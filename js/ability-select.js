@@ -93,7 +93,7 @@
                             `executeAbility(null)`,
                             getActivePortrait(name, char),
                             name,
-                            `<strong>${name}</strong><br><small>HP: ${char.hp}/${char.maxHp}</small>${getStatusEffectsHTML(char)}`,
+                            `<strong>${name}</strong><br><small>HP: ${char.hp}/${char.maxHp}</small>`,
                             'opacity:0.85; pointer-events:none;'
                         );
                     }
@@ -125,7 +125,7 @@
                         `executeAbility('${name}')`,
                         getActivePortrait(name, char),
                         name,
-                        `<strong>${name}</strong><br><small>HP: ${char.hp}/${char.maxHp}</small>${getStatusEffectsHTML(char)}`
+                        `<strong>${name}</strong><br><small>HP: ${char.hp}/${char.maxHp}</small>`
                     );
                 });
                 if (!hasAllyTargets) {
@@ -166,7 +166,7 @@
                             `executeAbility('${mpName}')`,
                             getActivePortrait(mpName, mpChar),
                             mpName,
-                            `<strong>${mpName}</strong><br><small>HP: ${mpChar.hp}/${mpChar.maxHp}</small><br><small style="color:#ff6600;">🌑 MEGA PROVOCACIÓN</small>${getStatusEffectsHTML(mpChar)}`,
+                            `<strong>${mpName}</strong><br><small>HP: ${mpChar.hp}/${mpChar.maxHp}</small><br><small style="color:#ff6600;">🌑 MEGA PROVOCACIÓN</small>`,
                             'border-color:#ff6600; background: linear-gradient(135deg, rgba(255,102,0,0.3), rgba(255,68,0,0.2));'
                         );
                     } else {
@@ -210,7 +210,7 @@
                         `executeAbility('${tauntTarget}')`,
                         tauntPortrait,
                         tauntTarget,
-                        `<strong>${tauntTarget}</strong><br><small>HP: ${tauntChar.hp}/${tauntChar.maxHp}</small><br><small style="color:var(--warning);">⚠️ PROVOCACIÓN</small>${getStatusEffectsHTML(tauntChar)}`,
+                        `<strong>${tauntTarget}</strong><br><small>HP: ${tauntChar.hp}/${tauntChar.maxHp}</small><br><small style="color:var(--warning);">⚠️ PROVOCACIÓN</small>`,
                         'border-color:var(--warning); background: linear-gradient(135deg, rgba(255,170,0,0.3), rgba(255,140,0,0.2));'
                     );
                 } else {
@@ -228,7 +228,7 @@
                                     `executeAbility('${name}')`,
                                     getActivePortrait(name, char),
                                     name,
-                                    `<strong>${name}</strong><br><small>HP: ${char.hp}/${char.maxHp}</small>${getStatusEffectsHTML(char)}`
+                                    `<strong>${name}</strong><br><small>HP: ${char.hp}/${char.maxHp}</small>`
                                 );
                             }
                         }
@@ -367,8 +367,8 @@
             if (attackerName !== 'Gilgamesh') return;
             const gil = gameState.characters['Gilgamesh'];
             if (!gil || gil.isDead || gil.hp <= 0) return;
-            gil.charges += 2;
-            addLog(`👑 Regla de Oro: Gilgamesh gana 2 cargas por golpe crítico`, 'buff');
+            gil.charges = Math.min(20, (gil.charges || 0) + 1);
+            addLog(`👑 Regla de Oro: Gilgamesh gana 1 carga por golpe crítico`, 'buff');
         }
 
         // ── PASIVA ENTRENAMIENTO DE LOS DIOSES (Goku): +1 vel y +1 daño en crítico ──
@@ -535,32 +535,6 @@
 
         function closeTargetModal() {
             document.getElementById('targetModal').classList.remove('show');
-        }
-
-        // Helper: genera HTML de los íconos de buffs/debuffs activos de un personaje
-        function getStatusEffectsHTML(char) {
-            if (!char || !char.statusEffects || char.statusEffects.length === 0) return '';
-            const icons = {
-                'Escudo': '🛡️', 'Escudo Sagrado': '✨', 'Provocación': '⚠️', 'Mega Provocación': '🌑',
-                'Concentración': '🎯', 'Concentracion': '🎯', 'Contraataque': '⚔️', 'Sigilo': '🌫️',
-                'Regeneración': '💚', 'Regeneracion': '💚', 'Invulnerabilidad': '💎',
-                'Veneno': '☠️', 'Quemadura': '🔥', 'Quemadura Solar': '☀️', 'Sangrado': '🩸',
-                'Congelado': '❄️', 'Miedo': '😱', 'Aturdido': '💫', 'Silencio': '🔇',
-                'Maldición': '💀', 'Ralentizado': '🐢',
-            };
-            const seen = new Set();
-            let html = '<div style="display:flex;flex-wrap:wrap;gap:2px;justify-content:center;margin-top:3px;">';
-            char.statusEffects.forEach(e => {
-                if (!e || !e.name) return;
-                if (seen.has(e.name)) return;
-                seen.add(e.name);
-                const icon = icons[e.name] || (e.type === 'buff' ? '✨' : '⚡');
-                const color = e.type === 'buff' ? '#4cffb0' : '#ff6060';
-                const dur = e.duration ? ` ${e.duration}T` : '';
-                html += `<span title="${e.name}${dur}" style="font-size:0.72rem;background:rgba(0,0,0,0.5);border-radius:4px;padding:1px 3px;border:1px solid ${color};color:${color};">${icon}${dur}</span>`;
-            });
-            html += '</div>';
-            return html;
         }
 
         // Helper: genera HTML de un botón de objetivo con portrait
