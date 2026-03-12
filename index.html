@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OVERSTRIKE - 5v5 RPG Battle v4.1</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- ==================== ESTILOS ==================== -->
+    <link rel="stylesheet" href="css/styles.css">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+<!-- ==================== AUDIO SYSTEM ==================== -->
+<audio id="audioMenu" loop preload="auto">
+  <source src="https://AlejandroSolis.publit.io/file/Statue-of-God-Theme-Solo-Leveling-Episode-1-%E4%BF%BA%E3%81%A0%E3%81%91%E3%83%AC%E3%83%99%E3%83%AB%E3%82%A2%E3%83%83%E3%83%97%E3%81%AA%E4%BB%B6-OST-Cover.mp3" type="audio/mpeg">
+</audio>
+<audio id="audioBattle1" loop preload="auto">
+  <source src="https://AlejandroSolis.publit.io/file/Naruto-Kouen-Crimson-Flames-Extended.mp3" type="audio/mpeg">
+</audio>
+<audio id="audioBattle2" loop preload="auto">
+  <source src="https://AlejandroSolis.publit.io/file/Infinity-Castle-Theme-Demon-Slayer-S4-EP8-Ost-ORIGINAL-SOUNDTRACK.mp3" type="audio/mpeg">
+</audio>
+<audio id="audioBattle3" loop preload="auto">
+  <source src="https://AlejandroSolis.publit.io/file/Demon-Slayer-Season-2-Main-Theme-Tengen-Uzui-Theme-EPIC-VERSION.mp3" type="audio/mpeg">
+</audio>
+<audio id="audioBattle4" loop preload="auto">
+  <source src="https://AlejandroSolis.publit.io/file/Desperate-Assault-HQ-Remaster-and-Rearrange.mp3" type="audio/mpeg">
+</audio>
+<audio id="audioBattle5" loop preload="auto">
+  <source src="https://AlejandroSolis.publit.io/file/UNDECEMBER-SOUNDTRACK-Into-the-Chaos.mp3" type="audio/mpeg">
+</audio>
+<audio id="audioSelect" preload="auto">
+  <source src="https://AlejandroSolis.publit.io/file/Menu-Select-Sound-Super.mp3" type="audio/mpeg">
+</audio>
+<!-- ==================== END AUDIO ==================== -->
+
+    <!-- ==================== LOGIN SCREEN ==================== -->
+    <div id="loginScreen" style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; background:linear-gradient(rgba(5,5,20,0.85),rgba(5,5,20,0.85)), url(https://i.postimg.cc/jSmHp0dw/4c9b34ddf1759d2a2950c4c8e1694ca9.jpg) center/cover no-repeat; gap:1.5rem; position:relative;">
+        <div style="position:absolute;width:600px;height:600px;background:radial-gradient(circle,rgba(0,196,255,0.08),transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;animation:loginPulse 4s ease-in-out infinite;"></div>
+        <div style="font-family:'Orbitron',sans-serif; font-size:3rem; font-weight:900; color:#fff; text-shadow:0 0 30px #00c4ff, 0 0 80px #00c4ff44; letter-spacing:.15em; text-align:center;">OVERSTRIKE</div>
+        <div style="font-size:.9rem; color:#00c4ff; letter-spacing:.3em; margin-top:-.8rem; opacity:.8;">5v5 TACTICAL RPG BATTLE</div>
+        <div id="loginBox" style="background:rgba(0,10,30,0.8); border:1px solid rgba(0,196,255,0.3); border-radius:20px; padding:2.5rem 3rem; display:flex; flex-direction:column; align-items:center; gap:1.2rem; min-width:320px; backdrop-filter:blur(12px); box-shadow:0 0 40px rgba(0,196,255,0.1);">
+            <div style="font-family:'Orbitron',sans-serif; font-size:1rem; color:#aaa; letter-spacing:.15em;">ACCESO AL SISTEMA</div>
+            <button id="googleLoginBtn" onclick="signInWithGoogle()" style="display:flex; align-items:center; gap:12px; background:#fff; color:#222; border:none; border-radius:10px; padding:14px 28px; font-size:1rem; font-weight:700; cursor:pointer; width:100%; justify-content:center; transition:all .2s; box-shadow:0 4px 15px rgba(0,0,0,0.3);" onmouseover="this.style.transform='scale(1.03)';this.style.boxShadow='0 6px 25px rgba(0,0,0,0.4)'" onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 4px 15px rgba(0,0,0,0.3)'">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:22px;height:22px;" alt="Google">
+                Iniciar sesión con Google
+            </button>
+            <div id="loginStatus" style="font-size:.8rem; color:#666; text-align:center; min-height:20px;"></div>
+        </div>
+        <div style="font-size:.7rem; color:#444; letter-spacing:.1em; text-align:center;">Al iniciar sesión aceptas jugar con honor ⚔️</div>
+    </div>
+    <!-- ==================== END LOGIN SCREEN ==================== -->
+
+    <!-- ==================== MODE SELECT SCREEN ==================== -->
+    <div id="modeSelectScreen" style="display:none; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; background:linear-gradient(rgba(5,5,20,0.72),rgba(5,5,20,0.72)), url(https://i.postimg.cc/jSmHp0dw/4c9b34ddf1759d2a2950c4c8e1694ca9.jpg) center/cover no-repeat; gap:2rem;">
+        <div style="font-family:'Orbitron',sans-serif; font-size:2.8rem; font-weight:900; color:#fff; text-shadow:0 0 30px #00c4ff, 0 0 60px #00c4ff; letter-spacing:.15em;">OVERSTRIKE</div>
+        <div style="font-size:1.1rem; color:#aaa; letter-spacing:.2em; margin-top:-.5rem;">SELECCIONA MODO DE JUEGO</div>
+        <button id="backToLobbyBtn" onclick="showLobby()" style="position:absolute;top:20px;left:20px;background:rgba(0,196,255,0.1);border:1px solid rgba(0,196,255,0.3);color:#aaa;border-radius:8px;padding:8px 16px;font-size:.8rem;cursor:pointer;display:none;">← Volver al Lobby</button>
+        <div style="display:flex; gap:2rem; margin-top:1rem;">
+            <button onclick="csSelectMode('multi')" style="padding:1.4rem 2.8rem; font-family:'Orbitron',sans-serif; font-size:1rem; font-weight:700; background:linear-gradient(135deg,#003a5c,#006fa6); color:#00c4ff; border:2px solid #00c4ff; border-radius:12px; cursor:pointer; letter-spacing:.1em; transition:all .2s; box-shadow:0 0 20px #00c4ff44;" onmouseover="this.style.boxShadow='0 0 35px #00c4ff'" onmouseout="this.style.boxShadow='0 0 20px #00c4ff44'">
+                👥 MULTIJUGADOR<br><span style="font-size:.75rem; opacity:.7; font-weight:400;">Jugador vs Jugador</span>
+            </button>
+            <button onclick="csSelectMode('solo')" style="padding:1.4rem 2.8rem; font-family:'Orbitron',sans-serif; font-size:1rem; font-weight:700; background:linear-gradient(135deg,#3a0020,#a60040); color:#ff4466; border:2px solid #ff4466; border-radius:12px; cursor:pointer; letter-spacing:.1em; transition:all .2s; box-shadow:0 0 20px #ff446644;" onmouseover="this.style.boxShadow='0 0 35px #ff4466'" onmouseout="this.style.boxShadow='0 0 20px #ff446644'">
+                🤖 SOLITARIO<br><span style="font-size:.75rem; opacity:.7; font-weight:400;">Jugador vs IA</span>
+            </button>
+        </div>
+    </div>
+    <!-- ==================== END MODE SELECT SCREEN ==================== -->
+
+    <!-- ==================== LOBBY SCREEN ==================== -->
+    <div id="lobbyScreen" style="display:none; flex-direction:column; align-items:center; min-height:100vh; background:linear-gradient(rgba(5,5,20,0.9),rgba(5,5,20,0.9)), url(https://i.postimg.cc/jSmHp0dw/4c9b34ddf1759d2a2950c4c8e1694ca9.jpg) center/cover no-repeat; padding:2rem; gap:1.5rem;">
+        <div style="display:flex; width:100%; max-width:900px; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
+            <div style="font-family:'Orbitron',sans-serif; font-size:1.6rem; font-weight:900; color:#00c4ff; text-shadow:0 0 15px #00c4ff;">⚔️ OVERSTRIKE</div>
+            <div id="lobbyUserInfo" style="display:flex; align-items:center; gap:12px; background:rgba(0,196,255,0.08); border:1px solid rgba(0,196,255,0.2); border-radius:50px; padding:8px 16px;">
+                <img id="lobbyUserPhoto" src="" style="width:32px;height:32px;border-radius:50%;border:2px solid #00c4ff;" onerror="this.style.display='none'">
+                <span id="lobbyUserName" style="font-size:.9rem; color:#fff;"></span>
+                <button onclick="signOut()" style="background:rgba(255,51,102,0.15); border:1px solid #ff3366; color:#ff3366; border-radius:20px; padding:4px 12px; font-size:.75rem; cursor:pointer;">Salir</button>
+            </div>
+        </div>
+        <div style="display:flex; gap:1.5rem; width:100%; max-width:900px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:250px; display:flex; flex-direction:column; gap:1rem;">
+                <div style="background:rgba(0,10,30,0.8); border:1px solid rgba(0,196,255,0.2); border-radius:16px; padding:1.5rem;">
+                    <div style="font-family:'Orbitron',sans-serif; font-size:.8rem; color:#00c4ff; margin-bottom:1rem; letter-spacing:.1em;">MODO DE JUEGO</div>
+                    <button onclick="createOnlineRoom()" style="width:100%; padding:1rem; font-family:'Orbitron',sans-serif; font-size:.85rem; background:linear-gradient(135deg,#003a5c,#006fa6); color:#00c4ff; border:2px solid #00c4ff; border-radius:10px; cursor:pointer; margin-bottom:.8rem; transition:all .2s;" onmouseover="this.style.boxShadow='0 0 20px #00c4ff'" onmouseout="this.style.boxShadow='none'">🌐 CREAR SALA ONLINE</button>
+                    <button onclick="goToLocalMode('multi')" style="width:100%; padding:1rem; font-family:'Orbitron',sans-serif; font-size:.85rem; background:rgba(0,196,255,0.08); color:#aaa; border:1px solid #333; border-radius:10px; cursor:pointer; margin-bottom:.8rem;">👥 LOCAL — 2 Jugadores</button>
+                    <button onclick="goToLocalMode('solo')" style="width:100%; padding:1rem; font-family:'Orbitron',sans-serif; font-size:.85rem; background:rgba(255,51,102,0.08); color:#aaa; border:1px solid #333; border-radius:10px; cursor:pointer;">🤖 SOLITARIO — vs IA</button>
+                </div>
+                <div style="background:rgba(0,10,30,0.8); border:1px solid rgba(0,255,136,0.2); border-radius:16px; padding:1.2rem;">
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:.5rem;">
+                        <div style="width:8px;height:8px;background:#00ff88;border-radius:50%;animation:loginPulse 2s infinite;"></div>
+                        <span style="font-size:.8rem; color:#00ff88;">EN LÍNEA</span>
+                        <span id="onlineCount" style="font-size:.8rem; color:#666; margin-left:auto;">0 jugadores</span>
+                    </div>
+                </div>
+            </div>
+            <div style="flex:2; min-width:300px; background:rgba(0,10,30,0.8); border:1px solid rgba(0,196,255,0.2); border-radius:16px; padding:1.5rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                    <div style="font-family:'Orbitron',sans-serif; font-size:.8rem; color:#00c4ff; letter-spacing:.1em;">SALAS DISPONIBLES</div>
+                    <button onclick="refreshRooms()" style="background:none; border:1px solid #333; color:#666; border-radius:8px; padding:4px 10px; font-size:.75rem; cursor:pointer;">🔄 Actualizar</button>
+                </div>
+                <div id="roomsList" style="display:flex; flex-direction:column; gap:.6rem; min-height:200px;">
+                    <div style="text-align:center; color:#444; padding:2rem; font-size:.85rem;">Cargando salas...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ==================== END LOBBY SCREEN ==================== -->
+
+    <!-- ==================== WAITING ROOM SCREEN ==================== -->
+    <div id="waitingScreen" style="display:none; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; background:linear-gradient(rgba(5,5,20,0.9),rgba(5,5,20,0.9)), url(https://i.postimg.cc/jSmHp0dw/4c9b34ddf1759d2a2950c4c8e1694ca9.jpg) center/cover no-repeat; gap:2rem;">
+        <div style="font-family:'Orbitron',sans-serif; font-size:1.4rem; color:#00c4ff;">⏳ SALA DE ESPERA</div>
+        <div id="waitingRoomCode" style="font-family:'Orbitron',sans-serif; font-size:2.5rem; font-weight:900; color:#fff; letter-spacing:.3em; background:rgba(0,196,255,0.1); border:2px solid #00c4ff; padding:1rem 2rem; border-radius:12px;"></div>
+        <div style="color:#aaa; font-size:.9rem;">Comparte este código con tu rival</div>
+        <div id="waitingStatus" style="color:#ffaa00; font-size:1rem; font-family:'Orbitron',sans-serif; animation:loginPulse 2s infinite;">Esperando oponente...</div>
+        <button onclick="cancelRoom()" style="background:rgba(255,51,102,0.15); border:1px solid #ff3366; color:#ff3366; border-radius:10px; padding:10px 24px; cursor:pointer; font-size:.85rem;">Cancelar</button>
+    </div>
+    <!-- ==================== END WAITING ROOM ==================== -->
+
+    <!-- ==================== CHARACTER SELECT SCREEN ==================== -->
+    <div id="charSelectScreen" style="display:none;">
+        <div class="cs-title">OVERSTRIKE</div>
+        <div class="cs-phase-label team1" id="csPhaseLabel">🔷 HUNTERS — Elige tus 5 personajes</div>
+        <div id="onlineReadyBtn" style="display:none; position:fixed; bottom:30px; left:50%; transform:translateX(-50%); z-index:9999; flex-direction:column; align-items:center; gap:8px;">
+            <button onclick="submitOnlineReady()" id="onlineReadyBtnInner" style="padding:16px 48px; font-family:'Orbitron',sans-serif; font-size:1.1rem; font-weight:900; background:linear-gradient(135deg,#003a5c,#00aa66); color:#00ff88; border:2px solid #00ff88; border-radius:14px; cursor:pointer; letter-spacing:.1em; box-shadow:0 0 30px #00ff8866; transition:all .2s;" onmouseover="this.style.boxShadow='0 0 50px #00ff88'" onmouseout="this.style.boxShadow='0 0 30px #00ff8866'">
+                ✅ LISTO PARA JUGAR
+            </button>
+            <div style="font-size:.75rem; color:#00ff88; opacity:.7; letter-spacing:.1em;">Has elegido tus 5 personajes</div>
+        </div>
+        <div class="cs-teams-preview">
+            <div class="cs-team-panel team1">
+                <div class="cs-team-label">🔷 HUNTERS</div>
+                <div class="cs-team-slots" id="csTeam1Slots"></div>
+            </div>
+            <div class="cs-team-panel team2">
+                <div class="cs-team-label">🔶 REAPERS</div>
+                <div id="onlineOppStatus" style="font-size:.75rem;color:#666;padding:2px 8px;"></div>
+                <div class="cs-team-slots" id="csTeam2Slots"></div>
+            </div>
+        </div>
+        <div class="cs-grid-wrap">
+            <div class="cs-grid" id="csGrid"></div>
+        </div>
+    </div>
+    <div id="csDetailModal">
+        <div class="cs-detail-content" id="csDetailContent"></div>
+    </div>
+    <!-- ==================== END CHARACTER SELECT SCREEN ==================== -->
+
+    <!-- ==================== BUFF/DEBUFF GUIDE MODAL ==================== -->
+    <div id="buffDebuffModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:1100;overflow-y:auto;padding:20px;box-sizing:border-box;">
+        <div style="max-width:780px;margin:0 auto;background:#0d1020;border:1px solid #00c4ff;border-radius:16px;padding:24px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+                <h2 style="font-family:'Orbitron',sans-serif;color:#00c4ff;margin:0;font-size:1.1rem;text-shadow:0 0 12px #00c4ff;">📖 GUÍA DE BUFFS Y DEBUFFS</h2>
+                <button onclick="document.getElementById('buffDebuffModal').style.display='none'" style="background:#ff4466;border:none;color:#fff;font-size:1.2rem;width:32px;height:32px;border-radius:50%;cursor:pointer;">✕</button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" id="buffDebuffContent"></div>
+        </div>
+    </div>
+    <!-- ==================== END BUFF/DEBUFF GUIDE MODAL ==================== -->
+
+    <!-- ==================== SUMMON INFO MODAL ==================== -->
+    <div id="summonInfoModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:99999;overflow-y:auto;padding:20px;box-sizing:border-box;">
+        <div style="max-width:500px;margin:40px auto;background:#0d1020;border:1px solid #a855f7;border-radius:16px;padding:24px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <h2 id="summonInfoTitle" style="font-family:'Orbitron',sans-serif;color:#a855f7;margin:0;font-size:1rem;text-shadow:0 0 12px #a855f7;">🔮 INVOCACIÓN</h2>
+                <button onclick="document.getElementById('summonInfoModal').style.display='none'" style="background:#ff4466;border:none;color:#fff;font-size:1.2rem;width:32px;height:32px;border-radius:50%;cursor:pointer;">✕</button>
+            </div>
+            <div id="summonInfoContent"></div>
+        </div>
+    </div>
+    <!-- ==================== END SUMMON INFO MODAL ==================== -->
+
+    <!-- ==================== GAME BATTLE CONTAINER ==================== -->
+    <div class="game-container" style="display:none;">
+        <div class="game-header">
+            <h1 class="game-title">OVERSTRIKE</h1>
+        </div>
+        <div class="battle-arena">
+            <div class="team-column">
+                <div style="text-align: center; font-family: 'Orbitron', sans-serif; font-size: 1.1em; color: var(--team1); margin-bottom: 10px; text-shadow: 0 0 10px var(--team1);">🔷 HUNTERS</div>
+                <div id="team1Characters"></div>
+                <div id="team1Summons"></div>
+            </div>
+            <div class="center-column">
+                <div class="control-panel">
+                    <div class="turn-info">
+                        <div class="current-turn" id="currentTurnDisplay">Calculando...</div>
+                    </div>
+                </div>
+                <div class="battle-log">
+                    <div class="battle-log-title" style="display:flex;align-items:center;gap:8px;">
+                        <span>📜 BATTLE LOG</span>
+                        <button onclick="showBuffDebuffGuide()" style="background:rgba(0,196,255,0.15);border:1px solid #00c4ff;color:#00c4ff;font-family:'Orbitron',sans-serif;font-size:.55rem;padding:3px 7px;border-radius:6px;cursor:pointer;letter-spacing:.05em;" title="Guía de Buffs y Debuffs">📖 GUÍA</button>
+                    </div>
+                    <div id="battleLogContent"></div>
+                </div>
+            </div>
+            <div class="team-column">
+                <div style="text-align: center; font-family: 'Orbitron', sans-serif; font-size: 1.1em; color: var(--team2); margin-bottom: 10px; text-shadow: 0 0 10px var(--team2);">🔶 REAPERS</div>
+                <div id="team2Characters"></div>
+                <div id="team2Summons"></div>
+            </div>
+        </div>
+    </div>
+    <!-- ==================== END GAME BATTLE CONTAINER ==================== -->
+
+    <!-- ==================== MODALS ==================== -->
+    <div class="turn-confirm-modal" id="turnConfirmModal">
+        <div class="turn-confirm-content">
+            <div class="round-counter" id="turnConfirmRound">RONDA 1</div>
+            <div class="turn-confirm-title">Siguiente Turno</div>
+            <div class="turn-confirm-subtitle" id="turnConfirmChar">Personaje</div>
+            <div class="turn-confirm-buttons">
+                <button class="turn-confirm-btn" onclick="continueTurn()">▶️ Continuar Turno</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="battle-status-modal" id="battleStatusModal">
+        <div class="battle-status-content">
+            <div class="battle-status-header">
+                <div class="battle-status-title">📊 ESTADO DE LA BATALLA</div>
+                <div class="round-counter" id="battleStatusRound">RONDA 1</div>
+            </div>
+            <div class="battle-status-teams">
+                <div class="battle-status-team team1">
+                    <div class="battle-status-team-header">🔷 HUNTERS</div>
+                    <div id="statusTeam1"></div>
+                </div>
+                <div class="battle-status-team team2">
+                    <div class="battle-status-team-header">🔶 REAPERS</div>
+                    <div id="statusTeam2"></div>
+                </div>
+            </div>
+            <button class="close-status-btn" onclick="closeBattleStatus()">Cerrar</button>
+        </div>
+    </div>
+
+    <div class="target-selection-modal" id="targetModal">
+        <div class="target-selection-content">
+            <div class="target-selection-title" id="targetModalTitle">Selecciona un Objetivo</div>
+            <div class="target-grid" id="targetGrid"></div>
+        </div>
+    </div>
+
+    <div class="action-modal" id="actionModal">
+        <div class="action-modal-content">
+            <div class="action-modal-header">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <div class="round-counter" id="roundCounter">RONDA 1</div>
+                    <button id="btnVolverBatalla" onclick="closeActionModal()" style="background:rgba(255,60,60,0.15);border:1px solid rgba(255,60,60,0.4);color:rgba(255,120,120,0.9);font-family:'Orbitron',sans-serif;font-size:0.7em;padding:5px 14px;border-radius:8px;cursor:pointer;letter-spacing:0.05em;" onmouseover="this.style.background='rgba(255,60,60,0.3)'" onmouseout="this.style.background='rgba(255,60,60,0.15)'">← BATALLA</button>
+                </div>
+                <div class="action-modal-hero">
+                    <div class="action-modal-portrait-wrap">
+                        <img id="actionPortraitImg" class="action-modal-portrait" src="" alt="" onerror="this.style.display='none';document.getElementById('actionPortraitFallback').style.display='flex'">
+                        <div id="actionPortraitFallback" class="action-modal-portrait-fallback" style="display:none">⚔️</div>
+                    </div>
+                    <div class="action-modal-info">
+                        <div class="action-modal-title" id="actionModalTitle">Turno de Personaje</div>
+                        <div class="action-modal-stats">
+                            <div class="action-stat">❤️ HP: <span id="actionHP">20/20</span></div>
+                            <div class="action-stat">⚡ Cargas: <span id="actionCharges">0</span></div>
+                            <div class="action-stat" id="actionShield" style="display: none;">🛡️ Escudo: <span id="actionShieldValue">0</span></div>
+                        </div>
+                        <div id="actionPassive"></div>
+                        <div id="actionStatusEffects"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="action-abilities" id="actionAbilities"></div>
+        </div>
+    </div>
+
+    <div id="charInfoPanel" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:995;justify-content:center;align-items:center;">
+        <div id="charInfoContent" style="background:linear-gradient(135deg,rgba(10,14,23,0.98),rgba(26,14,46,0.98));border:2px solid var(--primary-glow);border-radius:20px;padding:24px;max-width:420px;width:92%;max-height:85vh;overflow-y:auto;box-shadow:0 0 40px rgba(0,217,255,0.3);"></div>
+    </div>
+
+    <div class="game-over-modal" id="gameOverModal">
+        <div class="game-over-content">
+            <h2 class="game-over-title" id="gameOverText">¡VICTORIA!</h2>
+            <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:16px;">
+                <button class="restart-btn" onclick="goToMainMenu()" style="background:linear-gradient(135deg,#00d9ff,#00ff88);">🏠 Ir al Menú Principal</button>
+                <button class="restart-btn" onclick="location.reload()" style="background:linear-gradient(135deg,#ff4466,#ff9900);margin-top:0;">⚔️ Nueva Batalla</button>
+            </div>
+        </div>
+    </div>
+    <!-- ==================== END MODALS ==================== -->
+
+    <!-- ==================== CHAT UI ==================== -->
+    <button id="chatToggleBtn" onclick="toggleChat()" style="position:relative;">
+        💬 CHAT
+        <span id="chatUnreadBadge" style="display:none;align-items:center;justify-content:center;background:#ff4466;color:#fff;border-radius:50%;width:18px;height:18px;font-size:.65rem;font-weight:700;position:absolute;top:-6px;right:-6px;"></span>
+    </button>
+    <div id="chatPanel">
+        <div id="chatHeader">
+            <span>💬 CHAT EN PARTIDA</span>
+            <button onclick="toggleChat()" style="background:none;border:none;color:#666;cursor:pointer;font-size:1rem;">✕</button>
+        </div>
+        <div id="chatMessages"></div>
+        <div id="chatInputRow">
+            <input id="chatInput" type="text" placeholder="Escribe un mensaje..." maxlength="120" onkeydown="if(event.key==='Enter')sendChatMessage()">
+            <button id="chatSendBtn" onclick="sendChatMessage()">➤</button>
+        </div>
+    </div>
+    <!-- ==================== END CHAT UI ==================== -->
+
+    <!-- ==================== JAVASCRIPT MODULES ==================== -->
+    <!-- 1. Firebase, Auth, Lobby, Online -->
+    <script src="js/firebase-auth.js"></script>
+    <!-- 2. Datos de personajes -->
+    <script src="js/characters.js"></script>
+    <!-- 3. Estado del juego + Audio Manager -->
+    <script src="js/audio-state.js"></script>
+    <!-- 4. Character Select Screen -->
+    <script src="js/character-select.js"></script>
+    <!-- 5. IA Engine -->
+    <script src="js/ai-engine.js"></script>
+    <!-- 6. Inicialización + Orden de turnos + Renderizado -->
+    <script src="js/init-render.js"></script>
+    <!-- 7. Lógica de turnos -->
+    <script src="js/turn-logic.js"></script>
+    <!-- 8. Procesamiento de efectos de estado -->
+    <script src="js/status-effects.js"></script>
+    <!-- 9. Aplicadores de debuffs -->
+    <script src="js/debuffs.js"></script>
+    <!-- 10. Invocaciones -->
+    <script src="js/summons.js"></script>
+    <!-- 11. Selección de habilidad + Selección de objetivo -->
+    <script src="js/ability-select.js"></script>
+    <!-- 12. Ejecución de habilidades (skills) -->
+    <script src="js/skills.js"></script>
+    <!-- ==================== END JAVASCRIPT MODULES ==================== -->
+
+</body>
+</html>
