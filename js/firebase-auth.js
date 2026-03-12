@@ -103,12 +103,10 @@
                 const count = snap.numChildren();
                 const el = document.getElementById('onlineCount');
                 if (el) el.textContent = count;
-                // Update players list (#4)
-                updatePlayersList(snap.val());
+                updatePlayersList(snap.val()); // #4
             });
 
-            // Listen for incoming challenges (#4)
-            listenForChallenges();
+            listenForChallenges(); // #4
         }
 
         // #4: Update active players list
@@ -117,26 +115,25 @@
             if (!list || !presenceData) return;
             list.innerHTML = '';
             Object.entries(presenceData).forEach(function([uid, data]) {
-                if (uid === currentUser.uid) return; // Don't show yourself
+                if (uid === currentUser.uid) return;
                 const row = document.createElement('div');
                 row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 8px;background:rgba(0,255,136,0.05);border:1px solid rgba(0,255,136,0.1);border-radius:8px;';
                 const nameSpan = document.createElement('span');
                 nameSpan.style.cssText = 'color:#ccc;font-size:.8rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
                 nameSpan.textContent = data.name || 'Jugador';
                 const btns = document.createElement('div');
-                btns.style.cssText = 'display:flex;gap:4px;';
-                
-                // Private chat button
+                btns.style.cssText = 'display:flex;gap:4px;flex-shrink:0;';
+
                 const chatBtn = document.createElement('button');
                 chatBtn.title = 'Chat privado';
                 chatBtn.textContent = '💬';
                 chatBtn.style.cssText = 'background:rgba(0,196,255,0.1);border:1px solid rgba(0,196,255,0.3);color:#00c4ff;border-radius:6px;padding:3px 7px;cursor:pointer;font-size:.8rem;';
                 chatBtn.onclick = function() { openPrivateChat(uid, data.name); };
-                
-                // Challenge button
+
                 const chalBtn = document.createElement('button');
                 chalBtn.title = 'Desafiar';
                 chalBtn.textContent = '⚔️';
+                chalBtn.dataset.targetUid = uid;
                 chalBtn.style.cssText = 'background:rgba(255,170,0,0.1);border:1px solid rgba(255,170,0,0.3);color:#ffaa00;border-radius:6px;padding:3px 7px;cursor:pointer;font-size:.8rem;';
                 chalBtn.onclick = function() { sendChallenge(uid, data.name, chalBtn); };
 
@@ -155,7 +152,6 @@
         let pendingChallengeId = null;
         function sendChallenge(targetUid, targetName, btn) {
             if (!currentUser) return;
-            // Cancel previous challenge if any
             if (pendingChallengeId) {
                 db.ref('challenges/' + pendingChallengeId).remove();
                 pendingChallengeId = null;
@@ -172,15 +168,13 @@
             btn.textContent = '⏳';
             btn.disabled = true;
             btn.title = 'Desafío enviado — click para cancelar';
-            btn.onclick = function() { cancelChallenge(chalId, btn, targetName); };
-            
-            // Listen for response
+            btn.onclick = function() { cancelChallenge(chalId, btn, targetUid, targetName); };
+
             db.ref('challenges/' + chalId + '/status').on('value', function(snap) {
                 const status = snap.val();
                 if (status === 'accepted') {
                     db.ref('challenges/' + chalId + '/status').off();
                     pendingChallengeId = null;
-                    // Create a room and notify the opponent
                     const roomId = generateRoomCode();
                     db.ref('challenges/' + chalId).update({ roomId: roomId });
                     createOnlineRoomFromChallenge(roomId, chalId);
@@ -196,17 +190,17 @@
             });
         }
 
-        function cancelChallenge(chalId, btn, targetName) {
+        function cancelChallenge(chalId, btn, targetUid, targetName) {
             db.ref('challenges/' + chalId).remove();
             pendingChallengeId = null;
             if (btn) {
                 btn.textContent = '⚔️';
                 btn.disabled = false;
+                btn.onclick = function() { sendChallenge(targetUid, targetName, btn); };
             }
         }
 
         // #4: Listen for incoming challenges
-        let challengeListener = null;
         let activeChallengeId = null;
         function listenForChallenges() {
             if (!currentUser) return;
@@ -215,18 +209,19 @@
                 if (!chal || chal.status !== 'pending') return;
                 activeChallengeId = snap.key;
                 const modal = document.getElementById('challengeModal');
-                document.getElementById('challengeModalText').textContent = chal.fromName + ' te desafía a una batalla.';
-                modal.style.display = 'flex';
+                if (modal) {
+                    document.getElementById('challengeModalText').textContent = (chal.fromName || 'Alguien') + ' te desafía a una batalla.';
+                    modal.style.display = 'flex';
+                }
             });
         }
 
         function respondChallenge(accept) {
             const modal = document.getElementById('challengeModal');
-            modal.style.display = 'none';
+            if (modal) modal.style.display = 'none';
             if (!activeChallengeId) return;
             if (accept) {
                 db.ref('challenges/' + activeChallengeId + '/status').set('accepted');
-                // Wait for roomId then join
                 db.ref('challenges/' + activeChallengeId + '/roomId').on('value', function(snap) {
                     const roomId = snap.val();
                     if (!roomId) return;
@@ -237,7 +232,9 @@
                 });
             } else {
                 db.ref('challenges/' + activeChallengeId + '/status').set('rejected');
-                setTimeout(function() { db.ref('challenges/' + activeChallengeId).remove(); }, 2000);
+                setTimeout(function() {
+                    if (activeChallengeId) db.ref('challenges/' + activeChallengeId).remove();
+                }, 2000);
                 activeChallengeId = null;
             }
         }
@@ -262,10 +259,9 @@
 
         // #4: Private chat
         let privateChatTarget = null;
-        let privateChatListener = null;
+        let privateChatRef = null;
         function openPrivateChat(targetUid, targetName) {
             privateChatTarget = { uid: targetUid, name: targetName };
-            // Create or reuse a private chat panel
             let panel = document.getElementById('privateChatPanel');
             if (!panel) {
                 panel = document.createElement('div');
@@ -273,7 +269,7 @@
                 panel.style.cssText = 'position:fixed;bottom:20px;right:20px;width:300px;height:380px;background:#0a0e17;border:2px solid rgba(0,196,255,0.4);border-radius:16px;display:flex;flex-direction:column;z-index:8000;box-shadow:0 0 30px rgba(0,196,255,0.2);';
                 panel.innerHTML = [
                     '<div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(0,196,255,0.15);">',
-                    '<span id="privateChatTitle" style="font-family:Orbitron,sans-serif;font-size:.78rem;color:#00c4ff;">💬 Chat</span>',
+                    '<span id="privateChatTitle" style="font-family:Orbitron,sans-serif;font-size:.78rem;color:#00c4ff;"></span>',
                     '<button onclick="closePrivateChat()" style="background:none;border:none;color:#666;cursor:pointer;font-size:1rem;">✕</button>',
                     '</div>',
                     '<div id="privateChatMessages" style="flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px;"></div>',
@@ -287,15 +283,11 @@
             document.getElementById('privateChatTitle').textContent = '💬 ' + targetName;
             document.getElementById('privateChatMessages').innerHTML = '';
             panel.style.display = 'flex';
-            
-            // Stop previous listener
-            if (privateChatListener) privateChatListener.off && privateChatListener.off();
-            
-            // Private chat ref (sorted UIDs so same chat both ways)
+
+            if (privateChatRef) privateChatRef.off();
             const chatKey = [currentUser.uid, targetUid].sort().join('_');
-            const chatRef = db.ref('privateChats/' + chatKey);
-            privateChatListener = chatRef;
-            chatRef.limitToLast(50).on('child_added', function(snap) {
+            privateChatRef = db.ref('privateChats/' + chatKey);
+            privateChatRef.limitToLast(50).on('child_added', function(snap) {
                 const msg = snap.val();
                 if (!msg) return;
                 const isMe = msg.uid === currentUser.uid;
@@ -310,8 +302,7 @@
         function closePrivateChat() {
             const panel = document.getElementById('privateChatPanel');
             if (panel) panel.style.display = 'none';
-            if (privateChatListener && privateChatListener.off) privateChatListener.off();
-            privateChatListener = null;
+            if (privateChatRef) { privateChatRef.off(); privateChatRef = null; }
         }
 
         function sendPrivateMessage() {
@@ -342,10 +333,7 @@
                 el.style.cssText = 'max-width:85%;padding:5px 9px;border-radius:8px;font-size:.78rem;word-break:break-word;' + (isMe ? 'align-self:flex-end;background:rgba(255,170,0,0.15);color:#fff;' : 'align-self:flex-start;background:rgba(255,255,255,0.06);color:#ccc;');
                 el.innerHTML = '<span style="font-size:.68rem;color:#888;display:block;">' + escapeHtml(msg.name) + '</span>' + escapeHtml(msg.text);
                 const container = document.getElementById('globalChatMessages');
-                if (container) {
-                    container.appendChild(el);
-                    container.scrollTop = 99999;
-                }
+                if (container) { container.appendChild(el); container.scrollTop = 99999; }
             });
         }
 
