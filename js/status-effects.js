@@ -1,11 +1,16 @@
-        // ==================== PROCESAMIENTO DE EFECTOS DE ESTADO ====================
+// ==================== PROCESAMIENTO DE EFECTOS DE ESTADO ====================
         function processRegenerationEffects(charName) {
             const char = gameState.characters[charName];
             if (!char || !char.statusEffects) return;
+            // #17: No procesar regeneración en personajes muertos o sin HP
+            if (char.isDead || char.hp <= 0) return;
             
             const regenEffects = char.statusEffects.filter(e => e && e.name === 'Regeneracion');
             if (regenEffects.length > 0) {
                 regenEffects.forEach(regen => {
+                    // #17: Regeneracion de Fénix (duration:99) solo activa si fenixArmorActive
+                    if (regen.duration >= 99 && !char.fenixArmorActive) return;
+
                     // Support both flat amount and percent-based healing
                     let healAmount;
                     if (regen.amount) {
@@ -190,7 +195,6 @@
                 console.error(`applyBurn: Target ${targetName} no encontrado`);
                 return;
             }
-            // Guard: never apply burns with 0% or undefined percent
             const validPct = (typeof percent === 'number' && percent > 0) ? percent : null;
             if (!validPct) {
                 console.warn(`applyBurn: percent inválido (${percent}) para ${targetName} — ignorado`);
@@ -199,13 +203,21 @@
             if (!target.statusEffects) {
                 target.statusEffects = [];
             }
-            target.statusEffects.push({
-                name: 'Quemadura',
-                type: 'debuff',
-                percent: validPct,
-                duration: duration
-            });
-            addLog(`🔥 ${targetName} ha sido quemado (${validPct}% por ${duration} turno${duration > 1 ? 's' : ''})`, 'debuff');
+            // APILAMIENTO: si ya existe Quemadura, sumar el % y refrescar duración al máximo
+            const existing = target.statusEffects.find(e => e && e.name === 'Quemadura');
+            if (existing) {
+                existing.percent = (existing.percent || 0) + validPct;
+                existing.duration = Math.max(existing.duration || 0, duration);
+                addLog(`🔥 ${targetName} Quemadura apilada → ${existing.percent}% (${existing.duration} turno${existing.duration > 1 ? 's' : ''})`, 'debuff');
+            } else {
+                target.statusEffects.push({
+                    name: 'Quemadura',
+                    type: 'debuff',
+                    percent: validPct,
+                    duration: duration
+                });
+                addLog(`🔥 ${targetName} ha sido quemado (${validPct}% por ${duration} turno${duration > 1 ? 's' : ''})`, 'debuff');
+            }
         }
 
         // Normaliza tildes para comparaciones de efectos
@@ -229,4 +241,3 @@
             const normTarget = normAccent(effectName);
             return char.statusEffects.some(e => e && normAccent(e.name) === normTarget);
         }
-
