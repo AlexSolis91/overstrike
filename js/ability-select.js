@@ -1,4 +1,4 @@
-        // ==================== SELECCIÓN DE HABILIDAD ====================
+// ==================== SELECCIÓN DE HABILIDAD ====================
         function selectAbility(charName, abilityIndex) {
             audioManager.playSelect();
             if (gameState.selectedCharacter !== charName) {
@@ -93,7 +93,7 @@
                             `executeAbility(null)`,
                             getActivePortrait(name, char),
                             name,
-                            `<strong>${name}</strong><br><small>HP: ${char.hp}/${char.maxHp}</small>`,
+                            `<strong>${name}</strong><br><small>HP: ${char.hp}/${char.maxHp}</small>${getStatusEffectsHTML(char)}`,
                             'opacity:0.85; pointer-events:none;'
                         );
                     }
@@ -125,7 +125,7 @@
                         `executeAbility('${name}')`,
                         getActivePortrait(name, char),
                         name,
-                        `<strong>${name}</strong><br><small>HP: ${char.hp}/${char.maxHp}</small>`
+                        `<strong>${name}</strong><br><small>HP: ${char.hp}/${char.maxHp}</small>${getStatusEffectsHTML(char)}`
                     );
                 });
                 if (!hasAllyTargets) {
@@ -166,7 +166,7 @@
                             `executeAbility('${mpName}')`,
                             getActivePortrait(mpName, mpChar),
                             mpName,
-                            `<strong>${mpName}</strong><br><small>HP: ${mpChar.hp}/${mpChar.maxHp}</small><br><small style="color:#ff6600;">🌑 MEGA PROVOCACIÓN</small>`,
+                            `<strong>${mpName}</strong><br><small>HP: ${mpChar.hp}/${mpChar.maxHp}</small><br><small style="color:#ff6600;">🌑 MEGA PROVOCACIÓN</small>${getStatusEffectsHTML(mpChar)}`,
                             'border-color:#ff6600; background: linear-gradient(135deg, rgba(255,102,0,0.3), rgba(255,68,0,0.2));'
                         );
                     } else {
@@ -210,7 +210,7 @@
                         `executeAbility('${tauntTarget}')`,
                         tauntPortrait,
                         tauntTarget,
-                        `<strong>${tauntTarget}</strong><br><small>HP: ${tauntChar.hp}/${tauntChar.maxHp}</small><br><small style="color:var(--warning);">⚠️ PROVOCACIÓN</small>`,
+                        `<strong>${tauntTarget}</strong><br><small>HP: ${tauntChar.hp}/${tauntChar.maxHp}</small><br><small style="color:var(--warning);">⚠️ PROVOCACIÓN</small>${getStatusEffectsHTML(tauntChar)}`,
                         'border-color:var(--warning); background: linear-gradient(135deg, rgba(255,170,0,0.3), rgba(255,140,0,0.2));'
                     );
                 } else {
@@ -228,7 +228,7 @@
                                     `executeAbility('${name}')`,
                                     getActivePortrait(name, char),
                                     name,
-                                    `<strong>${name}</strong><br><small>HP: ${char.hp}/${char.maxHp}</small>`
+                                    `<strong>${name}</strong><br><small>HP: ${char.hp}/${char.maxHp}</small>${getStatusEffectsHTML(char)}`
                                 );
                             }
                         }
@@ -537,6 +537,32 @@
             document.getElementById('targetModal').classList.remove('show');
         }
 
+        // Helper: genera HTML de los íconos de buffs/debuffs activos de un personaje
+        function getStatusEffectsHTML(char) {
+            if (!char || !char.statusEffects || char.statusEffects.length === 0) return '';
+            const icons = {
+                'Escudo': '🛡️', 'Escudo Sagrado': '✨', 'Provocación': '⚠️', 'Mega Provocación': '🌑',
+                'Concentración': '🎯', 'Concentracion': '🎯', 'Contraataque': '⚔️', 'Sigilo': '🌫️',
+                'Regeneración': '💚', 'Regeneracion': '💚', 'Invulnerabilidad': '💎',
+                'Veneno': '☠️', 'Quemadura': '🔥', 'Quemadura Solar': '☀️', 'Sangrado': '🩸',
+                'Congelado': '❄️', 'Miedo': '😱', 'Aturdido': '💫', 'Silencio': '🔇',
+                'Maldición': '💀', 'Ralentizado': '🐢',
+            };
+            const seen = new Set();
+            let html = '<div style="display:flex;flex-wrap:wrap;gap:2px;justify-content:center;margin-top:3px;">';
+            char.statusEffects.forEach(e => {
+                if (!e || !e.name) return;
+                if (seen.has(e.name)) return;
+                seen.add(e.name);
+                const icon = icons[e.name] || (e.type === 'buff' ? '✨' : '⚡');
+                const color = e.type === 'buff' ? '#4cffb0' : '#ff6060';
+                const dur = e.duration ? ` ${e.duration}T` : '';
+                html += `<span title="${e.name}${dur}" style="font-size:0.72rem;background:rgba(0,0,0,0.5);border-radius:4px;padding:1px 3px;border:1px solid ${color};color:${color};">${icon}${dur}</span>`;
+            });
+            html += '</div>';
+            return html;
+        }
+
         // Helper: genera HTML de un botón de objetivo con portrait
         function makeTargetBtn(onclick, portrait, name, infoHTML, extraStyle = '') {
             const imgHTML = portrait
@@ -697,4 +723,3 @@
                 }
             }
         }
-
