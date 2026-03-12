@@ -1,4 +1,4 @@
-        // ==================== ROBO DE CARGAS ====================
+// ==================== ROBO DE CARGAS ====================
         function stealCharges(attackerName, targetName, amount) {
             const attacker = gameState.characters[attackerName];
             const target = gameState.characters[targetName];
@@ -547,7 +547,9 @@
             
             // ESCUDO SAGRADO: bloquea todo el daño de golpes (no efectos de estado)
             if (attackerName !== null && hasStatusEffect(targetName, 'Escudo Sagrado')) {
-                addLog(`✝️ Escudo Sagrado de ${targetName} bloqueó el golpe de ${attackerName}`, 'buff');
+                // #6: Consumir el stack de Escudo Sagrado al bloquear
+                target.statusEffects = target.statusEffects.filter(e => !(e && e.name === 'Escudo Sagrado'));
+                addLog(`✝️ Escudo Sagrado de ${targetName} bloqueó el golpe de ${attackerName} (consumido)`, 'buff');
                 return 0;
             }
 
@@ -819,12 +821,16 @@
 
         function reviveAlly(targetName) {
             const target = gameState.characters[targetName];
+            // #13: Guardar la pasiva antes de limpiar statusEffects
+            const savedPassive = target.passive;
             target.hp = target.maxHp;
             target.charges = 10;
             target.isDead = false;
             target.statusEffects = [];
             target.shield = 0;
             target.shieldEffect = null;
+            // #13: Restaurar la pasiva después de limpiar
+            if (savedPassive) target.passive = savedPassive;
             
             // Reintegrar al personaje en turnOrder si no está ya
             if (!gameState.turnOrder.includes(targetName)) {
