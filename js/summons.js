@@ -137,8 +137,8 @@
             if (summon.name === 'Kamish' && attackerName) {
                 const attacker = gameState.characters[attackerName];
                 if (attacker && !attacker.isDead) {
-                    applyBurn(attackerName, 25, 1); // 25% por 1 turno per Excel spec
-                    addLog(`🔥 ${attackerName} recibe Quemaduras permanentes del 20% por golpear a Kamish`, 'damage');
+                    applyBurn(attackerName, 25, 1);
+                    addLog(`🔥 Terror de las Sombras: ${attackerName} recibe Quemadura 25% 1T por golpear a Kamish`, 'damage');
                 }
             }
             
