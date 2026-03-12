@@ -1,7 +1,36 @@
 // ==================== EJECUCIÓN DE HABILIDAD ====================
 
+        // ── MEGA PROVOCACIÓN HELPER ─────────────────────────────────────
+        // Aplica daño AOE respetando Mega Provocación.
+        // Devuelve true si redirigió a portador (no aplicar daño normal), false si no había MegaProv.
+        function applyAOEWithMegaProv(enemyTeam, perUnitDamage, attackerName) {
+            const mpData = checkKamishMegaProvocation(enemyTeam);
+            if (!mpData) return false;
+            let count = 0;
+            for (let n in gameState.characters) {
+                const c = gameState.characters[n];
+                if (c && c.team === enemyTeam && !c.isDead && c.hp > 0) count++;
+            }
+            for (let sid in gameState.summons) {
+                const s = gameState.summons[sid];
+                if (s && s.team === enemyTeam && s.hp > 0 && sid !== mpData.id) count++;
+            }
+            const total = perUnitDamage * (count || 1);
+            if (mpData.isCharacter) {
+                applyDamageWithShield(mpData.characterName, total, attackerName);
+                addLog('🌑 Mega Provocación: ' + mpData.characterName + ' absorbe ' + total + ' de daño AOE (' + perUnitDamage + '×' + count + ')', 'damage');
+            } else {
+                applySummonDamage(mpData.id, total, attackerName);
+                const holderName = (mpData.kamish && mpData.kamish.name) || 'Invocación';
+                addLog('🐉 Mega Provocación: ' + holderName + ' absorbe ' + total + ' de daño AOE (' + perUnitDamage + '×' + count + ')', 'damage');
+            }
+            return true;
+        }
+
         // Aplicar daño AOE a TODOS los enemigos (personajes + invocaciones)
+        // Respeta Mega Provocación automáticamente.
         function applyAOEDamageToTeam(enemyTeam, damage, attackerName) {
+            if (applyAOEWithMegaProv(enemyTeam, damage, attackerName)) return;
             for (let n in gameState.characters) {
                 const c = gameState.characters[n];
                 if (c && c.team === enemyTeam && !c.isDead && c.hp > 0) {
@@ -206,19 +235,18 @@
 
             } else if (ability.effect === 'guadana_divina') {
                 const enemyTeamGD = attacker.team === 'team1' ? 'team2' : 'team1';
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (!c || c.team !== enemyTeamGD || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff'); continue; }
-                    applyDamageWithShield(n, finalDamage, charName);
-                    c.charges = 0;
-                    addLog('⚰️ Guadaña Divina: ' + n + ' pierde todas sus cargas', 'damage');
-                }
-                // Daño AOE también a invocaciones enemigas
-                for (let _sid in gameState.summons) {
-                    const _s = gameState.summons[_sid];
-                    if (_s && _s.team === enemyTeamGD && _s.hp > 0) {
-                        applySummonDamage(_sid, finalDamage, charName);
+                if (!applyAOEWithMegaProv(enemyTeamGD, finalDamage, charName)) {
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== enemyTeamGD || c.isDead || c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff'); continue; }
+                        applyDamageWithShield(n, finalDamage, charName);
+                        c.charges = 0;
+                        addLog('⚰️ Guadaña Divina: ' + n + ' pierde todas sus cargas', 'damage');
+                    }
+                    for (let _sid in gameState.summons) {
+                        const _s = gameState.summons[_sid];
+                        if (_s && _s.team === enemyTeamGD && _s.hp > 0) applySummonDamage(_sid, finalDamage, charName);
                     }
                 }
                 applyAOEDamageToSummons(attacker.team, finalDamage, charName);
@@ -282,20 +310,18 @@
             // ── EFECTOS NUEVOS DE PERSONAJES ─────────────────────────────
 
             } else if (ability.effect === 'aoe_drain_charges') {
-                // Guadaña Divina: daño AOE + drena todas las cargas
                 const enemyTeam = attacker.team === 'team1' ? 'team2' : 'team1';
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (c.team === enemyTeam && !c.isDead && c.hp > 0) {
-                        applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
-                        if (c.charges > 0) { addLog(`⚡ ${n} pierde todas sus cargas`, 'damage'); c.charges = 0; }
+                if (!applyAOEWithMegaProv(enemyTeam, finalDamage, gameState.selectedCharacter)) {
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (c.team === enemyTeam && !c.isDead && c.hp > 0) {
+                            applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
+                            if (c.charges > 0) { addLog(`⚡ ${n} pierde todas sus cargas`, 'damage'); c.charges = 0; }
+                        }
                     }
-                }
-                // AOE: también afecta invocaciones enemigas
-                for (let _sid in gameState.summons) {
-                    const _s = gameState.summons[_sid];
-                    if (_s && _s.team === enemyTeam && _s.hp > 0) {
-                        applySummonDamage(_sid, finalDamage, gameState.selectedCharacter);
+                    for (let _sid in gameState.summons) {
+                        const _s = gameState.summons[_sid];
+                        if (_s && _s.team === enemyTeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, gameState.selectedCharacter);
                     }
                 }
 
@@ -738,11 +764,13 @@
                 // MUZAN - Sombra de la Noche: AOE daño + Sigilo 2 rondas + veneno AOE 3 turnos
                 const snTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                 checkAndRemoveStealth(snTeam);
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (c && c.team === snTeam && !c.isDead && c.hp > 0) {
-                        applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
-                        applyPoison(n, 3);
+                if (!applyAOEWithMegaProv(snTeam, finalDamage, gameState.selectedCharacter)) {
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (c && c.team === snTeam && !c.isDead && c.hp > 0) {
+                            applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
+                            applyPoison(n, 3);
+                        }
                     }
                 }
                 applyStealth(gameState.selectedCharacter, 2);
@@ -779,11 +807,13 @@
                 // SAURON - Mano Negra: AOE daño + 50% chance miedo
                 const sfTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                 checkAndRemoveStealth(sfTeam);
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (c && c.team === sfTeam && !c.isDead && c.hp > 0) {
-                        applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
-                        if (Math.random() < 0.50) applyFear(n, 1);
+                if (!applyAOEWithMegaProv(sfTeam, finalDamage, gameState.selectedCharacter)) {
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (c && c.team === sfTeam && !c.isDead && c.hp > 0) {
+                            applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
+                            if (Math.random() < 0.50) applyFear(n, 1);
+                        }
                     }
                 }
                 addLog(`🖤 Mano Negra: ${finalDamage} daño AOE con 50% chance Miedo`, 'damage');
@@ -818,15 +848,15 @@
                 const iraTotal = finalDamage + iraBonusDmg;
                 const iraTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                 checkAndRemoveStealth(iraTeam);
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (c && c.team === iraTeam && !c.isDead && c.hp > 0) {
-                        applyDamageWithShield(n, iraTotal, gameState.selectedCharacter);
+                if (!applyAOEWithMegaProv(iraTeam, iraTotal, gameState.selectedCharacter)) {
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (c && c.team === iraTeam && !c.isDead && c.hp > 0) applyDamageWithShield(n, iraTotal, gameState.selectedCharacter);
                     }
-                }
-                for (let sId in gameState.summons) {
-                    const s = gameState.summons[sId];
-                    if (s && s.team === iraTeam && s.hp > 0) applySummonDamage(sId, iraTotal, gameState.selectedCharacter);
+                    for (let sId in gameState.summons) {
+                        const s = gameState.summons[sId];
+                        if (s && s.team === iraTeam && s.hp > 0) applySummonDamage(sId, iraTotal, gameState.selectedCharacter);
+                    }
                 }
                 addLog(`⚡ Ira del Elegido Caído: ${iraTotal} daño AOE (${finalDamage} base + ${iraBonusDmg} por HP perdido)`, 'damage');
 
@@ -1705,14 +1735,16 @@
                         const enemyTeamPS = attacker.team === 'team1' ? 'team2' : 'team1';
                         addLog(`🔥 Purgatorio: ${shadowCount} sombras × 2 = ${aoeDmg} daño a todos los enemigos`, 'damage');
                         
-                        for (let n in gameState.characters) {
-                            const c = gameState.characters[n];
-                            if (!c || c.team !== enemyTeamPS || c.isDead || c.hp <= 0) continue;
-                            if (checkAsprosAOEImmunity && checkAsprosAOEImmunity(n)) {
-                                addLog(`🌟 ${n} es inmune al AOE (Aspros)`, 'buff');
-                                continue;
+                        if (!applyAOEWithMegaProv(enemyTeamPS, aoeDmg, charName)) {
+                            for (let n in gameState.characters) {
+                                const c = gameState.characters[n];
+                                if (!c || c.team !== enemyTeamPS || c.isDead || c.hp <= 0) continue;
+                                if (checkAsprosAOEImmunity && checkAsprosAOEImmunity(n)) {
+                                    addLog(`🌟 ${n} es inmune al AOE (Aspros)`, 'buff');
+                                    continue;
+                                }
+                                applyDamageWithShield(n, aoeDmg, charName);
                             }
-                            applyDamageWithShield(n, aoeDmg, charName);
                         }
                         
                         renderSummons();
@@ -1861,20 +1893,20 @@
             // ── ALIENTO DE GINNUNGAGAP (Ymir) ──
             } else if (ability.effect === 'aliento_ginnungagap') {
                 const enemyTeamAG = attacker.team === 'team1' ? 'team2' : 'team1';
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (!c || c.team !== enemyTeamAG || c.isDead || c.hp <= 0) continue;
-                    applyDamageWithShield(n, finalDamage, charName);
-                    // 50% Megacongelación
-                    if (Math.random() < 0.5) {
-                        applyMegaFreeze(n, 1);
-                        addLog('❄️ Aliento de Ginnungagap: ' + n + ' recibe Megacongelación', 'damage');
-                    }
-                    // Si tiene Sangrado: reducir 2 cargas
-                    const cPost = gameState.characters[n];
-                    if (cPost && cPost.statusEffects && cPost.statusEffects.some(function(e) { return e && normAccent(e.name||'') === 'sangrado'; })) {
-                        cPost.charges = Math.max(0, (cPost.charges||0) - 2);
-                        addLog('🩸 Aliento Ginnungagap: ' + n + ' pierde 2 cargas (tenía Sangrado)', 'damage');
+                if (!applyAOEWithMegaProv(enemyTeamAG, finalDamage, charName)) {
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== enemyTeamAG || c.isDead || c.hp <= 0) continue;
+                        applyDamageWithShield(n, finalDamage, charName);
+                        if (Math.random() < 0.5) {
+                            applyMegaFreeze(n, 1);
+                            addLog('❄️ Aliento de Ginnungagap: ' + n + ' recibe Megacongelación', 'damage');
+                        }
+                        const cPost = gameState.characters[n];
+                        if (cPost && cPost.statusEffects && cPost.statusEffects.some(function(e) { return e && normAccent(e.name||'') === 'sangrado'; })) {
+                            cPost.charges = Math.max(0, (cPost.charges||0) - 2);
+                            addLog('🩸 Aliento Ginnungagap: ' + n + ' pierde 2 cargas (tenía Sangrado)', 'damage');
+                        }
                     }
                 }
                 applyAOEDamageToSummons(attacker.team, finalDamage, charName);
@@ -1883,17 +1915,15 @@
             } else if (ability.effect === 'niebla_niflheim') {
                 const allyTeamNN = attacker.team;
                 const enemyTeamNN = allyTeamNN === 'team1' ? 'team2' : 'team1';
-                // Daño AOE enemigos
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (!c || c.team !== enemyTeamNN || c.isDead || c.hp <= 0) continue;
-                    applyDamageWithShield(n, finalDamage, charName);
-                    // Congelación a cada enemigo
-                    applyFreeze(n, 2);
-                    addLog('❄️ Niebla de Niflheim: ' + n + ' recibe Congelación', 'damage');
+                if (!applyAOEWithMegaProv(enemyTeamNN, finalDamage, charName)) {
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== enemyTeamNN || c.isDead || c.hp <= 0) continue;
+                        applyDamageWithShield(n, finalDamage, charName);
+                        applyFreeze(n, 2);
+                        addLog('❄️ Niebla de Niflheim: ' + n + ' recibe Congelación', 'damage');
+                    }
                 }
-                // Limpiar debuffs aliados + aplicar Esquivar 3 turnos
-                // Also hit enemy summons
                 applyAOEDamageToSummons(attacker.team, finalDamage, charName);
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
@@ -1912,21 +1942,21 @@
             // ── TORMENTA DEL NORTE (Ragnar AOE) ──
             } else if (ability.effect === 'tormenta_norte') {
                 const enemyTeamTN = attacker.team === 'team1' ? 'team2' : 'team1';
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (!c || c.team !== enemyTeamTN || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
-                    applyDamageWithShield(n, finalDamage, charName);
-                    // 50% aplicar Sangrado
-                    if (Math.random() < 0.5) {
-                        applyBleed(n, 2);
-                        addLog('🩸 Tormenta del Norte: ' + n + ' recibe Sangrado', 'damage');
-                    } else {
-                        // Si ya tenía Sangrado: Frenesí a Ragnar
-                        const cPost = gameState.characters[n];
-                        if (cPost && cPost.statusEffects && cPost.statusEffects.some(function(e) { return e && normAccent(e.name||'') === 'sangrado'; })) {
-                            gameState.characters[charName].statusEffects.push({ name: 'Frenesi', type: 'buff', duration: 4, emoji: '🔥' });
-                            addLog('🔥 Tormenta del Norte: ' + charName + ' gana Frenesí 3 turnos (objetivo tenía Sangrado)', 'buff');
+                if (!applyAOEWithMegaProv(enemyTeamTN, finalDamage, charName)) {
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== enemyTeamTN || c.isDead || c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
+                        applyDamageWithShield(n, finalDamage, charName);
+                        if (Math.random() < 0.5) {
+                            applyBleed(n, 2);
+                            addLog('🩸 Tormenta del Norte: ' + n + ' recibe Sangrado', 'damage');
+                        } else {
+                            const cPost = gameState.characters[n];
+                            if (cPost && cPost.statusEffects && cPost.statusEffects.some(function(e) { return e && normAccent(e.name||'') === 'sangrado'; })) {
+                                gameState.characters[charName].statusEffects.push({ name: 'Frenesi', type: 'buff', duration: 4, emoji: '🔥' });
+                                addLog('🔥 Tormenta del Norte: ' + charName + ' gana Frenesí 3 turnos (objetivo tenía Sangrado)', 'buff');
+                            }
                         }
                     }
                 }
@@ -1935,14 +1965,16 @@
             // ── TORMENTA DEL NORTE V2 (Ragnar - updated) ──
             } else if (ability.effect === 'tormenta_norte_v2') {
                 const enemyTeamTNv2 = attacker.team === 'team1' ? 'team2' : 'team1';
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (!c || c.team !== enemyTeamTNv2 || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
-                    applyDamageWithShield(n, finalDamage, charName);
-                    const hadBleed = hasStatusEffect(n, 'Sangrado');
-                    if (Math.random() < 0.5) applyBleed(n, 1);
-                    if (hadBleed) { attacker.charges = Math.min(20, (attacker.charges||0) + 2); addLog('⚡ Tormenta del Norte: +2 cargas a ' + charName + ' (objetivo tenía Sangrado)', 'buff'); }
+                if (!applyAOEWithMegaProv(enemyTeamTNv2, finalDamage, charName)) {
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== enemyTeamTNv2 || c.isDead || c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
+                        applyDamageWithShield(n, finalDamage, charName);
+                        const hadBleed = hasStatusEffect(n, 'Sangrado');
+                        if (Math.random() < 0.5) applyBleed(n, 1);
+                        if (hadBleed) { attacker.charges = Math.min(20, (attacker.charges||0) + 2); addLog('⚡ Tormenta del Norte: +2 cargas a ' + charName + ' (objetivo tenía Sangrado)', 'buff'); }
+                    }
                 }
                 applyAOEDamageToSummons(attacker.team, finalDamage, charName);
                 addLog('🪓 Tormenta del Norte: ' + finalDamage + ' daño AOE', 'damage');
@@ -1950,14 +1982,16 @@
             // ── REY PAGANO (Ragnar AOE) ──
             } else if (ability.effect === 'rey_pagano') {
                 const enemyTeamRP = attacker.team === 'team1' ? 'team2' : 'team1';
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (!c || c.team !== enemyTeamRP || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
-                    const hadBleedRP = hasStatusEffect(n, 'Sangrado');
-                    applyDamageWithShield(n, finalDamage, charName);
-                    applyBleed(n, 2);
-                    if (hadBleedRP) { applyFear(n, 2); addLog('😱 Rey Pagano: ' + n + ' tenía Sangrado → aplica Miedo', 'damage'); }
+                if (!applyAOEWithMegaProv(enemyTeamRP, finalDamage, charName)) {
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== enemyTeamRP || c.isDead || c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
+                        const hadBleedRP = hasStatusEffect(n, 'Sangrado');
+                        applyDamageWithShield(n, finalDamage, charName);
+                        applyBleed(n, 2);
+                        if (hadBleedRP) { applyFear(n, 2); addLog('😱 Rey Pagano: ' + n + ' tenía Sangrado → aplica Miedo', 'damage'); }
+                    }
                 }
                 applyAOEDamageToSummons(attacker.team, finalDamage, charName);
                 addLog('👑 Rey Pagano: ' + finalDamage + ' daño AOE + Sangrado', 'damage');
@@ -1996,18 +2030,19 @@
             // ── ONDA DE FUERZA (Anakin AOE) ──
             } else if (ability.effect === 'onda_fuerza') {
                 const enemyTeamOF = attacker.team === 'team1' ? 'team2' : 'team1';
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (!c || c.team !== enemyTeamOF || c.isDead || c.hp <= 0) continue;
-                    let ofDmg = finalDamage;
-                    if (attacker.darkSideAwakened) {
-                        ofDmg += 2;
-                        if (Math.random() < 0.5) { ofDmg *= 2; addLog('💥 Lado Oscuro: ¡Crítico en Onda de Fuerza vs ' + n + '!', 'damage'); }
+                if (!applyAOEWithMegaProv(enemyTeamOF, finalDamage, charName)) {
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== enemyTeamOF || c.isDead || c.hp <= 0) continue;
+                        let ofDmg = finalDamage;
+                        if (attacker.darkSideAwakened) {
+                            ofDmg += 2;
+                            if (Math.random() < 0.5) { ofDmg *= 2; addLog('💥 Lado Oscuro: ¡Crítico en Onda de Fuerza vs ' + n + '!', 'damage'); }
+                        }
+                        applyDamageWithShield(n, ofDmg, charName);
+                        c.charges = Math.max(0, (c.charges||0) - 3);
+                        addLog('💫 Onda de Fuerza: ' + n + ' pierde 3 cargas', 'damage');
                     }
-                    applyDamageWithShield(n, ofDmg, charName);
-                    // Eliminar 3 cargas (actualizado)
-                    c.charges = Math.max(0, (c.charges||0) - 3);
-                    addLog('💫 Onda de Fuerza: ' + n + ' pierde 3 cargas', 'damage');
                 }
                 applyAOEDamageToSummons(attacker.team, finalDamage, charName);
 
@@ -2047,14 +2082,16 @@
             } else if (ability.effect === 'mano_negra') {
                 // Mano Negra: AOE, crit if target has Provocacion/Megaprovocacion/Sigilo
                 const enemyTeamMN = attacker.team === 'team1' ? 'team2' : 'team1';
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (!c || c.team !== enemyTeamMN || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
-                    const hasProv = hasStatusEffect(n, 'Provocacion') || hasStatusEffect(n, 'MegaProvocacion') || hasStatusEffect(n, 'Sigilo');
-                    const mnDmg = hasProv ? finalDamage * 2 : finalDamage;
-                    if (hasProv) addLog('💥 Mano Negra: ¡Crítico vs ' + n + ' (tiene Provoc/Sigilo)!', 'damage');
-                    applyDamageWithShield(n, mnDmg, charName);
+                if (!applyAOEWithMegaProv(enemyTeamMN, finalDamage, charName)) {
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== enemyTeamMN || c.isDead || c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
+                        const hasProv = hasStatusEffect(n, 'Provocacion') || hasStatusEffect(n, 'MegaProvocacion') || hasStatusEffect(n, 'Sigilo');
+                        const mnDmg = hasProv ? finalDamage * 2 : finalDamage;
+                        if (hasProv) addLog('💥 Mano Negra: ¡Crítico vs ' + n + ' (tiene Provoc/Sigilo)!', 'damage');
+                        applyDamageWithShield(n, mnDmg, charName);
+                    }
                 }
                 applyAOEDamageToSummons(attacker.team, finalDamage, charName);
                 addLog('🖤 Mano Negra: ' + finalDamage + ' daño AOE', 'damage');
@@ -2145,13 +2182,15 @@
 
             } else if (ability.effect === 'locura_targaryen') {
                 const enemyTeamLT = attacker.team === 'team1' ? 'team2' : 'team1';
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (!c || c.team !== enemyTeamLT || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff'); continue; }
-                    applyDamageWithShield(n, finalDamage, charName);
+                if (!applyAOEWithMegaProv(enemyTeamLT, finalDamage, charName)) {
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== enemyTeamLT || c.isDead || c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff'); continue; }
+                        applyDamageWithShield(n, finalDamage, charName);
+                    }
+                    applyAOEDamageToSummons(attacker.team, finalDamage, charName);
                 }
-                applyAOEDamageToSummons(attacker.team, finalDamage, charName);
                 // Count burns on enemies
                 let burnCount = 0;
                 for (let n in gameState.characters) {
@@ -2166,14 +2205,16 @@
 
             } else if (ability.effect === 'dracarys') {
                 const enemyTeamDC = attacker.team === 'team1' ? 'team2' : 'team1';
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (!c || c.team !== enemyTeamDC || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff'); continue; }
-                    applyDamageWithShield(n, finalDamage, charName);
-                    applyBurn(n, 20, 2);
+                if (!applyAOEWithMegaProv(enemyTeamDC, finalDamage, charName)) {
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== enemyTeamDC || c.isDead || c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff'); continue; }
+                        applyDamageWithShield(n, finalDamage, charName);
+                        applyBurn(n, 20, 2);
+                    }
+                    applyAOEDamageToSummons(attacker.team, finalDamage, charName);
                 }
-                applyAOEDamageToSummons(attacker.team, finalDamage, charName);
                 ['Drogon','Rhaegal','Viserion'].forEach(function(d) { summonDragon(d, charName, attacker.team); });
                 addLog('🔥 ¡DRACARYS! ' + finalDamage + ' daño AOE + Quemadura 20% + 3 dragones invocados', 'damage');
 
@@ -2250,11 +2291,13 @@
             } else if (ability.effect === 'orden_sith') {
                 // AOE 1 dmg + clean 3 debuffs from ENEMY team (activates passive per debuff) + heal Palpatine + random ally
                 const enemyTeamOS = attacker.team === 'team1' ? 'team2' : 'team1';
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (!c || c.team !== enemyTeamOS || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n)) continue;
-                    applyDamageWithShield(n, finalDamage, charName);
+                if (!applyAOEWithMegaProv(enemyTeamOS, finalDamage, charName)) {
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== enemyTeamOS || c.isDead || c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(n)) continue;
+                        applyDamageWithShield(n, finalDamage, charName);
+                    }
                 }
                 let debuffsCleared = 0;
                 for (let n in gameState.characters) {
@@ -2284,12 +2327,14 @@
             } else if (ability.effect === 'poder_ilimitado') {
                 // AOE 4 + 50% mega stun
                 const enemyTeamPL = attacker.team === 'team1' ? 'team2' : 'team1';
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (!c || c.team !== enemyTeamPL || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff'); continue; }
-                    applyDamageWithShield(n, finalDamage, charName);
-                    if (Math.random() < 0.5) applyStun(n, 2);
+                if (!applyAOEWithMegaProv(enemyTeamPL, finalDamage, charName)) {
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== enemyTeamPL || c.isDead || c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff'); continue; }
+                        applyDamageWithShield(n, finalDamage, charName);
+                        if (Math.random() < 0.5) applyStun(n, 2);
+                    }
                 }
                 applyAOEDamageToSummons(attacker.team, finalDamage, charName);
                 addLog('⚡ ¡PODER ILIMITADO! ' + finalDamage + ' daño AOE + 50% Megaaturdimiento', 'damage');
@@ -2394,21 +2439,22 @@
             // ── EXPIACIÓN INCANDESCENTE (Thestalos AOE + charge steal on burn) ──
             } else if (ability.effect === 'expiacion_incandescente') {
                 const enemyTeamEI = attacker.team === 'team1' ? 'team2' : 'team1';
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (!c || c.team !== enemyTeamEI || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
-                    applyDamageWithShield(n, finalDamage, charName);
-                    // If burning: steal 1 charge
-                    const cAfter = gameState.characters[n];
-                    const hasBurn = cAfter && cAfter.statusEffects && cAfter.statusEffects.some(function(e) {
-                        const nm = e && (e.name||'').toLowerCase().replace(/[áéíóú]/g, function(ch){return {á:'a',é:'e',í:'i',ó:'o',ú:'u'}[ch]||ch;});
-                        return nm === 'quemadura' || nm === 'quemadura solar';
-                    });
-                    if (hasBurn && cAfter.charges > 0) {
-                        cAfter.charges = Math.max(0, cAfter.charges - 1);
-                        gameState.characters[charName].charges += 1;
-                        addLog('🔥 Expiación: ' + n + ' pierde 1 carga (tenía Quemadura)', 'buff');
+                if (!applyAOEWithMegaProv(enemyTeamEI, finalDamage, charName)) {
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== enemyTeamEI || c.isDead || c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
+                        applyDamageWithShield(n, finalDamage, charName);
+                        const cAfter = gameState.characters[n];
+                        const hasBurn = cAfter && cAfter.statusEffects && cAfter.statusEffects.some(function(e) {
+                            const nm = e && (e.name||'').toLowerCase().replace(/[áéíóú]/g, function(ch){return {á:'a',é:'e',í:'i',ó:'o',ú:'u'}[ch]||ch;});
+                            return nm === 'quemadura' || nm === 'quemadura solar';
+                        });
+                        if (hasBurn && cAfter.charges > 0) {
+                            cAfter.charges = Math.max(0, cAfter.charges - 1);
+                            gameState.characters[charName].charges += 1;
+                            addLog('🔥 Expiación: ' + n + ' pierde 1 carga (tenía Quemadura)', 'buff');
+                        }
                     }
                 }
                 applyAOEDamageToSummons(attacker.team, finalDamage, charName);
@@ -2512,29 +2558,8 @@
                 const attackerTeam = attacker.team;
                 const targetTeam = attackerTeam === 'team1' ? 'team2' : 'team1';
                 
-                // VERIFICAR MEGA PROVOCACIÓN DE KAMISH
-                const kamishData = checkKamishMegaProvocation(targetTeam);
-                if (kamishData) {
-                    // Kamish absorbe TODO el daño AOE
-                    // Contar personajes E invocaciones enemigas vivas
-                    let targetCount = 0;
-                    for (let name in gameState.characters) {
-                        const char = gameState.characters[name];
-                        if (char.team === targetTeam && !char.isDead && char.hp > 0) targetCount++;
-                    }
-                    for (let sId in gameState.summons) {
-                        const s = gameState.summons[sId];
-                        if (s && s.team === targetTeam && s.hp > 0 && sId !== kamishData.id) targetCount++;
-                    }
-                    
-                    const totalDamage = finalDamage * targetCount;
-                    applySummonDamage(kamishData.id, totalDamage, gameState.selectedCharacter);
-                    addLog(`🐉 Kamish (Mega Provocación) absorbe ${totalDamage} de daño AOE`, 'buff');
-                } else {
-                    // Suspender Sigilo antes de atacar
+                if (!applyAOEWithMegaProv(targetTeam, finalDamage, gameState.selectedCharacter)) {
                     checkAndRemoveStealth(targetTeam);
-                    
-                    // Dañar personajes
                     for (let name in gameState.characters) {
                         const char = gameState.characters[name];
                         if (char.team === targetTeam && char.hp > 0 && !char.isDead) {
@@ -2546,15 +2571,12 @@
                             applyDamageWithShield(name, damage, gameState.selectedCharacter);
                         }
                     }
-                    
-                    // Dañar invocaciones
                     for (let summonId in gameState.summons) {
                         const summon = gameState.summons[summonId];
                         if (summon && summon.team === targetTeam && summon.hp > 0) {
                             applySummonDamage(summonId, finalDamage, gameState.selectedCharacter);
                         }
                     }
-                    
                     addLog(`💥 ${gameState.selectedCharacter} usa ${ability.name} causando ${finalDamage} de daño a todos los enemigos`, 'damage');
                 }
                 
@@ -2599,30 +2621,8 @@
                 const attackerTeam = attacker.team;
                 const targetTeam = attackerTeam === 'team1' ? 'team2' : 'team1';
                 
-                // VERIFICAR MEGA PROVOCACIÓN DE KAMISH
-                const kamishData = checkKamishMegaProvocation(targetTeam);
-                if (kamishData) {
-                    // Kamish absorbe TODO el daño AOE
-                    // Contar cuántos personajes E invocaciones del equipo objetivo están vivos
-                    let targetCount = 0;
-                    for (let name in gameState.characters) {
-                        const char = gameState.characters[name];
-                        if (char.team === targetTeam && !char.isDead && char.hp > 0) targetCount++;
-                    }
-                    for (let sId in gameState.summons) {
-                        const s = gameState.summons[sId];
-                        if (s && s.team === targetTeam && s.hp > 0 && sId !== kamishData.id) targetCount++;
-                    }
-                    
-                    const totalDamage = finalDamage * targetCount;
-                    applySummonDamage(kamishData.id, totalDamage, gameState.selectedCharacter);
-                    addLog(`🐉 Kamish (Mega Provocación) absorbe ${totalDamage} de daño AOE (${finalDamage} × ${targetCount} objetivos)`, 'buff');
-                } else {
-                    // Sin Mega Provocación - daño normal
-                    // Suspender Sigilo antes de atacar
+                if (!applyAOEWithMegaProv(targetTeam, finalDamage, gameState.selectedCharacter)) {
                     checkAndRemoveStealth(targetTeam);
-                    
-                    // Dañar personajes
                     for (let name in gameState.characters) {
                         const char = gameState.characters[name];
                         if (char.team === targetTeam && char.hp > 0 && !char.isDead) {
@@ -2630,15 +2630,12 @@
                             applyDamageWithShield(name, finalDamage, gameState.selectedCharacter);
                         }
                     }
-                    
-                    // Dañar invocaciones
                     for (let summonId in gameState.summons) {
                         const summon = gameState.summons[summonId];
                         if (summon && summon.team === targetTeam && summon.hp > 0) {
                             applySummonDamage(summonId, finalDamage, gameState.selectedCharacter);
                         }
                     }
-                    
                     addLog(`💥 ${gameState.selectedCharacter} usa ${ability.name} causando ${finalDamage} de daño a todos los enemigos`, 'damage');
                 }
                 
