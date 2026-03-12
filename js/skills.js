@@ -1681,41 +1681,45 @@
                 }
                 
             } else if (ability.effect === 'sacrifice_shadow') {
-                // Extracción de sombras - Sacrificar una sombra
+                // #2 FIX: Purgatorio de las Sombras — sacrifica TODAS las sombras del equipo
+                // y causa 2 de daño AOE por cada sombra sacrificada
                 try {
                     const myShadows = getSummonsBySummoner(gameState.selectedCharacter);
                     
                     if (myShadows.length === 0) {
                         addLog(`❌ ${gameState.selectedCharacter} no tiene sombras para sacrificar`, 'info');
                     } else {
-                        // Sacrificar la primera sombra disponible
-                        const shadowToSacrifice = myShadows[0];
-                        if (shadowToSacrifice && shadowToSacrifice.id) {
-                            const sacrificedName = shadowToSacrifice.name;
-                            // Eliminar la sombra ANTES de generar cargas para evitar que Igris
-                            // (si fuera el sacrificado) intente atacar desde un estado ya eliminado
-                            delete gameState.summons[shadowToSacrifice.id];
-                            addLog(`💨 ${sacrificedName} ha sido sacrificado`, 'damage');
-                            
-                            attacker.charges += 3;
-                            addLog(`⚡ ${gameState.selectedCharacter} sacrifica ${sacrificedName} y genera 3 cargas`, 'buff');
-                            
-                            // Activar pasiva de Sun Jin Woo si la sombra era suya (ya se eliminó, sin loop)
-                            const jinWoo = gameState.characters['Sun Jin Woo'];
-                            if (jinWoo && !jinWoo.isDead && shadowToSacrifice.summoner === 'Sun Jin Woo') {
-                                jinWoo.charges += 1;
-                                addLog(`⚡ Sun Jin Woo genera 1 carga (pasiva: Sombra sacrificada)`, 'buff');
+                        const shadowCount = myShadows.length;
+                        const shadowNames = myShadows.map(s => s.name).join(', ');
+                        
+                        // Eliminar TODAS las sombras
+                        myShadows.forEach(shadow => {
+                            if (shadow && shadow.id) {
+                                delete gameState.summons[shadow.id];
                             }
-                            
-                            // Activar pasiva de Igris SOLO si Igris sigue existiendo (no fue el sacrificado)
-                            triggerIgrisPassive(gameState.selectedCharacter);
-                        } else {
-                            addLog(`❌ Error al sacrificar sombra`, 'info');
+                        });
+                        addLog(`💀 Purgatorio de las Sombras: ${shadowNames} ${shadowCount > 1 ? 'son sacrificadas' : 'es sacrificada'}`, 'damage');
+                        
+                        // Daño AOE = 2 por cada sombra sacrificada
+                        const aoeDmg = shadowCount * 2;
+                        const enemyTeamPS = attacker.team === 'team1' ? 'team2' : 'team1';
+                        addLog(`🔥 Purgatorio: ${shadowCount} sombras × 2 = ${aoeDmg} daño a todos los enemigos`, 'damage');
+                        
+                        for (let n in gameState.characters) {
+                            const c = gameState.characters[n];
+                            if (!c || c.team !== enemyTeamPS || c.isDead || c.hp <= 0) continue;
+                            if (checkAsprosAOEImmunity && checkAsprosAOEImmunity(n)) {
+                                addLog(`🌟 ${n} es inmune al AOE (Aspros)`, 'buff');
+                                continue;
+                            }
+                            applyDamageWithShield(n, aoeDmg, charName);
                         }
+                        
+                        renderSummons();
                     }
                 } catch (error) {
                     console.error('Error en sacrifice_shadow:', error);
-                    addLog(`❌ Error al sacrificar sombra`, 'info');
+                    addLog(`❌ Error en Purgatorio de las Sombras`, 'info');
                 }
                 
             } else if (ability.effect === 'summon_kamish') {
@@ -1771,10 +1775,10 @@
                 reviveAlly(targetName);
                 
             } else if (ability.effect === 'damage_and_heal') {
-                // Great Horn - Daño + Curación
+                // Great Horn / Purificación Solar - Daño + Curación
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 
-                const healAmount = ability.heal || 3; // Great Horn cura 3 HP por defecto
+                const healAmount = ability.heal || 3;
                 const oldHp = attacker.hp;
                 attacker.hp = Math.min(attacker.maxHp, attacker.hp + healAmount);
                 const actualHeal = attacker.hp - oldHp;
@@ -1785,6 +1789,12 @@
                 }
                 
                 addLog(`⚔️ ${gameState.selectedCharacter} usa ${ability.name} en ${targetName} causando ${finalDamage} de daño`, 'damage');
+                
+                // #1 FIX: Thestalos aplica Quemadura 10% 2T con Purificación Solar (ataque básico)
+                if (charName === 'Thestalos' && targetName && gameState.characters[targetName] && !gameState.characters[targetName].isDead) {
+                    applyBurn(targetName, 10, 2);
+                    addLog(`🔥 Purificación Solar: ${targetName} recibe Quemadura 10%`, 'damage');
+                }
                 
             // ── ESCUDO CELESTIAL (Min Byung actualizado) ──
             } else if (ability.effect === 'escudo_celestial') {
@@ -2357,27 +2367,29 @@
 
             // ── CORAZÓN EN LLAMAS (Thestalos básico: self-heal + burn last attacker) ──
             } else if (ability.effect === 'corazon_llamas') {
-                // Purificación Solar: damage (already applied by generic ST path if damage>0)
-                // but effect=corazon_llamas means we handle manually: deal damage, self-heal, burn target
-                // Damage to target
-                applyDamageWithShield(targetName, finalDamage, charName);
-                // Self-heal
-                const tChar = gameState.characters[charName];
-                const clOldHp = tChar.hp;
-                tChar.hp = Math.min(tChar.maxHp, tChar.hp + 2);
-                const clActualHeal = tChar.hp - clOldHp;
-                if (clActualHeal > 0) {
-                    addLog('☀️ ' + charName + ' recupera ' + clActualHeal + ' HP (Purificación Solar)', 'heal');
-                    triggerBendicionSagrada(tChar.team, clActualHeal);
+                // #6 FIX: Corazón en Llamas (Over): 6 daño + 2 por cada enemigo con Quemadura + 50% lifesteal
+                const enemyTeamCLL = attacker.team === 'team1' ? 'team2' : 'team1';
+                let cllDmg = finalDamage;
+                let cllBurningCount = 0;
+                for (let n in gameState.characters) {
+                    const c = gameState.characters[n];
+                    if (!c || c.team !== enemyTeamCLL || c.isDead || c.hp <= 0) continue;
+                    if (c.statusEffects && c.statusEffects.some(function(e) {
+                        const nm = (e && e.name || '').toLowerCase().replace(/[áéíóú]/g, function(ch){return {á:'a',é:'e',í:'i',ó:'o',ú:'u'}[ch]||ch;});
+                        return nm === 'quemadura' || nm === 'quemadura solar';
+                    })) cllBurningCount++;
                 }
-                // Burn the selected target
-                if (targetName && gameState.characters[targetName] && !gameState.characters[targetName].isDead) {
-                    applyBurn(targetName, 10, 2);
-                    addLog('🔥 Purificación Solar: ' + targetName + ' recibe Quemadura 10%', 'damage');
+                cllDmg += cllBurningCount * 2;
+                if (cllBurningCount > 0) addLog('🔥 Corazón en Llamas: +' + (cllBurningCount*2) + ' daño bonus (' + cllBurningCount + ' enemigos en llamas)', 'damage');
+                const cllActualDmg = applyDamageWithShield(targetName, cllDmg, charName);
+                addLog('🔥 ' + charName + ' usa Corazón en Llamas en ' + targetName + ' causando ' + cllDmg + ' de daño', 'damage');
+                // Lifesteal 50%
+                const cllLifesteal = Math.ceil(cllActualDmg * 0.5);
+                if (cllLifesteal > 0) {
+                    gameState.characters[charName].hp = Math.min(gameState.characters[charName].maxHp, gameState.characters[charName].hp + cllLifesteal);
+                    addLog('❤️‍🔥 Corazón en Llamas: ' + charName + ' recupera ' + cllLifesteal + ' HP (50% del daño)', 'heal');
+                    triggerBendicionSagrada(attacker.team, cllLifesteal);
                 }
-                // Track for counterattack auto-use
-                if (!gameState._lastAttacker) gameState._lastAttacker = {};
-                gameState._lastAttacker[charName] = targetName;
 
             // ── EXPIACIÓN INCANDESCENTE (Thestalos AOE + charge steal on burn) ──
             } else if (ability.effect === 'expiacion_incandescente') {
@@ -2890,9 +2902,12 @@
             hideContinueButton();
             updateWaitingIndicator('', false);
             document.getElementById('gameOverText').textContent = message;
-            // #8: Mostrar "Nueva Batalla" solo en modo IA (no online)
+            // Mostrar "Nueva Batalla" solo en modo IA (no online)
             const nuevaBatallaBtn = document.getElementById('nuevaBatallaBtn');
             if (nuevaBatallaBtn) nuevaBatallaBtn.style.display = onlineMode ? 'none' : '';
+            // #8: Botón Revancha
+            const revanchaBtn = document.getElementById('revanchaBtn');
+            if (revanchaBtn) revanchaBtn.style.display = 'block';
             document.getElementById('gameOverModal').classList.add('show');
             audioManager.stopBattleMusic();
             audioManager.play('audioMenu');
@@ -2904,6 +2919,35 @@
                     pushedBy: currentUser ? currentUser.uid : 'unknown'
                 });
             }
+        }
+
+        // ==================== RENDICIÓN Y REVANCHA ====================
+        function handleSurrender() {
+            if (gameState.gameOver) return;
+            if (!confirm('¿Seguro que quieres rendirte? El equipo rival será declarado ganador.')) return;
+            
+            // Determinar qué equipo se rinde (el del personaje activo)
+            const activeChar = gameState.characters[gameState.selectedCharacter];
+            const losingTeam = activeChar ? activeChar.team : 'team1';
+            const winMessage = losingTeam === 'team1' ? '🔶 REAPERS GANAN! (Rendición)' : '🔷 HUNTERS GANAN! (Rendición)';
+            addLog(`🏳️ ${gameState.selectedCharacter} se rinde. ¡Victoria por rendición!`, 'info');
+            showGameOver(winMessage);
+        }
+
+        function handleRevancha() {
+            // Modo IA: reiniciar directamente con los mismos equipos
+            if (gameState.gameMode === 'solo') {
+                location.reload();
+                return;
+            }
+            // Modo local multi: reiniciar directamente
+            if (gameState.gameMode === 'multi') {
+                location.reload();
+                return;
+            }
+            // Modo online: ir a selección de personajes
+            document.getElementById('gameOverModal').classList.remove('show');
+            goToMainMenu();
         }
 
         // ==================== BATTLE LOG ====================
