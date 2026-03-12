@@ -1,6 +1,9 @@
-        // ==================== LÓGICA DE TURNOS ====================
+// ==================== LÓGICA DE TURNOS ====================
         function startTurn() {
             if (gameState.gameOver) return;
+            
+            // #3 FIX: Verificar fin de partida INMEDIATAMENTE antes de procesar cualquier turno
+            if (checkGameOver()) return;
 
             // ONLINE MODE: Only run startTurn if it will be my team's turn
             // The other player will handle their own turn after receiving Firebase push
@@ -174,6 +177,37 @@
                 }
             }
             btn.style.display = 'block';
+            
+            // #7: Botón de rendición
+            let surrenderBtn = document.getElementById('floatingSurrenderBtn');
+            if (!surrenderBtn) {
+                surrenderBtn = document.createElement('button');
+                surrenderBtn.id = 'floatingSurrenderBtn';
+                surrenderBtn.textContent = '🏳️ Rendirse';
+                surrenderBtn.style.cssText = [
+                    'position:fixed',
+                    'bottom:28px',
+                    'left:28px',
+                    'background:rgba(80,0,0,0.85)',
+                    'border:2px solid #ff3366',
+                    'color:#ff6688',
+                    "font-family:'Orbitron',sans-serif",
+                    'font-size:.8em',
+                    'font-weight:700',
+                    'padding:12px 22px',
+                    'border-radius:50px',
+                    'cursor:pointer',
+                    'z-index:996',
+                    'box-shadow:0 0 15px rgba(255,51,102,0.3)',
+                    'transition:all 0.2s ease',
+                    'letter-spacing:0.05em'
+                ].join(';');
+                surrenderBtn.onmouseover = function() { this.style.background = 'rgba(140,0,0,0.95)'; };
+                surrenderBtn.onmouseout = function() { this.style.background = 'rgba(80,0,0,0.85)'; };
+                surrenderBtn.onclick = function() { handleSurrender(); };
+                document.body.appendChild(surrenderBtn);
+            }
+            surrenderBtn.style.display = 'block';
         }
 
         function updateWaitingIndicator(charName, visible) {
@@ -206,6 +240,8 @@
         function hideContinueButton() {
             const btn = document.getElementById('floatingContinueBtn');
             if (btn) btn.style.display = 'none';
+            const surrenderBtn = document.getElementById('floatingSurrenderBtn');
+            if (surrenderBtn) surrenderBtn.style.display = 'none';
             hideWaitingForOpponent();
         }
 
@@ -1341,4 +1377,3 @@
                 console.error('Error en processEndOfRoundEffects:', error);
             }
         }
-
