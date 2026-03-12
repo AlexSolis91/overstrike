@@ -1,4 +1,4 @@
-        // ==================== DATOS DE PERSONAJES ====================
+// ==================== DATOS DE PERSONAJES ====================
         const characterData = {
 
             // ═══ TEAM HUNTERS ═══════════════════════════════════════
@@ -22,12 +22,12 @@
                 hp: 20, maxHp: 20, speed: 96, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/2y8gqPH1/Captura_de_pantalla_2026_02_21_225927.png',
-                passive: { name: 'Autoridad del Gobernante', description: 'Al inicio de su turno gana Sigilo 1 turno. Cuando una Sombra desaparece, genera 2 cargas.' },
+                passive: { name: 'Autoridad del Gobernante', description: 'Al inicio de su turno se aplica Buff Sigilo 1 turno. Cuando una Sombra desaparece (sea eliminada o sacrificada), genera 2 cargas.' },
                 abilities: [
                     { name: 'Arise!', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'arise_summon', description: 'Invoca una Sombra aleatoria (Igris, Iron, Tusk, Beru, Bellion).' },
-                    { name: 'Daga de Kamish', type: 'special', cost: 2, chargeGain: 1, damage: 2, target: 'single', effect: 'daga_kamish', description: 'Causa 2+2 adicional por cada Sombra invocada en tu equipo.' },
-                    { name: 'Extracción de Sombras', type: 'special', cost: 3, chargeGain: 1, damage: 0, target: 'self', effect: 'sacrifice_shadow', description: 'Sacrifica una Sombra invocada. Genera 5 cargas.' },
-                    { name: 'Kamish Arise!', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'self', effect: 'summon_kamish', description: 'Invoca a Kamish (30 HP, Megaprovocación permanente).' },
+                    { name: 'Daga de Kamish', type: 'special', cost: 2, chargeGain: 0, damage: 2, target: 'single', effect: 'daga_kamish', description: 'Causa +1 de daño adicional por cada Sombra Invocada en tu equipo. Roba 1 carga por cada sombra invocada en tu equipo.' },
+                    { name: 'Purgatorio de las Sombras', type: 'special', cost: 9, chargeGain: 0, damage: 0, target: 'aoe', effect: 'purgatorio_sombras', description: 'Sacrifica todas sus sombras (excepto Kamish), causa 2 de daño por cada sombra sacrificada (AOE).' },
+                    { name: 'Kamish Arise!', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'self', effect: 'summon_kamish', description: 'Invocación: Invoca a Kamish.' },
                 ]
             },
 
@@ -159,13 +159,13 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 ultraInstinto: false,
                 portrait: 'https://i.postimg.cc/wMsFFbWT/Captura_de_pantalla_2026_02_26_132013.png',
-                transformationPortrait: 'https://i.postimg.cc/NfCqnbgN/Captura_de_pantalla_2026_02_22_013932.png',
+                transformationPortrait: 'https://i.postimg.cc/ZK704HT2/Captura_de_pantalla_2026_03_02_112236.png',
                 passive: { name: 'Entrenamiento de los Dioses', description: 'Con Furia + Frenesí activos, sus ataques generan +2 cargas adicionales. Por cada crítico genera +2 cargas adicionales.' },
                 abilities: [
                     { name: 'Kamehameha', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'crit_chance_basic', critChance: 0.1, description: 'Causa 2 de daño. 10% de probabilidad de golpe crítico.' },
                     { name: 'Kaio Ken', type: 'special', cost: 2, chargeGain: 0, damage: 0, target: 'self', effect: 'kaio_ken', description: 'Aplica Buff Furia 2 turnos. Aplica Buff Frenesí 2 turnos.' },
                     { name: 'Genkidama', type: 'special', cost: 8, chargeGain: 0, damage: 4, target: 'aoe', effect: 'genkidama', description: 'Causa 4 AOE. Si el golpe es crítico, reduce a 0 las cargas del enemigo.' },
-                    { name: 'Ultra Instinto', type: 'over', cost: 20, chargeGain: 0, damage: 0, target: 'self', effect: 'ultra_instinto', description: 'TRANSFORMACIÓN: 50% de esquivar ataques. Al esquivar, ejecuta Kamehameha sobre el atacante.' },
+                    { name: 'Ultra Instinto', type: 'over', cost: 20, chargeGain: 0, damage: 0, target: 'self', effect: 'ultra_instinto', description: 'TRANSFORMACIÓN: 50% de esquivar ataques (pasiva, no visible como buff). Al esquivar, ejecuta Kamehameha sobre el atacante.' },
                 ]
             },
 
@@ -213,7 +213,7 @@
                 hp: 20, maxHp: 20, speed: 89, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/nzNJp8K7/Captura_de_pantalla_2026_02_27_201309.png',
-                passive: { name: 'Regla de Oro', description: '+10% de probabilidad de crítico en todos los ataques. Por cada crítico, genera 2 cargas.' },
+                passive: { name: 'Regla de Oro', description: '+10% de probabilidad de crítico en todos los ataques. Por cada crítico, genera 1 carga.' },
                 abilities: [
                     { name: 'Gate of Babylon', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'aoe', effect: 'crit_chance_basic', critChance: 0.25, description: 'Causa 1 AOE. 25% de probabilidad de golpe crítico.' },
                     { name: 'Espada Merodach', type: 'special', cost: 5, chargeGain: 1, damage: 3, target: 'aoe', effect: 'espada_merodach', description: 'Causa 3 AOE. Elimina 3 cargas del enemigo golpeado.' },
@@ -252,7 +252,7 @@
                 hp: 20, maxHp: 20, speed: 89, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/SKsNcvJt/Captura_de_pantalla_2026_02_24_103359.png',
-                passive: { name: 'Hiraishin no Jutsu', description: 'Esquiva Área (inmune a AOE enemigo). Genera +2 cargas adicionales por cada enemigo golpeado con menos velocidad que Minato.' },
+                passive: { name: 'Hiraishin no Jutsu', description: 'Esquiva Área (inmune a AOE enemigo). Genera +1 carga adicional por cada enemigo golpeado con menos velocidad que Minato.' },
                 abilities: [
                     { name: 'Kiiroi Senkō', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'kiiroi_senko_v2', description: 'Causa 1 de daño. Aplica Celeridad 10% 2 turnos. Aplica Buff aleatorio 2 turnos.' },
                     { name: 'Destello de la Danza Aullante', type: 'special', cost: 3, chargeGain: 0, damage: 2, target: 'aoe', effect: 'destello_danza', description: 'Causa 2 AOE. Si el enemigo tiene menos velocidad que Minato: aplica debuff aleatorio 2 turnos. Si tiene más: roba 2 cargas.' },
@@ -266,10 +266,10 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 muzanTransformed: false,
                 portrait: 'https://i.postimg.cc/fL41fCgH/Captura_de_pantalla_2026_02_28_020016.png',
-                transformationPortrait: 'https://i.postimg.cc/W3Rxw8ff/Captura_de_pantalla_2026_02_28_015847.png',
+                transformationPortrait: 'https://i.postimg.cc/nM8HxvTD/Whats_App_Image_2026_03_03_at_3_29_34_PM.jpg',
                 passive: { name: 'Progenitor Demoniaco', description: 'Al inicio de cada ronda, cura 1 HP a Muzan y a un aliado aleatorio. Cada vez que Veneno hace daño, Muzan genera 1 carga.' },
                 abilities: [
-                    { name: 'Espinas de Sangre', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'apply_poison', description: 'Causa 2 de daño. Aplica Veneno 2 turnos.' },
+                    { name: 'Espinas de Sangre', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'apply_poison', poisonDuration: 2, description: 'Causa 2 de daño. Aplica Veneno 2 turnos.' },
                     { name: 'Sangre Demoniaca', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'single', effect: 'sangre_demoniaca', description: 'Causa 3 de daño. Aplica Veneno 3 turnos. Cura 3 HP a Muzan.' },
                     { name: 'Sombra de la Noche', type: 'special', cost: 5, chargeGain: 0, damage: 3, target: 'aoe', effect: 'sombra_noche', description: 'Causa 3 AOE. Aplica Sigilo 2 turnos a Muzan. Aplica Veneno 3 turnos a los enemigos.' },
                     { name: 'Rey de los Demonios Definitivo', type: 'over', cost: 12, chargeGain: 0, damage: 1, target: 'aoe', effect: 'muzan_transform', description: 'TRANSFORMACIÓN + 1 AOE: Veneno 5t, Regeneración 30% 5t, +20% Celeridad, +70% crítico.' },
@@ -412,7 +412,7 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 ikki_armor: false, ikki_revival_round: null,
                 portrait: 'https://i.postimg.cc/LsX6jbnD/Captura_de_pantalla_2026_02_24_103509.png',
-                transformationPortrait: 'https://i.postimg.cc/MpXSqfx8/Captura_de_pantalla_2026_02_21_233200.png',
+                transformationPortrait: 'https://i.postimg.cc/5tMS08yN/Captura_de_pantalla_2026_02_24_104108.png',
                 passive: { name: 'Cenizas del Fénix', description: 'Al final de la segunda ronda después de morir, revive con 50% de HP y 5 cargas.' },
                 abilities: [
                     { name: 'Garras del Fénix', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'garras_fenix', burnPercent: 5, burnDuration: 3, description: 'Causa 1 de daño. Aplica Quemadura 5% por 2 turnos.' },
