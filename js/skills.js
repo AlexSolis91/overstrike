@@ -1,4 +1,4 @@
-        // ==================== EJECUCIÓN DE HABILIDAD ====================
+// ==================== EJECUCIÓN DE HABILIDAD ====================
 
         // Aplicar daño AOE a TODOS los enemigos (personajes + invocaciones)
         function applyAOEDamageToTeam(enemyTeam, damage, attackerName) {
@@ -556,11 +556,12 @@
                 addLog(`💥 Genkidama: ${gameState.selectedCharacter} causa ${finalDamage} daño AOE`, 'damage');
 
             } else if (ability.effect === 'ultra_instinto') {
-                // GOKU - Ultra Instinto: transformación permanente con esquivar
+                // #18: GOKU - Ultra Instinto: pasiva de esquivar (sin buff visible)
+                // Solo seteamos ultraInstinto=true; la lógica de esquivar está en applyDamageWithShield
                 attacker.ultraInstinto = true;
-                applyDodge(gameState.selectedCharacter);
+                // NO llamamos applyDodge para no mostrar buff visible
                 ability.used = true;
-                addLog(`✨ ¡${gameState.selectedCharacter} activa Ultra Instinto! Buff Esquivar permanente`, 'buff');
+                addLog(`✨ ¡${gameState.selectedCharacter} activa Ultra Instinto! Ahora esquiva el 50% de los ataques y contraataca con Kamehameha`, 'buff');
 
             } else if (ability.effect === 'apply_weaken') {
                 // SAITAMA - Golpe Normal: daño + Debilitar 2 turnos
@@ -723,7 +724,7 @@
             } else if (ability.effect === 'apply_poison_2') {
                 // MUZAN - Espinas de Sangre
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                applyPoison(targetName, 2);
+                applyPoison(targetName, ability.poisonDuration || 2); // #1: usar poisonDuration del dato
                 addLog(`⚔️ ${gameState.selectedCharacter} usa Espinas de Sangre en ${targetName} causando ${finalDamage} daño`, 'damage');
 
             } else if (ability.effect === 'sangre_demoniaca') {
@@ -2180,7 +2181,10 @@
                         addLog('🌿 Aguja Medicinal: elimina Debuff ' + tgtAM.statusEffects[debuffIdx].name + ' de ' + targetName, 'buff');
                         tgtAM.statusEffects.splice(debuffIdx, 1);
                     }
-                    if (tgtAM.hp > oldHpAM) addLog('🌿 Aguja Medicinal: +1 HP a ' + targetName, 'heal');
+                    if (tgtAM.hp > oldHpAM) {
+                        addLog('🌿 Aguja Medicinal: +1 HP a ' + targetName, 'heal');
+                        triggerBendicionSagrada(tgtAM.team, tgtAM.hp - oldHpAM); // #10
+                    }
                 }
 
             } else if (ability.effect === 'aroma_curativo') {
@@ -2209,6 +2213,7 @@
                     if (!c || c.team !== tamTeam2 || c.isDead || c.hp <= 0) continue;
                     c.hp = Math.min(c.maxHp, c.hp + totalRemoved);
                 }
+                if (totalRemoved > 0) triggerBendicionSagrada(attacker.team, totalRemoved); // #10
                 addLog('💊 Medicina Demoníaca: ' + totalRemoved + ' Debuffs eliminados → +' + totalRemoved + ' HP al equipo', 'heal');
 
             } else if (ability.effect === 'hechizo_sangre') {
