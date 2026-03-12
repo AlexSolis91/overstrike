@@ -1,4 +1,4 @@
-        // ==================== ESTADO DEL JUEGO ====================
+// ==================== ESTADO DEL JUEGO ====================
         // ==================== AUDIO MANAGER ====================
         const audioManager = {
             currentTrack: null,
@@ -170,7 +170,8 @@
                 maxHp: 30,
                 summoner: null,
                 team: null,
-                passive: 'Mega Provocación: Absorbe todo el daño ST y AOE que tu equipo fuera a recibir. Enemigos que lo golpean reciben Quemaduras del 25% por 1 turno',
+                megaProvocation: true,
+                passive: 'Terror de las Sombras: Mega Provocación permanente. Cada vez que es golpeado, causa Quemaduras 25% 1T al atacante.',
                 statusEffects: []
             },
 
