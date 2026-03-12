@@ -1,7 +1,6 @@
 // ==================== LÓGICA DE TURNOS ====================
         function startTurn() {
             if (gameState.gameOver) return;
-            
             // #3 FIX: Verificar fin de partida INMEDIATAMENTE antes de procesar cualquier turno
             if (checkGameOver()) return;
 
@@ -177,8 +176,8 @@
                 }
             }
             btn.style.display = 'block';
-            
-            // #7: Botón de rendición
+
+            // #7: Botón de rendición (abajo a la izquierda)
             let surrenderBtn = document.getElementById('floatingSurrenderBtn');
             if (!surrenderBtn) {
                 surrenderBtn = document.createElement('button');
@@ -387,9 +386,11 @@
 
                     if (activeTeam === myTeam && !charIsDead) {
                         updateWaitingIndicator('', false);
-                        const btn = createContinueBtn();
-                        btn.innerHTML = '▶ Continuar Turno<br><span style="font-size:0.65em;opacity:0.75;font-weight:400;">RONDA ' + gameState.currentRound + ' · ' + charName + '</span>';
-                        btn.style.display = 'block';
+                        // Use showContinueButton to ensure all button logic runs correctly
+                        showContinueButton();
+                        // Also ensure surrender button is visible
+                        const sb = document.getElementById('floatingSurrenderBtn');
+                        if (sb) sb.style.display = 'block';
                     } else if (!charIsDead) {
                         hideContinueButton();
                         updateWaitingIndicator(charName, true);
