@@ -2928,4 +2928,4 @@
             muteBtn.onmouseout = function() { this.style.background = 'rgba(0,0,0,0.6)'; };
             muteBtn.onclick = function() { audioManager.toggleMute(); };
             document.body.appendChild(muteBtn);
-        };
+        }; // init
