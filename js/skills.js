@@ -556,12 +556,11 @@
                 addLog(`💥 Genkidama: ${gameState.selectedCharacter} causa ${finalDamage} daño AOE`, 'damage');
 
             } else if (ability.effect === 'ultra_instinto') {
-                // #18: GOKU - Ultra Instinto: pasiva de esquivar (sin buff visible)
-                // Solo seteamos ultraInstinto=true; la lógica de esquivar está en applyDamageWithShield
+                // GOKU - Ultra Instinto: transformación permanente con esquivar
                 attacker.ultraInstinto = true;
-                // NO llamamos applyDodge para no mostrar buff visible
+                applyDodge(gameState.selectedCharacter);
                 ability.used = true;
-                addLog(`✨ ¡${gameState.selectedCharacter} activa Ultra Instinto! Ahora esquiva el 50% de los ataques y contraataca con Kamehameha`, 'buff');
+                addLog(`✨ ¡${gameState.selectedCharacter} activa Ultra Instinto! Buff Esquivar permanente`, 'buff');
 
             } else if (ability.effect === 'apply_weaken') {
                 // SAITAMA - Golpe Normal: daño + Debilitar 2 turnos
@@ -724,7 +723,7 @@
             } else if (ability.effect === 'apply_poison_2') {
                 // MUZAN - Espinas de Sangre
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                applyPoison(targetName, ability.poisonDuration || 2); // #1: usar poisonDuration del dato
+                applyPoison(targetName, 2);
                 addLog(`⚔️ ${gameState.selectedCharacter} usa Espinas de Sangre en ${targetName} causando ${finalDamage} daño`, 'damage');
 
             } else if (ability.effect === 'sangre_demoniaca') {
@@ -2181,10 +2180,7 @@
                         addLog('🌿 Aguja Medicinal: elimina Debuff ' + tgtAM.statusEffects[debuffIdx].name + ' de ' + targetName, 'buff');
                         tgtAM.statusEffects.splice(debuffIdx, 1);
                     }
-                    if (tgtAM.hp > oldHpAM) {
-                        addLog('🌿 Aguja Medicinal: +1 HP a ' + targetName, 'heal');
-                        triggerBendicionSagrada(tgtAM.team, tgtAM.hp - oldHpAM); // #10
-                    }
+                    if (tgtAM.hp > oldHpAM) addLog('🌿 Aguja Medicinal: +1 HP a ' + targetName, 'heal');
                 }
 
             } else if (ability.effect === 'aroma_curativo') {
@@ -2213,7 +2209,6 @@
                     if (!c || c.team !== tamTeam2 || c.isDead || c.hp <= 0) continue;
                     c.hp = Math.min(c.maxHp, c.hp + totalRemoved);
                 }
-                if (totalRemoved > 0) triggerBendicionSagrada(attacker.team, totalRemoved); // #10
                 addLog('💊 Medicina Demoníaca: ' + totalRemoved + ' Debuffs eliminados → +' + totalRemoved + ' HP al equipo', 'heal');
 
             } else if (ability.effect === 'hechizo_sangre') {
@@ -2876,6 +2871,8 @@
             // Reset csState
             csState.team1 = []; csState.team2 = [];
             csState.phase = 'team1'; csState.gameMode = 'multi';
+            // #12: Limpiar todas las invocaciones (Sun Jin Woo y otros)
+            gameState.summons = {};
             // Go to lobby if logged in, else mode select
             if (currentUser) {
                 showScreen('lobbyScreen');
@@ -2893,6 +2890,9 @@
             hideContinueButton();
             updateWaitingIndicator('', false);
             document.getElementById('gameOverText').textContent = message;
+            // #8: Mostrar "Nueva Batalla" solo en modo IA (no online)
+            const nuevaBatallaBtn = document.getElementById('nuevaBatallaBtn');
+            if (nuevaBatallaBtn) nuevaBatallaBtn.style.display = onlineMode ? 'none' : '';
             document.getElementById('gameOverModal').classList.add('show');
             audioManager.stopBattleMusic();
             audioManager.play('audioMenu');
@@ -2933,4 +2933,4 @@
             muteBtn.onmouseout = function() { this.style.background = 'rgba(0,0,0,0.6)'; };
             muteBtn.onclick = function() { audioManager.toggleMute(); };
             document.body.appendChild(muteBtn);
-        }; // init
+        };
