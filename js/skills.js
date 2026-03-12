@@ -2929,4 +2929,3 @@
             muteBtn.onclick = function() { audioManager.toggleMute(); };
             document.body.appendChild(muteBtn);
         };
-    </script>
