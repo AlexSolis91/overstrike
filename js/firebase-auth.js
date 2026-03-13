@@ -503,7 +503,6 @@
                     '<button onclick="cancelRankedSearch()" style="margin-top:1.5rem;background:rgba(255,51,102,0.15);border:1px solid #ff3366;color:#ff3366;border-radius:10px;padding:10px 24px;cursor:pointer;font-size:.85rem;">Cancelar</button>',
                     '</div>'
                 ].join('');
-                document.body.appendChild(modal);
             }
             modal.style.display = 'flex';
             // Countdown animation
@@ -588,12 +587,15 @@
                 modal.innerHTML = [
                     '<div style="width:100%;max-width:800px;background:#0a0e17;border:2px solid #ffaa00;border-radius:20px;padding:24px;">',
                     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">',
-                    '<div style="font-family:Orbitron,sans-serif;font-size:1.2rem;color:#ffaa00;text-shadow:0 0 12px #ffaa00;">🏆 RANKED LEADERBOARD</div>',
-                    '<button onclick="document.getElementById('leaderboardModal').style.display='none'" style="background:#ff4466;border:none;color:#fff;font-size:1.1rem;width:34px;height:34px;border-radius:50%;cursor:pointer;">✕</button>',
+                    '<div style="font-family:Orbitron,sans-serif;font-size:1.2rem;color:#ffaa00;text-shadow:0 0 12px #ffaa00;">&#x1F3C6; RANKED LEADERBOARD</div>',
+                    '<button id="leaderboardCloseBtn" style="background:#ff4466;border:none;color:#fff;font-size:1.1rem;width:34px;height:34px;border-radius:50%;cursor:pointer;">&#x2715;</button>',
                     '</div>',
-                    '<div id="leaderboardContent" style="color:#888;text-align:center;padding:2rem;">Cargando estadísticas...</div>',
+                    '<div id="leaderboardContent" style="color:#888;text-align:center;padding:2rem;">Cargando estad\u00edsticas...</div>',
                     '</div>'
                 ].join('');
+                document.getElementById('leaderboardCloseBtn').onclick = function() {
+                    document.getElementById('leaderboardModal').style.display = 'none';
+                };
                 document.body.appendChild(modal);
             }
             modal.style.display = 'flex';
@@ -628,7 +630,7 @@
                 // Top 5 chars
                 const topChars = getTopChars(e.charUsage, 5);
                 const charImgs = topChars.map(function(c) {
-                    return '<img src="' + getCharPortrait(c) + '" title="' + escapeHtml(c) + '" style="width:32px;height:32px;border-radius:6px;border:1px solid #333;object-fit:cover;" onerror="this.style.display='none'">';
+                    return '<img src="' + getCharPortrait(c) + '" title="' + escapeHtml(c) + '" style="width:32px;height:32px;border-radius:6px;border:1px solid #333;object-fit:cover;" onerror="this.style.display=&quot;none&quot;">';
                 }).join('');
                 return [
                     '<div style="background:rgba(255,170,0,0.04);border:1px solid rgba(255,170,0,0.12);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">',
