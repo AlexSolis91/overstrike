@@ -2143,7 +2143,8 @@
                 gameState.summons[sId] = {
                     name: 'Señuelo', summoner: charName, team: attacker.team,
                     hp: 5, maxHp: 5, isDead: false,
-                    statusEffects: []
+                    statusEffects: [],
+                    passive: '🎭 Distracción de Emergencia: al ser eliminado, genera 2 cargas a todos los aliados.'
                 };
                 // Padme gana Sigilo 2 turnos
                 applyBuff(charName, { name: 'Sigilo', type: 'buff', duration: 2, emoji: '👤' });
