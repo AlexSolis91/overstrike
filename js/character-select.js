@@ -1,4 +1,4 @@
-        // ==================== CHARACTER SELECT ====================
+// ==================== CHARACTER SELECT ====================
         const CS_TEAM_SIZE = 5;
 
         let csState = {
@@ -476,7 +476,8 @@
                 allSelected.forEach(function(entry) {
                     const base = entry.name;
                     nameCount[base] = (nameCount[base] || 0) + 1;
-                    const key = nameCount[base] > 1 ? base + ' #' + nameCount[base] : base;
+                    // NOTE: Firebase keys cannot contain '#' — use 'v2', 'v3' suffix instead
+                    const key = nameCount[base] > 1 ? base + ' v' + nameCount[base] : base;
                     const charCopy = JSON.parse(JSON.stringify(characterData[base]));
                     charCopy.team = entry.team;
                     charCopy.baseName = base; // keep reference to original name for data
