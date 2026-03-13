@@ -460,7 +460,14 @@
         }
 
         function csAIPickTeam() {
-            // IA elige 5 personajes aleatorios de todos los disponibles para team2
+            // Si hay revancha con equipo IA pre-cargado, usarlo tal cual
+            if (window._revanchaAITeamFixed && csState.team2 && csState.team2.length === CS_TEAM_SIZE) {
+                window._revanchaAITeamFixed = false;
+                addLog('🤖 La IA repite su equipo anterior.', 'info');
+                return;
+            }
+            window._revanchaAITeamFixed = false;
+            // IA elige 5 personajes aleatorios
             const allNames = Object.keys(characterData).filter(n => characterData[n] && characterData[n].abilities);
             const shuffled = allNames.slice().sort(() => Math.random() - 0.5);
             csState.team2 = shuffled.slice(0, CS_TEAM_SIZE);
@@ -504,6 +511,14 @@
                 // Store game mode in gameState so AI loop can check
                 gameState.gameMode = csState.gameMode;
                 gameState.aiTeam = 'team2';
+                // Ranked mode: mark for stats tracking
+                if (window._rankedMode) {
+                    gameState.gameMode = 'ranked';
+                    // Show fake opponent name in logs if vs IA
+                    if (window._rankedFakeOpponent) {
+                        addLog('🏆 RANKED: ' + (currentUser ? currentUser.displayName || 'Jugador' : 'Jugador') + ' vs ' + window._rankedFakeOpponent, 'info');
+                    }
+                }
                 audioManager.playRandomBattle();
             } catch(err) {
                 console.error('Error en csStartGame:', err);
