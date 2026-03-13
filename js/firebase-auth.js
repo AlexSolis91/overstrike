@@ -343,12 +343,348 @@
             const text = (input && input.value.trim()) || '';
             if (!text) return;
             input.value = '';
-            db.ref('globalChat').push({
+            const newMsg = {
                 uid: currentUser.uid,
                 name: currentUser.displayName || 'Jugador',
                 text: text,
                 ts: Date.now()
+            };
+            // Enforce max 30 messages: read current count, delete oldest if needed
+            const chatRef = db.ref('globalChat');
+            chatRef.once('value', function(snap) {
+                const msgs = snap.val();
+                const keys = msgs ? Object.keys(msgs) : [];
+                if (keys.length >= 30) {
+                    // Sort by ts and delete oldest
+                    const sorted = keys.sort(function(a, b) {
+                        return (msgs[a].ts || 0) - (msgs[b].ts || 0);
+                    });
+                    const toDelete = sorted.slice(0, keys.length - 29); // keep 29, add 1 = 30
+                    const updates = {};
+                    toDelete.forEach(function(k) { updates[k] = null; });
+                    chatRef.update(updates).then(function() { chatRef.push(newMsg); });
+                } else {
+                    chatRef.push(newMsg);
+                }
             });
+        }
+
+
+        // ════════════════════════════════════════════════
+        // MODO RANKED
+        // ════════════════════════════════════════════════
+        const RANKED_FAKE_NAMES = ['Richo92', 'ManuEx', 'Dante777', 'LoboREX', 'MarcoAntonio', 'JesusGz', 'Leonheart', 'Arturo', 'Rois Najera', 'David89', 'Erikkson10', 'Klaord', 'Carlos Cortes', 'Alexis', 'ViktorBaezzz', 'DonaldTrump22', 'Elbicho', 'ValeriaBitz', 'Jorge Vz', 'Porfirio', 'D3XTER', 'Don RAMON', 'Lieerey', 'MR poop', 'yorobot', 'Vicente Martinez', 'Cavendish', 'Vinchester', 'GoodZilla', 'Nikoory', 'Zamael', 'Draxler'];
+        let rankedMatchmakingTimer = null;
+        let rankedMatchmakingListener = null;
+
+        function startRankedMatchmaking() {
+            if (!currentUser) return;
+            const myUid = currentUser.uid;
+            const myName = currentUser.displayName || 'Jugador';
+
+            // Show searching modal
+            showRankedSearchModal();
+
+            // Register in matchmaking queue
+            const queueRef = db.ref('ranked_queue/' + myUid);
+            queueRef.set({ uid: myUid, name: myName, ts: Date.now() });
+            queueRef.onDisconnect().remove();
+
+            // Look for another player in the queue
+            let matched = false;
+            rankedMatchmakingListener = db.ref('ranked_queue').on('value', function(snap) {
+                if (matched) return;
+                const queue = snap.val() || {};
+                const others = Object.entries(queue).filter(([uid]) => uid !== myUid);
+                if (others.length === 0) return;
+
+                // Pick the first other player
+                const [opponentUid, opponentData] = others[0];
+                // The player with the smaller UID becomes host (deterministic)
+                const iAmHost = myUid < opponentUid;
+                matched = true;
+                clearRankedTimer();
+                db.ref('ranked_queue/' + myUid).remove();
+
+                if (iAmHost) {
+                    // Create a room and update queue entry to signal match
+                    const roomId = 'R_' + generateRoomCode();
+                    db.ref('ranked_queue/' + opponentUid).update({ matchedRoomId: roomId, matchedBy: myUid });
+                    currentRoomId = roomId;
+                    isRoomHost = true;
+                    onlineMode = true;
+                    db.ref('rooms/' + roomId).set({
+                        host: { uid: myUid, name: myName, photo: currentUser.photoURL || '' },
+                        guest: { uid: opponentUid, name: opponentData.name || 'Rival' },
+                        status: 'ready',
+                        ranked: true,
+                        created: Date.now()
+                    }).then(function() {
+                        hideRankedSearchModal();
+                        db.ref('ranked_queue').off('value', rankedMatchmakingListener);
+                        // Record ranked match start for stats
+                        window._rankedRoomId = roomId;
+                        window._rankedOpponentName = opponentData.name || 'Rival';
+                        startOnlineGame(roomId, true);
+                    });
+                } else {
+                    // Wait to receive the matchedRoomId
+                    db.ref('ranked_queue/' + myUid + '/matchedRoomId').on('value', function(s) {
+                        const rid = s.val();
+                        if (!rid) return;
+                        db.ref('ranked_queue/' + myUid + '/matchedRoomId').off();
+                        db.ref('ranked_queue/' + myUid).remove();
+                        matched = true;
+                        clearRankedTimer();
+                        hideRankedSearchModal();
+                        db.ref('ranked_queue').off('value', rankedMatchmakingListener);
+                        currentRoomId = rid;
+                        isRoomHost = false;
+                        onlineMode = true;
+                        window._rankedRoomId = rid;
+                        window._rankedOpponentName = opponentData.name || 'Rival';
+                        db.ref('rooms/' + rid + '/guest').set({
+                            uid: myUid, name: myName, photo: currentUser.photoURL || ''
+                        }).then(function() {
+                            startOnlineGame(rid, false);
+                        });
+                    });
+                }
+            });
+
+            // 10 second timer — if no match found, start vs IA with fake name
+            rankedMatchmakingTimer = setTimeout(function() {
+                if (matched) return;
+                matched = true;
+                clearRankedTimer();
+                if (rankedMatchmakingListener) {
+                    db.ref('ranked_queue').off('value', rankedMatchmakingListener);
+                    rankedMatchmakingListener = null;
+                }
+                db.ref('ranked_queue/' + myUid).remove();
+                hideRankedSearchModal();
+                // Pick a random fake opponent name
+                const fakeName = RANKED_FAKE_NAMES[Math.floor(Math.random() * RANKED_FAKE_NAMES.length)];
+                window._rankedFakeOpponent = fakeName;
+                window._rankedRoomId = null; // vs IA, no real room
+                // Start solo game (vs IA), mode = 'ranked_solo' 
+                csState.team1 = [];
+                csState.team2 = [];
+                csState.phase = 'team1';
+                csState.gameMode = 'solo';
+                csState.pendingChar = null;
+                window._rankedMode = true;
+                showScreen('charSelectScreen');
+                csInit();
+                audioManager.play('audioMenu');
+            }, 10000);
+        }
+
+        function clearRankedTimer() {
+            if (rankedMatchmakingTimer) { clearTimeout(rankedMatchmakingTimer); rankedMatchmakingTimer = null; }
+        }
+
+        let rankedSearchInterval = null;
+        function showRankedSearchModal() {
+            let modal = document.getElementById('rankedSearchModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'rankedSearchModal';
+                modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:10000;display:flex;align-items:center;justify-content:center;';
+                modal.innerHTML = [
+                    '<div style="background:linear-gradient(135deg,#0a0e17,#0d1525);border:2px solid #ffaa00;border-radius:20px;padding:2.5rem 3rem;text-align:center;max-width:380px;box-shadow:0 0 50px rgba(255,170,0,0.3);">',
+                    '<div style="font-size:2.5rem;margin-bottom:.8rem;animation:loginPulse 1s infinite;">🔍</div>',
+                    '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:#ffaa00;margin-bottom:.5rem;letter-spacing:.1em;">BUSCANDO RIVAL...</div>',
+                    '<div style="color:#888;font-size:.85rem;margin-bottom:1.5rem;">Conectando con otro jugador online</div>',
+                    '<div id="rankedTimerDisplay" style="font-family:Orbitron,sans-serif;font-size:2rem;color:#fff;margin-bottom:1.5rem;">10</div>',
+                    '<div style="width:100%;height:4px;background:rgba(255,170,0,0.2);border-radius:2px;overflow:hidden;">',
+                    '<div id="rankedTimerBar" style="height:100%;background:linear-gradient(90deg,#ffaa00,#ff6600);width:100%;transition:width 1s linear;border-radius:2px;"></div>',
+                    '</div>',
+                    '<button onclick="cancelRankedSearch()" style="margin-top:1.5rem;background:rgba(255,51,102,0.15);border:1px solid #ff3366;color:#ff3366;border-radius:10px;padding:10px 24px;cursor:pointer;font-size:.85rem;">Cancelar</button>',
+                    '</div>'
+                ].join('');
+                document.body.appendChild(modal);
+            }
+            modal.style.display = 'flex';
+            // Countdown animation
+            let timeLeft = 10;
+            const timerEl = document.getElementById('rankedTimerDisplay');
+            const barEl = document.getElementById('rankedTimerBar');
+            if (timerEl) timerEl.textContent = '10';
+            if (barEl) barEl.style.width = '100%';
+            if (rankedSearchInterval) clearInterval(rankedSearchInterval);
+            rankedSearchInterval = setInterval(function() {
+                timeLeft--;
+                if (timerEl) timerEl.textContent = timeLeft;
+                if (barEl) barEl.style.width = (timeLeft * 10) + '%';
+                if (timeLeft <= 0) clearInterval(rankedSearchInterval);
+            }, 1000);
+        }
+
+        function hideRankedSearchModal() {
+            const modal = document.getElementById('rankedSearchModal');
+            if (modal) modal.style.display = 'none';
+            if (rankedSearchInterval) { clearInterval(rankedSearchInterval); rankedSearchInterval = null; }
+        }
+
+        function cancelRankedSearch() {
+            clearRankedTimer();
+            if (rankedMatchmakingListener) {
+                db.ref('ranked_queue').off('value', rankedMatchmakingListener);
+                rankedMatchmakingListener = null;
+            }
+            if (currentUser) db.ref('ranked_queue/' + currentUser.uid).remove();
+            hideRankedSearchModal();
+        }
+
+        // ════════════════════════════════════════════════
+        // RANKED STATS — guardar resultado al final de la partida
+        // ════════════════════════════════════════════════
+        function saveRankedResult(winnerTeam, playerTeam, playerChars, opponentName, opponentChars) {
+            if (!currentUser || !window._rankedMode) return;
+            window._rankedMode = false;
+            const myUid = currentUser.uid;
+                        const myName = currentUser.displayName || 'Jugador';
+            const won = (winnerTeam === playerTeam);
+            const fakeOpp = window._rankedFakeOpponent || opponentName;
+            window._rankedFakeOpponent = null;
+
+            // Save my stats
+            const myRef = db.ref('ranked_stats/' + myUid);
+            myRef.once('value', function(snap) {
+                const cur = snap.val() || { wins: 0, losses: 0, name: myName, charUsage: {} };
+                cur.name = myName;
+                cur.wins = (cur.wins || 0) + (won ? 1 : 0);
+                cur.losses = (cur.losses || 0) + (won ? 0 : 1);
+                cur.charUsage = cur.charUsage || {};
+                (playerChars || []).forEach(function(c) { cur.charUsage[c] = (cur.charUsage[c] || 0) + 1; });
+                myRef.set(cur);
+            });
+
+            // Save fake opponent stats (keyed by name, not uid)
+            if (fakeOpp) {
+                const oppKey = 'fake_' + fakeOpp.replace(/[^a-zA-Z0-9]/g, '_');
+                const oppRef = db.ref('ranked_stats/' + oppKey);
+                oppRef.once('value', function(snap) {
+                    const cur = snap.val() || { wins: 0, losses: 0, name: fakeOpp, isFake: true, charUsage: {} };
+                    cur.wins = (cur.wins || 0) + (won ? 0 : 1);
+                    cur.losses = (cur.losses || 0) + (won ? 1 : 0);
+                    cur.charUsage = cur.charUsage || {};
+                    (opponentChars || []).forEach(function(c) { cur.charUsage[c] = (cur.charUsage[c] || 0) + 1; });
+                    oppRef.set(cur);
+                });
+            }
+        }
+
+        // ════════════════════════════════════════════════
+        // LEADERBOARD
+        // ════════════════════════════════════════════════
+        function showLeaderboard() {
+            let modal = document.getElementById('leaderboardModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'leaderboardModal';
+                modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:10000;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px;box-sizing:border-box;';
+                modal.innerHTML = [
+                    '<div style="width:100%;max-width:800px;background:#0a0e17;border:2px solid #ffaa00;border-radius:20px;padding:24px;">',
+                    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">',
+                    '<div style="font-family:Orbitron,sans-serif;font-size:1.2rem;color:#ffaa00;text-shadow:0 0 12px #ffaa00;">🏆 RANKED LEADERBOARD</div>',
+                    '<button onclick="document.getElementById('leaderboardModal').style.display='none'" style="background:#ff4466;border:none;color:#fff;font-size:1.1rem;width:34px;height:34px;border-radius:50%;cursor:pointer;">✕</button>',
+                    '</div>',
+                    '<div id="leaderboardContent" style="color:#888;text-align:center;padding:2rem;">Cargando estadísticas...</div>',
+                    '</div>'
+                ].join('');
+                document.body.appendChild(modal);
+            }
+            modal.style.display = 'flex';
+            loadLeaderboardData();
+        }
+
+        function loadLeaderboardData() {
+            db.ref('ranked_stats').once('value', function(snap) {
+                const data = snap.val() || {};
+                const entries = Object.entries(data).map(function([key, v]) {
+                    const total = (v.wins || 0) + (v.losses || 0);
+                    const wr = total > 0 ? Math.round((v.wins / total) * 100) : 0;
+                    return { key, name: v.name || key, wins: v.wins || 0, losses: v.losses || 0,
+                             total, wr, isFake: v.isFake || false, charUsage: v.charUsage || {} };
+                });
+                // Sort by wins desc, then winrate
+                entries.sort(function(a, b) { return b.wins - a.wins || b.wr - a.wr; });
+                renderLeaderboard(entries);
+            });
+        }
+
+        function renderLeaderboard(entries) {
+            const container = document.getElementById('leaderboardContent');
+            if (!entries.length) {
+                container.innerHTML = '<div style="color:#555;text-align:center;padding:3rem;font-size:.9rem;">Aún no hay partidas Ranked jugadas.<br><span style="color:#444;">¡Sé el primero en jugar!</span></div>';
+                return;
+            }
+            const rows = entries.map(function(e, i) {
+                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.';
+                const rankColor = i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#aaa';
+                const fakeTag = e.isFake ? '<span style="font-size:.65rem;color:#666;background:rgba(255,255,255,0.05);border:1px solid #333;border-radius:4px;padding:1px 5px;margin-left:5px;">IA</span>' : '';
+                // Top 5 chars
+                const topChars = getTopChars(e.charUsage, 5);
+                const charImgs = topChars.map(function(c) {
+                    return '<img src="' + getCharPortrait(c) + '" title="' + escapeHtml(c) + '" style="width:32px;height:32px;border-radius:6px;border:1px solid #333;object-fit:cover;" onerror="this.style.display='none'">';
+                }).join('');
+                return [
+                    '<div style="background:rgba(255,170,0,0.04);border:1px solid rgba(255,170,0,0.12);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">',
+                    '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:' + rankColor + ';min-width:32px;">' + medal + '</div>',
+                    '<div style="flex:1;min-width:120px;">',
+                    '<div style="font-weight:700;color:#fff;font-size:.95rem;">' + escapeHtml(e.name) + fakeTag + '</div>',
+                    '<div style="font-size:.75rem;color:#666;margin-top:2px;">' + e.wins + 'W &nbsp; ' + e.losses + 'L &nbsp; <span style="color:' + (e.wr >= 50 ? '#00ff88' : '#ff4466') + ';">' + e.wr + '% WR</span></div>',
+                    '</div>',
+                    '<div style="display:flex;gap:4px;align-items:center;">' + (charImgs || '<span style="color:#444;font-size:.75rem;">Sin datos</span>') + '</div>',
+                    '</div>'
+                ].join('');
+            });
+            container.innerHTML = rows.join('');
+        }
+
+        function getTopChars(charUsage, n) {
+            if (!charUsage) return [];
+            return Object.entries(charUsage)
+                .sort(function(a, b) { return b[1] - a[1]; })
+                .slice(0, n)
+                .map(function(e) { return e[0]; });
+        }
+
+        function getCharPortrait(charName) {
+            // Re-use init-render portrait logic
+            const portraits = {
+                'Thestalos': 'https://i.postimg.cc/7hvFBnhX/Thestalos-portrait.jpg',
+                'Sun Jin Woo': 'https://i.postimg.cc/pTFWmZwb/sun-jin-woo-portrait.jpg',
+                'Gilgamesh': 'https://i.postimg.cc/W4k14Jrt/gilgamesh-portrait.jpg',
+                'Madara Uchiha': 'https://i.postimg.cc/xjBhCb1Y/madara-portrait.jpg',
+                'Goku': 'https://i.postimg.cc/Y0mS0LbP/goku-portrait.jpg',
+                'Saitama': 'https://i.postimg.cc/Nfx2HQSQ/saitama-portrait.jpg',
+                'Minato Namikaze': 'https://i.postimg.cc/fLHrnpGb/minato-portrait.jpg',
+                'Tamayo': 'https://i.postimg.cc/GpHCWmdM/tamayo-portrait.jpg',
+                'Muzan Kibutsuji': 'https://i.postimg.cc/sfvKTfMJ/muzan-portrait.jpg',
+                'Darth Vader': 'https://i.postimg.cc/Kzm0KKMP/vader-portrait.jpg',
+                'Ymir': 'https://i.postimg.cc/QdqNXynk/ymir-portrait.jpg',
+                'Padme Amidala': 'https://i.postimg.cc/ydspL4rT/padme-portrait.jpg',
+                'Daenerys Targaryen': 'https://i.postimg.cc/cJSdCVhp/daenerys-portrait.jpg',
+                'Gandalf': 'https://i.postimg.cc/QCdstGDS/gandalf-portrait.jpg',
+                'Sauron': 'https://i.postimg.cc/yx50rMbw/sauron-portrait.jpg',
+                'Lich King': 'https://i.postimg.cc/MTn7Twbq/lichking-portrait.jpg',
+                'Ragnar Lothbrok': 'https://i.postimg.cc/W4g0XZG7/ragnar-portrait.jpg',
+                'Anakin Skywalker': 'https://i.postimg.cc/Nf5g6zzJ/anakin-portrait.jpg',
+                'Palpatine': 'https://i.postimg.cc/hGMpD9Fz/palpatine-portrait.jpg',
+                'Min Byung Gu': 'https://i.postimg.cc/PqsjrPtY/minbyung-portrait.jpg',
+                'Aspros de Gemini': 'https://i.postimg.cc/Px6BdfJv/aspros-portrait.jpg',
+                'Alexstrasza': 'https://i.postimg.cc/qMcyqQqL/alexstrasza-portrait.jpg',
+                'Aldebaran': 'https://i.postimg.cc/6pyGkMXN/aldebaran-portrait.jpg',
+                'Tirion Fordring': 'https://i.postimg.cc/FHRb4rMs/tirion-portrait.jpg',
+                'Sindragosa': 'https://i.postimg.cc/Yq1BMLhz/sindragosa-portrait.jpg',
+                'Naruto Uzumaki': 'https://i.postimg.cc/6pgC6gVb/naruto-portrait.jpg',
+                'Doomsday': 'https://i.postimg.cc/T15Wbpxt/doomsday-portrait.jpg',
+                'Nakime': 'https://i.postimg.cc/mgHWpvsq/nakime-portrait.jpg',
+            };
+            return portraits[charName] || 'https://i.postimg.cc/Px6BdfJv/aspros-portrait.jpg';
         }
 
         // ── Room management ──
@@ -440,6 +776,76 @@
             });
         }
 
+
+        // ── REVANCHA ONLINE ──
+        let revanchaListener = null;
+        function listenForRevanchaRequest(roomId) {
+            // Turn off any previous listener
+            if (revanchaListener) {
+                db.ref(revanchaListener).off('value');
+                revanchaListener = null;
+            }
+            const revRef = 'rooms/' + roomId + '/revancha';
+            revanchaListener = revRef;
+            db.ref(revRef).on('value', function(snap) {
+                const data = snap.val();
+                if (!data || !data.fromUid) return;
+                // If I'm the one who sent it, ignore
+                if (currentUser && data.fromUid === currentUser.uid) return;
+                if (data.status !== 'pending') return;
+
+                // Show revancha notification modal to the OTHER player
+                showRevanchaModal(data.fromName || 'Tu rival', roomId);
+            });
+        }
+
+        function showRevanchaModal(fromName, roomId) {
+            let modal = document.getElementById('revanchaRequestModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'revanchaRequestModal';
+                modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;align-items:center;justify-content:center;';
+                modal.innerHTML = [
+                    '<div style="background:linear-gradient(135deg,#0a0e17,#0d1525);border:2px solid #aa00ff;border-radius:20px;padding:2rem 2.5rem;text-align:center;max-width:360px;box-shadow:0 0 40px rgba(170,0,255,0.4);">',
+                    '<div style="font-size:2rem;margin-bottom:.5rem;">🔄</div>',
+                    '<div style="font-family:Orbitron,sans-serif;font-size:1rem;color:#aa00ff;margin-bottom:.5rem;">¡REVANCHA!</div>',
+                    '<div id="revanchaModalText" style="color:#ccc;font-size:.9rem;margin-bottom:1.5rem;"></div>',
+                    '<div style="display:flex;gap:1rem;justify-content:center;">',
+                    '<button onclick="respondRevancha(true)" style="background:linear-gradient(135deg,#003a1a,#00aa55);border:2px solid #00ff88;color:#00ff88;font-family:Orbitron,sans-serif;font-size:.85rem;padding:10px 24px;border-radius:10px;cursor:pointer;">✅ Aceptar</button>',
+                    '<button onclick="respondRevancha(false)" style="background:rgba(255,51,102,0.15);border:2px solid #ff3366;color:#ff3366;font-family:Orbitron,sans-serif;font-size:.85rem;padding:10px 24px;border-radius:10px;cursor:pointer;">❌ Rechazar</button>',
+                    '</div></div>'
+                ].join('');
+                document.body.appendChild(modal);
+            }
+            const txt = document.getElementById('revanchaModalText');
+            if (txt) txt.textContent = (fromName || 'Tu rival') + ' quiere una revancha. ¿Aceptas?';
+            modal.style.display = 'flex';
+        }
+
+        function respondRevancha(accept) {
+            const modal = document.getElementById('revanchaRequestModal');
+            if (modal) modal.style.display = 'none';
+            if (!currentRoomId) return;
+            if (accept) {
+                db.ref('rooms/' + currentRoomId + '/revancha/status').set('accepted');
+                // Also reinit from this side
+                setTimeout(function() {
+                    db.ref('rooms/' + currentRoomId + '/revancha').remove();
+                    db.ref('rooms/' + currentRoomId + '/gameState').remove();
+                    db.ref('rooms/' + currentRoomId + '/selections').remove();
+                    db.ref('rooms/' + currentRoomId + '/status').set('waiting');
+                    startOnlineGame(currentRoomId, isRoomHost);
+                }, 500);
+            } else {
+                db.ref('rooms/' + currentRoomId + '/revancha/status').set('rejected');
+                // Both go to lobby
+                setTimeout(function() {
+                    if (revanchaListener) { db.ref(revanchaListener).off(); revanchaListener = null; }
+                    goToMainMenu();
+                }, 500);
+            }
+        }
+
         function cancelRoom() {
             if (currentRoomId && isRoomHost) {
                 db.ref('rooms/' + currentRoomId).remove();
@@ -467,6 +873,7 @@
 
             showScreen('charSelectScreen');
             initChat(roomId);
+            listenForRevanchaRequest(roomId);
 
             // Update label to show which team this player is
             const lbl = document.getElementById('csPhaseLabel');
