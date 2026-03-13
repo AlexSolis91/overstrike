@@ -1,528 +1,373 @@
-// ==================== CHARACTER SELECT ====================
-        const CS_TEAM_SIZE = 5;
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OVERSTRIKE - 5v5 RPG Battle v4.1</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
 
-        let csState = {
-            team1: [],   // nombres seleccionados para hunters
-            team2: [],   // nombres seleccionados para reapers
-            phase: 'team1', // 'team1' | 'team2' | 'done'
-            pendingChar: null, // nombre del personaje en revisión
-            gameMode: 'multi' // 'multi' | 'solo'
-        };
+    <!-- ==================== ESTILOS ==================== -->
+    <link rel="stylesheet" href="css/styles.css">
 
-        function csSelectMode(mode) {
-            csState.gameMode = mode;
-            audioManager.playSelect();
-            // Do NOT restart menu music — it's already playing from the mode screen
-            document.getElementById('modeSelectScreen').style.display = 'none';
-            document.getElementById('charSelectScreen').style.display = 'block';
-            if (mode === 'solo') {
-                // En modo solitario solo HUNTERS (team1) elige; la IA elige team2 automáticamente
-                const lbl = document.getElementById('csPhaseLabel');
-                lbl.textContent = '🔷 HUNTERS — Elige tus 5 personajes (vs IA)';
-                lbl.className = 'cs-phase-label team1';
-            }
-            csInit();
-        }
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+</head>
+<body>
 
-        function csRemoveChar(team, index) {
-            audioManager.playSelect();
-            if (team === 'team1') {
-                csState.team1.splice(index, 1);
-                if (csState.gameMode !== 'online') {
-                    if (csState.phase === 'team2' || csState.phase === 'done') csState.phase = 'team1';
-                }
-            } else {
-                csState.team2.splice(index, 1);
-                if (csState.gameMode !== 'online') {
-                    if (csState.phase === 'done') csState.phase = 'team2';
-                }
-            }
-            // In online mode: hide ready button if my team now has < 5
-            if (csState.gameMode === 'online') {
-                const myTeam = isRoomHost ? 'team1' : 'team2';
-                if (csState[myTeam].length < CS_TEAM_SIZE) {
-                    const btn = document.getElementById('onlineReadyBtn');
-                    if (btn) btn.style.display = 'none';
-                }
-            }
-            csRenderSlots();
-            csRenderGrid();
-            // Actualizar label de fase
-            if (csState.phase === 'team1') {
-                const lbl = document.getElementById('csPhaseLabel');
-                const suffix = csState.gameMode === 'solo' ? ' (vs IA)' : '';
-                lbl.textContent = '🔷 HUNTERS — Elige tus 5 personajes' + suffix;
-                lbl.className = 'cs-phase-label team1';
-            } else if (csState.phase === 'team2') {
-                const lbl = document.getElementById('csPhaseLabel');
-                lbl.textContent = '🔶 REAPERS — Elige tus 5 personajes';
-                lbl.className = 'cs-phase-label team2';
-            }
-        }
+<!-- ==================== AUDIO SYSTEM ==================== -->
+<audio id="audioMenu" loop preload="auto">
+  <source src="https://AlejandroSolis.publit.io/file/Statue-of-God-Theme-Solo-Leveling-Episode-1-%E4%BF%BA%E3%81%A0%E3%81%91%E3%83%AC%E3%83%99%E3%83%AB%E3%82%A2%E3%83%83%E3%83%97%E3%81%AA%E4%BB%B6-OST-Cover.mp3" type="audio/mpeg">
+</audio>
+<audio id="audioBattle1" loop preload="auto">
+  <source src="https://AlejandroSolis.publit.io/file/Naruto-Kouen-Crimson-Flames-Extended.mp3" type="audio/mpeg">
+</audio>
+<audio id="audioBattle2" loop preload="auto">
+  <source src="https://AlejandroSolis.publit.io/file/Infinity-Castle-Theme-Demon-Slayer-S4-EP8-Ost-ORIGINAL-SOUNDTRACK.mp3" type="audio/mpeg">
+</audio>
+<audio id="audioBattle3" loop preload="auto">
+  <source src="https://AlejandroSolis.publit.io/file/Demon-Slayer-Season-2-Main-Theme-Tengen-Uzui-Theme-EPIC-VERSION.mp3" type="audio/mpeg">
+</audio>
+<audio id="audioBattle4" loop preload="auto">
+  <source src="https://AlejandroSolis.publit.io/file/Desperate-Assault-HQ-Remaster-and-Rearrange.mp3" type="audio/mpeg">
+</audio>
+<audio id="audioBattle5" loop preload="auto">
+  <source src="https://AlejandroSolis.publit.io/file/UNDECEMBER-SOUNDTRACK-Into-the-Chaos.mp3" type="audio/mpeg">
+</audio>
+<audio id="audioSelect" preload="auto">
+  <source src="https://AlejandroSolis.publit.io/file/Menu-Select-Sound-Super.mp3" type="audio/mpeg">
+</audio>
+<!-- ==================== END AUDIO ==================== -->
 
-        // ──────────────────────────────────────────────────────────────
-        // HELPER: crea un elemento con clase y texto/HTML de forma segura
-        // ──────────────────────────────────────────────────────────────
-        function el(tag, cls, text) {
-            const e = document.createElement(tag);
-            if (cls) e.className = cls;
-            if (text !== undefined) e.textContent = text;
-            return e;
-        }
-        function elHTML(tag, cls, html) {
-            const e = document.createElement(tag);
-            if (cls) e.className = cls;
-            if (html !== undefined) e.innerHTML = html;
-            return e;
-        }
-        function imgEl(src, alt, cls) {
-            const i = document.createElement('img');
-            i.src = src; i.alt = alt; i.loading = 'eager';
-            i.referrerPolicy = 'no-referrer';
-            if (cls) i.className = cls;
-            i.onerror = function() {
-                this.style.display = 'none';
-                if (this.nextElementSibling) this.nextElementSibling.style.display = 'flex';
-            };
-            return i;
-        }
-        function portraitEl(portrait, altText, cls, placeholderText) {
-            const wrap = document.createElement('div');
-            wrap.style.position = 'relative';
-            if (portrait) {
-                const img = imgEl(portrait, altText, cls);
-                wrap.appendChild(img);
-                const ph = el('div', cls ? cls + '-placeholder' : 'portrait-placeholder', placeholderText || '⚔️');
-                ph.style.display = 'none';
-                wrap.appendChild(ph);
-            } else {
-                const ph = el('div', cls ? cls + '-placeholder' : 'portrait-placeholder', placeholderText || '⚔️');
-                wrap.appendChild(ph);
-            }
-            return wrap;
-        }
+    <!-- ==================== LOGIN SCREEN ==================== -->
+    <div id="loginScreen" style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; background:linear-gradient(rgba(5,5,20,0.85),rgba(5,5,20,0.85)), url(https://i.postimg.cc/jSmHp0dw/4c9b34ddf1759d2a2950c4c8e1694ca9.jpg) center/cover no-repeat; gap:1.5rem; position:relative;">
+        <div style="position:absolute;width:600px;height:600px;background:radial-gradient(circle,rgba(0,196,255,0.08),transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;animation:loginPulse 4s ease-in-out infinite;"></div>
+        <div style="font-family:'Orbitron',sans-serif; font-size:3rem; font-weight:900; color:#fff; text-shadow:0 0 30px #00c4ff, 0 0 80px #00c4ff44; letter-spacing:.15em; text-align:center;">OVERSTRIKE</div>
+        <div style="font-size:.9rem; color:#00c4ff; letter-spacing:.3em; margin-top:-.8rem; opacity:.8;">5v5 TACTICAL RPG BATTLE</div>
+        <div id="loginBox" style="background:rgba(0,10,30,0.8); border:1px solid rgba(0,196,255,0.3); border-radius:20px; padding:2.5rem 3rem; display:flex; flex-direction:column; align-items:center; gap:1.2rem; min-width:320px; backdrop-filter:blur(12px); box-shadow:0 0 40px rgba(0,196,255,0.1);">
+            <div style="font-family:'Orbitron',sans-serif; font-size:1rem; color:#aaa; letter-spacing:.15em;">ACCESO AL SISTEMA</div>
+            <button id="googleLoginBtn" onclick="signInWithGoogle()" style="display:flex; align-items:center; gap:12px; background:#fff; color:#222; border:none; border-radius:10px; padding:14px 28px; font-size:1rem; font-weight:700; cursor:pointer; width:100%; justify-content:center; transition:all .2s; box-shadow:0 4px 15px rgba(0,0,0,0.3);" onmouseover="this.style.transform='scale(1.03)';this.style.boxShadow='0 6px 25px rgba(0,0,0,0.4)'" onmouseout="this.style.transform='scale(1)';this.style.boxShadow='0 4px 15px rgba(0,0,0,0.3)'">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:22px;height:22px;" alt="Google">
+                Iniciar sesión con Google
+            </button>
+            <div id="loginStatus" style="font-size:.8rem; color:#666; text-align:center; min-height:20px;"></div>
+        </div>
+        <div style="font-size:.7rem; color:#444; letter-spacing:.1em; text-align:center;">Al iniciar sesión aceptas jugar con honor ⚔️</div>
+    </div>
+    <!-- ==================== END LOGIN SCREEN ==================== -->
 
-        function csInit() {
-            csRenderSlots();
-            csRenderGrid();
-        }
+    <!-- ==================== MODE SELECT SCREEN ==================== -->
+    <div id="modeSelectScreen" style="display:none; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; background:linear-gradient(rgba(5,5,20,0.72),rgba(5,5,20,0.72)), url(https://i.postimg.cc/jSmHp0dw/4c9b34ddf1759d2a2950c4c8e1694ca9.jpg) center/cover no-repeat; gap:2rem;">
+        <div style="font-family:'Orbitron',sans-serif; font-size:2.8rem; font-weight:900; color:#fff; text-shadow:0 0 30px #00c4ff, 0 0 60px #00c4ff; letter-spacing:.15em;">OVERSTRIKE</div>
+        <div style="font-size:1.1rem; color:#aaa; letter-spacing:.2em; margin-top:-.5rem;">SELECCIONA MODO DE JUEGO</div>
+        <button id="backToLobbyBtn" onclick="showLobby()" style="position:absolute;top:20px;left:20px;background:rgba(0,196,255,0.1);border:1px solid rgba(0,196,255,0.3);color:#aaa;border-radius:8px;padding:8px 16px;font-size:.8rem;cursor:pointer;display:none;">← Volver al Lobby</button>
+        <div style="display:flex; gap:2rem; margin-top:1rem;">
+            <button onclick="csSelectMode('multi')" style="padding:1.4rem 2.8rem; font-family:'Orbitron',sans-serif; font-size:1rem; font-weight:700; background:linear-gradient(135deg,#003a5c,#006fa6); color:#00c4ff; border:2px solid #00c4ff; border-radius:12px; cursor:pointer; letter-spacing:.1em; transition:all .2s; box-shadow:0 0 20px #00c4ff44;" onmouseover="this.style.boxShadow='0 0 35px #00c4ff'" onmouseout="this.style.boxShadow='0 0 20px #00c4ff44'">
+                👥 MULTIJUGADOR<br><span style="font-size:.75rem; opacity:.7; font-weight:400;">Jugador vs Jugador</span>
+            </button>
+            <button onclick="csSelectMode('solo')" style="padding:1.4rem 2.8rem; font-family:'Orbitron',sans-serif; font-size:1rem; font-weight:700; background:linear-gradient(135deg,#3a0020,#a60040); color:#ff4466; border:2px solid #ff4466; border-radius:12px; cursor:pointer; letter-spacing:.1em; transition:all .2s; box-shadow:0 0 20px #ff446644;" onmouseover="this.style.boxShadow='0 0 35px #ff4466'" onmouseout="this.style.boxShadow='0 0 20px #ff446644'">
+                🤖 SOLITARIO<br><span style="font-size:.75rem; opacity:.7; font-weight:400;">Jugador vs IA</span>
+            </button>
+        </div>
+    </div>
+    <!-- ==================== END MODE SELECT SCREEN ==================== -->
 
-        function csRenderSlots() {
-            const t1 = document.getElementById('csTeam1Slots');
-            const t2 = document.getElementById('csTeam2Slots');
-            if (!t1 || !t2) { console.warn('[OVERSTRIKE] csRenderSlots: slots not found in DOM'); return; }
-            t1.innerHTML = '';
-            t2.innerHTML = '';
+    <!-- ==================== LOBBY SCREEN ==================== -->
+    <div id="lobbyScreen" style="display:none; flex-direction:column; align-items:center; min-height:100vh; background:linear-gradient(rgba(5,5,20,0.9),rgba(5,5,20,0.9)), url(https://i.postimg.cc/jSmHp0dw/4c9b34ddf1759d2a2950c4c8e1694ca9.jpg) center/cover no-repeat; padding:2rem; gap:1.5rem;">
+        <div style="display:flex; width:100%; max-width:1100px; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
+            <div style="font-family:'Orbitron',sans-serif; font-size:1.6rem; font-weight:900; color:#00c4ff; text-shadow:0 0 15px #00c4ff;">⚔️ OVERSTRIKE</div>
+            <div id="lobbyUserInfo" style="display:flex; align-items:center; gap:12px; background:rgba(0,196,255,0.08); border:1px solid rgba(0,196,255,0.2); border-radius:50px; padding:8px 16px;">
+                <img id="lobbyUserPhoto" src="" style="width:32px;height:32px;border-radius:50%;border:2px solid #00c4ff;" onerror="this.style.display='none'">
+                <span id="lobbyUserName" style="font-size:.9rem; color:#fff;"></span>
+                <button onclick="signOut()" style="background:rgba(255,51,102,0.15); border:1px solid #ff3366; color:#ff3366; border-radius:20px; padding:4px 12px; font-size:.75rem; cursor:pointer;">Salir</button>
+            </div>
+        </div>
+        <div style="display:flex; gap:1.5rem; width:100%; max-width:1100px; flex-wrap:wrap;">
+            <!-- Columna izquierda: modos + jugadores activos -->
+            <div style="flex:1; min-width:220px; display:flex; flex-direction:column; gap:1rem;">
+                <div style="background:rgba(0,10,30,0.8); border:1px solid rgba(0,196,255,0.2); border-radius:16px; padding:1.5rem;">
+                    <div style="font-family:'Orbitron',sans-serif; font-size:.8rem; color:#00c4ff; margin-bottom:1rem; letter-spacing:.1em;">MODO DE JUEGO</div>
+                    <button onclick="createOnlineRoom()" style="width:100%; padding:1rem; font-family:'Orbitron',sans-serif; font-size:.85rem; background:linear-gradient(135deg,#003a5c,#006fa6); color:#00c4ff; border:2px solid #00c4ff; border-radius:10px; cursor:pointer; margin-bottom:.8rem; transition:all .2s;" onmouseover="this.style.boxShadow='0 0 20px #00c4ff'" onmouseout="this.style.boxShadow='none'">🌐 CREAR SALA ONLINE</button>
+                    <button onclick="goToLocalMode('multi')" style="width:100%; padding:1rem; font-family:'Orbitron',sans-serif; font-size:.85rem; background:rgba(0,196,255,0.08); color:#aaa; border:1px solid #333; border-radius:10px; cursor:pointer; margin-bottom:.8rem;">👥 LOCAL — 2 Jugadores</button>
+                    <button onclick="goToLocalMode('solo')" style="width:100%; padding:1rem; font-family:'Orbitron',sans-serif; font-size:.85rem; background:rgba(255,51,102,0.08); color:#aaa; border:1px solid #333; border-radius:10px; cursor:pointer;">🤖 SOLITARIO — vs IA</button>
+                    <button onclick="startRankedMatchmaking()" style="width:100%; padding:1rem; font-family:'Orbitron',sans-serif; font-size:.85rem; background:linear-gradient(135deg,#3a2000,#7a4500); color:#ffaa00; border:2px solid #ffaa00; border-radius:10px; cursor:pointer; margin-top:.8rem; transition:all .2s; letter-spacing:.05em; box-shadow:0 0 12px rgba(255,170,0,0.2);" onmouseover="this.style.boxShadow='0 0 24px rgba(255,170,0,0.5)'" onmouseout="this.style.boxShadow='0 0 12px rgba(255,170,0,0.2)'">🏆 RANKED — Buscar Rival</button>
+                    <button onclick="showLeaderboard()" style="width:100%; padding:.7rem; font-family:'Orbitron',sans-serif; font-size:.78rem; background:rgba(255,170,0,0.06); color:#ffaa00; border:1px solid rgba(255,170,0,0.3); border-radius:10px; cursor:pointer; margin-top:.5rem; letter-spacing:.05em;">📊 VER LEADERBOARD</button>
+                </div>
+                <!-- #4: Lista de jugadores activos -->
+                <div style="background:rgba(0,10,30,0.8); border:1px solid rgba(0,255,136,0.2); border-radius:16px; padding:1.2rem; flex:1;">
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:.8rem;">
+                        <div style="width:8px;height:8px;background:#00ff88;border-radius:50%;animation:loginPulse 2s infinite;"></div>
+                        <span style="font-family:'Orbitron',sans-serif; font-size:.75rem; color:#00ff88; letter-spacing:.05em;">JUGADORES EN LÍNEA</span>
+                        <span id="onlineCount" style="font-size:.8rem; color:#666; margin-left:auto;">0</span>
+                    </div>
+                    <div id="playersList" style="display:flex; flex-direction:column; gap:.5rem; max-height:200px; overflow-y:auto;"></div>
+                </div>
+            </div>
+            <!-- Columna central: salas disponibles -->
+            <div style="flex:2; min-width:280px; background:rgba(0,10,30,0.8); border:1px solid rgba(0,196,255,0.2); border-radius:16px; padding:1.5rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                    <div style="font-family:'Orbitron',sans-serif; font-size:.8rem; color:#00c4ff; letter-spacing:.1em;">SALAS DISPONIBLES</div>
+                    <button onclick="refreshRooms()" style="background:none; border:1px solid #333; color:#666; border-radius:8px; padding:4px 10px; font-size:.75rem; cursor:pointer;">🔄 Actualizar</button>
+                </div>
+                <div id="roomsList" style="display:flex; flex-direction:column; gap:.6rem; min-height:200px;">
+                    <div style="text-align:center; color:#444; padding:2rem; font-size:.85rem;">Cargando salas...</div>
+                </div>
+            </div>
+            <!-- Columna derecha: #5 Chat Global -->
+            <div style="flex:1.2; min-width:240px; background:rgba(0,10,30,0.8); border:1px solid rgba(255,170,0,0.25); border-radius:16px; padding:1.5rem; display:flex; flex-direction:column;">
+                <div style="font-family:'Orbitron',sans-serif; font-size:.75rem; color:#ffaa00; letter-spacing:.1em; margin-bottom:.8rem;">💬 CHAT GLOBAL</div>
+                <div id="globalChatMessages" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:.4rem; min-height:220px; max-height:300px; margin-bottom:.8rem;"></div>
+                <div style="display:flex; gap:.5rem;">
+                    <input id="globalChatInput" type="text" placeholder="Mensaje al lobby..." maxlength="120"
+                        style="flex:1; background:rgba(255,170,0,0.07); border:1px solid rgba(255,170,0,0.2); border-radius:8px; padding:8px 12px; color:#fff; font-size:.82rem; outline:none;"
+                        onkeydown="if(event.key==='Enter') sendGlobalChat()">
+                    <button onclick="sendGlobalChat()" style="background:linear-gradient(135deg,#7a4800,#cc7700); border:none; color:#ffcc44; border-radius:8px; padding:8px 14px; cursor:pointer; font-size:.85rem;">➤</button>
+                </div>
+            </div>
+        </div>
+        <!-- #4: Modal alerta de desafío -->
+        <div id="challengeModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9000; align-items:center; justify-content:center;">
+            <div style="background:linear-gradient(135deg,#0a0e17,#0d1525); border:2px solid #ffaa00; border-radius:20px; padding:2rem 2.5rem; text-align:center; max-width:360px;">
+                <div style="font-size:2rem; margin-bottom:.5rem;">⚔️</div>
+                <div style="font-family:'Orbitron',sans-serif; font-size:1rem; color:#ffaa00; margin-bottom:.5rem;">¡DESAFÍO!</div>
+                <div id="challengeModalText" style="color:#ccc; font-size:.9rem; margin-bottom:1.5rem;">alguien te desafía</div>
+                <div style="display:flex; gap:1rem; justify-content:center;">
+                    <button onclick="respondChallenge(true)" style="background:linear-gradient(135deg,#003a1a,#00aa55); border:2px solid #00ff88; color:#00ff88; font-family:'Orbitron',sans-serif; font-size:.85rem; padding:10px 24px; border-radius:10px; cursor:pointer;">✅ Aceptar</button>
+                    <button onclick="respondChallenge(false)" style="background:rgba(255,51,102,0.15); border:2px solid #ff3366; color:#ff3366; font-family:'Orbitron',sans-serif; font-size:.85rem; padding:10px 24px; border-radius:10px; cursor:pointer;">❌ Rechazar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ==================== END LOBBY SCREEN ==================== -->
 
-            for (let i = 0; i < CS_TEAM_SIZE; i++) {
-                const name1 = csState.team1[i];
-                const name2 = csState.team2[i];
+    <!-- ==================== WAITING ROOM SCREEN ==================== -->
+    <div id="waitingScreen" style="display:none; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; background:linear-gradient(rgba(5,5,20,0.9),rgba(5,5,20,0.9)), url(https://i.postimg.cc/jSmHp0dw/4c9b34ddf1759d2a2950c4c8e1694ca9.jpg) center/cover no-repeat; gap:2rem;">
+        <div style="font-family:'Orbitron',sans-serif; font-size:1.4rem; color:#00c4ff;">⏳ SALA DE ESPERA</div>
+        <div id="waitingRoomCode" style="font-family:'Orbitron',sans-serif; font-size:2.5rem; font-weight:900; color:#fff; letter-spacing:.3em; background:rgba(0,196,255,0.1); border:2px solid #00c4ff; padding:1rem 2rem; border-radius:12px;"></div>
+        <div style="color:#aaa; font-size:.9rem;">Comparte este código con tu rival</div>
+        <div id="waitingStatus" style="color:#ffaa00; font-size:1rem; font-family:'Orbitron',sans-serif; animation:loginPulse 2s infinite;">Esperando oponente...</div>
+        <button onclick="cancelRoom()" style="background:rgba(255,51,102,0.15); border:1px solid #ff3366; color:#ff3366; border-radius:10px; padding:10px 24px; cursor:pointer; font-size:.85rem;">Cancelar</button>
+    </div>
+    <!-- ==================== END WAITING ROOM ==================== -->
 
-                // ── Slot Team 1 ──
-                const slot1 = document.createElement('div');
-                slot1.className = 'cs-slot' + (name1 ? ' filled team1' : '');
-                slot1.style.position = 'relative';
-                if (name1) {
-                    const char = characterData[name1];
-                    if (char && char.portrait) {
-                        const img = imgEl(char.portrait, name1, '');
-                        img.style.cssText = 'width:100%;height:100%;object-fit:contain;';
-                        slot1.appendChild(img);
-                    } else {
-                        const ico = document.createElement('span');
-                        ico.style.fontSize = '1.4em'; ico.textContent = '⚔️';
-                        slot1.appendChild(ico);
-                    }
-                    slot1.appendChild(el('div', 'cs-slot-name', name1.split(' ')[0]));
-                    // X button: show if local multi, or online host (team1 owner)
-                    const canRemove1 = csState.gameMode !== 'solo' && (csState.gameMode !== 'online' || isRoomHost);
-                    if (canRemove1) {
-                        const xBtn = document.createElement('button');
-                        xBtn.textContent = '✕';
-                        xBtn.style.cssText = 'position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;border:none;background:#ff4466;color:#fff;font-size:.65rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;z-index:10;';
-                        xBtn.title = 'Quitar ' + name1;
-                        (function(idx) { xBtn.onclick = function(e) { e.stopPropagation(); csRemoveChar('team1', idx); }; })(i);
-                        slot1.appendChild(xBtn);
-                    }
-                } else {
-                    slot1.textContent = String(i + 1);
-                }
-                t1.appendChild(slot1);
+    <!-- ==================== CHARACTER SELECT SCREEN ==================== -->
+    <div id="charSelectScreen" style="display:none;">
+        <div class="cs-title">OVERSTRIKE</div>
+        <div class="cs-phase-label team1" id="csPhaseLabel">🔷 HUNTERS — Elige tus 5 personajes</div>
+        <div id="onlineReadyBtn" style="display:none; position:fixed; bottom:30px; left:50%; transform:translateX(-50%); z-index:9999; flex-direction:column; align-items:center; gap:8px;">
+            <button onclick="submitOnlineReady()" id="onlineReadyBtnInner" style="padding:16px 48px; font-family:'Orbitron',sans-serif; font-size:1.1rem; font-weight:900; background:linear-gradient(135deg,#003a5c,#00aa66); color:#00ff88; border:2px solid #00ff88; border-radius:14px; cursor:pointer; letter-spacing:.1em; box-shadow:0 0 30px #00ff8866; transition:all .2s;" onmouseover="this.style.boxShadow='0 0 50px #00ff88'" onmouseout="this.style.boxShadow='0 0 30px #00ff8866'">
+                ✅ LISTO PARA JUGAR
+            </button>
+            <div style="font-size:.75rem; color:#00ff88; opacity:.7; letter-spacing:.1em;">Has elegido tus 5 personajes</div>
+        </div>
+        <div class="cs-teams-preview">
+            <div class="cs-team-panel team1">
+                <div class="cs-team-label">🔷 HUNTERS</div>
+                <div class="cs-team-slots" id="csTeam1Slots"></div>
+            </div>
+            <div class="cs-team-panel team2">
+                <div class="cs-team-label">🔶 REAPERS</div>
+                <div id="onlineOppStatus" style="font-size:.75rem;color:#666;padding:2px 8px;"></div>
+                <div class="cs-team-slots" id="csTeam2Slots"></div>
+            </div>
+        </div>
+        <div class="cs-grid-wrap">
+            <div class="cs-grid" id="csGrid"></div>
+        </div>
+    </div>
+    <div id="csDetailModal">
+        <div class="cs-detail-content" id="csDetailContent"></div>
+    </div>
+    <!-- ==================== END CHARACTER SELECT SCREEN ==================== -->
 
-                // ── Slot Team 2 ──
-                const slot2 = document.createElement('div');
-                slot2.className = 'cs-slot' + (name2 ? ' filled team2' : '');
-                slot2.style.position = 'relative';
-                if (name2) {
-                    const char = characterData[name2];
-                    if (char && char.portrait) {
-                        const img = imgEl(char.portrait, name2, '');
-                        img.style.cssText = 'width:100%;height:100%;object-fit:contain;';
-                        slot2.appendChild(img);
-                    } else {
-                        const ico = document.createElement('span');
-                        ico.style.fontSize = '1.4em'; ico.textContent = '⚔️';
-                        slot2.appendChild(ico);
-                    }
-                    slot2.appendChild(el('div', 'cs-slot-name', name2.split(' ')[0]));
-                    // X button: show if local multi, or online guest (team2 owner)
-                    const canRemove2 = csState.gameMode !== 'solo' && (csState.gameMode !== 'online' || !isRoomHost);
-                    if (canRemove2) {
-                        const xBtn2 = document.createElement('button');
-                        xBtn2.textContent = '✕';
-                        xBtn2.style.cssText = 'position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;border:none;background:#ff4466;color:#fff;font-size:.65rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;z-index:10;';
-                        xBtn2.title = 'Quitar ' + name2;
-                        (function(idx) { xBtn2.onclick = function(e) { e.stopPropagation(); csRemoveChar('team2', idx); }; })(i);
-                        slot2.appendChild(xBtn2);
-                    }
-                } else {
-                    slot2.textContent = csState.gameMode === 'solo' ? '🤖' : String(i + 1);
-                }
-                t2.appendChild(slot2);
-            }
-        }
+    <!-- ==================== BUFF/DEBUFF GUIDE MODAL ==================== -->
+    <div id="buffDebuffModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:1100;overflow-y:auto;padding:20px;box-sizing:border-box;">
+        <div style="max-width:780px;margin:0 auto;background:#0d1020;border:1px solid #00c4ff;border-radius:16px;padding:24px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+                <h2 style="font-family:'Orbitron',sans-serif;color:#00c4ff;margin:0;font-size:1.1rem;text-shadow:0 0 12px #00c4ff;">📖 GUÍA DE BUFFS Y DEBUFFS</h2>
+                <button onclick="document.getElementById('buffDebuffModal').style.display='none'" style="background:#ff4466;border:none;color:#fff;font-size:1.2rem;width:32px;height:32px;border-radius:50%;cursor:pointer;">✕</button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;" id="buffDebuffContent"></div>
+        </div>
+    </div>
+    <!-- ==================== END BUFF/DEBUFF GUIDE MODAL ==================== -->
 
-        function csRenderGrid() {
-            const grid = document.getElementById('csGrid');
-            grid.innerHTML = '';
+    <!-- ==================== SUMMON INFO MODAL ==================== -->
+    <div id="summonInfoModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:99999;overflow-y:auto;padding:20px;box-sizing:border-box;">
+        <div style="max-width:500px;margin:40px auto;background:#0d1020;border:1px solid #a855f7;border-radius:16px;padding:24px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                <h2 id="summonInfoTitle" style="font-family:'Orbitron',sans-serif;color:#a855f7;margin:0;font-size:1rem;text-shadow:0 0 12px #a855f7;">🔮 INVOCACIÓN</h2>
+                <button onclick="document.getElementById('summonInfoModal').style.display='none'" style="background:#ff4466;border:none;color:#fff;font-size:1.2rem;width:32px;height:32px;border-radius:50%;cursor:pointer;">✕</button>
+            </div>
+            <div id="summonInfoContent"></div>
+        </div>
+    </div>
+    <!-- ==================== END SUMMON INFO MODAL ==================== -->
 
-            for (const name in characterData) {
-                try {
-                    const char = characterData[name];
-                    if (!char || !char.abilities) continue;
+    <!-- ==================== GAME BATTLE CONTAINER ==================== -->
+    <div class="game-container" style="display:none;">
+        <div class="game-header">
+            <h1 class="game-title">OVERSTRIKE</h1>
+        </div>
+        <div class="battle-arena">
+            <div class="team-column">
+                <div style="text-align: center; font-family: 'Orbitron', sans-serif; font-size: 1.1em; color: var(--team1); margin-bottom: 10px; text-shadow: 0 0 10px var(--team1);">🔷 HUNTERS</div>
+                <div id="team1Characters"></div>
+                <div id="team1Summons"></div>
+            </div>
+            <div class="center-column">
+                <div class="control-panel">
+                    <div class="turn-info">
+                        <div class="current-turn" id="currentTurnDisplay">Calculando...</div>
+                    </div>
+                </div>
+                <div class="battle-log">
+                    <div class="battle-log-title" style="display:flex;align-items:center;gap:8px;">
+                        <span>📜 BATTLE LOG</span>
+                        <button onclick="showBuffDebuffGuide()" style="background:rgba(0,196,255,0.15);border:1px solid #00c4ff;color:#00c4ff;font-family:'Orbitron',sans-serif;font-size:.55rem;padding:3px 7px;border-radius:6px;cursor:pointer;letter-spacing:.05em;" title="Guía de Buffs y Debuffs">📖 GUÍA</button>
+                    </div>
+                    <div id="battleLogContent"></div>
+                </div>
+            </div>
+            <div class="team-column">
+                <div style="text-align: center; font-family: 'Orbitron', sans-serif; font-size: 1.1em; color: var(--team2); margin-bottom: 10px; text-shadow: 0 0 10px var(--team2);">🔶 REAPERS</div>
+                <div id="team2Characters"></div>
+                <div id="team2Summons"></div>
+            </div>
+        </div>
+    </div>
+    <!-- ==================== END GAME BATTLE CONTAINER ==================== -->
 
-                    // Count how many times this char appears in each team
-                    const countT1 = csState.team1.filter(n => n === name).length;
-                    const countT2 = csState.team2.filter(n => n === name).length;
-                    const inT1 = countT1 > 0;
-                    const inT2 = countT2 > 0;
+    <!-- ==================== MODALS ==================== -->
+    <div class="turn-confirm-modal" id="turnConfirmModal">
+        <div class="turn-confirm-content">
+            <div class="round-counter" id="turnConfirmRound">RONDA 1</div>
+            <div class="turn-confirm-title">Siguiente Turno</div>
+            <div class="turn-confirm-subtitle" id="turnConfirmChar">Personaje</div>
+            <div class="turn-confirm-buttons">
+                <button class="turn-confirm-btn" onclick="continueTurn()">▶️ Continuar Turno</button>
+            </div>
+        </div>
+    </div>
 
-                    const card = document.createElement('div');
-                    card.className = 'cs-char-card' + (inT1 && inT2 ? ' selected-both' : inT1 ? ' selected-team1' : inT2 ? ' selected-team2' : '');
+    <div class="battle-status-modal" id="battleStatusModal">
+        <div class="battle-status-content">
+            <div class="battle-status-header">
+                <div class="battle-status-title">📊 ESTADO DE LA BATALLA</div>
+                <div class="round-counter" id="battleStatusRound">RONDA 1</div>
+            </div>
+            <div class="battle-status-teams">
+                <div class="battle-status-team team1">
+                    <div class="battle-status-team-header">🔷 HUNTERS</div>
+                    <div id="statusTeam1"></div>
+                </div>
+                <div class="battle-status-team team2">
+                    <div class="battle-status-team-header">🔶 REAPERS</div>
+                    <div id="statusTeam2"></div>
+                </div>
+            </div>
+            <button class="close-status-btn" onclick="closeBattleStatus()">Cerrar</button>
+        </div>
+    </div>
 
-                    // Portrait
-                    if (char.portrait) {
-                        const img = imgEl(char.portrait, name, 'cs-char-img');
-                        card.appendChild(img);
-                        const ph = el('div', 'cs-char-img-placeholder', '⚔️');
-                        ph.style.display = 'none';
-                        card.appendChild(ph);
-                    } else {
-                        card.appendChild(el('div', 'cs-char-img-placeholder', '⚔️'));
-                    }
+    <div class="target-selection-modal" id="targetModal">
+        <div class="target-selection-content">
+            <div class="target-selection-title" id="targetModalTitle">Selecciona un Objetivo</div>
+            <div class="target-grid" id="targetGrid"></div>
+        </div>
+    </div>
 
-                    // Info row
-                    const info = el('div', 'cs-char-info');
-                    info.appendChild(el('div', 'cs-char-name', name));
-                    info.appendChild(el('div', 'cs-char-speed', '⚡ ' + (char.speed || '?')));
-                    // Show badges for how many times selected
-                    if (inT1) {
-                        const badge = el('span', 'cs-team-badge team1', '🔷' + (countT1 > 1 ? ' x' + countT1 : ''));
-                        info.appendChild(badge);
-                    }
-                    if (inT2) {
-                        const badge = el('span', 'cs-team-badge team2', '🔶' + (countT2 > 1 ? ' x' + countT2 : ''));
-                        info.appendChild(badge);
-                    }
-                    card.appendChild(info);
+    <div class="action-modal" id="actionModal">
+        <div class="action-modal-content">
+            <div class="action-modal-header">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <div class="round-counter" id="roundCounter">RONDA 1</div>
+                    <button id="btnVolverBatalla" onclick="closeActionModal()" style="background:rgba(255,60,60,0.15);border:1px solid rgba(255,60,60,0.4);color:rgba(255,120,120,0.9);font-family:'Orbitron',sans-serif;font-size:0.7em;padding:5px 14px;border-radius:8px;cursor:pointer;letter-spacing:0.05em;" onmouseover="this.style.background='rgba(255,60,60,0.3)'" onmouseout="this.style.background='rgba(255,60,60,0.15)'">← BATALLA</button>
+                </div>
+                <div class="action-modal-hero">
+                    <div class="action-modal-portrait-wrap">
+                        <img id="actionPortraitImg" class="action-modal-portrait" src="" alt="" onerror="this.style.display='none';document.getElementById('actionPortraitFallback').style.display='flex'">
+                        <div id="actionPortraitFallback" class="action-modal-portrait-fallback" style="display:none">⚔️</div>
+                    </div>
+                    <div class="action-modal-info">
+                        <div class="action-modal-title" id="actionModalTitle">Turno de Personaje</div>
+                        <div class="action-modal-stats">
+                            <div class="action-stat">❤️ HP: <span id="actionHP">20/20</span></div>
+                            <div class="action-stat">⚡ Cargas: <span id="actionCharges">0</span></div>
+                            <div class="action-stat" id="actionShield" style="display: none;">🛡️ Escudo: <span id="actionShieldValue">0</span></div>
+                        </div>
+                        <div id="actionPassive"></div>
+                        <div id="actionStatusEffects"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="action-abilities" id="actionAbilities"></div>
+        </div>
+    </div>
 
-                    // Always clickable (duplicates allowed)
-                    card.onclick = (function(n) { return function() { csShowDetail(n); }; })(name);
-                    grid.appendChild(card);
-                } catch (err) {
-                    console.error('Error renderizando carta de', name, err);
-                }
-            }
-        }
+    <div id="charInfoPanel" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:995;justify-content:center;align-items:center;">
+        <div id="charInfoContent" style="background:linear-gradient(135deg,rgba(10,14,23,0.98),rgba(26,14,46,0.98));border:2px solid var(--primary-glow);border-radius:20px;padding:24px;max-width:420px;width:92%;max-height:85vh;overflow-y:auto;box-shadow:0 0 40px rgba(0,217,255,0.3);"></div>
+    </div>
 
-        const SUMMON_CATALOGUE = {
-            'Igris': { hp: 10, passive: 'Ataca con 3 de daño a un enemigo aleatorio al inicio de cada ronda.' },
-            'Tusk': { hp: 8, passive: 'Aplica Debuff Sangrado a un enemigo aleatorio por 2 turnos al inicio de cada ronda.' },
-            'Beru': { hp: 12, passive: 'Ataca con 5 de daño y aplica Veneno a un enemigo aleatorio al inicio de cada ronda.' },
-            'Kamish': { hp: 30, passive: 'Mega Provocación: absorbe todo el daño ST y AOE del equipo. Los atacantes reciben Quemadura 20% permanente.' },
-            'Sindragosa': { hp: 10, passive: 'Se invoca con Mega Provocación. Genera 1 carga a todo el equipo aliado cada vez que recibe daño.' },
-            'Kel Thuzad': { hp: 8, passive: 'Aplica Regeneración 20% al equipo aliado cada turno.' },
-            'Darion Morgraine': { hp: 6, passive: 'Aumenta la probabilidad de Crítico del equipo aliado en un 50%.' },
-            'Bolvar Fordragon': { hp: 6, passive: 'Duplica el daño de las habilidades del equipo aliado.' },
-            'Tirion Fordring': { hp: 3, passive: 'Mega Provocación permanente. Cura 5 HP y genera 5 cargas al equipo aliado por turno.' },
-            'Sphinx Wehem-Mesut': { hp: 8, passive: 'Cada vez que un enemigo recibe daño por Quemadura Solar, pierde 2 cargas.' },
-            'Ramesseum Tentyris': { hp: 20, passive: 'Al final de cada ronda, aplica Quemadura Solar 5% a enemigos sin ese debuff. Cuando un enemigo recibe daño por QS, todos los aliados recuperan 1 HP.' },
-            'Enkidu': { hp: 15, passive: 'Cancela todas las invocaciones activas del enemigo. Aplica Mega Aturdimiento a todos los enemigos con más de 5 cargas.' },
-        };
+    <div class="game-over-modal" id="gameOverModal">
+        <div class="game-over-content">
+            <h2 class="game-over-title" id="gameOverText">¡VICTORIA!</h2>
+            <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-top:16px;">
+                <button class="restart-btn" onclick="goToMainMenu()" style="background:linear-gradient(135deg,#00d9ff,#00ff88);">🏠 Ir al Menú Principal</button>
+                <button id="nuevaBatallaBtn" class="restart-btn" onclick="location.reload()" style="background:linear-gradient(135deg,#ff4466,#ff9900);margin-top:0;">⚔️ Nueva Batalla</button>
+                <button id="revanchaBtn" class="restart-btn" onclick="handleRevancha()" style="background:linear-gradient(135deg,#6600cc,#aa00ff);margin-top:0;display:none;">🔄 REVANCHA</button>
+            </div>
+        </div>
+    </div>
+    <!-- ==================== END MODALS ==================== -->
 
+    <!-- ==================== CHAT UI ==================== -->
+    <button id="chatToggleBtn" onclick="toggleChat()" style="position:relative;">
+        💬 CHAT
+        <span id="chatUnreadBadge" style="display:none;align-items:center;justify-content:center;background:#ff4466;color:#fff;border-radius:50%;width:18px;height:18px;font-size:.65rem;font-weight:700;position:absolute;top:-6px;right:-6px;"></span>
+    </button>
+    <div id="chatPanel">
+        <div id="chatHeader">
+            <span>💬 CHAT EN PARTIDA</span>
+            <button onclick="toggleChat()" style="background:none;border:none;color:#666;cursor:pointer;font-size:1rem;">✕</button>
+        </div>
+        <div id="chatMessages"></div>
+        <div id="chatInputRow">
+            <input id="chatInput" type="text" placeholder="Escribe un mensaje..." maxlength="120" onkeydown="if(event.key==='Enter')sendChatMessage()">
+            <button id="chatSendBtn" onclick="sendChatMessage()">➤</button>
+        </div>
+    </div>
+    <!-- ==================== END CHAT UI ==================== -->
 
-        function csShowDetail(name) {
-            try {
-                const char = characterData[name];
-                if (!char) { console.error('Character not found:', name); return; }
-                csState.pendingChar = name;
+    <!-- ==================== JAVASCRIPT MODULES ==================== -->
+    <!-- 1. Firebase, Auth, Lobby, Online -->
+    <script src="js/firebase-auth.js"></script>
+    <!-- 2. Datos de personajes -->
+    <script src="js/characters.js"></script>
+    <!-- 3. Estado del juego + Audio Manager -->
+    <script src="js/audio-state.js"></script>
+    <!-- 4. Character Select Screen -->
+    <script src="js/character-select.js"></script>
+    <!-- 5. IA Engine -->
+    <script src="js/ai-engine.js"></script>
+    <!-- 6. Inicialización + Orden de turnos + Renderizado -->
+    <script src="js/init-render.js"></script>
+    <!-- 7. Lógica de turnos -->
+    <script src="js/turn-logic.js"></script>
+    <!-- 8. Procesamiento de efectos de estado -->
+    <script src="js/status-effects.js"></script>
+    <!-- 9. Aplicadores de debuffs -->
+    <script src="js/debuffs.js"></script>
+    <!-- 10. Invocaciones -->
+    <script src="js/summons.js"></script>
+    <!-- 11. Selección de habilidad + Selección de objetivo -->
+    <script src="js/ability-select.js"></script>
+    <!-- 12. Ejecución de habilidades (skills) -->
+    <script src="js/skills.js"></script>
+    <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
-                // In online mode, always use the player's assigned team
-                const currentTeam = (csState.gameMode === 'online' && csState.onlineTeam) ? csState.onlineTeam : csState.phase;
-                const isT1 = currentTeam === 'team1';
-                const teamLabel = isT1 ? '🔷 HUNTERS' : '🔶 REAPERS';
-                const teamColor = isT1 ? 'var(--team1)' : 'var(--team2)';
-
-                const modal = document.getElementById('csDetailContent');
-                modal.innerHTML = '';
-
-                // ── Hero section ──────────────────────────────────────────
-                const hero = el('div', 'cs-detail-hero');
-
-                // Portrait
-                const portraitWrap = el('div', 'cs-detail-portrait-wrap');
-                if (char.portrait) {
-                    const img = imgEl(char.portrait, name, 'cs-detail-portrait');
-                    portraitWrap.appendChild(img);
-                    const ph = el('div', 'cs-detail-portrait-fallback', '⚔️');
-                    ph.style.display = 'none';
-                    portraitWrap.appendChild(ph);
-                } else {
-                    portraitWrap.appendChild(el('div', 'cs-detail-portrait-fallback', '⚔️'));
-                }
-                hero.appendChild(portraitWrap);
-
-                // Meta
-                const meta = el('div', 'cs-detail-meta');
-                meta.appendChild(el('div', 'cs-detail-name', name));
-
-                const stats = el('div', 'cs-detail-stats');
-                stats.appendChild(el('div', 'cs-detail-stat', '⚡ Velocidad: ' + (char.speed || '?')));
-                stats.appendChild(el('div', 'cs-detail-stat', '💚 HP: ' + (char.hp || '?')));
-                meta.appendChild(stats);
-
-                if (char.passive) {
-                    const passiveBox = el('div', 'cs-detail-passive');
-                    passiveBox.appendChild(el('div', 'cs-detail-passive-title', '✨ PASIVA: ' + char.passive.name));
-                    const pdesc = el('div', '', char.passive.description);
-                    pdesc.style.opacity = '0.85';
-                    passiveBox.appendChild(pdesc);
-                    meta.appendChild(passiveBox);
-                }
-                hero.appendChild(meta);
-                modal.appendChild(hero);
-
-                // ── Abilities ─────────────────────────────────────────────
-                const abilitiesWrap = el('div', 'cs-detail-abilities');
-                const SUMMON_EFFECT_MAP = {
-                    'summon_shadows': ['Igris', 'Tusk', 'Beru'],
-                    'summon_kamish': ['Kamish'],
-                    'el_rey_caido': ['Sindragosa', 'Kel Thuzad', 'Darion Morgraine', 'Bolvar Fordragon', 'Tirion Fordring'],
-                    'summon_sphinx': ['Sphinx Wehem-Mesut'],
-                    'summon_ramesseum': ['Ramesseum Tentyris'],
-                    'enkidu': ['Enkidu'],
-                };
-                (char.abilities || []).forEach(ab => {
-                    const abilDiv = el('div', 'cs-detail-ability');
-                    const nameRow = el('div', '', '');
-                    nameRow.style.display = 'flex'; nameRow.style.alignItems = 'center'; nameRow.style.gap = '6px';
-                    nameRow.appendChild(el('div', 'cs-detail-ability-name', ab.name || ''));
-                    // Summon info button
-                    const summonList = SUMMON_EFFECT_MAP[ab.effect];
-                    if (summonList) {
-                        summonList.forEach(function(sName) {
-                            const btn = document.createElement('button');
-                            btn.textContent = '🔮';
-                            btn.title = 'Ver info de invocación: ' + sName;
-                            btn.style.cssText = 'background:rgba(168,85,247,0.2);border:1px solid #a855f7;color:#a855f7;border-radius:6px;cursor:pointer;padding:2px 6px;font-size:.75rem;';
-                            btn.onclick = (function(n) { return function(e) { e.stopPropagation(); e.preventDefault(); showSummonInfo(n, e); }; })(sName);
-                            nameRow.appendChild(btn);
-                        });
-                    }
-                    abilDiv.appendChild(nameRow);
-                    abilDiv.appendChild(el('div', 'cs-detail-ability-desc', ab.description || 'Sin descripcion.'));
-                    const footer = el('div', 'cs-detail-ability-footer');
-                    footer.appendChild(el('span', 'cs-detail-ability-cost', '💎 ' + (ab.cost || 0)));
-                    footer.appendChild(el('span', 'cs-detail-ability-type', ab.type || ''));
-                    abilDiv.appendChild(footer);
-                    abilitiesWrap.appendChild(abilDiv);
-                });
-                modal.appendChild(abilitiesWrap);
-
-                // ── Question ──────────────────────────────────────────────
-                const question = el('div', 'cs-detail-question');
-                question.appendChild(document.createTextNode('¿Añadir '));
-                const nameSpan = el('span', '', name);
-                nameSpan.style.color = teamColor;
-                nameSpan.style.fontWeight = '700';
-                question.appendChild(nameSpan);
-                question.appendChild(document.createTextNode(' a '));
-                const teamSpan = el('span', '', teamLabel);
-                teamSpan.style.color = teamColor;
-                question.appendChild(teamSpan);
-                question.appendChild(document.createTextNode('?'));
-                modal.appendChild(question);
-
-                // ── Buttons ───────────────────────────────────────────────
-                const btns = el('div', 'cs-detail-btns');
-                const btnYes = el('button', 'cs-confirm-btn yes', '✅ Sí, seleccionar');
-                btnYes.onclick = function() { csConfirm(true); };
-                const btnNo = el('button', 'cs-confirm-btn no', '❌ No, cancelar');
-                btnNo.onclick = function() { csConfirm(false); };
-                btns.appendChild(btnYes);
-                btns.appendChild(btnNo);
-                modal.appendChild(btns);
-
-                document.getElementById('csDetailModal').classList.add('show');
-
-            } catch(err) {
-                console.error('Error en csShowDetail para', name, err);
-                // Fallback seguro
-                try {
-                    const modal = document.getElementById('csDetailContent');
-                    modal.innerHTML = '';
-                    const errDiv = el('div', '', '');
-                    errDiv.style.cssText = 'padding:20px;text-align:center;';
-                    errDiv.appendChild(el('div', '', '⚠️ Error cargando ' + name));
-                    const btnClose = el('button', 'cs-confirm-btn no', '❌ Cerrar');
-                    btnClose.onclick = function() { csConfirm(false); };
-                    errDiv.appendChild(btnClose);
-                    modal.appendChild(errDiv);
-                    document.getElementById('csDetailModal').classList.add('show');
-                } catch(e2) {}
-            }
-        }
-
-        function csConfirm(yes) {
-            try {
-                document.getElementById('csDetailModal').classList.remove('show');
-
-                if (!yes || !csState.pendingChar) {
-                    csState.pendingChar = null;
-                    return;
-                }
-
-                const name = csState.pendingChar;
-                csState.pendingChar = null;
-                audioManager.playSelect();
-
-                // Determine which team to add to
-                let effectivePhase;
-                if (csState.gameMode === 'online') {
-                    effectivePhase = csState.onlineTeam; // always use assigned team
-                } else {
-                    effectivePhase = csState.phase;
-                }
-                console.log('[OVERSTRIKE DEBUG] csConfirm:', name, '| gameMode:', csState.gameMode, '| onlineTeam:', csState.onlineTeam, '| effectivePhase:', effectivePhase, '| team1:', csState.team1.length, '| team2:', csState.team2.length);
-
-                if (effectivePhase === 'team1') {
-                    // Prevent same character twice in same team
-                    if (csState.team1.includes(name)) {
-                        alert('⚠️ ' + name + ' ya está en tu equipo. Cada personaje solo puede aparecer una vez por equipo.');
-                        return;
-                    }
-                    csState.team1.push(name);
-                    if (csState.team1.length >= CS_TEAM_SIZE) {
-                        if (csState.gameMode === 'solo') {
-                            csState.phase = 'done';
-                            csAIPickTeam();
-                            csRenderSlots();
-                            setTimeout(function() { csStartGame(); }, 800);
-                            return;
-                        } else if (csState.gameMode === 'online') {
-                            csState.phase = 'done';
-                            csRenderSlots();
-                            csRenderGrid();
-                            showOnlineReadyBtn();
-                            return;
-                        } else {
-                            csState.phase = 'team2';
-                            const lbl = document.getElementById('csPhaseLabel');
-                            lbl.textContent = '🔶 REAPERS — Elige tus 5 personajes';
-                            lbl.className = 'cs-phase-label team2';
-                        }
-                    }
-                } else if (effectivePhase === 'team2') {
-                    if (csState.team2.includes(name)) {
-                        alert('⚠️ ' + name + ' ya está en tu equipo. Cada personaje solo puede aparecer una vez por equipo.');
-                        return;
-                    }
-                    csState.team2.push(name);
-                    if (csState.team2.length >= CS_TEAM_SIZE) {
-                        if (csState.gameMode === 'online') {
-                            csState.phase = 'done';
-                            csRenderSlots();
-                            csRenderGrid();
-                            showOnlineReadyBtn();
-                            return;
-                        }
-                        csState.phase = 'done';
-                        csStartGame();
-                        return;
-                    }
-                }
-
-                csRenderSlots();
-                csRenderGrid();
-            } catch(err) {
-                console.error('Error en csConfirm:', err);
-            }
-        }
-
-        function csAIPickTeam() {
-            // Si hay revancha con equipo IA pre-cargado, usarlo tal cual
-            if (window._revanchaAITeamFixed && csState.team2 && csState.team2.length === CS_TEAM_SIZE) {
-                window._revanchaAITeamFixed = false;
-                addLog('🤖 La IA repite su equipo anterior.', 'info');
-                return;
-            }
-            window._revanchaAITeamFixed = false;
-            // IA elige 5 personajes aleatorios
-            const allNames = Object.keys(characterData).filter(n => characterData[n] && characterData[n].abilities);
-            const shuffled = allNames.slice().sort(() => Math.random() - 0.5);
-            csState.team2 = shuffled.slice(0, CS_TEAM_SIZE);
-            addLog('🤖 La IA ha seleccionado su equipo.', 'info');
-        }
-
-        function csStartGame() {
-            try {
-                const selectedChars = {};
-                // Handle duplicate names: add suffix for duplicates
-                const nameCount = {};
-                const allSelected = csState.team1.map(n=>({name:n,team:'team1'})).concat(csState.team2.map(n=>({name:n,team:'team2'})));
-                allSelected.forEach(function(entry) {
-                    const base = entry.name;
-                    nameCount[base] = (nameCount[base] || 0) + 1;
-                    // NOTE: Firebase keys cannot contain '#' — use 'v2', 'v3' suffix instead
-                    const key = nameCount[base] > 1 ? base + ' v' + nameCount[base] : base;
-                    const charCopy = JSON.parse(JSON.stringify(characterData[base]));
-                    charCopy.team = entry.team;
-                    charCopy.baseName = base; // keep reference to original name for data
-                    selectedChars[key] = charCopy;
-                });
-
-                document.getElementById('charSelectScreen').style.display = 'none';
-                document.querySelector('.game-container').style.display = 'block';
-
-                initGame(selectedChars);
-                const modeLabel = csState.gameMode === 'solo' ? '🤖 Modo Solitario — ¡Buena suerte contra la IA!' : '👥 Modo Multijugador';
-                addLog('🎮 ¡Batalla iniciada! ' + modeLabel, 'info');
-                // In online mode: start syncing game state
-                if (csState.gameMode === 'online') {
-                    // Push initial state so both players see the first turn
-                    setTimeout(function() {
-                        if (isRoomHost) {
-                            // Host pushes initial game state so guest knows whose turn it is
-                            pushGameState();
-                        }
-                        listenGameState();
-                    }, 500);
-                }
-                // Store game mode in gameState so AI loop can check
-                gameState.gameMode = csState.gameMode;
-                gameState.aiTeam = 'team2';
-                // Ranked mode: mark for stats tracking
-                if (window._rankedMode) {
-                    gameState.gameMode = 'ranked';
-                    // Show fake opponent name in logs if vs IA
-                    if (window._rankedFakeOpponent) {
-                        addLog('🏆 RANKED: ' + (currentUser ? currentUser.displayName || 'Jugador' : 'Jugador') + ' vs ' + window._rankedFakeOpponent, 'info');
-                    }
-                }
-                audioManager.playRandomBattle();
-            } catch(err) {
-                console.error('Error en csStartGame:', err);
-            }
-        }
+</body>
+</html>
 
 
