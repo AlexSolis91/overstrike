@@ -2903,12 +2903,44 @@
             // Mostrar "Nueva Batalla" solo en modo IA (no online)
             const nuevaBatallaBtn = document.getElementById('nuevaBatallaBtn');
             if (nuevaBatallaBtn) nuevaBatallaBtn.style.display = onlineMode ? 'none' : '';
-            // #8: Botón Revancha
+            // Revancha
             const revanchaBtn = document.getElementById('revanchaBtn');
             if (revanchaBtn) revanchaBtn.style.display = 'block';
             document.getElementById('gameOverModal').classList.add('show');
             audioManager.stopBattleMusic();
             audioManager.play('audioMenu');
+
+            // Guardar el equipo de la IA para revancha (solo modo solo o ranked vs IA)
+            if (gameState.gameMode === 'solo' || gameState.gameMode === 'ranked') {
+                const aiNames = [];
+                for (const k in gameState.characters) {
+                    const c = gameState.characters[k];
+                    if (c && c.team === 'team2') aiNames.push(c.baseName || k);
+                }
+                window._lastAITeam = aiNames;
+            }
+
+            // Guardar estadísticas Ranked si aplica
+            if (window._rankedMode) {
+                try {
+                    const myTeam = onlineMode ? (isRoomHost ? 'team1' : 'team2') : 'team1';
+                    const playerChars = [], opponentChars = [];
+                    for (const k in gameState.characters) {
+                        const c = gameState.characters[k];
+                        if (!c) continue;
+                        const bn = c.baseName || k;
+                        if (c.team === myTeam) playerChars.push(bn);
+                        else opponentChars.push(bn);
+                    }
+                    // Determine winner team from message
+                    const winTeam = message.includes('HUNTERS') ? 'team1' : 'team2';
+                    const oppName = window._rankedFakeOpponent || window._rankedOpponentName || 'Rival';
+                    if (typeof saveRankedResult === 'function') {
+                        saveRankedResult(winTeam, myTeam, playerChars, oppName, opponentChars);
+                    }
+                } catch(e) { console.error('saveRankedResult error', e); }
+            }
+
             // Online: push game over so the loser also sees the modal
             if (onlineMode && currentRoomId) {
                 db.ref('rooms/' + currentRoomId + '/gameState').update({
@@ -2933,19 +2965,83 @@
         }
 
         function handleRevancha() {
-            // Modo IA: reiniciar directamente con los mismos equipos
-            if (gameState.gameMode === 'solo') {
-                location.reload();
-                return;
-            }
-            // Modo local multi: reiniciar directamente
-            if (gameState.gameMode === 'multi') {
-                location.reload();
-                return;
-            }
-            // Modo online: ir a selección de personajes
             document.getElementById('gameOverModal').classList.remove('show');
-            goToMainMenu();
+
+            // ── Modo IA (solo o ranked vs IA) ──
+            // El jugador elige personajes nuevos; la IA repite su último equipo.
+            if (gameState.gameMode === 'solo' || gameState.gameMode === 'ranked') {
+                const aiTeam = window._lastAITeam || [];
+                audioManager.stopBattleMusic();
+                // Limpiar listeners online si hubiera
+                if (onlineMode && currentRoomId) {
+                    try { db.ref('rooms/' + currentRoomId).remove(); } catch(e) {}
+                    onlineMode = false; currentRoomId = null;
+                }
+                document.querySelector('.game-container').style.display = 'none';
+                // Restaurar estado de csState con el equipo de la IA pre-cargado
+                csState.team1 = [];
+                csState.team2 = aiTeam.slice();
+                csState.phase = 'team1';
+                csState.gameMode = 'solo';
+                csState.pendingChar = null;
+                // Mostrar pantalla de selección
+                showScreen('charSelectScreen');
+                csInit();
+                // Marcar equipo IA como fijo (el jugador solo elige team1)
+                window._revanchaAITeamFixed = true;
+                audioManager.play('audioMenu');
+                return;
+            }
+
+            // ── Modo local multi ──
+            // Ambos jugadores eligen de nuevo desde cero.
+            if (gameState.gameMode === 'multi') {
+                audioManager.stopBattleMusic();
+                document.querySelector('.game-container').style.display = 'none';
+                csState.team1 = [];
+                csState.team2 = [];
+                csState.phase = 'team1';
+                csState.gameMode = 'multi';
+                csState.pendingChar = null;
+                showScreen('charSelectScreen');
+                csInit();
+                audioManager.play('audioMenu');
+                return;
+            }
+
+            // ── Modo online ──
+            // Enviar solicitud de revancha al rival; él elige aceptar o rechazar.
+            if (onlineMode && currentRoomId && currentUser) {
+                db.ref('rooms/' + currentRoomId + '/revancha').set({
+                    fromUid: currentUser.uid,
+                    fromName: currentUser.displayName || 'Jugador',
+                    status: 'pending',
+                    ts: Date.now()
+                });
+                // Mostrar estado de espera en el modal
+                const revBtn = document.getElementById('revanchaBtn');
+                if (revBtn) { revBtn.disabled = true; revBtn.textContent = '⏳ Esperando respuesta...'; }
+                // Escuchar la respuesta
+                db.ref('rooms/' + currentRoomId + '/revancha/status').on('value', function(snap) {
+                    const status = snap.val();
+                    if (status === 'accepted') {
+                        db.ref('rooms/' + currentRoomId + '/revancha/status').off();
+                        // Reiniciar sala y volver a selección de personajes
+                        db.ref('rooms/' + currentRoomId + '/revancha').remove();
+                        db.ref('rooms/' + currentRoomId + '/gameState').remove();
+                        db.ref('rooms/' + currentRoomId + '/selections').remove();
+                        db.ref('rooms/' + currentRoomId + '/status').set('waiting');
+                        // Redirigir a selección
+                        startOnlineGame(currentRoomId, isRoomHost);
+                    } else if (status === 'rejected') {
+                        db.ref('rooms/' + currentRoomId + '/revancha/status').off();
+                        db.ref('rooms/' + currentRoomId + '/revancha').remove();
+                        goToMainMenu();
+                    }
+                });
+            } else {
+                goToMainMenu();
+            }
         }
 
         // ==================== BATTLE LOG ====================
