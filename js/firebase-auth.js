@@ -85,11 +85,8 @@
         }
 
         function goToLocalMode(mode) {
-            showScreen('modeSelectScreen');
-            const backBtn = document.getElementById('backToLobbyBtn');
-            if (backBtn) backBtn.style.display = 'block';
-            // Trigger existing local mode selection
-            setTimeout(function() { csSelectMode(mode); }, 100);
+            // Go directly to char select - skip modeSelectScreen entirely from lobby
+            csSelectMode(mode);
         }
 
         function trackOnlinePresence() {
