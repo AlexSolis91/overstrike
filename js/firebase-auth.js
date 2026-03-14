@@ -488,27 +488,30 @@
                 modal = document.createElement('div');
                 modal.id = 'rankedSearchModal';
                 modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:10000;display:flex;align-items:center;justify-content:center;';
-                modal.innerHTML = [
-                    '<div style="background:linear-gradient(135deg,#0a0e17,#0d1525);border:2px solid #ffaa00;border-radius:20px;padding:2.5rem 3rem;text-align:center;max-width:380px;box-shadow:0 0 50px rgba(255,170,0,0.3);">',
-                    '<div style="font-size:2.5rem;margin-bottom:.8rem;animation:loginPulse 1s infinite;">🔍</div>',
-                    '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:#ffaa00;margin-bottom:.5rem;letter-spacing:.1em;">BUSCANDO RIVAL...</div>',
-                    '<div style="color:#888;font-size:.85rem;margin-bottom:1.5rem;">Conectando con otro jugador online</div>',
-                    '<div id="rankedTimerDisplay" style="font-family:Orbitron,sans-serif;font-size:2rem;color:#fff;margin-bottom:1.5rem;">10</div>',
-                    '<div style="width:100%;height:4px;background:rgba(255,170,0,0.2);border-radius:2px;overflow:hidden;">',
-                    '<div id="rankedTimerBar" style="height:100%;background:linear-gradient(90deg,#ffaa00,#ff6600);width:100%;transition:width 1s linear;border-radius:2px;"></div>',
-                    '</div>',
-                    '<button onclick="cancelRankedSearch()" style="margin-top:1.5rem;background:rgba(255,51,102,0.15);border:1px solid #ff3366;color:#ff3366;border-radius:10px;padding:10px 24px;cursor:pointer;font-size:.85rem;">Cancelar</button>',
-                    '</div>'
-                ].join('');
+                document.body.appendChild(modal); // append FIRST so querySelector works
             }
+            modal.innerHTML = [
+                '<div style="background:linear-gradient(135deg,#0a0e17,#0d1525);border:2px solid #ffaa00;border-radius:20px;padding:2.5rem 3rem;text-align:center;max-width:380px;box-shadow:0 0 50px rgba(255,170,0,0.3);">',
+                '<div style="font-size:2.5rem;margin-bottom:.8rem;">&#x1F50D;</div>',
+                '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:#ffaa00;margin-bottom:.5rem;letter-spacing:.1em;">BUSCANDO RIVAL...</div>',
+                '<div style="color:#888;font-size:.85rem;margin-bottom:1.5rem;">Conectando con otro jugador online</div>',
+                '<div id="rankedTimerDisplay" style="font-family:Orbitron,sans-serif;font-size:2rem;color:#fff;margin-bottom:1.5rem;">10</div>',
+                '<div style="width:100%;height:6px;background:rgba(255,170,0,0.2);border-radius:3px;overflow:hidden;">',
+                '<div id="rankedTimerBar" style="height:100%;background:linear-gradient(90deg,#ffaa00,#ff6600);width:100%;border-radius:3px;transition:width 1s linear;"></div>',
+                '</div>',
+                '<button id="cancelRankedBtn" style="margin-top:1.5rem;background:rgba(255,51,102,0.15);border:1px solid #ff3366;color:#ff3366;border-radius:10px;padding:10px 24px;cursor:pointer;font-size:.85rem;">&#x274C; Cancelar</button>',
+                '</div>'
+            ].join('');
+            modal.querySelector('#cancelRankedBtn').onclick = cancelRankedSearch;
             modal.style.display = 'flex';
             // Countdown animation
             let timeLeft = 10;
-            const timerEl = document.getElementById('rankedTimerDisplay');
-            const barEl = document.getElementById('rankedTimerBar');
+            const timerEl = modal.querySelector('#rankedTimerDisplay');
+            const barEl = modal.querySelector('#rankedTimerBar');
             if (timerEl) timerEl.textContent = '10';
-            if (barEl) barEl.style.width = '100%';
+            if (barEl) { barEl.style.transition = 'none'; barEl.style.width = '100%'; }
             if (rankedSearchInterval) clearInterval(rankedSearchInterval);
+            setTimeout(function() { if (barEl) barEl.style.transition = 'width 1s linear'; }, 50);
             rankedSearchInterval = setInterval(function() {
                 timeLeft--;
                 if (timerEl) timerEl.textContent = timeLeft;
@@ -581,16 +584,16 @@
                 modal = document.createElement('div');
                 modal.id = 'leaderboardModal';
                 modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:10000;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px;box-sizing:border-box;';
+                document.body.appendChild(modal); // append FIRST
                 modal.innerHTML = [
                     '<div style="width:100%;max-width:800px;background:#0a0e17;border:2px solid #ffaa00;border-radius:20px;padding:24px;">',
                     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">',
                     '<div style="font-family:Orbitron,sans-serif;font-size:1.2rem;color:#ffaa00;text-shadow:0 0 12px #ffaa00;">&#x1F3C6; RANKED LEADERBOARD</div>',
                     '<button id="leaderboardCloseBtn" style="background:#ff4466;border:none;color:#fff;font-size:1.1rem;width:34px;height:34px;border-radius:50%;cursor:pointer;">&#x2715;</button>',
                     '</div>',
-                    '<div id="leaderboardContent" style="color:#888;text-align:center;padding:2rem;">Cargando estad\u00edsticas...</div>',
+                    '<div id="leaderboardContent" style="color:#888;text-align:center;padding:2rem;">Cargando estadísticas...</div>',
                     '</div>'
                 ].join('');
-                document.body.appendChild(modal);
                 modal.querySelector('#leaderboardCloseBtn').onclick = function() {
                     modal.style.display = 'none';
                 };
