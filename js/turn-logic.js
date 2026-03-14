@@ -346,7 +346,7 @@
                     // Update turn display
                     const turnDisp = document.getElementById('currentTurnDisplay');
                     if (turnDisp) {
-                        const teamLabel = activeTeam === 'team1' ? 'HUNTERS' : 'REAPERS';
+                        const teamLabel = (typeof getTeamLabel === 'function') ? getTeamLabel(activeTeam) : (activeTeam === 'team1' ? 'HUNTERS' : 'REAPERS');
                         turnDisp.textContent = 'TURNO: ' + charName + ' (' + teamLabel + ')';
                         turnDisp.style.color = activeTeam === 'team1' ? 'var(--team1)' : 'var(--team2)';
                     }
@@ -691,7 +691,7 @@
 
             // Colores por equipo
             const teamColor = char.team === 'team1' ? 'var(--team1)' : 'var(--team2)';
-            const teamLabel = char.team === 'team1' ? '🔷 HUNTERS' : '🔶 REAPERS';
+            const teamLabel = (typeof getTeamLabel === 'function') ? ((char.team === 'team1' ? '🔷 ' : '🔶 ') + getTeamLabel(char.team)) : (char.team === 'team1' ? '🔷 HUNTERS' : '🔶 REAPERS');
 
             // Portrait
             const isTransformed = (char.rikudoMode && name === 'Madara Uchiha') ||
@@ -1056,7 +1056,7 @@
             const currentCharName = gameState.selectedCharacter;
             const currentChar = gameState.characters[currentCharName];
             document.getElementById('currentTurnDisplay').textContent = 
-                `🎯 TURNO: ${currentCharName} (${currentChar.team === 'team1' ? 'HUNTERS' : 'REAPERS'})`;
+                `🎯 TURNO: ${currentCharName} (${typeof getTeamLabel === 'function' ? getTeamLabel(currentChar.team) : (currentChar.team === 'team1' ? 'HUNTERS' : 'REAPERS')})`;
         }
 
         function highlightActiveCharacter() {
@@ -1316,7 +1316,7 @@
                     if (s.dragonEffect === 'mega_prov_aoe_dmg') {
                         // Drogon: inflige 3 daño AOE al equipo enemigo
                         const drogTeam = s.team === 'team1' ? 'team2' : 'team1';
-                        addLog(`🔴 Drogon (Pasiva): inflige 3 de daño AOE al equipo ${drogTeam === 'team1' ? 'HUNTERS' : 'REAPERS'}`, 'damage');
+                        addLog(`🔴 Drogon (Pasiva): inflige 3 de daño AOE al equipo ${typeof getTeamLabel === 'function' ? getTeamLabel(drogTeam) : (drogTeam === 'team1' ? 'HUNTERS' : 'REAPERS')}`, 'damage');
                         for (let n in gameState.characters) {
                             const c = gameState.characters[n];
                             if (c && c.team === drogTeam && !c.isDead && c.hp > 0) {
@@ -1327,7 +1327,7 @@
                     } else if (s.dragonEffect === 'burn_team') {
                         // Rhaegal: aplica Quemadura 10% por 1 turno a todo el equipo enemigo
                         const rhTeam = s.team === 'team1' ? 'team2' : 'team1';
-                        addLog(`🟢 Rhaegal (Pasiva): aplica Quemadura 10% al equipo ${rhTeam === 'team1' ? 'HUNTERS' : 'REAPERS'}`, 'damage');
+                        addLog(`🟢 Rhaegal (Pasiva): aplica Quemadura 10% al equipo ${typeof getTeamLabel === 'function' ? getTeamLabel(rhTeam) : (rhTeam === 'team1' ? 'HUNTERS' : 'REAPERS')}`, 'damage');
                         for (let n in gameState.characters) {
                             const c = gameState.characters[n];
                             if (c && c.team === rhTeam && !c.isDead && c.hp > 0) {
