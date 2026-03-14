@@ -590,10 +590,10 @@
                     '<div id="leaderboardContent" style="color:#888;text-align:center;padding:2rem;">Cargando estad\u00edsticas...</div>',
                     '</div>'
                 ].join('');
-                document.getElementById('leaderboardCloseBtn').onclick = function() {
-                    document.getElementById('leaderboardModal').style.display = 'none';
-                };
                 document.body.appendChild(modal);
+                modal.querySelector('#leaderboardCloseBtn').onclick = function() {
+                    modal.style.display = 'none';
+                };
             }
             modal.style.display = 'flex';
             loadLeaderboardData();
