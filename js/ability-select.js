@@ -103,7 +103,7 @@
                     <button class="target-btn" onclick="executeAbility(null)" style="border-color: var(--danger); background: linear-gradient(135deg, rgba(255,51,102,0.3), rgba(255,0,80,0.2)); min-height:80px;">
                         <div class="target-btn-info" style="padding:20px;">
                             💥 Confirmar AOE<br>
-                            <small>${targetTeam === 'team2' ? '🔶 REAPERS' : '🔷 HUNTERS'}</small>
+                            <small>${'🔷🔶'.split('')[targetTeam === 'team2' ? 1 : 0]} ${typeof getTeamLabel === 'function' ? getTeamLabel(targetTeam) : (targetTeam === 'team2' ? 'REAPERS' : 'HUNTERS')}</small>
                         </div>
                     </button>
                 `;
@@ -367,8 +367,8 @@
             if (attackerName !== 'Gilgamesh') return;
             const gil = gameState.characters['Gilgamesh'];
             if (!gil || gil.isDead || gil.hp <= 0) return;
-            gil.charges = Math.min(20, (gil.charges || 0) + 1);
-            addLog(`👑 Regla de Oro: Gilgamesh gana 1 carga por golpe crítico`, 'buff');
+            gil.charges += 2;
+            addLog(`👑 Regla de Oro: Gilgamesh gana 2 cargas por golpe crítico`, 'buff');
         }
 
         // ── PASIVA ENTRENAMIENTO DE LOS DIOSES (Goku): +1 vel y +1 daño en crítico ──
