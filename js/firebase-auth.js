@@ -463,15 +463,25 @@
                 // Pick a random fake opponent name
                 const fakeName = RANKED_FAKE_NAMES[Math.floor(Math.random() * RANKED_FAKE_NAMES.length)];
                 window._rankedFakeOpponent = fakeName;
-                window._rankedRoomId = null; // vs IA, no real room
-                // Start solo game (vs IA), mode = 'ranked_solo' 
+                window._rankedRoomId = null;
+                window._rankedMode = true;
+                // Set team names: real player vs fake AI opponent
+                const myName = currentUser ? (currentUser.displayName || 'Jugador') : 'Jugador';
+                window._teamNames = { team1: myName, team2: fakeName };
+                // Start vs IA
                 csState.team1 = [];
                 csState.team2 = [];
                 csState.phase = 'team1';
                 csState.gameMode = 'solo';
                 csState.pendingChar = null;
-                window._rankedMode = true;
                 showScreen('charSelectScreen');
+                // Update char select labels
+                const lbl = document.getElementById('csPhaseLabel');
+                if (lbl) { lbl.textContent = '🔷 ' + myName + ' — Elige tus 5 personajes (Ranked)'; lbl.className = 'cs-phase-label team1'; }
+                const n1 = document.getElementById('csTeamName1');
+                if (n1) n1.textContent = myName;
+                const n2 = document.getElementById('csTeamName2');
+                if (n2) n2.textContent = fakeName;
                 csInit();
                 audioManager.play('audioMenu');
             }, 10000);
@@ -868,7 +878,7 @@
             // Reset csState completely
             csState.team1 = [];
             csState.team2 = [];
-            csState.phase = 'team1'; // will be overridden below
+            csState.phase = 'team1';
             csState.pendingChar = null;
             csState.gameMode = 'online';
             csState.onlineTeam = asHost ? 'team1' : 'team2';
@@ -877,15 +887,35 @@
             initChat(roomId);
             listenForRevanchaRequest(roomId);
 
-            // Update label to show which team this player is
-            const lbl = document.getElementById('csPhaseLabel');
-            if (asHost) {
-                lbl.textContent = '🔷 HUNTERS — Elige tus 5 personajes';
-                lbl.className = 'cs-phase-label team1';
-            } else {
-                lbl.textContent = '🔶 REAPERS — Elige tus 5 personajes';
-                lbl.className = 'cs-phase-label team2';
-            }
+            // Fetch room to get both player names, then update UI
+            db.ref('rooms/' + roomId).once('value', function(snap) {
+                const room = snap.val() || {};
+                const hostName = (room.host && room.host.name) ? room.host.name : 'Jugador 1';
+                const guestName = (room.guest && room.guest.name) ? room.guest.name : 'Jugador 2';
+                window._teamNames = { team1: hostName, team2: guestName };
+
+                const lbl = document.getElementById('csPhaseLabel');
+                const myName = asHost ? hostName : guestName;
+                if (asHost) {
+                    if (lbl) { lbl.textContent = '🔷 ' + myName + ' — Elige tus 5 personajes'; lbl.className = 'cs-phase-label team1'; }
+                } else {
+                    if (lbl) { lbl.textContent = '🔶 ' + myName + ' — Elige tus 5 personajes'; lbl.className = 'cs-phase-label team2'; }
+                }
+                // Update char select team name spans
+                const n1 = document.getElementById('csTeamName1');
+                if (n1) n1.textContent = hostName;
+                const n2 = document.getElementById('csTeamName2');
+                if (n2) n2.textContent = guestName;
+                // Update battle headers too
+                const h1 = document.getElementById('teamHeader1');
+                if (h1) h1.textContent = '🔷 ' + hostName;
+                const h2 = document.getElementById('teamHeader2');
+                if (h2) h2.textContent = '🔶 ' + guestName;
+                const sh1 = document.getElementById('statusHeader1');
+                if (sh1) sh1.textContent = '🔷 ' + hostName;
+                const sh2 = document.getElementById('statusHeader2');
+                if (sh2) sh2.textContent = '🔶 ' + guestName;
+            });
 
             console.log('[OVERSTRIKE DEBUG] startOnlineGame: asHost=', asHost, '| onlineTeam=', csState.onlineTeam, '| gameMode=', csState.gameMode);
             csInit();
