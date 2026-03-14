@@ -2791,10 +2791,10 @@
             }
             
             if (team1Alive === 0) {
-                showGameOver('🔶 REAPERS GANAN!');
+                showGameOver('🔶 ' + (typeof getTeamLabel === 'function' ? getTeamLabel('team2') : 'REAPERS') + ' GANAN!');
                 return true;
             } else if (team2Alive === 0) {
-                showGameOver('🔷 HUNTERS GANAN!');
+                showGameOver('🔷 ' + (typeof getTeamLabel === 'function' ? getTeamLabel('team1') : 'HUNTERS') + ' GANAN!');
                 return true;
             }
             
@@ -2933,7 +2933,9 @@
                         else opponentChars.push(bn);
                     }
                     // Determine winner team from message
-                    const winTeam = message.includes('HUNTERS') ? 'team1' : 'team2';
+                    // Detect winner team: check if team1 name or HUNTERS is in the message
+                    const t1name = (window._teamNames && window._teamNames.team1) || 'HUNTERS';
+                    const winTeam = message.includes(t1name) || message.includes('HUNTERS') ? 'team1' : 'team2';
                     const oppName = window._rankedFakeOpponent || window._rankedOpponentName || 'Rival';
                     if (typeof saveRankedResult === 'function') {
                         saveRankedResult(winTeam, myTeam, playerChars, oppName, opponentChars);
@@ -2959,7 +2961,7 @@
             // Determinar qué equipo se rinde (el del personaje activo)
             const activeChar = gameState.characters[gameState.selectedCharacter];
             const losingTeam = activeChar ? activeChar.team : 'team1';
-            const winMessage = losingTeam === 'team1' ? '🔶 REAPERS GANAN! (Rendición)' : '🔷 HUNTERS GANAN! (Rendición)';
+            const winMessage = losingTeam === 'team1' ? ('🔶 ' + (typeof getTeamLabel === 'function' ? getTeamLabel('team2') : 'REAPERS') + ' GANAN! (Rendición)') : ('🔷 ' + (typeof getTeamLabel === 'function' ? getTeamLabel('team1') : 'HUNTERS') + ' GANAN! (Rendición)');
             addLog(`🏳️ ${gameState.selectedCharacter} se rinde. ¡Victoria por rendición!`, 'info');
             showGameOver(winMessage);
         }
