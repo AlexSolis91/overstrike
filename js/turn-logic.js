@@ -496,7 +496,7 @@
             }
 
             // ── IA: Si el personaje activo es del equipo de la IA, ejecutar automáticamente ──
-            if (gameState.gameMode === 'solo' && gameState.aiTeam) {
+            if ((gameState.gameMode === 'solo' || gameState.gameMode === 'ranked') && gameState.aiTeam) {
                 const activeChar = gameState.characters[charName];
                 if (activeChar && activeChar.team === gameState.aiTeam) {
                     // AI also fully passes through the same debuff checks above
