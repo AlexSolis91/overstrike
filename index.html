@@ -888,7 +888,14 @@
                 const sh2 = document.getElementById('statusHeader2');
                 if (sh2) sh2.textContent = '🔶 ' + getTeamLabel('team2');
 
-                const modeLabel = csState.gameMode === 'solo' ? '🤖 Modo Solitario — ¡Buena suerte contra la IA!' : '👥 Modo Multijugador';
+                let modeLabel;
+                if (window._rankedMode) {
+                    modeLabel = '🏆 Modo Ranked';
+                } else if (csState.gameMode === 'solo') {
+                    modeLabel = '🤖 Modo Solitario — ¡Buena suerte contra la IA!';
+                } else {
+                    modeLabel = '👥 Modo Multijugador';
+                }
                 addLog('🎮 ¡Batalla iniciada! ' + modeLabel, 'info');
                 // In online mode: start syncing game state
                 if (csState.gameMode === 'online') {
