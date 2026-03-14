@@ -596,12 +596,15 @@
                 modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:10000;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px;box-sizing:border-box;';
                 document.body.appendChild(modal); // append FIRST
                 modal.innerHTML = [
-                    '<div style="width:100%;max-width:800px;background:#0a0e17;border:2px solid #ffaa00;border-radius:20px;padding:24px;">',
-                    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">',
-                    '<div style="font-family:Orbitron,sans-serif;font-size:1.2rem;color:#ffaa00;text-shadow:0 0 12px #ffaa00;">&#x1F3C6; RANKED LEADERBOARD</div>',
-                    '<button id="leaderboardCloseBtn" style="background:#ff4466;border:none;color:#fff;font-size:1.1rem;width:34px;height:34px;border-radius:50%;cursor:pointer;">&#x2715;</button>',
+                    '<div style="width:100%;max-width:900px;background:linear-gradient(135deg,#0a0e17,#0d1525);border:2px solid #ffaa00;border-radius:20px;padding:28px;box-shadow:0 0 60px rgba(255,170,0,0.2);">',
+                    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;border-bottom:1px solid rgba(255,170,0,0.15);padding-bottom:18px;">',
+                    '<div>',
+                        '<div style="font-family:Orbitron,sans-serif;font-size:1.4rem;font-weight:900;color:#ffaa00;text-shadow:0 0 20px rgba(255,170,0,0.6);letter-spacing:.08em;">&#x1F3C6; RANKED LEADERBOARD</div>',
+                        '<div style="font-size:.75rem;color:#555;margin-top:4px;letter-spacing:.05em;">Estadísticas globales · Solo partidas Ranked</div>',
                     '</div>',
-                    '<div id="leaderboardContent" style="color:#888;text-align:center;padding:2rem;">Cargando estadísticas...</div>',
+                    '<button id="leaderboardCloseBtn" style="background:rgba(255,68,102,0.2);border:2px solid #ff4466;color:#ff4466;font-size:1.1rem;width:38px;height:38px;border-radius:50%;cursor:pointer;">&#x2715;</button>',
+                    '</div>',
+                    '<div id="leaderboardContent" style="color:#888;text-align:center;padding:3rem;font-size:.9rem;">Cargando estadísticas...</div>',
                     '</div>'
                 ].join('');
                 modal.querySelector('#leaderboardCloseBtn').onclick = function() {
@@ -630,26 +633,47 @@
         function renderLeaderboard(entries) {
             const container = document.getElementById('leaderboardContent');
             if (!entries.length) {
-                container.innerHTML = '<div style="color:#555;text-align:center;padding:3rem;font-size:.9rem;">Aún no hay partidas Ranked jugadas.<br><span style="color:#444;">¡Sé el primero en jugar!</span></div>';
+                container.innerHTML = '<div style="color:#555;text-align:center;padding:3rem;font-size:1rem;">Aún no hay partidas Ranked jugadas.<br><span style="color:#444;font-size:.85rem;">¡Sé el primero en jugar!</span></div>';
                 return;
             }
             const rows = entries.map(function(e, i) {
-                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1) + '.';
-                const rankColor = i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#aaa';
-                const fakeTag = e.isFake ? '<span style="font-size:.65rem;color:#666;background:rgba(255,255,255,0.05);border:1px solid #333;border-radius:4px;padding:1px 5px;margin-left:5px;">IA</span>' : '';
-                // Top 5 chars
+                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '<span style="font-family:Orbitron,sans-serif;font-size:.9rem;">' + (i + 1) + '</span>';
+                const rankColor = i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#888';
+                const bgGlow = i === 0 ? 'rgba(255,215,0,0.07)' : i === 1 ? 'rgba(192,192,192,0.05)' : i === 2 ? 'rgba(205,127,50,0.05)' : 'rgba(255,170,0,0.03)';
+                const borderColor = i === 0 ? 'rgba(255,215,0,0.3)' : i === 1 ? 'rgba(192,192,192,0.2)' : i === 2 ? 'rgba(205,127,50,0.2)' : 'rgba(255,170,0,0.1)';
+                const fakeTag = e.isFake ? '<span style="font-size:.6rem;color:#888;background:rgba(255,255,255,0.06);border:1px solid #444;border-radius:4px;padding:2px 6px;margin-left:7px;vertical-align:middle;">IA</span>' : '';
+                const wrColor = e.wr >= 60 ? '#00ff88' : e.wr >= 40 ? '#ffaa00' : '#ff4466';
+                // Top 5 chars - larger images
                 const topChars = getTopChars(e.charUsage, 5);
                 const charImgs = topChars.map(function(c) {
-                    return '<img src="' + getCharPortrait(c) + '" title="' + escapeHtml(c) + '" style="width:32px;height:32px;border-radius:6px;border:1px solid #333;object-fit:cover;" onerror="this.style.display=&quot;none&quot;">';
+                    const url = getCharPortrait(c);
+                    return [
+                        '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;">',
+                        '<img src="' + url + '" title="' + escapeHtml(c) + '" referrerpolicy="no-referrer" ',
+                        'style="width:52px;height:52px;border-radius:8px;border:2px solid rgba(255,170,0,0.3);object-fit:cover;background:#111;" ',
+                        'onerror="this.style.opacity=0.2">',
+                        '<span style="font-size:.55rem;color:#666;max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;">' + escapeHtml(c.split(' ')[0]) + '</span>',
+                        '</div>'
+                    ].join('');
                 }).join('');
+                const charSection = charImgs
+                    ? '<div style="display:flex;gap:6px;align-items:flex-end;">' + charImgs + '</div>'
+                    : '<div style="color:#444;font-size:.75rem;padding:0 8px;">Sin partidas</div>';
                 return [
-                    '<div style="background:rgba(255,170,0,0.04);border:1px solid rgba(255,170,0,0.12);border-radius:12px;padding:14px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">',
-                    '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:' + rankColor + ';min-width:32px;">' + medal + '</div>',
-                    '<div style="flex:1;min-width:120px;">',
-                    '<div style="font-weight:700;color:#fff;font-size:.95rem;">' + escapeHtml(e.name) + fakeTag + '</div>',
-                    '<div style="font-size:.75rem;color:#666;margin-top:2px;">' + e.wins + 'W &nbsp; ' + e.losses + 'L &nbsp; <span style="color:' + (e.wr >= 50 ? '#00ff88' : '#ff4466') + ';">' + e.wr + '% WR</span></div>',
+                    '<div style="background:' + bgGlow + ';border:1px solid ' + borderColor + ';border-radius:14px;padding:18px 20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:8px;">',
+                    // Rank medal
+                    '<div style="font-size:1.6rem;min-width:36px;text-align:center;color:' + rankColor + ';">' + medal + '</div>',
+                    // Player info
+                    '<div style="flex:1;min-width:140px;">',
+                        '<div style="font-family:Orbitron,sans-serif;font-weight:700;color:#fff;font-size:1rem;letter-spacing:.03em;">' + escapeHtml(e.name) + fakeTag + '</div>',
+                        '<div style="display:flex;gap:16px;margin-top:6px;align-items:center;">',
+                            '<span style="font-size:.85rem;color:#00ff88;font-weight:700;">' + e.wins + ' <span style="color:#555;font-weight:400;">W</span></span>',
+                            '<span style="font-size:.85rem;color:#ff4466;font-weight:700;">' + e.losses + ' <span style="color:#555;font-weight:400;">L</span></span>',
+                            '<span style="font-size:.82rem;color:' + wrColor + ';font-weight:700;background:rgba(255,255,255,0.05);border-radius:6px;padding:2px 8px;">' + e.wr + '% WR</span>',
+                        '</div>',
                     '</div>',
-                    '<div style="display:flex;gap:4px;align-items:center;">' + (charImgs || '<span style="color:#444;font-size:.75rem;">Sin datos</span>') + '</div>',
+                    // Character portraits
+                    charSection,
                     '</div>'
                 ].join('');
             });
@@ -665,41 +689,48 @@
         }
 
         function getCharPortrait(charName) {
-            // Re-use init-render portrait logic
+            // Use actual portrait URLs from characters.js
+            if (typeof characterData !== 'undefined' && characterData[charName] && characterData[charName].portrait) {
+                return characterData[charName].portrait;
+            }
+            // Fallback map with correct URLs
             const portraits = {
-                'Thestalos': 'https://i.postimg.cc/7hvFBnhX/Thestalos-portrait.jpg',
-                'Sun Jin Woo': 'https://i.postimg.cc/pTFWmZwb/sun-jin-woo-portrait.jpg',
-                'Gilgamesh': 'https://i.postimg.cc/W4k14Jrt/gilgamesh-portrait.jpg',
-                'Madara Uchiha': 'https://i.postimg.cc/xjBhCb1Y/madara-portrait.jpg',
-                'Goku': 'https://i.postimg.cc/Y0mS0LbP/goku-portrait.jpg',
-                'Saitama': 'https://i.postimg.cc/Nfx2HQSQ/saitama-portrait.jpg',
-                'Minato Namikaze': 'https://i.postimg.cc/fLHrnpGb/minato-portrait.jpg',
-                'Tamayo': 'https://i.postimg.cc/GpHCWmdM/tamayo-portrait.jpg',
-                'Muzan Kibutsuji': 'https://i.postimg.cc/sfvKTfMJ/muzan-portrait.jpg',
-                'Darth Vader': 'https://i.postimg.cc/Kzm0KKMP/vader-portrait.jpg',
-                'Ymir': 'https://i.postimg.cc/QdqNXynk/ymir-portrait.jpg',
-                'Padme Amidala': 'https://i.postimg.cc/ydspL4rT/padme-portrait.jpg',
-                'Daenerys Targaryen': 'https://i.postimg.cc/cJSdCVhp/daenerys-portrait.jpg',
-                'Gandalf': 'https://i.postimg.cc/QCdstGDS/gandalf-portrait.jpg',
-                'Sauron': 'https://i.postimg.cc/yx50rMbw/sauron-portrait.jpg',
-                'Lich King': 'https://i.postimg.cc/MTn7Twbq/lichking-portrait.jpg',
-                'Ragnar Lothbrok': 'https://i.postimg.cc/W4g0XZG7/ragnar-portrait.jpg',
-                'Anakin Skywalker': 'https://i.postimg.cc/Nf5g6zzJ/anakin-portrait.jpg',
-                'Palpatine': 'https://i.postimg.cc/hGMpD9Fz/palpatine-portrait.jpg',
-                'Min Byung Gu': 'https://i.postimg.cc/PqsjrPtY/minbyung-portrait.jpg',
-                'Aspros de Gemini': 'https://i.postimg.cc/Px6BdfJv/aspros-portrait.jpg',
-                'Alexstrasza': 'https://i.postimg.cc/qMcyqQqL/alexstrasza-portrait.jpg',
-                'Aldebaran': 'https://i.postimg.cc/6pyGkMXN/aldebaran-portrait.jpg',
-                'Tirion Fordring': 'https://i.postimg.cc/FHRb4rMs/tirion-portrait.jpg',
-                'Sindragosa': 'https://i.postimg.cc/Yq1BMLhz/sindragosa-portrait.jpg',
-                'Naruto Uzumaki': 'https://i.postimg.cc/6pgC6gVb/naruto-portrait.jpg',
-                'Doomsday': 'https://i.postimg.cc/T15Wbpxt/doomsday-portrait.jpg',
-                'Nakime': 'https://i.postimg.cc/mgHWpvsq/nakime-portrait.jpg',
+                'Madara Uchiha':        'https://i.postimg.cc/KzWJPy5j/Captura_de_pantalla_2026_02_26_134301.png',
+                'Sun Jin Woo':          'https://i.postimg.cc/2y8gqPH1/Captura_de_pantalla_2026_02_21_225927.png',
+                'Aldebaran':            'https://i.postimg.cc/PJr0LB6N/Captura_de_pantalla_2026_02_21_230603.png',
+                'Leonidas':             'https://i.postimg.cc/TYJdgC3L/Captura_de_pantalla_2026_03_06_001254.png',
+                'Min Byung':            'https://i.postimg.cc/Y9xJCpxr/Captura_de_pantalla_2026_02_22_002441.png',
+                'Rengoku':              'https://i.postimg.cc/5N8k49N4/Captura_de_pantalla_2026_02_24_094704.png',
+                'Aspros de Gemini':     'https://i.postimg.cc/NMZcBh8m/Captura_de_pantalla_2026_02_27_201323.png',
+                'Ymir':                 'https://i.postimg.cc/D0PFfyFL/Captura_de_pantalla_2026_03_03_125024.png',
+                'Thestalos':            'https://i.postimg.cc/9f6kNBpV/Gemini_Generated_Image_ac4u14ac4u14ac4u.png',
+                'Alexstrasza':          'https://i.postimg.cc/V6F3kYFw/Captura_de_pantalla_2026_02_21_233329.png',
+                'Anakin Skywalker':     'https://i.postimg.cc/7hYjCpBh/Captura_de_pantalla_2026_02_21_231859.png',
+                'Goku':                 'https://i.postimg.cc/wMsFFbWT/Captura_de_pantalla_2026_02_26_132013.png',
+                'Ragnar Lothbrok':      'https://i.postimg.cc/JnQ9z1QB/Captura_de_pantalla_2026_02_21_232050.png',
+                'Saitama':              'https://i.postimg.cc/Qtz0QrqV/Captura_de_pantalla_2026_02_26_132109.png',
+                'Ozymandias':           'https://i.postimg.cc/6qGzz1Hp/Captura_de_pantalla_2026_02_26_131502.png',
+                'Gilgamesh':            'https://i.postimg.cc/nzNJp8K7/Captura_de_pantalla_2026_02_27_201309.png',
+                'Goku Black':           'https://i.postimg.cc/SsGwxyGp/Captura_de_pantalla_2026_02_22_014009.png',
+                'Saga de Geminis':      'https://i.postimg.cc/wBvTDG7f/Captura_de_pantalla_2026_02_24_103109.png',
+                'Minato Namikaze':      'https://i.postimg.cc/SKsNcvJt/Captura_de_pantalla_2026_02_24_103359.png',
+                'Muzan Kibutsuji':      'https://i.postimg.cc/fL41fCgH/Captura_de_pantalla_2026_02_28_020016.png',
+                'Nakime':               'https://i.postimg.cc/858xm4nX/Captura_de_pantalla_2026_02_28_020047.png',
+                'Sauron':               'https://i.postimg.cc/858xm4n0/Captura_de_pantalla_2026_02_28_020119.png',
+                'Darth Vader':          'https://i.postimg.cc/63sFfc1F/Captura_de_pantalla_2026_02_28_015421.png',
+                'Lich King':            'https://i.postimg.cc/W3Rxw8ff/Captura_de_pantalla_2026_02_28_015847.png',
+                'Padme Amidala':        'https://i.postimg.cc/pV63g1B4/Whats_App_Image_2026_03_05_at_9_39_15_A.jpg',
+                'Daenerys Targaryen':   'https://i.postimg.cc/8k0xqnbx/Whats_App_Image_2026_03_05_at_9_41_48_A.jpg',
+                'Tamayo':               'https://i.postimg.cc/9XnsvNBS/Whats_App_Image_2026_03_05_at_9_42_52_A.jpg',
+                'Emperador Palpatine':  'https://i.postimg.cc/DfMRtYcj/Whats_App_Image_2026_03_05_at_9_50_54_A.jpg',
+                'Gandalf':              'https://i.postimg.cc/1RjbLYHx/Whats_App_Image_2026_03_05_at_9_53_24_A.jpg',
+                'Doomsday':             'https://i.postimg.cc/hjJDWnn6/Captura_de_pantalla_2026_03_06_003242.png',
+                'Ikki de Fenix':        'https://i.postimg.cc/LsX6jbnD/Captura_de_pantalla_2026_02_24_103509.png',
             };
-            return portraits[charName] || 'https://i.postimg.cc/Px6BdfJv/aspros-portrait.jpg';
+            return portraits[charName] || portraits['Aldebaran'];
         }
 
-        // ── Room management ──
+                // ── Room management ──
         function generateRoomCode() {
             const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
             let code = '';
