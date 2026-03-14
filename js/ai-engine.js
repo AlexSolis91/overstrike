@@ -1,4 +1,4 @@
-        // ==================== IA ENGINE ====================
+// ==================== IA ENGINE ====================
         function executeAITurn(charName) {
             try {
                 const char = gameState.characters[charName];
@@ -7,10 +7,10 @@
                 // (normally handled by continueTurn, but guard here too)
                 if (char.statusEffects) {
                     const stunned = char.statusEffects.some(e => e && (normAccent(e.name||'') === 'aturdimiento' || normAccent(e.name||'') === 'mega aturdimiento'));
-                    if (stunned) { addLog('⭐ [IA] ' + charName + ' está aturdido y pierde su turno', 'damage'); endTurn(); return; }
-                    if (hasStatusEffect(charName, 'Mega Congelacion')) { addLog('🧊 [IA] ' + charName + ' está Mega Congelado y pierde su turno', 'damage'); endTurn(); return; }
-                    if (hasStatusEffect(charName, 'Congelacion') && Math.random() < 0.5) { addLog('❄️ [IA] ' + charName + ' está Congelado y pierde su turno', 'damage'); endTurn(); return; }
-                    if (hasStatusEffect(charName, 'Miedo') && Math.random() < 0.5) { addLog('😱 [IA] ' + charName + ' está paralizado por el Miedo', 'damage'); endTurn(); return; }
+                    if (stunned) { addLog('⭐ ' + (gameState.gameMode !== 'ranked' ? '[IA] ' : '') + charName + ' está aturdido y pierde su turno', 'damage'); endTurn(); return; }
+                    if (hasStatusEffect(charName, 'Mega Congelacion')) { addLog('🧊 ' + (gameState.gameMode !== 'ranked' ? '[IA] ' : '') + charName + ' está Mega Congelado y pierde su turno', 'damage'); endTurn(); return; }
+                    if (hasStatusEffect(charName, 'Congelacion') && Math.random() < 0.5) { addLog('❄️ ' + (gameState.gameMode !== 'ranked' ? '[IA] ' : '') + charName + ' está Congelado y pierde su turno', 'damage'); endTurn(); return; }
+                    if (hasStatusEffect(charName, 'Miedo') && Math.random() < 0.5) { addLog('😱 ' + (gameState.gameMode !== 'ranked' ? '[IA] ' : '') + charName + ' está paralizado por el Miedo', 'damage'); endTurn(); return; }
                 }
 
                 const myTeam = char.team;
@@ -218,7 +218,7 @@
 
                 const target = pickTarget(chosen);
 
-                addLog('🤖 IA (' + charName + ') decide usar ' + chosen.name + (target && target !== charName ? ' sobre ' + target : ''), 'info');
+                addLog((gameState.gameMode !== 'ranked' ? '🤖 IA (' + charName + ')' : '⚔️ ' + charName) + ' decide usar ' + chosen.name + (target && target !== charName ? ' sobre ' + target : ''), 'info');
 
                 // Execute
                 gameState.selectedAbility = chosen;
