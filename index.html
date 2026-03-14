@@ -163,11 +163,11 @@
         </div>
         <div class="cs-teams-preview">
             <div class="cs-team-panel team1">
-                <div class="cs-team-label">🔷 HUNTERS</div>
+                <div class="cs-team-label" id="csTeamLabel1">🔷 <span id="csTeamName1">HUNTERS</span></div>
                 <div class="cs-team-slots" id="csTeam1Slots"></div>
             </div>
             <div class="cs-team-panel team2">
-                <div class="cs-team-label">🔶 REAPERS</div>
+                <div class="cs-team-label" id="csTeamLabel2">🔶 <span id="csTeamName2">REAPERS</span></div>
                 <div id="onlineOppStatus" style="font-size:.75rem;color:#666;padding:2px 8px;"></div>
                 <div class="cs-team-slots" id="csTeam2Slots"></div>
             </div>
@@ -212,7 +212,7 @@
         </div>
         <div class="battle-arena">
             <div class="team-column">
-                <div style="text-align: center; font-family: 'Orbitron', sans-serif; font-size: 1.1em; color: var(--team1); margin-bottom: 10px; text-shadow: 0 0 10px var(--team1);">🔷 HUNTERS</div>
+                <div style="text-align: center; font-family: 'Orbitron', sans-serif; font-size: 1.1em; color: var(--team1); margin-bottom: 10px; text-shadow: 0 0 10px var(--team1);" id="teamHeader1">🔷 HUNTERS</div>
                 <div id="team1Characters"></div>
                 <div id="team1Summons"></div>
             </div>
@@ -231,7 +231,7 @@
                 </div>
             </div>
             <div class="team-column">
-                <div style="text-align: center; font-family: 'Orbitron', sans-serif; font-size: 1.1em; color: var(--team2); margin-bottom: 10px; text-shadow: 0 0 10px var(--team2);">🔶 REAPERS</div>
+                <div style="text-align: center; font-family: 'Orbitron', sans-serif; font-size: 1.1em; color: var(--team2); margin-bottom: 10px; text-shadow: 0 0 10px var(--team2);" id="teamHeader2">🔶 REAPERS</div>
                 <div id="team2Characters"></div>
                 <div id="team2Summons"></div>
             </div>
@@ -259,11 +259,11 @@
             </div>
             <div class="battle-status-teams">
                 <div class="battle-status-team team1">
-                    <div class="battle-status-team-header">🔷 HUNTERS</div>
+                    <div class="battle-status-team-header" id="statusHeader1">🔷 HUNTERS</div>
                     <div id="statusTeam1"></div>
                 </div>
                 <div class="battle-status-team team2">
-                    <div class="battle-status-team-header">🔶 REAPERS</div>
+                    <div class="battle-status-team-header" id="statusHeader2">🔶 REAPERS</div>
                     <div id="statusTeam2"></div>
                 </div>
             </div>
@@ -363,14 +363,27 @@
         function csSelectMode(mode) {
             csState.gameMode = mode;
             audioManager.playSelect();
-            // Do NOT restart menu music — it's already playing from the mode screen
             document.getElementById('modeSelectScreen').style.display = 'none';
             document.getElementById('charSelectScreen').style.display = 'block';
+            const myName = (typeof currentUser !== 'undefined' && currentUser && currentUser.displayName) ? currentUser.displayName : 'Jugador 1';
             if (mode === 'solo') {
-                // En modo solitario solo HUNTERS (team1) elige; la IA elige team2 automáticamente
                 const lbl = document.getElementById('csPhaseLabel');
-                lbl.textContent = '🔷 HUNTERS — Elige tus 5 personajes (vs IA)';
+                lbl.textContent = '🔷 ' + myName + ' — Elige tus 5 personajes (vs IA)';
                 lbl.className = 'cs-phase-label team1';
+                // Set team names now so char select panels show correct names
+                window._teamNames = { team1: myName, team2: 'IA' };
+                const n1 = document.getElementById('csTeamName1');
+                if (n1) n1.textContent = myName;
+                const n2 = document.getElementById('csTeamName2');
+                if (n2) n2.textContent = 'IA';
+            } else if (mode === 'multi') {
+                window._teamNames = { team1: 'Jugador 1', team2: 'Jugador 2' };
+                const n1 = document.getElementById('csTeamName1');
+                if (n1) n1.textContent = 'Jugador 1';
+                const n2 = document.getElementById('csTeamName2');
+                if (n2) n2.textContent = 'Jugador 2';
+                const lbl = document.getElementById('csPhaseLabel');
+                if (lbl) { lbl.textContent = '🔷 Jugador 1 — Elige tus 5 personajes'; lbl.className = 'cs-phase-label team1'; }
             }
             csInit();
         }
@@ -779,7 +792,8 @@
                         } else {
                             csState.phase = 'team2';
                             const lbl = document.getElementById('csPhaseLabel');
-                            lbl.textContent = '🔶 REAPERS — Elige tus 5 personajes';
+                            const t2name = (window._teamNames && window._teamNames.team2) || 'Jugador 2';
+                            lbl.textContent = '🔶 ' + t2name + ' — Elige tus 5 personajes';
                             lbl.className = 'cs-phase-label team2';
                         }
                     }
@@ -825,6 +839,12 @@
             addLog('🤖 La IA ha seleccionado su equipo.', 'info');
         }
 
+        // ── Nombres de equipo (reemplazan HUNTERS/REAPERS) ──
+        window._teamNames = { team1: 'Jugador 1', team2: 'Jugador 2' };
+        function getTeamLabel(team) {
+            return (window._teamNames && window._teamNames[team]) || (team === 'team1' ? 'HUNTERS' : 'REAPERS');
+        }
+
         function csStartGame() {
             try {
                 const selectedChars = {};
@@ -846,6 +866,28 @@
                 document.querySelector('.game-container').style.display = 'block';
 
                 initGame(selectedChars);
+
+                // Establecer nombres de equipo para reemplazar HUNTERS/REAPERS
+                const myDisplayName = (typeof currentUser !== 'undefined' && currentUser && currentUser.displayName) ? currentUser.displayName : 'Jugador 1';
+                if (csState.gameMode === 'solo' || csState.gameMode === 'ranked') {
+                    const fakeOpp = window._rankedFakeOpponent || 'IA';
+                    window._teamNames = { team1: myDisplayName, team2: fakeOpp };
+                } else if (csState.gameMode === 'online') {
+                    // Names already set by startOnlineGame via _teamNames
+                } else {
+                    // multi local
+                    window._teamNames = { team1: 'Jugador 1', team2: 'Jugador 2' };
+                }
+                // Refresh all team name elements with real names
+                const th1 = document.getElementById('teamHeader1');
+                if (th1) th1.textContent = '🔷 ' + getTeamLabel('team1');
+                const th2 = document.getElementById('teamHeader2');
+                if (th2) th2.textContent = '🔶 ' + getTeamLabel('team2');
+                const sh1 = document.getElementById('statusHeader1');
+                if (sh1) sh1.textContent = '🔷 ' + getTeamLabel('team1');
+                const sh2 = document.getElementById('statusHeader2');
+                if (sh2) sh2.textContent = '🔶 ' + getTeamLabel('team2');
+
                 const modeLabel = csState.gameMode === 'solo' ? '🤖 Modo Solitario — ¡Buena suerte contra la IA!' : '👥 Modo Multijugador';
                 addLog('🎮 ¡Batalla iniciada! ' + modeLabel, 'info');
                 // In online mode: start syncing game state
@@ -899,5 +941,6 @@
 
 </body>
 </html>
+
 
 
