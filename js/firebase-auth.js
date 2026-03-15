@@ -40,6 +40,9 @@
                 const el = document.getElementById(s);
                 if (el) el.style.display = 'none';
             });
+            // Hide game container when showing non-game screens
+            const gc = document.querySelector('.game-container');
+            if (gc && id !== 'game') gc.style.display = 'none';
             const target = document.getElementById(id);
             if (!target) return;
             if (id === 'lobbyScreen' || id === 'waitingScreen') target.style.display = 'flex';
@@ -703,7 +706,10 @@
 
             if (csState.team1.length >= 5 && csState.team2.length >= 5) {
                 // Skip char select — start directly
-                document.getElementById('charSelectScreen').style.display = 'none';
+                // Hide all non-game screens
+                ['charSelectScreen','lobbyScreen','waitingScreen','modeSelectScreen','rankedTeamScreen'].forEach(function(id) {
+                    const el = document.getElementById(id); if (el) el.style.display = 'none';
+                });
                 document.querySelector('.game-container').style.display = 'block';
                 // Build character map
                 const selectedChars = {};
@@ -1282,32 +1288,27 @@
                 const guestName = (room.guest && room.guest.name) ? room.guest.name : 'Jugador 2';
                 window._teamNames = { team1: hostName, team2: guestName };
 
-                // ── RANKED: skip char select, use pre-saved attack teams ──
+                // ── RANKED: skip char select, each player loads own attack team ──
                 if (room.ranked) {
-                    const myAttack  = asHost ? room.hostAttack  : room.guestAttack;
-                    const oppAttack = asHost ? room.guestAttack : room.hostAttack;
                     window._rankedMode = true;
                     window._rankedOpponentName = asHost ? guestName : hostName;
-
-                    csState.team1       = asHost ? (myAttack || []) : (oppAttack || []);
-                    csState.team2       = asHost ? (oppAttack || []) : (myAttack || []);
-                    csState.gameMode    = 'online';
-                    csState.onlineTeam  = asHost ? 'team1' : 'team2';
-                    csState.phase       = 'done';
+                    csState.gameMode   = 'online';
+                    csState.onlineTeam = asHost ? 'team1' : 'team2';
+                    csState.phase      = 'done';
                     csState.pendingChar = null;
 
-                    // Both teams: signal ready immediately using selections path
-                    const myTeam  = asHost ? 'team1' : 'team2';
-                    const myPicks = asHost ? (myAttack || []) : (myAttack || []);
+                    const myTeam = asHost ? 'team1' : 'team2';
 
-                    // Push my selections so the other player knows I'm ready
-                    db.ref('rooms/' + roomId + '/selections').update({
-                        [myTeam + '_picks']: myPicks,
-                        [myTeam + '_ready']: true
+                    // Load MY own attack team from Firebase (avoids timing issues)
+                    getRankedTeams(function(myData) {
+                        const myAttack = (myData && myData.attack) ? myData.attack : [];
+                        // Push my picks so opponent sees I'm ready
+                        db.ref('rooms/' + roomId + '/selections').update({
+                            [myTeam + '_picks'] : myAttack,
+                            [myTeam + '_ready'] : true
+                        });
+                        _listenForRankedBothReady(roomId, asHost, hostName, guestName, myAttack);
                     });
-
-                    // Listen for opponent to also be ready, then start
-                    _listenForRankedBothReady(roomId, asHost, hostName, guestName, myAttack, oppAttack);
                     return;
                 }
 
@@ -1341,15 +1342,15 @@
             });
         }
 
-        function _listenForRankedBothReady(roomId, asHost, hostName, guestName, myAttack, oppAttack) {
-            // Show a "Connecting..." overlay while waiting for opponent
+        function _listenForRankedBothReady(roomId, asHost, hostName, guestName, myAttack) {
+            // Show connecting overlay
             let overlay = document.getElementById('rankedConnectOverlay');
             if (!overlay) {
                 overlay = document.createElement('div');
                 overlay.id = 'rankedConnectOverlay';
-                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;';
+                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;';
                 overlay.innerHTML = [
-                    '<div style="font-size:2rem;">⚔️</div>',
+                    '<div style="font-size:2.5rem;">⚔️</div>',
                     '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:#ffaa00;letter-spacing:.1em;">CONECTANDO CON RIVAL...</div>',
                     '<div style="font-size:.85rem;color:#666;">Cargando equipos Ranked</div>'
                 ].join('');
@@ -1357,35 +1358,29 @@
             }
             overlay.style.display = 'flex';
 
+            const myTeam  = asHost ? 'team1' : 'team2';
             const oppTeam = asHost ? 'team2' : 'team1';
-            db.ref('rooms/' + roomId + '/selections').on('value', function(snap) {
-                const data = snap.val() || {};
-                const oppReady = data[oppTeam + '_ready'];
-                if (!oppReady) return;
 
-                // Opponent is ready — both sides have their teams, start game
-                db.ref('rooms/' + roomId + '/selections').off();
+            // Poll for both sides ready
+            db.ref('rooms/' + roomId + '/selections').on('value', function handler(snap) {
+                const data = snap.val() || {};
+                const myReady  = data[myTeam  + '_ready'];
+                const oppReady = data[oppTeam + '_ready'];
+                if (!myReady || !oppReady) return;
+
+                // Both ready — get picks from Firebase
+                const t1Picks = data['team1_picks'] || [];
+                const t2Picks = data['team2_picks'] || [];
+
+                // Stop listening
+                db.ref('rooms/' + roomId + '/selections').off('value', handler);
                 overlay.style.display = 'none';
 
-                // Set up game state correctly
-                // host = team1, guest = team2
-                // Both use their attack teams
-                const t1Team = asHost ? myAttack : (data['team1_picks'] || oppAttack || []);
-                const t2Team = asHost ? (data['team2_picks'] || oppAttack || []) : myAttack;
-
-                csState.team1 = t1Team;
-                csState.team2 = t2Team;
-                csState.gameMode = 'online';
-                csState.phase = 'done';
-
-                // Build char map and start
-                document.getElementById('charSelectScreen').style.display = 'none';
-                document.querySelector('.game-container').style.display = 'block';
-
+                // Build character map
                 const selectedChars = {};
                 const nameCount = {};
-                const allSelected = t1Team.map(function(n) { return { name: n, team: 'team1' }; })
-                    .concat(t2Team.map(function(n) { return { name: n, team: 'team2' }; }));
+                const allSelected = t1Picks.map(function(n) { return { name: n, team: 'team1' }; })
+                    .concat(t2Picks.map(function(n) { return { name: n, team: 'team2' }; }));
                 allSelected.forEach(function(entry) {
                     const base = entry.name;
                     nameCount[base] = (nameCount[base] || 0) + 1;
@@ -1397,12 +1392,21 @@
                     selectedChars[key] = charCopy;
                 });
 
-                initGame(selectedChars);
-                window._teamNames = { team1: hostName, team2: guestName };
-                gameState.gameMode = 'ranked';
-                gameState.aiTeam = null; // both sides are human
+                // Hide any screens, show game
+                document.getElementById('charSelectScreen').style.display = 'none';
+                document.querySelector('.game-container').style.display = 'block';
+                // Hide lobby/other screens
+                ['lobbyScreen','waitingScreen','modeSelectScreen'].forEach(function(id) {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = 'none';
+                });
 
-                // Update all team labels
+                initGame(selectedChars);
+                gameState.gameMode = 'ranked';
+                gameState.aiTeam   = null; // both humans
+                window._teamNames  = { team1: hostName, team2: guestName };
+
+                // Update team labels
                 const th1 = document.getElementById('teamHeader1');  if (th1) th1.textContent = '🔷 ' + hostName;
                 const th2 = document.getElementById('teamHeader2');  if (th2) th2.textContent = '🔶 ' + guestName;
                 const sh1 = document.getElementById('statusHeader1'); if (sh1) sh1.textContent = '🔷 ' + hostName;
@@ -1411,14 +1415,13 @@
                 addLog('🏆 RANKED: ' + hostName + ' vs ' + guestName, 'info');
                 audioManager.playRandomBattle();
 
-                // Sync game state online
+                // Start sync
                 setTimeout(function() {
                     if (isRoomHost) { pushGameState(); }
                     listenGameState();
                 }, 500);
             });
         }
-
         function listenForOnlineReady(roomId, myTeam) {
             const opponentTeam = myTeam === 'team1' ? 'team2' : 'team1';
             db.ref('rooms/' + roomId + '/selections').on('value', function(snap) {
