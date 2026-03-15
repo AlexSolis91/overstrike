@@ -170,8 +170,18 @@
                 maxHp: 30,
                 summoner: null,
                 team: null,
-                megaProvocation: true,
-                passive: 'Terror de las Sombras: Mega Provocación permanente. Cada vez que es golpeado, causa Quemaduras 25% 1T al atacante.',
+                passive: 'Mega Provocación: Absorbe todo el daño ST y AOE que tu equipo fuera a recibir. Enemigos que lo golpean reciben Quemaduras del 25% por 1 turno',
+                statusEffects: []
+            },
+            'Kaisel': {
+                name: 'Kaisel',
+                hp: 7,
+                maxHp: 7,
+                summoner: null,
+                team: null,
+                passive: 'Maldición de Kaisel: Al final de cada ronda, aplica un Debuff aleatorio a 2 enemigos aleatorios.',
+                img: 'https://i.postimg.cc/GtmWZL41/Captura_de_pantalla_2026_03_11_151735.png',
+                isDead: false,
                 statusEffects: []
             },
 
@@ -232,5 +242,6 @@
                 statusEffects: []
             }
 
+        };
         };
 
