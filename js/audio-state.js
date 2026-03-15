@@ -100,7 +100,7 @@
         document.addEventListener('keydown', tryStartMenuMusic, { once: true });
         // ==================== END AUDIO MANAGER ====================
 
-        let gameState = {
+        var gameState = {
             characters: {},
             turnOrder: [],
             gameMode: 'multi',
