@@ -137,8 +137,8 @@
             if (summon.name === 'Kamish' && attackerName) {
                 const attacker = gameState.characters[attackerName];
                 if (attacker && !attacker.isDead) {
-                    applyBurn(attackerName, 25, 1);
-                    addLog(`🔥 Terror de las Sombras: ${attackerName} recibe Quemadura 25% 1T por golpear a Kamish`, 'damage');
+                    applyBurn(attackerName, 25, 1); // 25% por 1 turno per Excel spec
+                    addLog(`🔥 ${attackerName} recibe Quemaduras permanentes del 20% por golpear a Kamish`, 'damage');
                 }
             }
             
@@ -382,6 +382,36 @@
             passiveExecuting = false;
         }
 
+        // Pasiva de Kaisel: aplica debuff aleatorio a 2 enemigos al final de ronda
+        function triggerKaiselPassive() {
+            if (passiveExecuting) return;
+            Object.keys(gameState.summons).forEach(function(sid) {
+                const kais = gameState.summons[sid];
+                if (!kais || kais.name !== 'Kaisel' || kais.hp <= 0) return;
+                passiveExecuting = true;
+                const enemyTeam = kais.team === 'team1' ? 'team2' : 'team1';
+                const enemies = Object.keys(gameState.characters).filter(n => {
+                    const c = gameState.characters[n];
+                    return c && c.team === enemyTeam && !c.isDead && c.hp > 0;
+                });
+                if (enemies.length === 0) { passiveExecuting = false; return; }
+                // Pick 2 random enemies (or 1 if only 1)
+                const shuffled = enemies.slice().sort(() => Math.random() - 0.5);
+                const targets = shuffled.slice(0, Math.min(2, shuffled.length));
+                const debuffs = ['applyBurn', 'applyPoison', 'applyBleed', 'applyFreeze', 'applyStun', 'applyFear', 'applyWeaken'];
+                targets.forEach(function(tgt) {
+                    const rand = Math.floor(Math.random() * 5);
+                    if (rand === 0) applyBurn(tgt, 10, 1);
+                    else if (rand === 1) applyPoison(tgt, 1);
+                    else if (rand === 2) applyBleed(tgt, 1);
+                    else if (rand === 3) applyFreeze(tgt, 1);
+                    else applyFear(tgt, 1);
+                    addLog(`🐲 Kaisel (Maldición): aplica debuff aleatorio a ${tgt}`, 'damage');
+                });
+                passiveExecuting = false;
+            });
+        }
+
         // Pasiva de Bellion: cancelar Special/Over una vez por ronda
         function checkBellionCounter(attackerName, abilityType) {
             try {
@@ -547,9 +577,7 @@
             
             // ESCUDO SAGRADO: bloquea todo el daño de golpes (no efectos de estado)
             if (attackerName !== null && hasStatusEffect(targetName, 'Escudo Sagrado')) {
-                // #6: Consumir el stack de Escudo Sagrado al bloquear
-                target.statusEffects = target.statusEffects.filter(e => !(e && e.name === 'Escudo Sagrado'));
-                addLog(`✝️ Escudo Sagrado de ${targetName} bloqueó el golpe de ${attackerName} (consumido)`, 'buff');
+                addLog(`✝️ Escudo Sagrado de ${targetName} bloqueó el golpe de ${attackerName}`, 'buff');
                 return 0;
             }
 
@@ -821,16 +849,12 @@
 
         function reviveAlly(targetName) {
             const target = gameState.characters[targetName];
-            // #13: Guardar la pasiva antes de limpiar statusEffects
-            const savedPassive = target.passive;
             target.hp = target.maxHp;
             target.charges = 10;
             target.isDead = false;
             target.statusEffects = [];
             target.shield = 0;
             target.shieldEffect = null;
-            // #13: Restaurar la pasiva después de limpiar
-            if (savedPassive) target.passive = savedPassive;
             
             // Reintegrar al personaje en turnOrder si no está ya
             if (!gameState.turnOrder.includes(targetName)) {
