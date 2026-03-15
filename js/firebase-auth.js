@@ -805,51 +805,60 @@
             const defOwnerUid = window._rankedDefenseOwnerUid || null;
             window._rankedDefenseOwnerUid = null;
 
-            // Notify defense owner if a real player's defense was used
+            // ── Save MY stats (attack) ──
+            const myRef = db.ref('ranked_stats/' + myUid);
+            myRef.once('value', function(snap) {
+                const cur = snap.val() || {};
+                cur.name = myName;
+                // Global wins = atkWins + defWins
+                cur.atkWins   = (cur.atkWins   || 0) + (won ? 1 : 0);
+                cur.atkLosses = (cur.atkLosses || 0) + (won ? 0 : 1);
+                cur.defWins   = cur.defWins   || 0;
+                cur.defLosses = cur.defLosses || 0;
+                cur.globalWins = (cur.atkWins || 0) + (cur.defWins || 0);
+                // Attack char usage
+                cur.atkCharUsage = cur.atkCharUsage || {};
+                (playerChars || []).forEach(function(c) { cur.atkCharUsage[c] = (cur.atkCharUsage[c] || 0) + 1; });
+                // Defense char usage (record opponents used against you)
+                cur.defCharUsage = cur.defCharUsage || {};
+                myRef.set(cur);
+            });
+
+            // ── Notify + update defense owner if vs real player's defense ──
             if (defOwnerUid) {
                 const notifRef = db.ref('ranked_notifications/' + defOwnerUid).push();
                 notifRef.set({
-                    type: 'defense_attacked',
-                    attackerName: myName,
-                    attackerUid: myUid,
-                    defenseWon: !won, // defense team won if attacker lost
-                    ts: Date.now(),
-                    read: false
+                    type: 'defense_attacked', attackerName: myName, attackerUid: myUid,
+                    defenseWon: !won, ts: Date.now(), read: false
                 });
-                // Update defense owner's ranked stats
                 const oppRef = db.ref('ranked_stats/' + defOwnerUid);
                 oppRef.once('value', function(snap) {
-                    const cur = snap.val() || { wins: 0, losses: 0, name: fakeOpp, charUsage: {} };
-                    cur.wins   = (cur.wins   || 0) + (!won ? 1 : 0); // defense won = attacker lost
-                    cur.losses = (cur.losses || 0) + (won  ? 1 : 0);
-                    cur.charUsage = cur.charUsage || {};
-                    (opponentChars || []).forEach(function(c) { cur.charUsage[c] = (cur.charUsage[c] || 0) + 1; });
+                    const cur = snap.val() || {};
+                    cur.defWins   = (cur.defWins   || 0) + (!won ? 1 : 0); // defense won = attacker lost
+                    cur.defLosses = (cur.defLosses || 0) + (won  ? 1 : 0);
+                    cur.atkWins   = cur.atkWins   || 0;
+                    cur.atkLosses = cur.atkLosses || 0;
+                    cur.globalWins = (cur.atkWins || 0) + (cur.defWins || 0);
+                    // Record which chars were used in the attack against this defense
+                    cur.defCharUsage = cur.defCharUsage || {};
+                    (opponentChars || []).forEach(function(c) { cur.defCharUsage[c] = (cur.defCharUsage[c] || 0) + 1; });
                     oppRef.set(cur);
                 });
             }
 
-            // Save my stats
-            const myRef = db.ref('ranked_stats/' + myUid);
-            myRef.once('value', function(snap) {
-                const cur = snap.val() || { wins: 0, losses: 0, name: myName, charUsage: {} };
-                cur.name = myName;
-                cur.wins = (cur.wins || 0) + (won ? 1 : 0);
-                cur.losses = (cur.losses || 0) + (won ? 0 : 1);
-                cur.charUsage = cur.charUsage || {};
-                (playerChars || []).forEach(function(c) { cur.charUsage[c] = (cur.charUsage[c] || 0) + 1; });
-                myRef.set(cur);
-            });
-
-            // Save fake opponent stats (keyed by name, not uid)
-            if (fakeOpp) {
+            // ── Save fake opponent stats if vs CPU defense ──
+            if (!defOwnerUid && fakeOpp && fakeOpp !== 'CPU') {
                 const oppKey = 'fake_' + fakeOpp.replace(/[^a-zA-Z0-9]/g, '_');
                 const oppRef = db.ref('ranked_stats/' + oppKey);
                 oppRef.once('value', function(snap) {
-                    const cur = snap.val() || { wins: 0, losses: 0, name: fakeOpp, isFake: true, charUsage: {} };
-                    cur.wins = (cur.wins || 0) + (won ? 0 : 1);
-                    cur.losses = (cur.losses || 0) + (won ? 1 : 0);
-                    cur.charUsage = cur.charUsage || {};
-                    (opponentChars || []).forEach(function(c) { cur.charUsage[c] = (cur.charUsage[c] || 0) + 1; });
+                    const cur = snap.val() || { name: fakeOpp, isFake: true };
+                    cur.defWins   = (cur.defWins   || 0) + (!won ? 1 : 0);
+                    cur.defLosses = (cur.defLosses || 0) + (won  ? 1 : 0);
+                    cur.atkWins   = cur.atkWins   || 0;
+                    cur.atkLosses = cur.atkLosses || 0;
+                    cur.globalWins = (cur.atkWins || 0) + (cur.defWins || 0);
+                    cur.defCharUsage = cur.defCharUsage || {};
+                    (opponentChars || []).forEach(function(c) { cur.defCharUsage[c] = (cur.defCharUsage[c] || 0) + 1; });
                     oppRef.set(cur);
                 });
             }
@@ -889,67 +898,105 @@
             db.ref('ranked_stats').once('value', function(snap) {
                 const data = snap.val() || {};
                 const entries = Object.entries(data).map(function([key, v]) {
-                    const total = (v.wins || 0) + (v.losses || 0);
-                    const wr = total > 0 ? Math.round((v.wins / total) * 100) : 0;
-                    return { key, name: v.name || key, wins: v.wins || 0, losses: v.losses || 0,
-                             total, wr, isFake: v.isFake || false, charUsage: v.charUsage || {} };
+                    const atkW = v.atkWins   || v.wins   || 0;  // backwards compat
+                    const atkL = v.atkLosses || v.losses || 0;
+                    const defW = v.defWins   || 0;
+                    const defL = v.defLosses || 0;
+                    const globalW = atkW + defW;
+                    const totalAtk = atkW + atkL;
+                    const totalDef = defW + defL;
+                    const totalAll = totalAtk + totalDef;
+                    const globalWR = totalAll > 0 ? Math.round((globalW / totalAll) * 100) : 0;
+                    return {
+                        key, name: v.name || key, isFake: v.isFake || false,
+                        atkWins: atkW, atkLosses: atkL,
+                        defWins: defW, defLosses: defL,
+                        globalWins: globalW, globalWR,
+                        atkCharUsage: v.atkCharUsage || v.charUsage || {},
+                        defCharUsage: v.defCharUsage || {}
+                    };
                 });
-                // Sort by wins desc, then winrate
-                entries.sort(function(a, b) { return b.wins - a.wins || b.wr - a.wr; });
+                // Sort by globalWins desc
+                entries.sort(function(a, b) { return b.globalWins - a.globalWins || b.globalWR - a.globalWR; });
                 renderLeaderboard(entries);
             });
         }
 
         function renderLeaderboard(entries) {
             const container = document.getElementById('leaderboardContent');
+            if (!container) return;
             if (!entries.length) {
                 container.innerHTML = '<div style="color:#555;text-align:center;padding:3rem;font-size:1rem;">Aún no hay partidas Ranked jugadas.<br><span style="color:#444;font-size:.85rem;">¡Sé el primero en jugar!</span></div>';
                 return;
             }
             const rows = entries.map(function(e, i) {
-                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '<span style="font-family:Orbitron,sans-serif;font-size:.9rem;">' + (i + 1) + '</span>';
-                const rankColor = i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#888';
-                const bgGlow = i === 0 ? 'rgba(255,215,0,0.07)' : i === 1 ? 'rgba(192,192,192,0.05)' : i === 2 ? 'rgba(205,127,50,0.05)' : 'rgba(255,170,0,0.03)';
-                const borderColor = i === 0 ? 'rgba(255,215,0,0.3)' : i === 1 ? 'rgba(192,192,192,0.2)' : i === 2 ? 'rgba(205,127,50,0.2)' : 'rgba(255,170,0,0.1)';
-                const fakeTag = e.isFake ? '<span style="font-size:.6rem;color:#888;background:rgba(255,255,255,0.06);border:1px solid #444;border-radius:4px;padding:2px 6px;margin-left:7px;vertical-align:middle;">IA</span>' : '';
-                const wrColor = e.wr >= 60 ? '#00ff88' : e.wr >= 40 ? '#ffaa00' : '#ff4466';
-                // Top 5 chars - larger images
-                const topChars = getTopChars(e.charUsage, 5);
-                const charImgs = topChars.map(function(c) {
-                    const url = getCharPortrait(c);
-                    return [
-                        '<div style="display:flex;flex-direction:column;align-items:center;gap:3px;">',
-                        '<img src="' + url + '" title="' + escapeHtml(c) + '" referrerpolicy="no-referrer" ',
-                        'style="width:52px;height:52px;border-radius:8px;border:2px solid rgba(255,170,0,0.3);object-fit:cover;background:#111;" ',
-                        'onerror="this.style.opacity=0.2">',
-                        '<span style="font-size:.55rem;color:#666;max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;">' + escapeHtml(c.split(' ')[0]) + '</span>',
-                        '</div>'
-                    ].join('');
+                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '<span style="font-family:Orbitron,sans-serif;font-size:.85rem;color:#666;">' + (i + 1) + '</span>';
+                const rankColor = i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#555';
+                const bgGlow = i === 0 ? 'rgba(255,215,0,0.07)' : i === 1 ? 'rgba(192,192,192,0.04)' : i === 2 ? 'rgba(205,127,50,0.04)' : 'rgba(255,170,0,0.02)';
+                const borderColor = i === 0 ? 'rgba(255,215,0,0.3)' : i === 1 ? 'rgba(192,192,192,0.15)' : i === 2 ? 'rgba(205,127,50,0.15)' : 'rgba(255,170,0,0.08)';
+                const fakeTag = e.isFake ? '<span style="font-size:.58rem;color:#777;background:rgba(255,255,255,0.05);border:1px solid #444;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle;">IA</span>' : '';
+                const wrColor = e.globalWR >= 60 ? '#00ff88' : e.globalWR >= 40 ? '#ffaa00' : '#ff4466';
+
+                // Top 5 attack chars
+                const topAtk = getTopChars(e.atkCharUsage, 5);
+                const atkImgs = topAtk.map(function(c) {
+                    return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">' +
+                        '<img src="' + getCharPortrait(c) + '" title="' + escapeHtml(c) + '" referrerpolicy="no-referrer" ' +
+                        'style="width:46px;height:46px;border-radius:7px;border:2px solid rgba(79,195,247,0.4);object-fit:cover;background:#111;" onerror="this.style.opacity=0.15">' +
+                        '<span style="font-size:.5rem;color:#4fc3f7;max-width:46px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(c.split(' ')[0]) + '</span>' +
+                        '</div>';
                 }).join('');
-                const charSection = charImgs
-                    ? '<div style="display:flex;gap:6px;align-items:flex-end;">' + charImgs + '</div>'
-                    : '<div style="color:#444;font-size:.75rem;padding:0 8px;">Sin partidas</div>';
+
+                // Top 5 defense chars
+                const topDef = getTopChars(e.defCharUsage, 5);
+                const defImgs = topDef.map(function(c) {
+                    return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">' +
+                        '<img src="' + getCharPortrait(c) + '" title="' + escapeHtml(c) + '" referrerpolicy="no-referrer" ' +
+                        'style="width:46px;height:46px;border-radius:7px;border:2px solid rgba(200,100,255,0.4);object-fit:cover;background:#111;" onerror="this.style.opacity=0.15">' +
+                        '<span style="font-size:.5rem;color:#c864ff;max-width:46px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(c.split(' ')[0]) + '</span>' +
+                        '</div>';
+                }).join('');
+
+                const atkTotal = e.atkWins + e.atkLosses;
+                const defTotal = e.defWins + e.defLosses;
+                const atkWR = atkTotal > 0 ? Math.round((e.atkWins / atkTotal) * 100) : 0;
+                const defWR = defTotal > 0 ? Math.round((e.defWins / defTotal) * 100) : 0;
+
                 return [
-                    '<div style="background:' + bgGlow + ';border:1px solid ' + borderColor + ';border-radius:14px;padding:18px 20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:8px;">',
-                    // Rank medal
-                    '<div style="font-size:1.6rem;min-width:36px;text-align:center;color:' + rankColor + ';">' + medal + '</div>',
-                    // Player info
-                    '<div style="flex:1;min-width:140px;">',
-                        '<div style="font-family:Orbitron,sans-serif;font-weight:700;color:#fff;font-size:1rem;letter-spacing:.03em;">' + escapeHtml(e.name) + fakeTag + '</div>',
-                        '<div style="display:flex;gap:16px;margin-top:6px;align-items:center;">',
-                            '<span style="font-size:.85rem;color:#00ff88;font-weight:700;">' + e.wins + ' <span style="color:#555;font-weight:400;">W</span></span>',
-                            '<span style="font-size:.85rem;color:#ff4466;font-weight:700;">' + e.losses + ' <span style="color:#555;font-weight:400;">L</span></span>',
-                            '<span style="font-size:.82rem;color:' + wrColor + ';font-weight:700;background:rgba(255,255,255,0.05);border-radius:6px;padding:2px 8px;">' + e.wr + '% WR</span>',
+                    '<div style="background:' + bgGlow + ';border:1px solid ' + borderColor + ';border-radius:14px;padding:16px 18px;margin-bottom:10px;">',
+                    // Row 1: rank + name + global stats
+                    '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px;">',
+                        '<div style="font-size:1.5rem;min-width:34px;text-align:center;">' + medal + '</div>',
+                        '<div style="flex:1;min-width:140px;">',
+                            '<div style="font-family:Orbitron,sans-serif;font-weight:700;color:#fff;font-size:.95rem;">' + escapeHtml(e.name) + fakeTag + '</div>',
+                            '<div style="font-size:.75rem;color:#888;margin-top:3px;">',
+                                '🌐 <span style="color:#ffaa00;font-weight:700;">' + e.globalWins + '</span> Wins Globales &nbsp;',
+                                '<span style="color:' + wrColor + ';font-weight:700;background:rgba(255,255,255,0.05);border-radius:5px;padding:1px 6px;">' + e.globalWR + '% WR</span>',
+                            '</div>',
+                        '</div>',
+                        // Attack stats box
+                        '<div style="background:rgba(79,195,247,0.07);border:1px solid rgba(79,195,247,0.2);border-radius:8px;padding:8px 12px;text-align:center;min-width:110px;">',
+                            '<div style="font-size:.65rem;color:#4fc3f7;letter-spacing:.05em;margin-bottom:4px;">🗡️ ATAQUE</div>',
+                            '<div style="font-size:.85rem;"><span style="color:#00ff88;font-weight:700;">' + e.atkWins + 'W</span> <span style="color:#555;">/</span> <span style="color:#ff4466;font-weight:700;">' + e.atkLosses + 'L</span></div>',
+                            '<div style="font-size:.68rem;color:' + (atkWR>=50?'#00ff88':'#ff4466') + ';margin-top:2px;">' + atkWR + '% WR</div>',
+                        '</div>',
+                        // Defense stats box
+                        '<div style="background:rgba(200,100,255,0.07);border:1px solid rgba(200,100,255,0.2);border-radius:8px;padding:8px 12px;text-align:center;min-width:110px;">',
+                            '<div style="font-size:.65rem;color:#c864ff;letter-spacing:.05em;margin-bottom:4px;">🛡️ DEFENSA</div>',
+                            '<div style="font-size:.85rem;"><span style="color:#00ff88;font-weight:700;">' + e.defWins + 'W</span> <span style="color:#555;">/</span> <span style="color:#ff4466;font-weight:700;">' + e.defLosses + 'L</span></div>',
+                            '<div style="font-size:.68rem;color:' + (defWR>=50?'#00ff88':'#ff4466') + ';margin-top:2px;">' + defWR + '% WR</div>',
                         '</div>',
                     '</div>',
-                    // Character portraits
-                    charSection,
+                    // Row 2: character images
+                    '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">',
+                        topAtk.length ? '<div><div style="font-size:.62rem;color:#4fc3f7;margin-bottom:6px;letter-spacing:.05em;">🗡️ MÁS USADOS ATAQUE</div><div style="display:flex;gap:5px;">' + atkImgs + '</div></div>' : '',
+                        topDef.length ? '<div><div style="font-size:.62rem;color:#c864ff;margin-bottom:6px;letter-spacing:.05em;">🛡️ MÁS USADOS DEFENSA</div><div style="display:flex;gap:5px;">' + defImgs + '</div></div>' : '',
+                    '</div>',
                     '</div>'
                 ].join('');
             });
             container.innerHTML = rows.join('');
         }
-
         function getTopChars(charUsage, n) {
             if (!charUsage) return [];
             return Object.entries(charUsage)
@@ -966,34 +1013,34 @@
             // Fallback map with correct URLs
             const portraits = {
                 'Madara Uchiha':        'https://i.postimg.cc/KzWJPy5j/Captura_de_pantalla_2026_02_26_134301.png',
-                'Sun Jin Woo':          'https://i.postimg.cc/2y8gqPH1/Captura_de_pantalla_2026_02_21_225927.png',
+                'Sun Jin Woo':          'https://i.postimg.cc/3rSZSvdF/Captura_de_pantalla_2026_03_11_105214.png',
                 'Aldebaran':            'https://i.postimg.cc/PJr0LB6N/Captura_de_pantalla_2026_02_21_230603.png',
                 'Leonidas':             'https://i.postimg.cc/TYJdgC3L/Captura_de_pantalla_2026_03_06_001254.png',
                 'Min Byung':            'https://i.postimg.cc/Y9xJCpxr/Captura_de_pantalla_2026_02_22_002441.png',
-                'Rengoku':              'https://i.postimg.cc/5N8k49N4/Captura_de_pantalla_2026_02_24_094704.png',
+                'Rengoku':              'https://i.postimg.cc/wTWCgJY2/Captura_de_pantalla_2026_03_15_021343.png',
                 'Aspros de Gemini':     'https://i.postimg.cc/NMZcBh8m/Captura_de_pantalla_2026_02_27_201323.png',
                 'Ymir':                 'https://i.postimg.cc/D0PFfyFL/Captura_de_pantalla_2026_03_03_125024.png',
                 'Thestalos':            'https://i.postimg.cc/9f6kNBpV/Gemini_Generated_Image_ac4u14ac4u14ac4u.png',
                 'Alexstrasza':          'https://i.postimg.cc/V6F3kYFw/Captura_de_pantalla_2026_02_21_233329.png',
                 'Anakin Skywalker':     'https://i.postimg.cc/7hYjCpBh/Captura_de_pantalla_2026_02_21_231859.png',
                 'Goku':                 'https://i.postimg.cc/wMsFFbWT/Captura_de_pantalla_2026_02_26_132013.png',
-                'Ragnar Lothbrok':      'https://i.postimg.cc/JnQ9z1QB/Captura_de_pantalla_2026_02_21_232050.png',
+                'Ragnar Lothbrok':      'https://i.postimg.cc/9XqFNYqW/Captura_de_pantalla_2026_03_11_234717.png',
                 'Saitama':              'https://i.postimg.cc/Qtz0QrqV/Captura_de_pantalla_2026_02_26_132109.png',
                 'Ozymandias':           'https://i.postimg.cc/6qGzz1Hp/Captura_de_pantalla_2026_02_26_131502.png',
                 'Gilgamesh':            'https://i.postimg.cc/nzNJp8K7/Captura_de_pantalla_2026_02_27_201309.png',
                 'Goku Black':           'https://i.postimg.cc/SsGwxyGp/Captura_de_pantalla_2026_02_22_014009.png',
                 'Saga de Geminis':      'https://i.postimg.cc/wBvTDG7f/Captura_de_pantalla_2026_02_24_103109.png',
-                'Minato Namikaze':      'https://i.postimg.cc/SKsNcvJt/Captura_de_pantalla_2026_02_24_103359.png',
+                'Minato Namikaze':      'https://i.postimg.cc/qvNv9NQN/Captura_de_pantalla_2026_03_11_215715.png',
                 'Muzan Kibutsuji':      'https://i.postimg.cc/fL41fCgH/Captura_de_pantalla_2026_02_28_020016.png',
                 'Nakime':               'https://i.postimg.cc/858xm4nX/Captura_de_pantalla_2026_02_28_020047.png',
                 'Sauron':               'https://i.postimg.cc/858xm4n0/Captura_de_pantalla_2026_02_28_020119.png',
                 'Darth Vader':          'https://i.postimg.cc/63sFfc1F/Captura_de_pantalla_2026_02_28_015421.png',
                 'Lich King':            'https://i.postimg.cc/W3Rxw8ff/Captura_de_pantalla_2026_02_28_015847.png',
-                'Padme Amidala':        'https://i.postimg.cc/pV63g1B4/Whats_App_Image_2026_03_05_at_9_39_15_A.jpg',
-                'Daenerys Targaryen':   'https://i.postimg.cc/8k0xqnbx/Whats_App_Image_2026_03_05_at_9_41_48_A.jpg',
-                'Tamayo':               'https://i.postimg.cc/9XnsvNBS/Whats_App_Image_2026_03_05_at_9_42_52_A.jpg',
-                'Emperador Palpatine':  'https://i.postimg.cc/DfMRtYcj/Whats_App_Image_2026_03_05_at_9_50_54_A.jpg',
-                'Gandalf':              'https://i.postimg.cc/1RjbLYHx/Whats_App_Image_2026_03_05_at_9_53_24_A.jpg',
+                'Padme Amidala':        'https://i.postimg.cc/pV63g1B4/Whats_App_Image_2026_03_05_at_9_39_15_AM.jpg',
+                'Daenerys Targaryen':   'https://i.postimg.cc/Gm8k90V5/Whats_App_Image_2026_03_15_at_1_59_17_AM.jpg',
+                'Tamayo':               'https://i.postimg.cc/9XnsvNBS/Whats_App_Image_2026_03_05_at_9_42_52_AM.jpg',
+                'Emperador Palpatine':  'https://i.postimg.cc/DfMRtYcj/Whats_App_Image_2026_03_05_at_9_50_54_AM.jpg',
+                'Gandalf':              'https://i.postimg.cc/1RjbLYHx/Whats_App_Image_2026_03_05_at_9_53_24_AM.jpg',
                 'Doomsday':             'https://i.postimg.cc/hjJDWnn6/Captura_de_pantalla_2026_03_06_003242.png',
                 'Ikki de Fenix':        'https://i.postimg.cc/LsX6jbnD/Captura_de_pantalla_2026_02_24_103509.png',
             };
