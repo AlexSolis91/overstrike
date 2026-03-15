@@ -1266,6 +1266,9 @@
                 
                 // Activar pasiva de Beru
                 triggerBeruPassive();
+                
+                // Activar pasiva de Kaisel
+                triggerKaiselPassive();
 
                 // PASIVA PROGENITOR DEMONIACO (Muzan): cura al inicio de cada ronda
                 triggerMuzanPassive();
