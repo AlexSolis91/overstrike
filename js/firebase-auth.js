@@ -95,6 +95,12 @@
             userRef.set({ name: currentUser.displayName, online: true, ts: Date.now(), uid: currentUser.uid });
             userRef.onDisconnect().remove();
 
+            // Check and show ranked defense notifications
+            listenForDefenseNotifications();
+
+            // Check 30-day leaderboard reset
+            checkLeaderboardReset();
+
             // Count online users and update players list
             db.ref('presence').on('value', function(snap) {
                 const count = snap.numChildren();
@@ -374,119 +380,358 @@
         let rankedMatchmakingTimer = null;
         let rankedMatchmakingListener = null;
 
+
+        // ════════════════════════════════════════════════
+        // EQUIPO RANKED — Selección y guardado de equipos
+        // ════════════════════════════════════════════════
+        let rtPickingTeam = 'attack'; // 'attack' | 'defense'
+        let rtPickingSlot = -1;
+        let rtAttackTeam = [];   // up to 5 char names
+        let rtDefenseTeam = [];  // up to 5 char names
+
+        function showRankedTeamScreen() {
+            if (!currentUser) return;
+            // Load saved teams from Firebase
+            db.ref('ranked_teams/' + currentUser.uid).once('value', function(snap) {
+                const data = snap.val() || {};
+                rtAttackTeam  = (data.attack  || []).slice();
+                rtDefenseTeam = (data.defense || []).slice();
+                document.getElementById('rankedTeamScreen').style.display = 'block';
+                rtRender();
+            });
+        }
+
+        function hideRankedTeamScreen() {
+            document.getElementById('rankedTeamScreen').style.display = 'none';
+        }
+
+        function rtRender() {
+            rtRenderSlots('attack',  'rtAttackSlots',  rtAttackTeam,  '#4fc3f7');
+            rtRenderSlots('defense', 'rtDefenseSlots', rtDefenseTeam, '#c864ff');
+            rtRenderGrid();
+        }
+
+        function rtRenderSlots(teamType, containerId, team, color) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = '';
+            for (let i = 0; i < 5; i++) {
+                const slot = document.createElement('div');
+                const isActive = (rtPickingTeam === teamType && rtPickingSlot === i);
+                const charName = team[i];
+                slot.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;cursor:pointer;transition:all .15s;border:2px solid ' +
+                    (isActive ? color : (charName ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)')) + ';background:' +
+                    (isActive ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.3)') + ';';
+
+                if (charName) {
+                    const portrait = getCharPortrait(charName);
+                    slot.innerHTML = [
+                        '<img src="' + portrait + '" style="width:40px;height:40px;border-radius:8px;object-fit:cover;border:1px solid rgba(255,255,255,0.2);" referrerpolicy="no-referrer">',
+                        '<span style="flex:1;font-size:.9rem;color:#fff;font-weight:600;">' + escapeHtml(charName) + '</span>',
+                        '<button onclick="rtRemoveChar(\'' + teamType + '\',' + i + ');event.stopPropagation();" ' +
+                          'style="background:rgba(255,51,102,0.2);border:1px solid #ff3366;color:#ff3366;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:.75rem;">✕</button>'
+                    ].join('');
+                } else {
+                    slot.innerHTML = '<span style="color:#444;font-size:.85rem;">+ Slot ' + (i+1) + ' (vacío)</span>';
+                }
+
+                slot.onclick = function() { rtSelectSlot(teamType, i); };
+                container.appendChild(slot);
+            }
+        }
+
+        function rtRenderGrid() {
+            const grid = document.getElementById('rtCharGrid');
+            if (!grid || typeof characterData === 'undefined') return;
+            grid.innerHTML = '';
+            const usedAttack  = new Set(rtAttackTeam.filter(Boolean));
+            const usedDefense = new Set(rtDefenseTeam.filter(Boolean));
+            const allUsed = new Set([...usedAttack, ...usedDefense]);
+
+            Object.keys(characterData).forEach(function(name) {
+                const cd = characterData[name];
+                if (!cd || !cd.abilities) return;
+                const inAttack  = usedAttack.has(name);
+                const inDefense = usedDefense.has(name);
+                const blocked   = allUsed.has(name);
+                const portrait  = getCharPortrait(name);
+                const card = document.createElement('div');
+                card.style.cssText = 'position:relative;border-radius:10px;overflow:hidden;cursor:' + (blocked ? 'not-allowed' : 'pointer') +
+                    ';opacity:' + (blocked ? '0.35' : '1') + ';transition:all .15s;border:2px solid ' +
+                    (inAttack ? '#4fc3f7' : inDefense ? '#c864ff' : 'rgba(255,255,255,0.1)') + ';';
+                card.innerHTML = [
+                    '<img src="' + portrait + '" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;" referrerpolicy="no-referrer">',
+                    '<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.75);padding:3px 4px;font-size:.6rem;color:#ccc;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(name.split(' ')[0]) + '</div>',
+                    inAttack  ? '<div style="position:absolute;top:3px;right:3px;background:#4fc3f7;color:#000;border-radius:4px;padding:1px 4px;font-size:.55rem;font-weight:700;">ATK</div>' : '',
+                    inDefense ? '<div style="position:absolute;top:3px;left:3px;background:#c864ff;color:#000;border-radius:4px;padding:1px 4px;font-size:.55rem;font-weight:700;">DEF</div>' : '',
+                ].join('');
+                if (!blocked) {
+                    card.onmouseover = function() { this.style.transform = 'scale(1.06)'; };
+                    card.onmouseout  = function() { this.style.transform = 'scale(1)'; };
+                    card.onclick = function() { rtPickChar(name); };
+                }
+                grid.appendChild(card);
+            });
+            // Update picking label
+            const lbl = document.getElementById('rtPickingFor');
+            if (lbl) {
+                if (rtPickingSlot >= 0) {
+                    lbl.textContent = (rtPickingTeam === 'attack' ? '🗡️ Equipo de Ataque' : '🛡️ Equipo de Defensa') + ' — Slot ' + (rtPickingSlot + 1);
+                    lbl.style.color = rtPickingTeam === 'attack' ? '#4fc3f7' : '#c864ff';
+                } else {
+                    lbl.textContent = 'Haz clic en un slot vacío o ocupado para reemplazarlo';
+                    lbl.style.color = '#666';
+                }
+            }
+        }
+
+        function rtSelectSlot(teamType, slotIdx) {
+            rtPickingTeam = teamType;
+            rtPickingSlot = slotIdx;
+            rtRender();
+        }
+
+        function rtRemoveChar(teamType, slotIdx) {
+            if (teamType === 'attack')  rtAttackTeam[slotIdx]  = null;
+            if (teamType === 'defense') rtDefenseTeam[slotIdx] = null;
+            // Compact (remove nulls but keep length by shifting)
+            if (teamType === 'attack')  rtAttackTeam  = rtCompact(rtAttackTeam);
+            if (teamType === 'defense') rtDefenseTeam = rtCompact(rtDefenseTeam);
+            rtPickingSlot = -1;
+            rtRender();
+        }
+
+        function rtCompact(arr) {
+            const filled = arr.filter(Boolean);
+            while (filled.length < 5) filled.push(null);
+            return filled;
+        }
+
+        function rtPickChar(name) {
+            if (rtPickingSlot < 0) {
+                // Auto-assign to first empty slot of current team
+                const team = rtPickingTeam === 'attack' ? rtAttackTeam : rtDefenseTeam;
+                const emptyIdx = team.findIndex(function(x) { return !x; });
+                if (emptyIdx < 0) { alert('El equipo ya tiene 5 personajes. Elimina uno primero.'); return; }
+                rtPickingSlot = emptyIdx;
+            }
+            if (rtPickingTeam === 'attack') {
+                rtAttackTeam[rtPickingSlot]  = name;
+            } else {
+                rtDefenseTeam[rtPickingSlot] = name;
+            }
+            // Advance to next empty slot
+            const currentTeam = rtPickingTeam === 'attack' ? rtAttackTeam : rtDefenseTeam;
+            const nextEmpty = currentTeam.findIndex(function(x,i) { return !x && i > rtPickingSlot; });
+            rtPickingSlot = nextEmpty >= 0 ? nextEmpty : -1;
+            rtRender();
+        }
+
+        function saveRankedTeams() {
+            if (!currentUser) return;
+            const attack  = rtAttackTeam.filter(Boolean);
+            const defense = rtDefenseTeam.filter(Boolean);
+            if (attack.length < 5) { alert('El Equipo de Ataque necesita 5 personajes.'); return; }
+            if (defense.length < 5) { alert('El Equipo de Defensa necesita 5 personajes.'); return; }
+            const data = { attack: attack, defense: defense, uid: currentUser.uid, name: currentUser.displayName || 'Jugador', ts: Date.now() };
+            db.ref('ranked_teams/' + currentUser.uid).set(data).then(function() {
+                const msg = document.getElementById('rankedTeamSaveMsg');
+                if (msg) { msg.textContent = '✅ Equipos guardados correctamente'; msg.style.display = 'block'; setTimeout(function() { msg.style.display = 'none'; }, 3000); }
+            });
+        }
+
+        function getRankedTeams(callback) {
+            if (!currentUser) { callback(null); return; }
+            db.ref('ranked_teams/' + currentUser.uid).once('value', function(snap) {
+                callback(snap.val());
+            });
+        }
+
+        function hasRankedTeams(callback) {
+            getRankedTeams(function(data) {
+                callback(data && data.attack && data.attack.length >= 5 && data.defense && data.defense.length >= 5);
+            });
+        }
+
         function startRankedMatchmaking() {
             if (!currentUser) return;
-            const myUid = currentUser.uid;
+            // Check if player has configured ranked teams
+            hasRankedTeams(function(hasTeams) {
+                if (!hasTeams) {
+                    alert('⚠️ Debes configurar tu Equipo Ranked (Ataque y Defensa) antes de jugar en modo Ranked.\n\nHaz clic en "⚔️ EQUIPO RANKED" para configurarlo.');
+                    return;
+                }
+                _startRankedSearch();
+            });
+        }
+
+        function _startRankedSearch() {
+            const myUid  = currentUser.uid;
             const myName = currentUser.displayName || 'Jugador';
 
-            // Show searching modal
             showRankedSearchModal();
 
-            // Register in matchmaking queue
+            // Register in queue
             const queueRef = db.ref('ranked_queue/' + myUid);
             queueRef.set({ uid: myUid, name: myName, ts: Date.now() });
             queueRef.onDisconnect().remove();
 
-            // Look for another player in the queue
             let matched = false;
             rankedMatchmakingListener = db.ref('ranked_queue').on('value', function(snap) {
                 if (matched) return;
                 const queue = snap.val() || {};
-                const others = Object.entries(queue).filter(([uid]) => uid !== myUid);
+                const others = Object.entries(queue).filter(function(e) {
+                    return e[0] !== myUid && !e[1].matchedRoomId;
+                });
                 if (others.length === 0) return;
 
-                // Pick the first other player
+                // Found a rival — Ataque vs Ataque
                 const [opponentUid, opponentData] = others[0];
-                // The player with the smaller UID becomes host (deterministic)
                 const iAmHost = myUid < opponentUid;
                 matched = true;
                 clearRankedTimer();
                 db.ref('ranked_queue/' + myUid).remove();
+                db.ref('ranked_queue').off('value', rankedMatchmakingListener);
 
                 if (iAmHost) {
-                    // Create a room and update queue entry to signal match
                     const roomId = 'R_' + generateRoomCode();
                     db.ref('ranked_queue/' + opponentUid).update({ matchedRoomId: roomId, matchedBy: myUid });
-                    currentRoomId = roomId;
-                    isRoomHost = true;
-                    onlineMode = true;
-                    db.ref('rooms/' + roomId).set({
-                        host: { uid: myUid, name: myName, photo: currentUser.photoURL || '' },
-                        guest: { uid: opponentUid, name: opponentData.name || 'Rival' },
-                        status: 'ready',
-                        ranked: true,
-                        created: Date.now()
-                    }).then(function() {
-                        hideRankedSearchModal();
-                        db.ref('ranked_queue').off('value', rankedMatchmakingListener);
-                        // Record ranked match start for stats
-                        window._rankedRoomId = roomId;
-                        window._rankedOpponentName = opponentData.name || 'Rival';
-                        startOnlineGame(roomId, true);
+                    currentRoomId = roomId; isRoomHost = true; onlineMode = true;
+                    window._rankedMode = true;
+                    // Use attack teams for both players
+                    getRankedTeams(function(myTeams) {
+                        db.ref('ranked_teams/' + opponentUid).once('value', function(snap2) {
+                            const oppTeams = snap2.val() || {};
+                            window._teamNames = { team1: myName, team2: opponentData.name || 'Rival' };
+                            db.ref('rooms/' + roomId).set({
+                                host: { uid: myUid, name: myName, photo: currentUser.photoURL || '' },
+                                guest: { uid: opponentUid, name: opponentData.name || 'Rival' },
+                                status: 'ready', ranked: true, created: Date.now(),
+                                hostAttack: myTeams ? myTeams.attack : null,
+                                guestAttack: oppTeams ? oppTeams.attack : null
+                            }).then(function() {
+                                hideRankedSearchModal();
+                                window._rankedOpponentName = opponentData.name || 'Rival';
+                                startOnlineGame(roomId, true);
+                            });
+                        });
                     });
                 } else {
-                    // Wait to receive the matchedRoomId
+                    // Wait for matchedRoomId
                     db.ref('ranked_queue/' + myUid + '/matchedRoomId').on('value', function(s) {
                         const rid = s.val();
                         if (!rid) return;
                         db.ref('ranked_queue/' + myUid + '/matchedRoomId').off();
                         db.ref('ranked_queue/' + myUid).remove();
-                        matched = true;
-                        clearRankedTimer();
+                        matched = true; clearRankedTimer();
                         hideRankedSearchModal();
-                        db.ref('ranked_queue').off('value', rankedMatchmakingListener);
-                        currentRoomId = rid;
-                        isRoomHost = false;
-                        onlineMode = true;
-                        window._rankedRoomId = rid;
+                        currentRoomId = rid; isRoomHost = false; onlineMode = true;
+                        window._rankedMode = true;
                         window._rankedOpponentName = opponentData.name || 'Rival';
+                        window._teamNames = { team1: opponentData.name || 'Rival', team2: myName };
                         db.ref('rooms/' + rid + '/guest').set({
                             uid: myUid, name: myName, photo: currentUser.photoURL || ''
-                        }).then(function() {
-                            startOnlineGame(rid, false);
-                        });
+                        }).then(function() { startOnlineGame(rid, false); });
                     });
                 }
             });
 
-            // 10 second timer — if no match found, start vs IA with fake name
+            // 10s timer: no rival → fight random player's defense team
             rankedMatchmakingTimer = setTimeout(function() {
                 if (matched) return;
                 matched = true;
                 clearRankedTimer();
-                if (rankedMatchmakingListener) {
-                    db.ref('ranked_queue').off('value', rankedMatchmakingListener);
-                    rankedMatchmakingListener = null;
-                }
+                if (rankedMatchmakingListener) { db.ref('ranked_queue').off('value', rankedMatchmakingListener); rankedMatchmakingListener = null; }
                 db.ref('ranked_queue/' + myUid).remove();
                 hideRankedSearchModal();
-                // Pick a random fake opponent name
-                const fakeName = RANKED_FAKE_NAMES[Math.floor(Math.random() * RANKED_FAKE_NAMES.length)];
-                window._rankedFakeOpponent = fakeName;
-                window._rankedRoomId = null;
-                window._rankedMode = true;
-                // Set team names: real player vs fake AI opponent
-                const myName = currentUser ? (currentUser.displayName || 'Jugador') : 'Jugador';
-                window._teamNames = { team1: myName, team2: fakeName };
-                // Start vs IA
-                csState.team1 = [];
-                csState.team2 = [];
-                csState.phase = 'team1';
-                csState.gameMode = 'solo';
-                csState.pendingChar = null;
-                showScreen('charSelectScreen');
-                // Update char select labels
-                const lbl = document.getElementById('csPhaseLabel');
-                if (lbl) { lbl.textContent = '🔷 ' + myName + ' — Elige tus 5 personajes (Ranked)'; lbl.className = 'cs-phase-label team1'; }
-                const n1 = document.getElementById('csTeamName1');
-                if (n1) n1.textContent = myName;
-                const n2 = document.getElementById('csTeamName2');
-                if (n2) n2.textContent = fakeName;
-                csInit();
-                audioManager.play('audioMenu');
+                _startRankedVsDefense();
             }, 10000);
         }
 
+        function _startRankedVsDefense() {
+            // Pick a random player's defense team (excluding self)
+            db.ref('ranked_teams').once('value', function(snap) {
+                const allTeams = snap.val() || {};
+                const eligible = Object.entries(allTeams).filter(function(e) {
+                    return e[0] !== currentUser.uid && e[1].defense && e[1].defense.length >= 5;
+                });
+
+                const myName = currentUser.displayName || 'Jugador';
+
+                if (eligible.length === 0) {
+                    // No defense teams available — fall back to random IA with random team
+                    window._rankedMode = true;
+                    window._rankedFakeOpponent = 'CPU';
+                    window._rankedDefenseOwnerUid = null;
+                    window._teamNames = { team1: myName, team2: 'CPU' };
+                    getRankedTeams(function(myTeams) {
+                        _launchRankedVsIAWithTeam(myTeams ? myTeams.attack : null, null, 'CPU');
+                    });
+                    return;
+                }
+
+                // Pick a random eligible defense
+                const [defOwnerUid, defData] = eligible[Math.floor(Math.random() * eligible.length)];
+                const defOwnerName = defData.name || 'Rival';
+                window._rankedMode = true;
+                window._rankedFakeOpponent = defOwnerName;
+                window._rankedDefenseOwnerUid = defOwnerUid;
+                window._teamNames = { team1: myName, team2: defOwnerName };
+
+                getRankedTeams(function(myTeams) {
+                    _launchRankedVsIAWithTeam(myTeams ? myTeams.attack : null, defData.defense, defOwnerName);
+                });
+            });
+        }
+
+        function _launchRankedVsIAWithTeam(attackTeam, defenseTeam, opponentName) {
+            const myName = currentUser ? (currentUser.displayName || 'Jugador') : 'Jugador';
+            window._rankedMode = true;
+            window._rankedFakeOpponent = opponentName;
+
+            // Pre-load teams into csState so no character select screen is needed
+            csState.team1 = attackTeam || [];
+            csState.team2 = defenseTeam || [];
+            csState.phase = 'done';
+            csState.gameMode = 'solo';
+            csState.pendingChar = null;
+
+            if (csState.team1.length >= 5 && csState.team2.length >= 5) {
+                // Skip char select — start directly
+                document.getElementById('charSelectScreen').style.display = 'none';
+                document.querySelector('.game-container').style.display = 'block';
+                // Build character map
+                const selectedChars = {};
+                const nameCount = {};
+                const allSelected = csState.team1.map(function(n) { return { name: n, team: 'team1' }; })
+                    .concat(csState.team2.map(function(n) { return { name: n, team: 'team2' }; }));
+                allSelected.forEach(function(entry) {
+                    const base = entry.name;
+                    nameCount[base] = (nameCount[base] || 0) + 1;
+                    const key = nameCount[base] > 1 ? base + ' v' + nameCount[base] : base;
+                    if (!characterData[base]) return;
+                    const charCopy = JSON.parse(JSON.stringify(characterData[base]));
+                    charCopy.team = entry.team;
+                    charCopy.baseName = base;
+                    selectedChars[key] = charCopy;
+                });
+                if (typeof showScreen === 'function') showScreen('game');
+                initGame(selectedChars);
+                window._teamNames = { team1: myName, team2: opponentName };
+                gameState.gameMode = 'ranked';
+                gameState.aiTeam = 'team2';
+                const th1 = document.getElementById('teamHeader1'); if (th1) th1.textContent = '🔷 ' + myName;
+                const th2 = document.getElementById('teamHeader2'); if (th2) th2.textContent = '🔶 ' + opponentName;
+                const sh1 = document.getElementById('statusHeader1'); if (sh1) sh1.textContent = '🔷 ' + myName;
+                const sh2 = document.getElementById('statusHeader2'); if (sh2) sh2.textContent = '🔶 ' + opponentName;
+                addLog('🏆 RANKED: ' + myName + ' vs ' + opponentName + ' (equipo de defensa)', 'info');
+                audioManager.playRandomBattle();
+            } else {
+                // Fallback: go to char select (team1 only if no attack team)
+                showScreen('charSelectScreen');
+                csInit();
+            }
+        }
         function clearRankedTimer() {
             if (rankedMatchmakingTimer) { clearTimeout(rankedMatchmakingTimer); rankedMatchmakingTimer = null; }
         }
@@ -553,10 +798,35 @@
             if (!currentUser || !window._rankedMode) return;
             window._rankedMode = false;
             const myUid = currentUser.uid;
-                        const myName = currentUser.displayName || 'Jugador';
+            const myName = currentUser.displayName || 'Jugador';
             const won = (winnerTeam === playerTeam);
             const fakeOpp = window._rankedFakeOpponent || opponentName;
             window._rankedFakeOpponent = null;
+            const defOwnerUid = window._rankedDefenseOwnerUid || null;
+            window._rankedDefenseOwnerUid = null;
+
+            // Notify defense owner if a real player's defense was used
+            if (defOwnerUid) {
+                const notifRef = db.ref('ranked_notifications/' + defOwnerUid).push();
+                notifRef.set({
+                    type: 'defense_attacked',
+                    attackerName: myName,
+                    attackerUid: myUid,
+                    defenseWon: !won, // defense team won if attacker lost
+                    ts: Date.now(),
+                    read: false
+                });
+                // Update defense owner's ranked stats
+                const oppRef = db.ref('ranked_stats/' + defOwnerUid);
+                oppRef.once('value', function(snap) {
+                    const cur = snap.val() || { wins: 0, losses: 0, name: fakeOpp, charUsage: {} };
+                    cur.wins   = (cur.wins   || 0) + (!won ? 1 : 0); // defense won = attacker lost
+                    cur.losses = (cur.losses || 0) + (won  ? 1 : 0);
+                    cur.charUsage = cur.charUsage || {};
+                    (opponentChars || []).forEach(function(c) { cur.charUsage[c] = (cur.charUsage[c] || 0) + 1; });
+                    oppRef.set(cur);
+                });
+            }
 
             // Save my stats
             const myRef = db.ref('ranked_stats/' + myUid);
@@ -730,7 +1000,52 @@
             return portraits[charName] || portraits['Aldebaran'];
         }
 
-                // ── Room management ──
+                // ── Defense Attack Notifications ──
+        function listenForDefenseNotifications() {
+            if (!currentUser) return;
+            db.ref('ranked_notifications/' + currentUser.uid)
+              .orderByChild('read').equalTo(false)
+              .on('child_added', function(snap) {
+                const n = snap.val();
+                if (!n) return;
+                const defended = n.defenseWon ? '✅ tu equipo resistió el ataque' : '❌ tu equipo fue derrotado';
+                showLobbyToast('🛡️ ' + (n.attackerName || 'Alguien') + ' atacó tu equipo de defensa — ' + defended);
+                snap.ref.update({ read: true });
+            });
+        }
+
+        function showLobbyToast(msg) {
+            let toast = document.getElementById('lobbyToast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'lobbyToast';
+                toast.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(10,14,23,0.95);border:1px solid #ffaa00;border-radius:12px;padding:14px 24px;color:#ffaa00;font-size:.88rem;z-index:9999;max-width:420px;text-align:center;box-shadow:0 0 24px rgba(255,170,0,0.3);transition:opacity .3s;';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = msg;
+            toast.style.opacity = '1';
+            clearTimeout(toast._hideTimer);
+            toast._hideTimer = setTimeout(function() { toast.style.opacity = '0'; }, 5000);
+        }
+
+        // ── 30-day Leaderboard Reset ──
+        const LEADERBOARD_RESET_DAYS = 30;
+        function checkLeaderboardReset() {
+            db.ref('leaderboard_meta/lastReset').once('value', function(snap) {
+                const lastReset = snap.val() || 0;
+                const now = Date.now();
+                const daysSince = (now - lastReset) / (1000 * 60 * 60 * 24);
+                if (daysSince >= LEADERBOARD_RESET_DAYS) {
+                    // Reset all stats
+                    db.ref('ranked_stats').remove().then(function() {
+                        db.ref('leaderboard_meta/lastReset').set(now);
+                        console.log('[RANKED] Leaderboard reset — new 30-day season started');
+                    });
+                }
+            });
+        }
+
+        // ── Room management ──
         function generateRoomCode() {
             const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
             let code = '';
