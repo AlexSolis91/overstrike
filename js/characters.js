@@ -8,7 +8,7 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 rikudoMode: false,
                 portrait: 'https://i.postimg.cc/KzWJPy5j/Captura_de_pantalla_2026_02_26_134301.png',
-                transformationPortrait: 'https://i.postimg.cc/kGtwwhj9/Captura_de_pantalla_2026_02_26_135949.png',
+                transformationPortrait: 'https://i.postimg.cc/pTBgL2Bp/Captura_de_pantalla_2026_02_22_004257.png',
                 passive: { name: 'Limbo', description: '(Activa con Modo Rikudō) Recibe 50% menos de daño. Recupera 3 HP cada vez que recibe daño por golpe.' },
                 abilities: [
                     { name: 'Katon: Gōka Mekkyaku', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'burn', burnPercent: 10, burnDuration: 2, description: 'Causa 2 de daño. Aplica Quemaduras 10% 1 turno.' },
@@ -21,7 +21,7 @@
             'Sun Jin Woo': {
                 hp: 20, maxHp: 20, speed: 96, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/2y8gqPH1/Captura_de_pantalla_2026_02_21_225927.png',
+                portrait: 'https://i.postimg.cc/3rSZSvdF/Captura_de_pantalla_2026_03_11_105214.png',
                 passive: { name: 'Autoridad del Gobernante', description: 'Al inicio de su turno gana Sigilo 1 turno. Cuando una Sombra desaparece, genera 2 cargas.' },
                 abilities: [
                     { name: 'Arise!', type: 'basic', cost: 10, chargeGain: 1, damage: 0, target: 'self', effect: 'arise_summon', description: 'Invoca una Sombra aleatoria (Igris, Iron, Tusk, Beru, Bellion).' },
@@ -73,7 +73,7 @@
             'Rengoku': {
                 hp: 25, maxHp: 25, speed: 84, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/5N8k49N4/Captura_de_pantalla_2026_02_24_094704.png',
+                portrait: 'https://i.postimg.cc/wTWCgJY2/Captura_de_pantalla_2026_03_15_021343.png',
                 passive: { name: 'Corazón Ardiente', description: 'Cuando Rengoku muere, aplica Aturdimiento a todos los enemigos.' },
                 abilities: [
                     { name: 'Sol Ascendente', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'sol_ascendente', description: 'Causa 2 de daño. Aplica Quemadura 10% 2 turnos.' },
@@ -159,7 +159,7 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 ultraInstinto: false,
                 portrait: 'https://i.postimg.cc/wMsFFbWT/Captura_de_pantalla_2026_02_26_132013.png',
-                transformationPortrait: 'https://i.postimg.cc/NfCqnbgN/Captura_de_pantalla_2026_02_22_013932.png',
+                transformationPortrait: 'https://i.postimg.cc/ZK704HT2/Captura_de_pantalla_2026_03_02_112236.png',
                 passive: { name: 'Entrenamiento de los Dioses', description: 'Con Furia + Frenesí activos, sus ataques generan +2 cargas adicionales. Por cada crítico genera +2 cargas adicionales.' },
                 abilities: [
                     { name: 'Kamehameha', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'single', effect: 'crit_chance_basic', critChance: 0.1, description: 'Causa 2 de daño. 10% de probabilidad de golpe crítico.' },
@@ -172,7 +172,7 @@
             'Ragnar Lothbrok': {
                 hp: 25, maxHp: 25, speed: 83, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/JnQ9z1QB/Captura_de_pantalla_2026_02_21_232050.png',
+                portrait: 'https://i.postimg.cc/9XqFNYqW/Captura_de_pantalla_2026_03_11_234717.png',
                 passive: { name: 'Hijo de Odin', description: 'Cada vez que Ragnar recibe daño por golpe, genera 1 carga.' },
                 abilities: [
                     { name: 'Furia Vikinga', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'furia_vikinga', description: 'Causa 2 de daño. Aplica Sangrado 2 turnos.' },
@@ -251,7 +251,7 @@
             'Minato Namikaze': {
                 hp: 20, maxHp: 20, speed: 89, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/SKsNcvJt/Captura_de_pantalla_2026_02_24_103359.png',
+                portrait: 'https://i.postimg.cc/qvNv9NQN/Captura_de_pantalla_2026_03_11_215715.png',
                 passive: { name: 'Hiraishin no Jutsu', description: 'Esquiva Área (inmune a AOE enemigo). Genera +2 cargas adicionales por cada enemigo golpeado con menos velocidad que Minato.' },
                 abilities: [
                     { name: 'Kiiroi Senkō', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'kiiroi_senko_v2', description: 'Causa 1 de daño. Aplica Celeridad 10% 2 turnos. Aplica Buff aleatorio 2 turnos.' },
@@ -266,7 +266,7 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 muzanTransformed: false,
                 portrait: 'https://i.postimg.cc/fL41fCgH/Captura_de_pantalla_2026_02_28_020016.png',
-                transformationPortrait: 'https://i.postimg.cc/W3Rxw8ff/Captura_de_pantalla_2026_02_28_015847.png',
+                transformationPortrait: 'https://i.postimg.cc/nM8HxvTD/Whats_App_Image_2026_03_03_at_3_29_34_PM.jpg',
                 passive: { name: 'Progenitor Demoniaco', description: 'Al inicio de cada ronda, cura 1 HP a Muzan y a un aliado aleatorio. Cada vez que Veneno hace daño, Muzan genera 1 carga.' },
                 abilities: [
                     { name: 'Espinas de Sangre', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'apply_poison', description: 'Causa 2 de daño. Aplica Veneno 2 turnos.' },
@@ -332,7 +332,7 @@
             'Padme Amidala': {
                 hp: 20, maxHp: 20, speed: 78, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/pV63g1B4/Whats_App_Image_2026_03_05_at_9_39_15_A.jpg',
+                portrait: 'https://i.postimg.cc/pV63g1B4/Whats_App_Image_2026_03_05_at_9_39_15_AM.jpg',
                 passive: { name: 'Negociaciones Hostiles', description: 'Cada vez que un aliado recibe un Debuff, Padme genera 1 carga.' },
                 abilities: [
                     { name: 'Orden de Fuego', type: 'basic', cost: 0, chargeGain: 0, damage: 0, target: 'self', effect: 'orden_de_fuego', description: 'Genera 1 carga a los 4 aliados del equipo.' },
@@ -345,7 +345,7 @@
             'Daenerys Targaryen': {
                 hp: 15, maxHp: 15, speed: 77, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/8k0xqnbx/Whats_App_Image_2026_03_05_at_9_41_48_A.jpg',
+                portrait: 'https://i.postimg.cc/Gm8k90V5/Whats_App_Image_2026_03_15_at_1_59_17_AM.jpg',
                 passive: { name: 'Dinastía del Dragón', description: 'Inmune a Quemadura y Quemadura Solar. El equipo aliado aplica Quemadura 10% 1 turno al golpear al enemigo.' },
                 abilities: [
                     { name: 'Madre de Dragones', type: 'basic', cost: 10, chargeGain: 2, damage: 0, target: 'self', effect: 'madre_dragones', description: 'Invoca un Dragón aleatorio.' },
@@ -358,7 +358,7 @@
             'Tamayo': {
                 hp: 20, maxHp: 20, speed: 81, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/9XnsvNBS/Whats_App_Image_2026_03_05_at_9_42_52_A.jpg',
+                portrait: 'https://i.postimg.cc/9XnsvNBS/Whats_App_Image_2026_03_05_at_9_42_52_AM.jpg',
                 passive: { name: 'Curandera de las Sombras', description: 'Al inicio de cada ronda, elimina 2 Debuffs de un aliado aleatorio y aplica Escudo 3 HP a un aliado aleatorio.' },
                 abilities: [
                     { name: 'Aguja Medicinal', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'ally_single', effect: 'aguja_medicinal', heal: 1, description: 'Cura 1 HP y elimina 1 Debuff del objetivo aliado.' },
@@ -371,7 +371,7 @@
             'Emperador Palpatine': {
                 hp: 20, maxHp: 20, speed: 88, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/DfMRtYcj/Whats_App_Image_2026_03_05_at_9_50_54_A.jpg',
+                portrait: 'https://i.postimg.cc/DfMRtYcj/Whats_App_Image_2026_03_05_at_9_50_54_AM.jpg',
                 passive: { name: 'Emperador de la Galaxia', description: '50% de aplicar Aturdimiento cada vez que un Debuff del equipo enemigo se limpia o termina su efecto.' },
                 abilities: [
                     { name: 'Relámpago Sith', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'single', effect: 'relampago_sith', description: 'Causa 1 de daño. Limpia 1 Debuff del objetivo enemigo (activa pasiva).' },
@@ -384,7 +384,7 @@
             'Gandalf': {
                 hp: 20, maxHp: 20, speed: 74, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/1RjbLYHx/Whats_App_Image_2026_03_05_at_9_53_24_A.jpg',
+                portrait: 'https://i.postimg.cc/1RjbLYHx/Whats_App_Image_2026_03_05_at_9_53_24_AM.jpg',
                 passive: { name: 'Istari', description: 'Inmune a Posesión, Confusión y Miedo. Cada vez que un Escudo en un aliado se rompe, genera 3 cargas al portador.' },
                 abilities: [
                     { name: 'Resplandor', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'resplandor', description: 'Aplica Regeneración 10% 1 turno a todo el equipo aliado.' },
@@ -412,7 +412,7 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 ikki_armor: false, ikki_revival_round: null,
                 portrait: 'https://i.postimg.cc/LsX6jbnD/Captura_de_pantalla_2026_02_24_103509.png',
-                transformationPortrait: 'https://i.postimg.cc/MpXSqfx8/Captura_de_pantalla_2026_02_21_233200.png',
+                transformationPortrait: 'https://i.postimg.cc/5tMS08yN/Captura_de_pantalla_2026_02_24_104108.png',
                 passive: { name: 'Cenizas del Fénix', description: 'Al final de la segunda ronda después de morir, revive con 50% de HP y 5 cargas.' },
                 abilities: [
                     { name: 'Garras del Fénix', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'garras_fenix', burnPercent: 5, burnDuration: 3, description: 'Causa 1 de daño. Aplica Quemadura 5% por 2 turnos.' },
@@ -423,4 +423,3 @@
             },
 
         };
-
