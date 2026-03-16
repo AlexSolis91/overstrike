@@ -294,6 +294,17 @@
                     }
                 }
             }
+        
+            // CUERPO DIVINO (Goku Black): 50% apply Debilitar on target when GB deals damage
+            if (attackerName === 'Goku Black' && targetName && !passiveExecuting) {
+                const gb = gameState.characters['Goku Black'];
+                if (gb && !gb.isDead && gb.hp > 0 && Math.random() < 0.5) {
+                    passiveExecuting = true;
+                    applyWeaken(targetName, 2);
+                    addLog('💀 Cuerpo Divino: Goku Black aplica Debilitar a ' + targetName, 'debuff');
+                    passiveExecuting = false;
+                }
+            }
         }
 
         // ── PASIVA FALANGE (Leonidas): 2 cargas a aliado aleatorio cuando enemigo usa Special ──
@@ -314,13 +325,42 @@
         }
 
         // ── PASIVA MABOROSHI (Saga de Geminis): 1 carga al aplicar debuff ──
-        function triggerMaboroshi(targetTeam) {
-            // Note: does NOT check passiveExecuting — Maboroshi must fire even during passive chains
+        
+        function triggerAsistir(attackerName, targetName, abilityType) {
+            // ASISTIR (Anakin): when ally uses Special/Over ST, execute basic on same target
+            if (abilityType !== 'special' && abilityType !== 'over') return;
+            if (!targetName) return;
+            const target = gameState.characters[targetName];
+            if (!target || target.isDead || target.hp <= 0) return;
+            // Find Anakin on same team as attacker
+            const attacker = gameState.characters[attackerName];
+            if (!attacker) return;
+            const anakin = gameState.characters['Anakin Skywalker'];
+            if (!anakin || anakin.isDead || anakin.hp <= 0) return;
+            if (anakin.team !== attacker.team) return;
+            if (attackerName === 'Anakin Skywalker') return; // Don't trigger on own attacks
+            if (!anakin.anakinAsistir) return;
+            if (passiveExecuting) return;
+            // Execute Anakin's basic attack
+            const basic = anakin.abilities && anakin.abilities.find(function(a) { return a.type === 'basic'; });
+            if (!basic) return;
+            passiveExecuting = true;
+            const basicDmg = basic.damage || 1;
+            applyDamageWithShield(targetName, basicDmg, 'Anakin Skywalker');
+            anakin.charges = Math.min(20, (anakin.charges || 0) + (basic.chargeGain || 2));
+            addLog('⚔️ El Elegido (Asistir): Anakin ejecuta ataque básico sobre ' + targetName + ' (' + basicDmg + ' dmg)', 'buff');
+            passiveExecuting = false;
+        }
+function triggerMaboroshi(targetTeam, debuffName) {
+            // Only fires for Posesion and Mega Posesion → 3 cargas each
+            if (!debuffName) return;
+            const norm = (debuffName || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+            if (norm !== 'posesion' && norm !== 'mega posesion') return;
             const saga = gameState.characters['Saga de Geminis'];
             if (!saga || saga.isDead || saga.hp <= 0) return;
-            if (saga.team === targetTeam) return; // Solo aplica contra el equipo objetivo (enemigos de Saga)
-            saga.charges = Math.min(20, (saga.charges || 0) + 1);
-            addLog('🌌 Maboroshi: Saga de Géminis genera 1 carga (debuff aplicado)', 'buff');
+            if (saga.team === targetTeam) return;
+            saga.charges = Math.min(20, (saga.charges || 0) + 3);
+            addLog('🌌 Maboroshi: Saga de Géminis genera 3 cargas (' + debuffName + ' aplicado)', 'buff');
         }
 
 
@@ -396,11 +436,12 @@
         function triggerMuzanPassive() {
             const muzan = gameState.characters['Muzan Kibutsuji'];
             if (!muzan || muzan.isDead || muzan.hp <= 0) return;
-            // Curar 1 HP a Muzan
+            // Curar 2 HP a Muzan (Excel v5: 2HP a Muzan)
             if (muzan.hp < muzan.maxHp) {
-                muzan.hp = Math.min(muzan.maxHp, muzan.hp + 1);
-                addLog('🩸 Progenitor Demoniaco: Muzan recupera 1 HP', 'heal');
-                triggerBendicionSagrada(muzan.team, 1);
+                const healedM = Math.min(muzan.maxHp - muzan.hp, 2);
+                muzan.hp = Math.min(muzan.maxHp, muzan.hp + 2);
+                addLog('🩸 Progenitor Demoniaco: Muzan recupera 2 HP', 'heal');
+                triggerBendicionSagrada(muzan.team, healedM);
             }
             // Curar 1 HP a un aliado aleatorio
             const allies = Object.keys(gameState.characters).filter(function(n) {
