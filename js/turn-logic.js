@@ -1366,7 +1366,7 @@
                         for (let n in gameState.characters) {
                             const c = gameState.characters[n];
                             if (c && c.team === rhTeam && !c.isDead && c.hp > 0) {
-                                applyBurn(n, 10, 1);
+                                applyFlatBurn(n, 2, 1);
                             }
                         }
                     } else if (s.dragonEffect === 'heal_team') {
