@@ -416,7 +416,7 @@
                 const tgtCD = gameState.characters[targetName];
                 const nonStackCD = ['miedo','confusion','posesion','debilitar','aturdimiento','mega aturdimiento'];
                 const debuffPoolCD = [
-                    { name:'quemadura',  fn: function(){ applyBurn(targetName, 10, 2); } },
+                    { name:'quemadura',  fn: function(){ applyFlatBurn(targetName, 2, 2); } },
                     { name:'sangrado',   fn: function(){ applyBleed(targetName, 2); } },
                     { name:'veneno',     fn: function(){ applyPoison(targetName, 2); } },
                     { name:'miedo',      fn: function(){ applyFear(targetName, 1); } },
@@ -678,43 +678,18 @@
 
             // ── CAMBIO DE SANGRE (Nakime updated) ──
             } else if (ability.effect === 'cambio_sangre') {
-                const myTeamCS = attacker.team;
-                const enemyTeamCS = myTeamCS === 'team1' ? 'team2' : 'team1';
-                const alliesCS = Object.keys(gameState.characters).filter(n => { const c = gameState.characters[n]; return c && c.team === myTeamCS && !c.isDead && c.hp > 0; });
-                const enemiesCS = Object.keys(gameState.characters).filter(n => { const c = gameState.characters[n]; return c && c.team === enemyTeamCS && !c.isDead && c.hp > 0; });
-                if (alliesCS.length > 0 && enemiesCS.length > 0) {
-                    const allyNameCS = alliesCS[Math.floor(Math.random() * alliesCS.length)];
-                    const enemyNameCS = enemiesCS[Math.floor(Math.random() * enemiesCS.length)];
-                    const allyCS = gameState.characters[allyNameCS];
-                    const enemyCS = gameState.characters[enemyNameCS];
-                    const allyDebuffsCS = allyCS.statusEffects.filter(e => e && e.type === 'debuff');
-                    allyCS.statusEffects = allyCS.statusEffects.filter(e => e && e.type !== 'debuff');
-                    allyDebuffsCS.forEach(d => enemyCS.statusEffects.push(d));
-                    addLog('🎵 Cambio de Sangre: Debuffs de ' + allyNameCS + ' transferidos a ' + enemyNameCS, 'buff');
-                }
+                // Cambio de Sangre: selecciona enemigo, intercambia HP con un aliado
+                // targetName is the selected enemy (from showTargetSelection)
+                gameState.nakimePendingSwap = { type: 'sangre', enemy: targetName };
+                showNakimeSecondTarget('sangre', targetName);
+                return;
 
             // ── CAMBIO DEMONÍACO (Nakime - cargas y buffs bidireccional) ──
             } else if (ability.effect === 'cambio_demoniaco') {
-                const myTeamCD = attacker.team;
-                const enemyTeamCD = myTeamCD === 'team1' ? 'team2' : 'team1';
-                const alliesCD = Object.keys(gameState.characters).filter(n => { const c = gameState.characters[n]; return c && c.team === myTeamCD && !c.isDead && c.hp > 0; });
-                const enemiesCD = Object.keys(gameState.characters).filter(n => { const c = gameState.characters[n]; return c && c.team === enemyTeamCD && !c.isDead && c.hp > 0; });
-                if (alliesCD.length > 0 && enemiesCD.length > 0) {
-                    const allyNameCD = alliesCD[Math.floor(Math.random() * alliesCD.length)];
-                    const enemyNameCD = enemiesCD[Math.floor(Math.random() * enemiesCD.length)];
-                    const allyCD = gameState.characters[allyNameCD];
-                    const enemyCD = gameState.characters[enemyNameCD];
-                    // Swap charges
-                    const tmpCharges = allyCD.charges;
-                    allyCD.charges = Math.min(20, enemyCD.charges);
-                    enemyCD.charges = Math.min(20, tmpCharges);
-                    // Swap buffs bidirectionally
-                    const allyBuffsCD = allyCD.statusEffects.filter(e => e && e.type === 'buff');
-                    const enemyBuffsCD = enemyCD.statusEffects.filter(e => e && e.type === 'buff');
-                    allyCD.statusEffects = allyCD.statusEffects.filter(e => e && e.type !== 'buff').concat(enemyBuffsCD);
-                    enemyCD.statusEffects = enemyCD.statusEffects.filter(e => e && e.type !== 'buff').concat(allyBuffsCD);
-                    addLog('🎵 Cambio Demoníaco: Cargas y Buffs intercambiados entre ' + allyNameCD + ' y ' + enemyNameCD, 'buff');
-                }
+                // Cambio Demoniaco: selecciona enemigo, intercambia CARGAS con un aliado
+                gameState.nakimePendingSwap = { type: 'demoniaco', enemy: targetName };
+                showNakimeSecondTarget('demoniaco', targetName);
+                return;
 
             } else if (ability.effect === 'colapso') {
                 // NAKIME - Colapso: intercambia HP y cargas de los equipos completos
@@ -1027,28 +1002,42 @@
                 addLog(`🩸 ${gameState.selectedCharacter} sacrifica ${sacrifice} HP y gana 10 cargas`, 'buff');
 
             } else if (ability.effect === 'gloria_300') {
-                // Gloria de los 300: AOE + regen + escudo a aliados
-                const enemyTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                // Gloria de los 300: AOE 4 + Regen 25% 2T a aliados + limpia 1 debuff a aliados
+                const gloriaEnemyTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                const gloriaAllyTeam = attacker.team;
+                // AOE damage to enemies
+                const gloriaKamish = checkKamishMegaProvocation(gloriaEnemyTeam);
+                if (gloriaKamish) {
+                    let gloriaCount = 0;
+                    for (let n in gameState.characters) { const c = gameState.characters[n]; if (c && c.team === gloriaEnemyTeam && !c.isDead && c.hp > 0) gloriaCount++; }
+                    for (let sid in gameState.summons) { const s = gameState.summons[sid]; if (s && s.team === gloriaEnemyTeam && s.hp > 0 && sid !== gloriaKamish.id) gloriaCount++; }
+                    const gloriaTotalDmg = finalDamage * gloriaCount;
+                    if (gloriaKamish.isCharacter) { const gc = gameState.characters[gloriaKamish.characterName]; if (gc) { const gco = gc.hp; applyDamageWithShield(gloriaKamish.characterName, gloriaTotalDmg, charName); } }
+                    else applySummonDamage(gloriaKamish.id, gloriaTotalDmg, charName);
+                    addLog('🐉 Kamish absorbe ' + gloriaTotalDmg + ' daño AOE (Gloria de los 300)', 'buff');
+                } else {
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== gloriaEnemyTeam || c.isDead || c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE', 'buff'); continue; }
+                        applyDamageWithShield(n, finalDamage, charName);
+                    }
+                    for (let sid in gameState.summons) { const s = gameState.summons[sid]; if (s && s.team === gloriaEnemyTeam && s.hp > 0) applySummonDamage(sid, finalDamage, charName); }
+                    addLog('⚔️ Gloria de los 300: ' + finalDamage + ' AOE a todos los enemigos', 'damage');
+                }
+                // Regen 25% 2T + limpia 1 debuff a todos los aliados
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
-                    if (c.team === enemyTeam && !c.isDead && c.hp > 0) applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
+                    if (!c || c.team !== gloriaAllyTeam || c.isDead || c.hp <= 0) continue;
+                    c.statusEffects = (c.statusEffects || []).filter(e => e && !(e.name === 'Regeneracion' && e.gloria300));
+                    c.statusEffects.push({ name: 'Regeneracion', type: 'buff', duration: 2, percent: 25, gloria300: true, emoji: '💖' });
+                    // Cleanse 1 debuff
+                    const cDebuffs = c.statusEffects.filter(e => e && e.type === 'debuff' && !e.permanent);
+                    if (cDebuffs.length > 0) { c.statusEffects = c.statusEffects.filter(e => e !== cDebuffs[0]); addLog('✨ Gloria de los 300: Limpia ' + cDebuffs[0].name + ' de ' + n, 'buff'); }
                 }
-                // Daño AOE también a invocaciones enemigas
-                for (let _sid in gameState.summons) {
-                    const _s = gameState.summons[_sid];
-                    if (_s && _s.team === enemyTeam && _s.hp > 0) {
-                        applySummonDamage(_sid, finalDamage, gameState.selectedCharacter);
-                    }
-                }
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (c.team === attacker.team && !c.isDead && c.hp > 0) {
-                        c.statusEffects.push({ name: 'Regeneracion', type: 'buff', duration: 2, emoji: '💖', amount: Math.ceil(c.maxHp * 0.25) });
-                        c.shield = 5; c.shieldEffect = null;
-                        addLog(`💖 ${n} recibe Regeneración 25% y +5 escudo (Gloria 300)`, 'heal');
-                    }
-                }
+                addLog('⚔️ Gloria de los 300: Regeneración 25% x2T + 1 debuff limpiado a todos los aliados', 'buff');
 
+            
             } else if (ability.effect === 'self_provocation') {
                 // Doomsday Provocación
                 attacker.statusEffects = attacker.statusEffects.filter(e => e.name !== 'Provocación');
@@ -1067,23 +1056,12 @@
                 }
 
             } else if (ability.effect === 'aoe_stun_chance') {
-                // Smashing Strike: AOE + 50% stun
-                const enemyTeam = attacker.team === 'team1' ? 'team2' : 'team1';
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (c.team === enemyTeam && !c.isDead && c.hp > 0) {
-                        applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
-                        if (Math.random() < (ability.stunChance || 0.5)) applyStun(n, 1);
-                    }
-                }
-                // AOE: también afecta invocaciones enemigas
-                for (let _sid in gameState.summons) {
-                    const _s = gameState.summons[_sid];
-                    if (_s && _s.team === enemyTeam && _s.hp > 0) {
-                        applySummonDamage(_sid, finalDamage, gameState.selectedCharacter);
-                    }
-                }
+                // Smashing Strike: ST daño 3 + Aturdimiento
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                applyStun(targetName, 1);
+                addLog('💥 Smashing Strike: ' + targetName + ' recibe ' + finalDamage + ' daño y Aturdimiento', 'damage');
 
+            
             } else if (ability.effect === 'skill_drain') {
                 // Skill Drain: 0 daño de golpe, causa 1-3 de daño por efecto a cada enemigo. Cura HP = daño total
                 const enemyTeam = attacker.team === 'team1' ? 'team2' : 'team1';
@@ -1452,7 +1430,7 @@
                 const myTeam = attacker.team; const eTeam = myTeam === 'team1' ? 'team2' : 'team1';
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
-                    if (c.team === eTeam && !c.isDead && c.hp > 0) applyBurn(n, 30, 2);
+                    if (c.team === eTeam && !c.isDead && c.hp > 0) applyFlatBurn(n, 6, 2);
                     if (c.team === myTeam && !c.isDead && c.hp > 0) c.statusEffects.push({ name: 'Regeneracion', type: 'buff', duration: 3, emoji: '💖', amount: Math.ceil(c.maxHp * 0.30) });
                 }
                 applyHolyShield(gameState.selectedCharacter, 3); // dur=3 → activo 2 turnos reales
@@ -1511,7 +1489,7 @@
                         // Enemigo más lento: debuff aleatorio 2 turnos
                         const debuffPool = ['Quemadura','Veneno','Sangrado','Confusion','Debilitar','Congelacion','Silenciar','Miedo','Agotamiento','Aturdimiento'];
                         const chosen = debuffPool[Math.floor(Math.random() * debuffPool.length)];
-                        if (chosen === 'Quemadura') applyBurn(n, 10, 1);  // 1T, valor 2HP (10% de 20HP)
+                        if (chosen === 'Quemadura') applyFlatBurn(n, 2, 1);  // 1T, valor 2HP (10% de 20HP)
                         else if (chosen === 'Veneno') { c.statusEffects.push({ name: 'Veneno', type: 'debuff', duration: 1, emoji: '🐍', poisonTick: 0 }); }
                         else if (chosen === 'Sangrado') applyBleed(n, 1);
                         else if (chosen === 'Confusion') applyConfusion(n, 1);
@@ -1611,7 +1589,7 @@
                 applyDamageWithShield(targetName, finalDamage, charName);
                 // burnAmount: 1HP flat. Using 10% as standard Quemadura (≈1-2HP on avg chars)
                 const burnPct = (ability.burnAmount || 1) <= 1 ? 5 : 10;
-                applyBurn(targetName, burnPct, 1);
+                applyFlatBurn(targetName, ability.burnAmount || 1, 1);
                 addLog('☀️ Sol Ascendente: ' + targetName + ' recibe Quemadura ' + (ability.burnAmount||1) + 'HP', 'damage');
 
             // ── TIGRE DE FUEGO V2 (Rengoku updated) ──
@@ -1623,7 +1601,7 @@
                     if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
                     const hadBurn = hasStatusEffect(n, 'Quemadura');
                     applyDamageWithShield(n, finalDamage, charName);
-                    applyBurn(n, 10, 2);
+                    applyFlatBurn(n, 2, 2);
                     if (hadBurn) {
                         // Genera 1 carga a todo el equipo aliado
                         for (let a in gameState.characters) {
@@ -1650,7 +1628,7 @@
                     const purgTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                     for (let n in gameState.characters) {
                         const c = gameState.characters[n];
-                        if (c && c.team === purgTeam && !c.isDead && c.hp > 0) applyBurn(n, 30, 5);
+                        if (c && c.team === purgTeam && !c.isDead && c.hp > 0) applyFlatBurn(n, 6, 5);
                     }
                     addLog('🔥 Purgatorio: ¡objetivo eliminado! Quemadura 30% x5 a todos los enemigos', 'damage');
                 }
@@ -1660,7 +1638,7 @@
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 const tgtGF = gameState.characters[targetName];
                 if (tgtGF && !tgtGF.isDead && tgtGF.hp > 0) {
-                    applyBurn(targetName, ability.burnPercent || 5, ability.burnDuration || 3);
+                    applyFlatBurn(targetName, ability.burnAmount || 1, ability.burnDuration || 1);
                 }
                 addLog(`🔥 ${gameState.selectedCharacter} usa Garras del Fénix en ${targetName}: ${finalDamage} daño + Quemadura ${ability.burnPercent||5}%`, 'damage');
 
@@ -1682,7 +1660,7 @@
                 const aliveEnemies = Object.keys(gameState.characters).filter(n => { const c = gameState.characters[n]; return c.team === enemyTeamPurg && !c.isDead && c.hp > 0; });
                 for (let n of aliveEnemies) applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
                 const burnTargets = aliveEnemies.sort(() => Math.random() - 0.5).slice(0, ability.burnTargets || 3);
-                for (let n of burnTargets) applyBurn(n, ability.burnPercent || 30, ability.burnDuration || 2);
+                for (let n of burnTargets) applyFlatBurn(n, ability.burnAmount || 6, ability.burnDuration || 2);
                 
             } else if (ability.effect === 'summon_shadows') {
                 // Ejército de las Sombras — 2 invocaciones con probabilidades ponderadas
@@ -1724,43 +1702,52 @@
                 }
                 
             } else if (ability.effect === 'sacrifice_shadow') {
-                // Extracción de sombras - Sacrificar una sombra
+                // Extracción de Sombras: Sacrifica 1 sombra aleatoria (excepto Kamish)
+                // → Limpia todos los debuffs de todos los aliados
+                // → Limpia todos los buffs de todos los enemigos
                 try {
-                    const myShadows = getSummonsBySummoner(gameState.selectedCharacter);
-                    
-                    if (myShadows.length === 0) {
-                        addLog(`❌ ${gameState.selectedCharacter} no tiene sombras para sacrificar`, 'info');
+                    const allMyShadows = getSummonsBySummoner(gameState.selectedCharacter);
+                    const sacrificeable = allMyShadows.filter(s => s && s.name !== 'Kamish');
+                    if (sacrificeable.length === 0) {
+                        addLog('❌ Extracción de Sombras: No hay sombras para sacrificar (Kamish no cuenta)', 'info');
                     } else {
-                        // Sacrificar la primera sombra disponible
-                        const shadowToSacrifice = myShadows[0];
-                        if (shadowToSacrifice && shadowToSacrifice.id) {
-                            const sacrificedName = shadowToSacrifice.name;
-                            // Eliminar la sombra ANTES de generar cargas para evitar que Igris
-                            // (si fuera el sacrificado) intente atacar desde un estado ya eliminado
-                            delete gameState.summons[shadowToSacrifice.id];
-                            addLog(`💨 ${sacrificedName} ha sido sacrificado`, 'damage');
-                            
-                            attacker.charges += 3;
-                            addLog(`⚡ ${gameState.selectedCharacter} sacrifica ${sacrificedName} y genera 3 cargas`, 'buff');
-                            
-                            // Activar pasiva de Sun Jin Woo si la sombra era suya (ya se eliminó, sin loop)
-                            const jinWoo = gameState.characters['Sun Jin Woo'];
-                            if (jinWoo && !jinWoo.isDead && shadowToSacrifice.summoner === 'Sun Jin Woo') {
-                                jinWoo.charges += 1;
-                                addLog(`⚡ Sun Jin Woo genera 1 carga (pasiva: Sombra sacrificada)`, 'buff');
-                            }
-                            
-                            // Activar pasiva de Igris SOLO si Igris sigue existiendo (no fue el sacrificado)
-                            triggerIgrisPassive(gameState.selectedCharacter);
-                        } else {
-                            addLog(`❌ Error al sacrificar sombra`, 'info');
+                        // Pick a random sacrificeable shadow
+                        const toSac = sacrificeable[Math.floor(Math.random() * sacrificeable.length)];
+                        const sacName = toSac.name;
+                        delete gameState.summons[toSac.id];
+                        addLog('💨 Extracción de Sombras: ' + sacName + ' es sacrificada', 'buff');
+                        // Limpia todos los debuffs de todos los aliados
+                        let totalDebuffs = 0;
+                        for (let n in gameState.characters) {
+                            const c = gameState.characters[n];
+                            if (!c || c.team !== attacker.team || c.isDead) continue;
+                            const cDebuffs = (c.statusEffects || []).filter(e => e && e.type === 'debuff' && !e.permanent);
+                            totalDebuffs += cDebuffs.length;
+                            c.statusEffects = (c.statusEffects || []).filter(e => !e || e.type !== 'debuff' || e.permanent);
                         }
+                        addLog('✨ Extracción de Sombras: ' + totalDebuffs + ' debuffs eliminados del equipo aliado', 'buff');
+                        // Limpia todos los buffs de todos los enemigos
+                        const sacEnemyTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                        let totalBuffs = 0;
+                        for (let n in gameState.characters) {
+                            const c = gameState.characters[n];
+                            if (!c || c.team !== sacEnemyTeam || c.isDead) continue;
+                            const cBuffs = (c.statusEffects || []).filter(e => e && e.type === 'buff' && !e.permanent);
+                            totalBuffs += cBuffs.length;
+                            c.statusEffects = (c.statusEffects || []).filter(e => !e || e.type !== 'buff' || e.permanent);
+                        }
+                        addLog('✨ Extracción de Sombras: ' + totalBuffs + ' buffs eliminados de todos los enemigos', 'debuff');
+                        // SJW passive: +2 cargas when shadow eliminated
+                        attacker.charges = Math.min(20, (attacker.charges || 0) + 2);
+                        addLog('👻 Arise! (Pasiva): +2 cargas por sombra sacrificada', 'buff');
+                        renderSummons();
                     }
                 } catch (error) {
                     console.error('Error en sacrifice_shadow:', error);
-                    addLog(`❌ Error al sacrificar sombra`, 'info');
+                    addLog('❌ Error en Extracción de Sombras', 'info');
                 }
-                
+
+            
             } else if (ability.effect === 'sjw_sigilo') {
                 // Sigilo de la Sombras (Sun Jin Woo basic): aplica Buff Sigilo 1 turno
                 const sjwChar = attacker;
@@ -1769,7 +1756,7 @@
                     existingSigilo.duration = Math.max(existingSigilo.duration || 1, 1);
                 } else {
                     sjwChar.statusEffects = sjwChar.statusEffects || [];
-                    sjwChar.statusEffects.push({ name: 'Sigilo', type: 'buff', duration: 1, emoji: '👤' });
+                    sjwChar.statusEffects.push({ name: 'Sigilo', type: 'buff', duration: 2, emoji: '👤' });
                 }
                 if (ability.chargeGain) {
                     attacker.charges = Math.min(20, (attacker.charges || 0) + ability.chargeGain);
@@ -1777,20 +1764,49 @@
                 addLog(`👤 Sigilo de las Sombras: ${charName} gana Sigilo por 1 turno`, 'buff');
 
             } else if (ability.effect === 'summon_kamish') {
-                // Kamish Arise - Invocar a Kamish (solo uno)
-                try {
-                    const myShadows = getSummonsBySummoner(gameState.selectedCharacter);
-                    const hasKamish = myShadows.some(s => s && s.name === 'Kamish');
-                    
-                    if (hasKamish) {
-                        addLog(`❌ ${gameState.selectedCharacter} ya tiene a Kamish invocado`, 'info');
+                // Check if this is Purgatorio de las Sombras (Over) or simple Kamish summon
+                if (ability.type === 'over' || ability.cost >= 10) {
+                    // Purgatorio de las Sombras: Sacrifica todas las sombras (excepto Kamish) y causa 3 daño por sombra
+                    const purShadows = getSummonsBySummoner(gameState.selectedCharacter).filter(s => s && s.name !== 'Kamish');
+                    if (purShadows.length === 0) {
+                        addLog('❌ Purgatorio: No hay sombras para sacrificar (excepto Kamish)', 'info');
                     } else {
-                        summonShadow('Kamish', gameState.selectedCharacter);
-                        addLog(`🐉 ${gameState.selectedCharacter} invoca al poderoso KAMISH!`, 'buff');
+                        const purEnemyTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                        let purTotalDmg = 0;
+                        for (const purS of purShadows) {
+                            delete gameState.summons[purS.id];
+                            purTotalDmg += 3;
+                            addLog('💀 Purgatorio: ' + purS.name + ' sacrificada (+3 daño)', 'damage');
+                        }
+                        // Apply damage to all enemies
+                        for (let n in gameState.characters) {
+                            const c = gameState.characters[n];
+                            if (!c || c.team !== purEnemyTeam || c.isDead || c.hp <= 0) continue;
+                            if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                            applyDamageWithShield(n, purTotalDmg, charName);
+                        }
+                        for (let sid in gameState.summons) {
+                            const s = gameState.summons[sid];
+                            if (s && s.team === purEnemyTeam && s.hp > 0) applySummonDamage(sid, purTotalDmg, charName);
+                        }
+                        addLog('💀 Purgatorio de las Sombras: ' + purTotalDmg + ' daño total a todos los enemigos', 'damage');
+                        renderSummons();
                     }
-                } catch (error) {
-                    console.error('Error en summon_kamish:', error);
-                    addLog(`❌ Error al invocar Kamish`, 'info');
+                } else {
+                    // Invocar Kamish directamente
+                    try {
+                        const myShadows = getSummonsBySummoner(gameState.selectedCharacter);
+                        const hasKamish = myShadows.some(s => s && s.name === 'Kamish');
+                        if (hasKamish) {
+                            addLog('❌ ' + gameState.selectedCharacter + ' ya tiene a Kamish invocado', 'info');
+                        } else {
+                            summonShadow('Kamish', gameState.selectedCharacter);
+                            addLog('🐉 ' + gameState.selectedCharacter + ' invoca al poderoso KAMISH!', 'buff');
+                        }
+                    } catch (error) {
+                        console.error('Error en summon_kamish:', error);
+                        addLog('❌ Error al invocar Kamish', 'info');
+                    }
                 }
                 
             } else if (ability.effect === 'heal_ally') {
@@ -2029,7 +2045,7 @@
                 applyDamageWithShield(targetName, stDmg, charName);
                 // Buff Concentración a Anakin
                 attacker.statusEffects = (attacker.statusEffects || []).filter(e => e && e.name !== 'Concentración');
-                attacker.statusEffects.push({ name: 'Concentración', type: 'buff', duration: 1, emoji: '🎯' });
+                attacker.statusEffects.push({ name: 'Concentración', type: 'buff', duration: 2, emoji: '🎯' });
                 addLog('🎯 Estrangular: ' + charName + ' gana Buff Concentración', 'buff');
                 // +1 daño permanente al básico Djem So
                 if (!attacker.djemSoBonus) attacker.djemSoBonus = 0;
@@ -2080,9 +2096,32 @@
 
             // ── CAMBIO DE VIDA v2 (Nakime — jugador elige enemigo, luego aliado) ──
             } else if (ability.effect === 'cambio_vida_v2') {
-                gameState.nakimePendingSwap = { type: 'vida', enemy: targetName };
-                showNakimeSecondTarget('vida', targetName);
-                return;
+                // Colapso (Nakime OVER, target:'self'): 
+                // - Elimina 50% de cargas actuales de CADA enemigo
+                // - Genera el 50% de las cargas actuales de CADA aliado (para ese mismo aliado)
+                const colEnemyTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                const colAllyTeam = attacker.team;
+                let totalEnemyChargesRemoved = 0;
+                let totalAllyChargesGenerated = 0;
+                // Drain 50% from each enemy
+                for (let n in gameState.characters) {
+                    const c = gameState.characters[n];
+                    if (!c || c.team !== colEnemyTeam || c.isDead || c.hp <= 0) continue;
+                    const drain = Math.floor((c.charges || 0) * 0.5);
+                    c.charges = Math.max(0, (c.charges || 0) - drain);
+                    totalEnemyChargesRemoved += drain;
+                    if (drain > 0) addLog('🎵 Colapso: ' + n + ' pierde ' + drain + ' cargas (-50%)', 'debuff');
+                }
+                // Generate 50% more for each ally
+                for (let n in gameState.characters) {
+                    const c = gameState.characters[n];
+                    if (!c || c.team !== colAllyTeam || c.isDead || c.hp <= 0) continue;
+                    const gain = Math.floor((c.charges || 0) * 0.5);
+                    c.charges = Math.min(20, (c.charges || 0) + gain);
+                    totalAllyChargesGenerated += gain;
+                    if (gain > 0) addLog('🎵 Colapso: ' + n + ' gana ' + gain + ' cargas (+50%)', 'buff');
+                }
+                addLog('🎵 Colapso: Drenado ' + totalEnemyChargesRemoved + ' cargas enemigas. Generado ' + totalAllyChargesGenerated + ' cargas aliadas', 'buff');
 
             // ── COLAPSO v2 (Nakime Over — intercambia HP y Cargas por pares según orden de turno) ──
 
@@ -2225,7 +2264,7 @@
                     if (!c || c.team !== enemyTeamDC || c.isDead || c.hp <= 0) continue;
                     if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff'); continue; }
                     applyDamageWithShield(n, finalDamage, charName);
-                    applyBurn(n, 20, 2);
+                    applyFlatBurn(n, 4, 2);
                 }
                 applyAOEDamageToSummons(attacker.team, finalDamage, charName);
                 ['Drogon','Rhaegal','Viserion'].forEach(function(d) { summonDragon(d, charName, attacker.team); });
@@ -2276,17 +2315,29 @@
                 addLog('💊 Medicina Demoníaca: ' + totalRemoved + ' Debuffs eliminados → +' + totalRemoved + ' HP al equipo', 'heal');
 
             } else if (ability.effect === 'hechizo_sangre') {
+                // Hechizo de Sangre (Tamayo OVER): Regen 20% x3T a aliados + Confusión a 2 enemigos aleatorios
                 const tamTeam3 = attacker.team;
+                const tamEnemyTeam3 = tamTeam3 === 'team1' ? 'team2' : 'team1';
+                // Apply Regen 20% x3T to all allies
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== tamTeam3 || c.isDead || c.hp <= 0) continue;
+                    c.statusEffects = (c.statusEffects || []).filter(e => e && !(e.name === 'Regeneracion' && e.hechizoDeSangre));
                     c.statusEffects.push({ name: 'Regeneracion', type: 'buff', duration: 3, percent: 20, hechizoDeSangre: true, emoji: '💖' });
                 }
-                addLog('🩸 Hechizo de Sangre: Regeneración 20% x3 a todo el equipo aliado (50% confusión enemiga por tick)', 'buff');
+                addLog('🩸 Hechizo de Sangre: Regeneración 20% x3T aplicada a todo el equipo aliado', 'buff');
+                // Apply Confusion to 2 random enemies
+                const tamEnemies3 = Object.keys(gameState.characters).filter(function(n) {
+                    const c = gameState.characters[n];
+                    return c && c.team === tamEnemyTeam3 && !c.isDead && c.hp > 0;
+                });
+                const tamShuffled3 = tamEnemies3.slice().sort(function() { return Math.random() - 0.5; });
+                tamShuffled3.slice(0, 2).forEach(function(n) {
+                    applyConfusion(n, 2);
+                    addLog('🩸 Hechizo de Sangre: Confusión 2T aplicada a ' + n, 'debuff');
+                });
 
-            // ══════════════════════════════════════════════
-            // EMPERADOR PALPATINE EFFECTS
-            // ══════════════════════════════════════════════
+            
             } else if (ability.effect === 'relampago_sith') {
                 applyDamageWithShield(targetName, finalDamage, charName);
                 // Remove 1 debuff from target (triggers passive)
@@ -2528,7 +2579,7 @@
                         if (c && c.team === burnAoeTeam && !c.isDead && c.hp > 0) {
                             applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
                             if (gameState.characters[n] && gameState.characters[n].hp > 0 && !gameState.characters[n].isDead) {
-                                applyBurn(n, ability.burnPercent, ability.burnDuration);
+                                applyFlatBurn(n, ability.burnAmount || 2, ability.burnDuration || 1);
                             }
                         }
                     }
@@ -2542,31 +2593,45 @@
                     applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                     // Solo aplicar quemadura si el objetivo sigue vivo tras recibir el daño
                     if (gameState.characters[targetName] && gameState.characters[targetName].hp > 0 && !gameState.characters[targetName].isDead) {
-                        applyBurn(targetName, ability.burnPercent, ability.burnDuration);
+                        applyFlatBurn(targetName, ability.burnAmount || 2, ability.burnDuration || 1);
                     }
                     addLog(`⚔️ ${gameState.selectedCharacter} usa ${ability.name} en ${targetName} causando ${finalDamage} de daño`, 'damage');
                 }
                 
             } else if (ability.effect === 'sharingan_aoe') {
-                // Mangekyō Sharingan (Madara): AOE damage + Contraataque + Concentración on self
-                const madaraTeam = attacker.team;
-                const shaEnemyTeam = madaraTeam === 'team1' ? 'team2' : 'team1';
-                let hitCount = 0;
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (c && c.team === shaEnemyTeam && !c.isDead && c.hp > 0) {
-                        if (!checkMegaProvocation(shaEnemyTeam) || c.statusEffects.some(e => e && (e.name === 'Mega Provocación' || e.name === 'Mega Provocacion'))) {
-                            applyDamageWithShield(n, finalDamage, charName);
-                            hitCount++;
-                        }
+                // Mangekyō Sharingan (Madara): AOE 3 daño + Contraataque + Concentración
+                const shaEnemyTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                // Apply AOE damage to all enemies
+                const shaKamish = checkKamishMegaProvocation(shaEnemyTeam);
+                if (shaKamish) {
+                    let shaCount = 0;
+                    for (let n in gameState.characters) { const c = gameState.characters[n]; if (c && c.team === shaEnemyTeam && !c.isDead && c.hp > 0) shaCount++; }
+                    for (let sid in gameState.summons) { const s = gameState.summons[sid]; if (s && s.team === shaEnemyTeam && s.hp > 0 && sid !== shaKamish.id) shaCount++; }
+                    applySummonDamage(shaKamish.id, finalDamage * shaCount, charName);
+                    addLog('🐉 Kamish absorbe ' + (finalDamage * shaCount) + ' daño AOE de Mangekyō', 'buff');
+                } else {
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== shaEnemyTeam || c.isDead || c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE', 'buff'); continue; }
+                        applyDamageWithShield(n, finalDamage, charName);
+                    }
+                    for (let sid in gameState.summons) {
+                        const s = gameState.summons[sid];
+                        if (s && s.team === shaEnemyTeam && s.hp > 0) applySummonDamage(sid, finalDamage, charName);
                     }
                 }
-                if (hitCount === 0) applyAOEDamageToTeam(shaEnemyTeam, finalDamage, charName);
-                attacker.statusEffects = (attacker.statusEffects || []).filter(e => e && e.name !== 'Contraataque' && e.name !== 'Concentración');
-                attacker.statusEffects.push({ name: 'Contraataque', type: 'buff', duration: 2, emoji: '⚔️' });
+                addLog('👁️ Mangekyō Sharingan: ' + finalDamage + ' AOE a todos los enemigos', 'damage');
+                // Buff Contraataque en Madara
+                attacker.statusEffects = (attacker.statusEffects || []).filter(e => e && e.name !== 'Contraataque');
+                attacker.statusEffects.push({ name: 'Contraataque', type: 'buff', duration: 2, emoji: '🔄' });
+                addLog('🔄 Mangekyō Sharingan: ' + charName + ' gana Buff Contraataque', 'buff');
+                // Buff Concentración en Madara
+                attacker.statusEffects = attacker.statusEffects.filter(e => e && e.name !== 'Concentración' && e.name !== 'Concentracion');
                 attacker.statusEffects.push({ name: 'Concentración', type: 'buff', duration: 2, emoji: '🎯' });
-                addLog(`👁️ Mangekyō Sharingan: Madara causa ${finalDamage} AOE y gana Contraataque + Concentración`, 'buff');
+                addLog('🎯 Mangekyō Sharingan: ' + charName + ' gana Buff Concentración', 'buff');
 
+            
             } else if (ability.effect === 'rikudo_transformation') {
                 // Modo Rikudō - Transformación permanente
                 attacker.rikudoMode = true;
@@ -2574,56 +2639,37 @@
                 addLog(`✨ ${gameState.selectedCharacter} activa el ${ability.name}! Poder duplicado, costos reducidos a la mitad`, 'buff');
                 
             } else if (ability.effect === 'double_on_burn') {
-                // Susanoo - AOE con daño doble si tiene quemaduras
-                const attackerTeam = attacker.team;
-                const targetTeam = attackerTeam === 'team1' ? 'team2' : 'team1';
-                
-                // VERIFICAR MEGA PROVOCACIÓN DE KAMISH
-                const kamishData = checkKamishMegaProvocation(targetTeam);
-                if (kamishData) {
-                    // Kamish absorbe TODO el daño AOE
-                    // Contar personajes E invocaciones enemigas vivas
-                    let targetCount = 0;
-                    for (let name in gameState.characters) {
-                        const char = gameState.characters[name];
-                        if (char.team === targetTeam && !char.isDead && char.hp > 0) targetCount++;
-                    }
-                    for (let sId in gameState.summons) {
-                        const s = gameState.summons[sId];
-                        if (s && s.team === targetTeam && s.hp > 0 && sId !== kamishData.id) targetCount++;
-                    }
-                    
-                    const totalDamage = finalDamage * targetCount;
-                    applySummonDamage(kamishData.id, totalDamage, gameState.selectedCharacter);
-                    addLog(`🐉 Kamish (Mega Provocación) absorbe ${totalDamage} de daño AOE`, 'buff');
+                // Susanoo (Madara): AOE con 50% critico + Escudo +3HP por critico acertado
+                const susEnemyTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                const susKamish = checkKamishMegaProvocation(susEnemyTeam);
+                let susShieldGain = 0;
+                if (susKamish) {
+                    let susCnt = 0;
+                    for (let n in gameState.characters) { const c = gameState.characters[n]; if (c && c.team === susEnemyTeam && !c.isDead && c.hp > 0) susCnt++; }
+                    for (let sid in gameState.summons) { const s = gameState.summons[sid]; if (s && s.team === susEnemyTeam && s.hp > 0 && sid !== susKamish.id) susCnt++; }
+                    const susTotDmg = finalDamage * susCnt;
+                    if (susKamish.isCharacter) applyDamageWithShield(susKamish.characterName, susTotDmg, charName);
+                    else applySummonDamage(susKamish.id, susTotDmg, charName);
+                    addLog('🐉 Kamish absorbe ' + susTotDmg + ' daño AOE de Susanoo', 'buff');
                 } else {
-                    // Suspender Sigilo antes de atacar
-                    checkAndRemoveStealth(targetTeam);
-                    
-                    // Dañar personajes
-                    for (let name in gameState.characters) {
-                        const char = gameState.characters[name];
-                        if (char.team === targetTeam && char.hp > 0 && !char.isDead) {
-                            let damage = finalDamage;
-                            if (hasStatusEffect(name, 'Quemadura')) {
-                                damage *= 2;
-                                addLog(`🔥 ${name} recibe daño doble por tener Quemaduras`, 'damage');
-                            }
-                            applyDamageWithShield(name, damage, gameState.selectedCharacter);
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== susEnemyTeam || c.isDead || c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE', 'buff'); continue; }
+                        let susDmg = finalDamage;
+                        if (Math.random() < 0.50) {
+                            susDmg *= 2; // critical
+                            susShieldGain += 3;
+                            addLog('💥 Susanoo: ¡Crítico! +3 escudo sobre ' + charName, 'damage');
                         }
+                        applyDamageWithShield(n, susDmg, charName);
                     }
-                    
-                    // Dañar invocaciones
-                    for (let summonId in gameState.summons) {
-                        const summon = gameState.summons[summonId];
-                        if (summon && summon.team === targetTeam && summon.hp > 0) {
-                            applySummonDamage(summonId, finalDamage, gameState.selectedCharacter);
-                        }
-                    }
-                    
-                    addLog(`💥 ${gameState.selectedCharacter} usa ${ability.name} causando ${finalDamage} de daño a todos los enemigos`, 'damage');
+                    for (let sid in gameState.summons) { const s = gameState.summons[sid]; if (s && s.team === susEnemyTeam && s.hp > 0) applySummonDamage(sid, finalDamage, charName); }
                 }
-                
+                if (susShieldGain > 0) applyShield(charName, susShieldGain);
+                addLog('🛡️ Susanoo: ' + charName + ' gana ' + susShieldGain + ' HP de escudo total', 'buff');
+
+            
             } else if (ability.effect === 'multi_hit') {
                 // Gudōdama - Múltiples golpes con probabilidad
                 let hitsLanded = 0;
@@ -2655,7 +2701,286 @@
                 
                 addLog(`🌀 ${gameState.selectedCharacter} usa ${ability.name} en ${targetName}! ${hitsLanded}/${maxHits} golpes acertados causando ${totalDamage} de daño total`, 'damage');
                 
-            } else if (ability.target === 'single') {
+            } else if (ability.effect === 'lifesteal_basic') {
+                // Madara básico: daño + roba HP equivalente al daño causado (no doble daño)
+                const lsActualDmg = applyDamageWithShield(targetName, finalDamage, charName);
+                if (lsActualDmg > 0) {
+                    const lsOldHp = attacker.hp;
+                    attacker.hp = Math.min(attacker.maxHp, attacker.hp + lsActualDmg);
+                    const lsHealed = attacker.hp - lsOldHp;
+                    if (lsHealed > 0) addLog('🌀 Gakidō: ' + charName + ' roba ' + lsHealed + ' HP de ' + targetName, 'heal');
+                }
+                generateChargesInline(charName, ability.chargeGain);
+
+            } else if (ability.effect === 'purificacion_solar') {
+                // Thestalos básico: daño + cura 2 HP a sí mismo + Quemadura 2 HP al objetivo
+                applyDamageWithShield(targetName, finalDamage, charName);
+                const psOldHp = attacker.hp;
+                attacker.hp = Math.min(attacker.maxHp, attacker.hp + 2);
+                if (attacker.hp > psOldHp) addLog('💛 Purificación Solar: ' + charName + ' recupera ' + (attacker.hp - psOldHp) + ' HP', 'heal');
+                applyFlatBurn(targetName, 2, 1);
+                generateChargesInline(charName, ability.chargeGain);
+
+            } else if (ability.effect === 'great_horn') {
+                // Aldebaran básico: daño + cura 3 HP + Escudo 2 HP a sí mismo
+                applyDamageWithShield(targetName, finalDamage, charName);
+                const ghOldHp = attacker.hp;
+                attacker.hp = Math.min(attacker.maxHp, attacker.hp + (ability.heal || 3));
+                if (attacker.hp > ghOldHp) addLog('🐂 Great Horn: ' + charName + ' recupera ' + (attacker.hp - ghOldHp) + ' HP', 'heal');
+                applyShield(charName, ability.shieldAmount || 2);
+                generateChargesInline(charName, ability.chargeGain);
+
+            } else if (ability.effect === 'proteccion_astro_rey') {
+                // Thestalos especial: Provocación + Escudo 4 HP en sí mismo
+                attacker.statusEffects = (attacker.statusEffects || []).filter(e => e && normAccent(e.name||'') !== 'provocacion');
+                attacker.statusEffects.push({ name: 'Provocación', type: 'buff', duration: 2, emoji: '🛡️' });
+                addLog('🛡️ Protección del Astro Rey: ' + charName + ' gana Provocación', 'buff');
+                applyShield(charName, ability.shieldAmount || 4);
+
+            } else if (ability.effect === 'magma_strength') {
+                // Thestalos especial: cura 8 HP + Escudo Sagrado
+                const msOldHp = attacker.hp;
+                attacker.hp = Math.min(attacker.maxHp, attacker.hp + (ability.heal || 8));
+                addLog('🔥 Magma Strength: ' + charName + ' recupera ' + (attacker.hp - msOldHp) + ' HP', 'heal');
+                attacker.statusEffects = (attacker.statusEffects || []).filter(e => e && e.name !== 'Escudo Sagrado');
+                attacker.statusEffects.push({ name: 'Escudo Sagrado', type: 'buff', duration: 2, emoji: '✝️' });
+                addLog('✝️ Magma Strength: ' + charName + ' gana Escudo Sagrado', 'buff');
+
+            } else if (ability.effect === 'apply_weaken_basic') {
+                // Saitama Golpe Normal: daño + Debilitar 2T
+                applyDamageWithShield(targetName, finalDamage, charName);
+                applyWeaken(targetName, 2);
+                generateChargesInline(charName, ability.chargeGain);
+
+            } else if (ability.effect === 'genma_ken') {
+                // Aspros básico: daño + Confusión + elimina buffs del objetivo
+                applyDamageWithShield(targetName, finalDamage, charName);
+                applyConfusion(targetName, 1);
+                const tgtGK = gameState.characters[targetName];
+                if (tgtGK && tgtGK.statusEffects) {
+                    const gkBufRem = tgtGK.statusEffects.filter(e => e && e.type === 'buff' && !e.permanent).length;
+                    tgtGK.statusEffects = tgtGK.statusEffects.filter(e => !e || e.type !== 'buff' || e.permanent);
+                    if (gkBufRem > 0) addLog('🌀 Genma Ken: Eliminados ' + gkBufRem + ' buffs de ' + targetName, 'debuff');
+                }
+                generateChargesInline(charName, ability.chargeGain);
+
+            } else if (ability.effect === 'heal_all_allies') {
+                // Min Byung Sanación Heroica: cura 4 HP a todos los aliados
+                const haTeam = attacker.team;
+                for (let haName in gameState.characters) {
+                    const haC = gameState.characters[haName];
+                    if (!haC || haC.team !== haTeam || haC.isDead || haC.hp <= 0) continue;
+                    const haOld = haC.hp;
+                    haC.hp = Math.min(haC.maxHp, haC.hp + (ability.heal || 4));
+                    if (haC.hp > haOld) addLog('💚 Sanación Heroica: ' + haName + ' recupera ' + (haC.hp - haOld) + ' HP', 'heal');
+                }
+
+            } else if (ability.effect === 'dispel_ally_charges') {
+                // Min Byung Protección Celestial: disipar debuffs aliado + 1 carga por debuff
+                const daC = gameState.characters[targetName];
+                if (daC && daC.statusEffects) {
+                    const daDList = daC.statusEffects.filter(e => e && e.type === 'debuff' && !e.permanent);
+                    const daCnt = daDList.length;
+                    daC.statusEffects = daC.statusEffects.filter(e => !e || e.type !== 'debuff' || e.permanent);
+                    if (daCnt > 0) {
+                        daC.charges = Math.min(20, (daC.charges || 0) + daCnt);
+                        addLog('✨ Protección Celestial: ' + targetName + ' pierde ' + daCnt + ' debuffs y gana ' + daCnt + ' cargas', 'buff');
+                    } else {
+                        addLog('✨ Protección Celestial: ' + targetName + ' no tenía debuffs activos', 'info');
+                    }
+                }
+
+            } else if (ability.effect === 'gilgamesh_enuma') {
+                // Gilgamesh OVER: daño + roba TODAS las cargas del objetivo
+                applyDamageWithShield(targetName, finalDamage, charName);
+                const enTgt = gameState.characters[targetName];
+                if (enTgt) {
+                    const enStolen = enTgt.charges || 0;
+                    if (enStolen > 0) {
+                        enTgt.charges = 0;
+                        attacker.charges = Math.min(20, (attacker.charges || 0) + enStolen);
+                        addLog('✨ Enuma Elish: ' + charName + ' roba ' + enStolen + ' cargas de ' + targetName, 'buff');
+                    }
+                }
+
+            } else if (ability.effect === 'sangre_esparta') {
+                // Leonidas: Sacrifica 10 HP y genera 10 cargas
+                if (attacker.hp <= 10) {
+                    addLog('❌ Sangre de Esparta: ' + charName + ' no tiene suficiente HP', 'info');
+                } else {
+                    attacker.hp -= 10;
+                    attacker.charges = Math.min(20, (attacker.charges || 0) + 10);
+                    addLog('⚔️ Sangre de Esparta: ' + charName + ' sacrifica 10 HP y gana 10 cargas', 'buff');
+                }
+
+            } else if (ability.effect === 'summon_dragon') {
+                // Daenerys: Invoca un Dragón aleatorio de su pool
+                const dragonPool = [
+                    { name: 'Drogon', weight: 10 },
+                    { name: 'Rhaegal', weight: 45 },
+                    { name: 'Viserion', weight: 45 }
+                ];
+                const totalW = dragonPool.reduce((s, d) => s + d.weight, 0);
+                let drRand = Math.random() * totalW, drChosen = dragonPool[dragonPool.length-1].name;
+                for (const d of dragonPool) { drRand -= d.weight; if (drRand <= 0) { drChosen = d.name; break; } }
+                const drData = summonData[drChosen];
+                if (drData) {
+                    // Check if already have this dragon
+                    const hasDragon = Object.values(gameState.summons).some(s => s && s.name === drChosen && s.team === attacker.team);
+                    if (!hasDragon) {
+                        const drId = drChosen + '_' + Date.now();
+                        gameState.summons[drId] = { id: drId, name: drChosen, hp: drData.hp, maxHp: drData.hp, team: attacker.team, summoner: charName, passive: drData.passive, img: drData.img || '', statusEffects: [] };
+                        addLog('🐉 Madre de Dragones: ' + charName + ' invoca a ' + drChosen, 'buff');
+                        renderSummons();
+                    } else {
+                        addLog('🐉 ' + drChosen + ' ya está en el campo', 'info');
+                    }
+                }
+
+            } else if (ability.effect === 'team_regen') {
+                // Gandalf Resplandor: Buff Regeneración 10% x1 a todo el equipo aliado
+                const trTeam = attacker.team;
+                for (let trName in gameState.characters) {
+                    const trC = gameState.characters[trName];
+                    if (!trC || trC.team !== trTeam || trC.isDead || trC.hp <= 0) continue;
+                    trC.statusEffects = (trC.statusEffects || []).filter(e => e && !(e.name === 'Regeneracion' && !e.permanent));
+                    trC.statusEffects.push({ name: 'Regeneracion', type: 'buff', duration: 1, percent: 10, emoji: '💖' });
+                }
+                addLog('✨ Resplandor: Regeneración 10% x1T aplicada a todo el equipo aliado', 'buff');
+
+            } else if (ability.effect === 'escudo_sagrado_self') {
+                // Vuelo del Dragón (Daenerys): gana Buff Escudo Sagrado
+                attacker.statusEffects = (attacker.statusEffects || []).filter(e => e && e.name !== 'Escudo Sagrado');
+                attacker.statusEffects.push({ name: 'Escudo Sagrado', type: 'buff', duration: 2, emoji: '✝️' });
+                addLog('✝️ Vuelo del Dragón: ' + charName + ' gana Escudo Sagrado', 'buff');
+
+            } else if (ability.effect === 'heal_shield_prov') {
+                // Rayo de Luz (Gandalf): aliado objetivo recupera 5 HP + Escudo 5 HP + Provocación
+                const hspC = gameState.characters[targetName];
+                if (hspC) {
+                    const hspOld = hspC.hp;
+                    hspC.hp = Math.min(hspC.maxHp, hspC.hp + 5);
+                    addLog('💫 Rayo de Luz: ' + targetName + ' recupera ' + (hspC.hp - hspOld) + ' HP', 'heal');
+                    applyShield(targetName, 5);
+                    hspC.statusEffects = (hspC.statusEffects || []).filter(e => e && normAccent(e.name||'') !== 'provocacion');
+                    hspC.statusEffects.push({ name: 'Provocación', type: 'buff', duration: 2, emoji: '🛡️' });
+                    addLog('🛡️ Rayo de Luz: ' + targetName + ' gana Provocación', 'buff');
+                }
+
+            } else if (ability.effect === 'dispel_heal_allies') {
+                // Medicina Demoniaca (Tamayo): disipar debuffs aliados + 1 HP por debuff eliminado
+                const dhaTeam = attacker.team;
+                let dhaTotalDebuffs = 0;
+                for (let dhaName in gameState.characters) {
+                    const dhaC = gameState.characters[dhaName];
+                    if (!dhaC || dhaC.team !== dhaTeam || dhaC.isDead || dhaC.hp <= 0) continue;
+                    const dhaD = (dhaC.statusEffects || []).filter(e => e && e.type === 'debuff' && !e.permanent);
+                    dhaTotalDebuffs += dhaD.length;
+                    dhaC.statusEffects = (dhaC.statusEffects || []).filter(e => !e || e.type !== 'debuff' || e.permanent);
+                }
+                if (dhaTotalDebuffs > 0) {
+                    for (let dhaName in gameState.characters) {
+                        const dhaC = gameState.characters[dhaName];
+                        if (!dhaC || dhaC.team !== dhaTeam || dhaC.isDead || dhaC.hp <= 0) continue;
+                        const dhaHealOld = dhaC.hp;
+                        dhaC.hp = Math.min(dhaC.maxHp, dhaC.hp + dhaTotalDebuffs);
+                        addLog('💚 Medicina Demoniaca: ' + dhaName + ' recupera ' + (dhaC.hp - dhaHealOld) + ' HP', 'heal');
+                    }
+                    addLog('🌿 Medicina Demoniaca: Eliminados ' + dhaTotalDebuffs + ' debuffs totales del equipo', 'buff');
+                } else {
+                    addLog('🌿 Medicina Demoniaca: No había debuffs activos en el equipo', 'info');
+                }
+
+            } else if (ability.effect === 'aoe_cleanse_allies') {
+                // Aroma Curativo (Tamayo): Limpia 1 debuff de todos los aliados
+                const acTeam = attacker.team;
+                let acCleansed = 0;
+                for (let acName in gameState.characters) {
+                    const acC = gameState.characters[acName];
+                    if (!acC || acC.team !== acTeam || acC.isDead || acC.hp <= 0) continue;
+                    const acDebuffs = (acC.statusEffects || []).filter(e => e && e.type === 'debuff' && !e.permanent);
+                    if (acDebuffs.length > 0) {
+                        acC.statusEffects = acC.statusEffects.filter(e => e !== acDebuffs[0]);
+                        addLog('🌸 Aroma Curativo: Limpia ' + (acDebuffs[0].name||'debuff') + ' de ' + acName, 'buff');
+                        acCleansed++;
+                    }
+                }
+                if (acCleansed === 0) addLog('🌸 Aroma Curativo: Ningún aliado tenía debuffs', 'info');
+
+            } else if (ability.effect === 'cleanse_enemy_debuff') {
+                // Relámpago Sith (Palpatine): daño + limpia 1 debuff del objetivo enemigo
+                applyDamageWithShield(targetName, finalDamage, charName);
+                const rsTgt = gameState.characters[targetName];
+                if (rsTgt && rsTgt.statusEffects) {
+                    const rsD = (rsTgt.statusEffects || []).filter(e => e && e.type === 'debuff' && !e.permanent);
+                    if (rsD.length > 0) {
+                        rsTgt.statusEffects = rsTgt.statusEffects.filter(e => e !== rsD[0]);
+                        addLog('⚡ Relámpago Sith: Limpia ' + (rsD[0].name||'debuff') + ' de ' + targetName, 'buff');
+                        // Palpatine passive: 50% stun on debuff cleared
+                        if (Math.random() < 0.5) {
+                            applyStun(targetName, 1);
+                            addLog('⚡ Palpatine: 50% Aturdimiento sobre ' + targetName, 'debuff');
+                        }
+                    }
+                }
+                generateChargesInline(charName, ability.chargeGain);
+
+            } else if (ability.effect === 'heal_cleanse') {
+                // Tamayo básico Aguja Medicinal: cura 1 HP + limpia 1 debuff del aliado objetivo
+                const hcC = gameState.characters[targetName];
+                if (hcC) {
+                    const hcOld = hcC.hp;
+                    hcC.hp = Math.min(hcC.maxHp, hcC.hp + (ability.heal || 1));
+                    if (hcC.hp > hcOld) addLog('💚 Aguja Medicinal: ' + targetName + ' recupera ' + (hcC.hp - hcOld) + ' HP', 'heal');
+                    const hcD = (hcC.statusEffects || []).filter(e => e && e.type === 'debuff' && !e.permanent);
+                    if (hcD.length > 0) {
+                        hcC.statusEffects = hcC.statusEffects.filter(e => e !== hcD[0]);
+                        addLog('💚 Aguja Medicinal: Limpia ' + (hcD[0].name||'debuff') + ' de ' + targetName, 'buff');
+                    }
+                    triggerBendicionSagrada(attacker.team, hcC.hp - hcOld);
+                }
+                generateChargesInline(charName, ability.chargeGain);
+
+            } else if (ability.effect === 'colapso_dimensional') {
+                // Aspros Colapso Dimensional: daño + 2 debuffs aleatorios, +1 carga
+                applyDamageWithShield(targetName, finalDamage, charName);
+                const cdPool = [
+                    function() { applyConfusion(targetName, 1); },
+                    function() { applyWeaken(targetName, 2); },
+                    function() { applyFreeze(targetName, 1); },
+                    function() { applyFear(targetName, 1); },
+                    function() { applyBleed(targetName, 1); },
+                    function() { applyStun(targetName, 1); },
+                ];
+                cdPool.sort(() => Math.random() - 0.5).slice(0, 2).forEach(f => f());
+                addLog('🌀 Colapso Dimensional: ' + targetName + ' sufre 2 debuffs aleatorios', 'debuff');
+                generateChargesInline(charName, ability.chargeGain);
+
+            } else if (ability.effect === 'another_dimension') {
+                // Aspros Another Dimension: daño + roba mitad de cargas, +1 carga
+                applyDamageWithShield(targetName, finalDamage, charName);
+                const adTgt = gameState.characters[targetName];
+                if (adTgt) {
+                    const adSteal = Math.floor((adTgt.charges || 0) / 2);
+                    if (adSteal > 0) {
+                        adTgt.charges -= adSteal;
+                        attacker.charges = Math.min(20, (attacker.charges || 0) + adSteal);
+                        addLog('🌀 Another Dimension: ' + charName + ' roba ' + adSteal + ' cargas de ' + targetName, 'buff');
+                    }
+                }
+                generateChargesInline(charName, ability.chargeGain);
+
+            } else if (ability.effect === 'arc_geminga') {
+                // Aspros OVER: daño doble si enemigo tiene debuffs
+                const agTgt = gameState.characters[targetName];
+                let agDmg = finalDamage;
+                if (agTgt && (agTgt.statusEffects || []).some(e => e && e.type === 'debuff')) {
+                    agDmg *= 2;
+                    addLog('💥 Arc Geminga: ¡Daño doble! (' + targetName + ' tiene debuffs)', 'damage');
+                }
+                applyDamageWithShield(targetName, agDmg, charName);
+
+                        } else if (ability.target === 'single') {
                 // Daño a un solo objetivo (genérico)
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 addLog(`⚔️ ${gameState.selectedCharacter} usa ${ability.name} en ${targetName} causando ${finalDamage} de daño`, 'damage');
@@ -2802,219 +3127,7 @@
             }
 
 
-            // ── Missing handlers (added) ──
-            if (ability.effect === 'lifesteal_basic') {
-                // Madara básico: daño + roba HP equivalente al daño causado
-                const actualDmg = applyDamageWithShield(targetName, finalDamage, charName);
-                if (actualDmg > 0) {
-                    const oldHp = attacker.hp;
-                    attacker.hp = Math.min(attacker.maxHp, attacker.hp + actualDmg);
-                    const healed = attacker.hp - oldHp;
-                    if (healed > 0) addLog('🌀 Gakidō: ' + charName + ' roba ' + healed + ' HP de ' + targetName, 'heal');
-                }
-                generateChargesInline(charName, ability.chargeGain);
 
-            } else if (ability.effect === 'purificacion_solar') {
-                // Thestalos básico: daño + cura 2 HP + Quemadura 2 HP
-                applyDamageWithShield(targetName, finalDamage, charName);
-                const oldHpPS = attacker.hp;
-                attacker.hp = Math.min(attacker.maxHp, attacker.hp + 2);
-                if (attacker.hp > oldHpPS) addLog('💛 Purificación Solar: ' + charName + ' recupera ' + (attacker.hp - oldHpPS) + ' HP', 'heal');
-                // Quemadura 2 HP flat = 10% on 20HP char
-                applyBurn(targetName, 10, 1);
-                addLog('🔥 Purificación Solar: ' + targetName + ' sufre Quemadura 1 HP', 'damage');
-                generateChargesInline(charName, ability.chargeGain);
-
-            } else if (ability.effect === 'great_horn') {
-                // Aldebaran básico: daño + cura 3 HP a sí mismo + Escudo 2 HP
-                applyDamageWithShield(targetName, finalDamage, charName);
-                const oldHpGH = attacker.hp;
-                attacker.hp = Math.min(attacker.maxHp, attacker.hp + (ability.heal || 3));
-                if (attacker.hp > oldHpGH) addLog('🐂 Great Horn: ' + charName + ' recupera ' + (attacker.hp - oldHpGH) + ' HP', 'heal');
-                applyShield(charName, ability.shieldAmount || 2);
-                generateChargesInline(charName, ability.chargeGain);
-
-            } else if (ability.effect === 'proteccion_astro_rey') {
-                // Thestalos especial: Buff Provocación + Escudo 4 HP en Thestalos
-                attacker.statusEffects = (attacker.statusEffects || []).filter(e => e && e.name !== 'Provocación' && e.name !== 'Provocacion');
-                attacker.statusEffects.push({ name: 'Provocación', type: 'buff', duration: 2, emoji: '🛡️' });
-                addLog('🛡️ Protección del Astro Rey: ' + charName + ' gana Provocación', 'buff');
-                applyShield(charName, ability.shieldAmount || 4);
-
-            } else if (ability.effect === 'magma_strength') {
-                // Thestalos especial2: cura 8 HP + Escudo Sagrado
-                const oldHpMS = attacker.hp;
-                attacker.hp = Math.min(attacker.maxHp, attacker.hp + (ability.heal || 8));
-                addLog('🔥 Magma Strength: ' + charName + ' recupera ' + (attacker.hp - oldHpMS) + ' HP', 'heal');
-                attacker.statusEffects = (attacker.statusEffects || []).filter(e => e && e.name !== 'Escudo Sagrado');
-                attacker.statusEffects.push({ name: 'Escudo Sagrado', type: 'buff', duration: 2, emoji: '✝️' });
-                addLog('✝️ Magma Strength: ' + charName + ' gana Escudo Sagrado', 'buff');
-
-            } else if (ability.effect === 'furia_thestalos') {
-                // Thestalos OVER: 2 AOE, 50% critico, 50% daño triple
-                const fusTeam = attacker.team === 'team1' ? 'team2' : 'team1';
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (!c || c.team !== fusTeam || c.isDead || c.hp <= 0) continue;
-                    let fusDmg = finalDamage;
-                    if (Math.random() < 0.50) {
-                        if (Math.random() < 0.50) { fusDmg *= 3; addLog('💥 Furia de Thestalos: ¡Daño TRIPLE sobre ' + n + '!', 'damage'); }
-                        else { addLog('💥 Furia de Thestalos: ¡Golpe Crítico sobre ' + n + '!', 'damage'); }
-                    }
-                    applyDamageWithShield(n, fusDmg, charName);
-                }
-
-            } else if (ability.effect === 'apply_weaken_basic') {
-                // Saitama Golpe Normal: daño + Debilitar 2T
-                applyDamageWithShield(targetName, finalDamage, charName);
-                applyWeaken(targetName, 2);
-                generateChargesInline(charName, ability.chargeGain);
-
-            } else if (ability.effect === 'genma_ken') {
-                // Aspros básico: daño + Confusión + limpia buffs del objetivo
-                applyDamageWithShield(targetName, finalDamage, charName);
-                applyConfusion(targetName, 1);
-                // Remove all buffs from target
-                const tgtGK = gameState.characters[targetName];
-                if (tgtGK && tgtGK.statusEffects) {
-                    const buffsRemoved = tgtGK.statusEffects.filter(e => e && e.type === 'buff' && !e.permanent).length;
-                    tgtGK.statusEffects = tgtGK.statusEffects.filter(e => !e || e.type !== 'buff' || e.permanent);
-                    if (buffsRemoved > 0) addLog('🌀 Genma Ken: Eliminados ' + buffsRemoved + ' buffs de ' + targetName, 'debuff');
-                }
-                generateChargesInline(charName, ability.chargeGain);
-
-            } else if (ability.effect === 'heal_all_allies') {
-                // Min Byung Sanación Heroica: cura 4 HP a todos los aliados
-                const healTeam = attacker.team;
-                let healCount = 0;
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (!c || c.team !== healTeam || c.isDead || c.hp <= 0) continue;
-                    const oldHpHA = c.hp;
-                    c.hp = Math.min(c.maxHp, c.hp + (ability.heal || 4));
-                    if (c.hp > oldHpHA) {
-                        addLog('💚 Sanación Heroica: ' + n + ' recupera ' + (c.hp - oldHpHA) + ' HP', 'heal');
-                        triggerBendicionSagrada(healTeam, c.hp - oldHpHA);
-                        healCount++;
-                    }
-                }
-
-            } else if (ability.effect === 'dispel_ally_charges') {
-                // Min Byung Protección Celestial: disipar debuffs del aliado + 1 carga por debuff
-                const tgtDA = gameState.characters[targetName];
-                if (tgtDA && tgtDA.statusEffects) {
-                    const debuffList = tgtDA.statusEffects.filter(e => e && e.type === 'debuff' && !e.permanent);
-                    const debuffCount = debuffList.length;
-                    tgtDA.statusEffects = tgtDA.statusEffects.filter(e => !e || e.type !== 'debuff' || e.permanent);
-                    if (debuffCount > 0) {
-                        tgtDA.charges = Math.min(20, (tgtDA.charges || 0) + debuffCount);
-                        addLog('✨ Protección Celestial: ' + targetName + ' pierde ' + debuffCount + ' debuffs y gana ' + debuffCount + ' cargas', 'buff');
-                    } else {
-                        addLog('✨ Protección Celestial: ' + targetName + ' no tenía debuffs activos', 'buff');
-                    }
-                }
-
-            } else if (ability.effect === 'gilgamesh_enuma') {
-                // Gilgamesh OVER: daño + roba TODAS las cargas del objetivo
-                applyDamageWithShield(targetName, finalDamage, charName);
-                const tgtEN = gameState.characters[targetName];
-                if (tgtEN) {
-                    const stolenCharges = tgtEN.charges || 0;
-                    if (stolenCharges > 0) {
-                        tgtEN.charges = 0;
-                        attacker.charges = Math.min(20, (attacker.charges || 0) + stolenCharges);
-                        addLog('✨ Enuma Elish: ' + charName + ' roba ' + stolenCharges + ' cargas de ' + targetName, 'buff');
-                    } else {
-                        addLog('✨ Enuma Elish: ' + targetName + ' no tenía cargas', 'info');
-                    }
-                }
-
-            } else if (ability.effect === 'mar_de_fuego') {
-                // Rengoku Mar de Fuego: AOE, 100% critico a enemigos con Quemadura
-                const mfTeam = attacker.team === 'team1' ? 'team2' : 'team1';
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (!c || c.team !== mfTeam || c.isDead || c.hp <= 0) continue;
-                    let mfDmg = finalDamage;
-                    const hasBurn = (c.statusEffects || []).some(e => e && (e.name === 'Quemadura' || normAccent(e.name||'') === 'quemadura'));
-                    if (hasBurn) {
-                        mfDmg *= 2; // critical
-                        addLog('🔥 Mar de Fuego: ¡GOLPE CRÍTICO sobre ' + n + ' (Quemadura activa)!', 'damage');
-                    }
-                    applyDamageWithShield(n, mfDmg, charName);
-                }
-
-            } else if (ability.effect === 'revive_ally') {
-                // Min Byung Milagro de la vida: revive aliado con 100% HP y 10 cargas
-                const tgtRV = gameState.characters[targetName];
-                if (tgtRV && tgtRV.isDead) {
-                    tgtRV.isDead = false;
-                    tgtRV.hp = tgtRV.maxHp;
-                    tgtRV.charges = 10;
-                    tgtRV.statusEffects = [];
-                    addLog('✨ Milagro de la Vida: ¡' + targetName + ' revive con ' + tgtRV.maxHp + ' HP y 10 cargas!', 'heal');
-                } else {
-                    addLog('✨ Milagro de la Vida: ' + targetName + ' no está derrotado', 'info');
-                }
-
-            } else if (ability.effect === 'colapso_dimensional') {
-                // Aspros Colapso Dimensional: daño + 2 debuffs aleatorios
-                applyDamageWithShield(targetName, finalDamage, charName);
-                const debuffPoolCD2 = [
-                    { name:'confusion',  fn: function(){ applyConfusion(targetName, 1); } },
-                    { name:'debilitar',  fn: function(){ applyWeaken(targetName, 2); } },
-                    { name:'congelacion',fn: function(){ applyFreeze(targetName, 1); } },
-                    { name:'miedo',      fn: function(){ applyFear(targetName, 1); } },
-                    { name:'sangrado',   fn: function(){ applyBleed(targetName, 1); } },
-                    { name:'aturdimiento', fn: function(){ applyStun(targetName, 1); } },
-                ];
-                const shuffledCD = debuffPoolCD2.slice().sort(() => Math.random() - 0.5);
-                shuffledCD.slice(0,2).forEach(d => d.fn());
-                addLog('🌀 Colapso Dimensional: ' + targetName + ' sufre 2 debuffs aleatorios', 'debuff');
-                generateChargesInline(charName, ability.chargeGain);
-
-            } else if (ability.effect === 'another_dimension') {
-                // Aspros Another Dimension: daño + roba mitad de cargas
-                applyDamageWithShield(targetName, finalDamage, charName);
-                const tgtAD = gameState.characters[targetName];
-                if (tgtAD) {
-                    const stealAmt = Math.floor((tgtAD.charges || 0) / 2);
-                    if (stealAmt > 0) {
-                        tgtAD.charges -= stealAmt;
-                        attacker.charges = Math.min(20, (attacker.charges || 0) + stealAmt);
-                        addLog('🌀 Another Dimension: ' + charName + ' roba ' + stealAmt + ' cargas de ' + targetName, 'buff');
-                    }
-                }
-                generateChargesInline(charName, ability.chargeGain);
-
-            } else if (ability.effect === 'arc_geminga') {
-                // Aspros OVER: daño, doble si enemigo tiene debuffs
-                const tgtAG = gameState.characters[targetName];
-                let agDmg = finalDamage;
-                if (tgtAG && (tgtAG.statusEffects || []).some(e => e && e.type === 'debuff')) {
-                    agDmg *= 2;
-                    addLog('💥 Arc Geminga: ¡Daño doble! (' + targetName + ' tiene debuffs activos)', 'damage');
-                }
-                applyDamageWithShield(targetName, agDmg, charName);
-
-            } else if (ability.effect === 'heal_cleanse') {
-                // Tamayo básico: cura 1 HP + limpia 1 debuff del objetivo aliado
-                const tgtHC = gameState.characters[targetName];
-                if (tgtHC) {
-                    const oldHpHC = tgtHC.hp;
-                    tgtHC.hp = Math.min(tgtHC.maxHp, tgtHC.hp + (ability.heal || 1));
-                    if (tgtHC.hp > oldHpHC) addLog('💚 Aguja Medicinal: ' + targetName + ' recupera ' + (tgtHC.hp - oldHpHC) + ' HP', 'heal');
-                    const debuffsHC = (tgtHC.statusEffects || []).filter(e => e && e.type === 'debuff' && !e.permanent);
-                    if (debuffsHC.length > 0) {
-                        const toRemove = debuffsHC[0];
-                        tgtHC.statusEffects = tgtHC.statusEffects.filter(e => e !== toRemove);
-                        addLog('💚 Aguja Medicinal: Limpia ' + (toRemove.name||'debuff') + ' de ' + targetName, 'buff');
-                    }
-                    triggerBendicionSagrada(attacker.team, tgtHC.hp - oldHpHC);
-                }
-                generateChargesInline(charName, ability.chargeGain);
-            }
-            // ── End of additional handlers ──
 
             // Actualizar UI
             renderCharacters();
@@ -3095,10 +3208,15 @@
         function showSummonInfo(summonName, event) {
             if (event) { event.stopPropagation(); }
             const data = SUMMON_CATALOGUE[summonName];
+            // Also check summonData for image
+            const sData = (typeof summonData !== 'undefined') ? summonData[summonName] : null;
+            const imgUrl = (data && data.img) || (sData && sData.img) || '';
             if (!data) return;
             const modal = document.getElementById('summonInfoModal');
             document.getElementById('summonInfoTitle').textContent = '🔮 ' + summonName;
+            const imgHtml = imgUrl ? '<div style="text-align:center;margin-bottom:12px;"><img src="' + imgUrl + '" alt="' + summonName + '" style="width:80px;height:80px;object-fit:cover;border-radius:10px;border:2px solid #a855f7;" onerror="this.style.display=\'none\'"></div>' : '';
             document.getElementById('summonInfoContent').innerHTML =
+                imgHtml +
                 '<div style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.3);border-radius:10px;padding:14px;margin-bottom:12px;">' +
                 '<div style="color:#a855f7;font-weight:700;margin-bottom:6px;">❤️ HP</div>' +
                 '<div style="color:#fff;font-size:1.1rem;">' + data.hp + '</div>' +
