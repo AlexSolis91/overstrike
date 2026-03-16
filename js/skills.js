@@ -876,7 +876,7 @@
                         for (const n of pool) { rand -= weights[n]; if (rand <= 0) return n; }
                         return pool[pool.length - 1];
                     }
-                    const toSummonLich = Math.min(3, availableLich.length);
+                    const toSummonLich = Math.min(3 - myLichSummons.length, availableLich.length);
                     const remainingLich = [...availableLich];
                     const selectedLich = [];
                     for (let i = 0; i < toSummonLich; i++) {
@@ -2814,26 +2814,31 @@
                 }
 
             } else if (ability.effect === 'summon_dragon') {
-                // Daenerys: Invoca un Dragón aleatorio de su pool
-                const dragonPool = [
+                // Daenerys: Invoca un Dragón aleatorio — solo de los que NO están en el campo
+                const dragonPoolFull = [
                     { name: 'Drogon', weight: 10 },
                     { name: 'Rhaegal', weight: 45 },
                     { name: 'Viserion', weight: 45 }
                 ];
-                const totalW = dragonPool.reduce((s, d) => s + d.weight, 0);
-                let drRand = Math.random() * totalW, drChosen = dragonPool[dragonPool.length-1].name;
-                for (const d of dragonPool) { drRand -= d.weight; if (drRand <= 0) { drChosen = d.name; break; } }
-                const drData = summonData[drChosen];
-                if (drData) {
-                    // Check if already have this dragon
-                    const hasDragon = Object.values(gameState.summons).some(s => s && s.name === drChosen && s.team === attacker.team);
-                    if (!hasDragon) {
+                // Filter out dragons already on the field
+                const activeDragons = new Set(
+                    Object.values(gameState.summons)
+                        .filter(s => s && s.team === attacker.team)
+                        .map(s => s.name)
+                );
+                const dragonPool = dragonPoolFull.filter(d => !activeDragons.has(d.name));
+                if (dragonPool.length === 0) {
+                    addLog('🐉 Madre de Dragones: Todos los dragones ya están en el campo', 'info');
+                } else {
+                    const totalW = dragonPool.reduce((s, d) => s + d.weight, 0);
+                    let drRand = Math.random() * totalW, drChosen = dragonPool[dragonPool.length-1].name;
+                    for (const d of dragonPool) { drRand -= d.weight; if (drRand <= 0) { drChosen = d.name; break; } }
+                    const drData = summonData[drChosen];
+                    if (drData) {
                         const drId = drChosen + '_' + Date.now();
                         gameState.summons[drId] = { id: drId, name: drChosen, hp: drData.hp, maxHp: drData.hp, team: attacker.team, summoner: charName, passive: drData.passive, img: drData.img || '', statusEffects: [] };
                         addLog('🐉 Madre de Dragones: ' + charName + ' invoca a ' + drChosen, 'buff');
                         renderSummons();
-                    } else {
-                        addLog('🐉 ' + drChosen + ' ya está en el campo', 'info');
                     }
                 }
 
@@ -3006,8 +3011,15 @@
                     }
                     
                     const totalDamage = finalDamage * targetCount;
-                    applySummonDamage(kamishData.id, totalDamage, gameState.selectedCharacter);
-                    addLog(`🐉 Kamish (Mega Provocación) absorbe ${totalDamage} de daño AOE (${finalDamage} × ${targetCount} objetivos)`, 'buff');
+                    if (kamishData.isCharacter) {
+                        // CHARACTER with MegaProv (Darth Vader, Sauron, etc.)
+                        applyDamageWithShield(kamishData.characterName, totalDamage, gameState.selectedCharacter);
+                        addLog('🌑 ' + kamishData.characterName + ' (Mega Provocación) absorbe ' + totalDamage + ' de daño AOE (' + finalDamage + ' × ' + targetCount + ' objetivos)', 'buff');
+                    } else {
+                        // SUMMON with MegaProv (Kamish, Sindragosa, Tirion, Drogon)
+                        applySummonDamage(kamishData.id, totalDamage, gameState.selectedCharacter);
+                        addLog('🐉 ' + (kamishData.kamish ? kamishData.kamish.name : 'Invocación') + ' (Mega Provocación) absorbe ' + totalDamage + ' de daño AOE (' + finalDamage + ' × ' + targetCount + ' objetivos)', 'buff');
+                    }
                 } else {
                     // Sin Mega Provocación - daño normal
                     // Suspender Sigilo antes de atacar
