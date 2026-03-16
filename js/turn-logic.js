@@ -41,9 +41,8 @@
                         // (evita procesamiento doble — cada cliente procesa solo sus propios personajes)
                         const _isMyCharOnline = !onlineMode || (isRoomHost ? currentChar.team === 'team1' : currentChar.team === 'team2');
                         if (_isMyCharOnline) {
-                            processBurnEffects(currentCharName);
+                            // VENENO: aplica al INICIO del turno del personaje con el debuff
                             processNewDebuffEffects(currentCharName);
-                            processSolarBurnEffects(currentCharName);
                         }
                         
                         // PASIVA LIMBO: Madara en Modo Rikudō regenera 1 HP por turno
@@ -1080,6 +1079,16 @@
                 // Decrementar duraciones al FINAL del turno activo
                 // (buffs/debuffs expiran al finalizar el turno del personaje que los tiene)
                 if (gameState.selectedCharacter) {
+                    // QUEMADURA: aplica daño al FINAL del turno del personaje con el debuff
+                    processBurnEffects(gameState.selectedCharacter);
+                    processSolarBurnEffects(gameState.selectedCharacter);
+                    // Check if burn killed the character
+                    const _burnVictim = gameState.characters[gameState.selectedCharacter];
+                    if (_burnVictim && _burnVictim.hp <= 0 && !_burnVictim.isDead) {
+                        _burnVictim.isDead = true;
+                        addLog('💀 ' + gameState.selectedCharacter + ' ha sido derrotado por quemaduras', 'damage');
+                        renderCharacters();
+                    }
                     updateStatusEffectDurations(gameState.selectedCharacter);
                     // Decrementar cooldowns de habilidades (Another Dimension, etc.)
                     const actorChar = gameState.characters[gameState.selectedCharacter];
@@ -1308,6 +1317,21 @@
                 // RAMESSEUM TENTYRIS: aplica QS a enemigos sin QS
                 triggerRamesseumPassive();
 
+                // ABU EL-HOL SPHINX: todos los enemigos con QS pierden 2 cargas
+                const sphinx = Object.values(gameState.summons).find(s => s && (s.name === 'Abu el-Hol Sphinx' || s.name === 'Sphinx Wehem-Mesut') && s.hp > 0);
+                if (sphinx) {
+                    const sphinxEnemyTeam = sphinx.team === 'team1' ? 'team2' : 'team1';
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== sphinxEnemyTeam || c.isDead || c.hp <= 0) continue;
+                        const hasQS = (c.statusEffects || []).some(e => e && normAccent(e.name||'') === 'quemadura solar');
+                        if (hasQS) {
+                            c.charges = Math.max(0, (c.charges || 0) - 2);
+                            addLog('🦁 Sphinx: ' + n + ' pierde 2 cargas (tiene Quemadura Solar)', 'debuff');
+                        }
+                    }
+                }
+
                 // Resetear redirect de Nakime para nueva ronda
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
@@ -1317,15 +1341,14 @@
                 }
 
                 // LICH KING INVOCACIONES PASIVAS por ronda
-                // Kel Thuzad: regen 20% al equipo aliado
+                // Kel Thuzad (Aliado de la Muerte): cura 2 HP flat al equipo aliado al final de ronda
                 const kelThuzad = Object.values(gameState.summons).find(s => s && s.name === 'Kel Thuzad');
                 if (kelThuzad) {
                     for (let n in gameState.characters) {
                         const c = gameState.characters[n];
                         if (c && c.team === kelThuzad.team && !c.isDead && c.hp > 0) {
-                            const regen = Math.ceil(c.maxHp * 0.20);
-                            c.hp = Math.min(c.maxHp, c.hp + regen);
-                            addLog(`❄️ Kel Thuzad: ${n} recupera ${regen} HP (Regeneración 20%)`, 'heal');
+                            c.hp = Math.min(c.maxHp, c.hp + 2);
+                            addLog('❄️ Kel Thuzad (Aliado de la Muerte): ' + n + ' recupera 2 HP', 'heal');
                         }
                     }
                 }
