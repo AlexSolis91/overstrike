@@ -32,13 +32,8 @@
                         if (currentCharName === 'Sun Jin Woo') {
                             const sjw = gameState.characters['Sun Jin Woo'];
                             if (sjw && !sjw.isDead && sjw.hp > 0) {
-                                // Quitar sigilo anterior si quedó de ronda anterior
-                                sjw.statusEffects = sjw.statusEffects.filter(e => !e || normAccent(e.name||'') !== 'sigilo' || e.sjwPassive);
-                                // Aplicar nuevo sigilo que dura hasta fin de esta ronda
-                                if (!sjw.statusEffects.some(e => e && e.sjwPassive && normAccent(e.name||'') === 'sigilo')) {
-                                    sjw.statusEffects.push({ name: 'Sigilo', type: 'buff', duration: 999, untilRoundEnd: true, sjwPassive: true, sigiloRoundsLeft: 1, emoji: '👤' });
-                                    addLog(`👤 Autoridad del Gobernante: Sun Jin Woo gana Sigilo (hasta fin de ronda)`, 'buff');
-                                }
+                                // ARISE! passive: at start of turn, perform random invocation from shadow pool
+                                triggerSJWArisePassive('Sun Jin Woo');
                             }
                         }
 
