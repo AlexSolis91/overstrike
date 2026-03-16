@@ -615,6 +615,7 @@
                     db.ref('ranked_queue/' + opponentUid).update({ matchedRoomId: roomId, matchedBy: myUid });
                     currentRoomId = roomId; isRoomHost = true; onlineMode = true;
                     window._rankedMode = true;
+                    window._rankedPlayerTeam = 'team1'; // host is always team1
                     // Use attack teams for both players
                     getRankedTeams(function(myTeams) {
                         db.ref('ranked_teams/' + opponentUid).once('value', function(snap2) {
@@ -644,6 +645,7 @@
                         hideRankedSearchModal();
                         currentRoomId = rid; isRoomHost = false; onlineMode = true;
                         window._rankedMode = true;
+                        window._rankedPlayerTeam = 'team2'; // guest is always team2
                         window._rankedOpponentName = opponentData.name || 'Rival';
                         window._teamNames = { team1: opponentData.name || 'Rival', team2: myName };
                         // Update room with guest info AND their attack team
@@ -683,6 +685,7 @@
                 if (eligible.length === 0) {
                     // No defense teams available — fall back to random IA with random team
                     window._rankedMode = true;
+                    window._rankedPlayerTeam = 'team1'; // player always attacks as team1 vs CPU
                     window._rankedFakeOpponent = 'CPU';
                     window._rankedDefenseOwnerUid = null;
                     window._teamNames = { team1: myName, team2: 'CPU' };
@@ -696,6 +699,7 @@
                 const [defOwnerUid, defData] = eligible[Math.floor(Math.random() * eligible.length)];
                 const defOwnerName = defData.name || 'Rival';
                 window._rankedMode = true;
+                window._rankedPlayerTeam = 'team1'; // player always attacks as team1
                 window._rankedFakeOpponent = defOwnerName;
                 window._rankedDefenseOwnerUid = defOwnerUid;
                 window._teamNames = { team1: myName, team2: defOwnerName };
@@ -709,6 +713,7 @@
         function _launchRankedVsIAWithTeam(attackTeam, defenseTeam, opponentName) {
             const myName = currentUser ? (currentUser.displayName || 'Jugador') : 'Jugador';
             window._rankedMode = true;
+            window._rankedPlayerTeam = 'team1'; // player always attacks as team1 in vs-IA ranked
             window._rankedFakeOpponent = opponentName;
 
             // Pre-load teams into csState so no character select screen is needed
@@ -1305,6 +1310,7 @@
                 // ── RANKED: skip char select, each player loads own attack team ──
                 if (room.ranked) {
                     window._rankedMode = true;
+                    window._rankedPlayerTeam = asHost ? 'team1' : 'team2';
                     window._rankedOpponentName = asHost ? guestName : hostName;
                     csState.gameMode   = 'online';
                     csState.onlineTeam = asHost ? 'team1' : 'team2';
