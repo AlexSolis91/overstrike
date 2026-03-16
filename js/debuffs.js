@@ -107,6 +107,12 @@ function applyDebuff(targetName, effectObj) {
                     addLog(`🦸 Saitama es inmune a ${effectObj.name} (Espíritu del Héroe)`, 'buff');
                     return;
                 }
+                // DIVINIDAD: 50% limpiar debuff entrante, +2 cargas por limpiado
+                if (effectObj.type === 'debuff' && hasStatusEffect(targetName, 'Divinidad') && Math.random() < 0.5) {
+                    targetChar.charges = Math.min(20, (targetChar.charges || 0) + 2);
+                    addLog('✨ Divinidad: ' + targetName + ' limpia ' + (effectObj.name || 'debuff') + ' y gana 2 cargas', 'buff');
+                    return;
+                }
                 const effN = normAccent(effectObj.name || '');
                 // Inmune a Miedo
                 if (targetChar.immuneToMiedo && (effN === 'miedo')) {
