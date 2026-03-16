@@ -43,25 +43,49 @@
             }
         }
 
-        function processBurnEffects(charName) {
+        
+        function applyFlatBurn(targetName, flatHp, duration) {
+            // Apply a burn that does flat HP damage (not percent)
+            const target = gameState.characters[targetName];
+            if (!target) return;
+            if (targetName === 'Saitama') {
+                addLog('🦸 Saitama es inmune a Quemadura (Espíritu del Héroe)', 'buff');
+                return;
+            }
+            if (hasStatusEffect(targetName, 'Proteccion Sagrada') || hasStatusEffect(targetName, 'Protección Sagrada')) {
+                addLog('🛡️ ' + targetName + ' es inmune a Quemadura (Protección Sagrada)', 'buff');
+                return;
+            }
+            if (!target.statusEffects) target.statusEffects = [];
+            target.statusEffects.push({
+                name: 'Quemadura', type: 'debuff',
+                flatHp: flatHp, percent: 0, duration: duration || 1, emoji: '🔥'
+            });
+            addLog('🔥 ' + targetName + ' sufre Quemadura ' + flatHp + ' HP por ' + (duration||1) + ' turno(s)', 'damage');
+        }
+function processBurnEffects(charName) {
             const char = gameState.characters[charName];
             if (!char || !char.statusEffects) return;
             const burnEffects = char.statusEffects.filter(e => e && e.name === 'Quemadura');
             if (burnEffects.length === 0) return;
-            const totalPct = burnEffects.reduce(function(sum, b){ return sum + (b.percent || 0); }, 0);
-            let damage = Math.ceil(char.maxHp * (totalPct / 100));
+            // Support both flat HP (new) and percent (legacy)
+            let damage = 0;
+            burnEffects.forEach(function(b) {
+                if (b.flatHp) {
+                    damage += b.flatHp; // flat HP damage
+                } else {
+                    damage += Math.ceil(char.maxHp * ((b.percent || 10) / 100)); // legacy percent
+                }
+            });
             damage = applyTuskPassive(charName, damage);
             if (damage > 0) {
-                // Pass charName as attackerName=null but use helper that allows Ragnar passive
-                const oldHp = char.hp;
                 applyDamageWithShield(charName, damage, null);
-                addLog('🔥 ' + charName + ' recibe ' + damage + ' de daño por Quemadura (' + totalPct + '%)', 'damage');
-                // Ragnar passive already fires inside applyDamageWithShield now (attackerName check removed)
-                // RENGOKU PASIVA: Corazón Ardiente — genera 1 carga por tick de quemadura en cualquier enemigo
+                addLog('🔥 ' + charName + ' recibe ' + damage + ' de daño por Quemadura', 'damage');
+                // RENGOKU PASIVA: genera 1 carga por tick de quemadura en enemigo
                 const rengoku = gameState.characters['Rengoku'];
                 if (rengoku && !rengoku.isDead && rengoku.hp > 0 && rengoku.team !== char.team) {
                     rengoku.charges = Math.min(20, (rengoku.charges || 0) + 1);
-                    addLog('🔥 Corazón Ardiente: Rengoku genera 1 carga (quemadura en enemigo)', 'buff');
+                    addLog('🔥 Corazón Ardiente: Rengoku genera 1 carga', 'buff');
                 }
             }
         }
@@ -162,10 +186,7 @@
                         const palChar = gameState.characters['Emperador Palpatine'];
                         const thisChar = gameState.characters[charName];
                         if (palChar && !palChar.isDead && palChar.hp > 0 && thisChar && palChar.team !== thisChar.team) {
-                            if (Math.random() < 0.5) {
-                                applyStun(charName, 1);
-                                addLog('⚡ Emperador de la Galaxia: ' + charName + ' aturdido al expirar ' + effect.name, 'damage');
-                            }
+                            triggerPalpatinePassive(charName);
                         }
                     }
                     const nname = normAccent(effect.name || '');
