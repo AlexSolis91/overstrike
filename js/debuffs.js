@@ -278,6 +278,26 @@ function applyDebuff(targetName, effectObj) {
         }
 
         // Sigilo por N rondas (untilRoundEnd se decrementa manualmente en processEndOfRound)
+        function applyAuraBuff(targetName, auraType) {
+            // auraType: 'fuego'|'gelida'|'oscura'|'luz'
+            const target = gameState.characters[targetName];
+            if (!target) return;
+            const auraMap = {
+                'fuego':  { name: 'Aura de fuego',  emoji: '🔥', duration: 2 },
+                'gelida': { name: 'Aura gelida',     emoji: '❄️', duration: 2 },
+                'oscura': { name: 'Aura oscura',     emoji: '🌑', duration: 2 },
+                'luz':    { name: 'Aura de Luz',     emoji: '✨', duration: 2 },
+                'infectar': { name: 'Infectar',      emoji: '🦠', duration: 2 },
+                'reflejar': { name: 'Reflejar',      emoji: '🪞', duration: 2 },
+            };
+            const aura = auraMap[auraType];
+            if (!aura) return;
+            // Remove old instance and apply new
+            target.statusEffects = (target.statusEffects || []).filter(e => e && e.name !== aura.name);
+            target.statusEffects.push({ name: aura.name, type: 'buff', duration: aura.duration, emoji: aura.emoji });
+            addLog(aura.emoji + ' ' + targetName + ' recibe ' + aura.name + ' (' + aura.duration + ' turnos)', 'buff');
+        }
+
         function applyStealth(targetName, rounds) {
             const target = gameState.characters[targetName];
             if (!target) return;
