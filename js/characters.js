@@ -24,10 +24,10 @@
                 portrait: 'https://i.postimg.cc/3rSZSvdF/Captura_de_pantalla_2026_03_11_105214.png',
                 passive: { name: 'Autoridad del Gobernante', description: 'Al inicio de su turno gana Sigilo 1 turno. Cuando una Sombra desaparece, genera 2 cargas.' },
                 abilities: [
-                    { name: 'Arise!', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'arise_summon', description: 'Invoca una Sombra aleatoria (Igris, Iron, Tusk, Beru, Bellion).' },
+                    { name: 'Sigilo de la Sombras', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'sjw_sigilo', description: 'Invoca una Sombra aleatoria (Igris, Iron, Tusk, Beru, Bellion).' },
                     { name: 'Daga de Kamish', type: 'special', cost: 3, chargeGain: 0, damage: 2, target: 'single', effect: 'daga_kamish', description: 'Causa 2+2 adicional por cada Sombra invocada en tu equipo.' },
                     { name: 'Extracción de Sombras', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'self', effect: 'sacrifice_shadow', description: 'Sacrifica una Sombra invocada. Genera 5 cargas.' },
-                    { name: 'Kamish Arise!', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'summon_kamish', description: 'Invoca a Kamish (30 HP, Megaprovocación permanente).' },
+                    { name: 'Purgatorio de las Sombras', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'summon_kamish', description: 'Invoca a Kamish (30 HP, Megaprovocación permanente).' },
                 ]
             },
 
@@ -204,8 +204,8 @@
                 abilities: [
                     { name: 'Animación', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'animacion', description: 'Causa 1 de daño. Si el enemigo tiene Quemadura Solar, este ataque genera +1 carga permanentemente.' },
                     { name: 'Sentencia del Sol', type: 'special', cost: 2, chargeGain: 0, damage: 2, target: 'single', effect: 'sentencia_del_sol', description: 'Causa 2 de daño. Si tiene Quemadura Solar, causa 1-3 de daño adicional.' },
-                    { name: 'The Sphinx Wehem-Mesut', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'self', effect: 'summon_sphinx', description: 'Invoca a Sphinx Wehem-Mesut (8 HP).' },
-                    { name: 'Ramesseum Tentyris', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'summon_ramesseum', description: 'Invoca a Ramesseum Tentyris (20 HP).' },
+                    { name: 'Noble Phantasm Abu el-Hol Sphinx', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'self', effect: 'summon_sphinx', description: 'Invoca a Sphinx Wehem-Mesut (8 HP).' },
+                    { name: 'Noble Phantasm Ramesseum Tentyris', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'summon_ramesseum', description: 'Invoca a Ramesseum Tentyris (20 HP).' },
                 ]
             },
 
@@ -400,7 +400,7 @@
                 portrait: 'https://i.postimg.cc/hjJDWnn6/Captura_de_pantalla_2026_03_06_003242.png',
                 passive: { name: 'Adaptación Reactiva', description: 'Cada vez que recibe un golpe de un ataque básico, genera 1 carga.' },
                 abilities: [
-                    { name: 'Provocación', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'self_provocation', description: 'Aplica Buff Provocación hasta el final de su siguiente turno.' },
+                    { name: 'Rugido del Devastador', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'rugido_devastador', description: 'Aplica Buff Provocación. Aplica Buff Cuerpo Perfecto.' },
                     { name: 'Smashing Strike', type: 'special', cost: 3, chargeGain: 0, damage: 3, target: 'aoe', effect: 'aoe_stun_chance', description: 'Causa 2 AOE. 50% de probabilidad de Aturdir al enemigo golpeado.' },
                     { name: 'Skill Drain', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'aoe', effect: 'skill_drain', description: 'Causa de 1 a 3 de daño por efecto a cada enemigo. Recupera HP equivalente al daño total infligido.' },
                     { name: 'Devastator Punish', type: 'over', cost: 12, chargeGain: 0, damage: 10, target: 'single', effect: 'devastator_punish', critChance: 0.3, description: 'Causa 10 ST. 30% de probabilidad de crítico.' },
