@@ -186,11 +186,14 @@
                     return;
                 }
                 
-                // VERIFICAR PROVOCACIÓN — buscar por buff activo (funciona para originales Y duplicados #2)
+                // MEGA PROVOCACIÓN tiene prioridad sobre Provocación
+                // Verificar MegaProv PRIMERO — si existe, Provocación se ignora
+                const megaProvFirst = !sauronActive ? checkKamishMegaProvocation(targetTeam) : null;
+
+                // VERIFICAR PROVOCACIÓN — solo si NO hay Mega Provocación activa
                 let tauntTarget = null;
 
-                // Buscar CUALQUIER personaje enemigo con buff Provocación activo (permanente o temporal)
-                if (!sauronActive) {
+                if (!sauronActive && !megaProvFirst) {
                     for (let n in gameState.characters) {
                         const c = gameState.characters[n];
                         if (!c || c.team !== targetTeam || c.isDead || c.hp <= 0) continue;
@@ -201,7 +204,7 @@
                     }
                 }
 
-                if (tauntTarget && !sauronActive) {
+                if (tauntTarget && !sauronActive && !megaProvFirst) {
                     const tauntChar = gameState.characters[tauntTarget];
 
                     title.textContent = '⚠️ Provocación Activa — Debes Atacar a ' + tauntTarget;
