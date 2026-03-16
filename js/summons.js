@@ -795,6 +795,50 @@
                 triggerOzyPassive(targetName, attackerName);
                 // CONTRAATAQUE (Darth Vader, Goku UI, cualquier personaje con buff)
                 if (!passiveExecuting) triggerCounterattack(targetName, attackerName);
+                // BUFF REFLEJAR: cuando el portador recibe un ataque, el atacante recibe el mismo daño
+                if (!passiveExecuting && hasStatusEffect(targetName, 'Reflejar') && attackerName && damage > 0) {
+                    passiveExecuting = true;
+                    const reflectDmg = damage;
+                    applyDamageWithShield(attackerName, reflectDmg, targetName);
+                    addLog('🪞 Reflejar: ' + attackerName + ' recibe ' + reflectDmg + ' de daño reflejado', 'damage');
+                    passiveExecuting = false;
+                }
+                // AURA DE FUEGO: atacante recibe Quemadura 2HP
+                if (!passiveExecuting && hasStatusEffect(targetName, 'Aura de fuego') && attackerName) {
+                    passiveExecuting = true;
+                    applyBurn(attackerName, 10, 1);
+                    addLog('🔥 Aura de Fuego: ' + attackerName + ' recibe Quemadura al atacar', 'debuff');
+                    passiveExecuting = false;
+                }
+                // AURA GELIDA: atacante recibe Congelación 1T
+                if (!passiveExecuting && hasStatusEffect(targetName, 'Aura gelida') && attackerName) {
+                    passiveExecuting = true;
+                    applyFreeze(attackerName, 1);
+                    addLog('❄️ Aura Gélida: ' + attackerName + ' es Congelado al atacar', 'debuff');
+                    passiveExecuting = false;
+                }
+                // AURA OSCURA: atacante pierde 1 carga, 30% pierde 2 adicionales
+                if (!passiveExecuting && hasStatusEffect(targetName, 'Aura oscura') && attackerName) {
+                    passiveExecuting = true;
+                    const atkrAura = gameState.characters[attackerName];
+                    if (atkrAura) {
+                        atkrAura.charges = Math.max(0, (atkrAura.charges || 0) - 1);
+                        if (Math.random() < 0.30) {
+                            atkrAura.charges = Math.max(0, atkrAura.charges - 2);
+                            addLog('🌑 Aura Oscura: ' + attackerName + ' pierde 3 cargas', 'debuff');
+                        } else {
+                            addLog('🌑 Aura Oscura: ' + attackerName + ' pierde 1 carga', 'debuff');
+                        }
+                    }
+                    passiveExecuting = false;
+                }
+                // BUFF INFECTAR: cuando el portador recibe un golpe, aplica Veneno 2T al atacante
+                if (!passiveExecuting && hasStatusEffect(targetName, 'Infectar') && attackerName) {
+                    passiveExecuting = true;
+                    applyDebuff(attackerName, { name: 'Veneno', type: 'debuff', duration: 2, emoji: '☠️', poisonPercent: 10 });
+                    addLog('🦠 Infectar: ' + attackerName + ' recibe Veneno 2T por atacar a ' + targetName, 'debuff');
+                    passiveExecuting = false;
+                }
                 // BUFF ESPINAS: al recibir un golpe, causa 1 daño al atacante (+1 si atacante tiene Sangrado)
                 if (!passiveExecuting && hasStatusEffect(targetName, 'Espinas')) {
                     passiveExecuting = true;
@@ -831,7 +875,26 @@
             addLog('🛡️ ' + targetName + ' recibe Escudo de ' + shieldAmount + ' HP', 'buff');
         }
 
-        function applyRegeneration(targetName, amount, duration) {
+        
+        function healCharacter(charName, amount) {
+            const c = gameState.characters[charName];
+            if (!c || c.isDead) return 0;
+            // AURA DE LUZ: doubles HP recovery
+            let finalHeal = amount;
+            if (hasStatusEffect(charName, 'Aura de Luz')) {
+                finalHeal = amount * 2;
+                addLog('✨ Aura de Luz: curación de ' + charName + ' duplicada (' + amount + '→' + finalHeal + ' HP)', 'heal');
+            }
+            // QUEMADURA SOLAR: no puede recuperar HP
+            if (hasStatusEffect(charName, 'Quemadura Solar')) {
+                addLog('☀️ Quemadura Solar: ' + charName + ' no puede recuperar HP', 'debuff');
+                return 0;
+            }
+            const before = c.hp;
+            c.hp = Math.min(c.maxHp, c.hp + finalHeal);
+            return c.hp - before;
+        }
+function applyRegeneration(targetName, amount, duration) {
             const target = gameState.characters[targetName];
             if (!target.statusEffects) {
                 target.statusEffects = [];
