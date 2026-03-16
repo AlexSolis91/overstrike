@@ -1047,7 +1047,7 @@
                     // Row 2: character images
                     '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">',
                         topAtk.length ? '<div><div style="font-size:.62rem;color:#4fc3f7;margin-bottom:6px;letter-spacing:.05em;">🗡️ MÁS USADOS ATAQUE</div><div style="display:flex;gap:5px;">' + atkImgs + '</div></div>' : '',
-                        topDef.length ? '<div><div style="font-size:.62rem;color:#c864ff;margin-bottom:6px;letter-spacing:.05em;">🛡️ MÁS USADOS DEFENSA</div><div style="display:flex;gap:5px;">' + defImgs + '</div></div>' : '',
+                        topDef.length ? '<div style="margin-left:24px;"><div style="font-size:.62rem;color:#c864ff;margin-bottom:6px;letter-spacing:.05em;">🛡️ MÁS USADOS DEFENSA</div><div style="display:flex;gap:5px;">' + defImgs + '</div></div>' : '',
                     '</div>',
                     '</div>'
                 ].join('');
