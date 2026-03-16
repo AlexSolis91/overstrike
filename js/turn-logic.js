@@ -1270,6 +1270,32 @@
                 // Activar pasiva de Kaisel
                 triggerKaiselPassive();
 
+
+                // PHALANX (Leonidas): al inicio de ronda, limpia 1 debuff aleatorio de un aliado
+                // y el ataque básico gana +1 dmg +1 cg por cada debuff limpiado (permanente)
+                (function() {
+                    const leon = gameState.characters['Leonidas'];
+                    if (!leon || leon.isDead || leon.hp <= 0) return;
+                    const allies = Object.keys(gameState.characters).filter(function(n) {
+                        const c = gameState.characters[n];
+                        return c && c.team === leon.team && !c.isDead && c.hp > 0 &&
+                               c.statusEffects && c.statusEffects.some(function(e) { return e && e.type === 'debuff'; });
+                    });
+                    if (allies.length === 0) return;
+                    const randAlly = allies[Math.floor(Math.random() * allies.length)];
+                    const allyChar = gameState.characters[randAlly];
+                    const debuffs = allyChar.statusEffects.filter(function(e) { return e && e.type === 'debuff'; });
+                    if (debuffs.length === 0) return;
+                    const randDebuff = debuffs[Math.floor(Math.random() * debuffs.length)];
+                    allyChar.statusEffects = allyChar.statusEffects.filter(function(e) { return e !== randDebuff; });
+                    addLog('⚔️ Phalanx (Leonidas): Limpia ' + (randDebuff.name || 'Debuff') + ' de ' + randAlly, 'buff');
+                    // Boost basic attack permanently
+                    if (!leon.phalanxBonusDmg) leon.phalanxBonusDmg = 0;
+                    if (!leon.phalanxBonusCg) leon.phalanxBonusCg = 0;
+                    leon.phalanxBonusDmg += 1;
+                    leon.phalanxBonusCg += 1;
+                    addLog('⚔️ Phalanx: Ataque básico de Leonidas gana +1 daño +1 carga (total: +' + leon.phalanxBonusDmg + ' dmg / +' + leon.phalanxBonusCg + ' cg)', 'buff');
+                })();
                 // PASIVA PROGENITOR DEMONIACO (Muzan): cura al inicio de cada ronda
                 triggerMuzanPassive();
 
