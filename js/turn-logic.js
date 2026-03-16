@@ -695,7 +695,7 @@
                                    (name === 'Goku' && char.ultraInstinto) ||
                                   (name === 'Anakin Skywalker' && char.darkSideAwakened) ||
                                   (name === 'Muzan Kibutsuji' && char.muzanTransformed);
-            const portrait = (isTransformed && char.transformationPortrait) ? char.transformationPortrait : char.portrait;
+            const portrait = char.portrait || char.transformPortrait || char.transformationPortrait || '';
 
             // Header row
             const header = document.createElement('div');
@@ -860,7 +860,7 @@
                                        (char.ultraInstinto && charName === 'Goku') ||
                                        (char.darkSideAwakened && charName === 'Anakin Skywalker') ||
                                        (char.muzanTransformed && charName === 'Muzan Kibutsuji');
-            const modalPortrait = (isTransformedModal && char.transformationPortrait) ? char.transformationPortrait : char.portrait;
+                        const modalPortrait = char.portrait || char.transformPortrait || char.transformationPortrait || '';
             if (modalPortrait) {
                 portraitImg.src = modalPortrait;
                 portraitImg.alt = charName;
@@ -1114,8 +1114,15 @@
                     if (activeChar && activeChar.statusEffects && gameState._attackedThisTurn) {
                         const sigiloIdx = activeChar.statusEffects.findIndex(e => e && normAccent(e.name || '') === 'sigilo');
                         if (sigiloIdx !== -1) {
-                            activeChar.statusEffects.splice(sigiloIdx, 1);
-                            addLog(`👤 Sigilo de ${gameState.selectedCharacter} se pierde al atacar`, 'damage');
+                            const sigiloEff = activeChar.statusEffects[sigiloIdx];
+                            if (sigiloEff.appliedThisTurn) {
+                                // Sigilo aplicado en ESTE turno — sobrevive, solo limpiar flag
+                                sigiloEff.appliedThisTurn = false;
+                                addLog('👤 Sigilo de ' + gameState.selectedCharacter + ' se mantiene (aplicado este turno)', 'buff');
+                            } else {
+                                activeChar.statusEffects.splice(sigiloIdx, 1);
+                                addLog('👤 Sigilo de ' + gameState.selectedCharacter + ' se pierde al atacar', 'damage');
+                            }
                         }
                     }
                     gameState._attackedThisTurn = false;
@@ -1371,7 +1378,7 @@
                     const s = gameState.summons[sid];
                     if (!s || s.hp <= 0) continue;
                     
-                    if (s.dragonEffect === 'mega_prov_aoe_dmg') {
+                    if (s.effect === 'mega_prov_aoe_dmg' || s.dragonEffect === 'mega_prov_aoe_dmg') {
                         // Drogon: inflige 3 daño AOE al equipo enemigo
                         const drogTeam = s.team === 'team1' ? 'team2' : 'team1';
                         addLog(`🔴 Drogon (Pasiva): inflige 3 de daño AOE al equipo ${typeof getTeamLabel === 'function' ? getTeamLabel(drogTeam) : (drogTeam === 'team1' ? 'HUNTERS' : 'REAPERS')}`, 'damage');
@@ -1382,7 +1389,7 @@
                             }
                         }
                         // Drogon también tiene Megaprovocacion activa (se maneja en target selection)
-                    } else if (s.dragonEffect === 'burn_team') {
+                    } else if (s.effect === 'burn_team' || s.dragonEffect === 'burn_team') {
                         // Rhaegal: aplica Quemadura 10% por 1 turno a todo el equipo enemigo
                         const rhTeam = s.team === 'team1' ? 'team2' : 'team1';
                         addLog(`🟢 Rhaegal (Pasiva): aplica Quemadura 10% al equipo ${typeof getTeamLabel === 'function' ? getTeamLabel(rhTeam) : (rhTeam === 'team1' ? 'HUNTERS' : 'REAPERS')}`, 'damage');
@@ -1392,7 +1399,7 @@
                                 applyFlatBurn(n, 2, 1);
                             }
                         }
-                    } else if (s.dragonEffect === 'heal_team') {
+                    } else if (s.effect === 'heal_team' || s.dragonEffect === 'heal_team') {
                         // Viserion: cura 2 HP a todo el equipo aliado
                         addLog(`⚪ Viserion (Pasiva): cura 2 HP al equipo aliado`, 'heal');
                         for (let n in gameState.characters) {
