@@ -8,11 +8,11 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 rikudoMode: false,
                 portrait: 'https://i.postimg.cc/KzWJPy5j/Captura_de_pantalla_2026_02_26_134301.png',
-                transformationPortrait: 'https://i.postimg.cc/pTBgL2Bp/Captura_de_pantalla_2026_02_22_004257.png',
+                transformationPortrait: 'https://i.postimg.cc/vBbG3V57/Captura_de_pantalla_2026_03_16_172658.png',
                 passive: { name: 'Limbo', description: 'Efectos pasivos de Divinidad y Cuerpo Perfecto.' },
                 abilities: [
                     { name: 'Gakidō: Fūjutsu Kyūin', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'lifesteal_basic', description: 'Causa 2 de daño. Roba HP al enemigo golpeado equivalente al daño causado por este ataque.' },
-                    { name: 'Mangekyō Sharingan', type: 'special', cost: 2, chargeGain: 0, damage: 3, target: 'single', effect: 'sharingan_aoe', description: 'Causa 3 AOE. Se aplica Buff Contraataque. Se aplica Buff Concentración.' },
+                    { name: 'Mangekyō Sharingan', type: 'special', cost: 2, chargeGain: 0, damage: 3, target: 'single', effect: 'sharingan_aoe', description: 'Causa 3 de daño sobre el objetivo. Madara se aplica Buff Contraataque y Buff Concentración.' },
                     { name: 'Susanoo', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'aoe', effect: 'double_on_burn', description: 'Causa 3 de daño en área con 50% de probabilidad de golpe crítico. Aplica Buff Escudo con +3 HP por cada golpe crítico acertado en el enemigo.' },
                     { name: 'Modo Rikudō', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'rikudo_transformation', description: 'TRANSFORMACIÓN permanente. Todos los ataques cuestan la mitad de cargas, causan el doble de daño y generan el doble de cargas. Activa la pasiva Limbo: recibe 50% menos de daño y regenera 1 HP cada turno.' }
                 ]
