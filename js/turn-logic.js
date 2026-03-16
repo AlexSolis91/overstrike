@@ -1309,10 +1309,13 @@
                 })();
 
                 // CUERPO PERFECTO: al final de la ronda, elimina debuffs del usuario
+                // Limbo (Madara Uchiha) también incluye este efecto
                 Object.keys(gameState.characters).forEach(function(n) {
                     const c = gameState.characters[n];
                     if (!c || c.isDead || c.hp <= 0) return;
-                    if (!hasStatusEffect(n, 'Cuerpo Perfecto')) return;
+                    const hasCuerpoPerfecto = hasStatusEffect(n, 'Cuerpo Perfecto') ||
+                        (c.passive && c.passive.name === 'Limbo'); // Madara Limbo = Divinidad + Cuerpo Perfecto
+                    if (!hasCuerpoPerfecto) return;
                     const debuffsBefore = (c.statusEffects || []).filter(e => e && e.type === 'debuff' && !e.permanent);
                     if (debuffsBefore.length === 0) return;
                     c.statusEffects = (c.statusEffects || []).filter(e => !e || e.type !== 'debuff' || e.permanent);
