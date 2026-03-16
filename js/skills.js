@@ -69,10 +69,7 @@
                     return;
                 }
 
-            // FALANGE (Leonidas): 2 cargas a aliado cuando enemigo usa Special u Over
-            if (ability.type === 'special' || ability.type === 'over') {
-                triggerFalange(attacker.team);
-            }
+            // Phalanx (Leonidas) passive now fires at round start — removed enemy special trigger
             
             // Calcular daño y generación de cargas ajustados por modo Rikudō
             let finalDamage = ability.damage;
@@ -356,8 +353,13 @@
                 addLog(`🛡️ ${gameState.selectedCharacter} activa Provocación (1 turno) y gana Escudo 3 HP`, 'buff');
 
             } else if (ability.effect === 'precepto') {
-                // Precepto (Leonidas): daño + 1 carga a aliado aleatorio
-                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                // Precepto (Leonidas): daño + Phalanx permanent bonus
+                const leonBonus = attacker.phalanxBonusDmg || 0;
+                const leonCgBonus = attacker.phalanxBonusCg || 0;
+                applyDamageWithShield(targetName, finalDamage + leonBonus, gameState.selectedCharacter);
+                if (leonCgBonus > 0) {
+                    attacker.charges = Math.min(20, (attacker.charges || 0) + leonCgBonus);
+                }
                 const allies = Object.keys(gameState.characters).filter(n => { const c = gameState.characters[n]; return c.team === attacker.team && n !== gameState.selectedCharacter && !c.isDead && c.hp > 0; });
                 if (allies.length > 0) {
                     const lucky = allies[Math.floor(Math.random() * allies.length)];
@@ -2688,17 +2690,17 @@
                         addLog(`🔥 Entrenamiento de los Dioses: Goku genera +2 cargas (Furia+Frenesí)`, 'buff');
                     }
                 }
-                // ── MINATO PASIVA: +2 cargas por enemigo golpeado más lento ──
+                // ── MINATO PASIVA: +1 carga por enemigo golpeado más lento ──
                 if (gameState.selectedCharacter === 'Minato Namikaze' && !hasFear && finalDamage > 0 && targetName) {
                     const tgtMinato = gameState.characters[targetName];
                     if (tgtMinato && !tgtMinato.isDead && tgtMinato.speed < attacker.speed) {
-                        attacker.charges = Math.min(20, attacker.charges + 2);
-                        addLog(`⚡ Hiraishin no Jutsu: Minato genera +2 cargas (enemigo más lento: ${tgtMinato.speed} vs ${attacker.speed})`, 'buff');
+                        attacker.charges = Math.min(20, attacker.charges + 1);
+                        addLog(`⚡ Hiraishin no Jutsu: Minato genera +1 carga (enemigo más lento: ${tgtMinato.speed} vs ${attacker.speed})`, 'buff');
                     }
                 }
             }
             
-            // ── MINATO PASIVA (AOE): +2 cargas por CADA enemigo golpeado más lento ──
+            // ── MINATO PASIVA (AOE): +1 carga por CADA enemigo golpeado más lento ──
             if (gameState.selectedCharacter === 'Minato Namikaze' && ability.target === 'aoe') {
                 const hasFearM = hasStatusEffect('Minato Namikaze', 'Miedo');
                 if (!hasFearM) {
@@ -2707,7 +2709,7 @@
                     for (let n in gameState.characters) {
                         const c = gameState.characters[n];
                         if (c && c.team === enemyTeamM && !c.isDead && c.hp > 0 && c.speed < attacker.speed) {
-                            bonusChargesM += 2;
+                            bonusChargesM += 1;
                         }
                     }
                     if (bonusChargesM > 0) {
@@ -2717,6 +2719,12 @@
                 }
             }
             
+            // ASISTIR (Anakin): when ally uses Special/Over ST, execute basic on same target
+            if (ability && (ability.type === 'special' || ability.type === 'over') && 
+                ability.target === 'single' && targetName) {
+                triggerAsistir(gameState.selectedCharacter, targetName, ability.type);
+            }
+
             // Actualizar UI
             renderCharacters();
             renderSummons();
