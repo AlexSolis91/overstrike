@@ -213,15 +213,22 @@
             const teamClass = summon.team === 'team1' ? 'team1' : 'team2';
             const hpPct = Math.max(0, (summon.hp / summon.maxHp) * 100);
             const borderColor = summon.team === 'team1' ? '#00c4ff' : '#ff4466';
+            // Get image from summonData
+            const sData = summonData[summon.name] || {};
+            const imgUrl = sData.img || '';
+            const imgHtml = imgUrl
+                ? `<img src="${imgUrl}" alt="${summon.name}" style="width:36px;height:36px;border-radius:6px;object-fit:cover;border:1px solid ${borderColor};flex-shrink:0;" onerror="this.style.display='none'">`
+                : `<div style="width:36px;height:36px;border-radius:6px;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">👻</div>`;
             
             return `
-                <div class="summon-card-mini ${teamClass}" onclick="showSummonDetail('${summon.id}')" style="display:inline-flex; align-items:center; gap:6px; background:rgba(0,0,0,0.5); border:1px solid ${borderColor}; border-radius:8px; padding:5px 8px; margin:2px; cursor:pointer; max-width:160px; transition:all 0.2s;" onmouseover="this.style.boxShadow='0 0 10px ${borderColor}'" onmouseout="this.style.boxShadow='none'">
-                    <div style="font-size:0.7rem; font-weight:700; color:${borderColor}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:80px;">👻 ${summon.name}</div>
-                    <div style="flex:1; min-width:40px;">
-                        <div style="background:rgba(0,0,0,0.6); border-radius:3px; height:5px; overflow:hidden;">
-                            <div style="width:${hpPct}%; height:100%; background:linear-gradient(90deg,#00ff66,#00cc55); border-radius:3px;"></div>
+                <div class="summon-card-mini ${teamClass}" onclick="showSummonDetail('${summon.id}')" style="display:inline-flex; align-items:center; gap:6px; background:rgba(0,0,0,0.6); border:2px solid ${borderColor}; border-radius:8px; padding:4px 6px; margin:2px; cursor:pointer; max-width:170px; transition:all 0.2s;" onmouseover="this.style.boxShadow='0 0 12px ${borderColor}'" onmouseout="this.style.boxShadow='none'">
+                    ${imgHtml}
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-size:0.65rem; font-weight:700; color:${borderColor}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${summon.name}</div>
+                        <div style="background:rgba(0,0,0,0.6); border-radius:3px; height:5px; overflow:hidden; margin-top:2px;">
+                            <div style="width:${hpPct}%; height:100%; background:linear-gradient(90deg,#00ff66,#00cc55); border-radius:3px; transition:width 0.3s;"></div>
                         </div>
-                        <div style="font-size:0.55rem; color:#aaa; text-align:center;">${summon.hp}/${summon.maxHp}</div>
+                        <div style="font-size:0.55rem; color:#aaa; text-align:center;">${summon.hp}/${summon.maxHp} HP</div>
                     </div>
                 </div>
             `;
