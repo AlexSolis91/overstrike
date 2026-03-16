@@ -659,17 +659,15 @@
                 }
             }
 
-            // PASIVA DOOMSDAY: genera 1 carga si recibe golpe básico
-            if (attackerName && attackerName !== null && !passiveExecuting) {
-                const attckr = gameState.characters[attackerName];
-                if (true) { // any hit triggers Doomsday passive
-                    const tgtChar2 = gameState.characters[targetName];
-                    if (tgtChar2 && tgtChar2.passive && normAccent(tgtChar2.passive.name || '') === 'adaptacion reactiva' && remainingDamage > 0) {
-                        passiveExecuting = true;
-                        tgtChar2.hp = Math.min(tgtChar2.maxHp, tgtChar2.hp + 2);
-                        addLog(`💪 Adaptación Reactiva: ${targetName} recupera 2 HP`, 'heal');
-                        passiveExecuting = false;
-                    }
+            // PASIVA DOOMSDAY (Adaptación Reactiva): recupera 2 HP cada vez que recibe un golpe
+            // Solo se activa si el daño no lo mata (lo baja a <= 0)
+            if (attackerName && attackerName !== null && !passiveExecuting && damage > 0) {
+                const tgtCharDoom = gameState.characters[targetName];
+                if (tgtCharDoom && tgtCharDoom.hp > 0 && !tgtCharDoom.isDead &&
+                    tgtCharDoom.passive && normAccent(tgtCharDoom.passive.name || '') === 'adaptacion reactiva') {
+                    // Heal AFTER damage (will be applied once remainingDamage is processed)
+                    // Schedule post-damage heal with a small flag
+                    tgtCharDoom._doomsdayHealPending = true;
                 }
             }
 
@@ -741,6 +739,14 @@
             if (isNaN(remainingDamage)) remainingDamage = 0;
             const oldHp = target.hp;
             target.hp = Math.max(0, target.hp - remainingDamage);
+            // DOOMSDAY Adaptación Reactiva: recover 2HP after taking damage (if still alive)
+            if (target._doomsdayHealPending) {
+                target._doomsdayHealPending = false;
+                if (target.hp > 0 && !target.isDead) {
+                    target.hp = Math.min(target.maxHp, target.hp + 2);
+                    addLog('💪 Adaptación Reactiva: ' + targetName + ' recupera 2 HP tras recibir el golpe', 'heal');
+                }
+            }
 
             // HIJO DE ODIN (Ragnar): genera 1 carga por cada HP perdido (cualquier fuente)
             if (remainingDamage > 0 && !passiveExecuting) {
