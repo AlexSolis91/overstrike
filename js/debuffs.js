@@ -97,6 +97,9 @@
             if (targetName === 'Saitama') return true;
             // Proteccion Sagrada: immune to new debuffs
             if (hasStatusEffect(targetName, 'Proteccion Sagrada') || hasStatusEffect(targetName, 'Protección Sagrada')) return true;
+            // LIMBO (Madara Uchiha): Divinidad = inmune a debuffs en Modo Rikudō
+            const limboChar = gameState.characters[targetName];
+            if (limboChar && limboChar.passive && limboChar.passive.name === 'Limbo' && limboChar.rikudoMode) return true;
             return false;
         }
         function isImmuneToBurn(targetName) {
