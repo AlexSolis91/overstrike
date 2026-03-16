@@ -225,7 +225,13 @@
         }
         function addCharges(charObj, amount) {
             if (!charObj) return;
-            charObj.charges = Math.min(20, (charObj.charges || 0) + amount);
+            // CONCENTRACION: duplica cargas generadas
+            let finalAmount = amount;
+            const charName = Object.keys(gameState.characters).find(n => gameState.characters[n] === charObj);
+            if (charName && hasStatusEffect(charName, 'Concentración')) {
+                finalAmount = amount * 2;
+            }
+            charObj.charges = Math.min(20, (charObj.charges || 0) + finalAmount);
         }
 
 
