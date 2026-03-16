@@ -196,6 +196,11 @@
                 console.error(`applyBurn: Target ${targetName} no encontrado`);
                 return;
             }
+            // SAITAMA: inmune a todos los debuffs incluyendo Quemadura
+            if (targetName === 'Saitama') {
+                addLog('🦸 Saitama es inmune a Quemadura (Espíritu del Héroe)', 'buff');
+                return;
+            }
             // Guard: never apply burns with 0% or undefined percent
             const validPct = (typeof percent === 'number' && percent > 0) ? percent : null;
             if (!validPct) {
