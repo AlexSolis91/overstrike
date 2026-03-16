@@ -1,5 +1,4 @@
-
-        // ==================== INICIALIZACIÓN ====================
+// ==================== INICIALIZACIÓN ====================
         function initGame(selectedCharacters) {
             // Reset full game state for new game
             gameState.selectedCharacter = null;
@@ -31,10 +30,9 @@
                 const passiveName = ch.passive.name || '';
                 const baseName = ch.baseName || charName; // baseName handles duplicates like "Aldebaran #2"
                 
-                // Thestalos: Provocación + Contraataque permanentes
+                // Thestalos: solo Contraataque permanente (sin Provocacion — Excel v5)
                 if (baseName === 'Thestalos') {
                     ch.statusEffects = ch.statusEffects || [];
-                    ch.statusEffects.push({ name: 'Provocacion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🔥' });
                     ch.statusEffects.push({ name: 'Contraataque', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '⚔️' });
                 }
                 // Aldebaran: Provocación permanente
@@ -44,8 +42,7 @@
                 }
                 // Anakin Skywalker: Contraataque permanente
                 if (baseName === 'Anakin Skywalker') {
-                    ch.statusEffects = ch.statusEffects || [];
-                    ch.statusEffects.push({ name: 'Contraataque', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '⚔️' });
+                    ch.anakinAsistir = true; // Asistir: fires basic when ally uses Special/Over ST
                 }
                 // Aspros de Gemini: Esquiva Área permanente
                 if (baseName === 'Aspros de Gemini') {
