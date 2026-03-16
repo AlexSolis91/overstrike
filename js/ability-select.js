@@ -55,7 +55,7 @@
                              (name === 'Goku' && char.ultraInstinto) ||
                              (name === 'Anakin Skywalker' && char.darkSideAwakened) ||
                              (name === 'Muzan Kibutsuji' && char.muzanTransformed);
-            return (isTransf && char.transformationPortrait) ? char.transformationPortrait : (char.portrait || null);
+            return (isTransf && (char.transformPortrait || char.transformationPortrait)) ? (char.transformPortrait || char.transformationPortrait) : (char.portrait || null);
         }
 
                 function showTargetSelection(ability) {
