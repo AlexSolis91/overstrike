@@ -2609,37 +2609,15 @@
                 }
                 
             } else if (ability.effect === 'sharingan_aoe') {
-                // Mangekyō Sharingan (Madara): AOE 3 daño + Contraataque + Concentración
-                const shaEnemyTeam = attacker.team === 'team1' ? 'team2' : 'team1';
-                // Apply AOE damage to all enemies
-                const shaKamish = checkKamishMegaProvocation(shaEnemyTeam);
-                if (shaKamish) {
-                    let shaCount = 0;
-                    for (let n in gameState.characters) { const c = gameState.characters[n]; if (c && c.team === shaEnemyTeam && !c.isDead && c.hp > 0) shaCount++; }
-                    for (let sid in gameState.summons) { const s = gameState.summons[sid]; if (s && s.team === shaEnemyTeam && s.hp > 0 && sid !== shaKamish.id) shaCount++; }
-                    applySummonDamage(shaKamish.id, finalDamage * shaCount, charName);
-                    addLog('🐉 Kamish absorbe ' + (finalDamage * shaCount) + ' daño AOE de Mangekyō', 'buff');
-                } else {
-                    for (let n in gameState.characters) {
-                        const c = gameState.characters[n];
-                        if (!c || c.team !== shaEnemyTeam || c.isDead || c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE', 'buff'); continue; }
-                        applyDamageWithShield(n, finalDamage, charName);
-                    }
-                    for (let sid in gameState.summons) {
-                        const s = gameState.summons[sid];
-                        if (s && s.team === shaEnemyTeam && s.hp > 0) applySummonDamage(sid, finalDamage, charName);
-                    }
-                }
-                addLog('👁️ Mangekyō Sharingan: ' + finalDamage + ' AOE a todos los enemigos', 'damage');
-                // Buff Contraataque en Madara
+                // Mangekyō Sharingan (Madara): SINGLE TARGET 3 daño + Buff Contraataque + Buff Concentración
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                // Buff Contraataque al atacante
                 attacker.statusEffects = (attacker.statusEffects || []).filter(e => e && e.name !== 'Contraataque');
-                attacker.statusEffects.push({ name: 'Contraataque', type: 'buff', duration: 2, emoji: '🔄' });
-                addLog('🔄 Mangekyō Sharingan: ' + charName + ' gana Buff Contraataque', 'buff');
-                // Buff Concentración en Madara
-                attacker.statusEffects = attacker.statusEffects.filter(e => e && e.name !== 'Concentración' && e.name !== 'Concentracion');
+                attacker.statusEffects.push({ name: 'Contraataque', type: 'buff', duration: 2, emoji: '⚔️' });
+                // Buff Concentración al atacante
+                attacker.statusEffects = (attacker.statusEffects || []).filter(e => e && e.name !== 'Concentración' && e.name !== 'Concentracion');
                 attacker.statusEffects.push({ name: 'Concentración', type: 'buff', duration: 2, emoji: '🎯' });
-                addLog('🎯 Mangekyō Sharingan: ' + charName + ' gana Buff Concentración', 'buff');
+                addLog('👁️ Mangekyō Sharingan: ' + finalDamage + ' daño a ' + targetName + ' + Contraataque + Concentración a ' + charName, 'damage');
 
             
             } else if (ability.effect === 'rikudo_transformation') {
