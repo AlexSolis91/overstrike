@@ -5,11 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OVERSTRIKE - 5v5 RPG Battle v4.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
-
-    <!-- ==================== ESTILOS ==================== -->
     <link rel="stylesheet" href="css/styles.css">
-
-    <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -84,7 +80,6 @@
             </div>
         </div>
         <div style="display:flex; gap:1.5rem; width:100%; max-width:1100px; flex-wrap:wrap;">
-            <!-- Columna izquierda: modos + jugadores activos -->
             <div style="flex:1; min-width:220px; display:flex; flex-direction:column; gap:1rem;">
                 <div style="background:rgba(0,10,30,0.8); border:1px solid rgba(0,196,255,0.2); border-radius:16px; padding:1.5rem;">
                     <div style="font-family:'Orbitron',sans-serif; font-size:.8rem; color:#00c4ff; margin-bottom:1rem; letter-spacing:.1em;">MODO DE JUEGO</div>
@@ -95,7 +90,6 @@
                     <button onclick="showRankedTeamScreen()" style="width:100%; padding:1rem; font-family:'Orbitron',sans-serif; font-size:.85rem; background:linear-gradient(135deg,#002040,#004080); color:#4fc3f7; border:2px solid #4fc3f7; border-radius:10px; cursor:pointer; margin-top:.5rem; transition:all .2s; letter-spacing:.05em;" onmouseover="this.style.boxShadow='0 0 18px rgba(79,195,247,0.5)'" onmouseout="this.style.boxShadow='none'">⚔️ EQUIPO RANKED</button>
                     <button onclick="showLeaderboard()" style="width:100%; padding:.7rem; font-family:'Orbitron',sans-serif; font-size:.78rem; background:rgba(255,170,0,0.06); color:#ffaa00; border:1px solid rgba(255,170,0,0.3); border-radius:10px; cursor:pointer; margin-top:.5rem; letter-spacing:.05em;">📊 VER LEADERBOARD</button>
                 </div>
-                <!-- #4: Lista de jugadores activos -->
                 <div style="background:rgba(0,10,30,0.8); border:1px solid rgba(0,255,136,0.2); border-radius:16px; padding:1.2rem; flex:1;">
                     <div style="display:flex; align-items:center; gap:8px; margin-bottom:.8rem;">
                         <div style="width:8px;height:8px;background:#00ff88;border-radius:50%;animation:loginPulse 2s infinite;"></div>
@@ -105,7 +99,6 @@
                     <div id="playersList" style="display:flex; flex-direction:column; gap:.5rem; max-height:200px; overflow-y:auto;"></div>
                 </div>
             </div>
-            <!-- Columna central: salas disponibles -->
             <div style="flex:2; min-width:280px; background:rgba(0,10,30,0.8); border:1px solid rgba(0,196,255,0.2); border-radius:16px; padding:1.5rem;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
                     <div style="font-family:'Orbitron',sans-serif; font-size:.8rem; color:#00c4ff; letter-spacing:.1em;">SALAS DISPONIBLES</div>
@@ -115,7 +108,6 @@
                     <div style="text-align:center; color:#444; padding:2rem; font-size:.85rem;">Cargando salas...</div>
                 </div>
             </div>
-            <!-- Columna derecha: #5 Chat Global -->
             <div style="flex:1.2; min-width:240px; background:rgba(0,10,30,0.8); border:1px solid rgba(255,170,0,0.25); border-radius:16px; padding:1.5rem; display:flex; flex-direction:column;">
                 <div style="font-family:'Orbitron',sans-serif; font-size:.75rem; color:#ffaa00; letter-spacing:.1em; margin-bottom:.8rem;">💬 CHAT GLOBAL</div>
                 <div id="globalChatMessages" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:.4rem; min-height:220px; max-height:300px; margin-bottom:.8rem;"></div>
@@ -127,7 +119,6 @@
                 </div>
             </div>
         </div>
-        <!-- #4: Modal alerta de desafío -->
         <div id="challengeModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9000; align-items:center; justify-content:center;">
             <div style="background:linear-gradient(135deg,#0a0e17,#0d1525); border:2px solid #ffaa00; border-radius:20px; padding:2rem 2.5rem; text-align:center; max-width:360px;">
                 <div style="font-size:2rem; margin-bottom:.5rem;">⚔️</div>
@@ -343,22 +334,22 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js"></script>
+    <script src="js/firebase-auth.js?v=1773640809"></script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js"></script>
+    <script src="js/characters.js?v=1773640809"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js"></script>
+    <script src="js/audio-state.js?v=1773640809"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
         const CS_TEAM_SIZE = 5;
 
         let csState = {
-            team1: [],   // nombres seleccionados para hunters
-            team2: [],   // nombres seleccionados para reapers
-            phase: 'team1', // 'team1' | 'team2' | 'done'
-            pendingChar: null, // nombre del personaje en revisión
-            gameMode: 'multi' // 'multi' | 'solo'
+            team1: [],
+            team2: [],
+            phase: 'team1',
+            pendingChar: null,
+            gameMode: 'multi'
         };
 
         function csSelectMode(mode) {
@@ -371,7 +362,6 @@
                 const lbl = document.getElementById('csPhaseLabel');
                 lbl.textContent = '🔷 ' + myName + ' — Elige tus 5 personajes (vs IA)';
                 lbl.className = 'cs-phase-label team1';
-                // Set team names now so char select panels show correct names
                 window._teamNames = { team1: myName, team2: 'IA' };
                 const n1 = document.getElementById('csTeamName1');
                 if (n1) n1.textContent = myName;
@@ -402,7 +392,6 @@
                     if (csState.phase === 'done') csState.phase = 'team2';
                 }
             }
-            // In online mode: hide ready button if my team now has < 5
             if (csState.gameMode === 'online') {
                 const myTeam = isRoomHost ? 'team1' : 'team2';
                 if (csState[myTeam].length < CS_TEAM_SIZE) {
@@ -412,7 +401,6 @@
             }
             csRenderSlots();
             csRenderGrid();
-            // Actualizar label de fase
             if (csState.phase === 'team1') {
                 const lbl = document.getElementById('csPhaseLabel');
                 const suffix = csState.gameMode === 'solo' ? ' (vs IA)' : '';
@@ -425,9 +413,6 @@
             }
         }
 
-        // ──────────────────────────────────────────────────────────────
-        // HELPER: crea un elemento con clase y texto/HTML de forma segura
-        // ──────────────────────────────────────────────────────────────
         function el(tag, cls, text) {
             const e = document.createElement(tag);
             if (cls) e.className = cls;
@@ -483,7 +468,6 @@
                 const name1 = csState.team1[i];
                 const name2 = csState.team2[i];
 
-                // ── Slot Team 1 ──
                 const slot1 = document.createElement('div');
                 slot1.className = 'cs-slot' + (name1 ? ' filled team1' : '');
                 slot1.style.position = 'relative';
@@ -499,7 +483,6 @@
                         slot1.appendChild(ico);
                     }
                     slot1.appendChild(el('div', 'cs-slot-name', name1.split(' ')[0]));
-                    // X button: show if local multi, or online host (team1 owner)
                     const canRemove1 = csState.gameMode !== 'solo' && (csState.gameMode !== 'online' || isRoomHost);
                     if (canRemove1) {
                         const xBtn = document.createElement('button');
@@ -514,7 +497,6 @@
                 }
                 t1.appendChild(slot1);
 
-                // ── Slot Team 2 ──
                 const slot2 = document.createElement('div');
                 slot2.className = 'cs-slot' + (name2 ? ' filled team2' : '');
                 slot2.style.position = 'relative';
@@ -530,7 +512,6 @@
                         slot2.appendChild(ico);
                     }
                     slot2.appendChild(el('div', 'cs-slot-name', name2.split(' ')[0]));
-                    // X button: show if local multi, or online guest (team2 owner)
                     const canRemove2 = csState.gameMode !== 'solo' && (csState.gameMode !== 'online' || !isRoomHost);
                     if (canRemove2) {
                         const xBtn2 = document.createElement('button');
@@ -556,7 +537,6 @@
                     const char = characterData[name];
                     if (!char || !char.abilities) continue;
 
-                    // Count how many times this char appears in each team
                     const countT1 = csState.team1.filter(n => n === name).length;
                     const countT2 = csState.team2.filter(n => n === name).length;
                     const inT1 = countT1 > 0;
@@ -565,7 +545,6 @@
                     const card = document.createElement('div');
                     card.className = 'cs-char-card' + (inT1 && inT2 ? ' selected-both' : inT1 ? ' selected-team1' : inT2 ? ' selected-team2' : '');
 
-                    // Portrait
                     if (char.portrait) {
                         const img = imgEl(char.portrait, name, 'cs-char-img');
                         card.appendChild(img);
@@ -576,11 +555,9 @@
                         card.appendChild(el('div', 'cs-char-img-placeholder', '⚔️'));
                     }
 
-                    // Info row
                     const info = el('div', 'cs-char-info');
                     info.appendChild(el('div', 'cs-char-name', name));
                     info.appendChild(el('div', 'cs-char-speed', '⚡ ' + (char.speed || '?')));
-                    // Show badges for how many times selected
                     if (inT1) {
                         const badge = el('span', 'cs-team-badge team1', '🔷' + (countT1 > 1 ? ' x' + countT1 : ''));
                         info.appendChild(badge);
@@ -591,7 +568,6 @@
                     }
                     card.appendChild(info);
 
-                    // Always clickable (duplicates allowed)
                     card.onclick = (function(n) { return function() { csShowDetail(n); }; })(name);
                     grid.appendChild(card);
                 } catch (err) {
@@ -615,14 +591,12 @@
             'Enkidu': { hp: 15, passive: 'Cancela todas las invocaciones activas del enemigo. Aplica Mega Aturdimiento a todos los enemigos con más de 5 cargas.' },
         };
 
-
         function csShowDetail(name) {
             try {
                 const char = characterData[name];
                 if (!char) { console.error('Character not found:', name); return; }
                 csState.pendingChar = name;
 
-                // In online mode, always use the player's assigned team
                 const currentTeam = (csState.gameMode === 'online' && csState.onlineTeam) ? csState.onlineTeam : csState.phase;
                 const isT1 = currentTeam === 'team1';
                 const teamLabel = isT1 ? '🔷 HUNTERS' : '🔶 REAPERS';
@@ -631,10 +605,7 @@
                 const modal = document.getElementById('csDetailContent');
                 modal.innerHTML = '';
 
-                // ── Hero section ──────────────────────────────────────────
                 const hero = el('div', 'cs-detail-hero');
-
-                // Portrait
                 const portraitWrap = el('div', 'cs-detail-portrait-wrap');
                 if (char.portrait) {
                     const img = imgEl(char.portrait, name, 'cs-detail-portrait');
@@ -647,10 +618,8 @@
                 }
                 hero.appendChild(portraitWrap);
 
-                // Meta
                 const meta = el('div', 'cs-detail-meta');
                 meta.appendChild(el('div', 'cs-detail-name', name));
-
                 const stats = el('div', 'cs-detail-stats');
                 stats.appendChild(el('div', 'cs-detail-stat', '⚡ Velocidad: ' + (char.speed || '?')));
                 stats.appendChild(el('div', 'cs-detail-stat', '💚 HP: ' + (char.hp || '?')));
@@ -667,7 +636,6 @@
                 hero.appendChild(meta);
                 modal.appendChild(hero);
 
-                // ── Abilities ─────────────────────────────────────────────
                 const abilitiesWrap = el('div', 'cs-detail-abilities');
                 const SUMMON_EFFECT_MAP = {
                     'summon_shadows': ['Igris', 'Tusk', 'Beru'],
@@ -682,7 +650,6 @@
                     const nameRow = el('div', '', '');
                     nameRow.style.display = 'flex'; nameRow.style.alignItems = 'center'; nameRow.style.gap = '6px';
                     nameRow.appendChild(el('div', 'cs-detail-ability-name', ab.name || ''));
-                    // Summon info button
                     const summonList = SUMMON_EFFECT_MAP[ab.effect];
                     if (summonList) {
                         summonList.forEach(function(sName) {
@@ -704,7 +671,6 @@
                 });
                 modal.appendChild(abilitiesWrap);
 
-                // ── Question ──────────────────────────────────────────────
                 const question = el('div', 'cs-detail-question');
                 question.appendChild(document.createTextNode('¿Añadir '));
                 const nameSpan = el('span', '', name);
@@ -718,7 +684,6 @@
                 question.appendChild(document.createTextNode('?'));
                 modal.appendChild(question);
 
-                // ── Buttons ───────────────────────────────────────────────
                 const btns = el('div', 'cs-detail-btns');
                 const btnYes = el('button', 'cs-confirm-btn yes', '✅ Sí, seleccionar');
                 btnYes.onclick = function() { csConfirm(true); };
@@ -732,7 +697,6 @@
 
             } catch(err) {
                 console.error('Error en csShowDetail para', name, err);
-                // Fallback seguro
                 try {
                     const modal = document.getElementById('csDetailContent');
                     modal.innerHTML = '';
@@ -761,17 +725,15 @@
                 csState.pendingChar = null;
                 audioManager.playSelect();
 
-                // Determine which team to add to
                 let effectivePhase;
                 if (csState.gameMode === 'online') {
-                    effectivePhase = csState.onlineTeam; // always use assigned team
+                    effectivePhase = csState.onlineTeam;
                 } else {
                     effectivePhase = csState.phase;
                 }
                 console.log('[OVERSTRIKE DEBUG] csConfirm:', name, '| gameMode:', csState.gameMode, '| onlineTeam:', csState.onlineTeam, '| effectivePhase:', effectivePhase, '| team1:', csState.team1.length, '| team2:', csState.team2.length);
 
                 if (effectivePhase === 'team1') {
-                    // Prevent same character twice in same team
                     if (csState.team1.includes(name)) {
                         alert('⚠️ ' + name + ' ya está en tu equipo. Cada personaje solo puede aparecer una vez por equipo.');
                         return;
@@ -826,21 +788,18 @@
         }
 
         function csAIPickTeam() {
-            // Si hay revancha con equipo IA pre-cargado, usarlo tal cual
             if (window._revanchaAITeamFixed && csState.team2 && csState.team2.length === CS_TEAM_SIZE) {
                 window._revanchaAITeamFixed = false;
                 addLog('🤖 La IA repite su equipo anterior.', 'info');
                 return;
             }
             window._revanchaAITeamFixed = false;
-            // IA elige 5 personajes aleatorios
             const allNames = Object.keys(characterData).filter(n => characterData[n] && characterData[n].abilities);
             const shuffled = allNames.slice().sort(() => Math.random() - 0.5);
             csState.team2 = shuffled.slice(0, CS_TEAM_SIZE);
             addLog('🤖 La IA ha seleccionado su equipo.', 'info');
         }
 
-        // ── Nombres de equipo (reemplazan HUNTERS/REAPERS) ──
         window._teamNames = { team1: 'Jugador 1', team2: 'Jugador 2' };
         function getTeamLabel(team) {
             return (window._teamNames && window._teamNames[team]) || (team === 'team1' ? 'HUNTERS' : 'REAPERS');
@@ -849,26 +808,27 @@
         function csStartGame() {
             try {
                 const selectedChars = {};
-                // Handle duplicate names: add suffix for duplicates
                 const nameCount = {};
                 const allSelected = csState.team1.map(n=>({name:n,team:'team1'})).concat(csState.team2.map(n=>({name:n,team:'team2'})));
                 allSelected.forEach(function(entry) {
                     const base = entry.name;
                     nameCount[base] = (nameCount[base] || 0) + 1;
-                    // NOTE: Firebase keys cannot contain '#' — use 'v2', 'v3' suffix instead
                     const key = nameCount[base] > 1 ? base + ' v' + nameCount[base] : base;
                     const charCopy = JSON.parse(JSON.stringify(characterData[base]));
                     charCopy.team = entry.team;
-                    charCopy.baseName = base; // keep reference to original name for data
+                    charCopy.baseName = base;
                     selectedChars[key] = charCopy;
                 });
 
-                document.getElementById('charSelectScreen').style.display = 'none';
+                // ── FIX: Hide ALL screens before showing game ──
+                ['loginScreen','lobbyScreen','waitingScreen','modeSelectScreen','charSelectScreen'].forEach(function(id){
+                    var el2 = document.getElementById(id);
+                    if (el2) el2.style.display = 'none';
+                });
                 document.querySelector('.game-container').style.display = 'block';
 
                 initGame(selectedChars);
 
-                // Establecer nombres de equipo para reemplazar HUNTERS/REAPERS
                 const myDisplayName = (typeof currentUser !== 'undefined' && currentUser && currentUser.displayName) ? currentUser.displayName : 'Jugador 1';
                 if (csState.gameMode === 'solo' || csState.gameMode === 'ranked') {
                     const fakeOpp = window._rankedFakeOpponent || 'IA';
@@ -876,10 +836,8 @@
                 } else if (csState.gameMode === 'online') {
                     // Names already set by startOnlineGame via _teamNames
                 } else {
-                    // multi local
                     window._teamNames = { team1: 'Jugador 1', team2: 'Jugador 2' };
                 }
-                // Refresh all team name elements with real names
                 const th1 = document.getElementById('teamHeader1');
                 if (th1) th1.textContent = '🔷 ' + getTeamLabel('team1');
                 const th2 = document.getElementById('teamHeader2');
@@ -898,24 +856,16 @@
                     modeLabel = '👥 Modo Multijugador';
                 }
                 addLog('🎮 ¡Batalla iniciada! ' + modeLabel, 'info');
-                // In online mode: start syncing game state
                 if (csState.gameMode === 'online') {
-                    // Push initial state so both players see the first turn
                     setTimeout(function() {
-                        if (isRoomHost) {
-                            // Host pushes initial game state so guest knows whose turn it is
-                            pushGameState();
-                        }
+                        if (isRoomHost) { pushGameState(); }
                         listenGameState();
                     }, 500);
                 }
-                // Store game mode in gameState so AI loop can check
                 gameState.gameMode = csState.gameMode;
                 gameState.aiTeam = 'team2';
-                // Ranked mode: mark for stats tracking
                 if (window._rankedMode) {
                     gameState.gameMode = 'ranked';
-                    // Show fake opponent name in logs if vs IA
                     if (window._rankedFakeOpponent) {
                         addLog('🏆 RANKED: ' + (currentUser ? currentUser.displayName || 'Jugador' : 'Jugador') + ' vs ' + window._rankedFakeOpponent, 'info');
                     }
@@ -926,32 +876,29 @@
             }
         }
 
-
-
     </script>
     <!-- 5. IA Engine -->
     <script src="js/ai-engine.js"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
     <script src="js/init-render.js"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js"></script>
+    <script src="js/turn-logic.js?v=1773640809"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js"></script>
+    <script src="js/status-effects.js?v=1773640809"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js"></script>
+    <script src="js/debuffs.js?v=1773640809"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js"></script>
+    <script src="js/summons.js?v=1773640809"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js"></script>
+    <script src="js/ability-select.js?v=1773640809"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-    <script src="js/skills.js"></script>
+    <script src="js/skills.js?v=1773640809"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
     <!-- ==================== EQUIPO RANKED SCREEN ==================== -->
     <div id="rankedTeamScreen" style="display:none; position:fixed; inset:0; background:linear-gradient(rgba(2,8,20,0.97),rgba(2,8,20,0.97)), url(https://i.postimg.cc/jSmHp0dw/4c9b34ddf1759d2a2950c4c8e1694ca9.jpg) center/cover; z-index:5000; overflow-y:auto; padding:24px; box-sizing:border-box;">
         <div style="max-width:1000px; margin:0 auto;">
-            <!-- Header -->
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
                 <div>
                     <div style="font-family:'Orbitron',sans-serif; font-size:1.4rem; font-weight:900; color:#4fc3f7; text-shadow:0 0 20px rgba(79,195,247,0.6);">⚔️ EQUIPO RANKED</div>
@@ -959,26 +906,20 @@
                 </div>
                 <button onclick="hideRankedTeamScreen()" style="background:rgba(255,51,102,0.15); border:2px solid #ff3366; color:#ff3366; border-radius:10px; padding:10px 20px; cursor:pointer; font-family:'Orbitron',sans-serif; font-size:.8rem;">✕ Cerrar</button>
             </div>
-            <!-- Info banner -->
             <div id="rankedTeamSaveMsg" style="display:none; background:rgba(0,255,136,0.1); border:1px solid #00ff88; border-radius:10px; padding:12px 18px; color:#00ff88; font-size:.85rem; margin-bottom:16px; text-align:center;"></div>
-            <!-- Two columns -->
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-bottom:24px;">
-                <!-- ATTACK TEAM -->
                 <div style="background:rgba(0,30,60,0.7); border:2px solid rgba(79,195,247,0.3); border-radius:16px; padding:20px;">
                     <div style="font-family:'Orbitron',sans-serif; font-size:.85rem; color:#4fc3f7; margin-bottom:14px; letter-spacing:.08em;">🗡️ EQUIPO DE ATAQUE <span style="font-size:.7rem; color:#555;">(con el que juegas)</span></div>
                     <div id="rtAttackSlots" style="display:flex; flex-direction:column; gap:8px; min-height:280px;"></div>
                 </div>
-                <!-- DEFENSE TEAM -->
                 <div style="background:rgba(30,0,60,0.7); border:2px solid rgba(200,100,255,0.3); border-radius:16px; padding:20px;">
                     <div style="font-family:'Orbitron',sans-serif; font-size:.85rem; color:#c864ff; margin-bottom:14px; letter-spacing:.08em;">🛡️ EQUIPO DE DEFENSA <span style="font-size:.7rem; color:#555;">(la IA lo defiende)</span></div>
                     <div id="rtDefenseSlots" style="display:flex; flex-direction:column; gap:8px; min-height:280px;"></div>
                 </div>
             </div>
-            <!-- Save button -->
             <div style="text-align:center; margin-bottom:24px;">
                 <button onclick="saveRankedTeams()" style="background:linear-gradient(135deg,#003a1a,#00aa55); border:2px solid #00ff88; color:#00ff88; font-family:'Orbitron',sans-serif; font-size:1rem; font-weight:700; padding:14px 48px; border-radius:50px; cursor:pointer; letter-spacing:.08em; box-shadow:0 0 24px rgba(0,255,136,0.3);">💾 GUARDAR EQUIPOS</button>
             </div>
-            <!-- Character grid for picking -->
             <div style="background:rgba(0,10,25,0.8); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:20px;">
                 <div style="font-family:'Orbitron',sans-serif; font-size:.8rem; color:#aaa; margin-bottom:14px; letter-spacing:.08em;">
                     SELECCIONAR PERSONAJE PARA: 
