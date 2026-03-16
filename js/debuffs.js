@@ -330,4 +330,3 @@ function applyDebuff(targetName, effectObj) {
             });
             addLog(`👤 ${targetName} activa Sigilo por ${rounds} ronda${rounds > 1 ? 's' : ''}`, 'buff');
         }
-
