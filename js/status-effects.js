@@ -44,12 +44,29 @@
         }
 
         
+
+        function triggerDaenerysPassiveBurnHeal(charName) {
+            // Dinastía del Dragón: cura 1 HP a Daenerys cuando un burn es bloqueado/limpiado
+            const dae = gameState.characters['Daenerys Targaryen'];
+            if (!dae || dae.isDead || dae.hp <= 0) return;
+            const oldHpDae = dae.hp;
+            dae.hp = Math.min(dae.maxHp, dae.hp + 1);
+            if (dae.hp > oldHpDae) {
+                addLog('🐉 Dynastía del Dragón: Daenerys recupera 1 HP (inmunidad a Quemadura)', 'heal');
+            }
+        }
         function applyFlatBurn(targetName, flatHp, duration) {
             // Apply a burn that does flat HP damage (not percent)
             const target = gameState.characters[targetName];
             if (!target) return;
             if (targetName === 'Saitama') {
                 addLog('🦸 Saitama es inmune a Quemadura (Espíritu del Héroe)', 'buff');
+                return;
+            }
+            // DAENERYS - Dinastía del Dragón: inmune a Quemadura y Quemadura Solar
+            if (targetName === 'Daenerys Targaryen') {
+                addLog('🐉 Dynastía del Dragón: Daenerys es inmune a Quemadura', 'buff');
+                triggerDaenerysPassiveBurnHeal('Daenerys Targaryen');
                 return;
             }
             if (hasStatusEffect(targetName, 'Proteccion Sagrada') || hasStatusEffect(targetName, 'Protección Sagrada')) {
@@ -66,6 +83,13 @@
 function processBurnEffects(charName) {
             const char = gameState.characters[charName];
             if (!char || !char.statusEffects) return;
+            // DAENERYS: immune to Quemadura — remove any that slipped through and heal
+            if (charName === 'Daenerys Targaryen') {
+                const burnsBefore = char.statusEffects.filter(e => e && e.name === 'Quemadura').length;
+                char.statusEffects = char.statusEffects.filter(e => !e || e.name !== 'Quemadura');
+                if (burnsBefore > 0 && typeof triggerDaenerysPassiveBurnHeal === 'function') triggerDaenerysPassiveBurnHeal(charName);
+                return;
+            }
             const burnEffects = char.statusEffects.filter(e => e && e.name === 'Quemadura');
             if (burnEffects.length === 0) return;
             // Support both flat HP (new) and percent (legacy)
@@ -126,6 +150,13 @@ function processBurnEffects(charName) {
         function processSolarBurnEffects(charName) {
             const char = gameState.characters[charName];
             if (!char || !char.statusEffects) return;
+            // DAENERYS: immune to Quemadura Solar
+            if (charName === 'Daenerys Targaryen') {
+                const solarBefore = char.statusEffects.filter(e => e && e.name === 'Quemadura Solar').length;
+                char.statusEffects = char.statusEffects.filter(e => !e || e.name !== 'Quemadura Solar');
+                if (solarBefore > 0 && typeof triggerDaenerysPassiveBurnHeal === 'function') triggerDaenerysPassiveBurnHeal(charName);
+                return;
+            }
             if (hasStatusEffect(charName, 'Proteccion Sagrada')) return;
             const solarEffects = char.statusEffects.filter(e => e && e.name === 'Quemadura Solar');
             if (solarEffects.length === 0) return;
@@ -181,6 +212,10 @@ function processBurnEffects(charName) {
                 if (effect.permanent) return true; // Nunca expiran los buffs permanentes
                 if (effect.untilRoundEnd) return true;
                 if (effect.duration <= 0) {
+                    // DAENERYS Dinastía del Dragón: heal 1 HP when Quemadura/QS expires
+                    if (charName === 'Daenerys Targaryen' && (effect.name === 'Quemadura' || effect.name === 'Quemadura Solar')) {
+                        if (typeof triggerDaenerysPassiveBurnHeal === 'function') triggerDaenerysPassiveBurnHeal(charName);
+                    }
                     // PALPATINE PASSIVE: when an enemy debuff expires, 50% chance to stun them
                     if (effect.type === 'debuff') {
                         const palChar = gameState.characters['Emperador Palpatine'];
