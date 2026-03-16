@@ -8,6 +8,7 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 rikudoMode: false,
                 portrait: 'https://i.postimg.cc/KzWJPy5j/Captura_de_pantalla_2026_02_26_134301.png',
+                transformPortrait: 'https://i.postimg.cc/vBbG3V57/Captura_de_pantalla_2026_03_16_172658.png',
                 transformationPortrait: 'https://i.postimg.cc/vBbG3V57/Captura_de_pantalla_2026_03_16_172658.png',
                 passive: { name: 'Limbo', description: 'Efectos pasivos de Divinidad y Cuerpo Perfecto.' },
                 abilities: [
