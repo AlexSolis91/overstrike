@@ -308,7 +308,28 @@
         }
 
         // ── PASIVA FALANGE (Leonidas): 2 cargas a aliado aleatorio cuando enemigo usa Special ──
-        function triggerFalange(attackerTeam) {
+        
+        function triggerAnticipacion(attackerName, attackerTeam) {
+            // Anticipacion: when enemy gains extra turn, chars with this buff fire 3 basics on attacker
+            const defenderTeam = attackerTeam === 'team1' ? 'team2' : 'team1';
+            Object.keys(gameState.characters).forEach(function(n) {
+                const c = gameState.characters[n];
+                if (!c || c.isDead || c.hp <= 0) return;
+                if (c.team !== defenderTeam) return;
+                if (!hasStatusEffect(n, 'Anticipacion')) return;
+                const basic = c.abilities && c.abilities.find(function(a) { return a.type === 'basic'; });
+                if (!basic) return;
+                if (passiveExecuting) return;
+                passiveExecuting = true;
+                addLog('⚡ Anticipación: ' + n + ' ejecuta 3 ataques básicos sobre ' + attackerName, 'buff');
+                for (let hit = 0; hit < 3; hit++) {
+                    applyDamageWithShield(attackerName, basic.damage || 1, n);
+                    c.charges = Math.min(20, (c.charges || 0) + (basic.chargeGain || 1));
+                }
+                passiveExecuting = false;
+            });
+        }
+function triggerFalange(attackerTeam) {
             if (passiveExecuting) return;
             const leonidas = gameState.characters['Leonidas'];
             if (!leonidas || leonidas.isDead || leonidas.hp <= 0) return;
