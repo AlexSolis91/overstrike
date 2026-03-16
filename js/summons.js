@@ -648,12 +648,12 @@
             // PASIVA DOOMSDAY: genera 1 carga si recibe golpe básico
             if (attackerName && attackerName !== null && !passiveExecuting) {
                 const attckr = gameState.characters[attackerName];
-                if (attckr && gameState.selectedAbility && gameState.selectedAbility.type === 'basic') {
+                if (true) { // any hit triggers Doomsday passive
                     const tgtChar2 = gameState.characters[targetName];
-                    if (tgtChar2 && tgtChar2.passive && tgtChar2.passive.name === 'Adaptación Reactiva') {
+                    if (tgtChar2 && tgtChar2.passive && tgtChar2.passive.name === 'Adaptación Reactiva' && remainingDamage > 0) {
                         passiveExecuting = true;
-                        tgtChar2.charges += 1;
-                        addLog(`⚡ Adaptación Reactiva: ${targetName} genera 1 carga`, 'buff');
+                        tgtChar2.hp = Math.min(tgtChar2.maxHp, tgtChar2.hp + 2);
+                        addLog(`💪 Adaptación Reactiva: ${targetName} recupera 2 HP`, 'heal');
                         passiveExecuting = false;
                     }
                 }
@@ -902,13 +902,19 @@
         }
 
                 function triggerBendicionSagrada(team, healAmount) {
-            // Min Byung pasiva: cada vez que un aliado recupera HP, genera 1 carga a Min Byung
-            const minByung = Object.keys(gameState.characters).find(function(n) {
+            // Min Byung pasiva: cada vez que un aliado recupera HP, genera 2 cargas en un aliado aleatorio del equipo
+            const hasMinByung = Object.keys(gameState.characters).some(function(n) {
                 const c = gameState.characters[n];
                 return c && c.team === team && c.passive && normAccent(c.passive.name || '') === normAccent('Bendición Sagrada') && !c.isDead && c.hp > 0;
             });
-            if (!minByung) return;
-            gameState.characters[minByung].charges = Math.min(20, (gameState.characters[minByung].charges || 0) + 1);
-            addLog('✨ Bendición Sagrada: ' + minByung + ' genera 1 carga (aliado recuperó HP)', 'buff');
+            if (!hasMinByung) return;
+            // Pick a random alive ally
+            const aliveAllies = Object.keys(gameState.characters).filter(function(n) {
+                const c = gameState.characters[n];
+                return c && c.team === team && !c.isDead && c.hp > 0;
+            });
+            if (aliveAllies.length === 0) return;
+            const randomAlly = aliveAllies[Math.floor(Math.random() * aliveAllies.length)];
+            gameState.characters[randomAlly].charges = Math.min(20, (gameState.characters[randomAlly].charges || 0) + 2);
+            addLog('✨ Bendición Sagrada: ' + randomAlly + ' genera 2 cargas (aliado recuperó HP)', 'buff');
         }
-
