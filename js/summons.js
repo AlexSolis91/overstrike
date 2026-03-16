@@ -582,6 +582,13 @@
                 }
             }
             
+            // PROTECCION SAGRADA: inmune a nuevos debuffs (handled in applyDebuff)
+            // Also: blocks incoming HP DAMAGE from golpes (physical hits)
+            if (attackerName !== null && hasStatusEffect(targetName, 'Proteccion Sagrada') || 
+                (attackerName !== null && hasStatusEffect(targetName, 'Protección Sagrada'))) {
+                addLog('🛡️ Protección Sagrada: ' + targetName + ' es inmune al daño de golpe', 'buff');
+                return 0;
+            }
             // ESCUDO SAGRADO: bloquea todo el daño de golpes (no efectos de estado)
             if (attackerName !== null && hasStatusEffect(targetName, 'Escudo Sagrado')) {
                 addLog(`✝️ Escudo Sagrado de ${targetName} bloqueó el golpe de ${attackerName}`, 'buff');
@@ -949,6 +956,50 @@ function applyRegeneration(targetName, amount, duration) {
         }
 
         // ── SANGRE DE YMIR: aplica efectos cuando Espinas causa daño ──
+        function triggerSJWArisePassive(charName) {
+            // Arise! passive: at start of SJW's turn, invoke a random shadow
+            const sjwChar = gameState.characters[charName];
+            if (!sjwChar || sjwChar.isDead || sjwChar.hp <= 0) return;
+            const shadowPool = gameState._sjwShadowWeights || {
+                'Igris': 0.25, 'Iron': 0.25, 'Tusk': 0.20,
+                'Beru': 0.10, 'Bellion': 0.06, 'Kaisel': 0.10, 'Kamish': 0.04
+            };
+            // Check if we already have max summons (5 per team)
+            const teamSummons = Object.values(gameState.summons).filter(s => s && s.team === sjwChar.team);
+            if (teamSummons.length >= 5) return;
+            // Pick random shadow by weight
+            let rand = Math.random();
+            let cumulative = 0;
+            let chosen = 'Igris';
+            for (const [name, weight] of Object.entries(shadowPool)) {
+                cumulative += weight;
+                if (rand < cumulative) { chosen = name; break; }
+            }
+            // Get summon data
+            const sData = summonData[chosen];
+            if (!sData) return;
+            // Check if Kamish already exists (unique)
+            if (chosen === 'Kamish') {
+                const hasKamish = Object.values(gameState.summons).some(s => s && s.name === 'Kamish' && s.team === sjwChar.team);
+                if (hasKamish) { chosen = 'Igris'; }
+            }
+            // Create the summon
+            const summonId = chosen + '_' + Date.now();
+            gameState.summons[summonId] = {
+                id: summonId,
+                name: chosen,
+                hp: sData.hp || 5,
+                maxHp: sData.hp || 5,
+                team: sjwChar.team,
+                summoner: charName,
+                passive: sData.passive || '',
+                img: sData.img || '',
+                statusEffects: []
+            };
+            addLog('👻 Arise! (Pasiva): ' + charName + ' invoca a ' + chosen, 'buff');
+            renderSummons();
+        }
+
         function triggerSangreDeYmir(attackerName, ymirAllyName) {
             // Find Ymir in the same team as ymirAllyName
             const ymirAllyChar = gameState.characters[ymirAllyName];
