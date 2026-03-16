@@ -28,7 +28,16 @@
             if (user) {
                 currentUser = user;
                 document.getElementById('loginScreen').style.display = 'none';
-                showLobby();
+                // Only show lobby if no game, mode select, or char select is active
+                var _gc = document.querySelector('.game-container');
+                var _cs = document.getElementById('charSelectScreen');
+                var _ms = document.getElementById('modeSelectScreen');
+                var _gameActive = _gc && _gc.style.display === 'block';
+                var _csActive = _cs && _cs.style.display !== 'none';
+                var _msActive = _ms && _ms.style.display !== 'none';
+                if (!_gameActive && !_csActive && !_msActive) {
+                    showLobby();
+                }
             } else {
                 currentUser = null;
                 showScreen('loginScreen');
@@ -75,6 +84,13 @@
 
         // ── Lobby ──
         function showLobby() {
+            // Never override an active game, mode select, or char select screen
+            var gc = document.querySelector('.game-container');
+            var charScreen = document.getElementById('charSelectScreen');
+            var modeScreen = document.getElementById('modeSelectScreen');
+            if (gc && gc.style.display === 'block') return; // game running
+            if (charScreen && charScreen.style.display !== 'none') return; // char select open
+            if (modeScreen && modeScreen.style.display !== 'none') return; // mode select open
             showScreen('lobbyScreen');
             document.getElementById('lobbyUserName').textContent = currentUser.displayName || currentUser.email;
             const photo = document.getElementById('lobbyUserPhoto');
