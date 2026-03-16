@@ -138,8 +138,8 @@
             },
             'Tusk': {
                 name: 'Tusk',
-                hp: 5,
-                maxHp: 5,
+                hp: 6,
+                maxHp: 6,
                 summoner: null,
                 team: null,
                 passive: 'Himno de Fuego: Cuando un enemigo recibe daño por quemadura, duplica ese daño',
@@ -147,8 +147,8 @@
             },
             'Beru': {
                 name: 'Beru',
-                hp: 5,
-                maxHp: 5,
+                hp: 6,
+                maxHp: 6,
                 summoner: null,
                 team: null,
                 passive: 'Al final de cada ronda causa 5 de daño a un enemigo aleatorio',
@@ -156,8 +156,8 @@
             },
             'Bellion': {
                 name: 'Bellion',
-                hp: 8,
-                maxHp: 8,
+                hp: 10,
+                maxHp: 10,
                 summoner: null,
                 team: null,
                 passive: 'Una vez por ronda, la primera vez que un enemigo usa Special u Over, cancela su activación y causa 4 de daño',
@@ -180,7 +180,7 @@
                 summoner: null,
                 team: null,
                 passive: 'Maldición de Kaisel: Al final de cada ronda, aplica un Debuff aleatorio a 2 enemigos aleatorios.',
-                img: 'https://i.postimg.cc/GtmWZL41/Captura_de_pantalla_2026_03_11_151735.png',
+                img: 'https://i.postimg.cc/RhZkjSNk/Captura_de_pantalla_2026_03_11_152341.png',
                 isDead: false,
                 statusEffects: []
             },
@@ -241,6 +241,63 @@
                 passive: 'Al final de cada ronda, si hay enemigos sin debuff Quemadura Solar activo, aplica QS 5% 2 turnos a esos enemigos. Cada vez que un enemigo recibe daño por QS, todos los aliados recuperan 1 HP.',
                 statusEffects: []
             }
+,
+            'Señuelo': {
+                name: 'Señuelo',
+                hp: 5,
+                maxHp: 5,
+                summoner: null,
+                team: null,
+                passive: 'Distraccion de emergencia: Al morir genera 2 puntos de carga al equipo aliado',
+                img: 'https://i.postimg.cc/qq0BT0rT/Captura_de_pantalla_2026_03_15_003309.png',
+                isDead: false,
+                statusEffects: []
+            },
+            'Drogon': {
+                name: 'Drogon',
+                hp: 15,
+                maxHp: 15,
+                summoner: null,
+                team: null,
+                passive: 'Sombra de Fuego: Mega provocacion. Inflige 3 puntos de Daño a todo el equipo enemigo al final de cada ronda',
+                img: 'https://i.postimg.cc/Gtr3CrRL/Captura_de_pantalla_2026_03_15_002747.png',
+                isDead: false,
+                statusEffects: []
+            },
+            'Rhaegal': {
+                name: 'Rhaegal',
+                hp: 8,
+                maxHp: 8,
+                summoner: null,
+                team: null,
+                passive: 'Furia Esmeralda: Al final de cada ronda aplica debuff Quemadura de 1 hp a todo el equipo enemigo',
+                img: 'https://i.postimg.cc/8cDkSDGT/Captura_de_pantalla_2026_03_15_002820.png',
+                isDead: false,
+                statusEffects: []
+            },
+            'Viserion': {
+                name: 'Viserion',
+                hp: 6,
+                maxHp: 6,
+                summoner: null,
+                team: null,
+                passive: 'Llama de Oro: Al final de cada ronda cura 2 hp a todo el equipo aliado',
+                img: 'https://i.postimg.cc/2ymjDmYz/Captura_de_pantalla_2026_03_15_002923.png',
+                isDead: false,
+                statusEffects: []
+            },
+            'Abu el-Hol Sphinx': {
+                name: 'Abu el-Hol Sphinx',
+                hp: 8,
+                maxHp: 8,
+                summoner: null,
+                team: null,
+                passive: 'Al final de cada ronda todos los enemigos con Quemadura Solar pierden 2 cargas.',
+                img: 'https://i.postimg.cc/6qw6XwKQ/Captura_de_pantalla_2026_03_15_002404.png',
+                isDead: false,
+                statusEffects: []
+            },
+
 
         };
 
