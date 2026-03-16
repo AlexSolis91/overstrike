@@ -1,4 +1,4 @@
-        // ==================== APLICADORES DE DEBUFFS ====================
+// ==================== APLICADORES DE DEBUFFS ====================
 
         // Debuffs that cannot stack on the same target (must expire first)
         const NON_STACKABLE_DEBUFFS = ['aturdimiento', 'mega aturdimiento', 'congelacion', 'mega congelacion', 'posesion', 'mega posesion', 'silenciar', 'concentracion', 'esquivar', 'esquiva area', 'contraataque', 'espinas', 'armadura', 'escudo sagrado', 'proteccion sagrada', 'anticipacion'];
@@ -102,6 +102,11 @@ function applyDebuff(targetName, effectObj) {
             // IMMUNIDADES POR PERSONAJE (pasivas)
             const targetChar = gameState.characters[targetName];
             if (targetChar) {
+                // Saitama: inmune a todos los debuffs
+                if (targetName === 'Saitama' && effectObj.type === 'debuff') {
+                    addLog(`🦸 Saitama es inmune a ${effectObj.name} (Espíritu del Héroe)`, 'buff');
+                    return;
+                }
                 const effN = normAccent(effectObj.name || '');
                 // Inmune a Miedo
                 if (targetChar.immuneToMiedo && (effN === 'miedo')) {
@@ -135,7 +140,7 @@ function applyDebuff(targetName, effectObj) {
             }
             target.statusEffects.push(effectObj);
             // PASIVA MABOROSHI: Saga gana 1 carga al aplicar debuff en enemigo
-            triggerMaboroshi(target.team);
+            triggerMaboroshi(target.team, effectObj.name);
             // PASIVA NEGOCIACIONES HOSTILES (Padme): aliado recibe debuff → Padme +1 carga
             {
                 const padme = gameState.characters['Padme Amidala'];
