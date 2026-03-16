@@ -99,6 +99,13 @@
             if (hasStatusEffect(targetName, 'Proteccion Sagrada') || hasStatusEffect(targetName, 'Protección Sagrada')) return true;
             return false;
         }
+        function isImmuneToBurn(targetName) {
+            // Daenerys: immune to Quemadura and Quemadura Solar
+            if (targetName === 'Daenerys Targaryen') return true;
+            if (targetName === 'Saitama') return true;
+            if (hasStatusEffect(targetName, 'Proteccion Sagrada') || hasStatusEffect(targetName, 'Protección Sagrada')) return true;
+            return false;
+        }
 function applyDebuff(targetName, effectObj) {
             const target = gameState.characters[targetName];
             if (!target || !target.statusEffects) return;
@@ -258,8 +265,17 @@ function applyDebuff(targetName, effectObj) {
         function applySolarBurn(targetName, percent, duration) {
             const target = gameState.characters[targetName];
             if (!target || !target.statusEffects) return;
-            if (hasStatusEffect(targetName, 'Proteccion Sagrada')) {
+            if (hasStatusEffect(targetName, 'Proteccion Sagrada') || hasStatusEffect(targetName, 'Protección Sagrada')) {
                 addLog(`🛡️ ${targetName} es inmune a Quemadura Solar (Protección Sagrada)`, 'buff');
+                return;
+            }
+            if (targetName === 'Daenerys Targaryen') {
+                addLog('🐉 Dynastía del Dragón: Daenerys es inmune a Quemadura Solar', 'buff');
+                if (typeof triggerDaenerysPassiveBurnHeal === 'function') triggerDaenerysPassiveBurnHeal('Daenerys Targaryen');
+                return;
+            }
+            if (targetName === 'Saitama') {
+                addLog('🦸 Saitama es inmune a Quemadura Solar', 'buff');
                 return;
             }
             // Stackear: cada aplicación se agrega como efecto separado
