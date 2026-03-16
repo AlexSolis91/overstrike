@@ -3339,6 +3339,33 @@
             document.getElementById('gameOverModal').classList.add('show');
             audioManager.stopBattleMusic();
             audioManager.play('audioMenu');
+
+            // ══ RANKED STATS: guardar resultado si es partida Ranked ══
+            if (typeof saveRankedResult === 'function' && window._rankedMode) {
+                try {
+                    // Determinar equipo ganador
+                    const winnerTeam = message.includes('HUNTERS') ? 'team1' : 'team2';
+                    // Equipo del jugador local
+                    const playerTeam = window._rankedPlayerTeam || 'team1';
+                    // Personajes usados por el jugador
+                    const playerChars = Object.keys(gameState.characters || {}).filter(function(n) {
+                        const c = gameState.characters[n];
+                        return c && c.team === playerTeam;
+                    });
+                    // Personajes del oponente
+                    const opponentTeam = playerTeam === 'team1' ? 'team2' : 'team1';
+                    const opponentChars = Object.keys(gameState.characters || {}).filter(function(n) {
+                        const c = gameState.characters[n];
+                        return c && c.team === opponentTeam;
+                    });
+                    const opponentName = window._rankedOpponentName || window._rankedFakeOpponent || 'Oponente';
+                    saveRankedResult(winnerTeam, playerTeam, playerChars, opponentName, opponentChars);
+                    console.log('[RANKED] saveRankedResult called — winner:', winnerTeam, 'playerTeam:', playerTeam);
+                } catch(e) {
+                    console.error('[RANKED] Error saving ranked result:', e);
+                }
+            }
+
             // Online: push game over so the loser also sees the modal
             if (onlineMode && currentRoomId) {
                 db.ref('rooms/' + currentRoomId + '/gameState').update({
