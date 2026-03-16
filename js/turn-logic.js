@@ -1296,6 +1296,17 @@
                     leon.phalanxBonusCg += 1;
                     addLog('⚔️ Phalanx: Ataque básico de Leonidas gana +1 daño +1 carga (total: +' + leon.phalanxBonusDmg + ' dmg / +' + leon.phalanxBonusCg + ' cg)', 'buff');
                 })();
+
+                // CUERPO PERFECTO: al final de la ronda, elimina debuffs del usuario
+                Object.keys(gameState.characters).forEach(function(n) {
+                    const c = gameState.characters[n];
+                    if (!c || c.isDead || c.hp <= 0) return;
+                    if (!hasStatusEffect(n, 'Cuerpo Perfecto')) return;
+                    const debuffsBefore = (c.statusEffects || []).filter(e => e && e.type === 'debuff' && !e.permanent);
+                    if (debuffsBefore.length === 0) return;
+                    c.statusEffects = (c.statusEffects || []).filter(e => !e || e.type !== 'debuff' || e.permanent);
+                    addLog('💠 Cuerpo Perfecto: ' + n + ' elimina sus debuffs (' + debuffsBefore.length + ')', 'buff');
+                });
                 // PASIVA PROGENITOR DEMONIACO (Muzan): cura al inicio de cada ronda
                 triggerMuzanPassive();
 
