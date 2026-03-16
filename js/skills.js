@@ -1489,14 +1489,22 @@
                     applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
                     if (c.speed < attacker.speed) {
                         // Enemigo más lento: debuff aleatorio 2 turnos
-                        const debuffPool = ['Quemadura','Veneno','Sangrado','Confusion','Debilitar','Congelacion','Silenciar'];
+                        const debuffPool = ['Quemadura','Veneno','Sangrado','Confusion','Debilitar','Congelacion','Silenciar','Miedo','Agotamiento','Aturdimiento'];
                         const chosen = debuffPool[Math.floor(Math.random() * debuffPool.length)];
-                        if (chosen === 'Quemadura') applyBurn(n, 10, 3);
-                        else if (chosen === 'Veneno') { c.statusEffects.push({ name: 'Veneno', type: 'debuff', duration: 3, emoji: '🐍', poisonTick: 0 }); }
-                        else if (chosen === 'Sangrado') applyBleed(n, 3);
-                        else if (chosen === 'Confusion') applyConfusion(n, 3);
-                        else if (chosen === 'Debilitar') applyDebuff(n, { name: 'Debilitar', type: 'debuff', duration: 3, emoji: '💔' });
-                        else if (chosen === 'Congelacion') { c.statusEffects.push({ name: 'Congelacion', type: 'debuff', duration: 3, emoji: '❄️', speedPenalty: 0.10 }); c.speed = Math.round(c.speed * 0.90); }
+                        if (chosen === 'Quemadura') applyBurn(n, 10, 1);  // 1T, valor 2HP (10% de 20HP)
+                        else if (chosen === 'Veneno') { c.statusEffects.push({ name: 'Veneno', type: 'debuff', duration: 1, emoji: '🐍', poisonTick: 0 }); }
+                        else if (chosen === 'Sangrado') applyBleed(n, 1);
+                        else if (chosen === 'Confusion') applyConfusion(n, 1);
+                        else if (chosen === 'Debilitar') applyWeaken(n, 2);  // 2T per table
+                        else if (chosen === 'Miedo') applyFear(n, 1);
+                        else if (chosen === 'Aturdimiento') applyStun(n, 1);
+                        else if (chosen === 'Agotamiento') {
+                            const redAgt = Math.floor(Math.random() * 3) + 1;
+                            const cAgt = gameState.characters[n];
+                            if (cAgt) cAgt.charges = Math.max(0, (cAgt.charges||0) - redAgt);
+                            addLog('💨 ' + n + ' sufre Agotamiento: pierde ' + redAgt + ' carga(s)', 'debuff');
+                        }
+                        else if (chosen === 'Congelacion') applyFreeze(targetName || n, 1);  // 1T per table c.speed = Math.round(c.speed * 0.90); }
                         else if (chosen === 'Silenciar') { c.statusEffects.push({ name: 'Silenciar', type: 'debuff', duration: 3, emoji: '🔇' }); }
                         addLog(`⚡ Destello: ${n} (más lento) recibe ${chosen} 2t`, 'damage');
                     } else {
