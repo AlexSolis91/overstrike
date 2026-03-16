@@ -11,10 +11,10 @@
                 transformationPortrait: 'https://i.postimg.cc/pTBgL2Bp/Captura_de_pantalla_2026_02_22_004257.png',
                 passive: { name: 'Limbo', description: '(Activa con Modo Rikudō) Recibe 50% menos de daño. Recupera 3 HP cada vez que recibe daño por golpe.' },
                 abilities: [
-                    { name: 'Katon: Gōka Mekkyaku', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'burn', burnPercent: 10, burnDuration: 2, description: 'Causa 2 de daño. Aplica Quemaduras 10% 1 turno.' },
-                    { name: 'Susanoo', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'aoe', effect: 'double_on_burn', description: 'Causa 3 AOE. Duplica el daño contra enemigos con Quemaduras.' },
-                    { name: 'Modo Rikudō', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'rikudo_transformation', description: 'Transformación permanente: ataques cuestan mitad, causan doble daño, generan doble cargas. Activa Limbo.' },
-                    { name: 'Gudōdama', type: 'over', cost: 10, chargeGain: 0, damage: 4, target: 'single', effect: 'multi_hit', hits: 5, hitChance: 50, chargePerHit: 1, description: 'Golpea 1-5 veces (50% cada golpe). Genera 1 carga por golpe acertado.' },
+                    { name: 'Katon: Gōka Mekkyaku', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'burn', burnPercent: 10, burnDuration: 2, description: 'Causa 2 de daño. Aplica Quemaduras 10% 1 turno.' },
+                    { name: 'Susanoo', type: 'special', cost: 2, chargeGain: 0, damage: 3, target: 'aoe', effect: 'double_on_burn', description: 'Causa 3 AOE. Duplica el daño contra enemigos con Quemaduras.' },
+                    { name: 'Modo Rikudō', type: 'over', cost: 6, chargeGain: 0, damage: 3, target: 'self', effect: 'rikudo_transformation', description: 'Transformación permanente: ataques cuestan mitad, causan doble daño, generan doble cargas. Activa Limbo.' },
+                    { name: 'Gudōdama', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'single', effect: 'multi_hit', hits: 5, hitChance: 50, chargePerHit: 1, description: 'Golpea 1-5 veces (50% cada golpe). Genera 1 carga por golpe acertado.' },
                 ]
             },
 
@@ -24,10 +24,10 @@
                 portrait: 'https://i.postimg.cc/3rSZSvdF/Captura_de_pantalla_2026_03_11_105214.png',
                 passive: { name: 'Autoridad del Gobernante', description: 'Al inicio de su turno gana Sigilo 1 turno. Cuando una Sombra desaparece, genera 2 cargas.' },
                 abilities: [
-                    { name: 'Arise!', type: 'basic', cost: 10, chargeGain: 1, damage: 0, target: 'self', effect: 'arise_summon', description: 'Invoca una Sombra aleatoria (Igris, Iron, Tusk, Beru, Bellion).' },
-                    { name: 'Daga de Kamish', type: 'special', cost: 2, chargeGain: 1, damage: 0, target: 'single', effect: 'daga_kamish', description: 'Causa 2+2 adicional por cada Sombra invocada en tu equipo.' },
-                    { name: 'Extracción de Sombras', type: 'special', cost: 3, chargeGain: 1, damage: 0, target: 'self', effect: 'sacrifice_shadow', description: 'Sacrifica una Sombra invocada. Genera 5 cargas.' },
-                    { name: 'Kamish Arise!', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'self', effect: 'summon_kamish', description: 'Invoca a Kamish (30 HP, Megaprovocación permanente).' },
+                    { name: 'Arise!', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'arise_summon', description: 'Invoca una Sombra aleatoria (Igris, Iron, Tusk, Beru, Bellion).' },
+                    { name: 'Daga de Kamish', type: 'special', cost: 3, chargeGain: 0, damage: 2, target: 'single', effect: 'daga_kamish', description: 'Causa 2+2 adicional por cada Sombra invocada en tu equipo.' },
+                    { name: 'Extracción de Sombras', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'self', effect: 'sacrifice_shadow', description: 'Sacrifica una Sombra invocada. Genera 5 cargas.' },
+                    { name: 'Kamish Arise!', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'summon_kamish', description: 'Invoca a Kamish (30 HP, Megaprovocación permanente).' },
                 ]
             },
 
@@ -37,8 +37,8 @@
                 portrait: 'https://i.postimg.cc/PJr0LB6N/Captura_de_pantalla_2026_02_21_230603.png',
                 passive: { name: 'Fortaleza de Tauro', description: 'Provocación permanente. Mientras tenga Escudo activo, genera 1 carga por cada golpe recibido.' },
                 abilities: [
-                    { name: 'Great Horn', type: 'basic', cost: 0, chargeGain: 0, damage: 1, target: 'single', effect: 'damage_and_heal', heal: 3, description: 'Causa 1 de daño. Recupera 3 HP.' },
-                    { name: 'Golden Shield', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'self', effect: 'golden_shield', shieldAmount: 5, description: 'Aplica Escudo 5 HP sobre sí mismo.' },
+                    { name: 'Great Horn', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'damage_and_heal', heal: 3, description: 'Causa 1 de daño. Recupera 3 HP.' },
+                    { name: 'Golden Shield', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'self', effect: 'golden_shield', shieldAmount: 5, description: 'Aplica Escudo 5 HP sobre sí mismo.' },
                     { name: 'Double Great Horn', type: 'special', cost: 7, chargeGain: 0, damage: 3, target: 'single', effect: 'double_great_horn', description: 'MT (2 objetivos). 60% daño doble, 40% daño triple. Gana Escudo = daño total causado.' },
                     { name: 'Great Supernova', type: 'over', cost: 10, chargeGain: 0, damage: 10, target: 'single', effect: 'double_if_low_hp', description: 'Causa 10 ST. Daño doble si Aldebaran tiene 20% o menos de HP.' },
                 ]
@@ -51,9 +51,9 @@
                 passive: { name: 'Phalanx', description: 'Cada vez que un enemigo activa un movimiento especial, genera 2 cargas en un aliado aleatorio.' },
                 abilities: [
                     { name: 'Precepto', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'precepto', description: 'Causa 1 de daño. Genera 1 carga a un aliado aleatorio.' },
-                    { name: 'Grito de Esparta', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'self', effect: 'grito_de_esparta', description: 'Elimina todos los Debuffs aliados. Aplica Escudo Sagrado 2 turnos a todos los aliados.' },
-                    { name: 'Sangre de Esparta', type: 'special', cost: 2, chargeGain: 0, damage: 0, target: 'self', effect: 'sangre_de_esparta', description: 'Sacrifica 10 HP y genera 10 cargas.' },
-                    { name: 'Gloria de los 300', type: 'over', cost: 10, chargeGain: 0, damage: 3, target: 'aoe', effect: 'gloria_300', description: 'Causa 3 AOE. Aplica Regeneración 25% 2 turnos y Escudo 5 HP a todos los aliados.' },
+                    { name: 'Grito de Esparta', type: 'special', cost: 2, chargeGain: 0, damage: 0, target: 'self', effect: 'grito_de_esparta', description: 'Elimina todos los Debuffs aliados. Aplica Escudo Sagrado 2 turnos a todos los aliados.' },
+                    { name: 'Sangre de Esparta', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'self', effect: 'sangre_de_esparta', description: 'Sacrifica 10 HP y genera 10 cargas.' },
+                    { name: 'Gloria de los 300', type: 'over', cost: 10, chargeGain: 0, damage: 4, target: 'aoe', effect: 'gloria_300', description: 'Causa 3 AOE. Aplica Regeneración 25% 2 turnos y Escudo 5 HP a todos los aliados.' },
                 ]
             },
 
@@ -63,9 +63,9 @@
                 portrait: 'https://i.postimg.cc/Y9xJCpxr/Captura_de_pantalla_2026_02_22_002441.png',
                 passive: { name: 'Bendición Sagrada', description: 'Cada vez que un aliado recupera HP, Min Byung genera 1 carga.' },
                 abilities: [
-                    { name: 'Curación Mágica', type: 'basic', cost: 0, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'heal_ally', heal: 2, description: 'Recupera 2 HP a un aliado.' },
-                    { name: 'Escudo Celestial', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'escudo_celestial', shieldAmount: 4, description: 'Otorga Escudo 4 HP a un aliado y le da +2 cargas.' },
-                    { name: 'Sanación Heroica', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'self', effect: 'regen_team', description: 'Aplica Regeneración 2 HP a todo el equipo durante 2 rondas.' },
+                    { name: 'Curación Mágica', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'ally_single', effect: 'heal_ally', heal: 2, description: 'Recupera 2 HP a un aliado.' },
+                    { name: 'Escudo Celestial', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'escudo_celestial', shieldAmount: 4, description: 'Otorga Escudo 4 HP a un aliado y le da +2 cargas.' },
+                    { name: 'Sanación Heroica', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'self', effect: 'regen_team', description: 'Aplica Regeneración 2 HP a todo el equipo durante 2 rondas.' },
                     { name: 'Milagro de la Vida', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'ally_dead', effect: 'revive_ally', description: 'Revive a un aliado caído con 100% de HP y 10 cargas.' },
                 ]
             },
@@ -77,9 +77,9 @@
                 passive: { name: 'Corazón Ardiente', description: 'Cuando Rengoku muere, aplica Aturdimiento a todos los enemigos.' },
                 abilities: [
                     { name: 'Sol Ascendente', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'sol_ascendente', description: 'Causa 2 de daño. Aplica Quemadura 10% 2 turnos.' },
-                    { name: 'Mar de Fuego', type: 'special', cost: 2, chargeGain: 0, damage: 0, target: 'self', effect: 'fire_shield', shieldAmount: 3, description: 'Aplica Escudo 3 HP a Rengoku y un aliado. Genera 1 carga al portador por cada HP de Escudo perdido.' },
-                    { name: 'Tigre de Fuego', type: 'special', cost: 6, chargeGain: 0, damage: 4, target: 'aoe', effect: 'tigre_fuego_v2', description: 'Causa 3 AOE. Aplica Quemadura 10% 2 turnos. Si ya tenía Quemadura, genera 1 carga al equipo aliado.' },
-                    { name: 'Purgatorio', type: 'over', cost: 10, chargeGain: 0, damage: 7, target: 'single', effect: 'purgatorio_v2', description: 'Causa 9 ST + Megaaturdimiento. Si el objetivo muere, Quemadura 30% x5 turnos a todos los enemigos.' },
+                    { name: 'Mar de Fuego', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'self', effect: 'fire_shield', shieldAmount: 3, description: 'Aplica Escudo 3 HP a Rengoku y un aliado. Genera 1 carga al portador por cada HP de Escudo perdido.' },
+                    { name: 'Tigre de Fuego', type: 'special', cost: 5, chargeGain: 0, damage: 3, target: 'aoe', effect: 'tigre_fuego_v2', description: 'Causa 3 AOE. Aplica Quemadura 10% 2 turnos. Si ya tenía Quemadura, genera 1 carga al equipo aliado.' },
+                    { name: 'Purgatorio', type: 'over', cost: 12, chargeGain: 0, damage: 7, target: 'single', effect: 'purgatorio_v2', description: 'Causa 9 ST + Megaaturdimiento. Si el objetivo muere, Quemadura 30% x5 turnos a todos los enemigos.' },
                 ]
             },
 
@@ -91,9 +91,9 @@
                 passive: { name: 'Esquiva Área', description: 'No es afectado ni dañado por movimientos AOE del enemigo.' },
                 abilities: [
                     { name: 'Genma Ken', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'genma_ken_v2', description: 'Causa 2 de daño. Aplica Confusión 1 turno. Elimina los Buffs del enemigo.' },
-                    { name: 'Colapso Dimensional', type: 'special', cost: 3, chargeGain: 1, damage: 3, target: 'single', effect: 'colapso_dimensional', description: 'Causa 4 ST. Aplica 2 Debuffs aleatorios al enemigo.' },
+                    { name: 'Colapso Dimensional', type: 'special', cost: 3, chargeGain: 1, damage: 4, target: 'single', effect: 'colapso_dimensional', description: 'Causa 4 ST. Aplica 2 Debuffs aleatorios al enemigo.' },
                     { name: 'Another Dimension', type: 'special', cost: 3, chargeGain: 1, damage: 2, target: 'single', effect: 'another_dimension', description: 'Causa 2 ST. Roba la mitad de las cargas del enemigo. Cooldown: 2 turnos.' },
-                    { name: 'Arc Geminga', type: 'over', cost: 12, chargeGain: 0, damage: 8, target: 'single', effect: 'arc_geminga', description: 'Causa 8 ST. Daño doble si el enemigo tiene Debuffs activos.' },
+                    { name: 'Arc Geminga', type: 'over', cost: 10, chargeGain: 0, damage: 8, target: 'single', effect: 'arc_geminga', description: 'Causa 8 ST. Daño doble si el enemigo tiene Debuffs activos.' },
                 ]
             },
 
@@ -104,7 +104,7 @@
                 passive: { name: 'Sangre de Ymir', description: 'Cada vez que un enemigo recibe daño de Espinas, aplica Sangrado 1 turno y 50% de Megacongelación.' },
                 abilities: [
                     { name: 'Espinas de Hielo', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'self', effect: 'espinas_hielo', description: 'Aplica Buff Espinas 1 turno. Aplica Buff Provocación 1 turno.' },
-                    { name: 'Hacha del Caos Primigenio', type: 'special', cost: 5, chargeGain: 0, damage: 2, target: 'aoe', effect: 'hacha_caos', description: '50% crítico si el enemigo tiene Sangrado. Si tiene Sangrado, genera 3 cargas.' },
+                    { name: 'Hacha del Caos Primigenio', type: 'special', cost: 3, chargeGain: 0, damage: 2, target: 'aoe', effect: 'hacha_caos', description: '50% crítico si el enemigo tiene Sangrado. Si tiene Sangrado, genera 3 cargas.' },
                     { name: 'Aliento de Ginnungagap', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'aoe', effect: 'aliento_ginnungagap', description: '50% de Megacongelación. Reduce 2 cargas a enemigos con Sangrado.' },
                     { name: 'Niebla de Niflheim', type: 'over', cost: 10, chargeGain: 3, damage: 3, target: 'aoe', effect: 'niebla_niflheim', description: 'Causa 3 AOE. Elimina debuffs aliados. Aplica Esquivar 3 turnos aliados. Aplica Congelación a todos los enemigos.' },
                 ]
@@ -117,9 +117,9 @@
                 passive: { name: 'Provocación. Contraataque.', description: 'Thestalos tiene Provocación y Contraataque permanentes.' },
                 abilities: [
                     { name: 'Purificación Solar', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'damage_and_heal', description: 'Causa 1 de daño. Recupera 2 HP. Aplica Quemadura 10% 1 turno al objetivo.' },
-                    { name: 'Expiación Incandescente', type: 'special', cost: 2, chargeGain: 0, damage: 3, target: 'aoe', effect: 'expiacion_incandescente', description: 'Causa 3 AOE. Si el enemigo tiene Quemaduras, roba 1 carga.' },
+                    { name: 'Expiación Incandescente', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'aoe', effect: 'expiacion_incandescente', description: 'Causa 3 AOE. Si el enemigo tiene Quemaduras, roba 1 carga.' },
                     { name: 'Magma Strength', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'self', effect: 'magma_strength', description: 'Recupera 8 HP. Aplica Escudo Sagrado 1 turno.' },
-                    { name: 'Corazón en Llamas', type: 'over', cost: 10, chargeGain: 0, damage: 6, target: 'single', effect: 'corazon_llamas', description: 'Causa 6 ST +2 por cada enemigo con Quemaduras. Recupera 50% del daño causado como HP.' },
+                    { name: 'Corazón en Llamas', type: 'over', cost: 8, chargeGain: 0, damage: 2, target: 'single', effect: 'corazon_llamas', description: 'Causa 6 ST +2 por cada enemigo con Quemaduras. Recupera 50% del daño causado como HP.' },
                 ]
             },
 
@@ -130,9 +130,9 @@
                 transformationPortrait: 'https://i.postimg.cc/k4dLFV5p/Captura_de_pantalla_2026_02_24_101308.png',
                 passive: { name: 'Aspecto de la Vida', description: 'Al final de cada ronda, cura 3 HP al aliado con menos HP.' },
                 abilities: [
-                    { name: 'Fuego Vital', type: 'basic', cost: 0, chargeGain: 2, damage: 3, target: 'ally_single', effect: 'fuego_vital', shieldAmount: 2, description: 'Aplica Escudo 2 HP al aliado. Cada daño al aliado aplica Quemadura 10% al atacante 1 turno.' },
-                    { name: 'Don de la Vida', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'don_de_la_vida', heal: 4, description: 'Cura 4 HP al objetivo aliado.' },
-                    { name: 'Llama Preservadora', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'llama_preservadora', shieldAmount: 5, description: 'Escudo 5 HP al aliado. Cada HP perdido: Quemadura 10% al atacante + 1 carga para Alexstrasza.' },
+                    { name: 'Fuego Vital', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'ally_single', effect: 'fuego_vital', shieldAmount: 2, description: 'Aplica Escudo 2 HP al aliado. Cada daño al aliado aplica Quemadura 10% al atacante 1 turno.' },
+                    { name: 'Don de la Vida', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'don_de_la_vida', heal: 4, description: 'Cura 4 HP al objetivo aliado.' },
+                    { name: 'Llama Preservadora', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'llama_preservadora', shieldAmount: 5, description: 'Escudo 5 HP al aliado. Cada HP perdido: Quemadura 10% al atacante + 1 carga para Alexstrasza.' },
                     { name: 'Dragón de la Vida', type: 'over', cost: 9, chargeGain: 0, damage: 0, target: 'self', effect: 'dragon_of_life', description: 'Quemadura 30% 2 turnos a todos los enemigos. Regeneración 30% 2 turnos aliados. Escudo Sagrado 2 turnos a Alexstrasza.' },
                 ]
             },
@@ -145,7 +145,7 @@
                 transformationPortrait: 'https://i.postimg.cc/Vk6t5wFQ/Whats_App_Image_2026_03_03_at_12_16_07_PM.jpg',
                 passive: { name: 'El Elegido', description: 'Contraataque permanente.' },
                 abilities: [
-                    { name: 'Djem So', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'djem_so', description: 'Causa 2 de daño.' },
+                    { name: 'Djem So', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'single', effect: 'djem_so', description: 'Causa 2 de daño.' },
                     { name: 'Estrangular', type: 'special', cost: 5, chargeGain: 0, damage: 5, target: 'single', effect: 'estrangular', description: 'Causa 5 de daño. Aplica Debilitar 1 turno.' },
                     { name: 'Onda de Fuerza', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'aoe', effect: 'onda_fuerza', description: 'Causa 3 AOE. Elimina 3 cargas de los enemigos golpeados.' },
                     { name: 'Despertar del Lado Oscuro', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'despertar_lado_oscuro', description: 'TRANSFORMACIÓN: +2 de daño en todos los ataques y 50% de crítico en todas las habilidades.' },
@@ -162,8 +162,8 @@
                 transformationPortrait: 'https://i.postimg.cc/ZK704HT2/Captura_de_pantalla_2026_03_02_112236.png',
                 passive: { name: 'Entrenamiento de los Dioses', description: 'Con Furia + Frenesí activos, sus ataques generan +2 cargas adicionales. Por cada crítico genera +2 cargas adicionales.' },
                 abilities: [
-                    { name: 'Kamehameha', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'single', effect: 'crit_chance_basic', critChance: 0.1, description: 'Causa 2 de daño. 10% de probabilidad de golpe crítico.' },
-                    { name: 'Kaio Ken', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'self', effect: 'kaio_ken', description: 'Aplica Buff Furia 2 turnos. Aplica Buff Frenesí 2 turnos.' },
+                    { name: 'Kamehameha', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'crit_chance_basic', critChance: 0.1, description: 'Causa 2 de daño. 10% de probabilidad de golpe crítico.' },
+                    { name: 'Kaio Ken', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'self', effect: 'kaio_ken', description: 'Aplica Buff Furia 2 turnos. Aplica Buff Frenesí 2 turnos.' },
                     { name: 'Genkidama', type: 'special', cost: 8, chargeGain: 0, damage: 4, target: 'aoe', effect: 'genkidama', description: 'Causa 4 AOE. Si el golpe es crítico, reduce a 0 las cargas del enemigo.' },
                     { name: 'Ultra Instinto', type: 'over', cost: 12, chargeGain: 0, damage: 0, target: 'self', effect: 'ultra_instinto', description: 'TRANSFORMACIÓN: 50% de esquivar ataques. Al esquivar, ejecuta Kamehameha sobre el atacante.' },
                 ]
@@ -186,11 +186,11 @@
                 hp: 20, maxHp: 20, speed: 97, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/Qtz0QrqV/Captura_de_pantalla_2026_02_26_132109.png',
-                passive: { name: 'Espíritu del Héroe', description: 'Con 50% o menos de HP, genera 3 cargas al final de su turno. Por cada crítico, genera cargas = mitad del daño infligido.' },
+                passive: { name: 'Espíritu del Héroe', description: 'Inmunidad a debuffs.' },
                 abilities: [
                     { name: 'Golpe Normal', type: 'basic', cost: 0, chargeGain: 1, damage: 4, target: 'single', effect: 'apply_weaken', description: 'Causa 4 de daño. Aplica Debilitar 2 turnos.' },
-                    { name: 'Golpes Normales Consecutivos', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'single', effect: 'consecutive_hits', description: 'Golpea 1-3 veces. Daño crítico si el objetivo tiene Debilitar o Escudo activo.' },
-                    { name: 'Golpe Serio', type: 'special', cost: 6, chargeGain: 0, damage: 6, target: 'single', effect: 'crit_chance', critChance: 0.5, description: 'Causa 6 de daño. 50% de probabilidad de golpe crítico.' },
+                    { name: 'Golpes Normales Consecutivos', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'single', effect: 'consecutive_hits', description: 'Golpea 1-3 veces. Daño crítico si el objetivo tiene Debilitar o Escudo activo.' },
+                    { name: 'Golpe Serio', type: 'special', cost: 7, chargeGain: 0, damage: 7, target: 'single', effect: 'crit_chance', critChance: 0.5, description: 'Causa 6 de daño. 50% de probabilidad de golpe crítico.' },
                     { name: 'Golpe Grave', type: 'over', cost: 15, chargeGain: 0, damage: 20, target: 'single', effect: 'golpe_grave', description: 'Causa 20 de daño. Si el enemigo es derrotado, genera un turno adicional.' },
                 ]
             },
@@ -203,9 +203,9 @@
                 passive: { name: 'Privilegio Imperial', description: 'Si es golpeado por un enemigo, aplica Quemadura Solar 5% 1 turno al atacante.' },
                 abilities: [
                     { name: 'Animación', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'animacion', description: 'Causa 1 de daño. Si el enemigo tiene Quemadura Solar, este ataque genera +1 carga permanentemente.' },
-                    { name: 'Sentencia del Sol', type: 'special', cost: 3, chargeGain: 0, damage: 2, target: 'single', effect: 'sentencia_del_sol', description: 'Causa 2 de daño. Si tiene Quemadura Solar, causa 1-3 de daño adicional.' },
-                    { name: 'The Sphinx Wehem-Mesut', type: 'special', cost: 9, chargeGain: 0, damage: 0, target: 'self', effect: 'summon_sphinx', description: 'Invoca a Sphinx Wehem-Mesut (8 HP).' },
-                    { name: 'Ramesseum Tentyris', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'self', effect: 'summon_ramesseum', description: 'Invoca a Ramesseum Tentyris (20 HP).' },
+                    { name: 'Sentencia del Sol', type: 'special', cost: 2, chargeGain: 0, damage: 2, target: 'single', effect: 'sentencia_del_sol', description: 'Causa 2 de daño. Si tiene Quemadura Solar, causa 1-3 de daño adicional.' },
+                    { name: 'The Sphinx Wehem-Mesut', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'self', effect: 'summon_sphinx', description: 'Invoca a Sphinx Wehem-Mesut (8 HP).' },
+                    { name: 'Ramesseum Tentyris', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'summon_ramesseum', description: 'Invoca a Ramesseum Tentyris (20 HP).' },
                 ]
             },
 
@@ -216,7 +216,7 @@
                 passive: { name: 'Regla de Oro', description: '+10% de probabilidad de crítico en todos los ataques. Por cada crítico, genera 2 cargas.' },
                 abilities: [
                     { name: 'Gate of Babylon', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'aoe', effect: 'crit_chance_basic', critChance: 0.25, description: 'Causa 1 AOE. 25% de probabilidad de golpe crítico.' },
-                    { name: 'Espada Merodach', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'aoe', effect: 'espada_merodach', description: 'Causa 3 AOE. Elimina 3 cargas del enemigo golpeado.' },
+                    { name: 'Espada Merodach', type: 'special', cost: 5, chargeGain: 0, damage: 3, target: 'aoe', effect: 'espada_merodach', description: 'Causa 3 AOE. Elimina 3 cargas del enemigo golpeado.' },
                     { name: 'Enkidu: Cadenas del Cielo', type: 'special', cost: 7, chargeGain: 0, damage: 0, target: 'self', effect: 'enkidu', description: 'Cancela todas las invocaciones enemigas. Aplica Megaaturdimiento a enemigos con más de 5 cargas.' },
                     { name: 'Enuma Elish', type: 'over', cost: 10, chargeGain: 0, damage: 5, target: 'single', effect: 'enuma_elish', description: 'Causa 10 ST. Daño doble si el enemigo tiene Escudo activo.' },
                 ]
@@ -255,9 +255,9 @@
                 passive: { name: 'Hiraishin no Jutsu', description: 'Esquiva Área (inmune a AOE enemigo). Genera +2 cargas adicionales por cada enemigo golpeado con menos velocidad que Minato.' },
                 abilities: [
                     { name: 'Kiiroi Senkō', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'kiiroi_senko_v2', description: 'Causa 1 de daño. Aplica Celeridad 10% 2 turnos. Aplica Buff aleatorio 2 turnos.' },
-                    { name: 'Destello de la Danza Aullante', type: 'special', cost: 3, chargeGain: 0, damage: 2, target: 'aoe', effect: 'destello_danza', description: 'Causa 2 AOE. Si el enemigo tiene menos velocidad que Minato: aplica debuff aleatorio 2 turnos. Si tiene más: roba 2 cargas.' },
-                    { name: 'Rasen Senkō Chō Rinbu Kō Sanshiki', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'aoe', effect: 'rasen_senko_v2', description: 'Causa 2 AOE. Cada golpe tiene 50% de robar 3 cargas del enemigo.' },
-                    { name: 'Legado del Cuarto Hokage', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'self', effect: 'legado_hokage_v2', description: 'Genera 8 cargas a los 4 aliados del equipo (excepto Minato).' },
+                    { name: 'Destello de la Danza Aullante', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'aoe', effect: 'destello_danza', description: 'Causa 2 AOE. Si el enemigo tiene menos velocidad que Minato: aplica debuff aleatorio 2 turnos. Si tiene más: roba 2 cargas.' },
+                    { name: 'Rasen Senkō Chō Rinbu Kō Sanshiki', type: 'special', cost: 6, chargeGain: 0, damage: 4, target: 'aoe', effect: 'rasen_senko_v2', description: 'Causa 2 AOE. Cada golpe tiene 50% de robar 3 cargas del enemigo.' },
+                    { name: 'Legado del Cuarto Hokage', type: 'over', cost: 9, chargeGain: 0, damage: 0, target: 'self', effect: 'legado_hokage_v2', description: 'Genera 8 cargas a los 4 aliados del equipo (excepto Minato).' },
                 ]
             },
 
@@ -270,9 +270,9 @@
                 passive: { name: 'Progenitor Demoniaco', description: 'Al inicio de cada ronda, cura 1 HP a Muzan y a un aliado aleatorio. Cada vez que Veneno hace daño, Muzan genera 1 carga.' },
                 abilities: [
                     { name: 'Espinas de Sangre', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'apply_poison', description: 'Causa 2 de daño. Aplica Veneno 2 turnos.' },
-                    { name: 'Sangre Demoniaca', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'single', effect: 'sangre_demoniaca', description: 'Causa 3 de daño. Aplica Veneno 3 turnos. Cura 3 HP a Muzan.' },
-                    { name: 'Sombra de la Noche', type: 'special', cost: 5, chargeGain: 0, damage: 3, target: 'aoe', effect: 'sombra_noche', description: 'Causa 3 AOE. Aplica Sigilo 2 turnos a Muzan. Aplica Veneno 3 turnos a los enemigos.' },
-                    { name: 'Rey de los Demonios Definitivo', type: 'over', cost: 9, chargeGain: 0, damage: 1, target: 'aoe', effect: 'muzan_transform', description: 'TRANSFORMACIÓN + 1 AOE: Veneno 5t, Regeneración 30% 5t, +20% Celeridad, +70% crítico.' },
+                    { name: 'Sangre Demoniaca', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'single', effect: 'sangre_demoniaca', description: 'Causa 3 de daño. Aplica Veneno 3 turnos. Cura 3 HP a Muzan.' },
+                    { name: 'Sombra de la Noche', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'aoe', effect: 'sombra_noche', description: 'Causa 3 AOE. Aplica Sigilo 2 turnos a Muzan. Aplica Veneno 3 turnos a los enemigos.' },
+                    { name: 'Rey de los Demonios Definitivo', type: 'over', cost: 12, chargeGain: 0, damage: 1, target: 'aoe', effect: 'muzan_transform', description: 'TRANSFORMACIÓN + 1 AOE: Veneno 5t, Regeneración 30% 5t, +20% Celeridad, +70% crítico.' },
                 ]
             },
 
@@ -282,9 +282,9 @@
                 portrait: 'https://i.postimg.cc/858xm4nX/Captura_de_pantalla_2026_02_28_020047.png',
                 passive: { name: 'Castillo Infinito', description: 'Inmune a daño Single Target. Al inicio de cada ronda, el primer ataque enemigo impacta sobre un personaje del equipo enemigo.' },
                 abilities: [
-                    { name: 'Nota del Biwa', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'apply_confusion', description: 'Aplica Confusión al objetivo por 2 turnos.' },
-                    { name: 'Cambio de Sangre', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'single', effect: 'cambio_sangre', description: 'Intercambia todos los Debuffs de un aliado y los aplica a un objetivo enemigo.' },
-                    { name: 'Cambio Demoniaco', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'single', effect: 'cambio_demoniaco', description: 'Selecciona un enemigo e intercambia cargas y Buffs con un aliado.' },
+                    { name: 'Nota del Biwa', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'single', effect: 'apply_confusion', description: 'Aplica Confusión al objetivo por 2 turnos.' },
+                    { name: 'Cambio de Sangre', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'single', effect: 'cambio_sangre', description: 'Intercambia todos los Debuffs de un aliado y los aplica a un objetivo enemigo.' },
+                    { name: 'Cambio Demoniaco', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'single', effect: 'cambio_demoniaco', description: 'Selecciona un enemigo e intercambia cargas y Buffs con un aliado.' },
                     { name: 'Colapso', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'self', effect: 'cambio_vida_v2', description: 'Intercambia los HP y los puntos de carga de ambos equipos.' },
                 ]
             },
@@ -310,8 +310,8 @@
                 passive: { name: 'Presencia Oscura', description: 'Inmune a Miedo y Confusión. Cada vez que un Miedo termine, genera 1 carga.' },
                 abilities: [
                     { name: 'Intimidación del Imperio', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'single', effect: 'apply_fear_1', description: 'Aplica Miedo al objetivo por 1 turno.' },
-                    { name: 'Puño del Imperio', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'self', effect: 'apply_counterattack', description: 'Aplica Contraataque a Darth Vader por 4 turnos.' },
-                    { name: 'Lado Oscuro de la Fuerza', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'self', effect: 'apply_megaprovocation_buff', description: 'Aplica Megaprovocación 4 turnos.' },
+                    { name: 'Puño del Imperio', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'self', effect: 'apply_counterattack', description: 'Aplica Contraataque a Darth Vader por 4 turnos.' },
+                    { name: 'Lado Oscuro de la Fuerza', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'self', effect: 'apply_megaprovocation_buff', description: 'Aplica Megaprovocación 4 turnos.' },
                     { name: 'Ira del Elegido Caído', type: 'over', cost: 10, chargeGain: 0, damage: 2, target: 'aoe', effect: 'ira_elegido', description: 'Causa 2 AOE +1 adicional por cada HP que Darth Vader ha perdido.' },
                 ]
             },
@@ -336,8 +336,8 @@
                 passive: { name: 'Negociaciones Hostiles', description: 'Cada vez que un aliado recibe un Debuff, Padme genera 1 carga.' },
                 abilities: [
                     { name: 'Orden de Fuego', type: 'basic', cost: 0, chargeGain: 0, damage: 0, target: 'self', effect: 'orden_de_fuego', description: 'Genera 1 carga a los 4 aliados del equipo.' },
-                    { name: 'Solución Diplomática', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'solucion_diplomatica', description: 'Elimina todos los Debuffs del objetivo aliado. Padme genera 2 cargas por cada Debuff eliminado.' },
-                    { name: 'Señuelo', type: 'special', cost: 8, chargeGain: 0, damage: 0, target: 'self', effect: 'invocar_senuelo', description: 'Invoca un Señuelo (5 HP). Padme gana Sigilo 2 turnos.' },
+                    { name: 'Solución Diplomática', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'solucion_diplomatica', description: 'Elimina todos los Debuffs del objetivo aliado. Padme genera 2 cargas por cada Debuff eliminado.' },
+                    { name: 'Señuelo', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'self', effect: 'invocar_senuelo', description: 'Invoca un Señuelo (5 HP). Padme gana Sigilo 2 turnos.' },
                     { name: 'Reina de Naboo', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'reina_de_naboo', description: 'Aplica Escudo a los 4 aliados. Genera 4 cargas a los 4 aliados.' },
                 ]
             },
@@ -346,12 +346,12 @@
                 hp: 15, maxHp: 15, speed: 77, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/Gm8k90V5/Whats_App_Image_2026_03_15_at_1_59_17_AM.jpg',
-                passive: { name: 'Dinastía del Dragón', description: 'Inmune a Quemadura y Quemadura Solar. El equipo aliado aplica Quemadura 10% 1 turno al golpear al enemigo.' },
+                passive: { name: 'Dinastía del Dragón', description: 'Inmune a Debuffs Quemadura y Quemadura Solar. Aplica curación en Daenerys de 1 HP cada vez que un debuff Quemadura expire, sea Limpiado o Disipado.' },
                 abilities: [
-                    { name: 'Madre de Dragones', type: 'basic', cost: 10, chargeGain: 2, damage: 0, target: 'self', effect: 'madre_dragones', description: 'Invoca un Dragón aleatorio.' },
+                    { name: 'Madre de Dragones', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'self', effect: 'madre_dragones', description: 'Invoca un Dragón aleatorio.' },
                     { name: 'Vuelo del Dragón', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'self', effect: 'vuelo_dragon', description: 'Gana Escudo Sagrado 2 turnos.' },
-                    { name: 'Locura Targaryen', type: 'special', cost: 8, chargeGain: 0, damage: 7, target: 'aoe', effect: 'locura_targaryen', description: 'Causa 6 AOE. Genera 1 carga al equipo aliado por cada Quemadura activa en los enemigos.' },
-                    { name: 'Dracarys', type: 'over', cost: 14, chargeGain: 0, damage: 10, target: 'aoe', effect: 'dracarys', description: 'Causa 8 AOE. Aplica Quemadura 20% 2 turnos. Invoca a los 3 dragones.' },
+                    { name: 'Locura Targaryen', type: 'special', cost: 8, chargeGain: 0, damage: 6, target: 'aoe', effect: 'locura_targaryen', description: 'Causa 6 AOE. Genera 1 carga al equipo aliado por cada Quemadura activa en los enemigos.' },
+                    { name: 'Dracarys', type: 'over', cost: 14, chargeGain: 0, damage: 8, target: 'aoe', effect: 'dracarys', description: 'Causa 8 AOE. Aplica Quemadura 20% 2 turnos. Invoca a los 3 dragones.' },
                 ]
             },
 
@@ -364,7 +364,7 @@
                     { name: 'Aguja Medicinal', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'ally_single', effect: 'aguja_medicinal', heal: 1, description: 'Cura 1 HP y elimina 1 Debuff del objetivo aliado.' },
                     { name: 'Aroma Curativo', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'self', effect: 'aroma_curativo', description: 'Elimina 1 Debuff de todo el equipo aliado.' },
                     { name: 'Medicina Demoniaca', type: 'special', cost: 8, chargeGain: 0, damage: 0, target: 'self', effect: 'medicina_demoniaca', description: 'Elimina todos los Debuffs aliados. Por cada Debuff eliminado, cura 1 HP a todo el equipo.' },
-                    { name: 'Hechizo de Sangre', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'hechizo_sangre', description: 'Aplica Regeneración 20% 3 turnos al equipo aliado. 50% de Confusión 1t a un enemigo aleatorio por cada tick de Regeneración.' },
+                    { name: 'Hechizo de Sangre', type: 'over', cost: 12, chargeGain: 0, damage: 0, target: 'self', effect: 'hechizo_sangre', description: 'Aplica Regeneración 20% 3 turnos al equipo aliado. 50% de Confusión 1t a un enemigo aleatorio por cada tick de Regeneración.' },
                 ]
             },
 
@@ -418,7 +418,7 @@
                     { name: 'Garras del Fénix', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'garras_fenix', burnPercent: 5, burnDuration: 3, description: 'Causa 1 de daño. Aplica Quemadura 5% por 2 turnos.' },
                     { name: 'Phoenix Genma Ken', type: 'basic', cost: 0, chargeGain: 0, damage: 1, target: 'aoe', effect: 'phoenix_genma_ken', description: 'Causa 1 AOE. Si el enemigo tiene Quemaduras, genera 2 cargas.' },
                     { name: 'Hō Yoku Ten Shō', type: 'special', cost: 5, chargeGain: 0, damage: 4, target: 'aoe', effect: 'random_burn_aoe', description: 'Causa 4 AOE. Aplica Quemadura 5% 3 turnos.' },
-                    { name: 'Armadura Divina del Fénix', type: 'over', cost: 12, chargeGain: 0, damage: 0, target: 'self', effect: 'fenix_armor', description: 'TRANSFORMACIÓN: Regeneración 20% permanente y daño triple contra enemigos con Quemaduras.' },
+                    { name: 'Armadura Divina del Fénix', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'fenix_armor', description: 'TRANSFORMACIÓN: Regeneración 20% permanente y daño triple contra enemigos con Quemaduras.' },
                 ]
             },
 
