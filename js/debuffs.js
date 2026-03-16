@@ -91,6 +91,14 @@
             target.statusEffects.push(effectObj);
         }
 
+
+        function isImmuneToDebuff(targetName) {
+            // Saitama: total debuff immunity
+            if (targetName === 'Saitama') return true;
+            // Proteccion Sagrada: immune to new debuffs
+            if (hasStatusEffect(targetName, 'Proteccion Sagrada') || hasStatusEffect(targetName, 'Protección Sagrada')) return true;
+            return false;
+        }
 function applyDebuff(targetName, effectObj) {
             const target = gameState.characters[targetName];
             if (!target || !target.statusEffects) return;
@@ -161,24 +169,28 @@ function applyDebuff(targetName, effectObj) {
         }
 
         function applyStun(targetName, duration = 1) {
-            const name = duration >= 2 ? 'Mega Aturdimiento' : 'Aturdimiento';
+
+            if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }            const name = duration >= 2 ? 'Mega Aturdimiento' : 'Aturdimiento';
             const emoji = duration >= 2 ? '💫' : '⭐';
             applyDebuff(targetName, { name, type: 'debuff', duration, emoji });
             addLog(`${emoji} ${targetName} queda aturdido por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
         }
 
         function applyBleed(targetName, duration) {
-            applyDebuff(targetName, { name: 'Sangrado', type: 'debuff', duration, emoji: '🩸' });
+
+            if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }            applyDebuff(targetName, { name: 'Sangrado', type: 'debuff', duration, emoji: '🩸' });
             addLog(`🩸 ${targetName} sufre Sangrado por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
         }
 
         function applyFear(targetName, duration) {
-            applyDebuff(targetName, { name: 'Miedo', type: 'debuff', duration, emoji: '😱' });
+
+            if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }            applyDebuff(targetName, { name: 'Miedo', type: 'debuff', duration, emoji: '😱' });
             addLog(`😱 ${targetName} siente Miedo por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
         }
 
         function applyPossession(targetName, duration) {
-            applyDebuff(targetName, { name: 'Posesion', type: 'debuff', duration, emoji: '👁️' });
+
+            if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }            applyDebuff(targetName, { name: 'Posesion', type: 'debuff', duration, emoji: '👁️' });
             addLog(`👁️ ${targetName} queda Poseído por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
         }
 
@@ -202,7 +214,8 @@ function applyDebuff(targetName, effectObj) {
         }
 
         function applyFreeze(targetName, duration, mega = false) {
-            const name = mega ? 'Mega Congelacion' : 'Congelacion';
+
+            if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }            const name = mega ? 'Mega Congelacion' : 'Congelacion';
             const emoji = mega ? '🧊❄️' : '❄️';
             const speedPenalty = mega ? 0.20 : 0.10;
             const target = gameState.characters[targetName];
@@ -224,12 +237,14 @@ function applyDebuff(targetName, effectObj) {
 
 
         function applyWeaken(targetName, duration) {
-            applyDebuff(targetName, { name: 'Debilitar', type: 'debuff', duration, emoji: '💔' });
+
+            if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }            applyDebuff(targetName, { name: 'Debilitar', type: 'debuff', duration, emoji: '💔' });
             addLog(`💔 ${targetName} sufre Debilitar por ${duration} turno${duration > 1 ? 's' : ''} (recibe 50% más de daño)`, 'damage');
         }
 
         function applyConfusion(targetName, duration) {
-            const tgtConf = gameState.characters[targetName];
+
+            if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }            const tgtConf = gameState.characters[targetName];
             if (!tgtConf) return;
             // Reemplazar confusion existente en lugar de apilar
             if (tgtConf.statusEffects) {
