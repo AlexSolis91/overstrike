@@ -120,184 +120,111 @@
         const summonData = {
             'Igris': {
                 name: 'Igris',
-                hp: 5,
-                maxHp: 5,
-                summoner: null,
-                team: null,
-                passive: 'Caballero de las sombras: Cada vez que el invocador genera carga, ataca a un enemigo aleatorio causando 2 de daño',
-                statusEffects: []
+                hp: 5, maxHp: 5, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.postimg.cc/T13zZdKD/Captura_de_pantalla_2026_03_11_145542.png',
+                passive: 'Comandante Rojo Sangriento: Al final de cada ronda causa 2 de daño a todos los enemigos (incluyendo invocaciones enemigas)'
             },
             'Iron': {
                 name: 'Iron',
-                hp: 8,
-                maxHp: 8,
-                summoner: null,
-                team: null,
-                passive: 'Iron Strength: Absorbe cualquier daño que fuera a recibir el invocador',
-                statusEffects: []
+                hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.postimg.cc/7hZFpH5G/Captura_de_pantalla_2026_03_11_145721.png',
+                passive: 'Voluntad de Acero: absorbe todo el daño por golpe que fuera a recibir su invocador'
             },
             'Tusk': {
                 name: 'Tusk',
-                hp: 6,
-                maxHp: 6,
-                summoner: null,
-                team: null,
-                passive: 'Himno de Fuego: Cuando un enemigo recibe daño por quemadura, duplica ese daño',
-                statusEffects: []
+                hp: 6, maxHp: 6, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.postimg.cc/Wz1BQNdz/Captura_de_pantalla_2026_03_11_145950.png',
+                passive: 'Hipno de Fuego: Duplica el daño causado por debuff quemaduras sobre los enemigos'
             },
             'Beru': {
                 name: 'Beru',
-                hp: 6,
-                maxHp: 6,
-                summoner: null,
-                team: null,
-                passive: 'Al final de cada ronda causa 5 de daño a un enemigo aleatorio',
-                statusEffects: []
+                hp: 6, maxHp: 6, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.postimg.cc/zvGs9zyZ/Captura_de_pantalla_2026_03_11_150049.png',
+                passive: 'Garras del Abismo: Al final de cada ronda causa 5 de daño en un enemigo aleatorio'
             },
             'Bellion': {
                 name: 'Bellion',
-                hp: 10,
-                maxHp: 10,
-                summoner: null,
-                team: null,
-                passive: 'Una vez por ronda, la primera vez que un enemigo usa Special u Over, cancela su activación y causa 4 de daño',
-                usedThisRound: false,
-                statusEffects: []
-            },
-            'Kamish': {
-                name: 'Kamish',
-                hp: 30,
-                maxHp: 30,
-                summoner: null,
-                team: null,
-                passive: 'Mega Provocación: Absorbe todo el daño ST y AOE que tu equipo fuera a recibir. Enemigos que lo golpean reciben Quemaduras del 25% por 1 turno',
-                statusEffects: []
+                hp: 10, maxHp: 10, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.postimg.cc/XqYRTjpm/Captura_de_pantalla_2026_03_11_150350.png',
+                passive: 'General de Ashborn: La primera vez por ronda que un ataque especial u Over es activado por un enemigo, cancela ese movimiento.'
             },
             'Kaisel': {
                 name: 'Kaisel',
-                hp: 7,
-                maxHp: 7,
-                summoner: null,
-                team: null,
-                passive: 'Maldición de Kaisel: Al final de cada ronda, aplica un Debuff aleatorio a 2 enemigos aleatorios.',
-                img: 'https://i.postimg.cc/RhZkjSNk/Captura_de_pantalla_2026_03_11_152341.png',
-                isDead: false,
-                statusEffects: []
+                hp: 7, maxHp: 7, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.postimg.cc/GtmWZL41/Captura_de_pantalla_2026_03_11_151735.png',
+                passive: 'Maldicion de Kaisel: Al final de cada ronda aplica un Debuff aleatorio sobre 2 enemigos aleatorios.'
             },
-
-            // ── LICH KING INVOCACIONES ──
+            'Kamish': {
+                name: 'Kamish',
+                hp: 30, maxHp: 30, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.postimg.cc/RhZkjSNk/Captura_de_pantalla_2026_03_11_152341.png',
+                passive: 'Terror de las Sombras: Mega provocacion. Cada vez que es golpeado por un enemigo, causa quemaduras de 4 puntos sobre el enemigo atacante, durante 1 turno.'
+            },
             'Sindragosa': {
                 name: 'Sindragosa',
-                hp: 10, maxHp: 10,
-                summoner: null, team: null,
-                passive: 'Se invoca con buff Mega Provocación. Genera 1 punto de carga para todo el equipo aliado cada vez que recibe daño.',
-                spawnChance: 0.24,
-                statusEffects: []
+                hp: 10, maxHp: 10, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.postimg.cc/T1G26Gxf/Captura_de_pantalla_2026_03_15_003004.png',
+                passive: 'Muerte de la Magia: Mega provocacion. Genera un punto para todo el equipo aliado cada vez que recibe daño.'
             },
             'Kel Thuzad': {
                 name: 'Kel Thuzad',
-                hp: 8, maxHp: 8,
-                summoner: null, team: null,
-                passive: 'Aplica buff de Regeneración al equipo aliado por 20% por turno.',
-                spawnChance: 0.24,
-                statusEffects: []
+                hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.postimg.cc/J0m7Lm8W/Captura_de_pantalla_2026_03_15_003028.png',
+                passive: 'Aliado de la Muerte: Cura 2 hp del equipo aliado al final de la ronda'
             },
             'Darion Morgraine': {
                 name: 'Darion Morgraine',
-                hp: 8, maxHp: 8,
-                summoner: null, team: null,
-                passive: 'Aumenta la probabilidad de Crítico al equipo Aliado 50%.',
-                spawnChance: 0.24,
-                statusEffects: []
+                hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.postimg.cc/26njMysy/Captura_de_pantalla_2026_03_15_003106.png',
+                passive: 'Sirviente de la Muerte: Aumenta la celeridad del equipo aliado un 20%'
             },
             'Bolvar Fordragon': {
                 name: 'Bolvar Fordragon',
-                hp: 8, maxHp: 8,
-                summoner: null, team: null,
-                passive: 'Aumenta el daño de las habilidades del equipo aliado 100%.',
-                spawnChance: 0.24,
-                statusEffects: []
+                hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.postimg.cc/mkRZsR4R/Captura_de_pantalla_2026_03_15_003129.png',
+                passive: 'Castigo de la Muerte: Reduce 2 puntos de carga el costo de todos los especiales y over del equipo aliado'
             },
             'Tirion Fordring': {
                 name: 'Tirion Fordring',
-                hp: 30, maxHp: 30,
-                summoner: null, team: null,
-                passive: 'Se invoca con buff Mega Provocación permanente. Cura 5 HP por turno al equipo aliado. Genera 5 puntos de Carga por turno al equipo aliado.',
-                spawnChance: 0.04,
-                statusEffects: []
+                hp: 30, maxHp: 30, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.postimg.cc/qq0BT0rT/Captura_de_pantalla_2026_03_15_003309.png',
+                passive: 'Una luz en la Oscuridad: Mega provocacion. Cura 5 HP por turno al equipo aliado, genera 5 puntos de Carga por turno al equipo aliado.'
             },
-            // ── OZYMANDIAS INVOCACIONES ──
-            'Sphinx Wehem-Mesut': {
-                name: 'Sphinx Wehem-Mesut',
-                hp: 8, maxHp: 8,
-                summoner: null, team: null,
-                passive: 'Cada vez que un enemigo recibe daño por Quemadura Solar, pierde 2 cargas.',
-                statusEffects: []
-            },
-            'Ramesseum Tentyris': {
-                name: 'Ramesseum Tentyris',
-                hp: 20, maxHp: 20,
-                summoner: null, team: null,
-                passive: 'Al final de cada ronda, si hay enemigos sin debuff Quemadura Solar activo, aplica QS 5% 2 turnos a esos enemigos. Cada vez que un enemigo recibe daño por QS, todos los aliados recuperan 1 HP.',
-                statusEffects: []
-            }
-,
             'Señuelo': {
                 name: 'Señuelo',
-                hp: 5,
-                maxHp: 5,
-                summoner: null,
-                team: null,
-                passive: 'Distraccion de emergencia: Al morir genera 2 puntos de carga al equipo aliado',
-                img: 'https://i.postimg.cc/qq0BT0rT/Captura_de_pantalla_2026_03_15_003309.png',
-                isDead: false,
-                statusEffects: []
+                hp: 5, maxHp: 5, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.postimg.cc/1tbCn5Xm/Captura_de_pantalla_2026_03_15_004506.png',
+                passive: 'Distraccion de emergencia: Al morir genera 2 puntos de carga al equipo aliado'
             },
             'Drogon': {
                 name: 'Drogon',
-                hp: 15,
-                maxHp: 15,
-                summoner: null,
-                team: null,
-                passive: 'Sombra de Fuego: Mega provocacion. Inflige 3 puntos de Daño a todo el equipo enemigo al final de cada ronda',
+                hp: 15, maxHp: 15, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/Gtr3CrRL/Captura_de_pantalla_2026_03_15_002747.png',
-                isDead: false,
-                statusEffects: []
+                passive: 'Sombra de Fuego: Mega provocacion. Inflige 3 puntos de Daño a todo el equipo enemigo al final de cada ronda'
             },
             'Rhaegal': {
                 name: 'Rhaegal',
-                hp: 8,
-                maxHp: 8,
-                summoner: null,
-                team: null,
-                passive: 'Furia Esmeralda: Al final de cada ronda aplica debuff Quemadura de 1 hp a todo el equipo enemigo',
+                hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/8cDkSDGT/Captura_de_pantalla_2026_03_15_002820.png',
-                isDead: false,
-                statusEffects: []
+                passive: 'Furia Esmeralda: Al final de cada ronda aplica debuff Quemadura de 1 hp a todo el equipo enemigo'
             },
             'Viserion': {
                 name: 'Viserion',
-                hp: 6,
-                maxHp: 6,
-                summoner: null,
-                team: null,
-                passive: 'Llama de Oro: Al final de cada ronda cura 2 hp a todo el equipo aliado',
+                hp: 6, maxHp: 6, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/2ymjDmYz/Captura_de_pantalla_2026_03_15_002923.png',
-                isDead: false,
-                statusEffects: []
+                passive: 'Llama de Oro: Al final de cada ronda cura 2 hp a todo el equipo aliado'
             },
             'Abu el-Hol Sphinx': {
                 name: 'Abu el-Hol Sphinx',
-                hp: 8,
-                maxHp: 8,
-                summoner: null,
-                team: null,
-                passive: 'Al final de cada ronda todos los enemigos con Quemadura Solar pierden 2 cargas.',
+                hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/6qw6XwKQ/Captura_de_pantalla_2026_03_15_002404.png',
-                isDead: false,
-                statusEffects: []
+                passive: 'Al final de cada ronda todos los enemigos con Quemadura Solar pierden 2 cargas.'
             },
-
-
+            'Ramesseum Tentyris': {
+                name: 'Ramesseum Tentyris',
+                hp: 20, maxHp: 20, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.postimg.cc/qq0BT0rv/Captura_de_pantalla_2026_03_15_002546.png',
+                passive: 'Al final de cada ronda, si hay enemigos sin debuff activo quemadura solar, aplica debuff Quemadura solar sobre esos enemigos. Cada vez que un debuff quemadura solar es aplicado sobre 1 enemigo, todos los aliados de tu equipo recuperan 2 HP por debuff Quemadura Solar aplicado.'
+            }
         };
 
