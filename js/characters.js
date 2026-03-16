@@ -9,7 +9,7 @@
                 rikudoMode: false,
                 portrait: 'https://i.postimg.cc/KzWJPy5j/Captura_de_pantalla_2026_02_26_134301.png',
                 transformationPortrait: 'https://i.postimg.cc/pTBgL2Bp/Captura_de_pantalla_2026_02_22_004257.png',
-                passive: { name: 'Limbo', description: '(Activa con Modo Rikudō) Recibe 50% menos de daño. Recupera 3 HP cada vez que recibe daño por golpe.' },
+                passive: { name: 'Limbo', description: 'Efectos pasivos de Divinidad y Cuerpo Perfecto.' },
                 abilities: [
                     { name: 'Gakidō: Fūjutsu Kyūin', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'lifesteal_basic', description: 'Causa 2 de daño. Roba HP al enemigo golpeado equivalente al daño causado por este ataque.' },
                     { name: 'Mangekyō Sharingan', type: 'special', cost: 2, chargeGain: 0, damage: 3, target: 'aoe', effect: 'sharingan_aoe', description: 'Causa 3 AOE. Se aplica Buff Contraataque. Se aplica Buff Concentración.' },
@@ -22,7 +22,7 @@
                 hp: 20, maxHp: 20, speed: 96, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/3rSZSvdF/Captura_de_pantalla_2026_03_11_105214.png',
-                passive: { name: 'Autoridad del Gobernante', description: 'Al inicio de su turno gana Sigilo 1 turno. Cuando una Sombra desaparece, genera 2 cargas.' },
+                passive: { name: 'Arise!', description: 'Al inicio de su turno realiza una Invocacion aleatoria. Cada vez que una Invocacion es eliminada o sacrificada genera 2 cargas.' },
                 abilities: [
                     { name: 'Sigilo de la Sombras', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'sjw_sigilo', description: 'Se aplica Buff Sigilo por 1 turno.' },
                     { name: 'Daga de Kamish', type: 'special', cost: 3, chargeGain: 0, damage: 2, target: 'single', effect: 'daga_kamish', description: 'Causa 2 de daño +1 adicional por cada Sombra Invocada en tu equipo. Roba 1 carga por cada sombra invocada en tu equipo.' },
@@ -35,7 +35,7 @@
                 hp: 30, maxHp: 30, speed: 83, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/PJr0LB6N/Captura_de_pantalla_2026_02_21_230603.png',
-                passive: { name: 'Fortaleza de Tauro', description: 'Provocación permanente. Mientras tenga Escudo activo, genera 1 carga por cada golpe recibido.' },
+                passive: { name: 'Fortaleza de Tauro', description: 'Efecto pasivo Provocacion. Cada vez que un buff escudo es destruido por un golpe del enemigo, genera 1 carga.' },
                 abilities: [
                     { name: 'Great Horn', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'great_horn', heal: 3, shieldAmount: 2, description: 'Causa 1 de daño. Recupera 3 HP. Se aplica Buff Escudo 2 HP.' },
                     { name: 'Golden Shield', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'self', effect: 'golden_shield', shieldAmount: 3, description: 'Limpia los debuffs activos en Aldebaran. Se aplica un Buff Escudo de 3 HP.' },
@@ -48,7 +48,7 @@
                 hp: 20, maxHp: 20, speed: 79, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/TYJdgC3L/Captura_de_pantalla_2026_03_06_001254.png',
-                passive: { name: 'Phalanx', description: 'Cada vez que un enemigo activa un movimiento especial, genera 2 cargas en un aliado aleatorio.' },
+                passive: { name: 'Phalanx', description: 'Al inicio de cada ronda Limpia 1 debuff aleatorio de un aliado. Cada vez que un debuff es limpiado de un aliado, el ataque basico gana +1 de daño y +1 generacion de cargas permanente.' },
                 abilities: [
                     { name: 'Precepto', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'precepto', description: 'Causa 1 de daño. 50% de probabilidad de aplicar debuff Aturdimiento.' },
                     { name: 'Grito de Esparta', type: 'special', cost: 2, chargeGain: 0, damage: 0, target: 'ally_team', effect: 'grito_de_esparta', description: 'Aplica Buff Frenesí en todos los Aliados.' },
@@ -61,7 +61,7 @@
                 hp: 15, maxHp: 15, speed: 81, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/Y9xJCpxr/Captura_de_pantalla_2026_02_22_002441.png',
-                passive: { name: 'Bendición Sagrada', description: 'Cada vez que un aliado recupera HP, Min Byung genera 1 carga.' },
+                passive: { name: 'Bendicion Sagrada', description: 'Efecto pasivo Esquiva Area. Cada vez que un aliado recupera HP, genera 2 cargas en un aliado aleatorio.' },
                 abilities: [
                     { name: 'Curación Mágica', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'ally_single', effect: 'heal_ally', heal: 3, description: 'Recupera 3 HP a un aliado de tu elección.' },
                     { name: 'Protección Celestial', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'dispel_ally_charges', description: 'Disipar los debuffs del aliado objetivo y por cada debuff Disipado genera +1 carga sobre el aliado objetivo.' },
@@ -74,7 +74,7 @@
                 hp: 25, maxHp: 25, speed: 84, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/wTWCgJY2/Captura_de_pantalla_2026_03_15_021343.png',
-                passive: { name: 'Corazón Ardiente', description: 'Cuando Rengoku muere, aplica Aturdimiento a todos los enemigos.' },
+                passive: { name: 'Corazon Ardiente', description: 'Cuando Rengoku muere, aplica aturdimiento a todos los enemigos. Rengoku genera 1 punto de carga cada vez que un debuff quemadura inflige daño.' },
                 abilities: [
                     { name: 'Sol Ascendente', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'sol_ascendente', burnAmount: 1, description: 'Causa 2 de daño. Se aplica Debuff Quemadura 1 HP.' },
                     { name: 'Mar de Fuego', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'aoe', effect: 'corazon_llamas', description: 'Causa 3 AOE. 100% de golpe crítico a los enemigos con debuff Quemadura activo.' },
@@ -88,7 +88,7 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 anotherDimensionCooldown: 0,
                 portrait: 'https://i.postimg.cc/NMZcBh8m/Captura_de_pantalla_2026_02_27_201323.png',
-                passive: { name: 'Face of Geminga', description: 'Esquiva Área: No es afectado por ataques AOE del enemigo. Al inicio de la ronda tiene 50% de probabilidad de generar 1 carga por cada debuff activo en los enemigos.' },
+                passive: { name: 'Face of Geminga', description: 'Esquiva area. Al inicio de la ronda tiene 50% de probabilidad de generar 1 carga por cada debuff activo en los enemigos.' },
                 abilities: [
                     { name: 'Genma Ken', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'genma_ken', description: 'Causa 2 de daño. Aplica debuff Confusión sobre el objetivo. Elimina los buffs del enemigo golpeado.' },
                     { name: 'Colapso Dimensional', type: 'special', cost: 3, chargeGain: 1, damage: 4, target: 'single', effect: 'colapso_dimensional', description: 'Causa 4 de daño. Aplica 2 debuffs aleatorios en el enemigo golpeado.' },
@@ -114,7 +114,7 @@
                 hp: 25, maxHp: 25, speed: 86, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/9f6kNBpV/Gemini_Generated_Image_ac4u14ac4u14ac4u.png',
-                passive: { name: 'Provocación. Contraataque.', description: 'Thestalos tiene Provocación y Contraataque permanentes.' },
+                passive: { name: 'Primogenito del Sol', description: 'Contraataque.' },
                 abilities: [
                     { name: 'Purificación Solar', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'purificacion_solar', heal: 2, burnAmount: 2, description: 'Causa 1 de daño. Recupera 2 de HP. Aplica Quemaduras de 2 HP.' },
                     { name: 'Proteccion del Astro Rey', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'self', effect: 'proteccion_astro_rey', shieldAmount: 4, description: 'Se aplica Buff Provocación. Se aplica Buff Escudo 4 HP.' },
@@ -143,7 +143,7 @@
                 darkSideAwakened: false,
                 portrait: 'https://i.postimg.cc/7hYjCpBh/Captura_de_pantalla_2026_02_21_231859.png',
                 transformationPortrait: 'https://i.postimg.cc/Vk6t5wFQ/Whats_App_Image_2026_03_03_at_12_16_07_PM.jpg',
-                passive: { name: 'El Elegido', description: 'Contraataque permanente.' },
+                passive: { name: 'El Elegido', description: 'Efecto pasivo Asistir.' },
                 abilities: [
                     { name: 'Djem So', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'single', effect: 'djem_so', description: 'Causa 1 de daño. Sin efecto adicional.' },
                     { name: 'Estrangular', type: 'special', cost: 5, chargeGain: 0, damage: 5, target: 'single', effect: 'estrangular', description: 'Causa 5 de daño. Aplica Buff Concentración. Cada vez que Anakin usa esta habilidad, aumenta +1 el daño de Djem So permanentemente.' },
@@ -200,7 +200,7 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 ozyBonusChargeGain: 0,
                 portrait: 'https://i.postimg.cc/6qGzz1Hp/Captura_de_pantalla_2026_02_26_131502.png',
-                passive: { name: 'Privilegio Imperial', description: 'Si es golpeado por un enemigo, aplica Quemadura Solar 5% 1 turno al atacante.' },
+                passive: { name: 'Privilegio Imperial', description: 'Si es golpeado por un enemigo aplica Quemadura Solar sobre ese enemigo.' },
                 abilities: [
                     { name: 'Animación', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'ozy_basic', description: 'Causa 1 de daño. Si este ataque golpea a un enemigo con debuff Quemadura Solar, incrementa en +1 (permanente) la cantidad de cargas que genera este ataque.' },
                     { name: 'Sentencia del Sol', type: 'special', cost: 2, chargeGain: 0, damage: 2, target: 'single', effect: 'sentencia_sol', description: 'Causa 2 de daño. Si el enemigo golpeado tiene debuff Quemadura Solar, causa de 1-3 de daño adicional.' },
@@ -213,7 +213,7 @@
                 hp: 20, maxHp: 20, speed: 89, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/nzNJp8K7/Captura_de_pantalla_2026_02_27_201309.png',
-                passive: { name: 'Regla de Oro', description: '+10% de probabilidad de crítico en todos los ataques. Por cada crítico, genera 2 cargas.' },
+                passive: { name: 'Regla de Oro', description: 'Aumenta 25% la probabilidad de golpe critico de todos sus ataques. Cada vez que acierta un golpe critico en un enemigo tiene 50% de probabilidad de genera 1 cargas.' },
                 abilities: [
                     { name: 'Gate of Babylon', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'aoe', effect: 'crit_chance_basic', critChance: 0.15, description: 'Causa 1 AOE. 15% de probabilidad de golpe crítico.' },
                     { name: 'Espada Merodach', type: 'special', cost: 5, chargeGain: 0, damage: 3, target: 'aoe', effect: 'espada_merodach', description: 'Causa 3 AOE. Elimina 3 cargas del enemigo golpeado por un golpe crítico.' },
@@ -226,7 +226,7 @@
                 hp: 20, maxHp: 20, speed: 95, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/SsGwxyGp/Captura_de_pantalla_2026_02_22_014009.png',
-                passive: { name: 'Cuerpo Divino', description: 'Cada vez que Goku Black recibe daño, 50% de robar 1 carga del atacante.' },
+                passive: { name: 'Cuerpo Divino', description: 'Cada vez que Goku Black recibe daño, tiene un 50% de robar 1 carga del atacante. Cada vez que Goku Black inflige daño tiene un 50% de aplicar debuff debilidad.' },
                 abilities: [
                     { name: 'Espada de Ki', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'espada_ki', description: 'Causa 2 de daño. 50% de probabilidad de aplicar Buff Aura Oscura sobre Goku Black.' },
                     { name: 'Teletransportación', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'single', effect: 'teleportacion_confusion', description: 'Aplica Debuff Confusión. Roba 2 puntos de carga del objetivo.' },
@@ -239,7 +239,7 @@
                 hp: 20, maxHp: 20, speed: 91, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/wBvTDG7f/Captura_de_pantalla_2026_02_24_103109.png',
-                passive: { name: 'Maboroshi no Shinkirō', description: 'Cada vez que se aplica un debuff en un enemigo, genera 1 carga.' },
+                passive: { name: 'Maboroshi no Shinkiro', description: 'Cada vez que se aplica un debuff Posesion o Mega Posesion sobre un enemigo, genera 3 cargas.' },
                 abilities: [
                     { name: 'Shingun Ken', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'speed_up_self', description: 'Causa 1 de daño. Aumenta 1 punto la Velocidad de Saga de Géminis. 50% de probabilidad de aplicar Posesión sobre el enemigo golpeado.' },
                     { name: 'Genrō Maō Ken', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'aoe', effect: 'apply_possession', description: 'Causa 3 AOE. 50% de aplicar debuff Posesión sobre el enemigo golpeado.' },
@@ -252,7 +252,7 @@
                 hp: 20, maxHp: 20, speed: 89, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/qvNv9NQN/Captura_de_pantalla_2026_03_11_215715.png',
-                passive: { name: 'Hiraishin no Jutsu', description: 'Esquiva Área (inmune a AOE enemigo). Genera +2 cargas adicionales por cada enemigo golpeado con menos velocidad que Minato.' },
+                passive: { name: 'Hiraishin no Jutsu', description: 'Esquiva area (no es afectado por ataques AOE del enemigo). Minato genera +1 cargas adicionales por cada enemigo golpeado que tenga menos velocidad que Minato.' },
                 abilities: [
                     { name: 'Kiiroi Senkō', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'kiiroi_senko', description: 'Causa 1 de daño. Se aplica Buff Celeridad 10% por 2 turnos. Se aplica un Buff aleatorio por 2 turnos.' },
                     { name: 'Destello de la Danza Aullante', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'aoe', effect: 'destello_danza', description: 'Causa 2 AOE. Si el enemigo golpeado tiene menos velocidad que Minato, aplica un debuff aleatorio (Aturdimiento, Congelación, Posesión, Quemadura Solar, Sangrado, Miedo, Confusión, Debilitar, Silenciar, Agotamiento) por 1 turno.' },
@@ -267,7 +267,7 @@
                 muzanTransformed: false,
                 portrait: 'https://i.postimg.cc/fL41fCgH/Captura_de_pantalla_2026_02_28_020016.png',
                 transformationPortrait: 'https://i.postimg.cc/nM8HxvTD/Whats_App_Image_2026_03_03_at_3_29_34_PM.jpg',
-                passive: { name: 'Progenitor Demoniaco', description: 'Al inicio de cada ronda, cura 1 HP a Muzan y a un aliado aleatorio. Cada vez que Veneno hace daño, Muzan genera 1 carga.' },
+                passive: { name: 'Progenitor Demoniaco', description: 'Al pricipio de cada ronda, Muzan aplica Curacion de 2 HP a Muzan y 1 HP a un aliado aleatorio. Cada vez que un debuff Veneno haga daño, Muzan genera 1 punto de carga.' },
                 abilities: [
                     { name: 'Espinas de Sangre', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'apply_poison', poisonDuration: 2, description: 'Causa 2 de daño. Se aplica Debuff Veneno al objetivo por 2 turnos.' },
                     { name: 'Sangre Demoniaca', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'single', effect: 'sangre_demoniaca', poisonDuration: 3, heal: 3, description: 'Causa 3 de daño. Aplica Debuff Veneno en el objetivo por 3 turnos. Aplica Curación a Muzan por 3 HP.' },
@@ -293,7 +293,7 @@
                 hp: 25, maxHp: 25, speed: 78, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/858xm4n0/Captura_de_pantalla_2026_02_28_020119.png',
-                passive: { name: 'El Ojo que Todo lo Ve', description: 'Puede atacar ignorando Provocación, Megaprovocación y Sigilo. 50% de aplicar Silencio 1 turno cada vez que recibe daño.' },
+                passive: { name: 'El Ojo que Todo lo Ve', description: 'Sauron puede atacar ignorando buff provocacion, megaprovocacion y Sigilo. Cada vez que Sauron recibe un golpe del enemigo tiene 50% de probabilidad de aplicar debuff Silencio sobre el enemigo atacante.' },
                 abilities: [
                     { name: 'Voluntad de Mordor', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'sauron_basic', description: 'Causa 2 de daño. Si Sauron ataca a un enemigo que ya tenía debuff Silencio genera +2 cargas adicionales.' },
                     { name: 'Mano Negra', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'aoe', effect: 'mano_negra', description: 'Causa 2 AOE. Si los objetivos golpeados tienen Buff Provocación, Megaprovocación o Sigilo, este ataque es golpe crítico.' },
@@ -307,7 +307,7 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 hpLost: 0,
                 portrait: 'https://i.postimg.cc/63sFfc1F/Captura_de_pantalla_2026_02_28_015421.png',
-                passive: { name: 'Presencia Oscura', description: 'Inmune a Miedo y Confusión. Cada vez que un Miedo termine, genera 1 carga.' },
+                passive: { name: 'Presencia Oscura', description: 'Darth Vader es inmune a debuffs Miedo y Confusion. Cada vez que un debuff Miedo expire por Limpiar, Disipar o termine, Darth Vader genera 1 punto de Carga.' },
                 abilities: [
                     { name: 'Intimidación del Imperio', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'single', effect: 'apply_fear', description: 'Aplica Debuff Miedo al objetivo.' },
                     { name: 'Puño del Imperio', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'self', effect: 'apply_megaprovocation_buff', description: 'Aplica Buff Megaprovocación.' },
@@ -320,7 +320,7 @@
                 hp: 30, maxHp: 30, speed: 82, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/W3Rxw8ff/Captura_de_pantalla_2026_02_28_015847.png',
-                passive: { name: 'Aura de Hielo', description: 'Aplica Congelación al atacante cuando recibe daño. Inmune a Miedo, Posesión y Congelación.' },
+                passive: { name: 'Aura de Hielo', description: 'Efecto pasivo de Aura Gelida. Lich King es inmune a debuffs de Miedo, Posesion y Congelacion.' },
                 abilities: [
                     { name: 'Agonía de Escarcha', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'agonia_escarcha', description: 'Causa 1 de daño. Roba 1 HP del objetivo.' },
                     { name: 'Cadenas de Hielo', type: 'special', cost: 2, chargeGain: 0, damage: 0, target: 'self', effect: 'cadenas_hielo', description: 'Aplica Buff Provocación en Lich King. Cada vez que Lich King recibe daño con Buff Provocación activo, genera 1 carga.' },
@@ -359,7 +359,7 @@
                 hp: 20, maxHp: 20, speed: 81, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/9XnsvNBS/Whats_App_Image_2026_03_05_at_9_42_52_AM.jpg',
-                passive: { name: 'Curandera de las Sombras', description: 'Al inicio de cada ronda, elimina 2 Debuffs de un aliado aleatorio y aplica Escudo 3 HP a un aliado aleatorio.' },
+                passive: { name: 'Curandera de las Sombras', description: 'Al finalizar cada Ronda, Limpiar debuff de un aliado de manera aleatoria. Aplica buff Escudo de 3 HP a un aliado aleatorio.' },
                 abilities: [
                     { name: 'Aguja Medicinal', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'ally_single', effect: 'heal_cleanse', heal: 1, description: 'Cura 1 HP al objetivo aliado. Limpia 1 debuff del objetivo.' },
                     { name: 'Aroma Curativo', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'ally_team', effect: 'aoe_cleanse_allies', description: 'Limpia 1 debuff de todos los aliados.' },
@@ -398,7 +398,7 @@
                 hp: 30, maxHp: 30, speed: 84, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/hjJDWnn6/Captura_de_pantalla_2026_03_06_003242.png',
-                passive: { name: 'Adaptación Reactiva', description: 'Cada vez que recibe un golpe de un ataque básico, genera 1 carga.' },
+                passive: { name: 'Adaptacion Reactiva', description: 'Cada vez que recibe un golpe, recupera 2 HP.' },
                 abilities: [
                     { name: 'Rugido del Devastador', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'rugido_devastador', description: 'Se aplica Buff Provocación. Se aplica Buff Cuerpo Perfecto.' },
                     { name: 'Smashing Strike', type: 'special', cost: 3, chargeGain: 0, damage: 3, target: 'single', effect: 'aoe_stun_chance', description: 'Causa 3 de daño. Aplica debuff Aturdimiento.' },
