@@ -848,9 +848,14 @@
                 // Attack char usage
                 cur.atkCharUsage = cur.atkCharUsage || {};
                 (playerChars || []).forEach(function(c) { cur.atkCharUsage[c] = (cur.atkCharUsage[c] || 0) + 1; });
-                // Defense char usage (record opponents used against you)
+                // defCharUsage = los personajes del PROPIO equipo de defensa del jugador
                 cur.defCharUsage = cur.defCharUsage || {};
-                myRef.set(cur);
+                db.ref('ranked_teams/' + myUid).once('value', function(myTeamSnap) {
+                    const myTeamData = myTeamSnap.val() || {};
+                    const myDefTeam = (myTeamData.defense || []).filter(Boolean);
+                    [...new Set(myDefTeam)].forEach(function(c) { cur.defCharUsage[c] = (cur.defCharUsage[c] || 0) + 1; });
+                    myRef.set(cur);
+                });
             });
 
             // ── Notify + update defense owner if vs real player's defense ──
@@ -863,15 +868,38 @@
                 const oppRef = db.ref('ranked_stats/' + defOwnerUid);
                 oppRef.once('value', function(snap) {
                     const cur = snap.val() || {};
-                    cur.defWins   = (cur.defWins   || 0) + (!won ? 1 : 0); // defense won = attacker lost
-                    cur.defLosses = (cur.defLosses || 0) + (won  ? 1 : 0);
-                    cur.atkWins   = cur.atkWins   || 0;
-                    cur.atkLosses = cur.atkLosses || 0;
-                    cur.globalWins = (cur.atkWins || 0) + (cur.defWins || 0);
-                    // Record which chars were used in the attack against this defense
-                    cur.defCharUsage = cur.defCharUsage || {};
-                    (opponentChars || []).forEach(function(c) { cur.defCharUsage[c] = (cur.defCharUsage[c] || 0) + 1; });
-                    oppRef.set(cur);
+                    // Preserve or set name from ranked_teams data
+                    if (!cur.name || cur.name === defOwnerUid) {
+                        // Try to get the name from ranked_teams
+                        db.ref('ranked_teams/' + defOwnerUid).once('value', function(teamSnap) {
+                            const teamData = teamSnap.val() || {};
+                            cur.name = teamData.name || fakeOpp || cur.name || defOwnerUid;
+                            cur.defWins   = (cur.defWins   || 0) + (!won ? 1 : 0);
+                            cur.defLosses = (cur.defLosses || 0) + (won  ? 1 : 0);
+                            cur.atkWins   = cur.atkWins   || 0;
+                            cur.atkLosses = cur.atkLosses || 0;
+                            cur.globalWins = (cur.atkWins || 0) + (cur.defWins || 0);
+                            // defCharUsage = los personajes del EQUIPO DE DEFENSA del defOwner
+                            cur.defCharUsage = cur.defCharUsage || {};
+                            const defTeam = (teamData.defense || []).filter(Boolean);
+                            [...new Set(defTeam)].forEach(function(c) { cur.defCharUsage[c] = (cur.defCharUsage[c] || 0) + 1; });
+                            oppRef.set(cur);
+                        });
+                    } else {
+                        cur.defWins   = (cur.defWins   || 0) + (!won ? 1 : 0);
+                        cur.defLosses = (cur.defLosses || 0) + (won  ? 1 : 0);
+                        cur.atkWins   = cur.atkWins   || 0;
+                        cur.atkLosses = cur.atkLosses || 0;
+                        cur.globalWins = (cur.atkWins || 0) + (cur.defWins || 0);
+                        // defCharUsage = los personajes del EQUIPO DE DEFENSA del defOwner
+                        cur.defCharUsage = cur.defCharUsage || {};
+                        db.ref('ranked_teams/' + defOwnerUid).once('value', function(tSnap2) {
+                            const tData2 = tSnap2.val() || {};
+                            const defTeam2 = (tData2.defense || []).filter(Boolean);
+                            [...new Set(defTeam2)].forEach(function(c) { cur.defCharUsage[c] = (cur.defCharUsage[c] || 0) + 1; });
+                            oppRef.set(cur);
+                        });
+                    }
                 });
             }
 
