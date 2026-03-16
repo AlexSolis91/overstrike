@@ -48,7 +48,11 @@
                     ...JSON.parse(JSON.stringify(shadowTemplate)),
                     id: summonId,
                     summoner: summonerName,
-                    team: summoner.team
+                    team: summoner.team,
+                    // Copy effect as dragonEffect for legacy EOR checks
+                    dragonEffect: shadowTemplate.effect || null,
+                    // Drogon gets megaProvocation from summonData template
+                    megaProvocation: shadowTemplate.megaProvocation || (shadowName === 'Drogon') || false
                 };
                 
                 addLog(`👻 ${summonerName} invoca a ${shadowName}!`, 'buff');
