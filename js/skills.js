@@ -600,6 +600,8 @@
                 addLog(`💀 ${gameState.selectedCharacter} usa Golpe Grave en ${targetName} causando ${finalDamage} daño`, 'damage');
                 if (wasAliveBefore && tgtGrave && (tgtGrave.isDead || tgtGrave.hp <= 0)) {
                     addLog(`💪 ¡DERROTA! Saitama gana un turno adicional`, 'buff');
+                    // ANTICIPACION: chars with this buff fire 3 basics on the attacker
+                    triggerAnticipacion(gameState.selectedCharacter, attacker.team);
                     // Turno adicional: no incrementar turno, abrir selección de habilidades
                     renderCharacters();
                     renderSummons();
@@ -1038,6 +1040,15 @@
                 attacker.statusEffects = attacker.statusEffects.filter(e => e.name !== 'Provocación');
                 attacker.statusEffects.push({ name: 'Provocación', type: 'buff', duration: 2, emoji: '🛡️' });
                 addLog(`🛡️ ${gameState.selectedCharacter} activa Provocación`, 'buff');
+
+            } else if (ability.effect === 'rugido_devastador') {
+                // Doomsday: Rugido del Devastador — Provocación + Cuerpo Perfecto
+                const dday = attacker;
+                dday.statusEffects = (dday.statusEffects || []).filter(e => e && e.name !== 'Provocación' && e.name !== 'Cuerpo Perfecto');
+                dday.statusEffects.push({ name: 'Provocación', type: 'buff', duration: 2, emoji: '🛡️', passiveHidden: false });
+                dday.statusEffects.push({ name: 'Cuerpo Perfecto', type: 'buff', duration: 2, emoji: '💠', passiveHidden: false });
+                addLog(`🛡️ ${charName} activa Rugido del Devastador: Provocación + Cuerpo Perfecto`, 'buff');
+                generateCharges(charName, ability.chargeGain || 1);
 
             } else if (ability.effect === 'aoe_stun_chance') {
                 // Smashing Strike: AOE + 50% stun
@@ -1720,6 +1731,19 @@
                     addLog(`❌ Error al sacrificar sombra`, 'info');
                 }
                 
+            } else if (ability.effect === 'sjw_sigilo') {
+                // Sigilo de la Sombras (Sun Jin Woo basic): aplica Buff Sigilo 1 turno
+                const sjwChar = attacker;
+                const existingSigilo = (sjwChar.statusEffects || []).find(e => e && normAccent(e.name||'') === 'sigilo');
+                if (existingSigilo) {
+                    existingSigilo.duration = Math.max(existingSigilo.duration || 1, 1);
+                } else {
+                    sjwChar.statusEffects = sjwChar.statusEffects || [];
+                    sjwChar.statusEffects.push({ name: 'Sigilo', type: 'buff', duration: 1, emoji: '👤' });
+                }
+                generateCharges(charName, ability.chargeGain || 1);
+                addLog(`👤 Sigilo de las Sombras: ${charName} gana Sigilo por 1 turno`, 'buff');
+
             } else if (ability.effect === 'summon_kamish') {
                 // Kamish Arise - Invocar a Kamish (solo uno)
                 try {
@@ -2491,6 +2515,26 @@
                     addLog(`⚔️ ${gameState.selectedCharacter} usa ${ability.name} en ${targetName} causando ${finalDamage} de daño`, 'damage');
                 }
                 
+            } else if (ability.effect === 'sharingan_aoe') {
+                // Mangekyō Sharingan (Madara): AOE damage + Contraataque + Concentración on self
+                const madaraTeam = attacker.team;
+                const shaEnemyTeam = madaraTeam === 'team1' ? 'team2' : 'team1';
+                let hitCount = 0;
+                for (let n in gameState.characters) {
+                    const c = gameState.characters[n];
+                    if (c && c.team === shaEnemyTeam && !c.isDead && c.hp > 0) {
+                        if (!checkMegaProvocation(shaEnemyTeam) || c.statusEffects.some(e => e && (e.name === 'Mega Provocación' || e.name === 'Mega Provocacion'))) {
+                            applyDamageWithShield(n, finalDamage, charName);
+                            hitCount++;
+                        }
+                    }
+                }
+                if (hitCount === 0) applyAOEDamageToTeam(shaEnemyTeam, finalDamage, charName);
+                attacker.statusEffects = (attacker.statusEffects || []).filter(e => e && e.name !== 'Contraataque' && e.name !== 'Concentración');
+                attacker.statusEffects.push({ name: 'Contraataque', type: 'buff', duration: 2, emoji: '⚔️' });
+                attacker.statusEffects.push({ name: 'Concentración', type: 'buff', duration: 2, emoji: '🎯' });
+                addLog(`👁️ Mangekyō Sharingan: Madara causa ${finalDamage} AOE y gana Contraataque + Concentración`, 'buff');
+
             } else if (ability.effect === 'rikudo_transformation') {
                 // Modo Rikudō - Transformación permanente
                 attacker.rikudoMode = true;
