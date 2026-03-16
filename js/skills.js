@@ -1048,7 +1048,9 @@
                 dday.statusEffects.push({ name: 'Provocación', type: 'buff', duration: 2, emoji: '🛡️', passiveHidden: false });
                 dday.statusEffects.push({ name: 'Cuerpo Perfecto', type: 'buff', duration: 2, emoji: '💠', passiveHidden: false });
                 addLog(`🛡️ ${charName} activa Rugido del Devastador: Provocación + Cuerpo Perfecto`, 'buff');
-                generateCharges(charName, ability.chargeGain || 1);
+                if (ability.chargeGain) {
+                    attacker.charges = Math.min(20, (attacker.charges || 0) + ability.chargeGain);
+                }
 
             } else if (ability.effect === 'aoe_stun_chance') {
                 // Smashing Strike: AOE + 50% stun
@@ -1749,7 +1751,9 @@
                     sjwChar.statusEffects = sjwChar.statusEffects || [];
                     sjwChar.statusEffects.push({ name: 'Sigilo', type: 'buff', duration: 1, emoji: '👤' });
                 }
-                generateCharges(charName, ability.chargeGain || 1);
+                if (ability.chargeGain) {
+                    attacker.charges = Math.min(20, (attacker.charges || 0) + ability.chargeGain);
+                }
                 addLog(`👤 Sigilo de las Sombras: ${charName} gana Sigilo por 1 turno`, 'buff');
 
             } else if (ability.effect === 'summon_kamish') {
