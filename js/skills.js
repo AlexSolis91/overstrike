@@ -728,22 +728,28 @@
                 addLog(`⚔️ Sangre Demoniaca: ${finalDamage} daño + Veneno 3 turnos a ${targetName}`, 'damage');
 
             } else if (ability.effect === 'sombra_noche') {
-                // MUZAN - Sombra de la Noche: AOE daño + Sigilo 2 rondas + veneno AOE 3 turnos
+                // MUZAN - Sombra de la Noche: AOE daño + Sigilo 2T + Veneno 3T a enemigos
                 const snTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                 checkAndRemoveStealth(snTeam);
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (c && c.team === snTeam && !c.isDead && c.hp > 0) {
-                        applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
-                        applyPoison(n, 3);
+                        if (!checkAsprosAOEImmunity(n)) {
+                            applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
+                            applyPoison(n, 3);
+                        }
                     }
                 }
-                applyStealth(gameState.selectedCharacter, 2);
-                addLog(`🌑 Sombra de la Noche: ${finalDamage} daño AOE + Veneno + Sigilo 2 rondas`, 'damage');
+                // Sigilo con flag appliedThisTurn para sobrevivir el turno actual
+                attacker.statusEffects = (attacker.statusEffects || []).filter(e => e && normAccent(e.name||'') !== 'sigilo');
+                attacker.statusEffects.push({ name: 'Sigilo', type: 'buff', duration: 2, emoji: '👤', appliedThisTurn: true });
+                addLog('🌑 Sombra de la Noche: ' + finalDamage + ' AOE + Veneno 3T + Sigilo aplicado a ' + charName, 'damage');
 
+            
             } else if (ability.effect === 'muzan_transform') {
                 // MUZAN - Rey de los Demonios Definitivo
                 attacker.muzanTransformed = true;
+                if (attacker.transformPortrait) { attacker.portrait = attacker.transformPortrait; }
                 const mzTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                 checkAndRemoveStealth(mzTeam);
                 for (let n in gameState.characters) {
@@ -1313,6 +1319,7 @@
             } else if (ability.effect === 'fenix_armor') {
                 // Armadura Divina del Fénix: transformación
                 attacker.fenixArmorActive = true;
+                if (attacker.transformPortrait) { attacker.portrait = attacker.transformPortrait; }
                 attacker.statusEffects.push({ name: 'Regeneracion', type: 'buff', duration: 99, emoji: '💖', amount: Math.ceil(attacker.maxHp * 0.20) });
                 addLog(`🦅 ${gameState.selectedCharacter} equipa la Armadura Divina del Fénix`, 'buff');
                 ability.used = true;
@@ -1435,6 +1442,7 @@
                 }
                 applyHolyShield(gameState.selectedCharacter, 3); // dur=3 → activo 2 turnos reales
                 attacker.dragonFormActive = true;
+                if (attacker.transformPortrait) { attacker.portrait = attacker.transformPortrait; }
                 addLog(`🐉 Dragón de la Vida: Burn 30% en enemigos, Regen 30% en aliados, Escudo Sagrado en ${gameState.selectedCharacter}`, 'buff');
 
             } else if (ability.effect === 'kiiroi_senko' || ability.effect === 'kiiroi_senko_v2') {
@@ -1559,6 +1567,7 @@
             } else if (ability.effect === 'kurama_mode') {
                 // Modo Kurama: transformación de Minato
                 attacker.kuramaMode = true;
+                if (attacker.transformPortrait) { attacker.portrait = attacker.transformPortrait; }
                 attacker.speed += 5;
                 addLog(`🦊 ${gameState.selectedCharacter} activa el Modo Kurama (+5 vel, +3 dmg, +1 cargas)`, 'buff');
                 ability.used = true;
@@ -2084,6 +2093,7 @@
             // ── DESPERTAR DEL LADO OSCURO (Anakin Over — transformación permanente) ──
             } else if (ability.effect === 'despertar_lado_oscuro') {
                 attacker.darkSideAwakened = true;
+                if (attacker.transformPortrait) { attacker.portrait = attacker.transformPortrait; }
                 addLog('🌑 ¡' + charName + ' despierta el Lado Oscuro! +1 daño permanente y 50% crítico en todas sus habilidades.', 'buff');
 
             // ── CAMBIO DE ENERGÍA v2 (Nakime — jugador elige enemigo, luego aliado) ──
@@ -2635,6 +2645,7 @@
             } else if (ability.effect === 'rikudo_transformation') {
                 // Modo Rikudō - Transformación permanente
                 attacker.rikudoMode = true;
+                if (attacker.transformPortrait) { attacker.portrait = attacker.transformPortrait; }
                 ability.used = true; // Marcar como usada para no poder usarla de nuevo
                 addLog(`✨ ${gameState.selectedCharacter} activa el ${ability.name}! Poder duplicado, costos reducidos a la mitad`, 'buff');
                 
@@ -2836,7 +2847,15 @@
                     const drData = summonData[drChosen];
                     if (drData) {
                         const drId = drChosen + '_' + Date.now();
-                        gameState.summons[drId] = { id: drId, name: drChosen, hp: drData.hp, maxHp: drData.hp, team: attacker.team, summoner: charName, passive: drData.passive, img: drData.img || '', statusEffects: [] };
+                        gameState.summons[drId] = {
+                            id: drId, name: drChosen,
+                            hp: drData.hp, maxHp: drData.hp,
+                            team: attacker.team, summoner: charName,
+                            passive: drData.passive, img: drData.img || '',
+                            effect: drData.effect || '',
+                            megaProvocation: drChosen === 'Drogon',
+                            statusEffects: []
+                        };
                         addLog('🐉 Madre de Dragones: ' + charName + ' invoca a ' + drChosen, 'buff');
                         renderSummons();
                     }
