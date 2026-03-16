@@ -387,9 +387,16 @@ function triggerMaboroshi(targetTeam, debuffName) {
 
         // ── PASIVA ESQUIVA AREA (Aspros): no recibe daño AOE ──
         function checkAsprosAOEImmunity(targetName) {
-            const aspros = gameState.characters['Aspros de Gemini'];
-            if (!aspros || aspros.isDead || aspros.hp <= 0) return false;
-            return targetName === 'Aspros de Gemini';
+            // Check ANY character with Esquiva Area passive or buff
+            const c = gameState.characters[targetName];
+            if (!c || c.isDead || c.hp <= 0) return false;
+            // Check passive flag (set by init-render)
+            if (c.esquivaAreaPassive) return true;
+            // Check buff
+            if (hasStatusEffect(targetName, 'Esquiva Area') || hasStatusEffect(targetName, 'Esquiva Área')) return true;
+            // Legacy: Aspros, Minato, Min Byung have Esquiva Area passive
+            if (targetName === 'Aspros de Gemini' || targetName === 'Min Byung' || targetName === 'Minato Namikaze') return true;
+            return false;
         }
 
         // ── PASIVA EL OJO QUE TODO LO VE (Sauron): ignora Provocación/Sigilo ──
@@ -428,8 +435,11 @@ function triggerMaboroshi(targetTeam, debuffName) {
             if (attackerName !== 'Gilgamesh') return;
             const gil = gameState.characters['Gilgamesh'];
             if (!gil || gil.isDead || gil.hp <= 0) return;
-            gil.charges += 2;
-            addLog(`👑 Regla de Oro: Gilgamesh gana 2 cargas por golpe crítico`, 'buff');
+            // 50% de probabilidad de generar 1 carga por crítico
+            if (Math.random() < 0.50) {
+                gil.charges = Math.min(20, (gil.charges || 0) + 1);
+                addLog('👑 Regla de Oro: Gilgamesh gana 1 carga por golpe crítico (50%)', 'buff');
+            }
         }
 
         // ── PASIVA ENTRENAMIENTO DE LOS DIOSES (Goku): +1 vel y +1 daño en crítico ──
