@@ -159,7 +159,7 @@
             if (alreadySummoned) { addLog('🐉 ' + dragonName + ' ya está invocado', 'info'); return; }
             const dragonStats = {
                 'Drogon':  { hp: 15, maxHp: 15, effect: 'mega_prov_aoe_dmg', passive: '🔴 Megaprovoción activa. Inflige 3 de daño AOE al equipo enemigo al final de cada ronda.' },
-                'Rhaegal': { hp: 8, maxHp: 8, effect: 'burn_team', passive: '🟢 Al final de cada ronda aplica Quemadura 10% por 1 turno a todo el equipo enemigo.' },
+                'Rhaegal': { hp: 8, maxHp: 8, effect: 'burn_team', passive: '🟢 Al final de cada ronda aplica Quemadura 1 HP por 1 turno a todo el equipo enemigo.' },
                 'Viserion': { hp: 6, maxHp: 6, effect: 'heal_team', passive: '⚪ Al final de cada ronda cura 2 HP a todo el equipo aliado.' }
             };
             const stats = dragonStats[dragonName] || { hp: 8, maxHp: 8, effect: '' };
