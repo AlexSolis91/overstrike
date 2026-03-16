@@ -40,9 +40,11 @@
                 const el = document.getElementById(s);
                 if (el) el.style.display = 'none';
             });
-            // Hide game container when showing non-game screens
+            // Hide game container ONLY if the game is not actively running
             const gc = document.querySelector('.game-container');
-            if (gc && id !== 'game') gc.style.display = 'none';
+            if (gc && id !== 'game' && !(typeof gameState !== 'undefined' && gameState.turnOrder && gameState.turnOrder.length > 0 && !gameState.gameOver)) {
+                gc.style.display = 'none';
+            }
             const target = document.getElementById(id);
             if (!target) return;
             if (id === 'lobbyScreen' || id === 'waitingScreen') target.style.display = 'flex';
