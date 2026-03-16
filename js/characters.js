@@ -8,13 +8,12 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 rikudoMode: false,
                 portrait: 'https://i.postimg.cc/KzWJPy5j/Captura_de_pantalla_2026_02_26_134301.png',
-                transformPortrait: 'https://i.postimg.cc/pTBgL2Bp/Captura_de_pantalla_2026_02_22_004257.png',
                 transformationPortrait: 'https://i.postimg.cc/pTBgL2Bp/Captura_de_pantalla_2026_02_22_004257.png',
                 passive: { name: 'Limbo', description: 'Efectos pasivos de Divinidad y Cuerpo Perfecto.' },
                 abilities: [
                     { name: 'Gakidō: Fūjutsu Kyūin', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'lifesteal_basic', description: 'Causa 2 de daño. Roba HP al enemigo golpeado equivalente al daño causado por este ataque.' },
-                    { name: 'Mangekyō Sharingan', type: 'special', cost: 2, chargeGain: 0, damage: 3, target: 'aoe', effect: 'sharingan_aoe', description: 'Causa 3 AOE. Se aplica Buff Contraataque. Se aplica Buff Concentración.' },
-                    { name: 'Susanoo', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'single', effect: 'double_on_burn', description: 'Causa 3 de daño en área con 50% de probabilidad de golpe crítico. Aplica Buff Escudo con +3 HP por cada golpe crítico acertado en el enemigo.' },
+                    { name: 'Mangekyō Sharingan', type: 'special', cost: 2, chargeGain: 0, damage: 3, target: 'single', effect: 'sharingan_aoe', description: 'Causa 3 AOE. Se aplica Buff Contraataque. Se aplica Buff Concentración.' },
+                    { name: 'Susanoo', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'aoe', effect: 'double_on_burn', description: 'Causa 3 de daño en área con 50% de probabilidad de golpe crítico. Aplica Buff Escudo con +3 HP por cada golpe crítico acertado en el enemigo.' },
                     { name: 'Modo Rikudō', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'rikudo_transformation', description: 'TRANSFORMACIÓN permanente. Todos los ataques cuestan la mitad de cargas, causan el doble de daño y generan el doble de cargas. Activa la pasiva Limbo: recibe 50% menos de daño y regenera 1 HP cada turno.' }
                 ]
             },
@@ -128,7 +127,6 @@
                 hp: 25, maxHp: 25, speed: 82, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/V6F3kYFw/Captura_de_pantalla_2026_02_21_233329.png',
-                transformPortrait: 'https://i.postimg.cc/k4dLFV5p/Captura_de_pantalla_2026_02_24_101308.png',
                 transformationPortrait: 'https://i.postimg.cc/k4dLFV5p/Captura_de_pantalla_2026_02_24_101308.png',
                 passive: { name: 'Aspecto de la Vida', description: 'Al final de cada ronda, cura 3 HP al aliado con menos HP.' },
                 abilities: [
@@ -144,7 +142,6 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 darkSideAwakened: false,
                 portrait: 'https://i.postimg.cc/7hYjCpBh/Captura_de_pantalla_2026_02_21_231859.png',
-                transformPortrait: 'https://i.postimg.cc/Vk6t5wFQ/Whats_App_Image_2026_03_03_at_12_16_07_PM.jpg',
                 transformationPortrait: 'https://i.postimg.cc/Vk6t5wFQ/Whats_App_Image_2026_03_03_at_12_16_07_PM.jpg',
                 passive: { name: 'El Elegido', description: 'Efecto pasivo Asistir.' },
                 abilities: [
@@ -162,7 +159,6 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 ultraInstinto: false,
                 portrait: 'https://i.postimg.cc/wMsFFbWT/Captura_de_pantalla_2026_02_26_132013.png',
-                transformPortrait: 'https://i.postimg.cc/ZK704HT2/Captura_de_pantalla_2026_03_02_112236.png',
                 transformationPortrait: 'https://i.postimg.cc/ZK704HT2/Captura_de_pantalla_2026_03_02_112236.png',
                 passive: { name: 'Entrenamiento de los Dioses', description: 'Con Furia + Frenesí activos, sus ataques generan +2 cargas adicionales. Por cada crítico genera +2 cargas adicionales.' },
                 abilities: [
@@ -270,7 +266,6 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 muzanTransformed: false,
                 portrait: 'https://i.postimg.cc/fL41fCgH/Captura_de_pantalla_2026_02_28_020016.png',
-                transformPortrait: 'https://i.postimg.cc/nM8HxvTD/Whats_App_Image_2026_03_03_at_3_29_34_PM.jpg',
                 transformationPortrait: 'https://i.postimg.cc/nM8HxvTD/Whats_App_Image_2026_03_03_at_3_29_34_PM.jpg',
                 passive: { name: 'Progenitor Demoniaco', description: 'Al pricipio de cada ronda, Muzan aplica Curacion de 2 HP a Muzan y 1 HP a un aliado aleatorio. Cada vez que un debuff Veneno haga daño, Muzan genera 1 punto de carga.' },
                 abilities: [
@@ -417,7 +412,6 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 ikki_armor: false, ikki_revival_round: null,
                 portrait: 'https://i.postimg.cc/LsX6jbnD/Captura_de_pantalla_2026_02_24_103509.png',
-                transformPortrait: 'https://i.postimg.cc/5tMS08yN/Captura_de_pantalla_2026_02_24_104108.png',
                 transformationPortrait: 'https://i.postimg.cc/5tMS08yN/Captura_de_pantalla_2026_02_24_104108.png',
                 passive: { name: 'Cenizas del Fénix', description: 'Al final de la segunda ronda después de morir, revive con 50% de HP y 5 cargas.' },
                 abilities: [
