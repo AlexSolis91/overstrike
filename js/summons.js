@@ -137,7 +137,7 @@
             if (summon.name === 'Kamish' && attackerName) {
                 const attacker = gameState.characters[attackerName];
                 if (attacker && !attacker.isDead) {
-                    applyBurn(attackerName, 25, 1); // 25% por 1 turno per Excel spec
+                    applyFlatBurn(attackerName, 5, 1); // 25% por 1 turno per Excel spec
                     addLog(`🔥 ${attackerName} recibe Quemaduras permanentes del 20% por golpear a Kamish`, 'damage');
                 }
             }
@@ -158,7 +158,7 @@
             const alreadySummoned = Object.values(gameState.summons).some(s => s && s.name === dragonName && s.summoner === summoner);
             if (alreadySummoned) { addLog('🐉 ' + dragonName + ' ya está invocado', 'info'); return; }
             const dragonStats = {
-                'Drogon':  { hp: 20, maxHp: 20, effect: 'mega_prov_aoe_dmg', passive: '🔴 Megaprovoción activa. Inflige 3 de daño AOE al equipo enemigo al final de cada ronda.' },
+                'Drogon':  { hp: 15, maxHp: 15, effect: 'mega_prov_aoe_dmg', passive: '🔴 Megaprovoción activa. Inflige 3 de daño AOE al equipo enemigo al final de cada ronda.' },
                 'Rhaegal': { hp: 8, maxHp: 8, effect: 'burn_team', passive: '🟢 Al final de cada ronda aplica Quemadura 10% por 1 turno a todo el equipo enemigo.' },
                 'Viserion': { hp: 6, maxHp: 6, effect: 'heal_team', passive: '⚪ Al final de cada ronda cura 2 HP a todo el equipo aliado.' }
             };
@@ -408,7 +408,7 @@
                 const debuffs = ['applyBurn', 'applyPoison', 'applyBleed', 'applyFreeze', 'applyStun', 'applyFear', 'applyWeaken'];
                 targets.forEach(function(tgt) {
                     const rand = Math.floor(Math.random() * 5);
-                    if (rand === 0) applyBurn(tgt, 10, 1);
+                    if (rand === 0) applyFlatBurn(tgt, 2, 1);
                     else if (rand === 1) applyPoison(tgt, 1);
                     else if (rand === 2) applyBleed(tgt, 1);
                     else if (rand === 3) applyFreeze(tgt, 1);
@@ -664,7 +664,7 @@
                 const attckr = gameState.characters[attackerName];
                 if (true) { // any hit triggers Doomsday passive
                     const tgtChar2 = gameState.characters[targetName];
-                    if (tgtChar2 && tgtChar2.passive && tgtChar2.passive.name === 'Adaptación Reactiva' && remainingDamage > 0) {
+                    if (tgtChar2 && tgtChar2.passive && normAccent(tgtChar2.passive.name || '') === 'adaptacion reactiva' && remainingDamage > 0) {
                         passiveExecuting = true;
                         tgtChar2.hp = Math.min(tgtChar2.maxHp, tgtChar2.hp + 2);
                         addLog(`💪 Adaptación Reactiva: ${targetName} recupera 2 HP`, 'heal');
@@ -677,7 +677,7 @@
             if (attackerName && attackerName !== null && !passiveExecuting) {
                 if (target.shieldEffect === 'fire_retaliation' || target.shieldEffect === 'fire_retaliation_fuego' || target.shieldEffect === 'fire_charge_regen') {
                     passiveExecuting = true;
-                    applyBurn(attackerName, 10, 2); // 2 = dura hasta fin del siguiente turno del atacante
+                    applyFlatBurn(attackerName, 2, 2); // 2 = dura hasta fin del siguiente turno del atacante
                     addLog(`🔥 Represalia de Llama: ${attackerName} recibe Quemadura 10%`, 'damage');
                     passiveExecuting = false;
                 }
@@ -805,6 +805,15 @@
                 triggerOnHitPassives(targetName, attackerName, null);
                 // AURA DE HIELO (Lich King): congela al atacante
                 triggerLichKingAura(targetName, attackerName);
+                // CADENAS DE HIELO (Lich King): genera 1 carga cuando recibe daño con Provocación
+                if (targetName === 'Lich King') {
+                    const lichChar = gameState.characters['Lich King'];
+                    if (lichChar && !lichChar.isDead && lichChar.hp > 0 &&
+                        (hasStatusEffect('Lich King', 'Provocación') || hasStatusEffect('Lich King', 'Provocacion'))) {
+                        lichChar.charges = Math.min(20, (lichChar.charges || 0) + 1);
+                        addLog('🔗 Cadenas de Hielo: Lich King genera 1 carga al recibir daño con Provocación', 'buff');
+                    }
+                }
                 // PRIVILEGIO IMPERIAL (Ozymandias): aplica QS al atacante
                 triggerOzyPassive(targetName, attackerName);
                 // CONTRAATAQUE (Darth Vader, Goku UI, cualquier personaje con buff)
@@ -820,7 +829,7 @@
                 // AURA DE FUEGO: atacante recibe Quemadura 2HP
                 if (!passiveExecuting && hasStatusEffect(targetName, 'Aura de fuego') && attackerName) {
                     passiveExecuting = true;
-                    applyBurn(attackerName, 10, 1);
+                    applyFlatBurn(attackerName, 2, 1);
                     addLog('🔥 Aura de Fuego: ' + attackerName + ' recibe Quemadura al atacar', 'debuff');
                     passiveExecuting = false;
                 }
