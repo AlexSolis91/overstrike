@@ -538,7 +538,7 @@ function triggerMaboroshi(targetTeam, debuffName) {
                     addLog('  💖 [CONTRAATAQUE] ' + targetName + ' recupera ' + healed + ' HP', 'heal');
                     triggerBendicionSagrada(target.team, healed);
                 }
-                applyBurn(attackerName, 10, 2);
+                applyFlatBurn(attackerName, 2, 2);
                 addLog('  🔥 [CONTRAATAQUE] ' + attackerName + ' recibe Quemadura 10%', 'damage');
                 if (!gameState._lastAttacker) gameState._lastAttacker = {};
                 gameState._lastAttacker[targetName] = attackerName;
@@ -633,7 +633,8 @@ function triggerMaboroshi(targetTeam, debuffName) {
             const grid = document.getElementById('targetGrid');
             const title = document.getElementById('targetModalTitle');
             grid.innerHTML = '';
-            const label = swapType === 'energia' ? 'Cambio de Energía' : 'Cambio de Vida';
+            const labelMap = { 'sangre': 'Cambio de Sangre', 'demoniaco': 'Cambio Demoniaco', 'energia': 'Cambio de Energía', 'vida': 'Cambio de Vida' };
+            const label = labelMap[swapType] || 'Cambio';
             title.textContent = '🎯 ' + label + ' — Selecciona el ALIADO para el intercambio';
 
             for (let name in gameState.characters) {
@@ -659,21 +660,33 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 const ally = gameState.characters[allyName];
                 if (!enemy || !ally) { endTurn(); return; }
 
-                if (swapType === 'energia') {
-                    // Intercambiar Debuffs
+                if (swapType === 'sangre') {
+                    // Cambio de Sangre: intercambiar HP entre enemigo y aliado
+                    const tmpHp = enemy.hp;
+                    const tmpMaxHp = enemy.maxHp;
+                    // Clamp HP to respective maxHp
+                    enemy.hp = Math.min(enemy.maxHp, ally.hp);
+                    ally.hp = Math.min(ally.maxHp, tmpHp);
+                    addLog('🎵 Cambio de Sangre: HP de ' + enemyName + ' (' + tmpHp + ') ↔ ' + allyName + ' (' + ally.hp + ')', 'buff');
+                } else if (swapType === 'demoniaco') {
+                    // Cambio Demoniaco: intercambiar CARGAS entre enemigo y aliado
+                    const tmpCharges = enemy.charges || 0;
+                    enemy.charges = Math.min(20, ally.charges || 0);
+                    ally.charges = Math.min(20, tmpCharges);
+                    addLog('🎵 Cambio Demoniaco: Cargas de ' + enemyName + ' (' + tmpCharges + ') ↔ ' + allyName + ' (' + ally.charges + ')', 'buff');
+                } else if (swapType === 'energia') {
+                    // Intercambiar Debuffs (Cambio de Energía legacy)
                     const enemyDebuffs = (enemy.statusEffects || []).filter(function(e) { return e && e.type === 'debuff'; });
                     const allyDebuffs = (ally.statusEffects || []).filter(function(e) { return e && e.type === 'debuff'; });
                     enemy.statusEffects = (enemy.statusEffects || []).filter(function(e) { return !e || e.type !== 'debuff'; }).concat(allyDebuffs);
                     ally.statusEffects = (ally.statusEffects || []).filter(function(e) { return !e || e.type !== 'debuff'; }).concat(enemyDebuffs);
-                    addLog('🔄 Cambio de Energía: Debuffs intercambiados entre ' + enemyName + ' y ' + allyName, 'buff');
+                    addLog('🎵 Cambio de Energía: Debuffs intercambiados entre ' + enemyName + ' y ' + allyName, 'buff');
                 } else {
-                    // Intercambiar Cargas y Buffs
-                    const tmpCh = enemy.charges; enemy.charges = ally.charges; ally.charges = tmpCh;
-                    const enemyBuffs = (enemy.statusEffects || []).filter(function(e) { return e && e.type === 'buff'; });
-                    const allyBuffs = (ally.statusEffects || []).filter(function(e) { return e && e.type === 'buff'; });
-                    enemy.statusEffects = (enemy.statusEffects || []).filter(function(e) { return !e || e.type !== 'buff' || e.permanent; }).concat(allyBuffs);
-                    ally.statusEffects = (ally.statusEffects || []).filter(function(e) { return !e || e.type !== 'buff' || e.permanent; }).concat(enemyBuffs);
-                    addLog('🔄 Cambio de Vida: Cargas y Buffs intercambiados entre ' + enemyName + ' y ' + allyName, 'buff');
+                    // Fallback: swap charges only
+                    const tmpCh = enemy.charges || 0;
+                    enemy.charges = Math.min(20, ally.charges || 0);
+                    ally.charges = Math.min(20, tmpCh);
+                    addLog('🎵 Intercambio: Cargas intercambiadas entre ' + enemyName + ' y ' + allyName, 'buff');
                 }
                 renderCharacters();
                 if (checkGameOver()) return;
@@ -681,6 +694,19 @@ function triggerMaboroshi(targetTeam, debuffName) {
             } catch(err) {
                 console.error('Error en executeNakimeSwap:', err);
                 endTurn();
+            }
+        }
+
+        function triggerPalpatinePassive(charNameWhoLostDebuff) {
+            // 50% stun on character who had debuff expire/cleared, if Palpatine is on enemy team
+            const palChar = gameState.characters['Emperador Palpatine'];
+            const victim = gameState.characters[charNameWhoLostDebuff];
+            if (!palChar || palChar.isDead || palChar.hp <= 0) return;
+            if (!victim || victim.isDead || victim.hp <= 0) return;
+            if (palChar.team === victim.team) return; // same team, no trigger
+            if (Math.random() < 0.5) {
+                applyStun(charNameWhoLostDebuff, 1);
+                addLog('⚡ Palpatine - Emperador de la Galaxia: ' + charNameWhoLostDebuff + ' aturdido al perder un debuff', 'debuff');
             }
         }
 
