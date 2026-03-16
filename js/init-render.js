@@ -111,7 +111,7 @@
         function buildDisplayEffects(statusEffects) {
             if (!statusEffects || statusEffects.length === 0) return [];
             const display = [];
-            let burnPct = 0, burnAdded = false;
+            let burnPct = 0, burnFlat = 0, burnDur = 0, burnAdded = false;
             let solarPct = 0, solarAdded = false;
             let bleedStack = 0, bleedAdded = false;
             let poisonMaxDur = 0, poisonStacks = 0, poisonAdded = false;
@@ -123,6 +123,8 @@
 
                 if (nn === 'quemadura') {
                     burnPct += (e.percent || 0);
+                    burnFlat += (e.flatHp || 0);
+                    if (e.duration !== undefined) burnDur = Math.max(burnDur, e.duration);
                     burnAdded = true;
                 } else if (nn === 'quemadura solar') {
                     solarPct += (e.percent || 5);
@@ -140,7 +142,11 @@
                 }
             });
 
-            if (burnAdded && burnPct > 0)   display.push({ emoji: '🔥', label: 'Quemadura ' + burnPct + '%',  sub: '', type: 'debuff' });
+            if (burnAdded) {
+                if (burnFlat > 0) display.push({ emoji: '🔥', label: 'Quemadura ' + burnFlat + ' HP', sub: burnDur + 'T', type: 'debuff' });
+                else if (burnPct > 0) display.push({ emoji: '🔥', label: 'Quemadura ' + burnPct + '%', sub: '', type: 'debuff' });
+                else display.push({ emoji: '🔥', label: 'Quemadura', sub: '', type: 'debuff' });
+            }
             if (solarAdded)  display.push({ emoji: '☀️', label: 'QS ' + solarPct + '%',         sub: '', type: 'debuff' });
             if (bleedAdded)  display.push({ emoji: '🩸', label: 'Sangrado ' + bleedStack,        sub: '', type: 'debuff' });
             if (poisonAdded) display.push({ emoji: '☠️', label: 'Veneno',                        sub: poisonMaxDur + 'T', type: 'debuff' });
