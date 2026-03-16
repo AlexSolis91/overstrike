@@ -1,6 +1,15 @@
 // ==================== EJECUCIÓN DE HABILIDAD ====================
 
         // Aplicar daño AOE a TODOS los enemigos (personajes + invocaciones)
+
+        function generateChargesInline(charName, amount) {
+            if (!amount || amount <= 0) return;
+            const c = gameState.characters[charName];
+            if (!c) return;
+            let finalAmt = amount;
+            if (hasStatusEffect(charName, 'Concentración')) finalAmt = amount * 2;
+            c.charges = Math.min(20, (c.charges || 0) + finalAmt);
+        }
         function applyAOEDamageToTeam(enemyTeam, damage, attackerName) {
             for (let n in gameState.characters) {
                 const c = gameState.characters[n];
@@ -112,8 +121,8 @@
                 addLog(`🔱 Bolvar Fordragon: daño de habilidad duplicado`, 'buff');
             }
             // DARION MORGRAINE: +50% prob crit (se aplica a critChance del ability inline)
-            // REGLA DE ORO (Gilgamesh): +10% crit base sobre cualquier critChance (NO mutar ability)
-            // Se aplica inline en cada handler como gilgameshCritBonus = 0.10
+            // REGLA DE ORO (Gilgamesh): +25% crit base sobre cualquier critChance (NO mutar ability)
+            // Se aplica inline en cada handler como gilgameshCritBonus = 0.25
 
             // MODO KURAMA (Minato): +3 daño en todos los ataques
             if (attacker.kuramaMode && gameState.selectedCharacter === 'Minato Namikaze' && finalDamage > 0) {
@@ -184,9 +193,16 @@
             // ── GOKU BLACK EFFECTS ──
             } else if (ability.effect === 'espada_ki') {
                 let kiDmg = finalDamage;
-                if (attacker.darkSideAwakened) kiDmg += 2; // reuse darkSide check if ever applicable
+                if (attacker.darkSideAwakened) kiDmg += 2;
                 applyDamageWithShield(targetName, kiDmg, charName);
                 addLog('⚔️ Espada de Ki: ' + kiDmg + ' daño a ' + targetName, 'damage');
+                // 50% Buff Aura Oscura sobre Goku Black self
+                if (Math.random() < 0.50) {
+                    attacker.statusEffects = (attacker.statusEffects || []).filter(e => e && e.name !== 'Aura oscura');
+                    attacker.statusEffects.push({ name: 'Aura oscura', type: 'buff', duration: 2, emoji: '🌑' });
+                    addLog('🌑 Espada de Ki: ' + charName + ' gana Buff Aura Oscura', 'buff');
+                }
+                generateChargesInline(charName, ability.chargeGain);
 
             } else if (ability.effect === 'teleportacion_confusion') {
                 applyConfusion(targetName, 2);
@@ -240,7 +256,7 @@
 
             } else if (ability.effect === 'apply_bleed') {
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                applyBleed(targetName, ability.bleedDuration || 3);
+                applyBleed(targetName, ability.bleedDuration || 1);
                 addLog(`🩸 ${gameState.selectedCharacter} provoca Sangrado en ${targetName}`, 'damage');
 
             } else if (ability.effect === 'apply_fear') {
@@ -353,30 +369,28 @@
                 addLog(`🛡️ ${gameState.selectedCharacter} activa Provocación (1 turno) y gana Escudo 3 HP`, 'buff');
 
             } else if (ability.effect === 'precepto') {
-                // Precepto (Leonidas): daño + Phalanx permanent bonus
+                // Precepto (Leonidas): daño + 50% probabilidad Aturdimiento + Phalanx bonus
                 const leonBonus = attacker.phalanxBonusDmg || 0;
                 const leonCgBonus = attacker.phalanxBonusCg || 0;
                 applyDamageWithShield(targetName, finalDamage + leonBonus, gameState.selectedCharacter);
                 if (leonCgBonus > 0) {
                     attacker.charges = Math.min(20, (attacker.charges || 0) + leonCgBonus);
                 }
-                const allies = Object.keys(gameState.characters).filter(n => { const c = gameState.characters[n]; return c.team === attacker.team && n !== gameState.selectedCharacter && !c.isDead && c.hp > 0; });
-                if (allies.length > 0) {
-                    const lucky = allies[Math.floor(Math.random() * allies.length)];
-                    gameState.characters[lucky].charges += 1;
-                    addLog(`⚡ ${lucky} recibe 1 carga (Precepto)`, 'buff');
+                // 50% Aturdimiento
+                if (Math.random() < 0.50) {
+                    applyStun(targetName, 1);
                 }
+                generateChargesInline(charName, ability.chargeGain);
 
             } else if (ability.effect === 'grito_de_esparta') {
-                // Grito de Esparta: limpia debuffs de aliados + Protección Sagrada 2 turnos
+                // Grito de Esparta: aplica Buff Frenesí a todos los aliados
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
-                    if (c.team === attacker.team && !c.isDead && c.hp > 0) {
-                        c.statusEffects = c.statusEffects.filter(e => e.type === 'buff');
-                        applyHolyProtection(n, 3); // 3 = dura 2 turnos reales (se decrementa al fin de su turno)
-                    }
+                    if (!c || c.team !== attacker.team || c.isDead || c.hp <= 0) continue;
+                    c.statusEffects = (c.statusEffects || []).filter(e => e && e.name !== 'Frenesí' && e.name !== 'Frenesi');
+                    c.statusEffects.push({ name: 'Frenesí', type: 'buff', duration: 1, emoji: '⚡' });
                 }
-                addLog(`⚔️ ¡Grito de Esparta! Debuffs limpiados y Escudo Sagrado aplicado a todos los aliados`, 'buff');
+                addLog('⚡ ¡Grito de Esparta! Frenesí aplicado a todos los aliados', 'buff');
 
 
             } else if (ability.effect === 'apply_possession_1') {
@@ -477,7 +491,7 @@
                 let baseDmgCrit = finalDamage;
                 const darionBuff = Object.values(gameState.summons).find(s => s && s.name === 'Darion Morgraine' && s.team === attacker.team);
                 const critBonusFromDarion = darionBuff ? 0.50 : 0;
-                const gilgameshBonus = (gameState.selectedCharacter === 'Gilgamesh') ? 0.10 : 0;
+                const gilgameshBonus = (gameState.selectedCharacter === 'Gilgamesh') ? 0.25 : 0;
                 const muzanCritB = (gameState.selectedCharacter === 'Muzan Kibutsuji') ? (attacker.muzanCritBonus || 0) : 0;
                 const isCritBasic = Math.random() < Math.min(1, (ability.critChance || 0) + critBonusFromDarion + gilgameshBonus + muzanCritB);
                 if (isCritBasic) {
@@ -1107,10 +1121,14 @@
                 if (isCrit) addLog(`💥 ¡CRÍTICO! Devastator Punish: ${dmg} daño`, 'damage');
 
             } else if (ability.effect === 'speed_up_self') {
-                // Shingun Ken: daño + +1 velocidad propia
+                // Shingun Ken: daño + +1 velocidad propia + 50% Posesión al objetivo
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 attacker.speed += 1;
-                addLog(`⚡ ${gameState.selectedCharacter} aumenta su velocidad en 1 (ahora ${attacker.speed})`, 'buff');
+                addLog('⚡ ' + gameState.selectedCharacter + ' aumenta su velocidad en 1 (ahora ' + attacker.speed + ')', 'buff');
+                if (Math.random() < 0.50) {
+                    applyPossession(targetName, 1);
+                }
+                generateChargesInline(charName, ability.chargeGain);
 
             } else if (ability.effect === 'speed_bonus_damage') {
                 // Kōsoku Ken: daño + 1 por cada punto de diferencia de velocidad
@@ -1591,8 +1609,10 @@
             // ── SOL ASCENDENTE (Rengoku básico) ──
             } else if (ability.effect === 'sol_ascendente') {
                 applyDamageWithShield(targetName, finalDamage, charName);
-                applyBurn(targetName, 10, 2);
-                addLog('☀️ Sol Ascendente: ' + targetName + ' recibe Quemadura 10% por 2 turnos', 'damage');
+                // burnAmount: 1HP flat. Using 10% as standard Quemadura (≈1-2HP on avg chars)
+                const burnPct = (ability.burnAmount || 1) <= 1 ? 5 : 10;
+                applyBurn(targetName, burnPct, 1);
+                addLog('☀️ Sol Ascendente: ' + targetName + ' recibe Quemadura ' + (ability.burnAmount||1) + 'HP', 'damage');
 
             // ── TIGRE DE FUEGO V2 (Rengoku updated) ──
             } else if (ability.effect === 'tigre_fuego_v2') {
@@ -1992,7 +2012,7 @@
 
             // ── DJEM SO (Anakin básico) ──
             } else if (ability.effect === 'djem_so') {
-                let djemDmg = finalDamage;
+                let djemDmg = finalDamage + (attacker.djemSoBonus || 0); // +1 per Estrangular use
                 if (attacker.darkSideAwakened) {
                     djemDmg += 1;
                     if (Math.random() < 0.5) { djemDmg += djemDmg; addLog('💥 Lado Oscuro: ¡Crítico en Djem So!', 'damage'); }
@@ -2007,10 +2027,16 @@
                     if (Math.random() < 0.5) { stDmg *= 2; addLog('💥 Lado Oscuro: ¡Crítico en Estrangular!', 'damage'); }
                 }
                 applyDamageWithShield(targetName, stDmg, charName);
-                applyDebuff(targetName, { name: 'Debilitar', type: 'debuff', duration: 1, emoji: '💔' });
-                addLog('💔 Estrangular: ' + targetName + ' recibe Debilitar 1 turno', 'damage');
+                // Buff Concentración a Anakin
+                attacker.statusEffects = (attacker.statusEffects || []).filter(e => e && e.name !== 'Concentración');
+                attacker.statusEffects.push({ name: 'Concentración', type: 'buff', duration: 1, emoji: '🎯' });
+                addLog('🎯 Estrangular: ' + charName + ' gana Buff Concentración', 'buff');
+                // +1 daño permanente al básico Djem So
+                if (!attacker.djemSoBonus) attacker.djemSoBonus = 0;
+                attacker.djemSoBonus += 1;
+                addLog('⚔️ Estrangular: Djem So de ' + charName + ' gana +1 daño permanente (total +' + attacker.djemSoBonus + ')', 'buff');
+                addLog('💔 Estrangular: ' + targetName + ' recibe ' + stDmg + ' de daño', 'damage');
 
-            // ── APPLY_STUN_DMG (Anakin Estrangular - legacy) ──
             } else if (ability.effect === 'apply_stun_dmg') {
                 let stunDmg = finalDamage;
                 if (attacker.darkSideAwakened) {
@@ -2395,29 +2421,23 @@
 
             // ── CORAZÓN EN LLAMAS (Thestalos básico: self-heal + burn last attacker) ──
             } else if (ability.effect === 'corazon_llamas') {
-                // Purificación Solar: damage (already applied by generic ST path if damage>0)
-                // but effect=corazon_llamas means we handle manually: deal damage, self-heal, burn target
-                // Damage to target
-                applyDamageWithShield(targetName, finalDamage, charName);
-                // Self-heal
-                const tChar = gameState.characters[charName];
-                const clOldHp = tChar.hp;
-                tChar.hp = Math.min(tChar.maxHp, tChar.hp + 2);
-                const clActualHeal = tChar.hp - clOldHp;
-                if (clActualHeal > 0) {
-                    addLog('☀️ ' + charName + ' recupera ' + clActualHeal + ' HP (Purificación Solar)', 'heal');
-                    triggerBendicionSagrada(tChar.team, clActualHeal);
+                // Mar de Fuego (Rengoku): AOE 3 dmg, 100% crítico a enemigos con Quemadura
+                const mfTeam2 = attacker.team === 'team1' ? 'team2' : 'team1';
+                for (let n in gameState.characters) {
+                    const c = gameState.characters[n];
+                    if (!c || c.team !== mfTeam2 || c.isDead || c.hp <= 0) continue;
+                    if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) {
+                        addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff');
+                        continue;
+                    }
+                    let mfDmg2 = finalDamage;
+                    const hasBurn2 = (c.statusEffects || []).some(e => e && normAccent(e.name||'') === 'quemadura');
+                    if (hasBurn2) {
+                        mfDmg2 *= 2; // 100% critical = double damage
+                        addLog('🔥💥 Mar de Fuego: ¡CRÍTICO sobre ' + n + ' (tiene Quemadura)!', 'damage');
+                    }
+                    applyDamageWithShield(n, mfDmg2, charName);
                 }
-                // Burn the selected target
-                if (targetName && gameState.characters[targetName] && !gameState.characters[targetName].isDead) {
-                    applyBurn(targetName, 10, 2);
-                    addLog('🔥 Purificación Solar: ' + targetName + ' recibe Quemadura 10%', 'damage');
-                }
-                // Track for counterattack auto-use
-                if (!gameState._lastAttacker) gameState._lastAttacker = {};
-                gameState._lastAttacker[charName] = targetName;
-
-            // ── EXPIACIÓN INCANDESCENTE (Thestalos AOE + charge steal on burn) ──
             } else if (ability.effect === 'expiacion_incandescente') {
                 const enemyTeamEI = attacker.team === 'team1' ? 'team2' : 'team1';
                 for (let n in gameState.characters) {
@@ -2780,6 +2800,221 @@
                 ability.target === 'single' && targetName) {
                 triggerAsistir(gameState.selectedCharacter, targetName, ability.type);
             }
+
+
+            // ── Missing handlers (added) ──
+            if (ability.effect === 'lifesteal_basic') {
+                // Madara básico: daño + roba HP equivalente al daño causado
+                const actualDmg = applyDamageWithShield(targetName, finalDamage, charName);
+                if (actualDmg > 0) {
+                    const oldHp = attacker.hp;
+                    attacker.hp = Math.min(attacker.maxHp, attacker.hp + actualDmg);
+                    const healed = attacker.hp - oldHp;
+                    if (healed > 0) addLog('🌀 Gakidō: ' + charName + ' roba ' + healed + ' HP de ' + targetName, 'heal');
+                }
+                generateChargesInline(charName, ability.chargeGain);
+
+            } else if (ability.effect === 'purificacion_solar') {
+                // Thestalos básico: daño + cura 2 HP + Quemadura 2 HP
+                applyDamageWithShield(targetName, finalDamage, charName);
+                const oldHpPS = attacker.hp;
+                attacker.hp = Math.min(attacker.maxHp, attacker.hp + 2);
+                if (attacker.hp > oldHpPS) addLog('💛 Purificación Solar: ' + charName + ' recupera ' + (attacker.hp - oldHpPS) + ' HP', 'heal');
+                // Quemadura 2 HP flat = 10% on 20HP char
+                applyBurn(targetName, 10, 1);
+                addLog('🔥 Purificación Solar: ' + targetName + ' sufre Quemadura 1 HP', 'damage');
+                generateChargesInline(charName, ability.chargeGain);
+
+            } else if (ability.effect === 'great_horn') {
+                // Aldebaran básico: daño + cura 3 HP a sí mismo + Escudo 2 HP
+                applyDamageWithShield(targetName, finalDamage, charName);
+                const oldHpGH = attacker.hp;
+                attacker.hp = Math.min(attacker.maxHp, attacker.hp + (ability.heal || 3));
+                if (attacker.hp > oldHpGH) addLog('🐂 Great Horn: ' + charName + ' recupera ' + (attacker.hp - oldHpGH) + ' HP', 'heal');
+                applyShield(charName, ability.shieldAmount || 2);
+                generateChargesInline(charName, ability.chargeGain);
+
+            } else if (ability.effect === 'proteccion_astro_rey') {
+                // Thestalos especial: Buff Provocación + Escudo 4 HP en Thestalos
+                attacker.statusEffects = (attacker.statusEffects || []).filter(e => e && e.name !== 'Provocación' && e.name !== 'Provocacion');
+                attacker.statusEffects.push({ name: 'Provocación', type: 'buff', duration: 2, emoji: '🛡️' });
+                addLog('🛡️ Protección del Astro Rey: ' + charName + ' gana Provocación', 'buff');
+                applyShield(charName, ability.shieldAmount || 4);
+
+            } else if (ability.effect === 'magma_strength') {
+                // Thestalos especial2: cura 8 HP + Escudo Sagrado
+                const oldHpMS = attacker.hp;
+                attacker.hp = Math.min(attacker.maxHp, attacker.hp + (ability.heal || 8));
+                addLog('🔥 Magma Strength: ' + charName + ' recupera ' + (attacker.hp - oldHpMS) + ' HP', 'heal');
+                attacker.statusEffects = (attacker.statusEffects || []).filter(e => e && e.name !== 'Escudo Sagrado');
+                attacker.statusEffects.push({ name: 'Escudo Sagrado', type: 'buff', duration: 2, emoji: '✝️' });
+                addLog('✝️ Magma Strength: ' + charName + ' gana Escudo Sagrado', 'buff');
+
+            } else if (ability.effect === 'furia_thestalos') {
+                // Thestalos OVER: 2 AOE, 50% critico, 50% daño triple
+                const fusTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                for (let n in gameState.characters) {
+                    const c = gameState.characters[n];
+                    if (!c || c.team !== fusTeam || c.isDead || c.hp <= 0) continue;
+                    let fusDmg = finalDamage;
+                    if (Math.random() < 0.50) {
+                        if (Math.random() < 0.50) { fusDmg *= 3; addLog('💥 Furia de Thestalos: ¡Daño TRIPLE sobre ' + n + '!', 'damage'); }
+                        else { addLog('💥 Furia de Thestalos: ¡Golpe Crítico sobre ' + n + '!', 'damage'); }
+                    }
+                    applyDamageWithShield(n, fusDmg, charName);
+                }
+
+            } else if (ability.effect === 'apply_weaken_basic') {
+                // Saitama Golpe Normal: daño + Debilitar 2T
+                applyDamageWithShield(targetName, finalDamage, charName);
+                applyWeaken(targetName, 2);
+                generateChargesInline(charName, ability.chargeGain);
+
+            } else if (ability.effect === 'genma_ken') {
+                // Aspros básico: daño + Confusión + limpia buffs del objetivo
+                applyDamageWithShield(targetName, finalDamage, charName);
+                applyConfusion(targetName, 1);
+                // Remove all buffs from target
+                const tgtGK = gameState.characters[targetName];
+                if (tgtGK && tgtGK.statusEffects) {
+                    const buffsRemoved = tgtGK.statusEffects.filter(e => e && e.type === 'buff' && !e.permanent).length;
+                    tgtGK.statusEffects = tgtGK.statusEffects.filter(e => !e || e.type !== 'buff' || e.permanent);
+                    if (buffsRemoved > 0) addLog('🌀 Genma Ken: Eliminados ' + buffsRemoved + ' buffs de ' + targetName, 'debuff');
+                }
+                generateChargesInline(charName, ability.chargeGain);
+
+            } else if (ability.effect === 'heal_all_allies') {
+                // Min Byung Sanación Heroica: cura 4 HP a todos los aliados
+                const healTeam = attacker.team;
+                let healCount = 0;
+                for (let n in gameState.characters) {
+                    const c = gameState.characters[n];
+                    if (!c || c.team !== healTeam || c.isDead || c.hp <= 0) continue;
+                    const oldHpHA = c.hp;
+                    c.hp = Math.min(c.maxHp, c.hp + (ability.heal || 4));
+                    if (c.hp > oldHpHA) {
+                        addLog('💚 Sanación Heroica: ' + n + ' recupera ' + (c.hp - oldHpHA) + ' HP', 'heal');
+                        triggerBendicionSagrada(healTeam, c.hp - oldHpHA);
+                        healCount++;
+                    }
+                }
+
+            } else if (ability.effect === 'dispel_ally_charges') {
+                // Min Byung Protección Celestial: disipar debuffs del aliado + 1 carga por debuff
+                const tgtDA = gameState.characters[targetName];
+                if (tgtDA && tgtDA.statusEffects) {
+                    const debuffList = tgtDA.statusEffects.filter(e => e && e.type === 'debuff' && !e.permanent);
+                    const debuffCount = debuffList.length;
+                    tgtDA.statusEffects = tgtDA.statusEffects.filter(e => !e || e.type !== 'debuff' || e.permanent);
+                    if (debuffCount > 0) {
+                        tgtDA.charges = Math.min(20, (tgtDA.charges || 0) + debuffCount);
+                        addLog('✨ Protección Celestial: ' + targetName + ' pierde ' + debuffCount + ' debuffs y gana ' + debuffCount + ' cargas', 'buff');
+                    } else {
+                        addLog('✨ Protección Celestial: ' + targetName + ' no tenía debuffs activos', 'buff');
+                    }
+                }
+
+            } else if (ability.effect === 'gilgamesh_enuma') {
+                // Gilgamesh OVER: daño + roba TODAS las cargas del objetivo
+                applyDamageWithShield(targetName, finalDamage, charName);
+                const tgtEN = gameState.characters[targetName];
+                if (tgtEN) {
+                    const stolenCharges = tgtEN.charges || 0;
+                    if (stolenCharges > 0) {
+                        tgtEN.charges = 0;
+                        attacker.charges = Math.min(20, (attacker.charges || 0) + stolenCharges);
+                        addLog('✨ Enuma Elish: ' + charName + ' roba ' + stolenCharges + ' cargas de ' + targetName, 'buff');
+                    } else {
+                        addLog('✨ Enuma Elish: ' + targetName + ' no tenía cargas', 'info');
+                    }
+                }
+
+            } else if (ability.effect === 'mar_de_fuego') {
+                // Rengoku Mar de Fuego: AOE, 100% critico a enemigos con Quemadura
+                const mfTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                for (let n in gameState.characters) {
+                    const c = gameState.characters[n];
+                    if (!c || c.team !== mfTeam || c.isDead || c.hp <= 0) continue;
+                    let mfDmg = finalDamage;
+                    const hasBurn = (c.statusEffects || []).some(e => e && (e.name === 'Quemadura' || normAccent(e.name||'') === 'quemadura'));
+                    if (hasBurn) {
+                        mfDmg *= 2; // critical
+                        addLog('🔥 Mar de Fuego: ¡GOLPE CRÍTICO sobre ' + n + ' (Quemadura activa)!', 'damage');
+                    }
+                    applyDamageWithShield(n, mfDmg, charName);
+                }
+
+            } else if (ability.effect === 'revive_ally') {
+                // Min Byung Milagro de la vida: revive aliado con 100% HP y 10 cargas
+                const tgtRV = gameState.characters[targetName];
+                if (tgtRV && tgtRV.isDead) {
+                    tgtRV.isDead = false;
+                    tgtRV.hp = tgtRV.maxHp;
+                    tgtRV.charges = 10;
+                    tgtRV.statusEffects = [];
+                    addLog('✨ Milagro de la Vida: ¡' + targetName + ' revive con ' + tgtRV.maxHp + ' HP y 10 cargas!', 'heal');
+                } else {
+                    addLog('✨ Milagro de la Vida: ' + targetName + ' no está derrotado', 'info');
+                }
+
+            } else if (ability.effect === 'colapso_dimensional') {
+                // Aspros Colapso Dimensional: daño + 2 debuffs aleatorios
+                applyDamageWithShield(targetName, finalDamage, charName);
+                const debuffPoolCD2 = [
+                    { name:'confusion',  fn: function(){ applyConfusion(targetName, 1); } },
+                    { name:'debilitar',  fn: function(){ applyWeaken(targetName, 2); } },
+                    { name:'congelacion',fn: function(){ applyFreeze(targetName, 1); } },
+                    { name:'miedo',      fn: function(){ applyFear(targetName, 1); } },
+                    { name:'sangrado',   fn: function(){ applyBleed(targetName, 1); } },
+                    { name:'aturdimiento', fn: function(){ applyStun(targetName, 1); } },
+                ];
+                const shuffledCD = debuffPoolCD2.slice().sort(() => Math.random() - 0.5);
+                shuffledCD.slice(0,2).forEach(d => d.fn());
+                addLog('🌀 Colapso Dimensional: ' + targetName + ' sufre 2 debuffs aleatorios', 'debuff');
+                generateChargesInline(charName, ability.chargeGain);
+
+            } else if (ability.effect === 'another_dimension') {
+                // Aspros Another Dimension: daño + roba mitad de cargas
+                applyDamageWithShield(targetName, finalDamage, charName);
+                const tgtAD = gameState.characters[targetName];
+                if (tgtAD) {
+                    const stealAmt = Math.floor((tgtAD.charges || 0) / 2);
+                    if (stealAmt > 0) {
+                        tgtAD.charges -= stealAmt;
+                        attacker.charges = Math.min(20, (attacker.charges || 0) + stealAmt);
+                        addLog('🌀 Another Dimension: ' + charName + ' roba ' + stealAmt + ' cargas de ' + targetName, 'buff');
+                    }
+                }
+                generateChargesInline(charName, ability.chargeGain);
+
+            } else if (ability.effect === 'arc_geminga') {
+                // Aspros OVER: daño, doble si enemigo tiene debuffs
+                const tgtAG = gameState.characters[targetName];
+                let agDmg = finalDamage;
+                if (tgtAG && (tgtAG.statusEffects || []).some(e => e && e.type === 'debuff')) {
+                    agDmg *= 2;
+                    addLog('💥 Arc Geminga: ¡Daño doble! (' + targetName + ' tiene debuffs activos)', 'damage');
+                }
+                applyDamageWithShield(targetName, agDmg, charName);
+
+            } else if (ability.effect === 'heal_cleanse') {
+                // Tamayo básico: cura 1 HP + limpia 1 debuff del objetivo aliado
+                const tgtHC = gameState.characters[targetName];
+                if (tgtHC) {
+                    const oldHpHC = tgtHC.hp;
+                    tgtHC.hp = Math.min(tgtHC.maxHp, tgtHC.hp + (ability.heal || 1));
+                    if (tgtHC.hp > oldHpHC) addLog('💚 Aguja Medicinal: ' + targetName + ' recupera ' + (tgtHC.hp - oldHpHC) + ' HP', 'heal');
+                    const debuffsHC = (tgtHC.statusEffects || []).filter(e => e && e.type === 'debuff' && !e.permanent);
+                    if (debuffsHC.length > 0) {
+                        const toRemove = debuffsHC[0];
+                        tgtHC.statusEffects = tgtHC.statusEffects.filter(e => e !== toRemove);
+                        addLog('💚 Aguja Medicinal: Limpia ' + (toRemove.name||'debuff') + ' de ' + targetName, 'buff');
+                    }
+                    triggerBendicionSagrada(attacker.team, tgtHC.hp - oldHpHC);
+                }
+                generateChargesInline(charName, ability.chargeGain);
+            }
+            // ── End of additional handlers ──
 
             // Actualizar UI
             renderCharacters();
