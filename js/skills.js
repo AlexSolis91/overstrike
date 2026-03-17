@@ -55,6 +55,16 @@
                 const ability = gameState.selectedAbility;
                 const adjustedCost = gameState.adjustedCost || ability.cost;
                 
+                // ── SILENCIAR: bloquea la categoría silenciada ──────────────
+                if (ability && attacker) {
+                    const _silEffect = (attacker.statusEffects || []).find(e => e && normAccent(e.name || '') === 'silenciar');
+                    if (_silEffect && _silEffect.silencedCategory && _silEffect.silencedCategory === ability.type) {
+                        addLog('🔇 ' + charName + ' está Silenciado — no puede usar habilidades tipo ' + _silEffect.silencedCategory.toUpperCase(), 'damage');
+                        endTurn();
+                        return;
+                    }
+                }
+
                 if (!attacker || !ability) {
                     console.error('executeAbility: Missing attacker or ability');
                     return;
@@ -264,6 +274,47 @@
                 applyFear(targetName, ability.fearDuration || 2);
                 addLog(`😱 ${gameState.selectedCharacter} infunde Miedo en ${targetName}`, 'damage');
 
+            } else if (ability.effect === 'explosion_galaxias') {
+                // Explosión de Galaxias: 10 AOE + 30% crit por objetivo
+                const _egTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                const _critChance = ability.critChance || 0.30;
+                let _egLog = [];
+                for (let _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (_c && _c.team === _egTeam && !_c.isDead && _c.hp > 0) {
+                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' esquiva el AOE (Esquiva Área)', 'buff'); continue; }
+                        const _isCrit = Math.random() < _critChance;
+                        const _dmg = _isCrit ? finalDamage * 2 : finalDamage;
+                        applyDamageWithShield(_n, _dmg, gameState.selectedCharacter);
+                        _egLog.push(_n + (_isCrit ? ' 💥CRIT(' + _dmg + ')' : '(' + _dmg + ')'));
+                    }
+                }
+                // Also drain 1 charge per enemy (keeping original bonus from Onda de Fuerza flavor)
+                for (let _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (_c && _c.team === _egTeam && !_c.isDead && _c.hp > 0 && _c.charges > 0) {
+                        _c.charges = Math.max(0, _c.charges - 1);
+                    }
+                }
+                addLog('💥 Explosión de Galaxias: ' + _egLog.join(', '), 'damage');
+            } else if (ability.effect === 'genro_maoken') {
+                // Genrō Maō Ken: 3 AOE + 50% Posesión por objetivo
+                const _gmTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                let _gmLog = [];
+                for (let _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (_c && _c.team === _gmTeam && !_c.isDead && _c.hp > 0) {
+                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' esquiva el AOE (Esquiva Área)', 'buff'); continue; }
+                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        if (Math.random() < 0.5) {
+                            applyPossession(_n, 1);
+                            _gmLog.push(_n + ' (💀Posesión)');
+                        } else {
+                            _gmLog.push(_n);
+                        }
+                    }
+                }
+                addLog('👁️ Genrō Maō Ken: ' + finalDamage + ' AOE — ' + _gmLog.join(', '), 'damage');
             } else if (ability.effect === 'apply_possession') {
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 applyPossession(targetName, ability.possessionDuration || 1);
@@ -680,18 +731,62 @@
 
             // ── CAMBIO DE SANGRE (Nakime updated) ──
             } else if (ability.effect === 'cambio_sangre') {
-                // Cambio de Sangre: selecciona enemigo, intercambia HP con un aliado
-                // targetName is the selected enemy (from showTargetSelection)
+                // Cambio de Sangre: intercambia HP entre aliado (menos HP) y enemigo (más HP)
                 gameState.nakimePendingSwap = { type: 'sangre', enemy: targetName };
-                showNakimeSecondTarget('sangre', targetName);
-                return;
+                // If AI controls Nakime: auto-select targets
+                const _nakimeChar = gameState.characters[gameState.selectedCharacter];
+                const _isAITurn = _nakimeChar && _nakimeChar.team === gameState.aiTeam;
+                if (_isAITurn) {
+                    // AI: ally with lowest HP, enemy with highest HP (targetName is enemy)
+                    const _allyTeam = _nakimeChar.team;
+                    const _allies = Object.keys(gameState.characters).filter(n => {
+                        const c = gameState.characters[n]; return c && c.team === _allyTeam && !c.isDead && c.hp > 0;
+                    });
+                    const _lowestAlly = _allies.reduce((a, b) => 
+                        (gameState.characters[a].hp / gameState.characters[a].maxHp) < (gameState.characters[b].hp / gameState.characters[b].maxHp) ? a : b
+                    );
+                    // Execute swap directly
+                    const _allyChar = gameState.characters[_lowestAlly];
+                    const _enemyChar = gameState.characters[targetName];
+                    const _tempHp = _allyChar.hp;
+                    _allyChar.hp = Math.min(_enemyChar.hp, _allyChar.maxHp);
+                    _enemyChar.hp = Math.min(_tempHp, _enemyChar.maxHp);
+                    if (_enemyChar.hp <= 0) { _enemyChar.isDead = true; }
+                    addLog('🔄 Cambio de Sangre: HP de ' + _lowestAlly + ' y ' + targetName + ' intercambiados (IA)', 'damage');
+                    gameState.nakimePendingSwap = null;
+                    renderCharacters();
+                    if (checkGameOver()) return;
+                } else {
+                    showNakimeSecondTarget('sangre', targetName);
+                    return;
+                }
 
             // ── CAMBIO DEMONÍACO (Nakime - cargas y buffs bidireccional) ──
             } else if (ability.effect === 'cambio_demoniaco') {
-                // Cambio Demoniaco: selecciona enemigo, intercambia CARGAS con un aliado
+                // Cambio Demoniaco: intercambia CARGAS entre aliado (menos cargas) y enemigo (más cargas)
                 gameState.nakimePendingSwap = { type: 'demoniaco', enemy: targetName };
-                showNakimeSecondTarget('demoniaco', targetName);
-                return;
+                const _nakimeChar2 = gameState.characters[gameState.selectedCharacter];
+                const _isAITurn2 = _nakimeChar2 && _nakimeChar2.team === gameState.aiTeam;
+                if (_isAITurn2) {
+                    const _allyTeam2 = _nakimeChar2.team;
+                    const _allies2 = Object.keys(gameState.characters).filter(n => {
+                        const c = gameState.characters[n]; return c && c.team === _allyTeam2 && !c.isDead && c.hp > 0;
+                    });
+                    const _lowestChargeAlly = _allies2.reduce((a, b) =>
+                        (gameState.characters[a].charges || 0) < (gameState.characters[b].charges || 0) ? a : b
+                    );
+                    const _allyChar2 = gameState.characters[_lowestChargeAlly];
+                    const _enemyChar2 = gameState.characters[targetName];
+                    const _tempCharges = _allyChar2.charges || 0;
+                    _allyChar2.charges = Math.min(20, _enemyChar2.charges || 0);
+                    _enemyChar2.charges = Math.max(0, _tempCharges);
+                    addLog('🔄 Cambio Demoniaco: Cargas de ' + _lowestChargeAlly + ' y ' + targetName + ' intercambiadas (IA)', 'damage');
+                    gameState.nakimePendingSwap = null;
+                    renderCharacters();
+                } else {
+                    showNakimeSecondTarget('demoniaco', targetName);
+                    return;
+                }
 
             } else if (ability.effect === 'colapso') {
                 // NAKIME - Colapso: intercambia HP y cargas de los equipos completos
@@ -2804,6 +2899,26 @@
                     addLog('⚔️ Sangre de Esparta: ' + charName + ' sacrifica 10 HP y gana 10 cargas', 'buff');
                 }
 
+            } else if (ability.effect === 'dispel_target_padme_charges') {
+                // Solución Diplomática (Padmé): elimina TODOS los debuffs del aliado objetivo
+                // Padmé gana 2 cargas por cada debuff eliminado
+                const _dispelChar = gameState.characters[targetName];
+                if (!_dispelChar) { addLog('❌ Objetivo no encontrado', 'info'); }
+                const _debuffs = (_dispelChar.statusEffects || []).filter(e => e && e.type === 'debuff');
+                const _count = _debuffs.length;
+                if (_count === 0) {
+                    addLog('🌸 Solución Diplomática: ' + targetName + ' no tiene debuffs activos', 'info');
+                } else {
+                    _dispelChar.statusEffects = (_dispelChar.statusEffects || []).filter(e => !e || e.type !== 'debuff');
+                    addLog('🌸 Solución Diplomática: ' + _count + ' debuff' + (_count>1?'s':'') + ' eliminado' + (_count>1?'s':'') + ' de ' + targetName, 'buff');
+                    const _padmeChar = gameState.characters[gameState.selectedCharacter];
+                    if (_padmeChar) {
+                        const _gained = _count * 2;
+                        _padmeChar.charges = Math.min(20, (_padmeChar.charges || 0) + _gained);
+                        addLog('🌸 Padmé gana ' + _gained + ' cargas por ' + _count + ' debuffs eliminados', 'buff');
+                    }
+                }
+                addLog('⚔️ ' + gameState.selectedCharacter + ' usa Solución Diplomática en ' + targetName, 'damage');
             } else if (ability.effect === 'summon_dragon') {
                 // Daenerys: Invoca un Dragón aleatorio — solo de los que NO están en el campo
                 const dragonPoolFull = [
@@ -2841,6 +2956,29 @@
                     }
                 }
 
+            } else if (ability.effect === 'heal_aura_luz') {
+                // El Mago Blanco (Gandalf) / similar: cura 3HP a todos los aliados + Buff Aura de Luz
+                const _halTeam = attacker.team;
+                let _healed = 0;
+                for (let _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (_c && _c.team === _halTeam && !_c.isDead && _c.hp > 0) {
+                        const _heal = ability.heal || 3;
+                        const _before = _c.hp;
+                        _c.hp = Math.min(_c.maxHp, _c.hp + _heal);
+                        const _actualHeal = _c.hp - _before;
+                        if (_actualHeal > 0) {
+                            _healed += _actualHeal;
+                            triggerBendicionSagrada(_halTeam, _actualHeal);
+                            addLog('✨ ' + _n + ' recupera ' + _actualHeal + ' HP (Aura de Luz)', 'heal');
+                        }
+                        // Apply Aura de Luz buff to this ally
+                        if (!hasStatusEffect(_n, 'Aura de Luz') && !hasStatusEffect(_n, 'Aura de luz')) {
+                            applyBuff(_n, { name: 'Aura de Luz', type: 'buff', duration: 3, emoji: '✨', description: 'Aura de Luz: aliado brillante' });
+                        }
+                    }
+                }
+                addLog('✨ ' + gameState.selectedCharacter + ' usa ' + ability.name + ' — Curación + Aura de Luz al equipo aliado', 'heal');
             } else if (ability.effect === 'team_regen') {
                 // Gandalf Resplandor: Buff Regeneración 10% x1 a todo el equipo aliado
                 const trTeam = attacker.team;
@@ -2895,6 +3033,15 @@
                     addLog('🌿 Medicina Demoniaca: No había debuffs activos en el equipo', 'info');
                 }
 
+            } else if (ability.effect === 'apply_aura_oscura') {
+                // Aplica Buff Aura Oscura al personaje activo
+                const _aoName = gameState.selectedCharacter;
+                if (!hasStatusEffect(_aoName, 'Aura oscura') && !hasStatusEffect(_aoName, 'Aura Oscura')) {
+                    applyBuff(_aoName, { name: 'Aura oscura', type: 'buff', duration: 4, emoji: '🌑', permanent: false });
+                    addLog('🌑 ' + _aoName + ' activa Aura Oscura (los enemigos que le ataquen pierden cargas)', 'buff');
+                } else {
+                    addLog('🌑 ' + _aoName + ' ya tiene Aura Oscura activa', 'info');
+                }
             } else if (ability.effect === 'aoe_cleanse_allies') {
                 // Aroma Curativo (Tamayo): Limpia 1 debuff de todos los aliados
                 const acTeam = attacker.team;
