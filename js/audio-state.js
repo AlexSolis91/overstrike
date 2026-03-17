@@ -62,7 +62,7 @@
                 }
             },
 
-            selectSfxUrl: 'https://AlejandroSolis.publit.io/file/Menu-Select-Sound-Super.mp3',
+            selectSfxUrl: 'audio/Menu%20Select%20Sound%20-%20Super.mp3',
 
             playSelect: function() {
                 if (this.muted) return;
