@@ -999,8 +999,8 @@
                 const atkImgs = topAtk.map(function(c) {
                     return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">' +
                         '<img src="' + getCharPortrait(c) + '" title="' + escapeHtml(c) + '" referrerpolicy="no-referrer" ' +
-                        'style="width:69px;height:69px;border-radius:8px;border:2px solid rgba(79,195,247,0.4);object-fit:cover;background:#111;" onerror="this.style.opacity=0.15">' +
-                        '<span style="font-size:.58rem;color:#4fc3f7;max-width:69px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(c.split(' ')[0]) + '</span>' +
+                        'style="width:59px;height:59px;border-radius:7px;border:2px solid rgba(79,195,247,0.4);object-fit:cover;background:#111;" onerror="this.style.opacity=0.15">' +
+                        '<span style="font-size:.56rem;color:#4fc3f7;max-width:59px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(c.split(' ')[0]) + '</span>' +
                         '</div>';
                 }).join('');
 
@@ -1009,8 +1009,8 @@
                 const defImgs = topDef.map(function(c) {
                     return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">' +
                         '<img src="' + getCharPortrait(c) + '" title="' + escapeHtml(c) + '" referrerpolicy="no-referrer" ' +
-                        'style="width:69px;height:69px;border-radius:8px;border:2px solid rgba(200,100,255,0.4);object-fit:cover;background:#111;" onerror="this.style.opacity=0.15">' +
-                        '<span style="font-size:.58rem;color:#c864ff;max-width:69px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(c.split(' ')[0]) + '</span>' +
+                        'style="width:59px;height:59px;border-radius:7px;border:2px solid rgba(200,100,255,0.4);object-fit:cover;background:#111;" onerror="this.style.opacity=0.15">' +
+                        '<span style="font-size:.56rem;color:#c864ff;max-width:59px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(c.split(' ')[0]) + '</span>' +
                         '</div>';
                 }).join('');
 
