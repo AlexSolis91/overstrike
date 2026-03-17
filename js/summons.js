@@ -149,8 +149,8 @@
             if (summon.name === 'Kamish' && attackerName) {
                 const attacker = gameState.characters[attackerName];
                 if (attacker && !attacker.isDead) {
-                    applyFlatBurn(attackerName, 5, 1); // 25% por 1 turno per Excel spec
-                    addLog(`🔥 ${attackerName} recibe Quemaduras permanentes del 20% por golpear a Kamish`, 'damage');
+                    applyFlatBurn(attackerName, 4, 1); // 4 HP por 1 turno (spec: 4 HP)
+                    addLog('🔥 Kamish: ' + attackerName + ' recibe Quemadura de 4 HP (1 turno)', 'damage');
                 }
             }
             
@@ -742,6 +742,11 @@
                     if (gandalfChar && !gandalfChar.isDead && gandalfChar.hp > 0 && gandalfChar.team === target.team) {
                         target.charges = Math.min(20, (target.charges||0) + 3);
                         addLog(`✨ Istari (Gandalf): ${targetName} gana 3 cargas por escudo roto`, 'buff');
+                    }
+                    // FORTALEZA DE TAURO (Aldebaran): escudo roto → genera 2 cargas
+                    if (target.passive && target.passive.name === 'Fortaleza de Tauro') {
+                        target.charges = Math.min(20, (target.charges || 0) + 2);
+                        addLog('🐂 Fortaleza de Tauro: ' + targetName + ' genera 2 cargas (escudo roto)', 'buff');
                     }
                 }
             }
