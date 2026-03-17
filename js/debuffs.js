@@ -167,12 +167,13 @@ function applyDebuff(targetName, effectObj) {
             triggerMaboroshi(target.team, effectObj.name);
             // PASIVA NEGOCIACIONES HOSTILES (Padme): aliado recibe debuff → Padme +1 carga
             {
-                const padme = gameState.characters['Padme Amidala'];
+                const padme = gameState.characters['Padme Amidala'] ||
+                    Object.values(gameState.characters).find(c => c && (c.passive && c.passive.name === 'Negociaciones Hostiles') && c.team === target.team && !c.isDead && c.hp > 0);
                 if (padme && !padme.isDead && padme.hp > 0 && effectObj.type === 'debuff') {
                     // Check if target is an ally of Padme (same team)
                     if (target.team === padme.team) {
                         padme.charges = Math.min(20, (padme.charges || 0) + 1);
-                        addLog('🌹 Negociaciones Hostiles: Padme gana 1 carga', 'buff');
+                        addLog('🌹 Negociaciones Hostiles: Padmé gana 1 carga (' + padme.charges + ')', 'buff');
                     }
                 }
             }
