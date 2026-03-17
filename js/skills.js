@@ -514,6 +514,8 @@
                     for (let n in gameState.characters) {
                         const c = gameState.characters[n];
                         if (c && c.team === critAoeTeam && !c.isDead && c.hp > 0) {
+                            // ESQUIVA ÁREA: Aspros, Min Byung, Minato, y cualquier personaje con buff/pasiva
+                            if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff'); continue; }
                             // Each enemy gets its own crit roll
                             const darionB2 = Object.values(gameState.summons).find(s => s && s.name === 'Darion Morgraine' && s.team === attacker.team);
                             const criB2 = darionB2 ? 0.50 : 0;
