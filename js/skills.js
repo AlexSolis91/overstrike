@@ -1442,12 +1442,20 @@
                 }
 
             } else if (ability.effect === 'llama_preservadora') {
-                // ALEXSTRAZA - Llama Preservadora: Escudo 5 HP + represalia quemadura + genera carga por daño absorbido
+                // ALEXSTRAZA - Llama Preservadora: Escudo 5 HP + Aura de fuego + Aura de Luz
                 const tgtLP = gameState.characters[targetName];
                 if (tgtLP) {
                     tgtLP.shield = (ability.shieldAmount || 5);
                     tgtLP.shieldEffect = 'fire_charge_regen';
-                    addLog(`🔥 ${targetName} recibe Escudo ${ability.shieldAmount || 5} HP con represalia Quemadura 10% + Cargas por absorción (Llama Preservadora)`, 'buff');
+                    // Apply Aura de fuego
+                    if (!hasStatusEffect(targetName, 'Aura de fuego')) {
+                        applyBuff(targetName, { name: 'Aura de fuego', type: 'buff', duration: 4, emoji: '🔥', description: 'Quemadura 2HP al atacante' });
+                    }
+                    // Apply Aura de Luz
+                    if (!hasStatusEffect(targetName, 'Aura de Luz') && !hasStatusEffect(targetName, 'Aura de luz')) {
+                        applyBuff(targetName, { name: 'Aura de Luz', type: 'buff', duration: 4, emoji: '✨', description: 'Duplica la recuperación de HP' });
+                    }
+                    addLog('🔥✨ Llama Preservadora: ' + targetName + ' recibe Escudo ' + (ability.shieldAmount || 5) + ' HP + Aura de Fuego + Aura de Luz', 'buff');
                 }
 
             } else if (ability.effect === 'don_de_la_vida') {
@@ -1456,6 +1464,8 @@
                 if (tgtDV) {
                     const oldHpDV = tgtDV.hp;
                     tgtDV.hp = Math.min(tgtDV.maxHp, tgtDV.hp + 4);
+                    const _ddvHeal = tgtDV.hp - oldHpDV;
+                    if (_ddvHeal > 0) triggerBendicionSagrada(tgtDV.team, _ddvHeal);
                     addLog(`💚 ${targetName} recupera ${tgtDV.hp - oldHpDV} HP (Don de la Vida)`, 'heal');
                 }
 
@@ -2899,7 +2909,47 @@
                     addLog('⚔️ Sangre de Esparta: ' + charName + ' sacrifica 10 HP y gana 10 cargas', 'buff');
                 }
 
-            } else if (ability.effect === 'dispel_target_padme_charges') {
+            
+            } else if (ability.effect === 'summon_señuelo') {
+                // PADME: Invoca un Señuelo + aplica Sigilo a Padmé por 2 turnos
+                const _senName = gameState.selectedCharacter;
+                const _senAtt = gameState.characters[_senName];
+                if (!_senAtt) { addLog('❌ No se encontró el personaje', 'info'); }
+                const _teamSummons = Object.values(gameState.summons).filter(s => s && s.team === _senAtt.team);
+                if (_teamSummons.length >= 5) {
+                    addLog('❌ Límite de invocaciones alcanzado (máx 5)', 'info');
+                } else {
+                    const _seExists = Object.values(gameState.summons).some(s => s && s.name === 'Señuelo' && s.team === _senAtt.team);
+                    if (_seExists) {
+                        addLog('❌ El Señuelo ya está en el campo', 'info');
+                    } else {
+                        // Create Señuelo from summonData
+                        const _seData = summonData['Señuelo'];
+                        if (_seData) {
+                            const _seId = 'Señuelo_' + Date.now();
+                            gameState.summons[_seId] = {
+                                id: _seId,
+                                name: 'Señuelo',
+                                hp: _seData.hp || 5,
+                                maxHp: _seData.maxHp || 5,
+                                team: _senAtt.team,
+                                summoner: _senName,
+                                passive: _seData.passive || 'Distraccion de emergencia: Al morir genera 2 puntos de carga al equipo aliado',
+                                img: _seData.img || 'https://i.postimg.cc/1tbCn5Xm/Captura_de_pantalla_2026_03_15_004506.png',
+                                effect: '',
+                                statusEffects: []
+                            };
+                            renderSummons();
+                            addLog('🎭 ' + _senName + ' invoca un Señuelo', 'buff');
+                        } else {
+                            addLog('❌ No se encontró la plantilla del Señuelo en summonData', 'info');
+                        }
+                    }
+                }
+                // Aplicar Sigilo a Padmé por 2 turnos
+                applyStealthBuff(_senName, 2);
+                addLog('👤 ' + _senName + ' se oculta en Sigilo (2 turnos)', 'buff');
+} else if (ability.effect === 'dispel_target_padme_charges') {
                 // Solución Diplomática (Padmé): elimina TODOS los debuffs del aliado objetivo
                 // Padmé gana 2 cargas por cada debuff eliminado
                 const _dispelChar = gameState.characters[targetName];
@@ -3001,7 +3051,10 @@
                 const hspC = gameState.characters[targetName];
                 if (hspC) {
                     const hspOld = hspC.hp;
-                    hspC.hp = Math.min(hspC.maxHp, hspC.hp + 5);
+                    const _hspOldHp = hspC.hp;
+                hspC.hp = Math.min(hspC.maxHp, hspC.hp + 5);
+                const _hspHeal = hspC.hp - _hspOldHp;
+                if (_hspHeal > 0) triggerBendicionSagrada(hspC.team, _hspHeal);
                     addLog('💫 Rayo de Luz: ' + targetName + ' recupera ' + (hspC.hp - hspOld) + ' HP', 'heal');
                     applyShield(targetName, 5);
                     hspC.statusEffects = (hspC.statusEffects || []).filter(e => e && normAccent(e.name||'') !== 'provocacion');
