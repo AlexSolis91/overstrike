@@ -84,7 +84,7 @@
             let finalDamage = ability.damage;
             let finalChargeGain = ability.chargeGain;
             
-            if (attacker.rikudoMode && gameState.selectedCharacter === 'Madara Uchiha') {
+            if (attacker.rikudoMode && (gameState.selectedCharacter === 'Madara Uchiha' || gameState.selectedCharacter === 'Madara Uchiha v2')) {
                 finalDamage *= 2;
                 finalChargeGain *= 2;
             }
@@ -101,7 +101,7 @@
                 }
             }
             // GOKU: bonus daño de Entrenamiento de los Dioses
-            if (gameState.selectedCharacter === 'Goku' && attacker.gokuBonusDamage > 0 && finalDamage > 0) {
+            if ((gameState.selectedCharacter === 'Goku' || gameState.selectedCharacter === 'Goku v2') && attacker.gokuBonusDamage > 0 && finalDamage > 0) {
                 finalDamage += attacker.gokuBonusDamage;
             }
             // SAURON transformado: +1 daño adicional
@@ -492,7 +492,7 @@
                 const darionBuff = Object.values(gameState.summons).find(s => s && s.name === 'Darion Morgraine' && s.team === attacker.team);
                 const critBonusFromDarion = darionBuff ? 0.50 : 0;
                 const gilgameshBonus = (gameState.selectedCharacter === 'Gilgamesh') ? 0.25 : 0;
-                const muzanCritB = (gameState.selectedCharacter === 'Muzan Kibutsuji') ? (attacker.muzanCritBonus || 0) : 0;
+                const muzanCritB = ((gameState.selectedCharacter === 'Muzan Kibutsuji' || gameState.selectedCharacter === 'Muzan Kibutsuji v2')) ? (attacker.muzanCritBonus || 0) : 0;
                 const isCritBasic = Math.random() < Math.min(1, (ability.critChance || 0) + critBonusFromDarion + gilgameshBonus + muzanCritB);
                 if (isCritBasic) {
                     baseDmgCrit *= 2;
@@ -520,7 +520,7 @@
                             const darionB2 = Object.values(gameState.summons).find(s => s && s.name === 'Darion Morgraine' && s.team === attacker.team);
                             const criB2 = darionB2 ? 0.50 : 0;
                             const gilB2 = (gameState.selectedCharacter === 'Gilgamesh') ? 0.10 : 0;
-                            const mzB2 = (gameState.selectedCharacter === 'Muzan Kibutsuji') ? (attacker.muzanCritBonus || 0) : 0;
+                            const mzB2 = ((gameState.selectedCharacter === 'Muzan Kibutsuji' || gameState.selectedCharacter === 'Muzan Kibutsuji v2')) ? (attacker.muzanCritBonus || 0) : 0;
                             const isCrit2 = Math.random() < Math.min(1, (ability.critChance || 0) + criB2 + gilB2 + mzB2);
                             let dmg2 = finalDamage;
                             if (isCrit2) { dmg2 *= 2; triggerGilgameshCrit(gameState.selectedCharacter); }
@@ -950,7 +950,7 @@
                 const emTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                 checkAndRemoveStealth(emTeam);
                 const darionEM = Object.values(gameState.summons).find(s => s && s.name === 'Darion Morgraine' && s.team === attacker.team);
-                const muzanEM = (gameState.selectedCharacter === 'Muzan Kibutsuji') ? (attacker.muzanCritBonus || 0) : 0;
+                const muzanEM = ((gameState.selectedCharacter === 'Muzan Kibutsuji' || gameState.selectedCharacter === 'Muzan Kibutsuji v2')) ? (attacker.muzanCritBonus || 0) : 0;
                 const critBonusEM = (darionEM ? 0.50 : 0) + 0.10 + muzanEM; // +10% regla de oro + Muzan bonus
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
@@ -1130,7 +1130,7 @@
                 checkAndRemoveStealth(enemyTeam);
                 // Bonos de crit acumulados
                 const gilBonus = (gameState.selectedCharacter === 'Gilgamesh') ? 0.10 : 0;
-                const muzanBonus = (gameState.selectedCharacter === 'Muzan Kibutsuji') ? (attacker.muzanCritBonus || 0) : 0;
+                const muzanBonus = ((gameState.selectedCharacter === 'Muzan Kibutsuji' || gameState.selectedCharacter === 'Muzan Kibutsuji v2')) ? (attacker.muzanCritBonus || 0) : 0;
                 const darionBonus = Object.values(gameState.summons).find(s => s && s.name === 'Darion Morgraine' && s.team === attacker.team) ? 0.50 : 0;
                 const totalCritBonus = gilBonus + muzanBonus + darionBonus;
                 for (let n in gameState.characters) {
@@ -2678,7 +2678,7 @@
                         
                         // Ganar cargas por cada golpe acertado
                         let chargesGained = chargePerHitVal;
-                        if (attacker.rikudoMode && gameState.selectedCharacter === 'Madara Uchiha') {
+                        if (attacker.rikudoMode && (gameState.selectedCharacter === 'Madara Uchiha' || gameState.selectedCharacter === 'Madara Uchiha v2')) {
                             chargesGained *= 2;
                         }
                         attacker.charges += chargesGained;
@@ -3094,7 +3094,7 @@
 
                 // ── GOKU PASIVA: Entrenamiento de los Dioses ──
                 // +2 cargas si tiene Furia Y Frenesi al atacar
-                if (gameState.selectedCharacter === 'Goku' && !hasFear && finalDamage > 0) {
+                if ((gameState.selectedCharacter === 'Goku' || gameState.selectedCharacter === 'Goku v2') && !hasFear && finalDamage > 0) {
                     const hasFuria = hasStatusEffect('Goku', 'Furia');
                     const hasFrenesi = hasStatusEffect('Goku', 'Frenesi');
                     if (hasFuria && hasFrenesi) {
