@@ -42,6 +42,14 @@
                     return;
                 }
                 
+                // UNICIDAD: verificar que no haya otra invocación con el mismo nombre del mismo invocador
+                const alreadyExists = Object.values(gameState.summons).some(
+                    s => s && s.name === shadowName && s.team === summoner.team
+                );
+                if (alreadyExists) {
+                    addLog('❌ ' + shadowName + ' ya está en el campo (no se puede invocar dos veces)', 'info');
+                    return;
+                }
                 // Crear copia de la invocación
                 const summonId = `${shadowName}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                 gameState.summons[summonId] = {
@@ -997,22 +1005,42 @@ function applyRegeneration(targetName, amount, duration) {
             // Get summon data
             const sData = summonData[chosen];
             if (!sData) return;
-            // Check if Kamish already exists (unique)
-            if (chosen === 'Kamish') {
-                const hasKamish = Object.values(gameState.summons).some(s => s && s.name === 'Kamish' && s.team === sjwChar.team);
-                if (hasKamish) { chosen = 'Igris'; }
+            // Get names of summons already on the field for this summoner
+            const existingNames = new Set(
+                Object.values(gameState.summons)
+                    .filter(s => s && s.team === sjwChar.team)
+                    .map(s => s.name)
+            );
+            // If chosen shadow is already on field, try to find another available one
+            if (existingNames.has(chosen)) {
+                const allPool = ['Igris', 'Iron', 'Tusk', 'Beru', 'Bellion', 'Kaisel', 'Kamish'];
+                const available = allPool.filter(n => !existingNames.has(n));
+                if (available.length === 0) {
+                    addLog('👻 Arise! (Pasiva): ' + charName + ' ya tiene todas las sombras invocadas', 'info');
+                    return;
+                }
+                // Pick random from available (weighted if possible)
+                const availableWeights = available.map(n => ({ name: n, w: shadowPool[n] || 0.01 }));
+                const totalW = availableWeights.reduce((s, x) => s + x.w, 0);
+                let r2 = Math.random() * totalW;
+                chosen = availableWeights[availableWeights.length - 1].name;
+                for (const x of availableWeights) { r2 -= x.w; if (r2 <= 0) { chosen = x.name; break; } }
             }
-            // Create the summon
+            const sData2 = summonData[chosen];
+            if (!sData2) return;
+            // Create the summon (guaranteed unique)
             const summonId = chosen + '_' + Date.now();
             gameState.summons[summonId] = {
                 id: summonId,
                 name: chosen,
-                hp: sData.hp || 5,
-                maxHp: sData.hp || 5,
+                hp: sData2.hp || 5,
+                maxHp: sData2.hp || 5,
                 team: sjwChar.team,
                 summoner: charName,
-                passive: sData.passive || '',
-                img: sData.img || '',
+                passive: sData2.passive || '',
+                img: sData2.img || '',
+                effect: sData2.effect || '',
+                dragonEffect: sData2.effect || null,
                 statusEffects: []
             };
             addLog('👻 Arise! (Pasiva): ' + charName + ' invoca a ' + chosen, 'buff');
