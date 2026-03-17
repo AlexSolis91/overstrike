@@ -1388,7 +1388,17 @@
                         for (let n in gameState.characters) {
                             const c = gameState.characters[n];
                             if (c && c.team === drogTeam && !c.isDead && c.hp > 0) {
+                                if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' esquiva el AOE de Drogon (Esquiva Área)', 'buff'); continue; }
                                 applyDamageWithShield(n, 3, null);
+                            }
+                        }
+                        // Drogon AOE también daña invocaciones enemigas
+                        for (let sid in gameState.summons) {
+                            const ds = gameState.summons[sid];
+                            if (ds && ds.team === drogTeam && ds.hp > 0) {
+                                ds.hp = Math.max(0, ds.hp - 3);
+                                addLog('🔴 Drogon: ' + ds.name + ' recibe 3 daño', 'damage');
+                                if (ds.hp <= 0) { delete gameState.summons[sid]; addLog('💨 ' + ds.name + ' fue derrotado por Drogon', 'damage'); }
                             }
                         }
                         // Drogon también tiene Megaprovocacion activa (se maneja en target selection)
@@ -1399,17 +1409,33 @@
                         for (let n in gameState.characters) {
                             const c = gameState.characters[n];
                             if (c && c.team === rhTeam && !c.isDead && c.hp > 0) {
-                                applyFlatBurn(n, 2, 1);
+                                applyFlatBurn(n, 1, 1); // 1 HP per spec
+                            }
+                        }
+                        // Rhaegal también aplica quemadura a invocaciones enemigas
+                        for (let rhsid in gameState.summons) {
+                            const rhs = gameState.summons[rhsid];
+                            if (rhs && rhs.team === rhTeam && rhs.hp > 0) {
+                                rhs.hp = Math.max(0, rhs.hp - 1);
+                                if (rhs.hp <= 0) { delete gameState.summons[rhsid]; addLog('💨 ' + rhs.name + ' fue derrotado por Rhaegal', 'damage'); }
                             }
                         }
                     } else if (s.effect === 'heal_team' || s.dragonEffect === 'heal_team') {
-                        // Viserion: cura 2 HP a todo el equipo aliado
-                        addLog(`⚪ Viserion (Pasiva): cura 2 HP al equipo aliado`, 'heal');
+                        // Viserion: cura 2 HP a todo el equipo aliado (personajes + invocaciones)
+                        addLog('⚪ Viserion (Pasiva): cura 2 HP al equipo aliado', 'heal');
                         for (let n in gameState.characters) {
                             const c = gameState.characters[n];
                             if (c && c.team === s.team && !c.isDead && c.hp > 0) {
                                 const vHeal = Math.min(2, c.maxHp - c.hp);
                                 if (vHeal > 0) { c.hp += vHeal; }
+                            }
+                        }
+                        // También cura invocaciones aliadas
+                        for (let vsid in gameState.summons) {
+                            const vs = gameState.summons[vsid];
+                            if (vs && vs.team === s.team && vs.hp > 0 && vs.maxHp) {
+                                const vsHeal = Math.min(2, vs.maxHp - vs.hp);
+                                if (vsHeal > 0) { vs.hp += vsHeal; }
                             }
                         }
                     }
