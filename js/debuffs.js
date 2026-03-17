@@ -126,6 +126,17 @@ function triggerMaboroshi(targetTeam, debuffName) {
 function applyDebuff(targetName, effectObj) {
             const target = gameState.characters[targetName];
             if (!target || !target.statusEffects) return;
+            // ESQUIVA ÁREA: inmune a debuffs AOE de enemigos
+            if (gameState.selectedAbility && gameState.selectedAbility.target === 'aoe') {
+                const _attacker = gameState.characters[gameState.selectedCharacter];
+                if (_attacker && _attacker.team !== target.team) {
+                    // Attacker is enemy and ability is AOE — check immunity
+                    if (checkAsprosAOEImmunity(targetName) || checkMinatoAOEImmunity(targetName)) {
+                        addLog('🌟 ' + targetName + ' es inmune al debuff AOE (Esquiva Área)', 'buff');
+                        return;
+                    }
+                }
+            }
             // Proteccion Sagrada bloquea todos los debuffs
             if (hasStatusEffect(targetName, 'Proteccion Sagrada')) {
                 addLog(`🛡️ ${targetName} es inmune a debuffs (Protección Sagrada)`, 'buff');
