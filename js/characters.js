@@ -160,6 +160,7 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 ultraInstinto: false,
                 portrait: 'https://i.postimg.cc/wMsFFbWT/Captura_de_pantalla_2026_02_26_132013.png',
+                transformPortrait: 'https://i.postimg.cc/ZK704HT2/Captura_de_pantalla_2026_03_02_112236.png',
                 transformationPortrait: 'https://i.postimg.cc/ZK704HT2/Captura_de_pantalla_2026_03_02_112236.png',
                 passive: { name: 'Entrenamiento de los Dioses', description: 'Con Furia + Frenesí activos, sus ataques generan +2 cargas adicionales. Por cada crítico genera +2 cargas adicionales.' },
                 abilities: [
