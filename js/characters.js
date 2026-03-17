@@ -8,8 +8,8 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 rikudoMode: false,
                 portrait: 'https://i.postimg.cc/KzWJPy5j/Captura_de_pantalla_2026_02_26_134301.png',
-                transformPortrait: 'https://i.postimg.cc/vBbG3V57/Captura_de_pantalla_2026_03_16_172658.png',
-                transformationPortrait: 'https://i.postimg.cc/vBbG3V57/Captura_de_pantalla_2026_03_16_172658.png',
+                transformPortrait: 'https://i.postimg.cc/kGtwwhj9/Captura_de_pantalla_2026_02_26_135949.png',
+                transformationPortrait: 'https://i.postimg.cc/kGtwwhj9/Captura_de_pantalla_2026_02_26_135949.png',
                 passive: { name: 'Limbo', description: 'Efectos pasivos de Divinidad y Cuerpo Perfecto.' },
                 abilities: [
                     { name: 'Gakidō: Fūjutsu Kyūin', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'lifesteal_basic', description: 'Causa 2 de daño. Roba HP al enemigo golpeado equivalente al daño causado por este ataque.' },
