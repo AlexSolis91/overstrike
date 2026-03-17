@@ -78,6 +78,18 @@
                 name: 'Quemadura', type: 'debuff',
                 flatHp: flatHp, percent: 0, duration: duration || 1, emoji: '🔥'
             });
+            // PADME Negociaciones Hostiles: aliado recibe quemadura → Padme +1 carga
+            (function() {
+                const _padme = gameState.characters['Padme Amidala'] ||
+                    Object.values(gameState.characters).find(c => c && c.passive && c.passive.name === 'Negociaciones Hostiles' && !c.isDead);
+                if (_padme && !_padme.isDead && _padme.hp > 0) {
+                    const _tgt = gameState.characters[targetName];
+                    if (_tgt && _tgt.team === _padme.team) {
+                        _padme.charges = Math.min(20, (_padme.charges || 0) + 1);
+                        addLog('🌹 Negociaciones Hostiles: Padmé gana 1 carga (' + _padme.charges + ')', 'buff');
+                    }
+                }
+            })();
             addLog('🔥 ' + targetName + ' sufre Quemadura ' + flatHp + ' HP por ' + (duration||1) + ' turno(s)', 'damage');
         }
 function processBurnEffects(charName) {
