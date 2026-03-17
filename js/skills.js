@@ -1067,21 +1067,27 @@
                 }
                 addLog(`⚔️ Espada Merodach: ${finalDamage} daño AOE a todos los enemigos`, 'damage');
 
-            } else if (ability.effect === 'enkidu') {
+            } else if (ability.effect === 'enkidu' || ability.effect === 'enkidu_cadenas') {
                 // GILGAMESH - Enkidu Cadenas del Cielo: cancela invocaciones + Mega Stun a >5 cargas
                 const enkTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                 // Cancelar todas las invocaciones enemigas
                 const enemySummons = Object.keys(gameState.summons).filter(id => gameState.summons[id] && gameState.summons[id].team === enkTeam);
-                enemySummons.forEach(id => {
-                    addLog(`⛓️ Enkidu cancela ${gameState.summons[id].name}`, 'damage');
-                    delete gameState.summons[id];
-                });
+                if (enemySummons.length === 0) {
+                    addLog('⛓️ Enkidu: No hay invocaciones enemigas que cancelar', 'info');
+                } else {
+                    enemySummons.forEach(id => {
+                        const sName = gameState.summons[id] ? gameState.summons[id].name : '?';
+                        addLog('⛓️ Enkidu cancela la invocación de ' + sName, 'damage');
+                        delete gameState.summons[id];
+                    });
+                    renderSummons();
+                }
                 // Mega Aturdimiento a enemigos con >5 cargas
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (c && c.team === enkTeam && !c.isDead && c.hp > 0 && c.charges > 5) {
-                        applyStun(n, 2); // Mega Aturdimiento
-                        addLog(`⛓️ Enkidu: ${n} queda Mega Aturdido (tenía ${c.charges} cargas)`, 'damage');
+                        applyMegaStun(n);
+                        addLog('⛓️ Enkidu: ' + n + ' queda Mega Aturdido (tenía ' + c.charges + ' cargas)', 'damage');
                     }
                 }
                 addLog(`⛓️ ¡Enkidu: Cadenas del Cielo! Invocaciones canceladas`, 'damage');
