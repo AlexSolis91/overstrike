@@ -78,13 +78,13 @@
             addLog(`💨 ${summon.name} ha ${reason === 'sacrificed' ? 'sido sacrificado' : 'sido derrotado'}`, 'damage');
             
             // Activar pasiva de Sun Jin Woo si es su sombra - SOLO si no estamos en otra pasiva
-            if (summon.summoner === 'Sun Jin Woo' && reason !== 'summoner_dead' && !passiveExecuting) {
-                const jinWoo = gameState.characters['Sun Jin Woo'];
+            if ((summon.summoner === 'Sun Jin Woo' || summon.summoner === 'Sun Jin Woo v2') && reason !== 'summoner_dead' && !passiveExecuting) {
+                const jinWoo = gameState.characters[summon.summoner] || gameState.characters['Sun Jin Woo'];
                 if (jinWoo && !jinWoo.isDead) {
                     jinWoo.charges += 2;
                     addLog(`⚡ Sun Jin Woo genera 2 cargas (pasiva: Sombra derrotada)`, 'buff');
                     // Activar pasiva de Igris SOLO si no estamos en cascada
-                    triggerIgrisPassive('Sun Jin Woo');
+                    triggerIgrisPassive(summon.summoner || 'Sun Jin Woo');
                 }
             }
             
@@ -824,12 +824,12 @@
                 // AURA DE HIELO (Lich King): congela al atacante
                 triggerLichKingAura(targetName, attackerName);
                 // CADENAS DE HIELO (Lich King): genera 1 carga cuando recibe daño con Provocación
-                if (targetName === 'Lich King') {
-                    const lichChar = gameState.characters['Lich King'];
+                if (targetName === 'Lich King' || targetName === 'Lich King v2') {
+                    const lichChar = gameState.characters[targetName];
                     if (lichChar && !lichChar.isDead && lichChar.hp > 0 &&
-                        (hasStatusEffect('Lich King', 'Provocación') || hasStatusEffect('Lich King', 'Provocacion'))) {
+                        (hasStatusEffect(targetName, 'Provocación') || hasStatusEffect(targetName, 'Provocacion'))) {
                         lichChar.charges = Math.min(20, (lichChar.charges || 0) + 1);
-                        addLog('🔗 Cadenas de Hielo: Lich King genera 1 carga al recibir daño con Provocación', 'buff');
+                        addLog('🔗 Cadenas de Hielo: ' + targetName + ' genera 1 carga al recibir daño con Provocación', 'buff');
                     }
                 }
                 // PRIVILEGIO IMPERIAL (Ozymandias): aplica QS al atacante
@@ -983,6 +983,18 @@ function applyRegeneration(targetName, amount, duration) {
         }
 
         // ── SANGRE DE YMIR: aplica efectos cuando Espinas causa daño ──
+
+        // ── HELPER: get base character name (strips v2/v3 suffix) ──
+        function getBaseName(charName) {
+            if (!charName) return charName;
+            return charName.replace(/ v\d+$/, '').trim();
+        }
+        // ── HELPER: find character by base name ──
+        function findCharByBaseName(baseName) {
+            return Object.keys(gameState.characters).find(function(n) {
+                return n === baseName || n.startsWith(baseName + ' v');
+            });
+        }
         function triggerSJWArisePassive(charName) {
             // Arise! passive: at start of SJW's turn, invoke a random shadow
             const sjwChar = gameState.characters[charName];
