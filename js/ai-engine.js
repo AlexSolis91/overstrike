@@ -72,6 +72,18 @@
                     // ── TIER BONUS: always prefer higher tier ──────────────────
                     score += abilityTier(ab) * 120; // over=360, special=240, basic=120
 
+                    // === CLEANSE / DISPEL (highest support priority when allies have debuffs) ===
+                    const CLEANSE_EFFECTS = ['heal_cleanse', 'aoe_cleanse_allies', 'dispel_heal_allies',
+                        'grito_de_esparta', 'dispel_target_padme_charges'];
+                    const _allyDebuffCount = allies.reduce(function(sum, n) {
+                        const c = gameState.characters[n];
+                        return sum + (c && c.statusEffects ? c.statusEffects.filter(function(e) { return e && e.type === 'debuff'; }).length : 0);
+                    }, 0);
+                    if (CLEANSE_EFFECTS.includes(ab.effect) || (ab.effect && ab.effect.includes('cleanse'))) {
+                        // High priority if allies have debuffs
+                        score += _allyDebuffCount >= 3 ? 200 : _allyDebuffCount >= 1 ? 120 : 10;
+                    }
+
                     // === HEALING / SUPPORT ===
                     if (ab.target === 'ally_single' || ab.target === 'self') {
                         const lowestAlly = allies.reduce((a,b) => hpPct(a) < hpPct(b) ? a : b);
