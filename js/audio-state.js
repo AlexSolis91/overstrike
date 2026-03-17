@@ -197,19 +197,19 @@
                 passive: 'Distraccion de emergencia: Al morir genera 2 puntos de carga al equipo aliado'
             },
             'Drogon': {
-                name: 'Drogon',
+                name: 'Drogon', effect: 'mega_prov_aoe_dmg', megaProvocation: true,
                 hp: 15, maxHp: 15, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/Gtr3CrRL/Captura_de_pantalla_2026_03_15_002747.png',
                 passive: 'Sombra de Fuego: Mega provocacion. Inflige 3 puntos de Daño a todo el equipo enemigo al final de cada ronda'
             },
             'Rhaegal': {
-                name: 'Rhaegal',
+                name: 'Rhaegal', effect: 'burn_team',
                 hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/8cDkSDGT/Captura_de_pantalla_2026_03_15_002820.png',
                 passive: 'Furia Esmeralda: Al final de cada ronda aplica debuff Quemadura de 1 hp a todo el equipo enemigo'
             },
             'Viserion': {
-                name: 'Viserion',
+                name: 'Viserion', effect: 'heal_team',
                 hp: 6, maxHp: 6, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/2ymjDmYz/Captura_de_pantalla_2026_03_15_002923.png',
                 passive: 'Llama de Oro: Al final de cada ronda cura 2 hp a todo el equipo aliado'
@@ -227,4 +227,3 @@
                 passive: 'Al final de cada ronda, si hay enemigos sin debuff activo quemadura solar, aplica debuff Quemadura solar sobre esos enemigos. Cada vez que un debuff quemadura solar es aplicado sobre 1 enemigo, todos los aliados de tu equipo recuperan 2 HP por debuff Quemadura Solar aplicado.'
             }
         };
-
