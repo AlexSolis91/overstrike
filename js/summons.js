@@ -259,7 +259,14 @@
                     '<span style="background:rgba(255,170,0,0.2);border:1px solid #ffaa00;padding:2px 6px;border-radius:5px;font-size:0.75em;margin:2px;">' + (e.emoji||'✨') + ' ' + e.name + '</span>'
                 ).join(' ');
             }
+            // Get image from summonData (Bug 10 fix: show image in in-game summon modal)
+            const _sDetail = (typeof summonData !== 'undefined') ? (summonData[summon.name] || {}) : {};
+            const _imgUrl = _sDetail.img || summon.img || '';
+            const _imgHtml = _imgUrl
+                ? '<div style="text-align:center;margin-bottom:14px;"><img src="' + _imgUrl + '" alt="' + summon.name + '" style="width:120px;height:120px;object-fit:cover;border-radius:12px;border:3px solid ' + borderColor + ';box-shadow:0 0 20px ' + borderColor + '66;" onerror="this.style.opacity=0.2"></div>'
+                : '';
             content.innerHTML = '<div style="text-align:center;max-width:400px;margin:0 auto;">' +
+                _imgHtml +
                 '<div style="font-family:Orbitron,sans-serif;font-size:1.3rem;color:' + borderColor + ';margin-bottom:8px;">👻 ' + summon.name + '</div>' +
                 '<div style="font-size:1rem;color:#fff;margin-bottom:6px;">❤️ HP: ' + summon.hp + ' / ' + summon.maxHp + '</div>' +
                 '<div style="background:rgba(0,0,0,0.4);border-radius:8px;height:12px;overflow:hidden;margin:8px auto;max-width:200px;">' +
@@ -272,13 +279,6 @@
             '</div>';
             modal.style.display = 'block';
         }
-
-        // ==================== PASIVAS DE INVOCACIONES ====================
-        
-        // Variables para prevenir cascadas y loops infinitos
-        let passiveExecuting = false; // Flag global para todas las pasivas
-        
-        // Pasiva de Igris: ataca cuando el invocador genera carga
         function triggerIgrisPassive(summonerName) {
             try {
                 // Prevenir cascadas de pasivas
