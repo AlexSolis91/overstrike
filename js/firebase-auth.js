@@ -999,8 +999,8 @@
                 const atkImgs = topAtk.map(function(c) {
                     return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">' +
                         '<img src="' + getCharPortrait(c) + '" title="' + escapeHtml(c) + '" referrerpolicy="no-referrer" ' +
-                        'style="width:92px;height:92px;border-radius:10px;border:2px solid rgba(79,195,247,0.4);object-fit:cover;background:#111;" onerror="this.style.opacity=0.15">' +
-                        '<span style="font-size:.6rem;color:#4fc3f7;max-width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(c.split(' ')[0]) + '</span>' +
+                        'style="width:69px;height:69px;border-radius:8px;border:2px solid rgba(79,195,247,0.4);object-fit:cover;background:#111;" onerror="this.style.opacity=0.15">' +
+                        '<span style="font-size:.58rem;color:#4fc3f7;max-width:69px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(c.split(' ')[0]) + '</span>' +
                         '</div>';
                 }).join('');
 
@@ -1009,8 +1009,8 @@
                 const defImgs = topDef.map(function(c) {
                     return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">' +
                         '<img src="' + getCharPortrait(c) + '" title="' + escapeHtml(c) + '" referrerpolicy="no-referrer" ' +
-                        'style="width:92px;height:92px;border-radius:10px;border:2px solid rgba(200,100,255,0.4);object-fit:cover;background:#111;" onerror="this.style.opacity=0.15">' +
-                        '<span style="font-size:.6rem;color:#c864ff;max-width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(c.split(' ')[0]) + '</span>' +
+                        'style="width:69px;height:69px;border-radius:8px;border:2px solid rgba(200,100,255,0.4);object-fit:cover;background:#111;" onerror="this.style.opacity=0.15">' +
+                        '<span style="font-size:.58rem;color:#c864ff;max-width:69px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(c.split(' ')[0]) + '</span>' +
                         '</div>';
                 }).join('');
 
@@ -1045,9 +1045,9 @@
                         '</div>',
                     '</div>',
                     // Row 2: character images
-                    '<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">',
+                    '<div style="display:flex;gap:20px;flex-wrap:nowrap;align-items:flex-start;overflow:visible;">',
                         topAtk.length ? '<div><div style="font-size:.62rem;color:#4fc3f7;margin-bottom:6px;letter-spacing:.05em;">🗡️ MÁS USADOS ATAQUE</div><div style="display:flex;gap:5px;">' + atkImgs + '</div></div>' : '',
-                        topDef.length ? '<div style="margin-left:24px;"><div style="font-size:.62rem;color:#c864ff;margin-bottom:6px;letter-spacing:.05em;">🛡️ MÁS USADOS DEFENSA</div><div style="display:flex;gap:5px;">' + defImgs + '</div></div>' : '',
+                        topDef.length ? '<div style="margin-left:28px;min-width:0;"><div style="font-size:.62rem;color:#c864ff;margin-bottom:6px;letter-spacing:.05em;">🛡️ MÁS USADOS DEFENSA</div><div style="display:flex;gap:5px;">' + defImgs + '</div></div>' : '',
                     '</div>',
                     '</div>'
                 ].join('');
