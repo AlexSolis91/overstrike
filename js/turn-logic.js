@@ -1427,7 +1427,10 @@
                             const c = gameState.characters[n];
                             if (c && c.team === s.team && !c.isDead && c.hp > 0) {
                                 const vHeal = Math.min(2, c.maxHp - c.hp);
-                                if (vHeal > 0) { c.hp += vHeal; }
+                                if (vHeal > 0) {
+                                    c.hp += vHeal;
+                                    triggerBendicionSagrada(s.team, vHeal); // per-char trigger
+                                }
                             }
                         }
                         // También cura invocaciones aliadas
