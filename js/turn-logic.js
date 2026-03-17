@@ -29,11 +29,11 @@
                         // NOTA: updateStatusEffectDurations se llama dentro de continueTurn
                         // para que el decremento ocurra DESPUÉS de verificar stun/freeze/etc.
                         // SUN JIN WOO PASIVA: Sigilo al inicio de su turno, dura hasta fin de ronda (no es permanente)
-                        if (currentCharName === 'Sun Jin Woo') {
+                        if ((currentCharName === 'Sun Jin Woo' || currentCharName.startsWith('Sun Jin Woo')) || currentCharName === 'Sun Jin Woo v2') {
                             const sjw = gameState.characters['Sun Jin Woo'];
                             if (sjw && !sjw.isDead && sjw.hp > 0) {
                                 // ARISE! passive: at start of turn, perform random invocation from shadow pool
-                                triggerSJWArisePassive('Sun Jin Woo');
+                                triggerSJWArisePassive(currentCharName); // supports v2 names
                             }
                         }
 
@@ -46,7 +46,7 @@
                         }
                         
                         // PASIVA LIMBO: Madara en Modo Rikudō regenera 1 HP por turno
-                        if (currentCharName === 'Madara Uchiha' && currentChar.rikudoMode && currentChar.hp > 0) {
+                        if (((currentCharName === 'Madara Uchiha' || currentCharName.startsWith('Madara Uchiha')) || currentCharName === 'Madara Uchiha v2') && currentChar.rikudoMode && currentChar.hp > 0) {
                             const oldHp = currentChar.hp;
                             currentChar.hp = Math.min(currentChar.maxHp, currentChar.hp + 1);
                             if (currentChar.hp > oldHp) {
@@ -692,7 +692,7 @@
                                    (char.fenixArmorActive && name === 'Ikki de Fenix') ||
                                    (char.kuramaMode && name === 'Minato Namikaze') ||
                                    (name === 'Alexstrasza' && char.dragonFormActive) ||
-                                   (name === 'Goku' && char.ultraInstinto) ||
+                                   ((name === 'Goku' || name.startsWith('Goku')) && char.ultraInstinto) ||
                                   (name === 'Anakin Skywalker' && char.darkSideAwakened) ||
                                   (name === 'Muzan Kibutsuji' && char.muzanTransformed);
             const portrait = char.portrait || char.transformPortrait || char.transformationPortrait || '';
@@ -857,7 +857,7 @@
                                        (char.fenixArmorActive && charName === 'Ikki de Fenix') ||
                                        (char.kuramaMode && charName === 'Minato Namikaze') ||
                                        (char.dragonFormActive && charName === 'Alexstrasza') ||
-                                       (char.ultraInstinto && charName === 'Goku') ||
+                                       (char.ultraInstinto && (charName === 'Goku' || charName.startsWith('Goku'))) ||
                                        (char.darkSideAwakened && charName === 'Anakin Skywalker') ||
                                        (char.muzanTransformed && charName === 'Muzan Kibutsuji');
                         const modalPortrait = char.portrait || char.transformPortrait || char.transformationPortrait || '';
