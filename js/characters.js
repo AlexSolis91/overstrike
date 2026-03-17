@@ -8,8 +8,8 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 rikudoMode: false,
                 portrait: 'https://i.postimg.cc/KzWJPy5j/Captura_de_pantalla_2026_02_26_134301.png',
-                transformPortrait: 'https://i.postimg.cc/kGtwwhj9/Captura_de_pantalla_2026_02_26_135949.png',
-                transformationPortrait: 'https://i.postimg.cc/kGtwwhj9/Captura_de_pantalla_2026_02_26_135949.png',
+                transformPortrait: 'https://i.postimg.cc/vBbG3V57/Captura_de_pantalla_2026_03_16_172658.png',
+                transformationPortrait: 'https://i.postimg.cc/vBbG3V57/Captura_de_pantalla_2026_03_16_172658.png',
                 passive: { name: 'Limbo', description: 'Efectos pasivos de Divinidad y Cuerpo Perfecto.' },
                 abilities: [
                     { name: 'Gakidō: Fūjutsu Kyūin', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'lifesteal_basic', description: 'Causa 2 de daño. Roba HP al enemigo golpeado equivalente al daño causado por este ataque.' },
@@ -338,7 +338,7 @@
                 passive: { name: 'Negociaciones Hostiles', description: 'Cada vez que un aliado recibe un Debuff, Padme genera 1 carga.' },
                 abilities: [
                     { name: 'Orden de Fuego', type: 'basic', cost: 0, chargeGain: 0, damage: 0, target: 'ally_team', effect: 'orden_de_fuego', description: 'Genera 1 punto de Carga a los 4 aliados del equipo.' },
-                    { name: 'Solución Diplomática', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'single', effect: 'dispel_target_padme_charges', description: 'Disipar los debuffs en el objetivo. Padme genera 2 puntos de Carga por cada debuff eliminado.' },
+                    { name: 'Solución Diplomática', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'dispel_target_padme_charges', description: 'Disipar los debuffs en el objetivo. Padme genera 2 puntos de Carga por cada debuff eliminado.' },
                     { name: 'Señuelo', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'self', effect: 'summon_señuelo', description: 'INVOCACIÓN: Invoca un Señuelo. Padme aplica Buff Sigilo por 2 turnos.' },
                     { name: 'Reina de Naboo', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'ally_team', effect: 'reina_de_naboo', description: 'Aplica Buff Escudo de 6 HP a los 4 aliados del equipo. Genera 4 puntos de Carga a todos los aliados (excepto Padme Amidala).' }
                 ]
