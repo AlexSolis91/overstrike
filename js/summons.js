@@ -933,7 +933,9 @@
             }
             const before = c.hp;
             c.hp = Math.min(c.maxHp, c.hp + finalHeal);
-            return c.hp - before;
+            const _hcActual = c.hp - before;
+            if (_hcActual > 0) triggerBendicionSagrada(c.team, _hcActual);
+            return _hcActual;
         }
 function applyRegeneration(targetName, amount, duration) {
             const target = gameState.characters[targetName];
