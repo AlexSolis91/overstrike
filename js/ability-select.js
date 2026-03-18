@@ -11,7 +11,7 @@
             
             // Calcular costo ajustado por modo Rikudō
             let adjustedCost = ability.cost;
-            if (char.rikudoMode && charName === 'Madara Uchiha') {
+            if (char.rikudoMode && (charName === 'Madara Uchiha' || charName === 'Madara Uchiha v2')) {
                 adjustedCost = Math.ceil(ability.cost / 2);
             }
             // PODER DEL ANILLO (Sauron): habilidades cuestan 3 menos
@@ -48,13 +48,13 @@
         // Returns transformation portrait if active, else base portrait
         function getActivePortrait(name, char) {
             if (!char) return null;
-            const isTransf = (char.rikudoMode && name === 'Madara Uchiha') ||
-                             (char.fenixArmorActive && name === 'Ikki de Fenix') ||
-                             (char.kuramaMode && name === 'Minato Namikaze') ||
-                             (name === 'Alexstrasza' && char.dragonFormActive) ||
-                             (name === 'Goku' && char.ultraInstinto) ||
-                             (name === 'Anakin Skywalker' && char.darkSideAwakened) ||
-                             (name === 'Muzan Kibutsuji' && char.muzanTransformed);
+            const isTransf = (char.rikudoMode && (name === 'Madara Uchiha' || name === 'Madara Uchiha v2')) ||
+                             (char.fenixArmorActive && (name === 'Ikki de Fenix' || name === 'Ikki de Fenix v2')) ||
+                             (char.kuramaMode && (name === 'Minato Namikaze' || name === 'Minato Namikaze v2')) ||
+                             ((name === 'Alexstrasza' || name === 'Alexstrasza v2') && char.dragonFormActive) ||
+                             ((name === 'Goku' || name === 'Goku v2') && char.ultraInstinto) ||
+                             ((name === 'Anakin Skywalker' || name === 'Anakin Skywalker v2') && char.darkSideAwakened) ||
+                             ((name === 'Muzan Kibutsuji' || name === 'Muzan Kibutsuji v2') && char.muzanTransformed);
             return (isTransf && (char.transformPortrait || char.transformationPortrait)) ? (char.transformPortrait || char.transformationPortrait) : (char.portrait || null);
         }
 
@@ -288,7 +288,7 @@
         // ── HOOK POST-DAÑO: pasivas que se activan DESPUÉS de recibir daño ──
         function triggerOnHitPassives(targetName, attackerName, abilityUsed) {
             // CADENAS DE HIELO (Lich King): reduce 5% velocidad del atacante si Provocación activa
-            if (targetName === 'Lich King' && attackerName && !passiveExecuting) {
+            if ((targetName === 'Lich King' || targetName === 'Lich King v2') && attackerName && !passiveExecuting) {
                 const lk = gameState.characters['Lich King'];
                 if (lk && !lk.isDead && lk.hp > 0 && lk.lichKingCadenasActive && hasStatusEffect('Lich King', 'Provocación')) {
                     const atker = gameState.characters[attackerName];
@@ -304,7 +304,7 @@
             if (!target || target.isDead || target.hp <= 0) return;
 
             // PASIVA EL ELEGIDO (Anakin): 50% contraataque con básico
-            if (targetName === 'Anakin Skywalker' && attackerName && attackerName !== gameState.selectedCharacter) {
+            if ((targetName === 'Anakin Skywalker' || targetName === 'Anakin Skywalker v2') && attackerName && attackerName !== gameState.selectedCharacter) {
                 if (Math.random() < 0.5) {
                     const basic = target.abilities[0];
                     if (basic && attackerName) {
@@ -318,7 +318,7 @@
             }
         
             // CUERPO DIVINO (Goku Black): 50% apply Debilitar on target when GB deals damage
-            if (attackerName === 'Goku Black' && targetName && !passiveExecuting) {
+            if ((attackerName === 'Goku Black' || attackerName === 'Goku Black v2') && targetName && !passiveExecuting) {
                 const gb = gameState.characters['Goku Black'];
                 if (gb && !gb.isDead && gb.hp > 0 && Math.random() < 0.5) {
                     passiveExecuting = true;
@@ -381,7 +381,7 @@ function triggerFalange(attackerTeam) {
             const anakin = gameState.characters['Anakin Skywalker'];
             if (!anakin || anakin.isDead || anakin.hp <= 0) return;
             if (anakin.team !== attacker.team) return;
-            if (attackerName === 'Anakin Skywalker') return; // Don't trigger on own attacks
+            if ((attackerName === 'Anakin Skywalker' || attackerName === 'Anakin Skywalker v2')) return; // Don't trigger on own attacks
             if (!anakin.anakinAsistir) return;
             if (passiveExecuting) return;
             // Execute Anakin's basic attack
@@ -409,15 +409,23 @@ function triggerMaboroshi(targetTeam, debuffName) {
 
         // ── PASIVA ESQUIVA AREA (Aspros): no recibe daño AOE ──
         function checkAsprosAOEImmunity(targetName) {
-            // Check ANY character with Esquiva Area passive or buff
+            // Check ANY character with Esquiva Area passive or buff — supports v2 names
             const c = gameState.characters[targetName];
             if (!c || c.isDead || c.hp <= 0) return false;
-            // Check passive flag (set by init-render)
+            // 1. Check passive flag (set by initGame using baseName)
             if (c.esquivaAreaPassive) return true;
-            // Check buff
+            // 2. Check Esquiva Area buff
             if (hasStatusEffect(targetName, 'Esquiva Area') || hasStatusEffect(targetName, 'Esquiva Área')) return true;
-            // Legacy: Aspros, Minato, Min Byung have Esquiva Area passive
-            if (targetName === 'Aspros de Gemini' || targetName === 'Min Byung' || targetName === 'Minato Namikaze') return true;
+            // 3. Check passive.name — covers v2 variants automatically
+            //    Esquiva Area passives: Bendicion Sagrada (Min Byung), Face of Geminga (Aspros), Hiraishin no Jutsu (Minato)
+            const ESQUIVA_PASSIVE_NAMES = ['Bendicion Sagrada', 'Bendición Sagrada', 'Face of Geminga', 'Hiraishin no Jutsu'];
+            if (c.passive && c.passive.name && ESQUIVA_PASSIVE_NAMES.includes(c.passive.name)) return true;
+            // 4. Check passive description for 'Esquiva' keyword (catch-all for future chars)
+            if (c.passive && c.passive.description && c.passive.description.includes('Esquiva') && 
+                c.passive.description.toLowerCase().includes('area')) return true;
+            // 5. Legacy hardcoded names (for exact match safety)
+            const baseName = targetName.replace(/ v\d+$/, '').trim();
+            if (baseName === 'Aspros de Gemini' || baseName === 'Min Byung' || (baseName === 'Minato Namikaze' || baseName === 'Minato Namikaze v2')) return true;
             return false;
         }
 
@@ -429,10 +437,10 @@ function triggerMaboroshi(targetTeam, debuffName) {
 
         // ── PASIVA AURA DE HIELO (Lich King): congela al atacante al recibir daño ──
         function triggerLichKingAura(targetName, attackerName) {
-            if (targetName !== 'Lich King') return;
+            if ((targetName !== 'Lich King' && targetName !== 'Lich King v2')) return;
             const lk = gameState.characters['Lich King'];
             if (!lk || lk.isDead || lk.hp <= 0) return;
-            if (!attackerName || attackerName === 'Lich King') return;
+            if (!attackerName || (attackerName === 'Lich King' || attackerName === 'Lich King v2')) return;
             if (passiveExecuting) return;
             passiveExecuting = true;
             applyFreeze(attackerName, 2); // 2 = dura hasta fin del SIGUIENTE turno del atacante
@@ -441,10 +449,10 @@ function triggerMaboroshi(targetTeam, debuffName) {
 
         // ── PASIVA PRIVILEGIO IMPERIAL (Ozymandias): aplica QS al atacante ──
         function triggerOzyPassive(targetName, attackerName) {
-            if (targetName !== 'Ozymandias') return;
+            if ((targetName !== 'Ozymandias' && targetName !== 'Ozymandias v2')) return;
             const ozy = gameState.characters['Ozymandias'];
             if (!ozy || ozy.isDead || ozy.hp <= 0) return;
-            if (!attackerName || attackerName === 'Ozymandias') return;
+            if (!attackerName || (attackerName === 'Ozymandias' || attackerName === 'Ozymandias v2')) return;
             if (passiveExecuting) return;
             passiveExecuting = true;
             applySolarBurn(attackerName, 5, 2); // 2 = dura hasta fin del siguiente turno del atacante
@@ -454,7 +462,7 @@ function triggerMaboroshi(targetTeam, debuffName) {
 
         // ── PASIVA REGLA DE ORO (Gilgamesh): +2 cargas en crítico ──
         function triggerGilgameshCrit(attackerName) {
-            if (attackerName !== 'Gilgamesh') return;
+            if ((attackerName !== 'Gilgamesh' && attackerName !== 'Gilgamesh v2')) return;
             const gil = gameState.characters['Gilgamesh'];
             if (!gil || gil.isDead || gil.hp <= 0) return;
             // 50% de probabilidad de generar 1 carga por crítico
@@ -466,7 +474,7 @@ function triggerMaboroshi(targetTeam, debuffName) {
 
         // ── PASIVA ENTRENAMIENTO DE LOS DIOSES (Goku): +1 vel y +1 daño en crítico ──
         function triggerGokuCrit(attackerName) {
-            if (attackerName !== 'Goku') return;
+            if ((attackerName !== 'Goku' && attackerName !== 'Goku v2')) return;
             const goku = gameState.characters['Goku'];
             if (!goku || goku.isDead || goku.hp <= 0) return;
             goku.speed += 1;
@@ -511,7 +519,7 @@ function triggerMaboroshi(targetTeam, debuffName) {
 
         // ── PASIVA PRESENCIA OSCURA (Darth Vader): 20% esquivar ataques especiales ──
         function checkVaderDodge(targetName, abilityType) {
-            if (targetName !== 'Darth Vader') return false;
+            if ((targetName !== 'Darth Vader' && targetName !== 'Darth Vader v2')) return false;
             const vader = gameState.characters['Darth Vader'];
             if (!vader || vader.isDead || vader.hp <= 0) return false;
             if (abilityType !== 'special' && abilityType !== 'over') return false;
@@ -528,9 +536,9 @@ function triggerMaboroshi(targetTeam, debuffName) {
             // Buff Contraataque activo
             const hasCounterBuff = target.statusEffects && target.statusEffects.some(e => e && e.name === 'Contraataque');
             // Ultra Instinto de Goku
-            const isGokuUI = targetName === 'Goku' && target.ultraInstinto;
+            const isGokuUI = (targetName === 'Goku' || targetName === 'Goku v2') && target.ultraInstinto;
             // Pasiva Thestalos: Contraataque permanente hardcoded
-            const isThestalos = targetName === 'Thestalos';
+            const isThestalos = (targetName === 'Thestalos' || targetName === 'Thestalos v2');
 
             if (!hasCounterBuff && !isGokuUI && !isThestalos) return;
 
@@ -566,12 +574,12 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 gameState._lastAttacker[targetName] = attackerName;
             }
             // Darth Vader — básico aplica Miedo
-            if (targetName === 'Darth Vader') {
+            if ((targetName === 'Darth Vader' || targetName === 'Darth Vader v2')) {
                 applyFear(attackerName, 1);
                 addLog('  😱 [CONTRAATAQUE] ' + attackerName + ' recibe Miedo (Darth Vader)', 'damage');
             }
             // Furia Vikinga (Ragnar) — básico aplica Sangrado
-            if (targetName === 'Ragnar Lothbrok') {
+            if ((targetName === 'Ragnar Lothbrok' || targetName === 'Ragnar Lothbrok v2')) {
                 applyBleed(attackerName, 2);
                 addLog('  🩸 [CONTRAATAQUE] ' + attackerName + ' recibe Sangrado (Ragnar)', 'damage');
             }
@@ -615,7 +623,7 @@ function triggerMaboroshi(targetTeam, debuffName) {
             return false;
         }
         function checkMinatoAOEImmunity(targetName) {
-            if (targetName !== 'Minato Namikaze') return false;
+            if ((targetName !== 'Minato Namikaze' && targetName !== 'Minato Namikaze v2')) return false;
             const minato = gameState.characters['Minato Namikaze'];
             if (!minato || minato.isDead || minato.hp <= 0) return false;
             return true; // indica que se esquivó
@@ -759,7 +767,7 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 
                 // Calcular daño ajustado
                 let finalDamage = ability.damage || 0;
-                if (attacker.rikudoMode && gameState.selectedCharacter === 'Madara Uchiha') {
+                if (attacker.rikudoMode && (gameState.selectedCharacter === 'Madara Uchiha' || gameState.selectedCharacter === 'Madara Uchiha v2')) {
                     finalDamage *= 2;
                 }
                 
@@ -772,7 +780,7 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 
                 // Ganar cargas
                 let finalChargeGain = ability.chargeGain || 0;
-                if (attacker.rikudoMode && gameState.selectedCharacter === 'Madara Uchiha') {
+                if (attacker.rikudoMode && (gameState.selectedCharacter === 'Madara Uchiha' || gameState.selectedCharacter === 'Madara Uchiha v2')) {
                     finalChargeGain *= 2;
                 }
                 
