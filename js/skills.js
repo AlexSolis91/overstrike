@@ -173,16 +173,16 @@
             // Se aplica inline en cada handler como gilgameshCritBonus = 0.25
 
             // MODO KURAMA (Minato): +3 daño en todos los ataques
-            if (attacker.kuramaMode && gameState.selectedCharacter === 'Minato Namikaze' && finalDamage > 0) {
+            if (attacker.kuramaMode && (gameState.selectedCharacter === 'Minato Namikaze' || gameState.selectedCharacter === 'Minato Namikaze v2') && finalDamage > 0) {
                 finalDamage += 3;
             }
             // MODO KURAMA: +1 carga base en todos los ataques
-            if (attacker.kuramaMode && gameState.selectedCharacter === 'Minato Namikaze') {
+            if (attacker.kuramaMode && (gameState.selectedCharacter === 'Minato Namikaze' || gameState.selectedCharacter === 'Minato Namikaze v2')) {
                 finalChargeGain += 1;
             }
 
             // ARMADURA DIVINA DEL FÉNIX (Ikki): daño triple en enemigos con Quemadura
-            if (attacker.fenixArmorActive && gameState.selectedCharacter === 'Ikki de Fenix' && finalDamage > 0) {
+            if (attacker.fenixArmorActive && (gameState.selectedCharacter === 'Ikki de Fenix' || gameState.selectedCharacter === 'Ikki de Fenix v2') && finalDamage > 0) {
                 const tgtIkki = gameState.characters[targetName];
                 if (tgtIkki && hasStatusEffect(targetName, 'Quemadura')) {
                     finalDamage *= 3;
@@ -590,7 +590,7 @@
                 let baseDmgCrit = finalDamage;
                 const darionBuff = Object.values(gameState.summons).find(s => s && s.name === 'Darion Morgraine' && s.team === attacker.team);
                 const critBonusFromDarion = darionBuff ? 0.50 : 0;
-                const gilgameshBonus = (gameState.selectedCharacter === 'Gilgamesh') ? 0.25 : 0;
+                const gilgameshBonus = ((gameState.selectedCharacter === 'Gilgamesh' || gameState.selectedCharacter === 'Gilgamesh v2')) ? 0.25 : 0;
                 const muzanCritB = ((gameState.selectedCharacter === 'Muzan Kibutsuji' || gameState.selectedCharacter === 'Muzan Kibutsuji v2')) ? (attacker.muzanCritBonus || 0) : 0;
                 const isCritBasic = Math.random() < Math.min(1, (ability.critChance || 0) + critBonusFromDarion + gilgameshBonus + muzanCritB);
                 if (isCritBasic) {
@@ -599,7 +599,7 @@
                     triggerGokuCrit(gameState.selectedCharacter);
                     triggerGilgameshCrit(gameState.selectedCharacter);
                     // ESPÍRITU DEL HÉROE (Saitama): cargas = mitad del daño en crítico
-                    if (gameState.selectedCharacter === 'Saitama') {
+                    if ((gameState.selectedCharacter === 'Saitama' || gameState.selectedCharacter === 'Saitama v2')) {
                         const critCharges = Math.floor(baseDmgCrit / 2);
                         attacker.charges += critCharges;
                         addLog(`💪 Espíritu del Héroe: Saitama gana ${critCharges} cargas por crítico`, 'buff');
@@ -618,7 +618,7 @@
                             // Each enemy gets its own crit roll
                             const darionB2 = Object.values(gameState.summons).find(s => s && s.name === 'Darion Morgraine' && s.team === attacker.team);
                             const criB2 = darionB2 ? 0.50 : 0;
-                            const gilB2 = (gameState.selectedCharacter === 'Gilgamesh') ? 0.10 : 0;
+                            const gilB2 = ((gameState.selectedCharacter === 'Gilgamesh' || gameState.selectedCharacter === 'Gilgamesh v2')) ? 0.10 : 0;
                             const mzB2 = ((gameState.selectedCharacter === 'Muzan Kibutsuji' || gameState.selectedCharacter === 'Muzan Kibutsuji v2')) ? (attacker.muzanCritBonus || 0) : 0;
                             const isCrit2 = Math.random() < Math.min(1, (ability.critChance || 0) + criB2 + gilB2 + mzB2);
                             let dmg2 = finalDamage;
@@ -1314,7 +1314,7 @@
                 const enemyTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                 checkAndRemoveStealth(enemyTeam);
                 // Bonos de crit acumulados
-                const gilBonus = (gameState.selectedCharacter === 'Gilgamesh') ? 0.10 : 0;
+                const gilBonus = ((gameState.selectedCharacter === 'Gilgamesh' || gameState.selectedCharacter === 'Gilgamesh v2')) ? 0.10 : 0;
                 const muzanBonus = ((gameState.selectedCharacter === 'Muzan Kibutsuji' || gameState.selectedCharacter === 'Muzan Kibutsuji v2')) ? (attacker.muzanCritBonus || 0) : 0;
                 const darionBonus = Object.values(gameState.summons).find(s => s && s.name === 'Darion Morgraine' && s.team === attacker.team) ? 0.50 : 0;
                 const totalCritBonus = gilBonus + muzanBonus + darionBonus;
@@ -3411,7 +3411,7 @@
                     }
                 }
                 // ── MINATO PASIVA: +1 carga por enemigo golpeado más lento ──
-                if (gameState.selectedCharacter === 'Minato Namikaze' && !hasFear && finalDamage > 0 && targetName) {
+                if ((gameState.selectedCharacter === 'Minato Namikaze' || gameState.selectedCharacter === 'Minato Namikaze v2') && !hasFear && finalDamage > 0 && targetName) {
                     const tgtMinato = gameState.characters[targetName];
                     if (tgtMinato && !tgtMinato.isDead && tgtMinato.speed < attacker.speed) {
                         attacker.charges = Math.min(20, attacker.charges + 1);
@@ -3421,7 +3421,7 @@
             }
             
             // ── MINATO PASIVA (AOE): +1 carga por CADA enemigo golpeado más lento ──
-            if (gameState.selectedCharacter === 'Minato Namikaze' && ability.target === 'aoe') {
+            if ((gameState.selectedCharacter === 'Minato Namikaze' || gameState.selectedCharacter === 'Minato Namikaze v2') && ability.target === 'aoe') {
                 const hasFearM = hasStatusEffect('Minato Namikaze', 'Miedo');
                 if (!hasFearM) {
                     const enemyTeamM = attacker.team === 'team1' ? 'team2' : 'team1';
