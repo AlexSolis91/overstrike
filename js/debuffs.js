@@ -1,3 +1,12 @@
+// ── PASIVA RINNEGAN (Madara): genera 3 cargas cuando un debuff es limpiado/disipado ──
+        function triggerRinneganCleanse(targetName, count) {
+            if (!count || count <= 0) return;
+            const c = gameState.characters[targetName];
+            if (!c || c.isDead || !c.passive || c.passive.name !== 'Rinnegan') return;
+            const gained = count * 3;
+            c.charges = Math.min(20, (c.charges || 0) + gained);
+            addLog('👁️ Rinnegan: ' + targetName + ' genera ' + gained + ' cargas (' + count + ' debuff' + (count>1?'s':'') + ' disipado' + (count>1?'s':'') + ')', 'buff');
+        }
 function triggerMaboroshi(targetTeam, debuffName) {
             if (!debuffName) return;
             const norm = (debuffName || '').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
@@ -190,6 +199,22 @@ function applyDebuff(targetName, effectObj) {
             target.statusEffects.push(effectObj);
             // PASIVA MABOROSHI: Saga gana 1 carga al aplicar debuff en enemigo
             triggerMaboroshi(target.team, effectObj.name);
+            // PASIVA RINNEGAN (Madara Uchiha): 70% chance debuff is cleansed + 3 charges
+            {
+                const _rinTarget = gameState.characters[targetName];
+                if (_rinTarget && !_rinTarget.isDead && _rinTarget.hp > 0 &&
+                    _rinTarget.passive && _rinTarget.passive.name === 'Rinnegan' &&
+                    effectObj.type === 'debuff') {
+                    if (Math.random() < 0.70) {
+                        // Cleanse: remove the debuff that was just added
+                        _rinTarget.statusEffects = (_rinTarget.statusEffects || []).filter(e => e !== effectObj);
+                        _rinTarget.charges = Math.min(20, (_rinTarget.charges || 0) + 3);
+                        addLog('👁️ Rinnegan: ' + targetName + ' disipa ' + effectObj.name + ' y genera 3 cargas (70%)', 'buff');
+                        return; // debuff was removed
+                    }
+                }
+            }
+
             // PASIVA NEGOCIACIONES HOSTILES (Padme): aliado recibe debuff → Padme +1 carga
             {
                 const padme = gameState.characters['Padme Amidala'] ||
