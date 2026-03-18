@@ -45,6 +45,44 @@
             }
         }
 
+
+        // ── AOE HELPER: applies MegaProv redirect + returns true if target is immune (EA) ──
+        function handleAOETarget(n, dmg, attackerName, targetTeam) {
+            // Returns actual damage dealt (0 if EA immune)
+            const c = gameState.characters[n];
+            if (!c || c.team !== targetTeam || c.isDead || c.hp <= 0) return -1; // skip
+            if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) {
+                addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff');
+                return 0; // immune
+            }
+            return applyDamageWithShield(n, dmg, attackerName);
+        }
+
+        // ── AOE MEGAPROV HELPER: check if MegaProv exists and redirect total AOE damage ──
+        function checkAndRedirectAOEMegaProv(targetTeam, dmgPerTarget, attackerName) {
+            const mpData = checkKamishMegaProvocation(targetTeam);
+            if (!mpData) return false;
+            // Count alive targets (excluding MegaProv holder)
+            let count = 0;
+            for (let _n in gameState.characters) {
+                const _c = gameState.characters[_n];
+                if (_c && _c.team === targetTeam && !_c.isDead && _c.hp > 0) count++;
+            }
+            for (let _sid in gameState.summons) {
+                const _s = gameState.summons[_sid];
+                if (_s && _s.team === targetTeam && _s.hp > 0 && _sid !== mpData.id) count++;
+            }
+            const totalDmg = dmgPerTarget * Math.max(1, count);
+            if (mpData.isCharacter) {
+                applyDamageWithShield(mpData.characterName, totalDmg, attackerName);
+                addLog('🌑 ' + mpData.characterName + ' (Mega Provocación) absorbe ' + totalDmg + ' daño AOE', 'damage');
+            } else {
+                applySummonDamage(mpData.id, totalDmg, attackerName);
+                addLog('🐉 ' + (mpData.kamish ? mpData.kamish.name : 'Invocación') + ' (Mega Provocación) absorbe ' + totalDmg + ' daño AOE', 'damage');
+            }
+            return true;
+        }
+
         function executeAbility(targetName) {
             audioManager.playSelect(); // SFX on every ability/action
             try {
@@ -279,6 +317,10 @@
                 const _egTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                 const _critChance = ability.critChance || 0.30;
                 let _egLog = [];
+                                // MEGA PROVOCACIÓN
+                if (checkAndRedirectAOEMegaProv(_egTeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('⛓️ explosion_galaxias: AOE redirigido por Mega Provocación', 'damage');
+                } else {
                 for (let _n in gameState.characters) {
                     const _c = gameState.characters[_n];
                     if (_c && _c.team === _egTeam && !_c.isDead && _c.hp > 0) {
@@ -288,6 +330,7 @@
                         applyDamageWithShield(_n, _dmg, gameState.selectedCharacter);
                         _egLog.push(_n + (_isCrit ? ' 💥CRIT(' + _dmg + ')' : '(' + _dmg + ')'));
                     }
+                }
                 }
                 // Also drain 1 charge per enemy (keeping original bonus from Onda de Fuerza flavor)
                 for (let _n in gameState.characters) {
@@ -301,6 +344,10 @@
                 // Genrō Maō Ken: 3 AOE + 50% Posesión por objetivo
                 const _gmTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                 let _gmLog = [];
+                                // MEGA PROVOCACIÓN
+                if (checkAndRedirectAOEMegaProv(_gmTeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('⛓️ genro_maoken: AOE redirigido por Mega Provocación', 'damage');
+                } else {
                 for (let _n in gameState.characters) {
                     const _c = gameState.characters[_n];
                     if (_c && _c.team === _gmTeam && !_c.isDead && _c.hp > 0) {
@@ -313,6 +360,7 @@
                             _gmLog.push(_n);
                         }
                     }
+                }
                 }
                 addLog('👁️ Genrō Maō Ken: ' + finalDamage + ' AOE — ' + _gmLog.join(', '), 'damage');
             } else if (ability.effect === 'apply_possession') {
@@ -604,6 +652,10 @@
                 checkAndRemoveStealth(gkTeam);
                 const darionGk = Object.values(gameState.summons).find(s => s && s.name === 'Darion Morgraine' && s.team === attacker.team);
                 const critBonusGk = darionGk ? 0.50 : 0;
+                                // MEGA PROVOCACIÓN: redirect all AOE damage
+                if (checkAndRedirectAOEMegaProv(gkTeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('⛓️ genkidama: AOE redirigido por Mega Provocación', 'damage');
+                } else {
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== gkTeam || c.isDead || c.hp <= 0) continue;
@@ -617,6 +669,7 @@
                         triggerGilgameshCrit(gameState.selectedCharacter);
                     }
                     applyDamageWithShield(n, dmgGk, gameState.selectedCharacter);
+                }
                 }
                 for (let sId in gameState.summons) {
                     const s = gameState.summons[sId];
@@ -1041,32 +1094,63 @@
                 }
 
             } else if (ability.effect === 'espada_merodach') {
-                // GILGAMESH - Espada Merodach: AOE daño + elimina 3 cargas, crítico posible
+                // GILGAMESH - Espada Merodach: AOE daño + elimina 3 cargas
                 const emTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                 checkAndRemoveStealth(emTeam);
                 const darionEM = Object.values(gameState.summons).find(s => s && s.name === 'Darion Morgraine' && s.team === attacker.team);
                 const muzanEM = ((gameState.selectedCharacter === 'Muzan Kibutsuji' || gameState.selectedCharacter === 'Muzan Kibutsuji v2')) ? (attacker.muzanCritBonus || 0) : 0;
-                const critBonusEM = (darionEM ? 0.50 : 0) + 0.10 + muzanEM; // +10% regla de oro + Muzan bonus
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (!c || c.team !== emTeam || c.isDead || c.hp <= 0) continue;
-                    const isCritEM = Math.random() < ((ability.critChance || 0.10) + critBonusEM);
-                    let dmgEM = finalDamage;
-                    if (isCritEM) {
-                        dmgEM *= 2;
-                        addLog(`💥 ¡CRÍTICO! Espada Merodach en ${n}`, 'damage');
-                        triggerGilgameshCrit(gameState.selectedCharacter);
-                    }
-                    applyDamageWithShield(n, dmgEM, gameState.selectedCharacter);
-                    c.charges = Math.max(0, c.charges - 3);
-                    addLog(`👑 ${n} pierde 3 cargas (Espada Merodach)`, 'damage');
-                }
-                for (let sId in gameState.summons) {
-                    const s = gameState.summons[sId];
-                    if (s && s.team === emTeam && s.hp > 0) applySummonDamage(sId, finalDamage, gameState.selectedCharacter);
-                }
-                addLog(`⚔️ Espada Merodach: ${finalDamage} daño AOE a todos los enemigos`, 'damage');
+                const critBonusEM = (darionEM ? 0.50 : 0) + 0.10 + muzanEM;
 
+                // ── MEGA PROVOCACIÓN: redirige todo el daño al portador ──
+                const emKamish = checkKamishMegaProvocation(emTeam);
+                if (emKamish) {
+                    // Count alive targets for damage multiplication
+                    let emTargetCount = 0;
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (c && c.team === emTeam && !c.isDead && c.hp > 0) emTargetCount++;
+                    }
+                    for (let sId in gameState.summons) {
+                        const s = gameState.summons[sId];
+                        if (s && s.team === emTeam && s.hp > 0 && sId !== emKamish.id) emTargetCount++;
+                    }
+                    const emTotalDmg = finalDamage * Math.max(1, emTargetCount);
+                    if (emKamish.isCharacter) {
+                        applyDamageWithShield(emKamish.characterName, emTotalDmg, gameState.selectedCharacter);
+                        addLog('🌑 ' + emKamish.characterName + ' (Mega Provocación) absorbe ' + emTotalDmg + ' daño de Espada Merodach', 'damage');
+                    } else {
+                        applySummonDamage(emKamish.id, emTotalDmg, gameState.selectedCharacter);
+                        addLog('🐉 ' + (emKamish.kamish ? emKamish.kamish.name : 'Invocación') + ' (Mega Provocación) absorbe ' + emTotalDmg + ' daño de Espada Merodach', 'damage');
+                    }
+                    addLog('⚔️ Espada Merodach (Mega Prov): ' + emTotalDmg + ' daño total redirigido', 'damage');
+                } else {
+                    // Sin Mega Provocación — AOE normal
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== emTeam || c.isDead || c.hp <= 0) continue;
+                        // ESQUIVA ÁREA: inmune a todo efecto AOE
+                        if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) {
+                            addLog('🌟 ' + n + ' es inmune a Espada Merodach (Esquiva Área)', 'buff');
+                            continue; // skip damage AND charge drain
+                        }
+                        const isCritEM = Math.random() < ((ability.critChance || 0.10) + critBonusEM);
+                        let dmgEM = finalDamage;
+                        if (isCritEM) {
+                            dmgEM *= 2;
+                            addLog('💥 ¡CRÍTICO! Espada Merodach en ' + n, 'damage');
+                            triggerGilgameshCrit(gameState.selectedCharacter);
+                        }
+                        applyDamageWithShield(n, dmgEM, gameState.selectedCharacter);
+                        // Only drain charges if NOT Esquiva Area (already skipped above via continue)
+                        c.charges = Math.max(0, c.charges - 3);
+                        addLog('👑 ' + n + ' pierde 3 cargas (Espada Merodach)', 'damage');
+                    }
+                    for (let sId in gameState.summons) {
+                        const s = gameState.summons[sId];
+                        if (s && s.team === emTeam && s.hp > 0) applySummonDamage(sId, finalDamage, gameState.selectedCharacter);
+                    }
+                    addLog('⚔️ Espada Merodach: ' + finalDamage + ' daño AOE a todos los enemigos', 'damage');
+                }
             } else if (ability.effect === 'enkidu' || ability.effect === 'enkidu_cadenas') {
                 // GILGAMESH - Enkidu Cadenas del Cielo: cancela invocaciones + Mega Stun a >5 cargas
                 const enkTeam = attacker.team === 'team1' ? 'team2' : 'team1';
@@ -1717,6 +1801,10 @@
             // ── TIGRE DE FUEGO V2 (Rengoku updated) ──
             } else if (ability.effect === 'tigre_fuego_v2') {
                 const enemyTeamTF = attacker.team === 'team1' ? 'team2' : 'team1';
+                                // MEGA PROVOCACIÓN
+                if (checkAndRedirectAOEMegaProv(enemyTeamTF, finalDamage, gameState.selectedCharacter)) {
+                    addLog('⛓️ tigre_fuego_v2: AOE redirigido por Mega Provocación', 'damage');
+                } else {
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== enemyTeamTF || c.isDead || c.hp <= 0) continue;
@@ -1735,6 +1823,7 @@
                         addLog('🔥 Tigre de Fuego: equipo gana 1 carga (objetivo tenía Quemadura)', 'buff');
                         break; // one bonus per cast
                     }
+                }
                 }
                 applyAOEDamageToSummons(attacker.team, finalDamage, charName);
                 addLog('🐯 Tigre de Fuego: ' + finalDamage + ' daño AOE + Quemadura', 'damage');
@@ -2597,6 +2686,10 @@
             } else if (ability.effect === 'corazon_llamas') {
                 // Mar de Fuego (Rengoku): AOE 3 dmg, 100% crítico a enemigos con Quemadura
                 const mfTeam2 = attacker.team === 'team1' ? 'team2' : 'team1';
+                                // MEGA PROVOCACIÓN
+                if (checkAndRedirectAOEMegaProv(mfTeam2, finalDamage, gameState.selectedCharacter)) {
+                    addLog('⛓️ corazon_llamas: AOE redirigido por Mega Provocación', 'damage');
+                } else {
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== mfTeam2 || c.isDead || c.hp <= 0) continue;
@@ -2611,6 +2704,7 @@
                         addLog('🔥💥 Mar de Fuego: ¡CRÍTICO sobre ' + n + ' (tiene Quemadura)!', 'damage');
                     }
                     applyDamageWithShield(n, mfDmg2, charName);
+                }
                 }
             } else if (ability.effect === 'expiacion_incandescente') {
                 const enemyTeamEI = attacker.team === 'team1' ? 'team2' : 'team1';
@@ -2872,9 +2966,17 @@
                 for (let haName in gameState.characters) {
                     const haC = gameState.characters[haName];
                     if (!haC || haC.team !== haTeam || haC.isDead || haC.hp <= 0) continue;
+                    // AURA DE LUZ: doubles healing
+                    const _haHealAmt = hasStatusEffect(haName, 'Aura de Luz') || hasStatusEffect(haName, 'Aura de luz')
+                        ? (ability.heal || 4) * 2 : (ability.heal || 4);
                     const haOld = haC.hp;
-                    haC.hp = Math.min(haC.maxHp, haC.hp + (ability.heal || 4));
-                    if (haC.hp > haOld) addLog('💚 Sanación Heroica: ' + haName + ' recupera ' + (haC.hp - haOld) + ' HP', 'heal');
+                    haC.hp = Math.min(haC.maxHp, haC.hp + _haHealAmt);
+                    const _haActual = haC.hp - haOld;
+                    if (_haActual > 0) {
+                        addLog('💚 ' + haName + ' recupera ' + _haActual + ' HP (Sanación Heroica)', 'heal');
+                        // BENDICIÓN SAGRADA: fires per character that recovers HP
+                        triggerBendicionSagrada(haTeam, _haActual);
+                    }
                 }
 
             } else if (ability.effect === 'dispel_ally_charges') {
