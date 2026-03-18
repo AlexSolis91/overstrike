@@ -688,13 +688,13 @@
             const teamLabel = (typeof getTeamLabel === 'function') ? ((char.team === 'team1' ? '🔷 ' : '🔶 ') + getTeamLabel(char.team)) : (char.team === 'team1' ? '🔷 HUNTERS' : '🔶 REAPERS');
 
             // Portrait
-            const isTransformed = (char.rikudoMode && name === 'Madara Uchiha') ||
-                                   (char.fenixArmorActive && name === 'Ikki de Fenix') ||
-                                   (char.kuramaMode && name === 'Minato Namikaze') ||
-                                   (name === 'Alexstrasza' && char.dragonFormActive) ||
+            const isTransformed = (char.rikudoMode && (name === 'Madara Uchiha' || name === 'Madara Uchiha v2')) ||
+                                   (char.fenixArmorActive && (name === 'Ikki de Fenix' || name === 'Ikki de Fenix v2')) ||
+                                   (char.kuramaMode && (name === 'Minato Namikaze' || name === 'Minato Namikaze v2')) ||
+                                   ((name === 'Alexstrasza' || name === 'Alexstrasza v2') && char.dragonFormActive) ||
                                    ((name === 'Goku' || name.startsWith('Goku')) && char.ultraInstinto) ||
-                                  (name === 'Anakin Skywalker' && char.darkSideAwakened) ||
-                                  (name === 'Muzan Kibutsuji' && char.muzanTransformed);
+                                  ((name === 'Anakin Skywalker' || name === 'Anakin Skywalker v2') && char.darkSideAwakened) ||
+                                  ((name === 'Muzan Kibutsuji' || name === 'Muzan Kibutsuji v2') && char.muzanTransformed);
             const portrait = char.portrait || char.transformPortrait || char.transformationPortrait || '';
 
             // Header row
@@ -853,13 +853,13 @@
             const portraitImg = document.getElementById('actionPortraitImg');
             const portraitFallback = document.getElementById('actionPortraitFallback');
             const charName = gameState.selectedCharacter;
-            const isTransformedModal = (char.rikudoMode && charName === 'Madara Uchiha') ||
-                                       (char.fenixArmorActive && charName === 'Ikki de Fenix') ||
-                                       (char.kuramaMode && charName === 'Minato Namikaze') ||
-                                       (char.dragonFormActive && charName === 'Alexstrasza') ||
+            const isTransformedModal = (char.rikudoMode && (charName === 'Madara Uchiha' || charName === 'Madara Uchiha v2')) ||
+                                       (char.fenixArmorActive && (charName === 'Ikki de Fenix' || charName === 'Ikki de Fenix v2')) ||
+                                       (char.kuramaMode && (charName === 'Minato Namikaze' || charName === 'Minato Namikaze v2')) ||
+                                       (char.dragonFormActive && (charName === 'Alexstrasza' || charName === 'Alexstrasza v2')) ||
                                        (char.ultraInstinto && (charName === 'Goku' || charName.startsWith('Goku'))) ||
-                                       (char.darkSideAwakened && charName === 'Anakin Skywalker') ||
-                                       (char.muzanTransformed && charName === 'Muzan Kibutsuji');
+                                       (char.darkSideAwakened && (charName === 'Anakin Skywalker' || charName === 'Anakin Skywalker v2')) ||
+                                       (char.muzanTransformed && (charName === 'Muzan Kibutsuji' || charName === 'Muzan Kibutsuji v2'));
                         const modalPortrait = char.portrait || char.transformPortrait || char.transformationPortrait || '';
             if (modalPortrait) {
                 portraitImg.src = modalPortrait;
@@ -889,7 +889,7 @@
             // Mostrar pasiva si existe
             const passiveContainer = document.getElementById('actionPassive');
             if (char.passive) {
-                const isLimboActive = gameState.selectedCharacter === 'Madara Uchiha' && char.rikudoMode;
+                const isLimboActive = (gameState.selectedCharacter === 'Madara Uchiha' || gameState.selectedCharacter === 'Madara Uchiha v2') && char.rikudoMode;
                 const borderColor = isLimboActive ? 'rgba(255,153,0,0.5)' : 'rgba(255,170,0,0.35)';
                 const titleColor = isLimboActive ? '#ff9900' : 'var(--warning)';
                 const activeTag = isLimboActive ? ' <span style="background:rgba(255,153,0,0.3);border:1px solid #ff9900;border-radius:6px;padding:1px 7px;font-size:0.75em;color:#ff9900;">⚡ ACTIVA</span>' : '';
@@ -939,7 +939,7 @@
                 
                 // Calcular costo ajustado
                 let adjustedCost = ability.cost;
-                if (char.rikudoMode && gameState.selectedCharacter === 'Madara Uchiha') {
+                if (char.rikudoMode && (gameState.selectedCharacter === 'Madara Uchiha' || gameState.selectedCharacter === 'Madara Uchiha v2')) {
                     adjustedCost = Math.ceil(ability.cost / 2);
                 }
                 
@@ -1032,7 +1032,7 @@
             
             // Calcular costo ajustado
             let adjustedCost = ability.cost;
-            if (char.rikudoMode && gameState.selectedCharacter === 'Madara Uchiha') {
+            if (char.rikudoMode && (gameState.selectedCharacter === 'Madara Uchiha' || gameState.selectedCharacter === 'Madara Uchiha v2')) {
                 adjustedCost = Math.ceil(ability.cost / 2);
             }
             
@@ -1100,7 +1100,7 @@
                 }
 
                 // ESPÍRITU DEL HÉROE (Saitama): genera 3 cargas al final del turno si HP <= 50%
-                if (gameState.selectedCharacter === 'Saitama') {
+                if ((gameState.selectedCharacter === 'Saitama' || gameState.selectedCharacter === 'Saitama v2')) {
                     const saitama = gameState.characters['Saitama'];
                     if (saitama && !saitama.isDead && saitama.hp <= Math.floor(saitama.maxHp * 0.5)) {
                         saitama.charges += 3;
