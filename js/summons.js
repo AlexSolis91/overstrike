@@ -577,7 +577,7 @@
             }
 
             // CASTILLO INFINITO (Nakime): inmune a daño ST directo
-            if (attackerName !== null && targetName === 'Nakime' && !passiveExecuting) {
+            if (attackerName !== null && (targetName === 'Nakime' || targetName === 'Nakime v2') && !passiveExecuting) {
                 // Check if this is a single-target ability (not AOE, not a debuff tick)
                 if (gameState.selectedAbility && gameState.selectedAbility.target === 'single') {
                     addLog(`🏯 Castillo Infinito: Nakime es inmune al daño ST`, 'buff');
@@ -636,7 +636,7 @@
                     if (Math.random() < 0.50) {
                         addLog(`💨 ${targetName} esquiva el ataque de ${attackerName}!`, 'buff');
                         // Si es Goku con Ultra Instinto, contraataca
-                        if (targetName === 'Goku' && target.ultraInstinto) {
+                        if ((targetName === 'Goku' || targetName === 'Goku v2') && target.ultraInstinto) {
                             triggerCounterattack(targetName, attackerName);
                         }
                         return 0;
@@ -645,7 +645,7 @@
             }
 
             // PRESENCIA OSCURA (Darth Vader): 20% de esquivar ataques especiales/over
-            if (attackerName !== null && !passiveExecuting && targetName === 'Darth Vader') {
+            if (attackerName !== null && !passiveExecuting && (targetName === 'Darth Vader' || targetName === 'Darth Vader v2')) {
                 const atkAbility = gameState.selectedAbility;
                 if (atkAbility && (atkAbility.type === 'special' || atkAbility.type === 'over')) {
                     if (Math.random() < 0.20) {
@@ -656,14 +656,14 @@
             }
 
             // PASIVA LIMBO: Madara en Modo Rikudō recibe 50% menos de daño
-            if (targetName === 'Madara Uchiha' && target.rikudoMode) {
+            if ((targetName === 'Madara Uchiha' || targetName === 'Madara Uchiha v2') && target.rikudoMode) {
                 const reduced = Math.ceil(damage / 2);
                 addLog(`🌀 Limbo: Madara absorbe ${damage - reduced} de daño (50% reducción)`, 'buff');
                 damage = reduced;
             }
 
             // PASIVA CUERPO DIVINO: Goku Black roba 1 carga al atacante con 50%
-            if (targetName === 'Goku Black' && attackerName && attackerName !== null && !passiveExecuting) {
+            if ((targetName === 'Goku Black' || targetName === 'Goku Black v2') && attackerName && attackerName !== null && !passiveExecuting) {
                 if (Math.random() < 0.5) {
                     passiveExecuting = true;
                     stealCharges('Goku Black', attackerName, 1);
@@ -799,7 +799,7 @@
                 }
 
                 // PASIVA CORAZÓN ARDIENTE (Rengoku): al morir aturde a todos los enemigos
-                if (targetName === 'Rengoku' && !passiveExecuting) {
+                if ((targetName === 'Rengoku' || targetName === 'Rengoku v2') && !passiveExecuting) {
                     passiveExecuting = true;
                     const enemyTeam = target.team === 'team1' ? 'team2' : 'team1';
                     addLog(`🔥 Corazón Ardiente: ¡Rengoku aturde a todos los enemigos al morir!`, 'damage');
@@ -811,7 +811,7 @@
                 }
 
                 // PASIVA IKKI: registrar ronda de muerte
-                if (targetName === 'Ikki de Fenix') {
+                if ((targetName === 'Ikki de Fenix' || targetName === 'Ikki de Fenix v2')) {
                     target.deathRound = gameState.currentRound;
                     target.fenixRevived = false;
                 }
