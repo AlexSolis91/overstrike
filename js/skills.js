@@ -3068,6 +3068,7 @@
                     addLog('🌸 Solución Diplomática: ' + targetName + ' no tiene debuffs activos', 'info');
                 } else {
                     _dispelChar.statusEffects = (_dispelChar.statusEffects || []).filter(e => !e || e.type !== 'debuff');
+                    if (typeof triggerRinneganCleanse === 'function') triggerRinneganCleanse(targetName, _count);
                     addLog('🌸 Solución Diplomática: ' + _count + ' debuff' + (_count>1?'s':'') + ' eliminado' + (_count>1?'s':'') + ' de ' + targetName, 'buff');
                     const _padmeChar = gameState.characters[gameState.selectedCharacter];
                     if (_padmeChar) {
@@ -3237,6 +3238,68 @@
                 }
                 generateChargesInline(charName, ability.chargeGain);
 
+            } else if (ability.effect === 'campo_atraccion') {
+                // LINTERNA VERDE — Campo de Atracción: Provocación + Protección Sagrada
+                const _lgName = gameState.selectedCharacter;
+                applyBuff(_lgName, { name: 'Provocacion', type: 'buff', duration: 3, emoji: '⚠️', description: 'Provocación: enemigos deben atacarte' });
+                applyBuff(_lgName, { name: 'Proteccion Sagrada', type: 'buff', duration: 2, emoji: '🛡️', description: 'Protección Sagrada: inmune a debuffs y daño de golpe' });
+                addLog('💚 Campo de Atracción: ' + _lgName + ' activa Provocación + Protección Sagrada', 'buff');
+
+            } else if (ability.effect === 'sincronia_esmeralda') {
+                // LINTERNA VERDE — Sincronía Esmeralda: limpia 1 debuff del aliado + 3 cargas
+                const _seChar = gameState.characters[targetName];
+                if (_seChar) {
+                    const _seDebuffs = (_seChar.statusEffects || []).filter(e => e && e.type === 'debuff');
+                    if (_seDebuffs.length > 0) {
+                        // Remove oldest debuff (first in array)
+                        const _seRemoved = _seDebuffs[0];
+                        _seChar.statusEffects = (_seChar.statusEffects || []).filter(e => e !== _seRemoved);
+                        addLog('💚 Sincronía Esmeralda: Debuff ' + _seRemoved.name + ' eliminado de ' + targetName, 'buff');
+                    } else {
+                        addLog('💚 Sincronía Esmeralda: ' + targetName + ' no tiene debuffs activos', 'info');
+                    }
+                    _seChar.charges = Math.min(20, (_seChar.charges || 0) + 3);
+                    addLog('💚 ' + targetName + ' genera 3 cargas (Sincronía Esmeralda)', 'buff');
+                }
+
+            } else if (ability.effect === 'soporte_vital') {
+                // LINTERNA VERDE — Soporte Vital Autónomo: ambos recuperan 5 HP + limpian debuffs
+                const _svLG = gameState.characters[gameState.selectedCharacter];
+                const _svAlly = gameState.characters[targetName];
+                // Heal + cleanse both
+                [{ name: gameState.selectedCharacter, char: _svLG }, { name: targetName, char: _svAlly }].forEach(function(obj) {
+                    if (!obj.char) return;
+                    const _svOld = obj.char.hp;
+                    obj.char.hp = Math.min(obj.char.maxHp, obj.char.hp + 5);
+                    const _svHeal = obj.char.hp - _svOld;
+                    if (_svHeal > 0) {
+                        addLog('💚 ' + obj.name + ' recupera ' + _svHeal + ' HP (Soporte Vital)', 'heal');
+                        triggerBendicionSagrada(obj.char.team, _svHeal);
+                    }
+                    const _svBefore = (obj.char.statusEffects || []).filter(e => e && e.type === 'debuff').length;
+                    obj.char.statusEffects = (obj.char.statusEffects || []).filter(e => !e || e.type !== 'debuff');
+                    if (_svBefore > 0) addLog('💚 ' + obj.name + ': ' + _svBefore + ' debuff' + (_svBefore>1?'s':'') + ' disipado' + (_svBefore>1?'s':'') + ' (Soporte Vital)', 'buff');
+                });
+
+            } else if (ability.effect === 'lanza_de_oa') {
+                // LINTERNA VERDE — La Lanza de Oa: 2 + 5~10 daño + Mega Aturdimiento + lifesteal total
+                const _loaBase = finalDamage; // 2
+                const _loaBonus = Math.floor(Math.random() * 6) + 5; // 5-10
+                const _loaTotal = _loaBase + _loaBonus;
+                applyDamageWithShield(targetName, _loaTotal, gameState.selectedCharacter);
+                applyStun(gameState.selectedCharacter === targetName ? targetName : targetName, 2); // Mega Aturdimiento
+                // Lifesteal: Linterna Verde recovers HP equal to total damage dealt
+                const _lgLoa = gameState.characters[gameState.selectedCharacter];
+                if (_lgLoa) {
+                    const _loaHealOld = _lgLoa.hp;
+                    _lgLoa.hp = Math.min(_lgLoa.maxHp, _lgLoa.hp + _loaTotal);
+                    const _loaHeal = _lgLoa.hp - _loaHealOld;
+                    if (_loaHeal > 0) {
+                        addLog('💚 Linterna Verde recupera ' + _loaHeal + ' HP (Lanza de Oa)', 'heal');
+                        triggerBendicionSagrada(_lgLoa.team, _loaHeal);
+                    }
+                }
+                addLog('💚 La Lanza de Oa: ' + _loaTotal + ' daño (' + _loaBase + '+' + _loaBonus + ') + Mega Aturdimiento a ' + targetName, 'damage');
             } else if (ability.effect === 'heal_cleanse') {
                 // Tamayo básico Aguja Medicinal: cura 1 HP + limpia 1 debuff del aliado objetivo
                 const hcC = gameState.characters[targetName];
