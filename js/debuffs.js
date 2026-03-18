@@ -108,7 +108,7 @@ function triggerMaboroshi(targetTeam, debuffName) {
 
         function isImmuneToDebuff(targetName) {
             // Saitama: total debuff immunity
-            if (targetName === 'Saitama') return true;
+            if ((targetName === 'Saitama' || targetName === 'Saitama v2')) return true;
             // Proteccion Sagrada: immune to new debuffs
             if (hasStatusEffect(targetName, 'Proteccion Sagrada') || hasStatusEffect(targetName, 'Protección Sagrada')) return true;
             // LIMBO (Madara Uchiha): Divinidad = inmune a debuffs en Modo Rikudō
@@ -118,8 +118,8 @@ function triggerMaboroshi(targetTeam, debuffName) {
         }
         function isImmuneToBurn(targetName) {
             // Daenerys: immune to Quemadura and Quemadura Solar
-            if (targetName === 'Daenerys Targaryen') return true;
-            if (targetName === 'Saitama') return true;
+            if ((targetName === 'Daenerys Targaryen' || targetName === 'Daenerys Targaryen v2')) return true;
+            if ((targetName === 'Saitama' || targetName === 'Saitama v2')) return true;
             if (hasStatusEffect(targetName, 'Proteccion Sagrada') || hasStatusEffect(targetName, 'Protección Sagrada')) return true;
             return false;
         }
@@ -146,7 +146,7 @@ function applyDebuff(targetName, effectObj) {
             const targetChar = gameState.characters[targetName];
             if (targetChar) {
                 // Saitama: inmune a todos los debuffs
-                if (targetName === 'Saitama' && effectObj.type === 'debuff') {
+                if ((targetName === 'Saitama' || targetName === 'Saitama v2') && effectObj.type === 'debuff') {
                     addLog(`🦸 Saitama es inmune a ${effectObj.name} (Espíritu del Héroe)`, 'buff');
                     return;
                 }
@@ -298,12 +298,12 @@ function applyDebuff(targetName, effectObj) {
                 addLog(`🛡️ ${targetName} es inmune a Quemadura Solar (Protección Sagrada)`, 'buff');
                 return;
             }
-            if (targetName === 'Daenerys Targaryen') {
+            if ((targetName === 'Daenerys Targaryen' || targetName === 'Daenerys Targaryen v2')) {
                 addLog('🐉 Dynastía del Dragón: Daenerys es inmune a Quemadura Solar', 'buff');
                 if (typeof triggerDaenerysPassiveBurnHeal === 'function') triggerDaenerysPassiveBurnHeal('Daenerys Targaryen');
                 return;
             }
-            if (targetName === 'Saitama') {
+            if ((targetName === 'Saitama' || targetName === 'Saitama v2')) {
                 addLog('🦸 Saitama es inmune a Quemadura Solar', 'buff');
                 return;
             }
