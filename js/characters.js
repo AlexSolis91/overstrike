@@ -425,7 +425,7 @@
             'Linterna Verde': {
                 hp: 20, maxHp: 20, speed: 96, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/tgkc9D2t/Green-Lantern.png',
+                portrait: 'https://i.postimg.cc/1twccKpj/Captura_de_pantalla_2026_03_18_131918.png',
                 passive: { name: 'Visión Esmeralda', description: 'Cada vez que recibe un golpe, genera 2 cargas.' },
                 abilities: [
                     { name: 'Campo de Atracción', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'campo_atraccion', description: 'Se aplica Buff Provocación. Se aplica Buff Protección Sagrada.' },
