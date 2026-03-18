@@ -59,12 +59,12 @@
             // Apply a burn that does flat HP damage (not percent)
             const target = gameState.characters[targetName];
             if (!target) return;
-            if (targetName === 'Saitama') {
+            if ((targetName === 'Saitama' || targetName === 'Saitama v2')) {
                 addLog('🦸 Saitama es inmune a Quemadura (Espíritu del Héroe)', 'buff');
                 return;
             }
             // DAENERYS - Dinastía del Dragón: inmune a Quemadura y Quemadura Solar
-            if (targetName === 'Daenerys Targaryen') {
+            if ((targetName === 'Daenerys Targaryen' || targetName === 'Daenerys Targaryen v2')) {
                 addLog('🐉 Dynastía del Dragón: Daenerys es inmune a Quemadura', 'buff');
                 triggerDaenerysPassiveBurnHeal('Daenerys Targaryen');
                 return;
@@ -96,7 +96,7 @@ function processBurnEffects(charName) {
             const char = gameState.characters[charName];
             if (!char || !char.statusEffects) return;
             // DAENERYS: immune to Quemadura — remove any that slipped through and heal
-            if (charName === 'Daenerys Targaryen') {
+            if ((charName === 'Daenerys Targaryen' || charName === 'Daenerys Targaryen v2')) {
                 const burnsBefore = char.statusEffects.filter(e => e && e.name === 'Quemadura').length;
                 char.statusEffects = char.statusEffects.filter(e => !e || e.name !== 'Quemadura');
                 if (burnsBefore > 0 && typeof triggerDaenerysPassiveBurnHeal === 'function') triggerDaenerysPassiveBurnHeal(charName);
@@ -163,7 +163,7 @@ function processBurnEffects(charName) {
             const char = gameState.characters[charName];
             if (!char || !char.statusEffects) return;
             // DAENERYS: immune to Quemadura Solar
-            if (charName === 'Daenerys Targaryen') {
+            if ((charName === 'Daenerys Targaryen' || charName === 'Daenerys Targaryen v2')) {
                 const solarBefore = char.statusEffects.filter(e => e && e.name === 'Quemadura Solar').length;
                 char.statusEffects = char.statusEffects.filter(e => !e || e.name !== 'Quemadura Solar');
                 if (solarBefore > 0 && typeof triggerDaenerysPassiveBurnHeal === 'function') triggerDaenerysPassiveBurnHeal(charName);
@@ -225,7 +225,7 @@ function processBurnEffects(charName) {
                 if (effect.untilRoundEnd) return true;
                 if (effect.duration <= 0) {
                     // DAENERYS Dinastía del Dragón: heal 1 HP when Quemadura/QS expires
-                    if (charName === 'Daenerys Targaryen' && (effect.name === 'Quemadura' || effect.name === 'Quemadura Solar')) {
+                    if ((charName === 'Daenerys Targaryen' || charName === 'Daenerys Targaryen v2') && (effect.name === 'Quemadura' || effect.name === 'Quemadura Solar')) {
                         if (typeof triggerDaenerysPassiveBurnHeal === 'function') triggerDaenerysPassiveBurnHeal(charName);
                     }
                     // PALPATINE PASSIVE: when an enemy debuff expires, 50% chance to stun them
@@ -238,7 +238,7 @@ function processBurnEffects(charName) {
                     }
                     const nname = normAccent(effect.name || '');
                     // Limpiar Forma Dragón de Alexstrasza cuando Escudo Sagrado expira
-                    if (nname === 'escudo sagrado' && charName === 'Alexstrasza') {
+                    if (nname === 'escudo sagrado' && (charName === 'Alexstrasza' || charName === 'Alexstrasza v2')) {
                         char.dragonFormActive = false;
                         addLog(`🐉 Alexstrasza vuelve a su forma normal`, 'info');
                     }
@@ -265,7 +265,7 @@ function processBurnEffects(charName) {
                 return;
             }
             // SAITAMA: inmune a todos los debuffs incluyendo Quemadura
-            if (targetName === 'Saitama') {
+            if ((targetName === 'Saitama' || targetName === 'Saitama v2')) {
                 addLog('🦸 Saitama es inmune a Quemadura (Espíritu del Héroe)', 'buff');
                 return;
             }
