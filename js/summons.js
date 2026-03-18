@@ -1,4 +1,7 @@
-// ==================== ROBO DE CARGAS ====================
+// ── GLOBAL FLAG: prevents infinite passive cascade loops ──
+        let passiveExecuting = false;
+
+        // ==================== ROBO DE CARGAS ====================
         function stealCharges(attackerName, targetName, amount) {
             const attacker = gameState.characters[attackerName];
             const target = gameState.characters[targetName];
@@ -825,6 +828,11 @@
 
             // Disparar pasivas post-golpe si el objetivo sigue vivo
             if (target.hp > 0 && !target.isDead && attackerName) {
+                // VISIÓN ESMERALDA (Linterna Verde): genera 2 cargas al recibir un golpe
+                if (!passiveExecuting && target.passive && target.passive.name === 'Visión Esmeralda') {
+                    target.charges = Math.min(20, (target.charges || 0) + 2);
+                    addLog('💚 Visión Esmeralda: ' + targetName + ' genera 2 cargas al recibir golpe', 'buff');
+                }
                 triggerOnHitPassives(targetName, attackerName, null);
                 // AURA DE HIELO (Lich King): congela al atacante
                 triggerLichKingAura(targetName, attackerName);
