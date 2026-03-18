@@ -9,13 +9,12 @@
                 rikudoMode: false,
                 portrait: 'https://i.postimg.cc/KzWJPy5j/Captura_de_pantalla_2026_02_26_134301.png',
                 transformPortrait: 'https://i.postimg.cc/kGtwwhj9/Captura_de_pantalla_2026_02_26_135949.png',
-                transformationPortrait: 'https://i.postimg.cc/vBbG3V57/Captura_de_pantalla_2026_03_16_172658.png',
-                passive: { name: 'Limbo', description: 'Efectos pasivos de Divinidad y Cuerpo Perfecto.' },
+                passive: { name: 'Rinnegan', description: 'Cada vez que recibe un debuff, hay 70% de probabilidad de que ese debuff sea limpiado automáticamente. Cada vez que un debuff es limpiado o disipado en Madara, genera 3 cargas.' },
                 abilities: [
-                    { name: 'Gakidō: Fūjutsu Kyūin', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'lifesteal_basic', description: 'Causa 2 de daño. Roba HP al enemigo golpeado equivalente al daño causado por este ataque.' },
-                    { name: 'Mangekyō Sharingan', type: 'special', cost: 2, chargeGain: 0, damage: 3, target: 'single', effect: 'sharingan_aoe', description: 'Causa 3 de daño sobre el objetivo. Madara se aplica Buff Contraataque y Buff Concentración.' },
-                    { name: 'Susanoo', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'aoe', effect: 'double_on_burn', description: 'Causa 3 de daño en área con 50% de probabilidad de golpe crítico. Aplica Buff Escudo con +3 HP por cada golpe crítico acertado en el enemigo.' },
-                    { name: 'Modo Rikudō', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'rikudo_transformation', description: 'TRANSFORMACIÓN permanente. Todos los ataques cuestan la mitad de cargas, causan el doble de daño y generan el doble de cargas. Activa la pasiva Limbo: recibe 50% menos de daño y regenera 1 HP cada turno.' }
+                    { name: 'Gakidō: Fūjutsu Kyūin', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'single', effect: 'lifesteal_basic', description: 'Causa 1 daño. Roba 2 HP del objetivo.' },
+                    { name: 'Mangekyō Sharingan', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'single', effect: 'sharingan_aoe', description: 'Causa 4 daño. Se aplica Buff Contraataque. Se aplica Buff Concentración.' },
+                    { name: 'Susanoo', type: 'special', cost: 8, chargeGain: 0, damage: 3, target: 'aoe', effect: 'double_on_burn', critChance: 0.50, description: 'Causa 3 AOE con 50% de probabilidad de golpe crítico. Aplica Buff Escudo con +3 HP por cada golpe crítico acertado.' },
+                    { name: 'Modo Rikudō', type: 'over', cost: 12, chargeGain: 0, damage: 0, target: 'self', effect: 'rikudo_transformation', description: 'Transformación permanente. Todos los ataques cuestan la mitad de cargas. Todos los ataques causan daño doble.' }
                 ]
             },
 
@@ -423,5 +422,16 @@
                     { name: 'Armadura Divina del Fénix', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'armadura_fenix', description: 'TRANSFORMACIÓN: Ikki de Fénix es equipado con su Armadura Divina del Fénix. Mientras esté equipado, aplica Buff Regeneración 20% y causa daño triple en enemigos con debuff Quemaduras.' }
                 ]
             },
-
+            'Linterna Verde': {
+                hp: 20, maxHp: 20, speed: 96, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.postimg.cc/tgkc9D2t/Green-Lantern.png',
+                passive: { name: 'Visión Esmeralda', description: 'Cada vez que recibe un golpe, genera 2 cargas.' },
+                abilities: [
+                    { name: 'Campo de Atracción', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'campo_atraccion', description: 'Se aplica Buff Provocación. Se aplica Buff Protección Sagrada.' },
+                    { name: 'Sincronía Esmeralda', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'sincronia_esmeralda', description: 'Limpia 1 debuff sobre el aliado objetivo y el aliado genera 3 cargas.' },
+                    { name: 'Soporte Vital Autónomo', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'soporte_vital', description: 'Selecciona un aliado: ambos (Linterna Verde y el aliado) recuperan 5 HP y disipan todos los debuffs.' },
+                    { name: 'La Lanza de Oa', type: 'over', cost: 10, chargeGain: 0, damage: 2, target: 'single', effect: 'lanza_de_oa', description: 'Causa 2 + 5 a 10 daño adicional aleatorio. Aplica debuff Mega Aturdimiento. Linterna Verde recupera HP equivalente al daño total causado.' }
+                ]
+            }
         };
