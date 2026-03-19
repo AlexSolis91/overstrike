@@ -85,7 +85,35 @@
             if (ability.target === 'aoe') {
                 const targetTeam = attackerTeam === 'team1' ? 'team2' : 'team1';
                 title.textContent = '🎯 Ataque AOE — Todos los Enemigos';
-                // Mostrar preview de todos los enemigos vivos como targets
+                
+                // MEGA PROVOCACIÓN: mostrar solo al portador como objetivo
+                const _aoeMP = checkKamishMegaProvocation(targetTeam);
+                if (_aoeMP && !sauronIgnoresRestrictions()) {
+                    title.textContent = '🎯 MEGA PROVOCACIÓN — AOE absorbido por ' + (_aoeMP.isCharacter ? _aoeMP.characterName : (_aoeMP.holder ? _aoeMP.holder.name : 'Invocación'));
+                    if (_aoeMP.isCharacter) {
+                        const _mpChar = gameState.characters[_aoeMP.characterName];
+                        grid.innerHTML = makeTargetBtn(
+                            `executeAbility(null)`,
+                            getActivePortrait(_aoeMP.characterName, _mpChar),
+                            _aoeMP.characterName,
+                            `<strong>🎯 ${_aoeMP.characterName}</strong><br><small>HP: ${_mpChar ? _mpChar.hp : '?'}/${_mpChar ? _mpChar.maxHp : '?'}</small><br><small style="color:#ffaa00;">🎯 MEGA PROVOCACIÓN — absorbe todo</small>`,
+                            'border-color:#ffaa00; background:linear-gradient(135deg,rgba(255,170,0,0.3),rgba(255,140,0,0.2));'
+                        );
+                    } else {
+                        const _mpS = _aoeMP.holder;
+                        const _mpSName = _mpS ? _mpS.name : 'Invocación';
+                        grid.innerHTML = makeTargetBtn(
+                            `executeAbility(null)`,
+                            null, _mpSName,
+                            `<strong>🎯 ${_mpSName}</strong><br><small>HP: ${_mpS ? _mpS.hp : '?'}/${_mpS ? _mpS.maxHp : '?'}</small><br><small style="color:#ffaa00;">🎯 MEGA PROVOCACIÓN</small>`,
+                            'border-color:#ffaa00;'
+                        );
+                    }
+                    modal.classList.add('show');
+                    return;
+                }
+                
+                // Sin MegaProv — preview normal + botón de confirmación
                 for (let name in gameState.characters) {
                     const char = gameState.characters[name];
                     if (char.team === targetTeam && char.hp > 0 && !char.isDead) {
