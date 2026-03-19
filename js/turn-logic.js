@@ -389,6 +389,21 @@
         }
 
         function continueTurn() {
+            // ── ENFORCE PERMANENT PASSIVES AT TURN START ──
+            for (const _epn in gameState.characters) {
+                const _epc = gameState.characters[_epn];
+                if (!_epc || _epc.isDead || !_epc.passive) continue;
+                // Darth Vader: Aura Oscura permanente
+                if (_epc.passive.name === 'Presencia Oscura' && !hasStatusEffect(_epn, 'Aura oscura')) {
+                    _epc.statusEffects = (_epc.statusEffects || []);
+                    _epc.statusEffects.push({ name: 'Aura oscura', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🌑' });
+                }
+                // Giyu Tomioka: Armadura permanente
+                if (_epc.passive.name === 'Pilar del Agua' && !hasStatusEffect(_epn, 'Armadura')) {
+                    _epc.statusEffects = (_epc.statusEffects || []);
+                    _epc.statusEffects.push({ name: 'Armadura', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🛡️' });
+                }
+            }
             // Online mode: only the player whose team is active can continue
             if (onlineMode) {
                 const myTeam = isRoomHost ? 'team1' : 'team2';
@@ -1478,6 +1493,10 @@
                     }
                 }
 
+            // Final check after all EOR effects — catches kills from burns, dragons, etc.
+            if (typeof checkGameOver === 'function' && checkGameOver()) return;
+            renderCharacters();
+            renderSummons();
             } catch (error) {
                 console.error('Error en processEndOfRoundEffects:', error);
             }
