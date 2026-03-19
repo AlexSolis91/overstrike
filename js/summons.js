@@ -794,6 +794,8 @@
             // Verificar si fue derrotado
             if (target.hp <= 0 && oldHp > 0) {
                 target.isDead = true;
+                // Immediate game-over check after every kill
+                if (typeof checkGameOver === 'function') checkGameOver();
                 
                 if (attackerName) {
                     addLog(`💀 ${targetName} fue derrotado por ${attackerName}`, 'damage');
@@ -920,13 +922,11 @@
         function applyShield(targetName, shieldAmount, specialEffect = null) {
             const target = gameState.characters[targetName];
             if (!target) return;
-            // Escudos NO son acumulables — el nuevo escudo siempre reemplaza al anterior
-            if (target.shield > 0) {
-                addLog('🛡️ El escudo anterior de ' + targetName + ' (' + target.shield + ' HP) es reemplazado por uno nuevo', 'info');
-            }
-            target.shield = shieldAmount;
-            target.shieldEffect = specialEffect;
-            addLog('🛡️ ' + targetName + ' recibe Escudo de ' + shieldAmount + ' HP', 'buff');
+            // Escudos son ACUMULABLES — se suma al escudo existente
+            const prevShield = target.shield || 0;
+            target.shield = prevShield + shieldAmount;
+            if (specialEffect) target.shieldEffect = specialEffect;
+            addLog('🛡️ ' + targetName + ' recibe Escudo +' + shieldAmount + ' HP (total: ' + target.shield + ' HP)', 'buff');
         }
 
         
