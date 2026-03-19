@@ -62,24 +62,15 @@
         function checkAndRedirectAOEMegaProv(targetTeam, dmgPerTarget, attackerName) {
             const mpData = checkKamishMegaProvocation(targetTeam);
             if (!mpData) return false;
-            // Count alive targets (excluding MegaProv holder)
-            let count = 0;
-            for (let _n in gameState.characters) {
-                const _c = gameState.characters[_n];
-                if (_c && _c.team === targetTeam && !_c.isDead && _c.hp > 0) count++;
-            }
-            for (let _sid in gameState.summons) {
-                const _s = gameState.summons[_sid];
-                if (_s && _s.team === targetTeam && _s.hp > 0 && _sid !== mpData.id) count++;
-            }
-            const totalDmg = dmgPerTarget * Math.max(1, count);
+            const mult = countMegaProvMultiplier(targetTeam, mpData);
+            const totalDmg = dmgPerTarget * mult;
+            const holderName = mpData.isCharacter ? mpData.characterName : (mpData.holder ? mpData.holder.name : 'Invocación');
             if (mpData.isCharacter) {
                 applyDamageWithShield(mpData.characterName, totalDmg, attackerName);
-                addLog('🌑 ' + mpData.characterName + ' (Mega Provocación) absorbe ' + totalDmg + ' daño AOE', 'damage');
             } else {
                 applySummonDamage(mpData.id, totalDmg, attackerName);
-                addLog('🐉 ' + (mpData.kamish ? mpData.kamish.name : 'Invocación') + ' (Mega Provocación) absorbe ' + totalDmg + ' daño AOE', 'damage');
             }
+            addLog('🎯 ' + holderName + ' (Mega Provocación) absorbe ' + totalDmg + ' daño AOE (' + dmgPerTarget + '×' + mult + ')', 'damage');
             return true;
         }
 
@@ -267,6 +258,10 @@
 
             } else if (ability.effect === 'guadana_divina') {
                 const enemyTeamGD = attacker.team === 'team1' ? 'team2' : 'team1';
+                                // MEGA PROVOCACIÓN
+                if (checkAndRedirectAOEMegaProv(enemyTeamGD, finalDamage, gameState.selectedCharacter)) {
+                    addLog('🎯 guadana_divina: AOE redirigido por Mega Provocación', 'damage');
+                } else {
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== enemyTeamGD || c.isDead || c.hp <= 0) continue;
@@ -274,6 +269,7 @@
                     applyDamageWithShield(n, finalDamage, charName);
                     c.charges = 0;
                     addLog('⚰️ Guadaña Divina: ' + n + ' pierde todas sus cargas', 'damage');
+                }
                 }
                 // Daño AOE también a invocaciones enemigas
                 for (let _sid in gameState.summons) {
@@ -946,7 +942,7 @@
             } else if (ability.effect === 'poder_del_anillo') {
                 // SAURON - Poder del Anillo: MegaProvocacion 4t + Regeneracion 20% 4t
                 attacker.sauronTransformed = true;
-                attacker.statusEffects.push({ name: 'MegaProvocacion', type: 'buff', duration: 4, emoji: '🌑' });
+                attacker.statusEffects.push({ name: 'MegaProvocacion', type: 'buff', duration: 4, emoji: '🎯' });
                 attacker.statusEffects.push({ name: 'Regeneracion', type: 'buff', duration: 4, percent: 20, emoji: '💖' });
                 addLog('💍 ¡Poder del Anillo! Sauron activa MegaProvocación 4t + Regeneración 20% 4t', 'buff');
 
@@ -958,8 +954,8 @@
             } else if (ability.effect === 'apply_megaprovocation_buff') {
                 // DARTH VADER - Lado Oscuro de la Fuerza: Mega Provocación 4 turnos
                 // Use Kamish-style mega provocation as a character buff
-                attacker.statusEffects.push({ name: 'MegaProvocacion', type: 'buff', duration: ability.provDuration || 4, emoji: '🌑' });
-                addLog(`🌑 ${gameState.selectedCharacter} activa Mega Provocación por ${ability.provDuration || 4} turnos (absorbe todo el daño del equipo)`, 'buff');
+                attacker.statusEffects.push({ name: 'MegaProvocacion', type: 'buff', duration: ability.provDuration || 4, emoji: '🎯' });
+                addLog('🎯 ' + gameState.selectedCharacter + ' activa Mega Provocación por ' + (ability.provDuration || 4) + ' turnos', 'buff');
 
             } else if (ability.effect === 'ira_elegido') {
                 // DARTH VADER - Ira del Elegido Caído: 2 AOE + 1 por HP perdido
@@ -967,11 +963,16 @@
                 const iraTotal = finalDamage + iraBonusDmg;
                 const iraTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                 checkAndRemoveStealth(iraTeam);
+                                // MEGA PROVOCACIÓN
+                if (checkAndRedirectAOEMegaProv(iraTeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('🎯 ira_elegido: AOE redirigido por Mega Provocación', 'damage');
+                } else {
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (c && c.team === iraTeam && !c.isDead && c.hp > 0) {
                         applyDamageWithShield(n, iraTotal, gameState.selectedCharacter);
                     }
+                }
                 }
                 for (let sId in gameState.summons) {
                     const s = gameState.summons[sId];
@@ -1523,12 +1524,15 @@
                 }
 
             } else if (ability.effect === 'fuego_vital') {
-                // ALEXSTRAZA - Fuego Vital: Escudo 2 HP + represalia quemadura 10% al atacante mientras escudo activo
+                // ALEXSTRAZA - Fuego Vital: Escudo 2 HP + Aura de fuego
                 const tgtFV = gameState.characters[targetName];
                 if (tgtFV) {
-                    tgtFV.shield = (ability.shieldAmount || 2);
-                    tgtFV.shieldEffect = 'fire_retaliation_fuego';
-                    addLog(`🔥 ${targetName} recibe Escudo ${ability.shieldAmount || 2} HP con represalia de Quemadura 10% (Fuego Vital)`, 'buff');
+                    applyShield(targetName, ability.shieldAmount || 2);
+                    // Apply Aura de fuego buff
+                    if (!hasStatusEffect(targetName, 'Aura de fuego')) {
+                        applyBuff(targetName, { name: 'Aura de fuego', type: 'buff', duration: 4, emoji: '🔥', description: 'Quemadura 2HP al atacante' });
+                    }
+                    addLog('🔥 ' + targetName + ' recibe Escudo ' + (ability.shieldAmount || 2) + ' HP + Aura de Fuego (Fuego Vital)', 'buff');
                 }
 
             } else if (ability.effect === 'llama_preservadora') {
@@ -2252,10 +2256,10 @@
                 const _giyuChar = gameState.characters[_giyuPC];
                 if (_giyuChar) {
                     _giyuChar.statusEffects = (_giyuChar.statusEffects || []).filter(e => e && e.name !== 'MegaProvocacion');
-                    _giyuChar.statusEffects.push({ name: 'MegaProvocacion', type: 'buff', duration: 3, emoji: '🌊', permanent: false });
+                    _giyuChar.statusEffects.push({ name: 'MegaProvocacion', type: 'buff', duration: 3, emoji: '🎯', permanent: false });
                 }
                 applyShield(_giyuPC, ability.shieldAmount || 3);
-                addLog('🌊 Onceava Postura: ' + _giyuPC + ' activa Mega Provocación + Escudo 3HP', 'buff');
+                addLog('🎯 Onceava Postura: ' + _giyuPC + ' activa Mega Provocación + Escudo 3HP', 'buff');
 
             } else if (ability.effect === 'superficie_muerta') {
                 // GIYU — Superficie Muerta: 1-3 AOE + Escudo a Giyu por daño causado
@@ -3533,60 +3537,41 @@
                 addLog(`⚔️ ${gameState.selectedCharacter} usa ${ability.name} en ${targetName} causando ${finalDamage} de daño`, 'damage');
                 
             } else if (ability.target === 'aoe') {
-                // Daño a todos los enemigos (genérico) - INCLUYENDO INVOCACIONES
+                // ── GENÉRICO AOE: con Mega Provocación y Esquiva Área ──
                 const attackerTeam = attacker.team;
                 const targetTeam = attackerTeam === 'team1' ? 'team2' : 'team1';
-                
-                // VERIFICAR MEGA PROVOCACIÓN DE KAMISH
-                const kamishData = checkKamishMegaProvocation(targetTeam);
-                if (kamishData) {
-                    // Kamish absorbe TODO el daño AOE
-                    // Contar cuántos personajes E invocaciones del equipo objetivo están vivos
-                    let targetCount = 0;
-                    for (let name in gameState.characters) {
-                        const char = gameState.characters[name];
-                        if (char.team === targetTeam && !char.isDead && char.hp > 0) targetCount++;
-                    }
-                    for (let sId in gameState.summons) {
-                        const s = gameState.summons[sId];
-                        if (s && s.team === targetTeam && s.hp > 0 && sId !== kamishData.id) targetCount++;
-                    }
-                    
-                    const totalDamage = finalDamage * targetCount;
-                    if (kamishData.isCharacter) {
-                        // CHARACTER with MegaProv (Darth Vader, Sauron, etc.)
-                        applyDamageWithShield(kamishData.characterName, totalDamage, gameState.selectedCharacter);
-                        addLog('🌑 ' + kamishData.characterName + ' (Mega Provocación) absorbe ' + totalDamage + ' de daño AOE (' + finalDamage + ' × ' + targetCount + ' objetivos)', 'buff');
+                checkAndRemoveStealth(targetTeam);
+
+                const _genMPData = checkKamishMegaProvocation(targetTeam);
+                if (_genMPData) {
+                    // MEGA PROVOCACIÓN activa — holder absorbe daño × total aliados
+                    const _genMult = countMegaProvMultiplier(targetTeam, _genMPData);
+                    const _genTotalDmg = finalDamage * _genMult;
+                    const _genHolderName = _genMPData.isCharacter ? _genMPData.characterName : null;
+                    if (_genMPData.isCharacter) {
+                        applyDamageWithShield(_genHolderName, _genTotalDmg, gameState.selectedCharacter);
+                        addLog('🎯 ' + _genHolderName + ' (Mega Provocación) absorbe ' + _genTotalDmg + ' daño AOE (' + finalDamage + '×' + _genMult + ')', 'damage');
                     } else {
-                        // SUMMON with MegaProv (Kamish, Sindragosa, Tirion, Drogon)
-                        applySummonDamage(kamishData.id, totalDamage, gameState.selectedCharacter);
-                        addLog('🐉 ' + (kamishData.kamish ? kamishData.kamish.name : 'Invocación') + ' (Mega Provocación) absorbe ' + totalDamage + ' de daño AOE (' + finalDamage + ' × ' + targetCount + ' objetivos)', 'buff');
+                        applySummonDamage(_genMPData.id, _genTotalDmg, gameState.selectedCharacter);
+                        addLog('🎯 ' + (_genMPData.holder ? _genMPData.holder.name : 'Invocación') + ' (Mega Provocación) absorbe ' + _genTotalDmg + ' daño AOE (' + finalDamage + '×' + _genMult + ')', 'damage');
                     }
                 } else {
-                    // Sin Mega Provocación - daño normal
-                    // Suspender Sigilo antes de atacar
-                    checkAndRemoveStealth(targetTeam);
-                    
-                    // Dañar personajes
-                    for (let name in gameState.characters) {
-                        const char = gameState.characters[name];
-                        if (char.team === targetTeam && char.hp > 0 && !char.isDead) {
-                            if (checkAsprosAOEImmunity(name) || checkMinatoAOEImmunity(name)) { addLog(`🌟 ${name} es inmune al daño AOE (Esquiva Área)`, 'buff'); continue; }
-                            applyDamageWithShield(name, finalDamage, gameState.selectedCharacter);
+                    // Sin Mega Provocación — AOE normal con Esquiva Área
+                    for (let _gn in gameState.characters) {
+                        const _gc = gameState.characters[_gn];
+                        if (!_gc || _gc.team !== targetTeam || _gc.isDead || _gc.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_gn) || checkMinatoAOEImmunity(_gn)) {
+                            addLog('🌟 ' + _gn + ' es inmune al AOE (Esquiva Área)', 'buff'); continue;
                         }
+                        applyDamageWithShield(_gn, finalDamage, gameState.selectedCharacter);
                     }
-                    
-                    // Dañar invocaciones
-                    for (let summonId in gameState.summons) {
-                        const summon = gameState.summons[summonId];
-                        if (summon && summon.team === targetTeam && summon.hp > 0) {
-                            applySummonDamage(summonId, finalDamage, gameState.selectedCharacter);
-                        }
+                    for (let _gSId in gameState.summons) {
+                        const _gS = gameState.summons[_gSId];
+                        if (_gS && _gS.team === targetTeam && _gS.hp > 0)
+                            applySummonDamage(_gSId, finalDamage, gameState.selectedCharacter);
                     }
-                    
-                    addLog(`💥 ${gameState.selectedCharacter} usa ${ability.name} causando ${finalDamage} de daño a todos los enemigos`, 'damage');
+                    addLog('💥 AOE: ' + finalDamage + ' daño a todos los enemigos', 'damage');
                 }
-                
             } else if (ability.target === 'self') {
                 // Efecto en uno mismo (genérico)
                 if (ability.effect === 'attack_buff') {
