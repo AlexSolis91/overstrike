@@ -135,14 +135,26 @@ function triggerMaboroshi(targetTeam, debuffName) {
 function applyDebuff(targetName, effectObj) {
             const target = gameState.characters[targetName];
             if (!target || !target.statusEffects) return;
-            // ESQUIVA ÁREA: inmune a debuffs AOE de enemigos
-            if (gameState.selectedAbility && gameState.selectedAbility.target === 'aoe') {
+            // ESQUIVA ÁREA + MEGA PROVOCACIÓN: inmune a debuffs AOE de enemigos
+            if (gameState.selectedAbility && (gameState.selectedAbility.target === 'aoe' || gameState.selectedAbility.target === 'team')) {
                 const _attacker = gameState.characters[gameState.selectedCharacter];
                 if (_attacker && _attacker.team !== target.team) {
-                    // Attacker is enemy and ability is AOE — check immunity
+                    // Esquiva Área check
                     if (checkAsprosAOEImmunity(targetName) || checkMinatoAOEImmunity(targetName)) {
                         addLog('🌟 ' + targetName + ' es inmune al debuff AOE (Esquiva Área)', 'buff');
                         return;
+                    }
+                    // Mega Provocación: solo el portador puede recibir debuffs AOE del enemigo
+                    const _mpData = (typeof checkKamishMegaProvocation === 'function')
+                        ? checkKamishMegaProvocation(target.team)
+                        : null;
+                    if (_mpData) {
+                        const _mpHolder = _mpData.isCharacter ? _mpData.characterName : null;
+                        // If MegaProv active AND this target is NOT the holder → block debuff
+                        if (_mpHolder && targetName !== _mpHolder) {
+                            addLog('🛡️ Mega Provocación: ' + targetName + ' es inmune al debuff AOE del enemigo', 'buff');
+                            return;
+                        }
                     }
                 }
             }
