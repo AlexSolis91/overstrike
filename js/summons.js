@@ -494,28 +494,24 @@
 
         // Verificar si hay Kamish con Mega Provocación
         function checkKamishMegaProvocation(targetTeam) {
+            // Returns { id, kamish/char obj, isCharacter, characterName } if MegaProv active
+            // Priority: character buff > summon megaProvocation flag > Kamish by name
             try {
-                // Buscar Kamish por nombre
-                for (let summonId in gameState.summons) {
-                    const s = gameState.summons[summonId];
-                    if (s && s.name === 'Kamish' && s.team === targetTeam && s.hp > 0) {
-                        return { id: summonId, kamish: s };
-                    }
-                }
-                // Buscar invocaciones con megaProvocation flag (Sindragosa, Tirion Fordring)
-                for (let summonId in gameState.summons) {
-                    const s = gameState.summons[summonId];
-                    if (s && s.megaProvocation && s.team === targetTeam && s.hp > 0) {
-                        return { id: summonId, kamish: s };
-                    }
-                }
-                // Buscar personaje con buff MegaProvocacion activo (Darth Vader)
+                // 1. CHARACTER with MegaProvocacion buff active
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
-                    if (c && c.team === targetTeam && !c.isDead && c.hp > 0) {
-                        if (c.statusEffects && c.statusEffects.some(e => e && normAccent(e.name || '') === 'megaprovocacion')) {
-                            return { id: null, kamish: c, isCharacter: true, characterName: n };
-                        }
+                    if (!c || c.team !== targetTeam || c.isDead || c.hp <= 0) continue;
+                    if (c.statusEffects && c.statusEffects.some(e => e && normAccent(e.name || '') === 'megaprovocacion')) {
+                        return { id: null, holder: c, isCharacter: true, characterName: n, kamish: c };
+                    }
+                }
+                // 2. SUMMON with megaProvocation flag (Drogon, Sindragosa, Tirion, Kamish)
+                for (let summonId in gameState.summons) {
+                    const s = gameState.summons[summonId];
+                    if (s && s.team === targetTeam && s.hp > 0 &&
+                        (s.megaProvocation || s.name === 'Kamish' || s.name === 'Tirion Fordring' ||
+                         s.name === 'Sindragosa' || s.name === 'Drogon')) {
+                        return { id: summonId, holder: s, isCharacter: false, kamish: s };
                     }
                 }
                 return null;
@@ -523,6 +519,23 @@
                 console.error('Error en checkKamishMegaProvocation:', error);
                 return null;
             }
+        }
+
+        // ── HELPER: Count total alive team members (chars + summons) excluding MegaProv holder ──
+        function countMegaProvMultiplier(team, mpData) {
+            let count = 0;
+            for (let n in gameState.characters) {
+                const c = gameState.characters[n];
+                if (!c || c.team !== team || c.isDead || c.hp <= 0) continue;
+                // Include EVERYONE including the MegaProv holder themselves
+                count++;
+            }
+            for (let sid in gameState.summons) {
+                const s = gameState.summons[sid];
+                if (!s || s.team !== team || s.hp <= 0) continue;
+                count++;
+            }
+            return Math.max(1, count);
         }
 
         // Pasiva de Iron: absorbe daño del invocador
