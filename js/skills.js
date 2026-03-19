@@ -142,7 +142,7 @@
                 finalDamage = Math.ceil(finalDamage * 1.5);
             }
             // BUFF FRENESÍ: 50% de crítico en este ataque (daño doble)
-            if (finalDamage > 0 && hasStatusEffect(gameState.selectedCharacter, 'Frenesi')) {
+            if (finalDamage > 0 && (hasStatusEffect(gameState.selectedCharacter, 'Frenesi') || hasStatusEffect(gameState.selectedCharacter, 'Frenesí'))) {
                 if (Math.random() < 0.50) {
                     finalDamage *= 2;
                     addLog(`⚡ ¡FRENESÍ CRÍTICO! ${gameState.selectedCharacter}`, 'buff');
@@ -1634,7 +1634,7 @@
                 const myTeam = attacker.team; const eTeam = myTeam === 'team1' ? 'team2' : 'team1';
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
-                    if (c.team === eTeam && !c.isDead && c.hp > 0) applyFlatBurn(n, 6, 2);
+                    if (c.team === eTeam && !c.isDead && c.hp > 0) applyFlatBurn(n, 4, 2);
                     if (c.team === myTeam && !c.isDead && c.hp > 0) c.statusEffects.push({ name: 'Regeneracion', type: 'buff', duration: 3, emoji: '💖', amount: Math.ceil(c.maxHp * 0.30) });
                 }
                 applyHolyShield(gameState.selectedCharacter, 3); // dur=3 → activo 2 turnos reales
@@ -2349,7 +2349,7 @@
                         const _vegPrinceTriple = attacker.passive && attacker.passive.name === 'Príncipe de los Sayajins' && Math.random() < 0.20;
                         if (_vegPrinceTriple) { _rkDmg *= 3; addLog('💥 Príncipe de los Sayajins: ¡Daño Triple!', 'damage'); }
                         _c.hp = Math.max(0, _c.hp - _rkDmg);
-                        if (_c.hp <= 0) _c.isDead = true;
+                        if (_c.hp <= 0) { _c.isDead = true; }
                         addLog('💥 Ráfagas de Ki: ' + _n + ' recibe ' + _rkDmg + ' daño directo', 'damage');
                     }
                 }
@@ -2406,6 +2406,12 @@
                     if (Math.random() < 0.5) { djemDmg += djemDmg; addLog('💥 Lado Oscuro: ¡Crítico en Djem So!', 'damage'); }
                 }
                 applyDamageWithShield(targetName, djemDmg, charName);
+                // CORTE OSCURO (Darth Vader): 50% Miedo
+                if (ability.fearChance && Math.random() < ability.fearChance) {
+                    applyFear(targetName, 1);
+                    addLog('😱 Corte Oscuro: ' + targetName + ' recibe Miedo (50%)', 'debuff');
+                }
+                addLog('⚔️ Djem So / Corte Oscuro: ' + djemDmg + ' daño a ' + targetName, 'damage');
 
             // ── ESTRANGULAR (Anakin - Debilitar, nueva versión) ──
             } else if (ability.effect === 'estrangular') {
@@ -3344,14 +3350,19 @@
                     dhaC.statusEffects = (dhaC.statusEffects || []).filter(e => !e || e.type !== 'debuff' || e.permanent);
                 }
                 if (dhaTotalDebuffs > 0) {
+                    // Heal ALL alive allies 1HP per total debuff removed
                     for (let dhaName in gameState.characters) {
                         const dhaC = gameState.characters[dhaName];
                         if (!dhaC || dhaC.team !== dhaTeam || dhaC.isDead || dhaC.hp <= 0) continue;
                         const dhaHealOld = dhaC.hp;
                         dhaC.hp = Math.min(dhaC.maxHp, dhaC.hp + dhaTotalDebuffs);
-                        addLog('💚 Medicina Demoniaca: ' + dhaName + ' recupera ' + (dhaC.hp - dhaHealOld) + ' HP', 'heal');
+                        const dhaActualHeal = dhaC.hp - dhaHealOld;
+                        if (dhaActualHeal > 0) {
+                            addLog('💚 Medicina Demoniaca: ' + dhaName + ' recupera ' + dhaActualHeal + ' HP (' + dhaTotalDebuffs + ' debuffs eliminados)', 'heal');
+                            triggerBendicionSagrada(dhaTeam, dhaActualHeal);
+                        }
                     }
-                    addLog('🌿 Medicina Demoniaca: Eliminados ' + dhaTotalDebuffs + ' debuffs totales del equipo', 'buff');
+                    addLog('🌿 Medicina Demoniaca: ' + dhaTotalDebuffs + ' debuffs eliminados del equipo aliado', 'buff');
                 } else {
                     addLog('🌿 Medicina Demoniaca: No había debuffs activos en el equipo', 'info');
                 }
