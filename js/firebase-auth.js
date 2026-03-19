@@ -415,7 +415,66 @@
                 rtDefenseTeam = (data.defense || []).slice();
                 document.getElementById('rankedTeamScreen').style.display = 'block';
                 rtRender();
+                // Inject "Probar vs IA" button if not already present
+                rtInjectTestButton();
             });
+        }
+
+        function rtInjectTestButton() {
+            if (document.getElementById('rtTestVsIABtn')) return; // already injected
+            // Find the save button container and add our button after it
+            const screen = document.getElementById('rankedTeamScreen');
+            if (!screen) return;
+            // Find the GUARDAR button
+            const saveBtn = screen.querySelector('button[onclick*="saveRankedTeams"]') ||
+                Array.from(screen.querySelectorAll('button')).find(function(b) { return b.textContent.includes('GUARDAR'); });
+            if (!saveBtn) return;
+            const saveContainer = saveBtn.parentElement;
+            // Create our button
+            const testBtn = document.createElement('button');
+            testBtn.id = 'rtTestVsIABtn';
+            testBtn.onclick = rtTestVsIA;
+            testBtn.innerHTML = '⚔️ PROBAR MIS EQUIPOS VS IA';
+            testBtn.style.cssText = [
+                'background: linear-gradient(135deg, #ff6b35, #ff3366)',
+                'border: 2px solid #ff6b35',
+                'color: #fff',
+                'font-family: Orbitron, sans-serif',
+                'font-size: .85rem',
+                'font-weight: 700',
+                'letter-spacing: .08em',
+                'padding: 14px 28px',
+                'border-radius: 12px',
+                'cursor: pointer',
+                'width: 100%',
+                'margin-top: 10px',
+                'text-shadow: 0 1px 3px rgba(0,0,0,.5)',
+                'box-shadow: 0 0 20px rgba(255,107,53,.4)',
+                'transition: all .2s'
+            ].join(';');
+            testBtn.onmouseover = function() { this.style.boxShadow = '0 0 30px rgba(255,107,53,.7)'; this.style.transform = 'scale(1.02)'; };
+            testBtn.onmouseout  = function() { this.style.boxShadow = '0 0 20px rgba(255,107,53,.4)'; this.style.transform = 'scale(1)'; };
+            // Insert after save container (or after save button)
+            if (saveContainer && saveContainer !== screen) {
+                saveContainer.parentElement.insertBefore(
+                    Object.assign(document.createElement('div'), {
+                        style: 'padding: 0 24px 8px;',
+                        innerHTML: testBtn.outerHTML
+                    }),
+                    saveContainer.nextSibling
+                );
+                // Re-bind onclick after outerHTML loses it
+                const injected = document.getElementById('rtTestVsIABtn');
+                if (injected) injected.onclick = rtTestVsIA;
+            } else {
+                saveBtn.parentElement.appendChild(testBtn);
+            }
+            // Add helper tooltip
+            const tip = document.createElement('div');
+            tip.style.cssText = 'text-align:center;font-size:.75rem;color:#888;padding:4px 24px 12px;';
+            tip.textContent = '⚔️ TÚ con tu Equipo de Ataque · 🛡️ IA con tu Equipo de Defensa';
+            const injBtn = document.getElementById('rtTestVsIABtn');
+            if (injBtn) injBtn.parentElement.appendChild(tip);
         }
 
         function hideRankedTeamScreen() {
@@ -542,6 +601,17 @@
             const nextEmpty = currentTeam.findIndex(function(x,i) { return !x && i > rtPickingSlot; });
             rtPickingSlot = nextEmpty >= 0 ? nextEmpty : -1;
             rtRender();
+        }
+
+
+        function rtTestVsIA() {
+            const attack  = rtAttackTeam.filter(Boolean);
+            const defense = rtDefenseTeam.filter(Boolean);
+            if (attack.length < 5)  { alert('⚠️ Configura 5 personajes en tu Equipo de Ataque primero.'); return; }
+            if (defense.length < 5) { alert('⚠️ Configura 5 personajes en tu Equipo de Defensa primero.'); return; }
+            const playerName = currentUser ? (currentUser.displayName || 'Jugador') : 'Jugador';
+            hideRankedTeamScreen();
+            _launchRankedVsIAWithTeam(attack, defense, playerName + ' (Defensa)');
         }
 
         function saveRankedTeams() {
