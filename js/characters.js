@@ -425,7 +425,7 @@
             'Linterna Verde': {
                 hp: 20, maxHp: 20, speed: 96, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/tgkc9D2t/Green-Lantern.png',
+                portrait: 'https://i.ibb.co/bRMTVQVr/Captura-de-pantalla-2026-03-18-131918.png',
                 passive: { name: 'Visión Esmeralda', description: 'Cada vez que recibe un golpe, genera 2 cargas.' },
                 abilities: [
                     { name: 'Campo de Atracción', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'campo_atraccion', description: 'Se aplica Buff Provocación. Se aplica Buff Protección Sagrada.' },
@@ -437,7 +437,7 @@
             'Vegeta': {
                 hp: 20, maxHp: 20, speed: 96, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/C55Ssj7Q/Whats_App_Image_2026_03_17_at_2_07_04_AM.jpg',
+                portrait: 'https://i.ibb.co/DfBgpQLQ/Captura-de-pantalla-2026-03-19-113940.png',
                 passive: { name: 'Príncipe de los Sayajins', description: 'Todos sus ataques tienen 20% de probabilidad de causar daño triple. Los debuffs tienen 50% menos precisión contra Vegeta.' },
                 abilities: [
                     { name: 'Galick Gun', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'galick_gun', description: 'Causa 2 daño. Aplica Buff Frenesí 1 turno.' },
@@ -449,7 +449,7 @@
             'Giyu Tomioka': {
                 hp: 30, maxHp: 30, speed: 83, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://ibb.co/rRXP861G',
+                portrait: 'https://i.ibb.co/0R3wCJSB/Whats-App-Image-2026-03-19-at-11-04-32-AM.jpg',
                 passive: { name: 'Pilar del Agua', description: 'Buff Pasivo Armadura permanente. Al inicio de cada ronda aplica Buff Escudo de 1 HP al equipo aliado.' },
                 abilities: [
                     { name: 'Corte de Agua', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'single', effect: 'corte_agua', shieldAmount: 2, description: 'Causa 1 daño. Aplica Buff Escudo de 2 HP en Giyu Tomioka.' },
