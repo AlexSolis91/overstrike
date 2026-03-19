@@ -947,7 +947,20 @@
             const before = c.hp;
             c.hp = Math.min(c.maxHp, c.hp + finalHeal);
             const _hcActual = c.hp - before;
-            if (_hcActual > 0) triggerBendicionSagrada(c.team, _hcActual);
+            if (_hcActual > 0) {
+                triggerBendicionSagrada(c.team, _hcActual);
+                // PRESENCIA OSCURA (Darth Vader): +1 carga cuando un enemigo recupera HP
+                const _enemyTeamHC = c.team === 'team1' ? 'team2' : 'team1';
+                for (const _dvn in gameState.characters) {
+                    const _dvc = gameState.characters[_dvn];
+                    if (_dvc && !_dvc.isDead && _dvc.hp > 0 && _dvc.team === _enemyTeamHC &&
+                        _dvc.passive && _dvc.passive.name === 'Presencia Oscura') {
+                        _dvc.charges = Math.min(20, (_dvc.charges || 0) + 1);
+                        addLog('🌑 Presencia Oscura: ' + _dvn + ' gana 1 carga (' + charName + ' recuperó HP)', 'buff');
+                        break;
+                    }
+                }
+            }
             return _hcActual;
         }
 function applyRegeneration(targetName, amount, duration) {
