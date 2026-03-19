@@ -1138,6 +1138,18 @@
                     
                     gameState.currentRound++;
                     gameState.turnsInRound = 0;
+                    // PILAR DEL AGUA (Giyu Tomioka): inicio de nueva ronda → Escudo 1HP a aliados
+                    for (const _gn in gameState.characters) {
+                        const _gc = gameState.characters[_gn];
+                        if (!_gc || _gc.isDead || !_gc.passive || _gc.passive.name !== 'Pilar del Agua') continue;
+                        for (const _an in gameState.characters) {
+                            const _ac = gameState.characters[_an];
+                            if (_ac && !_ac.isDead && _ac.hp > 0 && _ac.team === _gc.team) {
+                                _ac.shield = (_ac.shield || 0) + 1;
+                            }
+                        }
+                        addLog('🌊 Pilar del Agua: Escudo 1HP aplicado al equipo aliado', 'buff');
+                    }
                     // Nuevo snapshot de vivos para la ronda que comienza
                     gameState.aliveCountAtRoundStart = Object.values(gameState.characters).filter(c => c && !c.isDead && c.hp > 0).length;
                     addLog(`⏱️ ¡RONDA ${gameState.currentRound} COMIENZA!`, 'info');
@@ -1177,6 +1189,28 @@
         }
 
         function processEndOfRoundEffects() {
+            try {
+                // ── ENFORCE PERMANENT PASSIVES (run at start of each round) ──
+                for (const _pn in gameState.characters) {
+                    const _pc = gameState.characters[_pn];
+                    if (!_pc || _pc.isDead || !_pc.passive) continue;
+                    const _pname = _pc.passive.name;
+                    // Darth Vader: Aura Oscura permanente
+                    if (_pname === 'Presencia Oscura') {
+                        if (!hasStatusEffect(_pn, 'Aura oscura')) {
+                            _pc.statusEffects = (_pc.statusEffects || []);
+                            _pc.statusEffects.push({ name: 'Aura oscura', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🌑' });
+                        }
+                    }
+                    // Giyu Tomioka: Armadura permanente
+                    if (_pname === 'Pilar del Agua') {
+                        if (!hasStatusEffect(_pn, 'Armadura')) {
+                            _pc.statusEffects = (_pc.statusEffects || []);
+                            _pc.statusEffects.push({ name: 'Armadura', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🛡️' });
+                        }
+                    }
+                }
+            } catch(e) { console.warn('Permanent passive enforcement error:', e); }
             // ── TAMAYO PASIVA: Curandera de las Sombras (1 vez por ronda) ──
             for (let tamName in gameState.characters) {
                 if (!tamName.startsWith('Tamayo')) continue;
