@@ -173,7 +173,7 @@
             'Ragnar Lothbrok': {
                 hp: 25, maxHp: 25, speed: 83, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/W1CFbB4P/Captura_de_pantalla_2026_03_11_234607.png',
+                portrait: 'https://i.postimg.cc/9XqFNYqW/Captura_de_pantalla_2026_03_11_234717.png',
                 passive: { name: 'Hijo de Odin', description: 'Cada vez que Ragnar recibe daño por golpe, genera 1 carga.' },
                 abilities: [
                     { name: 'Furia Vikinga', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'apply_bleed', description: 'Causa 2 de daño. Aplica debuff Sangrado.' },
@@ -304,16 +304,16 @@
             },
 
             'Darth Vader': {
-                hp: 30, maxHp: 30, speed: 80, charges: 0, team: 'team2',
+                hp: 25, maxHp: 25, speed: 80, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 hpLost: 0,
                 portrait: 'https://i.postimg.cc/63sFfc1F/Captura_de_pantalla_2026_02_28_015421.png',
-                passive: { name: 'Presencia Oscura', description: 'Darth Vader es inmune a debuffs Miedo y Confusion. Cada vez que un debuff Miedo expire por Limpiar, Disipar o termine, Darth Vader genera 1 punto de Carga.' },
+                passive: { name: 'Presencia Oscura', description: 'Darth Vader tiene Buff Aura Oscura permanente. Genera 1 carga cada vez que un enemigo recupera HP.' },
                 abilities: [
-                    { name: 'Intimidación del Imperio', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'single', effect: 'apply_fear', description: 'Aplica Debuff Miedo al objetivo.' },
-                    { name: 'Puño del Imperio', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'self', effect: 'apply_megaprovocation_buff', description: 'Aplica Buff Megaprovocación.' },
-                    { name: 'Lado Oscuro de la Fuerza', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'self', effect: 'apply_aura_oscura', description: 'Aplica Buff Aura Oscura.' },
-                    { name: 'Ira del Elegido Caído', type: 'over', cost: 10, chargeGain: 0, damage: 2, target: 'aoe', effect: 'ira_elegido', description: 'Causa 2 AOE. Inflige 1 punto de daño adicional por cada punto de HP que Darth Vader ha perdido en el combate.' }
+                    { name: 'Corte Oscuro', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'djem_so', fearChance: 0.50, description: 'Causa 2 daño. 50% de probabilidad de aplicar Debuff Miedo al objetivo.' },
+                    { name: 'Explosión de la Fuerza', type: 'special', cost: 5, chargeGain: 0, damage: 2, target: 'aoe', effect: 'explosion_fuerza_dv', description: 'Causa 2 AOE. 50% de probabilidad de aplicar Aturdimiento. 50% de probabilidad de aplicar Debilitar.' },
+                    { name: 'Intimidación Sith', type: 'special', cost: 7, chargeGain: 0, damage: 4, target: 'single', effect: 'intimidacion_sith', description: 'Causa 4 daño + 3 daño adicional por cada buff activo en el objetivo.' },
+                    { name: 'Ira del Elegido Caído', type: 'over', cost: 10, chargeGain: 0, damage: 2, target: 'aoe', effect: 'ira_elegido', description: 'Causa 2 AOE + 1 daño adicional por cada HP que Darth Vader ha perdido en el combate.' }
                 ]
             },
 
@@ -425,13 +425,37 @@
             'Linterna Verde': {
                 hp: 20, maxHp: 20, speed: 96, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/1twccKpj/Captura_de_pantalla_2026_03_18_131918.png',
+                portrait: 'https://i.postimg.cc/tgkc9D2t/Green-Lantern.png',
                 passive: { name: 'Visión Esmeralda', description: 'Cada vez que recibe un golpe, genera 2 cargas.' },
                 abilities: [
                     { name: 'Campo de Atracción', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'campo_atraccion', description: 'Se aplica Buff Provocación. Se aplica Buff Protección Sagrada.' },
                     { name: 'Sincronía Esmeralda', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'sincronia_esmeralda', description: 'Limpia 1 debuff sobre el aliado objetivo y el aliado genera 3 cargas.' },
                     { name: 'Soporte Vital Autónomo', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'soporte_vital', description: 'Selecciona un aliado: ambos (Linterna Verde y el aliado) recuperan 5 HP y disipan todos los debuffs.' },
                     { name: 'La Lanza de Oa', type: 'over', cost: 10, chargeGain: 0, damage: 2, target: 'single', effect: 'lanza_de_oa', description: 'Causa 2 + 5 a 10 daño adicional aleatorio. Aplica debuff Mega Aturdimiento. Linterna Verde recupera HP equivalente al daño total causado.' }
+                ]
+            },
+            'Vegeta': {
+                hp: 20, maxHp: 20, speed: 96, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.postimg.cc/C55Ssj7Q/Whats_App_Image_2026_03_17_at_2_07_04_AM.jpg',
+                passive: { name: 'Príncipe de los Sayajins', description: 'Todos sus ataques tienen 20% de probabilidad de causar daño triple. Los debuffs tienen 50% menos precisión contra Vegeta.' },
+                abilities: [
+                    { name: 'Galick Gun', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'galick_gun', description: 'Causa 2 daño. Aplica Buff Frenesí 1 turno.' },
+                    { name: 'Big Bang Attack', type: 'special', cost: 2, chargeGain: 0, damage: 3, target: 'single', effect: 'big_bang_attack', description: 'Causa 3 daño. Genera +2 cargas adicionales por cada Buff y Debuff activo en el objetivo.' },
+                    { name: 'Ráfagas de Ki', type: 'special', cost: 5, chargeGain: 0, damage: 2, target: 'aoe', effect: 'rafagas_ki', description: 'Causa 2 AOE. 50% de probabilidad de causar 0-2 daño adicional. El daño se considera daño directo, no golpe.' },
+                    { name: 'Final Flash', type: 'over', cost: 12, chargeGain: 0, damage: 12, target: 'single', effect: 'final_flash', description: 'Causa 12 daño. Ignora Provocación, Mega Provocación y Sigilo. Si el objetivo es derrotado, genera 10 cargas.' }
+                ]
+            },
+            'Giyu Tomioka': {
+                hp: 30, maxHp: 30, speed: 83, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://ibb.co/rRXP861G',
+                passive: { name: 'Pilar del Agua', description: 'Buff Pasivo Armadura permanente. Al inicio de cada ronda aplica Buff Escudo de 1 HP al equipo aliado.' },
+                abilities: [
+                    { name: 'Corte de Agua', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'single', effect: 'corte_agua', shieldAmount: 2, description: 'Causa 1 daño. Aplica Buff Escudo de 2 HP en Giyu Tomioka.' },
+                    { name: 'Onceava Postura: Calma', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'self', effect: 'postura_calma', shieldAmount: 3, description: 'Aplica Buff Mega Provocación en Giyu Tomioka. Aplica Buff Escudo de 3 HP en Giyu Tomioka.' },
+                    { name: 'Superficie Muerta', type: 'special', cost: 7, chargeGain: 0, damage: 0, target: 'aoe', effect: 'superficie_muerta', description: 'Causa 1-3 daño AOE. Aplica Buff Escudo a Giyu por la cantidad de daño causado.' },
+                    { name: 'Marca del Cazador', type: 'over', cost: 16, chargeGain: 0, damage: 0, target: 'aoe', effect: 'marca_cazador', description: 'Causa 1 daño AOE por cada punto de Escudo que Giyu Tomioka tenga al ejecutar este ataque.' }
                 ]
             }
         };
