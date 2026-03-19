@@ -3,14 +3,13 @@
             try {
                 const char = gameState.characters[charName];
                 if (!char || char.isDead || char.hp <= 0) { endTurn(); return; }
-                // Safety: re-check key debuffs in case AI was called directly
-                // (normally handled by continueTurn, but guard here too)
+
                 if (char.statusEffects) {
                     const stunned = char.statusEffects.some(e => e && (normAccent(e.name||'') === 'aturdimiento' || normAccent(e.name||'') === 'mega aturdimiento'));
                     if (stunned) { addLog('⭐ ' + (gameState.gameMode !== 'ranked' ? '[IA] ' : '') + charName + ' está aturdido y pierde su turno', 'damage'); endTurn(); return; }
-                    if (hasStatusEffect(charName, 'Mega Congelacion')) { addLog('🧊 ' + (gameState.gameMode !== 'ranked' ? '[IA] ' : '') + charName + ' está Mega Congelado y pierde su turno', 'damage'); endTurn(); return; }
-                    if (hasStatusEffect(charName, 'Congelacion') && Math.random() < 0.5) { addLog('❄️ ' + (gameState.gameMode !== 'ranked' ? '[IA] ' : '') + charName + ' está Congelado y pierde su turno', 'damage'); endTurn(); return; }
-                    if (hasStatusEffect(charName, 'Miedo') && Math.random() < 0.5) { addLog('😱 ' + (gameState.gameMode !== 'ranked' ? '[IA] ' : '') + charName + ' está paralizado por el Miedo', 'damage'); endTurn(); return; }
+                    if (hasStatusEffect(charName, 'Mega Congelacion')) { addLog('🧊 [IA] ' + charName + ' está Mega Congelado y pierde su turno', 'damage'); endTurn(); return; }
+                    if (hasStatusEffect(charName, 'Congelacion') && Math.random() < 0.5) { addLog('❄️ [IA] ' + charName + ' está Congelado y pierde su turno', 'damage'); endTurn(); return; }
+                    if (hasStatusEffect(charName, 'Miedo') && Math.random() < 0.5) { addLog('😱 [IA] ' + charName + ' está paralizado por el Miedo', 'damage'); endTurn(); return; }
                 }
 
                 const myTeam = char.team;
@@ -36,10 +35,23 @@
                 function hpPct(n) {
                     const c = gameState.characters[n]; return c ? c.hp / c.maxHp : 1;
                 }
-                function hasDebuff(n, dbName) { return hasStatusEffect(n, dbName); }
                 function hasBuff(n, bName) { return hasStatusEffect(n, bName); }
                 function summonPresent(sName, team) {
                     return Object.values(gameState.summons).some(s => s && s.name === sName && s.team === team);
+                }
+                function getCharges(n) {
+                    const c = gameState.characters[n]; return c ? (c.charges || 0) : 0;
+                }
+                function getMaxDamage(n) {
+                    const c = gameState.characters[n];
+                    if (!c || !c.abilities) return 0;
+                    return c.abilities.reduce((mx, ab) => Math.max(mx, ab.damage || 0), 0);
+                }
+                function allyTeamSummonCount() {
+                    return Object.values(gameState.summons).filter(s => s && s.team === myTeam && s.hp > 0).length;
+                }
+                function enemyTeamSummonCount() {
+                    return Object.values(gameState.summons).filter(s => s && s.team === enemyTeam && s.hp > 0).length;
                 }
 
                 const allies = getAliveAllies();
@@ -48,8 +60,132 @@
 
                 if (enemies.length === 0 || usable.length === 0) { endTurn(); return; }
 
-                // ── Priority scoring system (HARD MODE AI) ───────────────────────────────────
-                // SUPPORT characters — AI focuses on killing these
+                // ═══════════════════════════════════════════════════════════════════
+                // IMPROVEMENT 1: CHARGE MANAGEMENT
+                // Predict charges needed for next Over/Special and decide if we should
+                // farm charges with basics instead of spending them prematurely.
+                // ═══════════════════════════════════════════════════════════════════
+                function chargesNeededForBestAbility() {
+                    const nonBasic = char.abilities.filter(ab => !ab.used && ab.type !== 'basic');
+                    if (nonBasic.length === 0) return 0;
+                    const cheapest = nonBasic.reduce((a, b) => a.cost < b.cost ? a : b);
+                    return Math.max(0, cheapest.cost - char.charges);
+                }
+                const chargesShortfall = chargesNeededForBestAbility();
+                // If we're only 1-2 charges away from a big ability, prefer basics
+                const shouldFarmCharges = chargesShortfall > 0 && chargesShortfall <= 2;
+
+                // ═══════════════════════════════════════════════════════════════════
+                // IMPROVEMENT 2: LOOKAHEAD — simulate state after each ability
+                // Score bonus if using the ability can kill an enemy (kill-check),
+                // penalize if it wastes an Over on a near-dead enemy
+                // ═══════════════════════════════════════════════════════════════════
+                function lookaheadScore(ab, tgt) {
+                    let bonus = 0;
+                    if (!tgt || ab.target === 'self') return 0;
+                    const tgtChar = gameState.characters[tgt];
+                    if (!tgtChar) return 0;
+
+                    // Can this kill the target?
+                    const effectiveDmg = ab.damage * (char.rikudoMode ? 2 : 1);
+                    if (effectiveDmg >= tgtChar.hp && tgtChar.hp > 0) {
+                        // Big bonus for kill shots
+                        bonus += 150;
+                        // Extra bonus if target was dangerous (high charges)
+                        if (tgtChar.charges >= 8) bonus += 50;
+                        // Extra bonus if it's the last enemy
+                        if (enemies.length === 1) bonus += 80;
+                    }
+
+                    // Penalize: using an Over on a target that could be killed by a Basic
+                    if (ab.type === 'over') {
+                        const basicCanKill = char.abilities.some(b => b.type === 'basic' && b.damage >= tgtChar.hp);
+                        if (basicCanKill) bonus -= 200;
+                    }
+
+                    // Penalize: using AOE when there's only 1 enemy (waste)
+                    if (ab.target === 'aoe' && enemies.length === 1 && ab.type === 'over') bonus -= 40;
+
+                    return bonus;
+                }
+
+                // ═══════════════════════════════════════════════════════════════════
+                // IMPROVEMENT 3: THREAT ASSESSMENT
+                // Identify the most dangerous enemy (can kill an ally next turn or
+                // has high charges) and prioritize eliminating them.
+                // ═══════════════════════════════════════════════════════════════════
+                function getThreatScore(n) {
+                    const c = gameState.characters[n];
+                    if (!c) return 0;
+                    let threat = 0;
+                    // High charges = can use Over soon
+                    threat += (c.charges || 0) * 8;
+                    // High damage potential
+                    threat += getMaxDamage(n) * 15;
+                    // Low HP ally next to this enemy = kill threat
+                    const fragileAlly = allies.some(a => hpPct(a) < 0.4);
+                    if (fragileAlly && getMaxDamage(n) >= 5) threat += 60;
+                    // Support characters are secondary targets but still threats
+                    return threat;
+                }
+                function getMostThreateningEnemy() {
+                    if (enemies.length === 0) return null;
+                    return enemies.reduce((a, b) => getThreatScore(a) >= getThreatScore(b) ? a : b);
+                }
+                const mostThreatening = getMostThreateningEnemy();
+
+                // ═══════════════════════════════════════════════════════════════════
+                // IMPROVEMENT 4: COMPOSITION COUNTER
+                // Detect enemy buffs/passives and choose abilities that counter them.
+                // ═══════════════════════════════════════════════════════════════════
+                function hasProtectedEnemy() {
+                    return enemies.some(n => {
+                        const c = gameState.characters[n];
+                        return c && (hasStatusEffect(n, 'Escudo Sagrado') || hasStatusEffect(n, 'Proteccion Sagrada') || (c.shield || 0) > 3);
+                    });
+                }
+                function hasAuraEnemy(auraName) {
+                    return enemies.some(n => hasStatusEffect(n, auraName));
+                }
+
+                // ═══════════════════════════════════════════════════════════════════
+                // IMPROVEMENT 5: DEBUFF MEMORY
+                // Before using a high-cost Over, check if target has Escudo Sagrado
+                // or Proteccion Sagrada — if so, prefer a dispel first.
+                // ═══════════════════════════════════════════════════════════════════
+                function targetIsProtected(n) {
+                    return hasStatusEffect(n, 'Escudo Sagrado') || hasStatusEffect(n, 'Proteccion Sagrada');
+                }
+                const DISPEL_EFFECTS = ['cleanse_enemy_debuff', 'enuma_elish', 'another_dimension'];
+                function shouldDispelFirst(ab) {
+                    if (!DISPEL_EFFECTS.includes(ab.effect)) return false;
+                    return enemies.some(n => targetIsProtected(n));
+                }
+
+                // ═══════════════════════════════════════════════════════════════════
+                // IMPROVEMENT 6: REACTIVE HEALS — only use heals when needed
+                // ═══════════════════════════════════════════════════════════════════
+                function allyNeedsHealUrgently() {
+                    return allies.some(n => hpPct(n) < 0.35);
+                }
+                function allyNeedsHeal() {
+                    return allies.some(n => hpPct(n) < 0.60);
+                }
+
+                // ═══════════════════════════════════════════════════════════════════
+                // IMPROVEMENT 7: TURN ORDER AWARENESS
+                // If this char has highest speed and will get another turn soon,
+                // save Overs for the following turn if no kill shot available.
+                // ═══════════════════════════════════════════════════════════════════
+                function willActSoonAgain() {
+                    const mySpeed = char.speed || 0;
+                    const fastestEnemy = enemies.reduce((mx, n) => Math.max(mx, (gameState.characters[n] ? gameState.characters[n].speed || 0 : 0)), 0);
+                    return mySpeed > fastestEnemy + 10; // significantly faster
+                }
+
+                // ═══════════════════════════════════════════════════════════════════
+                // SUPPORT character detection (unchanged from before)
+                // ═══════════════════════════════════════════════════════════════════
                 const SUPPORT_EFFECTS = ['heal', 'don_de_la_vida', 'regen', 'shield', 'summon',
                     'el_rey_caido', 'summon_sphinx', 'summon_ramesseum', 'summon_dragon',
                     'arise_summon', 'enkidu', 'dispel_target_padme_charges', 'summon_señuelo'];
@@ -61,38 +197,89 @@
                             || ab.target === 'ally_single';
                     });
                 }
-                // Ability tier rank: over=3, special=2, basic=1
                 function abilityTier(ab) {
                     if (ab.type === 'over') return 3;
                     if (ab.type === 'special') return 2;
                     return 1;
                 }
+
+                // ─────────────────────────────────────────────────────────────────
+                // MAIN SCORING FUNCTION — incorporates all 7 improvements
+                // ─────────────────────────────────────────────────────────────────
                 function scoreAbility(ab) {
                     let score = 0;
-                    // ── TIER BONUS: always prefer higher tier ──────────────────
-                    score += abilityTier(ab) * 120; // over=360, special=240, basic=120
 
-                    // === CLEANSE / DISPEL (highest support priority when allies have debuffs) ===
+                    // ── TIER BONUS ──────────────────────────────────────────────
+                    score += abilityTier(ab) * 120;
+
+                    // ── IMPROVEMENT 1: CHARGE FARMING ──────────────────────────
+                    // If only 1-2 charges away from a big ability, strongly prefer basics
+                    if (shouldFarmCharges && ab.type === 'basic') score += 180;
+                    if (shouldFarmCharges && ab.type !== 'basic') score -= 60;
+
+                    // ── IMPROVEMENT 2: LOOKAHEAD (applied during target selection) ──
+                    // We pre-compute best target for damage abilities here
+                    let lookaheadTarget = null;
+                    if (ab.damage > 0 && ab.target === 'single') {
+                        // Try each enemy and find best lookahead
+                        const killable = enemies.find(n => {
+                            const c = gameState.characters[n];
+                            const eff = ab.damage * (char.rikudoMode ? 2 : 1);
+                            return c && c.hp > 0 && eff >= c.hp;
+                        });
+                        if (killable) {
+                            lookaheadTarget = killable;
+                            score += lookaheadScore(ab, killable);
+                        }
+                    }
+
+                    // ── IMPROVEMENT 3: THREAT TARGETING ────────────────────────
+                    // Bonus for abilities that can damage the most threatening enemy
+                    if (ab.damage > 0 && mostThreatening) {
+                        const tgtChar = gameState.characters[mostThreatening];
+                        const effectiveDmg = ab.damage * (char.rikudoMode ? 2 : 1);
+                        if (tgtChar && effectiveDmg > 0) {
+                            score += Math.min(60, getThreatScore(mostThreatening) / 3);
+                        }
+                    }
+
+                    // ── IMPROVEMENT 4: COMPOSITION COUNTER ─────────────────────
+                    // AOE is better when enemy has Aura de fuego (avoid direct hits)
+                    if (ab.target === 'aoe' && hasAuraEnemy('Aura de fuego')) score += 40;
+                    // Enuma Elish (shield strip) is prioritized when enemies have shields
+                    if (ab.effect === 'enuma_elish' && hasProtectedEnemy()) score += 80;
+                    if (DISPEL_EFFECTS.includes(ab.effect) && enemies.some(n => targetIsProtected(n))) score += 90;
+
+                    // ── IMPROVEMENT 5: DEBUFF MEMORY ───────────────────────────
+                    // Penalize Overs on fully-protected targets
+                    if (ab.type === 'over' && ab.damage > 0) {
+                        const mainTarget = enemies.find(n => targetIsProtected(n));
+                        if (mainTarget && enemies.length === 1) score -= 100; // only target is protected
+                    }
+
+                    // ── IMPROVEMENT 6: REACTIVE HEALS ──────────────────────────
                     const CLEANSE_EFFECTS = ['heal_cleanse', 'aoe_cleanse_allies', 'dispel_heal_allies',
                         'grito_de_esparta', 'dispel_target_padme_charges'];
                     const _allyDebuffCount = allies.reduce(function(sum, n) {
                         const c = gameState.characters[n];
-                        return sum + (c && c.statusEffects ? c.statusEffects.filter(function(e) { return e && e.type === 'debuff'; }).length : 0);
+                        return sum + (c && c.statusEffects ? c.statusEffects.filter(e => e && e.type === 'debuff').length : 0);
                     }, 0);
                     if (CLEANSE_EFFECTS.includes(ab.effect) || (ab.effect && ab.effect.includes('cleanse'))) {
-                        // High priority if allies have debuffs
                         score += _allyDebuffCount >= 3 ? 200 : _allyDebuffCount >= 1 ? 120 : 10;
                     }
-
-                    // === HEALING / SUPPORT ===
                     if (ab.target === 'ally_single' || ab.target === 'self') {
                         const lowestAlly = allies.reduce((a,b) => hpPct(a) < hpPct(b) ? a : b);
                         const lowestPct = hpPct(lowestAlly);
                         if (ab.effect && (ab.effect.includes('heal') || ab.effect === 'don_de_la_vida')) {
-                            score += lowestPct < 0.35 ? 90 : lowestPct < 0.60 ? 50 : 20;
+                            // REACTIVE: only prioritize heal when ally actually needs it
+                            if (allyNeedsHealUrgently()) score += 250;      // critical — heal NOW
+                            else if (allyNeedsHeal())    score += 80;        // helpful
+                            else                          score += 5;         // not needed, low prio
                         }
                         if (ab.shieldAmount) score += lowestPct < 0.4 ? 65 : 30;
-                        if (ab.effect && (ab.effect.includes('regen') || ab.effect === 'leyenda_nordica')) score += 40;
+                        if (ab.effect && (ab.effect.includes('regen') || ab.effect === 'leyenda_nordica')) {
+                            score += allyNeedsHeal() ? 60 : 20;
+                        }
                         if (ab.effect === 'grito_de_esparta') {
                             const anyDebuffed = allies.some(n => gameState.characters[n].statusEffects.some(e => e && e.type === 'debuff'));
                             score += anyDebuffed ? 85 : 25;
@@ -103,17 +290,25 @@
                         if (ab.effect === 'kaio_ken') score += 55;
                     }
 
-                    // === DAMAGE ===
+                    // ── IMPROVEMENT 7: TURN ORDER AWARENESS ────────────────────
+                    // If we're significantly faster and will act again soon, save Overs
+                    // unless we have a kill shot available
+                    if (ab.type === 'over' && willActSoonAgain()) {
+                        const hasKillShot = enemies.some(n => {
+                            const c = gameState.characters[n];
+                            return c && c.hp > 0 && ab.damage >= c.hp;
+                        });
+                        if (!hasKillShot) score -= 80; // save Over for better moment
+                    }
+
+                    // ── STANDARD DAMAGE SCORING ─────────────────────────────────
                     if (ab.damage > 0) {
                         score += ab.damage * 5;
-                        // AOE: bonus when multiple enemies
                         if (ab.target === 'aoe' && enemies.length >= 2) score += 25 * enemies.length;
-                        // blood_eagle execute
                         if (ab.effect === 'blood_eagle') {
                             const weakEnemy = enemies.find(n => hpPct(n) <= 0.5);
                             if (weakEnemy) score += 70;
                         }
-                        // Debuff-applying attacks bonus
                         if (ab.effect && (ab.effect.includes('poison') || ab.effect.includes('burn') ||
                             ab.effect.includes('bleed') || ab.effect.includes('freeze') ||
                             ab.effect.includes('stun') || ab.effect.includes('fear'))) score += 25;
@@ -124,7 +319,7 @@
                         if (ab.effect === 'golpe_grave') score += enemies.some(n => hpPct(n) <= 0.6) ? 55 : 20;
                     }
 
-                    // === DEBUFFS (0-damage) ===
+                    // ── STANDARD DEBUFF SCORING ──────────────────────────────────
                     if (ab.damage === 0 && (ab.target === 'single' || ab.target === 'aoe')) {
                         if (ab.effect === 'apply_mega_stun') score += 75;
                         if (ab.effect === 'apply_possession_1' || ab.effect === 'apply_possession') score += 60;
@@ -135,50 +330,68 @@
                         if (ab.effect === 'purgatorio_v2') score += 80;
                     }
 
-                    // === SUMMONS ===
+                    // ── SUMMONS ──────────────────────────────────────────────────
                     if (ab.effect === 'el_rey_caido') score += summonPresent('Sindragosa', myTeam) ? 20 : 75;
                     if (ab.effect === 'summon_sphinx') score += summonPresent('Sphinx Wehem-Mesut', myTeam) ? -200 : 60;
                     if (ab.effect === 'summon_ramesseum') score += summonPresent('Ramesseum Tentyris', myTeam) ? -200 : 55;
                     if (ab.effect === 'arise_summon') {
-                        const teamSummonCount = Object.values(gameState.summons).filter(s => s && s.team === myTeam).length;
+                        const teamSummonCount = allyTeamSummonCount();
                         score += teamSummonCount < 4 ? 65 : 10;
                     }
-                    if (ab.effect === 'enkidu') {
-                        const hasSummons = Object.values(gameState.summons).some(s => s && s.team === enemyTeam);
+                    if (ab.effect === 'enkidu' || ab.effect === 'enkidu_cadenas') {
+                        const hasSummons = enemyTeamSummonCount() > 0;
                         score += hasSummons ? 90 : 10;
                     }
-                    if (ab.effect === 'cadenas_hielo') score += enemies.some(n => gameState.characters[n].charges >= 5) ? 65 : 25;
+                    if (ab.effect === 'cadenas_hielo') score += enemies.some(n => getCharges(n) >= 5) ? 65 : 25;
 
-                    // === Can't afford: penalize heavily ===
+                    // ── FINAL GUARDS ─────────────────────────────────────────────
                     if (ab.type !== 'basic' && char.charges < ab.cost) score -= 999;
-
-                    // === Prefer cheaper abilities when very low charges ===
                     if (char.charges < 3 && ab.type !== 'basic') score -= (ab.cost - char.charges) * 10;
 
                     return score;
                 }
 
-                // Pick best ability (highest score = highest tier + most damage)
+                // ─────────────────────────────────────────────────────────────────
+                // Pick best ability
+                // ─────────────────────────────────────────────────────────────────
                 usable.sort((a,b) => scoreAbility(b) - scoreAbility(a));
                 const chosen = usable[0];
 
-                // ── Pick target (HARD MODE: focus vulnerable + support enemies) ─────────
+                // ─────────────────────────────────────────────────────────────────
+                // PICK TARGET — uses all improvements
+                // ─────────────────────────────────────────────────────────────────
                 function pickTarget(ab) {
                     if (ab.target === 'self' || ab.target === 'aoe') return charName;
 
                     if (ab.target === 'ally_single') {
+                        // IMPROVEMENT 6: pick ally that needs heal most (lowest HP)
+                        // but only if they actually need it — otherwise pick lowest charges
+                        if (ab.effect && (ab.effect.includes('heal') || ab.effect === 'don_de_la_vida')) {
+                            return allies.reduce((a,b) => hpPct(a) < hpPct(b) ? a : b);
+                        }
+                        // For cleanse: pick ally with most debuffs
+                        if (CLEANSE_EFFECTS.includes(ab.effect)) {
+                            return allies.reduce((a,b) => {
+                                const da = (gameState.characters[a].statusEffects||[]).filter(e=>e&&e.type==='debuff').length;
+                                const db = (gameState.characters[b].statusEffects||[]).filter(e=>e&&e.type==='debuff').length;
+                                return da >= db ? a : b;
+                            });
+                        }
+                        // Default: lowest HP ally
                         return allies.reduce((a,b) => hpPct(a) < hpPct(b) ? a : b);
                     }
 
                     if (ab.target === 'single') {
-                        // Always respect taunt/provocation rules
+                        // Taunt/MegaProv rules — always respected
                         const sauronBypass = sauronIgnoresRestrictions();
                         let aiTauntTarget = null;
-                        const aldebaranAI = gameState.characters['Aldebaran'];
-                        if (aldebaranAI && aldebaranAI.team === enemyTeam && !aldebaranAI.isDead && aldebaranAI.hp > 0) aiTauntTarget = 'Aldebaran';
-                        if (!aiTauntTarget) {
-                            const thestalosAI = gameState.characters['Thestalos'];
-                            if (thestalosAI && thestalosAI.team === enemyTeam && !thestalosAI.isDead && thestalosAI.hp > 0) aiTauntTarget = 'Thestalos';
+                        for (const _n of ['Aldebaran', 'Thestalos']) {
+                            const _c = gameState.characters[_n] || gameState.characters[_n + ' v2'];
+                            const _name = gameState.characters[_n] ? _n : (_c ? _n + ' v2' : null);
+                            if (_name && gameState.characters[_name] && gameState.characters[_name].team === enemyTeam &&
+                                !gameState.characters[_name].isDead && gameState.characters[_name].hp > 0) {
+                                aiTauntTarget = _name; break;
+                            }
                         }
                         if (!aiTauntTarget) {
                             for (let _n in gameState.characters) {
@@ -192,33 +405,45 @@
                         if (kamishData && kamishData.isCharacter && !sauronBypass) aiTauntTarget = kamishData.characterName;
                         if (aiTauntTarget && !sauronBypass) return aiTauntTarget;
 
-                        // No taunt — pick smartest target:
-                        // Priority 1: Enemy that can be killed this hit
+                        // ── IMPROVEMENT 2: Kill shot first ──────────────────────
+                        const effectiveDmg = ab.damage * (char.rikudoMode ? 2 : 1);
                         const killShot = enemies.find(n => {
                             const c = gameState.characters[n];
-                            return c && c.hp > 0 && c.hp <= ab.damage;
+                            return c && c.hp > 0 && effectiveDmg >= c.hp;
                         });
                         if (killShot) return killShot;
 
-                        // Priority 2: Support/healer enemies — take them out first
+                        // ── IMPROVEMENT 5: Avoid protected targets if dispel available ──
+                        if (ab.type === 'over' && hasProtectedEnemy()) {
+                            const unprotected = enemies.find(n => !targetIsProtected(n));
+                            if (unprotected) return unprotected;
+                        }
+
+                        // ── IMPROVEMENT 4: Counter Aura de fuego — prefer AOE over ST ──
+                        // (handled in scoring, but for ST fallback pick non-Aura target)
+                        if (hasAuraEnemy('Aura de fuego') && ab.target === 'single') {
+                            const noAura = enemies.find(n => !hasStatusEffect(n, 'Aura de fuego'));
+                            if (noAura) return noAura;
+                        }
+
+                        // ── IMPROVEMENT 3: Support/healer enemies first ──────────
                         const supportEnemy = enemies.find(n => isSupportChar(n));
                         if (supportEnemy) return supportEnemy;
 
-                        // Priority 3: Most vulnerable (lowest HP %)
+                        // ── IMPROVEMENT 3: Threatening enemies ──────────────────
+                        if (mostThreatening && getThreatScore(mostThreatening) > 60) return mostThreatening;
+
+                        // ── Fallback: Most vulnerable ────────────────────────────
                         const mostVulnerable = enemies.reduce((a,b) => hpPct(a) < hpPct(b) ? a : b);
                         if (hpPct(mostVulnerable) < 0.6) return mostVulnerable;
 
-                        // Priority 4: Highest charge (most dangerous)
-                        if (ab.effect === 'apply_mega_stun' || ab.effect === 'cadenas_hielo') {
-                            return enemies.reduce((a,b) => (gameState.characters[a].charges||0) > (gameState.characters[b].charges||0) ? a : b);
+                        // ── Stun/chain: highest charges ─────────────────────────
+                        if (ab.effect === 'apply_mega_stun' || ab.effect === 'cadenas_hielo' || ab.effect === 'enkidu_cadenas') {
+                            return enemies.reduce((a,b) => getCharges(a) >= getCharges(b) ? a : b);
                         }
 
-                        // Priority 5: Highest damage dealer
-                        return enemies.reduce((a,b) => {
-                            const dmgA = (gameState.characters[a].abilities||[]).reduce((x,y) => Math.max(x,y.damage||0), 0);
-                            const dmgB = (gameState.characters[b].abilities||[]).reduce((x,y) => Math.max(x,y.damage||0), 0);
-                            return dmgA >= dmgB ? a : b;
-                        });
+                        // ── Default: highest threat ──────────────────────────────
+                        return enemies.reduce((a,b) => getThreatScore(a) >= getThreatScore(b) ? a : b);
                     }
                     return enemies[Math.floor(Math.random() * enemies.length)];
                 }
@@ -227,7 +452,6 @@
 
                 addLog((gameState.gameMode !== 'ranked' ? '🤖 IA (' + charName + ')' : '⚔️ ' + charName) + ' decide usar ' + chosen.name + (target && target !== charName ? ' sobre ' + target : ''), 'info');
 
-                // Execute
                 gameState.selectedAbility = chosen;
                 gameState.adjustedCost = chosen.cost;
 
@@ -237,7 +461,6 @@
                     } else if (target) {
                         executeAbility(target);
                     } else {
-                        // Kamish redirect or no target
                         endTurn();
                     }
                 }, 400);
