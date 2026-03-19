@@ -144,15 +144,18 @@ function applyDebuff(targetName, effectObj) {
                         addLog('🌟 ' + targetName + ' es inmune al debuff AOE (Esquiva Área)', 'buff');
                         return;
                     }
-                    // Mega Provocación: solo el portador puede recibir debuffs AOE del enemigo
-                    const _mpData = (typeof checkKamishMegaProvocation === 'function')
+                    // MEGA PROVOCACIÓN: solo el portador de MegaProv puede recibir debuffs/buffs AOE del enemigo
+                    const _mpDebData = (typeof checkKamishMegaProvocation === 'function')
                         ? checkKamishMegaProvocation(target.team)
                         : null;
-                    if (_mpData) {
-                        const _mpHolder = _mpData.isCharacter ? _mpData.characterName : null;
-                        // If MegaProv active AND this target is NOT the holder → block debuff
-                        if (_mpHolder && targetName !== _mpHolder) {
-                            addLog('🛡️ Mega Provocación: ' + targetName + ' es inmune al debuff AOE del enemigo', 'buff');
+                    if (_mpDebData) {
+                        // Determine if targetName is the MegaProv holder
+                        let _isHolder = false;
+                        if (_mpDebData.isCharacter && targetName === _mpDebData.characterName) _isHolder = true;
+                        // For summon holders: the debuff would go to the summon (handled by applyDebuff on summon)
+                        // For character holders: only they can receive the debuff
+                        if (!_isHolder && _mpDebData.isCharacter) {
+                            addLog('🎯 Mega Provocación: ' + targetName + ' es inmune al debuff/buff AOE (solo ' + _mpDebData.characterName + ' puede ser afectado)', 'buff');
                             return;
                         }
                     }
