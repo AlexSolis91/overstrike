@@ -2238,6 +2238,167 @@
                 addLog('👑 Rey Pagano: ' + finalDamage + ' daño AOE + Sangrado', 'damage');
 
             // ── DJEM SO (Anakin básico) ──
+            } else if (ability.effect === 'corte_agua') {
+                // GIYU — Corte de Agua: 1 dmg + Escudo 2HP en Giyu
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                const _giyuName = gameState.selectedCharacter;
+                applyShield(_giyuName, ability.shieldAmount || 2);
+                addLog('💧 Corte de Agua: ' + finalDamage + ' daño a ' + targetName + ' + Escudo 2HP en ' + _giyuName, 'buff');
+
+            } else if (ability.effect === 'postura_calma') {
+                // GIYU — Onceava Postura: Mega Provocación + Escudo 3HP en Giyu
+                const _giyuPC = gameState.selectedCharacter;
+                // Apply MegaProv buff
+                const _giyuChar = gameState.characters[_giyuPC];
+                if (_giyuChar) {
+                    _giyuChar.statusEffects = (_giyuChar.statusEffects || []).filter(e => e && e.name !== 'MegaProvocacion');
+                    _giyuChar.statusEffects.push({ name: 'MegaProvocacion', type: 'buff', duration: 3, emoji: '🌊', permanent: false });
+                }
+                applyShield(_giyuPC, ability.shieldAmount || 3);
+                addLog('🌊 Onceava Postura: ' + _giyuPC + ' activa Mega Provocación + Escudo 3HP', 'buff');
+
+            } else if (ability.effect === 'superficie_muerta') {
+                // GIYU — Superficie Muerta: 1-3 AOE + Escudo a Giyu por daño causado
+                const _sdTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                const _sdDmg = Math.floor(Math.random() * 3) + 1; // 1-3
+                let _sdTotalDmg = 0;
+                if (checkAndRedirectAOEMegaProv(_sdTeam, _sdDmg, gameState.selectedCharacter)) {
+                    _sdTotalDmg = _sdDmg;
+                    addLog('🌊 Superficie Muerta redirigida por Mega Provocación', 'damage');
+                } else {
+                    for (let _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _sdTeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        applyDamageWithShield(_n, _sdDmg, gameState.selectedCharacter);
+                        _sdTotalDmg += _sdDmg;
+                    }
+                }
+                // Giyu gains shield equal to damage dealt
+                if (_sdTotalDmg > 0) {
+                    applyShield(gameState.selectedCharacter, _sdTotalDmg);
+                    addLog('🌊 Superficie Muerta: ' + gameState.selectedCharacter + ' gana Escudo ' + _sdTotalDmg + ' HP', 'buff');
+                }
+                addLog('🌊 Superficie Muerta: ' + _sdDmg + ' daño AOE', 'damage');
+
+            } else if (ability.effect === 'marca_cazador') {
+                // GIYU — Marca del Cazador: 1 dmg AOE por cada punto de Escudo de Giyu
+                const _mcGiyu = gameState.characters[gameState.selectedCharacter];
+                const _mcShield = _mcGiyu ? (_mcGiyu.shield || 0) : 0;
+                const _mcDmgPerTarget = Math.max(1, _mcShield);
+                const _mcTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                if (_mcShield === 0) {
+                    addLog('🌊 Marca del Cazador: Giyu no tiene escudo activo (1 daño base)', 'info');
+                }
+                if (checkAndRedirectAOEMegaProv(_mcTeam, _mcDmgPerTarget, gameState.selectedCharacter)) {
+                    addLog('🌊 Marca del Cazador redirigida por Mega Provocación', 'damage');
+                } else {
+                    for (let _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _mcTeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        applyDamageWithShield(_n, _mcDmgPerTarget, gameState.selectedCharacter);
+                    }
+                }
+                addLog('🌊 Marca del Cazador: ' + _mcDmgPerTarget + ' daño AOE (' + _mcShield + ' HP de escudo)', 'damage');
+            } else if (ability.effect === 'galick_gun') {
+                // VEGETA — Galick Gun: 2 dmg + Frenesí 1T + Príncipe triple damage 20%
+                const _ggAttacker = gameState.characters[gameState.selectedCharacter];
+                let _ggDmg = finalDamage;
+                if (_ggAttacker && _ggAttacker.passive && _ggAttacker.passive.name === 'Príncipe de los Sayajins' && Math.random() < 0.20) {
+                    _ggDmg = finalDamage * 3;
+                    addLog('💥 Príncipe de los Sayajins: ¡Daño Triple!', 'damage');
+                }
+                applyDamageWithShield(targetName, _ggDmg, gameState.selectedCharacter);
+                applyFrenesi(gameState.selectedCharacter, 1);
+                addLog('💥 Galick Gun: ' + _ggDmg + ' daño + Frenesí a ' + gameState.selectedCharacter, 'damage');
+
+            } else if (ability.effect === 'big_bang_attack') {
+                // VEGETA — Big Bang Attack: 3 dmg + 2 cargas por cada buff/debuff del objetivo
+                const _bbaAttacker = gameState.characters[gameState.selectedCharacter];
+                let _bbaDmg = finalDamage;
+                if (_bbaAttacker && _bbaAttacker.passive && _bbaAttacker.passive.name === 'Príncipe de los Sayajins' && Math.random() < 0.20) {
+                    _bbaDmg = finalDamage * 3;
+                    addLog('💥 Príncipe de los Sayajins: ¡Daño Triple!', 'damage');
+                }
+                applyDamageWithShield(targetName, _bbaDmg, gameState.selectedCharacter);
+                const _bbaTarget = gameState.characters[targetName];
+                if (_bbaTarget) {
+                    const _bbaEffects = (_bbaTarget.statusEffects || []).filter(e => e && e.name).length;
+                    const _bbaGain = _bbaEffects * 2;
+                    if (_bbaGain > 0) {
+                        _bbaAttacker.charges = Math.min(20, (_bbaAttacker.charges || 0) + _bbaGain);
+                        addLog('💥 Big Bang Attack: ' + gameState.selectedCharacter + ' gana ' + _bbaGain + ' cargas (' + _bbaEffects + ' efectos en ' + targetName + ')', 'buff');
+                    }
+                }
+                addLog('💥 Big Bang Attack: ' + _bbaDmg + ' daño a ' + targetName, 'damage');
+
+            } else if (ability.effect === 'rafagas_ki') {
+                // VEGETA — Ráfagas de Ki: 2 AOE + 50% 0-2 bonus. Daño DIRECTO (bypasses shields)
+                const _rkTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                if (checkAndRedirectAOEMegaProv(_rkTeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('💥 Ráfagas de Ki redirigidas por Mega Provocación', 'damage');
+                } else {
+                    for (let _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _rkTeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        let _rkDmg = finalDamage;
+                        if (Math.random() < 0.50) _rkDmg += Math.floor(Math.random() * 3); // 0-2 bonus
+                        // Daño directo — bypass shields, go straight to HP
+                        const _vegPrinceTriple = attacker.passive && attacker.passive.name === 'Príncipe de los Sayajins' && Math.random() < 0.20;
+                        if (_vegPrinceTriple) { _rkDmg *= 3; addLog('💥 Príncipe de los Sayajins: ¡Daño Triple!', 'damage'); }
+                        _c.hp = Math.max(0, _c.hp - _rkDmg);
+                        if (_c.hp <= 0) _c.isDead = true;
+                        addLog('💥 Ráfagas de Ki: ' + _n + ' recibe ' + _rkDmg + ' daño directo', 'damage');
+                    }
+                }
+                addLog('💥 Ráfagas de Ki: AOE completado', 'damage');
+
+            } else if (ability.effect === 'final_flash') {
+                // VEGETA — Final Flash: 12 dmg, ignora prov/megaprov/sigilo, +10 cargas si mata
+                // Bypass all taunt/stealth — attack targetName directly regardless of buffs
+                const _ffAttacker = gameState.characters[gameState.selectedCharacter];
+                let _ffDmg = finalDamage;
+                if (_ffAttacker && _ffAttacker.passive && _ffAttacker.passive.name === 'Príncipe de los Sayajins' && Math.random() < 0.20) {
+                    _ffDmg = finalDamage * 3;
+                    addLog('💥 Príncipe de los Sayajins: ¡Daño Triple!', 'damage');
+                }
+                const _ffTarget = gameState.characters[targetName];
+                const _ffWasAlive = _ffTarget && !_ffTarget.isDead && _ffTarget.hp > 0;
+                applyDamageWithShield(targetName, _ffDmg, gameState.selectedCharacter);
+                if (_ffWasAlive && _ffTarget && (_ffTarget.isDead || _ffTarget.hp <= 0)) {
+                    _ffAttacker.charges = Math.min(20, (_ffAttacker.charges || 0) + 10);
+                    addLog('💥 Final Flash: ¡' + targetName + ' derrotado! ' + gameState.selectedCharacter + ' gana 10 cargas', 'buff');
+                }
+                addLog('⚡ Final Flash: ' + _ffDmg + ' daño ignorando Provocación/Sigilo a ' + targetName, 'damage');
+            } else if (ability.effect === 'intimidacion_sith') {
+                // DARTH VADER — Intimidación Sith: 4dmg + 3 per buff on target
+                const _isTarget = gameState.characters[targetName];
+                let _isDmg = finalDamage;
+                if (_isTarget) {
+                    const _isBuffs = (_isTarget.statusEffects || []).filter(e => e && e.type === 'buff').length;
+                    _isDmg += _isBuffs * 3;
+                    if (_isBuffs > 0) addLog('🌑 Intimidación Sith: +' + (_isBuffs*3) + ' daño por ' + _isBuffs + ' buff' + (_isBuffs>1?'s':'') + ' activos', 'damage');
+                }
+                applyDamageWithShield(targetName, _isDmg, gameState.selectedCharacter);
+                addLog('🌑 Intimidación Sith: ' + _isDmg + ' daño total a ' + targetName, 'damage');
+            } else if (ability.effect === 'explosion_fuerza_dv') {
+                // DARTH VADER — Explosión de la Fuerza: 2 AOE + 50% stun + 50% debilitar
+                const _efTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                if (checkAndRedirectAOEMegaProv(_efTeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('🌑 Explosión de la Fuerza redirigida por Mega Provocación', 'damage');
+                } else {
+                    for (let _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _efTeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        if (Math.random() < 0.50) { applyStun(_n, 1); addLog('⭐ ' + _n + ' recibe Aturdimiento (Explosión de la Fuerza)', 'debuff'); }
+                        if (Math.random() < 0.50) { applyDebuff(_n, { name: 'Debilitar', type: 'debuff', duration: 2, emoji: '💔' }); addLog('💔 ' + _n + ' recibe Debilitar (Explosión de la Fuerza)', 'debuff'); }
+                    }
+                }
+                addLog('🌑 Explosión de la Fuerza: ' + finalDamage + ' AOE a todos los enemigos', 'damage');
             } else if (ability.effect === 'djem_so') {
                 let djemDmg = finalDamage + (attacker.djemSoBonus || 0); // +1 per Estrangular use
                 if (attacker.darkSideAwakened) {
