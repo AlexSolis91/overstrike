@@ -173,7 +173,7 @@
             'Ragnar Lothbrok': {
                 hp: 25, maxHp: 25, speed: 83, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/9XqFNYqW/Captura_de_pantalla_2026_03_11_234717.png',
+                portrait: 'https://i.postimg.cc/W1CFbB4P/Captura_de_pantalla_2026_03_11_234607.png',
                 passive: { name: 'Hijo de Odin', description: 'Cada vez que Ragnar recibe daño por golpe, genera 1 carga.' },
                 abilities: [
                     { name: 'Furia Vikinga', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'apply_bleed', description: 'Causa 2 de daño. Aplica debuff Sangrado.' },
