@@ -199,6 +199,19 @@ function applyDebuff(targetName, effectObj) {
             target.statusEffects.push(effectObj);
             // PASIVA MABOROSHI: Saga gana 1 carga al aplicar debuff en enemigo
             triggerMaboroshi(target.team, effectObj.name);
+            // PASIVA PRÍNCIPE DE LOS SAYAJINS (Vegeta): 50% debuff miss chance
+            {
+                const _vegDebTarget = gameState.characters[targetName];
+                if (_vegDebTarget && !_vegDebTarget.isDead && _vegDebTarget.hp > 0 &&
+                    _vegDebTarget.passive && _vegDebTarget.passive.name === 'Príncipe de los Sayajins' &&
+                    effectObj.type === 'debuff') {
+                    if (Math.random() < 0.50) {
+                        addLog('👑 Príncipe de los Sayajins: ' + targetName + ' evade el debuff ' + effectObj.name + ' (50%)', 'buff');
+                        return; // debuff blocked
+                    }
+                }
+            }
+
             // PASIVA RINNEGAN (Madara Uchiha): 70% chance debuff is cleansed + 3 charges
             {
                 const _rinTarget = gameState.characters[targetName];
