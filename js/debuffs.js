@@ -1,4 +1,45 @@
-// ── PASIVA RINNEGAN (Madara): genera 3 cargas cuando un debuff es limpiado/disipado ──
+// ── HELPER: triggerIzanamiPartB ──
+        // Called by applyFlatBurn, applyPoison, applyConfusion, and applyDebuff
+        // when a trigger debuff (Quemadura/Veneno/Posesion/Confusion) hits any character.
+        // If Itachi is on that character's team, he cleanses up to 2 debuffs + 2 charges each.
+        function triggerIzanamiPartB(targetName) {
+            if (passiveExecuting) return;
+            const target = gameState.characters[targetName];
+            if (!target || target.isDead || target.hp <= 0) return;
+            const _izAllyTeam = target.team;
+            for (const _izn in gameState.characters) {
+                const _izc = gameState.characters[_izn];
+                if (!_izc || _izc.isDead || _izc.hp <= 0 || _izc.team !== _izAllyTeam) continue;
+                if (!_izc.passive || _izc.passive.name !== 'Izanami') continue;
+                passiveExecuting = true;
+                let _izCleaned = 0;
+                const _allies = Object.keys(gameState.characters).filter(function(n) {
+                    const c = gameState.characters[n];
+                    return c && !c.isDead && c.hp > 0 && c.team === _izAllyTeam;
+                });
+                for (let i = 0; i < _allies.length && _izCleaned < 2; i++) {
+                    const _alc = gameState.characters[_allies[i]];
+                    const _dbs = (_alc.statusEffects || []).filter(function(e) {
+                        return e && e.type === 'debuff' && !e.permanent;
+                    });
+                    if (_dbs.length === 0) continue;
+                    const _rem = _dbs[0];
+                    _alc.statusEffects = (_alc.statusEffects || []).filter(function(e) { return e !== _rem; });
+                    addLog('👁️ Izanami: Debuff ' + _rem.name + ' limpiado de ' + _allies[i], 'buff');
+                    if (typeof triggerRinneganCleanse === 'function') triggerRinneganCleanse(_allies[i], 1);
+                    _izCleaned++;
+                }
+                if (_izCleaned > 0) {
+                    _izc.charges = Math.min(20, (_izc.charges || 0) + _izCleaned * 2);
+                    addLog('👁️ Izanami: ' + _izn + ' genera ' + (_izCleaned * 2) + ' cargas (' + _izCleaned + ' debuff' + (_izCleaned > 1 ? 's' : '') + ' limpiados)', 'buff');
+                }
+                passiveExecuting = false;
+                break;
+            }
+        }
+
+
+        // ── PASIVA RINNEGAN (Madara): genera 3 cargas cuando un debuff es limpiado/disipado ──
         function triggerRinneganCleanse(targetName, count) {
             if (!count || count <= 0) return;
             const c = gameState.characters[targetName];
@@ -256,47 +297,11 @@ function applyDebuff(targetName, effectObj) {
                 }
             }
 
-            // ── PASIVA IZANAMI PARTE B (Itachi Uchiha): debuff trigger ──
-            // Cuando un debuff trigger (Posesión/Veneno/Quemadura/Confusión) es aplicado a un ALIADO de Itachi,
-            // Itachi limpia hasta 2 debuffs del equipo aliado y gana 2 cargas por cada limpiado
-            if (!passiveExecuting && effectObj && effectObj.type === 'debuff') {
-                const _izTriggers = ['posesion', 'posesión', 'veneno', 'quemadura', 'quemaduras', 'confusion', 'confusión'];
-                const _izIsTrigger = _izTriggers.some(function(t){ return normAccent(effectObj.name||'').toLowerCase().includes(t); });
-                if (_izIsTrigger) {
-                    // Find Itachi on the SAME team as the debuffed target
-                    const _izAllyTeam = target.team;
-                    for (const _izn in gameState.characters) {
-                        const _izc = gameState.characters[_izn];
-                        if (!_izc || _izc.isDead || _izc.hp <= 0) continue;
-                        if (_izc.team !== _izAllyTeam) continue;
-                        if (!_izc.passive || _izc.passive.name !== 'Izanami') continue;
-                        // Found Itachi on the ally team
-                        passiveExecuting = true;
-                        let _izCleaned = 0;
-                        // Collect all debuffed allies and clean up to 2
-                        const _allAllies = Object.keys(gameState.characters).filter(function(n) {
-                            const c = gameState.characters[n];
-                            return c && !c.isDead && c.hp > 0 && c.team === _izAllyTeam;
-                        });
-                        for (let _ai = 0; _ai < _allAllies.length && _izCleaned < 2; _ai++) {
-                            const _aln = _allAllies[_ai];
-                            const _alc = gameState.characters[_aln];
-                            const _alDbs = (_alc.statusEffects || []).filter(function(e){ return e && e.type === 'debuff' && !e.permanent; });
-                            if (_alDbs.length === 0) continue;
-                            const _removed = _alDbs[0];
-                            _alc.statusEffects = (_alc.statusEffects || []).filter(function(e){ return e !== _removed; });
-                            addLog('👁️ Izanami: Debuff ' + _removed.name + ' limpiado de ' + _aln, 'buff');
-                            if (typeof triggerRinneganCleanse === 'function') triggerRinneganCleanse(_aln, 1);
-                            _izCleaned++;
-                        }
-                        if (_izCleaned > 0) {
-                            const _izGain = _izCleaned * 2;
-                            _izc.charges = Math.min(20, (_izc.charges || 0) + _izGain);
-                            addLog('👁️ Izanami: ' + _izn + ' genera ' + _izGain + ' cargas (' + _izCleaned + ' debuff' + (_izCleaned>1?'s':'') + ' limpiados)', 'buff');
-                        }
-                        passiveExecuting = false;
-                        break; // Only one Itachi per team
-                    }
+            // ── PASIVA IZANAMI PARTE B: via triggerIzanamiPartB helper ──
+            if (effectObj && effectObj.type === 'debuff') {
+                const _izTriggers2 = ['posesion', 'posesión', 'veneno', 'quemadura', 'quemaduras', 'confusion', 'confusión'];
+                if (_izTriggers2.some(function(t){ return normAccent(effectObj.name||'').toLowerCase().includes(t); })) {
+                    triggerIzanamiPartB(targetName);
                 }
             }
         }
@@ -366,6 +371,7 @@ function applyDebuff(targetName, effectObj) {
             applyDebuff(targetName, { name: 'Veneno', type: 'debuff', duration, emoji: '☠️', poisonTick: 0 });
             const stackCount = target.statusEffects.filter(e => e && normAccent(e.name||'') === 'veneno').length;
             addLog(`☠️ ${targetName} es envenenado por ${duration} turno${duration > 1 ? 's' : ''} (${stackCount} stack${stackCount > 1 ? 's' : ''})`, 'damage');
+            if (typeof triggerIzanamiPartB === 'function') triggerIzanamiPartB(targetName);
         }
 
 
@@ -385,6 +391,7 @@ function applyDebuff(targetName, effectObj) {
             }
             applyDebuff(targetName, { name: 'Confusion', type: 'debuff', duration, emoji: '😵' });
             addLog(`😵 ${targetName} queda Confundido por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
+            if (typeof triggerIzanamiPartB === 'function') triggerIzanamiPartB(targetName);
         }
 
         // Quemadura Solar: stackeable (a diferencia de Quemadura normal)
