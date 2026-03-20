@@ -457,5 +457,18 @@
                     { name: 'Superficie Muerta', type: 'special', cost: 7, chargeGain: 0, damage: 0, target: 'aoe', effect: 'superficie_muerta', description: 'Causa 1-3 daño AOE. Aplica Buff Escudo a Giyu por la cantidad de daño causado.' },
                     { name: 'Marca del Cazador', type: 'over', cost: 16, chargeGain: 0, damage: 0, target: 'aoe', effect: 'marca_cazador', description: 'Causa 1 daño AOE por cada punto de Escudo que Giyu Tomioka tenga al ejecutar este ataque.' }
                 ]
+            },
+            'Itachi Uchiha': {
+                hp: 20, maxHp: 20, speed: 88, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                izanamiUsedThisRound: false,
+                portrait: 'https://i.ibb.co/HDhTPLvR/91a611f2e00a9c83e9a8dd1607a2c50a.jpg',
+                passive: { name: 'Izanami', description: 'La primera vez por ronda que Itachi fuera a recibir un golpe de 3+ daño, esquiva y roba hasta 5 cargas del atacante. Cada vez que un debuff (Posesión, Veneno, Quemadura, Confusión) es aplicado sobre un aliado, limpia hasta 2 debuffs del equipo aliado y genera 2 cargas por cada debuff limpiado.' },
+                abilities: [
+                    { name: 'Genjutsu', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'single', effect: 'genjutsu_itachi', description: '50% Debuff Agotamiento. 50% Debuff Posesión. Genera 1 carga por cada debuff aplicado.' },
+                    { name: 'Tsukuyomi', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'single', effect: 'tsukuyomi_itachi', description: 'Disipa TODOS los debuffs de ambos equipos. +2 daño adicional por cada debuff disipado.' },
+                    { name: 'Amaterasu', type: 'special', cost: 7, chargeGain: 0, damage: 4, target: 'single', effect: 'amaterasu_itachi', description: 'Quemadura 4HP al objetivo. Si el objetivo es una Invocación, la elimina y aplica Quemadura 6HP AOE a todos los enemigos.' },
+                    { name: 'Susanoo, Espada de Totsuka', type: 'over', cost: 9, chargeGain: 2, damage: 8, target: 'single', effect: 'totsuka_itachi', description: 'Roba TODAS las cargas del objetivo. Aplica Mega Aturdimiento. Aplica Debilitar.' }
+                ]
             }
         };
