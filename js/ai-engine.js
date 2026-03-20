@@ -345,6 +345,14 @@
                         }
                     }
 
+                    // ── AMATERASU (Itachi): máxima prioridad si hay invocaciones enemigas ──
+                    if (ab.effect === 'amaterasu_itachi') {
+                        const _enemySummonCount = Object.values(gameState.summons).filter(function(s) {
+                            return s && s.team === enemyTeam && s.hp > 0;
+                        }).length;
+                        score += _enemySummonCount > 0 ? 400 : 0; // Prioridad altísima si hay invocaciones
+                    }
+
                     // ── SUMMONS ──────────────────────────────────────────────────
                     if (ab.effect === 'el_rey_caido') score += summonPresent('Sindragosa', myTeam) ? 20 : 75;
                     if (ab.effect === 'summon_sphinx') score += summonPresent('Sphinx Wehem-Mesut', myTeam) ? -200 : 60;
@@ -472,7 +480,20 @@
 
                 const target = pickTarget(chosen);
 
-                addLog((gameState.gameMode !== 'ranked' ? '🤖 IA (' + charName + ')' : '⚔️ ' + charName) + ' decide usar ' + chosen.name + (target && target !== charName ? ' sobre ' + target : ''), 'info');
+                // AMATERASU override: if there's an enemy summon, target it instead
+                let _finalTarget = target;
+                let _amaterasuSummonId = null;
+                if (chosen.effect === 'amaterasu_itachi') {
+                    const _amSummonEntry = Object.entries(gameState.summons).find(function(e) {
+                        return e[1] && e[1].team === enemyTeam && e[1].hp > 0;
+                    });
+                    if (_amSummonEntry) {
+                        _amaterasuSummonId = _amSummonEntry[0];
+                        _finalTarget = _amSummonEntry[1].name;
+                    }
+                }
+
+                addLog((gameState.gameMode !== 'ranked' ? '🤖 IA (' + charName + ')' : '⚔️ ' + charName) + ' decide usar ' + chosen.name + (_finalTarget && _finalTarget !== charName ? ' sobre ' + _finalTarget : ''), 'info');
 
                 gameState.selectedAbility = chosen;
                 gameState.adjustedCost = chosen.cost;
@@ -480,8 +501,11 @@
                 setTimeout(function() {
                     if (chosen.target === 'aoe' || chosen.target === 'self') {
                         executeAbility(charName);
-                    } else if (target) {
-                        executeAbility(target);
+                    } else if (_amaterasuSummonId) {
+                        // Amaterasu targeting a summon
+                        executeAbilitySummon(_amaterasuSummonId);
+                    } else if (_finalTarget) {
+                        executeAbility(_finalTarget);
                     } else {
                         endTurn();
                     }
