@@ -805,6 +805,24 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 // Aplicar daño a la invocación
                 applySummonDamage(summonId, finalDamage, gameState.selectedCharacter);
                 addLog(`⚔️ ${gameState.selectedCharacter} usa ${ability.name} causando ${finalDamage} de daño`, 'damage');
+
+                // AMATERASU (Itachi): si el objetivo es una invocación — elimínala + Quemadura 6HP AOE a todos los enemigos
+                if (ability.effect === 'amaterasu_itachi') {
+                    const _amSummon = gameState.summons[summonId];
+                    const _amEnemyTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                    if (_amSummon) {
+                        addLog('🔥 Amaterasu: ¡' + _amSummon.name + ' consumida por el fuego negro!', 'damage');
+                        delete gameState.summons[summonId];
+                        renderSummons();
+                    }
+                    // AOE Quemadura 6HP a todos los personajes enemigos
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _amEnemyTeam || _c.isDead || _c.hp <= 0) continue;
+                        applyFlatBurn(_n, 6, 2);
+                        addLog('🔥 Amaterasu AOE: ' + _n + ' recibe Quemadura 6HP', 'debuff');
+                    }
+                }
                 
                 // Ganar cargas
                 let finalChargeGain = ability.chargeGain || 0;
