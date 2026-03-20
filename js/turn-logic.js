@@ -1153,6 +1153,13 @@
                     
                     gameState.currentRound++;
                     gameState.turnsInRound = 0;
+                    // IZANAMI (Itachi): reset dodge flag each round
+                    for (const _in in gameState.characters) {
+                        const _ic = gameState.characters[_in];
+                        if (_ic && _ic.passive && _ic.passive.name === 'Izanami') {
+                            _ic.izanamiUsedThisRound = false;
+                        }
+                    }
                     // PILAR DEL AGUA (Giyu Tomioka): inicio de nueva ronda → Escudo 1HP a aliados
                     for (const _gn in gameState.characters) {
                         const _gc = gameState.characters[_gn];
