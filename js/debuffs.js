@@ -255,6 +255,40 @@ function applyDebuff(targetName, effectObj) {
                     }
                 }
             }
+
+            // ── PASIVA IZANAMI (Itachi Uchiha): debuff trigger ──
+            // Limpia hasta 2 debuffs del equipo aliado + 2 cargas por cada uno
+            {
+                const _izTriggers = ['posesion', 'posesión', 'veneno', 'quemadura', 'quemaduras', 'confusion', 'confusión'];
+                if (effectObj && effectObj.type === 'debuff' && _izTriggers.some(function(t){ return normAccent(effectObj.name||'').toLowerCase().includes(t); })) {
+                    const _izTeam = target.team;
+                    for (const _izn in gameState.characters) {
+                        const _izc = gameState.characters[_izn];
+                        if (!_izc || _izc.isDead || _izc.hp <= 0 || _izc.team !== _izTeam) continue;
+                        if (!_izc.passive || _izc.passive.name !== 'Izanami') continue;
+                        if (passiveExecuting) break;
+                        passiveExecuting = true;
+                        let _izCleaned = 0;
+                        for (const _aln in gameState.characters) {
+                            if (_izCleaned >= 2) break;
+                            const _alc = gameState.characters[_aln];
+                            if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== _izTeam) continue;
+                            const _alDbs = (_alc.statusEffects || []).filter(function(e){ return e && e.type === 'debuff' && !e.permanent; });
+                            if (_alDbs.length === 0) continue;
+                            _alc.statusEffects = (_alc.statusEffects || []).filter(function(e){ return e !== _alDbs[0]; });
+                            addLog('👁️ Izanami: Debuff ' + _alDbs[0].name + ' limpiado de ' + _aln, 'buff');
+                            if (typeof triggerRinneganCleanse === 'function') triggerRinneganCleanse(_aln, 1);
+                            _izCleaned++;
+                        }
+                        if (_izCleaned > 0) {
+                            _izc.charges = Math.min(20, (_izc.charges || 0) + _izCleaned * 2);
+                            addLog('👁️ Izanami: ' + _izn + ' genera ' + (_izCleaned*2) + ' cargas (' + _izCleaned + ' debuff' + (_izCleaned>1?'s':'') + ' limpiados)', 'buff');
+                        }
+                        passiveExecuting = false;
+                        break;
+                    }
+                }
+            }
         }
 
         function applyStun(targetName, duration = 1) {
