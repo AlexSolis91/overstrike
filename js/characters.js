@@ -488,12 +488,13 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 garouSaitamaMode: false,
                 portrait: 'https://i.ibb.co/1YPdwxPw/Captura-de-pantalla-2026-03-20-160048.png',
-                passive: { name: 'Cazador de Héroes', description: 'Cada vez que un enemigo activa su habilidad pasiva, Garou realiza un ataque básico sobre ese enemigo y recupera 2 HP.' },
+                transformPortrait: 'https://i.ibb.co/S4vdmL4s/Captura-de-pantalla-2026-03-20-172015.png',
+                passive: { name: 'Cazador de Héroes', description: 'Cualquier daño directo al HP que fuera a recibir Garou se convierte en cargas. Al inicio de cada turno de Garou aplica Buff Armadura 2 turnos. Si Garou tiene Veneno/Quemadura/Sangrado activo, todos sus ataques causan daño doble.' },
                 abilities: [
-                    { name: 'Ryusui Gansai-ken', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'ryusui_garou', description: 'Causa 2 daño. Reduce 2 cargas del objetivo.' },
-                    { name: 'Cross Fang Dragon Slayer Fist', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'single', effect: 'cross_fang_garou', description: 'Causa 4 daño + 2 por cada personaje derrotado en el campo.' },
-                    { name: 'Gamma Ray Burst', type: 'special', cost: 7, chargeGain: 0, damage: 1, target: 'aoe', effect: 'gamma_ray_garou', description: 'AOE: causa 1 + daño adicional por cada carga del objetivo golpeado.' },
-                    { name: 'Saitama Mode', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'saitama_mode_garou', description: 'Transformación: Garou gana inmunidad a debuffs y reduce 50% cualquier daño recibido.' }
+                    { name: 'Ryusui Gansai-ken', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'ryusui_garou', description: 'Causa 2 daño. Garou se aplica Veneno 2 turnos y Buff Infectar 2 turnos.' },
+                    { name: 'Cross Fang Dragon Slayer Fist', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'single', effect: 'cross_fang_garou', description: 'Causa 4 daño + 2 adicional por cada aliado y enemigo derrotado.' },
+                    { name: 'Gamma Ray Burst', type: 'special', cost: 7, chargeGain: 0, damage: 2, target: 'aoe', effect: 'gamma_ray_garou', description: 'Causa 2 AOE + 1 daño adicional por cada carga del objetivo.' },
+                    { name: 'Saitama Mode', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'saitama_mode_garou', description: 'Reduce -2 puntos el daño recibido por golpe. Todos los ataques de Garou causan +2 de daño adicional permanente. Transformación permanente.' }
                 ]
             },
             'Tanjiro Kamado': {
