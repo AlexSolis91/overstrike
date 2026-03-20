@@ -584,6 +584,12 @@
                 }
             }
 
+            // ── SAITAMA MODE (Garou): reduce 50% todo daño recibido ──
+            if (target.saitamaModeActive && damage > 0) {
+                damage = Math.max(1, Math.floor(damage * 0.5));
+                addLog('💪 Saitama Mode: ' + targetName + ' reduce daño a ' + damage, 'buff');
+            }
+
             // CASTILLO INFINITO (Nakime): redirigir primer ataque ST de la ronda al equipo atacante
             if (attackerName !== null && attackerName !== targetName && !passiveExecuting) {
                 const attacker = gameState.characters[attackerName];
