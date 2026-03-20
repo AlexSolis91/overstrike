@@ -159,6 +159,9 @@ function triggerMaboroshi(targetTeam, debuffName) {
         function isImmuneToDebuff(targetName) {
             // Saitama: total debuff immunity
             if ((targetName === 'Saitama' || targetName === 'Saitama v2')) return true;
+            // Garou Saitama Mode: full debuff immunity
+            const _garouChar = gameState.characters[targetName];
+            if (_garouChar && _garouChar.saitamaModeActive) return true;
             // Proteccion Sagrada: immune to new debuffs
             if (hasStatusEffect(targetName, 'Proteccion Sagrada') || hasStatusEffect(targetName, 'Protección Sagrada')) return true;
             // LIMBO (Madara Uchiha): Divinidad = inmune a debuffs en Modo Rikudō
