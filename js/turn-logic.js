@@ -404,6 +404,19 @@
                     _epc.statusEffects.push({ name: 'Armadura', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🛡️' });
                 }
             }
+            // ── CAZADOR DE HÉROES PASSIVE B (Garou): Buff Armadura 2T al inicio de su turno ──
+            if (gameState.selectedCharacter) {
+                const _garouTurn = gameState.characters[gameState.selectedCharacter];
+                if (_garouTurn && !_garouTurn.isDead && _garouTurn.hp > 0 &&
+                    _garouTurn.passive && _garouTurn.passive.name === 'Cazador de Héroes') {
+                    // Apply Armadura 2 turns (refresh each turn)
+                    _garouTurn.statusEffects = (_garouTurn.statusEffects || []).filter(function(e) {
+                        return e && normAccent(e.name||'') !== 'armadura';
+                    });
+                    _garouTurn.statusEffects.push({ name: 'Armadura', type: 'buff', duration: 2, emoji: '🛡️' });
+                    addLog('🐆 Cazador de Héroes: ' + gameState.selectedCharacter + ' activa Armadura 2 turnos', 'buff');
+                }
+            }
             // Online mode: only the player whose team is active can continue
             if (onlineMode) {
                 const myTeam = isRoomHost ? 'team1' : 'team2';
