@@ -584,10 +584,18 @@
                 }
             }
 
-            // ── SAITAMA MODE (Garou): reduce 50% todo daño recibido ──
-            if (target.saitamaModeActive && damage > 0) {
-                damage = Math.max(1, Math.floor(damage * 0.5));
-                addLog('💪 Saitama Mode: ' + targetName + ' reduce daño a ' + damage, 'buff');
+            // ── CAZADOR DE HÉROES (Garou): daño directo al HP → cargas ──
+            if (!passiveExecuting && damage > 0 && target.passive && target.passive.name === 'Cazador de Héroes') {
+                const _garouChargesGained = damage;
+                target.charges = Math.min(20, (target.charges || 0) + _garouChargesGained);
+                addLog('🐆 Cazador de Héroes: ' + targetName + ' convierte ' + damage + ' daño en ' + _garouChargesGained + ' cargas', 'buff');
+                return 0; // No damage — all converted to charges
+            }
+            // ── SAITAMA MODE (Garou): reduce -2 daño recibido ──
+            if (target.garouSaitamaMode && damage > 0) {
+                damage = Math.max(0, damage - 2);
+                if (damage === 0) { addLog('💪 Saitama Mode: ' + targetName + ' bloquea el golpe (-2)', 'buff'); return 0; }
+                addLog('💪 Saitama Mode: ' + targetName + ' reduce daño a ' + damage + ' (-2)', 'buff');
             }
 
             // CASTILLO INFINITO (Nakime): redirigir primer ataque ST de la ronda al equipo atacante
