@@ -566,6 +566,24 @@
             const target = gameState.characters[targetName];
             if (!target) return 0;
 
+            // ── PASIVA IZANAMI (Itachi Uchiha): esquiva primer golpe de 3+ daño por ronda ──
+            if (!passiveExecuting && damage >= 3 && attackerName && attackerName !== targetName) {
+                if (!target.isDead && target.hp > 0 &&
+                    target.passive && target.passive.name === 'Izanami' &&
+                    !target.izanamiUsedThisRound) {
+                    target.izanamiUsedThisRound = true;
+                    const _izAtk = gameState.characters[attackerName];
+                    const _izStolen = _izAtk ? Math.min(5, _izAtk.charges || 0) : 0;
+                    if (_izAtk && _izStolen > 0) {
+                        _izAtk.charges = Math.max(0, (_izAtk.charges || 0) - _izStolen);
+                        target.charges = Math.min(20, (target.charges || 0) + _izStolen);
+                    }
+                    addLog('👁️ Izanami: ' + targetName + ' esquiva el golpe de ' + damage + ' daño' +
+                        (_izStolen > 0 ? ' y roba ' + _izStolen + ' cargas de ' + attackerName : ''), 'buff');
+                    return 0; // Golpe esquivado completamente
+                }
+            }
+
             // CASTILLO INFINITO (Nakime): redirigir primer ataque ST de la ronda al equipo atacante
             if (attackerName !== null && attackerName !== targetName && !passiveExecuting) {
                 const attacker = gameState.characters[attackerName];
