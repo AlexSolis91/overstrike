@@ -330,6 +330,21 @@
                         if (ab.effect === 'purgatorio_v2') score += 80;
                     }
 
+                    // ── REVIVE — highest priority when a dead ally exists ──────────
+                    if (ab.effect === 'revive_ally') {
+                        const _deadAllies = allies.length < 5
+                            ? Object.keys(gameState.characters).filter(function(n) {
+                                const c = gameState.characters[n];
+                                return c && c.team === myTeam && c.isDead;
+                              })
+                            : [];
+                        if (_deadAllies.length > 0) {
+                            score += 500; // Always revive if possible
+                        } else {
+                            score -= 999; // No dead allies — useless
+                        }
+                    }
+
                     // ── SUMMONS ──────────────────────────────────────────────────
                     if (ab.effect === 'el_rey_caido') score += summonPresent('Sindragosa', myTeam) ? 20 : 75;
                     if (ab.effect === 'summon_sphinx') score += summonPresent('Sphinx Wehem-Mesut', myTeam) ? -200 : 60;
@@ -363,9 +378,16 @@
                 function pickTarget(ab) {
                     if (ab.target === 'self' || ab.target === 'aoe') return charName;
 
-                    if (ab.target === 'ally_single') {
+                    if (ab.target === 'ally_single' || ab.target === 'ally_dead') {
+                        // REVIVE: pick a dead ally
+                        if (ab.effect === 'revive_ally' || ab.target === 'ally_dead') {
+                            const _dead = Object.keys(gameState.characters).find(function(n) {
+                                const c = gameState.characters[n];
+                                return c && c.team === myTeam && c.isDead;
+                            });
+                            if (_dead) return _dead;
+                        }
                         // IMPROVEMENT 6: pick ally that needs heal most (lowest HP)
-                        // but only if they actually need it — otherwise pick lowest charges
                         if (ab.effect && (ab.effect.includes('heal') || ab.effect === 'don_de_la_vida')) {
                             return allies.reduce((a,b) => hpPct(a) < hpPct(b) ? a : b);
                         }
