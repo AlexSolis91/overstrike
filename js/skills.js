@@ -3414,6 +3414,66 @@
                 }
                 generateChargesInline(charName, ability.chargeGain);
 
+            } else if (ability.effect === 'genjutsu_itachi') {
+                // ITACHI — Genjutsu: 50% Agotamiento + 50% Posesión, +1 carga por debuff aplicado
+                const _gjAtk = gameState.characters[gameState.selectedCharacter];
+                let _gjGain = 0;
+                if (Math.random() < 0.50) {
+                    applyDebuff(targetName, { name: 'Agotamiento', type: 'debuff', duration: 2, emoji: '😴', description: 'Agotamiento: no genera cargas' });
+                    addLog('😴 Genjutsu: ' + targetName + ' sufre Agotamiento', 'debuff');
+                    _gjGain++;
+                }
+                if (Math.random() < 0.50) {
+                    applyPossession(targetName, 1);
+                    addLog('👁️ Genjutsu: ' + targetName + ' sufre Posesión', 'debuff');
+                    _gjGain++;
+                }
+                if (_gjGain > 0 && _gjAtk) {
+                    _gjAtk.charges = Math.min(20, (_gjAtk.charges || 0) + _gjGain);
+                    addLog('👁️ Genjutsu: ' + gameState.selectedCharacter + ' gana ' + _gjGain + ' carga' + (_gjGain>1?'s':'') + ' por debuffs aplicados', 'buff');
+                }
+
+            } else if (ability.effect === 'tsukuyomi_itachi') {
+                // ITACHI — Tsukuyomi: 2 daño + disipa TODOS los debuffs de AMBOS equipos, +2 por debuff disipado
+                const _tsAtk = gameState.characters[gameState.selectedCharacter];
+                const _tsTarget = gameState.characters[targetName];
+                let _tsDebuffCount = 0;
+                // Count + remove debuffs from ALL characters both teams
+                for (let _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.isDead) continue;
+                    const _dbs = (_c.statusEffects || []).filter(e => e && e.type === 'debuff' && !e.permanent);
+                    _tsDebuffCount += _dbs.length;
+                    _c.statusEffects = (_c.statusEffects || []).filter(e => !e || e.type !== 'debuff' || e.permanent);
+                    // Rinnegan trigger for Madara
+                    if (_dbs.length > 0 && typeof triggerRinneganCleanse === 'function') triggerRinneganCleanse(_n, _dbs.length);
+                }
+                const _tsBonusDmg = _tsDebuffCount * 2;
+                const _tsTotalDmg = finalDamage + _tsBonusDmg;
+                applyDamageWithShield(targetName, _tsTotalDmg, gameState.selectedCharacter);
+                addLog('🌙 Tsukuyomi: ' + _tsTotalDmg + ' daño (' + finalDamage + ' base + ' + _tsBonusDmg + ' por ' + _tsDebuffCount + ' debuffs disipados)', 'damage');
+
+            } else if (ability.effect === 'amaterasu_itachi') {
+                // ITACHI — Amaterasu: 4 daño + Quemadura 4HP. Si el objetivo es una Invocación: elimínala + Quemadura 6HP AOE
+                // NOTE: This handler fires for character targets; summon targets handled separately below
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                applyFlatBurn(targetName, 4, 2);
+                addLog('🔥 Amaterasu: ' + finalDamage + ' daño + Quemadura 4HP a ' + targetName, 'damage');
+
+            } else if (ability.effect === 'totsuka_itachi') {
+                // ITACHI — Espada de Totsuka: 8 daño + roba TODAS las cargas + Mega Aturdimiento + Debilitar
+                const _totTarget = gameState.characters[targetName];
+                const _totAtk = gameState.characters[gameState.selectedCharacter];
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                if (_totTarget && _totAtk) {
+                    const _totStolen = _totTarget.charges || 0;
+                    _totTarget.charges = 0;
+                    _totAtk.charges = Math.min(20, (_totAtk.charges || 0) + _totStolen);
+                    if (_totStolen > 0) addLog('⚡ Espada de Totsuka: ' + gameState.selectedCharacter + ' roba ' + _totStolen + ' cargas de ' + targetName, 'buff');
+                }
+                applyStun(targetName, 2); // Mega Aturdimiento
+                applyDebuff(targetName, { name: 'Debilitar', type: 'debuff', duration: 2, emoji: '💔' });
+                addLog('⚔️ Espada de Totsuka: ' + finalDamage + ' daño + Mega Aturdimiento + Debilitar a ' + targetName, 'damage');
             } else if (ability.effect === 'campo_atraccion') {
                 // LINTERNA VERDE — Campo de Atracción: Provocación + Protección Sagrada
                 const _lgName = gameState.selectedCharacter;
