@@ -3487,9 +3487,9 @@
                         return e && e.name !== 'Provocacion' && e.name !== 'Esquivar';
                     });
                 }
-                applyBuff(_lgName, { name: 'Provocacion', type: 'buff', duration: 1, emoji: '⚠️', description: 'Provocación: enemigos deben atacarte (1 turno)' });
-                applyBuff(_lgName, { name: 'Esquivar', type: 'buff', duration: 1, emoji: '💨', description: 'Esquivar: 50% de esquivar cualquier ataque (1 turno)' });
-                addLog('💚 Campo de Atracción: ' + _lgName + ' activa Provocación + Esquivar (1 turno)', 'buff');
+                applyBuff(_lgName, { name: 'Provocacion', type: 'buff', duration: 2, emoji: '⚠️', description: 'Provocación: enemigos deben atacarte (expira en el próximo turno de Linterna Verde)' });
+                applyBuff(_lgName, { name: 'Esquivar', type: 'buff', duration: 2, emoji: '💨', description: 'Esquivar: 50% de esquivar cualquier ataque (expira en el próximo turno de Linterna Verde)' });
+                addLog('💚 Campo de Atracción: ' + _lgName + ' activa Provocación + Esquivar (hasta el próximo turno)', 'buff');
 
             } else if (ability.effect === 'sincronia_esmeralda') {
                 // LINTERNA VERDE — Sincronía Esmeralda: limpia 1 debuff del aliado + 3 cargas
