@@ -91,6 +91,8 @@
                 }
             })();
             addLog('🔥 ' + targetName + ' sufre Quemadura ' + flatHp + ' HP por ' + (duration||1) + ' turno(s)', 'damage');
+            // IZANAMI: trigger Part B when Quemadura is applied to an ally
+            if (typeof triggerIzanamiPartB === 'function') triggerIzanamiPartB(targetName);
         }
 function processBurnEffects(charName) {
             const char = gameState.characters[charName];
