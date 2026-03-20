@@ -1033,7 +1033,11 @@
                         for (const n of pool) { rand -= weights[n]; if (rand <= 0) return n; }
                         return pool[pool.length - 1];
                     }
-                    const toSummonLich = Math.min(3 - myLichSummons.length, availableLich.length);
+                    // Fill up to 3 per cast, but never exceed 5 total summons
+                    const _totalSummons = Object.values(gameState.summons).filter(s => s && s.team === attacker.team).length;
+                    const _slotsLeft = Math.max(0, 5 - _totalSummons);
+                    const _lichWant = Math.min(3, availableLich.length); // always try to summon 3
+                    const toSummonLich = Math.min(_lichWant, _slotsLeft);
                     const remainingLich = [...availableLich];
                     const selectedLich = [];
                     for (let i = 0; i < toSummonLich; i++) {
@@ -1539,8 +1543,7 @@
                 // ALEXSTRAZA - Llama Preservadora: Escudo 5 HP + Aura de fuego + Aura de Luz
                 const tgtLP = gameState.characters[targetName];
                 if (tgtLP) {
-                    tgtLP.shield = (ability.shieldAmount || 5);
-                    tgtLP.shieldEffect = 'fire_charge_regen';
+                    applyShield(targetName, ability.shieldAmount || 5, 'fire_charge_regen');
                     // Apply Aura de fuego
                     if (!hasStatusEffect(targetName, 'Aura de fuego')) {
                         applyBuff(targetName, { name: 'Aura de fuego', type: 'buff', duration: 4, emoji: '🔥', description: 'Quemadura 2HP al atacante' });
@@ -3416,6 +3419,162 @@
                 }
                 generateChargesInline(charName, ability.chargeGain);
 
+            } else if (ability.effect === 'vals_tanjiro') {
+                // TANJIRO — Vals: 1 dmg + 1 carga a TODOS los aliados + passive crit 20%
+                const _tjAtk = gameState.characters[gameState.selectedCharacter];
+                let _tjDmg = finalDamage;
+                // Passive: Olor de la Brecha — 20% crit
+                if (_tjAtk && _tjAtk.passive && _tjAtk.passive.name === 'Olor de la Brecha' && Math.random() < 0.20) {
+                    _tjDmg *= 2;
+                    _tjAtk.charges = Math.min(20, (_tjAtk.charges || 0) + 1);
+                    addLog('🌊 ¡Crítico! Olor de la Brecha: ' + gameState.selectedCharacter + ' gana 1 carga', 'buff');
+                }
+                applyDamageWithShield(targetName, _tjDmg, gameState.selectedCharacter);
+                // All allies gain 1 charge
+                for (const _aln in gameState.characters) {
+                    const _alc = gameState.characters[_aln];
+                    if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== (_tjAtk ? _tjAtk.team : '')) continue;
+                    _alc.charges = Math.min(20, (_alc.charges || 0) + 1);
+                }
+                addLog('🌊 Vals: ' + _tjDmg + ' daño a ' + targetName + ' + 1 carga al equipo aliado', 'buff');
+
+            } else if (ability.effect === 'cascada_agua_tanjiro') {
+                // TANJIRO — Cascada de Agua: 2 AOE + 1 carga aliado por critico + passive crit
+                const _caAtk = gameState.characters[gameState.selectedCharacter];
+                const _caTeam = _caAtk ? (_caAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                let _caCrits = 0;
+                if (checkAndRedirectAOEMegaProv(_caTeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('🌊 Cascada de Agua redirigida por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _caTeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        let _caDmg = finalDamage;
+                        // 20% crit per hit
+                        if (_caAtk && _caAtk.passive && _caAtk.passive.name === 'Olor de la Brecha' && Math.random() < 0.20) {
+                            _caDmg *= 2;
+                            _caAtk.charges = Math.min(20, (_caAtk.charges || 0) + 1);
+                            _caCrits++;
+                            addLog('💥 ¡Crítico! Cascada de Agua en ' + _n, 'damage');
+                        }
+                        applyDamageWithShield(_n, _caDmg, gameState.selectedCharacter);
+                    }
+                }
+                // Allies gain 1 charge per crit
+                if (_caCrits > 0 && _caAtk) {
+                    for (const _aln in gameState.characters) {
+                        const _alc = gameState.characters[_aln];
+                        if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== _caAtk.team) continue;
+                        _alc.charges = Math.min(20, (_alc.charges || 0) + _caCrits);
+                    }
+                    addLog('🌊 Cascada de Agua: ' + _caCrits + ' crítico' + (_caCrits>1?'s':'') + ' — equipo aliado gana ' + _caCrits + ' carga' + (_caCrits>1?'s':''), 'buff');
+                }
+                addLog('🌊 Cascada de Agua: 2 daño AOE', 'damage');
+
+            } else if (ability.effect === 'danza_fuego_tanjiro') {
+                // TANJIRO — Danza del Dios del Fuego: 5 ataques básicos aleatorios
+                const _dfAtk = gameState.characters[gameState.selectedCharacter];
+                const _dfEnemyTeam = _dfAtk ? (_dfAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _dfBasicDmg = (_dfAtk && _dfAtk.abilities && _dfAtk.abilities[0]) ? (_dfAtk.abilities[0].damage || 1) : 1;
+                for (let _i = 0; _i < 5; _i++) {
+                    const _alive = Object.keys(gameState.characters).filter(function(n) {
+                        const c = gameState.characters[n]; return c && c.team === _dfEnemyTeam && !c.isDead && c.hp > 0;
+                    });
+                    if (_alive.length === 0) break;
+                    const _tgt = _alive[Math.floor(Math.random() * _alive.length)];
+                    let _dfDmg = _dfBasicDmg;
+                    if (_dfAtk && _dfAtk.passive && _dfAtk.passive.name === 'Olor de la Brecha' && Math.random() < 0.20) {
+                        _dfDmg *= 2;
+                        _dfAtk.charges = Math.min(20, (_dfAtk.charges || 0) + 1);
+                        addLog('💥 ¡Crítico! Danza del Fuego golpe ' + (_i+1) + ' en ' + _tgt, 'damage');
+                    }
+                    applyDamageWithShield(_tgt, _dfDmg, gameState.selectedCharacter);
+                    addLog('🔥 Danza del Fuego golpe ' + (_i+1) + ': ' + _dfDmg + ' daño a ' + _tgt, 'damage');
+                }
+
+            } else if (ability.effect === 'decimotercera_tanjiro') {
+                // TANJIRO — Decimotercera Postura: 13 ataques aleatorios + 50% -1 carga por golpe
+                const _dpAtk = gameState.characters[gameState.selectedCharacter];
+                const _dpEnemyTeam = _dpAtk ? (_dpAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _dpBasicDmg = (_dpAtk && _dpAtk.abilities && _dpAtk.abilities[0]) ? (_dpAtk.abilities[0].damage || 1) : 1;
+                let _dpCrits = 0;
+                for (let _i = 0; _i < 13; _i++) {
+                    const _alive = Object.keys(gameState.characters).filter(function(n) {
+                        const c = gameState.characters[n]; return c && c.team === _dpEnemyTeam && !c.isDead && c.hp > 0;
+                    });
+                    if (_alive.length === 0) break;
+                    const _tgt = _alive[Math.floor(Math.random() * _alive.length)];
+                    const _tgtChar = gameState.characters[_tgt];
+                    let _dpDmg = _dpBasicDmg;
+                    // 20% crit
+                    if (_dpAtk && _dpAtk.passive && _dpAtk.passive.name === 'Olor de la Brecha' && Math.random() < 0.20) {
+                        _dpDmg *= 2;
+                        _dpAtk.charges = Math.min(20, (_dpAtk.charges || 0) + 1);
+                        _dpCrits++;
+                    }
+                    applyDamageWithShield(_tgt, _dpDmg, gameState.selectedCharacter);
+                    // 50% drain 1 charge
+                    if (_tgtChar && !_tgtChar.isDead && Math.random() < 0.50 && _tgtChar.charges > 0) {
+                        _tgtChar.charges = Math.max(0, _tgtChar.charges - 1);
+                        addLog('⚡ Decimotercera Postura: ' + _tgt + ' pierde 1 carga', 'damage');
+                    }
+                }
+                addLog('🌊 Decimotercera Postura: 13 golpes completados (' + _dpCrits + ' críticos)', 'damage');
+            } else if (ability.effect === 'ryusui_garou') {
+                // GAROU — Ryusui Gansai-ken: 2 dmg + -2 cargas objetivo + +2 HP para Garou (pasiva)
+                const _rgAtk = gameState.characters[gameState.selectedCharacter];
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                const _rgTgt = gameState.characters[targetName];
+                if (_rgTgt) {
+                    _rgTgt.charges = Math.max(0, (_rgTgt.charges || 0) - 2);
+                    addLog('⚡ Ryusui: ' + targetName + ' pierde 2 cargas', 'damage');
+                }
+                // Cazador de Héroes: recover 2 HP on basic attack
+                if (_rgAtk) {
+                    const _rgOldHp = _rgAtk.hp;
+                    _rgAtk.hp = Math.min(_rgAtk.maxHp, _rgAtk.hp + 2);
+                    if (_rgAtk.hp > _rgOldHp) addLog('💪 Cazador de Héroes: ' + gameState.selectedCharacter + ' recupera ' + (_rgAtk.hp - _rgOldHp) + ' HP', 'buff');
+                }
+
+            } else if (ability.effect === 'cross_fang_garou') {
+                // GAROU — Cross Fang: 4 dmg + 2 per dead char
+                const _cfDeadCount = Object.values(gameState.characters).filter(function(c) { return c && c.isDead; }).length;
+                const _cfDmg = finalDamage + _cfDeadCount * 2;
+                applyDamageWithShield(targetName, _cfDmg, gameState.selectedCharacter);
+                addLog('🐉 Cross Fang: ' + _cfDmg + ' daño (' + finalDamage + ' base + ' + (_cfDeadCount*2) + ' por ' + _cfDeadCount + ' derrotados)', 'damage');
+                // Garou heals 2 on basic behavior too
+                const _cfGarou = gameState.characters[gameState.selectedCharacter];
+                if (_cfGarou) { _cfGarou.hp = Math.min(_cfGarou.maxHp, _cfGarou.hp + 2); }
+
+            } else if (ability.effect === 'gamma_ray_garou') {
+                // GAROU — Gamma Ray Burst: 1 AOE + 1 per target's charges
+                const _grAtk = gameState.characters[gameState.selectedCharacter];
+                const _grTeam = _grAtk ? (_grAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                if (checkAndRedirectAOEMegaProv(_grTeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('🐉 Gamma Ray redirigido por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _grTeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        const _grBonus = _c.charges || 0;
+                        const _grDmg = finalDamage + _grBonus;
+                        applyDamageWithShield(_n, _grDmg, gameState.selectedCharacter);
+                        addLog('☢️ Gamma Ray: ' + _grDmg + ' daño a ' + _n + ' (' + finalDamage + ' base +' + _grBonus + ' por cargas)', 'damage');
+                    }
+                }
+
+            } else if (ability.effect === 'saitama_mode_garou') {
+                // GAROU — Saitama Mode: transformación permanente
+                const _smGarou = gameState.characters[gameState.selectedCharacter];
+                if (_smGarou) {
+                    _smGarou.garouSaitamaMode = true;
+                    _smGarou.immuneToDebuffs = true;    // handled in isImmuneToDebuff
+                    _smGarou.saitamaModeActive = true;  // handled in applyDamageWithShield
+                    ability.used = true;
+                    addLog('💪 ¡SAITAMA MODE! ' + gameState.selectedCharacter + ' activa inmunidad a debuffs y -50% daño recibido permanente', 'buff');
+                }
             } else if (ability.effect === 'genjutsu_itachi') {
                 // ITACHI — Genjutsu: 50% Agotamiento + 50% Posesión, +1 carga por debuff aplicado
                 const _gjAtk = gameState.characters[gameState.selectedCharacter];
@@ -3476,6 +3635,156 @@
                 applyStun(targetName, 2); // Mega Aturdimiento
                 applyDebuff(targetName, { name: 'Debilitar', type: 'debuff', duration: 2, emoji: '💔' });
                 addLog('⚔️ Espada de Totsuka: ' + finalDamage + ' daño + Mega Aturdimiento + Debilitar a ' + targetName, 'damage');
+            } else if (ability.effect === 'vals_tanjiro') {
+                // TANJIRO — Vals: 1 daño + 1 carga a TODO el equipo aliado
+                const _vTk = gameState.characters[gameState.selectedCharacter];
+                let _vDmg = finalDamage;
+                // Passive: 20% crítico → x2 daño + 1 carga
+                const _vCrit = _vTk && _vTk.passive && _vTk.passive.name === 'Olor de la Brecha' && Math.random() < 0.20;
+                if (_vCrit) { _vDmg *= 2; if (_vTk) { _vTk.charges = Math.min(20, (_vTk.charges||0)+1); } addLog('💥 Olor de la Brecha: ¡Crítico! Tanjiro +1 carga', 'buff'); }
+                applyDamageWithShield(targetName, _vDmg, gameState.selectedCharacter);
+                // +1 carga a todos los aliados vivos
+                const _vTeam = _vTk ? _vTk.team : attacker.team;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (_c && !_c.isDead && _c.hp > 0 && _c.team === _vTeam) {
+                        _c.charges = Math.min(20, (_c.charges||0) + 1);
+                    }
+                }
+                addLog('⚔️ Vals: ' + _vDmg + ' daño + el equipo aliado gana 1 carga', 'buff');
+
+            } else if (ability.effect === 'cascada_agua') {
+                // TANJIRO — Cascada de Agua: 2 AOE + 1 carga al equipo aliado por crit
+                const _caAtk = gameState.characters[gameState.selectedCharacter];
+                const _caTeam = _caAtk ? _caAtk.team : attacker.team;
+                const _caEnemyTeam = _caTeam === 'team1' ? 'team2' : 'team1';
+                if (checkAndRedirectAOEMegaProv(_caEnemyTeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('💧 Cascada de Agua redirigida por Mega Provocación', 'damage');
+                } else {
+                    let _caCritCount = 0;
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _caEnemyTeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        const _caCrit = _caAtk && _caAtk.passive && _caAtk.passive.name === 'Olor de la Brecha' && Math.random() < 0.20;
+                        let _caDmg = finalDamage;
+                        if (_caCrit) { _caDmg *= 2; _caCritCount++; addLog('💥 ¡Crítico! Cascada de Agua en ' + _n, 'damage'); }
+                        applyDamageWithShield(_n, _caDmg, gameState.selectedCharacter);
+                    }
+                    if (_caCritCount > 0) {
+                        // +1 carga al equipo por cada crítico
+                        for (const _n in gameState.characters) {
+                            const _c = gameState.characters[_n];
+                            if (_c && !_c.isDead && _c.hp > 0 && _c.team === _caTeam) {
+                                _c.charges = Math.min(20, (_c.charges||0) + _caCritCount);
+                            }
+                        }
+                        addLog('💧 Cascada de Agua: el equipo gana ' + _caCritCount + ' carga' + (_caCritCount>1?'s':'') + ' por críticos', 'buff');
+                    }
+                    addLog('💧 Cascada de Agua: ' + finalDamage + ' AOE', 'damage');
+                }
+
+            } else if (ability.effect === 'danza_dios_fuego') {
+                // TANJIRO — Danza del Dios del Fuego: 5 ataques básicos aleatorios
+                const _ddfAtk = gameState.characters[gameState.selectedCharacter];
+                const _ddfEnemyTeam = _ddfAtk ? (_ddfAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _ddfBaseDmg = ((_ddfAtk && _ddfAtk.abilities && _ddfAtk.abilities[0]) ? (_ddfAtk.abilities[0].damage || 1) : 1);
+                for (let _i = 0; _i < 5; _i++) {
+                    const _enemies = Object.keys(gameState.characters).filter(function(n) {
+                        const c = gameState.characters[n]; return c && c.team === _ddfEnemyTeam && !c.isDead && c.hp > 0;
+                    });
+                    if (_enemies.length === 0) break;
+                    const _tgt = _enemies[Math.floor(Math.random() * _enemies.length)];
+                    let _ddfDmg = _ddfBaseDmg;
+                    const _ddfCrit = _ddfAtk && _ddfAtk.passive && _ddfAtk.passive.name === 'Olor de la Brecha' && Math.random() < 0.20;
+                    if (_ddfCrit) { _ddfDmg *= 2; if (_ddfAtk) _ddfAtk.charges = Math.min(20, (_ddfAtk.charges||0)+1); addLog('💥 ¡Crítico! Danza golpe ' + (_i+1), 'damage'); }
+                    applyDamageWithShield(_tgt, _ddfDmg, gameState.selectedCharacter);
+                    addLog('🔥 Danza del Dios del Fuego golpe ' + (_i+1) + ': ' + _ddfDmg + ' daño a ' + _tgt, 'damage');
+                }
+
+            } else if (ability.effect === 'decimotercera_postura') {
+                // TANJIRO — Decimotercera Postura: 13 ataques aleatorios, 50% drain 1 carga por golpe
+                const _dpAtk = gameState.characters[gameState.selectedCharacter];
+                const _dpEnemyTeam = _dpAtk ? (_dpAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _dpBaseDmg = ((_dpAtk && _dpAtk.abilities && _dpAtk.abilities[0]) ? (_dpAtk.abilities[0].damage || 1) : 1);
+                let _dpCostPaid = ability.cost || 15;
+                for (let _i = 0; _i < 13; _i++) {
+                    const _enemies = Object.keys(gameState.characters).filter(function(n) {
+                        const c = gameState.characters[n]; return c && c.team === _dpEnemyTeam && !c.isDead && c.hp > 0;
+                    });
+                    if (_enemies.length === 0) break;
+                    const _tgt = _enemies[Math.floor(Math.random() * _enemies.length)];
+                    const _tgtChar = gameState.characters[_tgt];
+                    let _dpDmg = _dpBaseDmg;
+                    const _dpCrit = _dpAtk && _dpAtk.passive && _dpAtk.passive.name === 'Olor de la Brecha' && Math.random() < 0.20;
+                    if (_dpCrit) { _dpDmg *= 2; if (_dpAtk) _dpAtk.charges = Math.min(20, (_dpAtk.charges||0)+1); addLog('💥 ¡Crítico! Postura golpe ' + (_i+1), 'damage'); }
+                    applyDamageWithShield(_tgt, _dpDmg, gameState.selectedCharacter);
+                    // 50% drain 1 carga
+                    if (_tgtChar && Math.random() < 0.50 && _tgtChar.charges > 0) {
+                        _tgtChar.charges = Math.max(0, _tgtChar.charges - 1);
+                        addLog('⚡ Decimotercera Postura: ' + _tgt + ' pierde 1 carga', 'debuff');
+                    }
+                }
+                addLog('⚔️ Decimotercera Postura: 13 golpes completados', 'damage');
+            } else if (ability.effect === 'ryusui_garou') {
+                // GAROU — Ryusui Gansai-ken: 2 daño + reduce 2 cargas + Garou recupera 2 HP
+                const _rgAtk = gameState.characters[gameState.selectedCharacter];
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                const _rgTarget = gameState.characters[targetName];
+                if (_rgTarget) {
+                    const _rgDrain = Math.min(2, _rgTarget.charges || 0);
+                    _rgTarget.charges = Math.max(0, (_rgTarget.charges||0) - 2);
+                    if (_rgDrain > 0) addLog('⚡ Ryusui: ' + targetName + ' pierde ' + _rgDrain + ' cargas', 'debuff');
+                }
+                // Garou heals 2 HP (basic attack heal from passive context — done here)
+                if (_rgAtk) {
+                    const _rgOldHp = _rgAtk.hp;
+                    _rgAtk.hp = Math.min(_rgAtk.maxHp, (_rgAtk.hp||0) + 2);
+                    if (_rgAtk.hp > _rgOldHp) addLog('🐾 Cazador de Héroes: Garou recupera ' + (_rgAtk.hp - _rgOldHp) + ' HP', 'heal');
+                }
+                addLog('🐾 Ryusui Gansai-ken: ' + finalDamage + ' daño a ' + targetName, 'damage');
+
+            } else if (ability.effect === 'cross_fang_garou') {
+                // GAROU — Cross Fang Dragon Slayer Fist: 4 + 2 por cada personaje derrotado
+                let _cfBonus = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n]; if (_c && _c.isDead) _cfBonus += 2;
+                }
+                const _cfTotal = finalDamage + _cfBonus;
+                if (_cfBonus > 0) addLog('🐾 Cross Fang: +' + _cfBonus + ' daño por personajes derrotados', 'damage');
+                applyDamageWithShield(targetName, _cfTotal, gameState.selectedCharacter);
+                addLog('🐾 Cross Fang Dragon Slayer Fist: ' + _cfTotal + ' daño total a ' + targetName, 'damage');
+
+            } else if (ability.effect === 'gamma_ray_garou') {
+                // GAROU — Gamma Ray Burst: 1 AOE + bonus por cargas del objetivo
+                const _grAtk = gameState.characters[gameState.selectedCharacter];
+                const _grEnemyTeam = _grAtk ? (_grAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                if (checkAndRedirectAOEMegaProv(_grEnemyTeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('🐾 Gamma Ray Burst redirigida por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _grEnemyTeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        const _grDmg = finalDamage + (_c.charges || 0);
+                        applyDamageWithShield(_n, _grDmg, gameState.selectedCharacter);
+                        addLog('🐾 Gamma Ray Burst: ' + _grDmg + ' daño a ' + _n + ' (' + (_c.charges||0) + ' cargas)', 'damage');
+                    }
+                }
+
+            } else if (ability.effect === 'saitama_mode_garou') {
+                // GAROU — Saitama Mode: inmunidad a debuffs + 50% reducción de daño recibido
+                const _smAtk = gameState.characters[gameState.selectedCharacter];
+                if (_smAtk) {
+                    _smAtk.garouSaitamaMode = true;
+                    _smAtk.immuneToDebuffs = true; // used by isImmuneToDebuff
+                    // Apply a permanent damage reduction buff (checked in applyDamageWithShield)
+                    applyBuff(gameState.selectedCharacter, {
+                        name: 'Saitama Mode', type: 'buff', duration: 999, permanent: true, emoji: '💀',
+                        damageReduction: 0.50, description: 'Inmune a debuffs. Recibe 50% menos daño.'
+                    });
+                    addLog('💀 Saitama Mode: Garou activa inmunidad y reducción de daño 50%', 'buff');
+                }
             } else if (ability.effect === 'campo_atraccion') {
                 // LINTERNA VERDE — Campo de Atracción: Provocación + Esquivar, 1 turno cada uno
                 // Ambos buffs expiran al inicio del siguiente turno del personaje (duration:1)
