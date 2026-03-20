@@ -3522,35 +3522,52 @@
                 }
                 addLog('🌊 Decimotercera Postura: 13 golpes completados (' + _dpCrits + ' críticos)', 'damage');
             } else if (ability.effect === 'ryusui_garou') {
-                // GAROU — Ryusui Gansai-ken: 2 dmg + -2 cargas objetivo + +2 HP para Garou (pasiva)
+                // GAROU — Ryusui Gansai-ken: 2 dmg + Garou se aplica Veneno 2T + Infectar 2T
                 const _rgAtk = gameState.characters[gameState.selectedCharacter];
-                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                const _rgTgt = gameState.characters[targetName];
-                if (_rgTgt) {
-                    _rgTgt.charges = Math.max(0, (_rgTgt.charges || 0) - 2);
-                    addLog('⚡ Ryusui: ' + targetName + ' pierde 2 cargas', 'damage');
-                }
-                // Cazador de Héroes: recover 2 HP on basic attack
+                // Check passive: double damage if Garou has poison/burn/bleed
+                let _rgDmg = finalDamage;
                 if (_rgAtk) {
-                    const _rgOldHp = _rgAtk.hp;
-                    _rgAtk.hp = Math.min(_rgAtk.maxHp, _rgAtk.hp + 2);
-                    if (_rgAtk.hp > _rgOldHp) addLog('💪 Cazador de Héroes: ' + gameState.selectedCharacter + ' recupera ' + (_rgAtk.hp - _rgOldHp) + ' HP', 'buff');
+                    const _rgHasDoT = (_rgAtk.statusEffects||[]).some(function(e) {
+                        const n = normAccent(e && e.name||'').toLowerCase();
+                        return n.includes('veneno') || n.includes('quemadura') || n.includes('sangrado');
+                    });
+                    if (_rgHasDoT) {
+                        _rgDmg *= 2;
+                        addLog('💪 Cazador de Héroes: ¡Daño doble por DoT activo!', 'buff');
+                    }
+                    // Saitama Mode bonus
+                    if (_rgAtk.garouSaitamaMode) _rgDmg += 2;
                 }
+                applyDamageWithShield(targetName, _rgDmg, gameState.selectedCharacter);
+                // Garou self-applies Veneno 2T and Infectar 2T
+                applyDebuff(gameState.selectedCharacter, { name: 'Veneno', type: 'debuff', duration: 2, emoji: '☠️' });
+                applyBuff(gameState.selectedCharacter, { name: 'Infectar', type: 'buff', duration: 2, emoji: '🦠', description: 'Infectar: golpes aplican Veneno al atacante' });
+                addLog('🐆 Ryusui: ' + _rgDmg + ' daño + Veneno 2T + Infectar 2T sobre ' + gameState.selectedCharacter, 'buff');
 
             } else if (ability.effect === 'cross_fang_garou') {
                 // GAROU — Cross Fang: 4 dmg + 2 per dead char
+                const _cfAtk = gameState.characters[gameState.selectedCharacter];
                 const _cfDeadCount = Object.values(gameState.characters).filter(function(c) { return c && c.isDead; }).length;
-                const _cfDmg = finalDamage + _cfDeadCount * 2;
+                let _cfDmg = finalDamage + _cfDeadCount * 2;
+                if (_cfAtk) {
+                    const _cfHasDoT = (_cfAtk.statusEffects||[]).some(function(e) {
+                        const n = normAccent(e && e.name||'').toLowerCase();
+                        return n.includes('veneno') || n.includes('quemadura') || n.includes('sangrado');
+                    });
+                    if (_cfHasDoT) { _cfDmg *= 2; addLog('💪 Cazador de Héroes: ¡Daño doble por DoT activo!', 'buff'); }
+                    if (_cfAtk.garouSaitamaMode) _cfDmg += 2;
+                }
                 applyDamageWithShield(targetName, _cfDmg, gameState.selectedCharacter);
                 addLog('🐉 Cross Fang: ' + _cfDmg + ' daño (' + finalDamage + ' base + ' + (_cfDeadCount*2) + ' por ' + _cfDeadCount + ' derrotados)', 'damage');
-                // Garou heals 2 on basic behavior too
-                const _cfGarou = gameState.characters[gameState.selectedCharacter];
-                if (_cfGarou) { _cfGarou.hp = Math.min(_cfGarou.maxHp, _cfGarou.hp + 2); }
 
             } else if (ability.effect === 'gamma_ray_garou') {
-                // GAROU — Gamma Ray Burst: 1 AOE + 1 per target's charges
+                // GAROU — Gamma Ray Burst: 2 AOE + 1 per target's charges
                 const _grAtk = gameState.characters[gameState.selectedCharacter];
                 const _grTeam = _grAtk ? (_grAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _grHasDoT = _grAtk && (_grAtk.statusEffects||[]).some(function(e) {
+                    const n = normAccent(e && e.name||'').toLowerCase();
+                    return n.includes('veneno') || n.includes('quemadura') || n.includes('sangrado');
+                });
                 if (checkAndRedirectAOEMegaProv(_grTeam, finalDamage, gameState.selectedCharacter)) {
                     addLog('🐉 Gamma Ray redirigido por Mega Provocación', 'damage');
                 } else {
@@ -3558,10 +3575,11 @@
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _grTeam || _c.isDead || _c.hp <= 0) continue;
                         if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
-                        const _grBonus = _c.charges || 0;
-                        const _grDmg = finalDamage + _grBonus;
+                        let _grDmg = finalDamage + (_c.charges || 0);
+                        if (_grHasDoT) { _grDmg *= 2; }
+                        if (_grAtk && _grAtk.garouSaitamaMode) _grDmg += 2;
                         applyDamageWithShield(_n, _grDmg, gameState.selectedCharacter);
-                        addLog('☢️ Gamma Ray: ' + _grDmg + ' daño a ' + _n + ' (' + finalDamage + ' base +' + _grBonus + ' por cargas)', 'damage');
+                        addLog('☢️ Gamma Ray: ' + _grDmg + ' daño a ' + _n, 'damage');
                     }
                 }
 
@@ -3570,10 +3588,10 @@
                 const _smGarou = gameState.characters[gameState.selectedCharacter];
                 if (_smGarou) {
                     _smGarou.garouSaitamaMode = true;
-                    _smGarou.immuneToDebuffs = true;    // handled in isImmuneToDebuff
-                    _smGarou.saitamaModeActive = true;  // handled in applyDamageWithShield
                     ability.used = true;
-                    addLog('💪 ¡SAITAMA MODE! ' + gameState.selectedCharacter + ' activa inmunidad a debuffs y -50% daño recibido permanente', 'buff');
+                    // Apply transformation portrait
+                    if (_smGarou.transformPortrait) _smGarou.portrait = _smGarou.transformPortrait;
+                    addLog('💪 ¡SAITAMA MODE! ' + gameState.selectedCharacter + ' activa -2 daño recibido y +2 daño en todos los ataques permanente', 'buff');
                 }
             } else if (ability.effect === 'genjutsu_itachi') {
                 // ITACHI — Genjutsu: 50% Agotamiento + 50% Posesión, +1 carga por debuff aplicado
