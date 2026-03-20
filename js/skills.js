@@ -1643,7 +1643,9 @@
                 }
                 applyHolyShield(gameState.selectedCharacter, 3); // dur=3 → activo 2 turnos reales
                 attacker.dragonFormActive = true;
-                if (attacker.transformPortrait) { attacker.portrait = attacker.transformPortrait; }
+                // Support both field names (transformPortrait and transformationPortrait)
+                const _alexTP = attacker.transformPortrait || attacker.transformationPortrait;
+                if (_alexTP) { attacker.portrait = _alexTP; }
                 addLog(`🐉 Dragón de la Vida: Burn 30% en enemigos, Regen 30% en aliados, Escudo Sagrado en ${gameState.selectedCharacter}`, 'buff');
 
             } else if (ability.effect === 'kiiroi_senko' || ability.effect === 'kiiroi_senko_v2') {
@@ -3475,11 +3477,19 @@
                 applyDebuff(targetName, { name: 'Debilitar', type: 'debuff', duration: 2, emoji: '💔' });
                 addLog('⚔️ Espada de Totsuka: ' + finalDamage + ' daño + Mega Aturdimiento + Debilitar a ' + targetName, 'damage');
             } else if (ability.effect === 'campo_atraccion') {
-                // LINTERNA VERDE — Campo de Atracción: Provocación + Protección Sagrada
+                // LINTERNA VERDE — Campo de Atracción: Provocación + Esquivar, 1 turno cada uno
+                // Ambos buffs expiran al inicio del siguiente turno del personaje (duration:1)
                 const _lgName = gameState.selectedCharacter;
-                applyBuff(_lgName, { name: 'Provocacion', type: 'buff', duration: 3, emoji: '⚠️', description: 'Provocación: enemigos deben atacarte' });
-                applyBuff(_lgName, { name: 'Proteccion Sagrada', type: 'buff', duration: 2, emoji: '🛡️', description: 'Protección Sagrada: inmune a debuffs y daño de golpe' });
-                addLog('💚 Campo de Atracción: ' + _lgName + ' activa Provocación + Protección Sagrada', 'buff');
+                // Remove existing copies first to avoid stacking
+                const _lgChar = gameState.characters[_lgName];
+                if (_lgChar) {
+                    _lgChar.statusEffects = (_lgChar.statusEffects || []).filter(function(e){
+                        return e && e.name !== 'Provocacion' && e.name !== 'Esquivar';
+                    });
+                }
+                applyBuff(_lgName, { name: 'Provocacion', type: 'buff', duration: 1, emoji: '⚠️', description: 'Provocación: enemigos deben atacarte (1 turno)' });
+                applyBuff(_lgName, { name: 'Esquivar', type: 'buff', duration: 1, emoji: '💨', description: 'Esquivar: 50% de esquivar cualquier ataque (1 turno)' });
+                addLog('💚 Campo de Atracción: ' + _lgName + ' activa Provocación + Esquivar (1 turno)', 'buff');
 
             } else if (ability.effect === 'sincronia_esmeralda') {
                 // LINTERNA VERDE — Sincronía Esmeralda: limpia 1 debuff del aliado + 3 cargas
@@ -3694,8 +3704,8 @@
                 if ((gameState.selectedCharacter === 'Minato Namikaze' || gameState.selectedCharacter === 'Minato Namikaze v2') && !hasFear && finalDamage > 0 && targetName) {
                     const tgtMinato = gameState.characters[targetName];
                     if (tgtMinato && !tgtMinato.isDead && tgtMinato.speed < attacker.speed) {
-                        attacker.charges = Math.min(20, attacker.charges + 1);
-                        addLog(`⚡ Hiraishin no Jutsu: Minato genera +1 carga (enemigo más lento: ${tgtMinato.speed} vs ${attacker.speed})`, 'buff');
+                        attacker.charges = Math.min(20, attacker.charges + 2);
+                        addLog(`⚡ Hiraishin no Jutsu: Minato genera +2 cargas (enemigo más lento: ${tgtMinato.speed} vs ${attacker.speed})`, 'buff');
                     }
                 }
             }
@@ -3709,7 +3719,7 @@
                     for (let n in gameState.characters) {
                         const c = gameState.characters[n];
                         if (c && c.team === enemyTeamM && !c.isDead && c.hp > 0 && c.speed < attacker.speed) {
-                            bonusChargesM += 1;
+                            bonusChargesM += 2;
                         }
                     }
                     if (bonusChargesM > 0) {
