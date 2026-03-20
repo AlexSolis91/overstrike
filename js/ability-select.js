@@ -315,6 +315,14 @@
 
         // ── HOOK POST-DAÑO: pasivas que se activan DESPUÉS de recibir daño ──
         function triggerOnHitPassives(targetName, attackerName, abilityUsed) {
+            // CAZADOR DE HÉROES (Garou): counter-attack when enemy passive activates
+            if (!passiveExecuting && targetName && attackerName && targetName !== attackerName) {
+                const _tgtOH = gameState.characters[targetName];
+                const _atkOH = gameState.characters[attackerName];
+                if (_tgtOH && _atkOH && _tgtOH.team !== _atkOH.team) {
+                    if (typeof triggerGarouCazadorPassive === 'function') triggerGarouCazadorPassive(targetName);
+                }
+            }
             // CADENAS DE HIELO (Lich King): reduce 5% velocidad del atacante si Provocación activa
             if ((targetName === 'Lich King' || targetName === 'Lich King v2') && attackerName && !passiveExecuting) {
                 const lk = gameState.characters['Lich King'];
