@@ -83,6 +83,88 @@
         }
 
         // ── Lobby ──
+
+        // ── BACK BUTTON INJECTION ──────────────────────────────────────────
+        // Adds "← Volver" buttons to screens that need them.
+        // Called once on page load and whenever a screen is shown.
+        function injectBackButtons() {
+            // Screen definitions: { screenId, backLabel, backAction }
+            var BACK_CONFIG = [
+                {
+                    id: 'charSelectScreen',
+                    label: '← Volver al Lobby',
+                    action: 'showLobby()',
+                    existsCheck: function(el) {
+                        return !!el.querySelector('#csBackBtn');
+                    },
+                    inject: function(el) {
+                        var btn = document.createElement('button');
+                        btn.id = 'csBackBtn';
+                        btn.textContent = '← Volver al Lobby';
+                        btn.setAttribute('onclick', 'showLobby()');
+                        btn.style.cssText = [
+                            'position:fixed',
+                            'top:14px',
+                            'left:14px',
+                            'z-index:9999',
+                            'background:rgba(0,0,0,0.55)',
+                            'border:1.5px solid rgba(255,255,255,0.25)',
+                            'color:#ccc',
+                            'font-family:Orbitron,sans-serif',
+                            'font-size:.72rem',
+                            'letter-spacing:.06em',
+                            'padding:8px 16px',
+                            'border-radius:8px',
+                            'cursor:pointer',
+                            'transition:all .15s'
+                        ].join(';');
+                        btn.onmouseover = function() {
+                            this.style.background = 'rgba(79,195,247,0.18)';
+                            this.style.borderColor = '#4fc3f7';
+                            this.style.color = '#4fc3f7';
+                        };
+                        btn.onmouseout = function() {
+                            this.style.background = 'rgba(0,0,0,0.55)';
+                            this.style.borderColor = 'rgba(255,255,255,0.25)';
+                            this.style.color = '#ccc';
+                        };
+                        el.appendChild(btn);
+                    }
+                },
+                {
+                    id: 'modeSelectScreen',
+                    existsCheck: function(el) {
+                        // modeSelectScreen already has "← Volver al Lobby" as the first button
+                        return true;
+                    },
+                    inject: function() {}
+                },
+                {
+                    id: 'waitingScreen',
+                    existsCheck: function(el) {
+                        // waitingScreen already has "Cancelar" button
+                        return true;
+                    },
+                    inject: function() {}
+                }
+            ];
+
+            BACK_CONFIG.forEach(function(cfg) {
+                var el = document.getElementById(cfg.id);
+                if (!el) return;
+                if (!cfg.existsCheck(el)) cfg.inject(el);
+            });
+        }
+
+        // Run on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(injectBackButtons, 500);
+        });
+        // Also run immediately in case DOM is already ready
+        if (document.readyState !== 'loading') {
+            setTimeout(injectBackButtons, 500);
+        }
+
         function showLobby() {
             // Never override an active game, mode select, or char select screen
             var gc = document.querySelector('.game-container');
@@ -610,8 +692,10 @@
             if (attack.length < 5)  { alert('⚠️ Configura 5 personajes en tu Equipo de Ataque primero.'); return; }
             if (defense.length < 5) { alert('⚠️ Configura 5 personajes en tu Equipo de Defensa primero.'); return; }
             const playerName = currentUser ? (currentUser.displayName || 'Jugador') : 'Jugador';
+            // Mark this as a self-test — results must NOT be saved to the leaderboard
+            window._rankedSelfTest = true;
             hideRankedTeamScreen();
-            _launchRankedVsIAWithTeam(attack, defense, playerName + ' (Defensa)');
+            _launchRankedVsIAWithTeam(attack, defense, playerName + ' (Defensa — Prueba)');
         }
 
         function saveRankedTeams() {
@@ -896,6 +980,12 @@
         function saveRankedResult(winnerTeam, playerTeam, playerChars, opponentName, opponentChars) {
             if (!currentUser || !window._rankedMode) return;
             window._rankedMode = false;
+            // SELF-TEST: never save stats when player tests their own teams
+            if (window._rankedSelfTest) {
+                window._rankedSelfTest = false;
+                addLog('🧪 Modo Prueba: los resultados NO se registran en el Leaderboard', 'info');
+                return;
+            }
             const myUid = currentUser.uid;
             const myName = currentUser.displayName || 'Jugador';
             const won = (winnerTeam === playerTeam);
