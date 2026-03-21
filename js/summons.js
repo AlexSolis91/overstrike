@@ -594,6 +594,20 @@
                 addLog('🐆 Cazador de Héroes: ' + targetName + ' convierte ' + damage + ' de daño directo en ' + _garouChargesGained + ' cargas', 'buff');
                 return 0; // No HP damage — converted to charges
             }
+            // ── CABALLERO DE LA NOCHE (Batman): inmune a daño de ataques especiales ──
+            if (!passiveExecuting && attackerName && attackerName !== targetName &&
+                target.passive && target.passive.name === 'Caballero de la Noche') {
+                const _atkrBat = gameState.characters[attackerName];
+                const _selAbBat = gameState.selectedAbility;
+                if (_atkrBat && _atkrBat.team !== target.team && _selAbBat && _selAbBat.type === 'special') {
+                    addLog('🦇 Caballero de la Noche: ' + targetName + ' es inmune al ataque especial de ' + attackerName, 'buff');
+                    // Also give Batman +3 charges
+                    target.charges = Math.min(20, (target.charges || 0) + 3);
+                    addLog('🦇 Caballero de la Noche: ' + targetName + ' genera 3 cargas', 'buff');
+                    return 0;
+                }
+            }
+
             // ── SAITAMA MODE (Garou): reduce -2 daño recibido ──
             if (target.garouSaitamaMode && damage > 0) {
                 damage = Math.max(0, damage - 2);
