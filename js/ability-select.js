@@ -72,6 +72,38 @@
             }
             
             const attackerTeam = gameState.characters[gameState.selectedCharacter].team;
+            const enemyTeam = attackerTeam === 'team1' ? 'team2' : 'team1';
+
+            // ── PRE-CHECK: si todos los enemigos tienen Sigilo y la habilidad es ST,
+            //    no abrir el modal — reportar en log y terminar el turno ──
+            if (ability.target === 'single') {
+                const sauronBypass = sauronIgnoresRestrictions();
+                const hasMegaProv = !sauronBypass && typeof checkKamishMegaProvocation === 'function' && checkKamishMegaProvocation(enemyTeam);
+                const hasProvocacion = !sauronBypass && !hasMegaProv && Object.keys(gameState.characters).some(function(n) {
+                    const c = gameState.characters[n];
+                    return c && c.team === enemyTeam && !c.isDead && c.hp > 0 &&
+                        (c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'provocacion'; });
+                });
+                if (!hasMegaProv && !hasProvocacion && !sauronBypass) {
+                    // Check if every alive enemy has Sigilo
+                    const aliveEnemies = Object.keys(gameState.characters).filter(function(n) {
+                        const c = gameState.characters[n];
+                        return c && c.team === enemyTeam && !c.isDead && c.hp > 0;
+                    });
+                    const aliveSummons = Object.values(gameState.summons).filter(function(s) {
+                        return s && s.team === enemyTeam && s.hp > 0;
+                    });
+                    const allInSigilo = aliveEnemies.length > 0 && aliveEnemies.every(function(n) {
+                        const c = gameState.characters[n];
+                        return (c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'sigilo'; });
+                    }) && aliveSummons.length === 0;
+                    if (allInSigilo) {
+                        addLog('👤 ' + gameState.selectedCharacter + ' usa ' + ability.name + ' pero todos los enemigos están en Sigilo — el ataque no puede conectar', 'info');
+                        if (typeof endTurn === 'function') endTurn();
+                        return;
+                    }
+                }
+            }
             
             if (ability.target === 'ally_team') {
                 executeAbility(null);
