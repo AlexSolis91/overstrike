@@ -165,7 +165,59 @@
             setTimeout(injectBackButtons, 500);
         }
 
+
+        // ══════════════════════════════════════════════════════════
+        // BATTLE BACKGROUNDS — random image each game
+        // ══════════════════════════════════════════════════════════
+        var BATTLE_BACKGROUNDS = [
+            'https://i.ibb.co/999Tq0YP/descarga-1.jpg',
+            'https://i.ibb.co/7NB4gBph/image.jpg',
+            'https://i.ibb.co/1GRjfQpG/Dragon-Ball-Z-Revival-Of-F.jpg',
+            'https://i.ibb.co/3yyY65nG/Instagram.jpg',
+            'https://i.ibb.co/4nGmMLnc/descarga-2.jpg',
+            'https://i.ibb.co/XkkVDrbj/Gotham-City-Roof-Top.jpg',
+            'https://i.ibb.co/FL3JTCHd/descarga-3.jpg',
+            'https://i.ibb.co/2Y6mk90J/Echoes-of-the-Ancestors.jpg',
+            'https://i.ibb.co/S45SZcJw/descarga-4.jpg',
+            'https://i.ibb.co/B2xcn8Wr/descarga-5.jpg',
+            'https://i.ibb.co/0pYJ5ZQ8/descarga-7.jpg',
+            'https://i.ibb.co/ZRCCS7sp/descarga-6.jpg',
+            'https://i.ibb.co/bx6SXjs/throneroom.jpg',
+            'https://i.ibb.co/h1FLNK7V/Download-Free-Vectors-Images-Photos-Videos-Vecteezy.jpg',
+            'https://i.ibb.co/RTqqRPtZ/Onde-tudo-come-ou-a-mudar-romancescifi-oguardiao-oguardiaoeaandroid-casavarlen-casavarlenunive.jpg',
+            'https://i.ibb.co/Txt7q1bY/descarga-8.jpg',
+            'https://i.ibb.co/PGBhnFQ1/Gemini-Generated-Image-hwe9sxhwe9sxhwe9.png',
+            'https://i.ibb.co/FbMH2q6z/Captura-de-pantalla-2026-03-21-135055.png'
+        ];
+
+        function applyBattleBackground() {
+            var gc = document.querySelector('.game-container');
+            if (!gc) return;
+            var url = BATTLE_BACKGROUNDS[Math.floor(Math.random() * BATTLE_BACKGROUNDS.length)];
+            gc.style.backgroundImage = 'url(' + url + ')';
+            gc.style.backgroundSize = 'cover';
+            gc.style.backgroundPosition = 'center center';
+            gc.style.backgroundRepeat = 'no-repeat';
+            gc.style.backgroundAttachment = 'local';
+            gc.style.position = 'relative';
+            // Inject overlay style if not already present
+            if (!document.getElementById('battle-bg-overlay-style')) {
+                var style = document.createElement('style');
+                style.id = 'battle-bg-overlay-style';
+                style.textContent = '.game-container{background-size:cover!important;background-position:center center!important;}' +
+                    '.game-container::before{content:"";position:fixed;inset:0;background:rgba(5,8,16,0.55);pointer-events:none;z-index:0;}' +
+                    '.game-header,.battle-arena{position:relative;z-index:1;}';                document.head.appendChild(style);
+            }
+        }
+
+        function clearBattleBackground() {
+            var gc = document.querySelector('.game-container');
+            if (!gc) return;
+            gc.style.backgroundImage = 'none';
+        }
+
         function showLobby() {
+            clearBattleBackground();
             // Never override an active game, mode select, or char select screen
             var gc = document.querySelector('.game-container');
             var charScreen = document.getElementById('charSelectScreen');
@@ -888,6 +940,7 @@
                     const el = document.getElementById(id); if (el) el.style.display = 'none';
                 });
                 document.querySelector('.game-container').style.display = 'block';
+                applyBattleBackground();
                 // Build character map
                 const selectedChars = {};
                 const nameCount = {};
@@ -1611,6 +1664,7 @@
                 // Hide any screens, show game
                 document.getElementById('charSelectScreen').style.display = 'none';
                 document.querySelector('.game-container').style.display = 'block';
+                applyBattleBackground();
                 // Hide lobby/other screens
                 ['lobbyScreen','waitingScreen','modeSelectScreen'].forEach(function(id) {
                     const el = document.getElementById(id);
