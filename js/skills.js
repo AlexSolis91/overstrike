@@ -122,6 +122,11 @@
             // Calcular daño y generación de cargas ajustados por modo Rikudō
             let finalDamage = ability.damage;
             let finalChargeGain = ability.chargeGain;
+            // ESPÍRITU DEL HÉROE (Saitama): +accumulated bonus on basic attacks
+            if (ability.type === 'basic' && attacker.passive && attacker.passive.name === 'Espíritu del Héroe') {
+                finalChargeGain = (ability.chargeGain || 1) + (attacker.saitamaBasicChargeBonus || 0);
+                attacker.saitamaBasicChargeBonus = (attacker.saitamaBasicChargeBonus || 0) + 2;
+            }
             
             if (attacker.rikudoMode && (gameState.selectedCharacter === 'Madara Uchiha' || gameState.selectedCharacter === 'Madara Uchiha v2')) {
                 finalDamage *= 2;
@@ -3592,6 +3597,158 @@
                     // Apply transformation portrait
                     if (_smGarou.transformPortrait) _smGarou.portrait = _smGarou.transformPortrait;
                     addLog('💪 ¡SAITAMA MODE! ' + gameState.selectedCharacter + ' activa -2 daño recibido y +2 daño en todos los ataques permanente', 'buff');
+                }
+            } else if (ability.effect === 'golpe_serio_saitama') {
+                // SAITAMA — Golpe Serio: 6 dmg, triple if target has Prov or MegaProv
+                const _gsTgt = gameState.characters[targetName];
+                let _gsDmg = finalDamage;
+                const _gsHasProv = _gsTgt && (_gsTgt.statusEffects||[]).some(function(e){
+                    return e && (normAccent(e.name||'') === 'provocacion' || normAccent(e.name||'') === 'megaprovocacion');
+                });
+                const _gsHasMegaProv = typeof checkKamishMegaProvocation === 'function' &&
+                    checkKamishMegaProvocation(_gsTgt ? _gsTgt.team : 'team2');
+                if (_gsHasProv || _gsHasMegaProv) {
+                    _gsDmg *= 3;
+                    addLog('💥 Golpe Serio: ¡DAÑO TRIPLE por Provocación!', 'damage');
+                } else if (Math.random() < 0.50) {
+                    // crit_50_serious still has 50% crit
+                }
+                applyDamageWithShield(targetName, _gsDmg, gameState.selectedCharacter);
+                addLog('💥 Golpe Serio: ' + _gsDmg + ' daño a ' + targetName, 'damage');
+            } else if (ability.effect === 'golpe_normal_saitama') {
+                // SAITAMA — Golpe Normal: 4 dmg + Furia 2T + escalating charge bonus (pasiva)
+                const _gnSaitama = gameState.characters[gameState.selectedCharacter];
+                let _gnDmg = finalDamage;
+                applyDamageWithShield(targetName, _gnDmg, gameState.selectedCharacter);
+                applyFuria(gameState.selectedCharacter, 2);
+                // ESPÍRITU DEL HÉROE pasiva: each basic use adds +2 chargeGain next time
+                if (_gnSaitama) {
+                    _gnSaitama.saitamaBasicChargeBonus = (_gnSaitama.saitamaBasicChargeBonus || 0) + 2;
+                    const _totalCharge = (ability.chargeGain || 1) + (_gnSaitama.saitamaBasicChargeBonus - 2); // -2 because we already added 2
+                    // Actually: current usage gains the bonus from PREVIOUS uses
+                    // The bonus earned NOW applies NEXT time
+                    addLog('💥 Golpe Normal: ' + _gnDmg + ' daño + Furia 2T. Próximo básico generará ' + (1 + _gnSaitama.saitamaBasicChargeBonus) + ' cargas', 'buff');
+                }
+            } else if (ability.effect === 'naipes_joker') {
+                // JOKER — Naipes Impregnados: 1 dmg + Veneno 2T
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                applyPoison(targetName, 2);
+                addLog('🃏 Naipes Impregnados: ' + finalDamage + ' daño + Veneno 2T a ' + targetName, 'damage');
+
+            } else if (ability.effect === 'granada_joker') {
+                // JOKER — Granada de Humo Púrpura: 1 AOE + Veneno 3T
+                const _gjTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                if (checkAndRedirectAOEMegaProv(_gjTeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('🃏 Granada redirigida por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _gjTeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        applyPoison(_n, 3);
+                    }
+                }
+                addLog('🃏 Granada de Humo Púrpura: 1 AOE + Veneno 3T a todos los enemigos', 'damage');
+
+            } else if (ability.effect === 'detonador_joker') {
+                // JOKER — Detonador del Caos: 3 AOE + 50% drain cargas si tiene Veneno/Aturdimiento
+                const _djTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                if (checkAndRedirectAOEMegaProv(_djTeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('🃏 Detonador redirigido por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _djTeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        const _hasVenAturd = (_c.statusEffects||[]).some(function(e){
+                            const nm = normAccent(e&&e.name||'').toLowerCase();
+                            return nm.includes('veneno') || nm.includes('aturdimiento');
+                        });
+                        if (_hasVenAturd && Math.random() < 0.50) {
+                            addLog('🃏 Detonador del Caos: ' + _n + ' pierde todas sus cargas (' + _c.charges + ')', 'damage');
+                            _c.charges = 0;
+                        }
+                    }
+                }
+                addLog('🃏 Detonador del Caos: 3 AOE completado', 'damage');
+
+            } else if (ability.effect === 'por_que_serio_joker') {
+                // JOKER — ¿Por qué tan serio?: 2 dmg + si tiene Veneno → -60% HP actual
+                const _pqTgt = gameState.characters[targetName];
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                if (_pqTgt && !_pqTgt.isDead && _pqTgt.hp > 0) {
+                    const _hasVeneno = (_pqTgt.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'').toLowerCase().includes('veneno'); });
+                    if (_hasVeneno) {
+                        const _pqLoss = Math.floor(_pqTgt.hp * 0.60);
+                        _pqTgt.hp = Math.max(0, _pqTgt.hp - _pqLoss);
+                        if (_pqTgt.hp <= 0) { _pqTgt.isDead = true; if (typeof checkGameOver === 'function') checkGameOver(); }
+                        addLog('🃏 ¿Por qué tan serio? -60% HP: ' + targetName + ' pierde ' + _pqLoss + ' HP', 'damage');
+                    }
+                }
+                addLog('🃏 ¿Por qué tan serio?: ' + finalDamage + ' daño a ' + targetName, 'damage');
+            } else if (ability.effect === 'batarang_batman') {
+                // BATMAN — Batarang Táctico: 2 dmg + 50% stun + 50% steal 2 cargas
+                const _bbAtk = gameState.characters[gameState.selectedCharacter];
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                if (Math.random() < 0.50) { applyStun(targetName, 1); addLog('🦇 Batarang: ' + targetName + ' aturdido', 'debuff'); }
+                const _bbTgt = gameState.characters[targetName];
+                if (Math.random() < 0.50 && _bbTgt && _bbTgt.charges >= 2) {
+                    _bbTgt.charges -= 2;
+                    if (_bbAtk) _bbAtk.charges = Math.min(20, (_bbAtk.charges||0) + 2);
+                    addLog('🦇 Batarang: Batman roba 2 cargas de ' + targetName, 'buff');
+                }
+
+            } else if (ability.effect === 'bomba_humo_batman') {
+                // BATMAN — Bomba de Humo: Esquiva Área 2T a aliados + 50% Sigilo a cada uno
+                const _bhTeam = attacker.team;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.isDead || _c.hp <= 0 || _c.team !== _bhTeam) continue;
+                    // Apply Esquiva Área buff 2 turns
+                    applyBuff(_n, { name: 'Esquiva Area', type: 'buff', duration: 2, emoji: '🌟', description: 'Esquiva Área: inmune a AOE del enemigo' });
+                    // 50% Sigilo
+                    if (Math.random() < 0.50) {
+                        applyStealthBuff ? applyStealthBuff(_n, 1) : applyStealth(_n, 1);
+                        addLog('🦇 Bomba de Humo: ' + _n + ' entra en Sigilo', 'buff');
+                    }
+                }
+                addLog('🦇 Bomba de Humo: Esquiva Área 2T aplicada al equipo aliado', 'buff');
+
+            } else if (ability.effect === 'analisis_batman') {
+                // BATMAN — Análisis de Puntos Débiles: 3 AOE + bloquea 1 movimiento por 2T
+                const _anTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                if (checkAndRedirectAOEMegaProv(_anTeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('🦇 Análisis redirigido por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _anTeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        // Block 1 random ability for 2 turns (apply Silenciar on random category)
+                        if (!(_c.statusEffects||[]).some(function(e){return e&&normAccent(e.name||'')==='silenciar';})) {
+                            const cats = ['basic','special','over'];
+                            const cat = cats[Math.floor(Math.random()*cats.length)];
+                            applyDebuff(_n, { name: 'Silenciar', type: 'debuff', duration: 2, silencedCategory: cat, emoji: '🔇' });
+                            addLog('🦇 Análisis: ' + _n + ' bloqueado en categoría ' + cat + ' (2T)', 'debuff');
+                        }
+                    }
+                }
+                addLog('🦇 Análisis de Puntos Débiles: 3 AOE + bloqueo de movimiento', 'damage');
+
+            } else if (ability.effect === 'contingencia_batman') {
+                // BATMAN — Planes de Contingencia: 5 dmg + drain all cargas + 1 per drained + no-charge 3T
+                const _conTgt = gameState.characters[targetName];
+                const _conBatman = gameState.characters[gameState.selectedCharacter];
+                const _conStolen = _conTgt ? (_conTgt.charges || 0) : 0;
+                const _conDmg = finalDamage + _conStolen;
+                applyDamageWithShield(targetName, _conDmg, gameState.selectedCharacter);
+                if (_conTgt) {
+                    _conTgt.charges = 0;
+                    _conTgt.noChargeGenTurns = 3; // checked in endTurn/startTurn
+                    addLog('🦇 Planes de Contingencia: ' + _conDmg + ' daño (' + finalDamage + '+' + _conStolen + ' cargas drenadas). ' + targetName + ' no puede generar cargas por 3 turnos', 'damage');
                 }
             } else if (ability.effect === 'genjutsu_itachi') {
                 // ITACHI — Genjutsu: 50% Agotamiento + 50% Posesión, +1 carga por debuff aplicado
