@@ -186,13 +186,14 @@
             'Saitama': {
                 hp: 20, maxHp: 20, speed: 97, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                saitamaBasicChargeBonus: 0,
                 portrait: 'https://i.postimg.cc/Qtz0QrqV/Captura_de_pantalla_2026_02_26_132109.png',
-                passive: { name: 'Espíritu del Héroe', description: 'Inmunidad a debuffs.' },
+                passive: { name: 'Espíritu del Héroe', description: 'Inmunidad a debuffs. Cada vez que se realiza un ataque básico, el ataque básico aumentará en +2 las cargas generadas en su próximo uso.' },
                 abilities: [
-                    { name: 'Golpe Normal', type: 'basic', cost: 0, chargeGain: 1, damage: 4, target: 'single', effect: 'apply_weaken_basic', description: 'Causa 4 de daño. Aplica debuff Debilitar.' },
-                    { name: 'Golpes Normales Consecutivos', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'single', effect: 'multi_hit', description: 'Golpea de 1 a 3 veces al enemigo. Si golpea a un enemigo con debuff Debilitar o Escudo activo, causa daño crítico.' },
-                    { name: 'Golpe Serio', type: 'special', cost: 7, chargeGain: 0, damage: 7, target: 'single', effect: 'crit_50_serious', critChance: 0.50, description: 'Causa 7 de daño. 50% de probabilidad de golpe Crítico.' },
-                    { name: 'Golpe Grave', type: 'over', cost: 15, chargeGain: 0, damage: 20, target: 'single', effect: 'golpe_grave', description: 'Causa 20 de daño. Si el enemigo es derrotado tras este golpe, genera un turno adicional para atacar.' }
+                    { name: 'Golpe Normal', type: 'basic', cost: 0, chargeGain: 1, damage: 4, target: 'single', effect: 'golpe_normal_saitama', description: 'Causa 4 daño. Aplica Buff Furia 2 turnos.' },
+                    { name: 'Golpes Normales Consecutivos', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'single', effect: 'multi_hit', description: 'Causa 3 daño + 3 adicional por cada Buff activo en el objetivo.' },
+                    { name: 'Golpe Serio', type: 'special', cost: 8, chargeGain: 0, damage: 6, target: 'single', effect: 'golpe_serio_saitama', description: 'Causa 6 daño. Daño triple si el objetivo tiene Provocación o Mega Provocación.' },
+                    { name: 'Golpe Grave', type: 'over', cost: 20, chargeGain: 0, damage: 0, target: 'single', effect: 'golpe_grave', description: 'Elimina al enemigo golpeado.' }
                 ]
             },
 
@@ -520,6 +521,30 @@
                     { name: 'Cross Fang Dragon Slayer Fist', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'single', effect: 'cross_fang_garou', description: 'Causa 4 daño + 2 adicional por cada aliado y enemigo derrotado.' },
                     { name: 'Gamma Ray Burst', type: 'special', cost: 7, chargeGain: 0, damage: 1, target: 'aoe', effect: 'gamma_ray_garou', description: 'Causa 1 AOE + 1 daño adicional por cada carga del objetivo.' },
                     { name: 'Saitama Mode', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'saitama_mode_garou', description: 'Transformación. Inmunidad a debuffs y reduce 50% todo daño recibido.' }
+                ]
+            },
+            'The Joker': {
+                hp: 20, maxHp: 20, speed: 85, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/gZQDP5Cm/Captura-de-pantalla-2026-03-20-230645.png',
+                passive: { name: 'Anarquía', description: 'Cada vez que un enemigo recibe daño de Veneno, 50% de probabilidad de aplicar debuff Aturdimiento en ese enemigo.' },
+                abilities: [
+                    { name: 'Naipes Impregnados', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'naipes_joker', description: 'Causa 1 daño. Aplica debuff Veneno 2 turnos sobre el objetivo.' },
+                    { name: 'Granada de Humo Púrpura', type: 'special', cost: 2, chargeGain: 0, damage: 1, target: 'aoe', effect: 'granada_joker', description: 'Causa 1 AOE. Aplica debuff Veneno 3 turnos sobre los enemigos.' },
+                    { name: 'Detonador del Caos', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'aoe', effect: 'detonador_joker', description: 'Causa 3 AOE. Si el enemigo tiene Veneno o Aturdimiento, 50% de eliminar todas sus cargas.' },
+                    { name: '¿Por qué tan serio?', type: 'over', cost: 8, chargeGain: 0, damage: 2, target: 'single', effect: 'por_que_serio_joker', description: 'Causa 2 daño. Si el objetivo tiene Veneno activo, reduce un 60% su HP actual.' }
+                ]
+            },
+            'Batman': {
+                hp: 25, maxHp: 25, speed: 84, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/xKm24r5T/Captura-de-pantalla-2026-03-20-235244.png',
+                passive: { name: 'Caballero de la Noche', description: 'Batman es inmune a daño y efectos de movimientos especiales del enemigo. Cada vez que un enemigo usa un ataque especial, Batman genera 3 cargas.' },
+                abilities: [
+                    { name: 'Batarang Táctico', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'batarang_batman', description: 'Causa 2 daño. 50% de aturdir al enemigo. 50% de robar 2 cargas del enemigo.' },
+                    { name: 'Bomba de Humo', type: 'special', cost: 3, chargeGain: 1, damage: 0, target: 'self', effect: 'bomba_humo_batman', description: 'Aplica Buff Esquiva Área a todos los aliados por 2 turnos. 50% de aplicar Sigilo a cada aliado.' },
+                    { name: 'Análisis de Puntos Débiles', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'aoe', effect: 'analisis_batman', description: 'Causa 3 AOE. Bloquea 1 movimiento de cada enemigo por 2 turnos.' },
+                    { name: 'Planes de Contingencia', type: 'over', cost: 10, chargeGain: 0, damage: 5, target: 'single', effect: 'contingencia_batman', description: 'Causa 5 daño + 1 adicional por cada carga eliminada del objetivo. El objetivo no puede generar cargas por 3 turnos.' }
                 ]
             }
         };
