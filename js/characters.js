@@ -193,7 +193,7 @@
                     { name: 'Golpe Normal', type: 'basic', cost: 0, chargeGain: 1, damage: 4, target: 'single', effect: 'golpe_normal_saitama', description: 'Causa 4 daño. Aplica Buff Furia 2 turnos.' },
                     { name: 'Golpes Normales Consecutivos', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'single', effect: 'multi_hit', description: 'Causa 3 daño + 3 adicional por cada Buff activo en el objetivo.' },
                     { name: 'Golpe Serio', type: 'special', cost: 8, chargeGain: 0, damage: 6, target: 'single', effect: 'golpe_serio_saitama', description: 'Causa 6 daño. Daño triple si el objetivo tiene Provocación o Mega Provocación.' },
-                    { name: 'Golpe Grave', type: 'over', cost: 20, chargeGain: 0, damage: 0, target: 'single', effect: 'golpe_grave', description: 'Elimina al enemigo golpeado.' }
+                    { name: 'Golpe Grave', type: 'over', cost: 20, chargeGain: 0, damage: 20, target: 'single', effect: 'golpe_grave', description: 'Causa 20 de daño. Si el enemigo es derrotado por este ataque, Saitama gana un turno adicional.' }
                 ]
             },
 
