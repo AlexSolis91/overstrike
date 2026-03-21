@@ -143,6 +143,23 @@ function processBurnEffects(charName) {
                     if (poisonEffect.poisonChargeDrain) hasChargeDrain = true;
                 });
                 applyDamageWithShield(charName, totalVenenoDmg, null);
+                // ANARQUÍA (Joker): 50% stun when a character takes poison damage
+                if (!passiveExecuting) {
+                    const _jkrChar = gameState.characters[charName];
+                    if (_jkrChar) {
+                        const _jkrEnemyTeam = _jkrChar.team === 'team1' ? 'team2' : 'team1';
+                        for (const _jkn in gameState.characters) {
+                            const _jkc = gameState.characters[_jkn];
+                            if (!_jkc || _jkc.isDead || _jkc.hp <= 0 || _jkc.team !== _jkrEnemyTeam) continue;
+                            if (!_jkc.passive || _jkc.passive.name !== 'Anarquía') continue;
+                            if (Math.random() < 0.50) {
+                                applyStun(charName, 1);
+                                addLog('🃏 Anarquía: ' + charName + ' queda Aturdido por daño de Veneno', 'debuff');
+                            }
+                            break;
+                        }
+                    }
+                }
                 addLog('☠️ ' + charName + ' recibe ' + totalVenenoDmg + ' de daño por Veneno', 'damage');
                 // PROGENITOR DEMONIACO (Muzan): genera 1 carga cuando veneno hace daño
                 const muzanP = gameState.characters['Muzan Kibutsuji'];
