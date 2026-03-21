@@ -737,6 +737,8 @@
         }
 
         function _startRankedSearch() {
+            // Mark this as a legitimate ranked match from Buscar Rival
+            window._rankedFromMatchmaking = true;
             const myUid  = currentUser.uid;
             const myName = currentUser.displayName || 'Jugador';
 
@@ -769,6 +771,7 @@
                     db.ref('ranked_queue/' + opponentUid).update({ matchedRoomId: roomId, matchedBy: myUid });
                     currentRoomId = roomId; isRoomHost = true; onlineMode = true;
                     window._rankedMode = true;
+                    window._rankedFromMatchmaking = true;
                     window._rankedPlayerTeam = 'team1'; // host is always team1
                     // Use attack teams for both players
                     getRankedTeams(function(myTeams) {
@@ -799,6 +802,7 @@
                         hideRankedSearchModal();
                         currentRoomId = rid; isRoomHost = false; onlineMode = true;
                         window._rankedMode = true;
+                        window._rankedFromMatchmaking = true;
                         window._rankedPlayerTeam = 'team2'; // guest is always team2
                         window._rankedOpponentName = opponentData.name || 'Rival';
                         window._teamNames = { team1: opponentData.name || 'Rival', team2: myName };
@@ -980,12 +984,16 @@
         function saveRankedResult(winnerTeam, playerTeam, playerChars, opponentName, opponentChars) {
             if (!currentUser || !window._rankedMode) return;
             window._rankedMode = false;
-            // SELF-TEST: never save stats when player tests their own teams
-            if (window._rankedSelfTest) {
+            // LEADERBOARD PROTECTION: only save results from real Ranked matchmaking
+            // (Buscar Rival button or online PvP). Test battles never count.
+            if (!window._rankedFromMatchmaking || window._rankedSelfTest) {
+                window._rankedFromMatchmaking = false;
                 window._rankedSelfTest = false;
                 addLog('🧪 Modo Prueba: los resultados NO se registran en el Leaderboard', 'info');
                 return;
             }
+            window._rankedFromMatchmaking = false;
+            window._rankedSelfTest = false;
             const myUid = currentUser.uid;
             const myName = currentUser.displayName || 'Jugador';
             const won = (winnerTeam === playerTeam);
