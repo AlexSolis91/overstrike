@@ -191,29 +191,57 @@
         ];
 
         function applyBattleBackground() {
-            var gc = document.querySelector('.game-container');
-            if (!gc) return;
             var url = BATTLE_BACKGROUNDS[Math.floor(Math.random() * BATTLE_BACKGROUNDS.length)];
-            gc.style.backgroundImage = 'url(' + url + ')';
-            gc.style.backgroundSize = 'cover';
-            gc.style.backgroundPosition = 'center center';
-            gc.style.backgroundRepeat = 'no-repeat';
-            gc.style.backgroundAttachment = 'local';
-            gc.style.position = 'relative';
-            // Inject overlay style if not already present
-            if (!document.getElementById('battle-bg-overlay-style')) {
-                var style = document.createElement('style');
-                style.id = 'battle-bg-overlay-style';
-                style.textContent = '.game-container{background-size:cover!important;background-position:center center!important;}' +
-                    '.game-container::before{content:"";position:fixed;inset:0;background:rgba(5,8,16,0.55);pointer-events:none;z-index:0;}' +
-                    '.game-header,.battle-arena{position:relative;z-index:1;}';                document.head.appendChild(style);
+            // Fixed full-screen background div — sits above body bg, below all game UI
+            var bg = document.getElementById('battle-bg-fullscreen');
+            if (!bg) {
+                bg = document.createElement('div');
+                bg.id = 'battle-bg-fullscreen';
+                document.body.insertBefore(bg, document.body.firstChild);
             }
+            bg.style.cssText =
+                'position:fixed;top:0;left:0;width:100vw;height:100vh;' +
+                'background-size:cover;background-position:center center;' +
+                'background-repeat:no-repeat;' +
+                'z-index:0;pointer-events:none;display:block;';
+            bg.style.backgroundImage = 'url(' + url + ')';
+            // Dark overlay for readability
+            var overlay = document.getElementById('battle-bg-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'battle-bg-overlay';
+                overlay.style.cssText =
+                    'position:fixed;top:0;left:0;width:100vw;height:100vh;' +
+                    'background:rgba(5,8,16,0.52);' +
+                    'z-index:1;pointer-events:none;display:block;';
+                document.body.insertBefore(overlay, bg.nextSibling);
+            } else {
+                overlay.style.display = 'block';
+            }
+            // Make body and all screen containers transparent so bg shows through
+            var style = document.getElementById('battle-bg-style');
+            if (!style) {
+                style = document.createElement('style');
+                style.id = 'battle-bg-style';
+                document.head.appendChild(style);
+            }
+            style.textContent =
+                'body { background: transparent !important; }' +
+                'html { background: transparent !important; }' +
+                '#lobbyScreen,#modeSelectScreen,#charSelectScreen,#loginScreen,#waitingScreen,' +
+                '.game-container,.battle-arena,.game-header {' +
+                '  background: transparent !important;' +
+                '  position: relative; z-index: 2;' +
+                '}';
         }
 
         function clearBattleBackground() {
-            var gc = document.querySelector('.game-container');
-            if (!gc) return;
-            gc.style.backgroundImage = 'none';
+            var bg = document.getElementById('battle-bg-fullscreen');
+            if (bg) { bg.style.backgroundImage = 'none'; bg.style.display = 'none'; }
+            var overlay = document.getElementById('battle-bg-overlay');
+            if (overlay) overlay.style.display = 'none';
+            var style = document.getElementById('battle-bg-style');
+            if (style) style.remove();
         }
 
         function showLobby() {
