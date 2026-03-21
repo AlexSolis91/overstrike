@@ -472,18 +472,6 @@
                     { name: 'Susanoo, Espada de Totsuka', type: 'over', cost: 9, chargeGain: 2, damage: 8, target: 'single', effect: 'totsuka_itachi', description: 'Roba TODAS las cargas del objetivo. Aplica Mega Aturdimiento. Aplica Debilitar.' }
                 ]
             },
-            'Tanjiro Kamado': {
-                hp: 20, maxHp: 20, speed: 88, charges: 0, team: 'team1',
-                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.ibb.co/x8qLNcDN/Whats-App-Image-2026-03-20-at-3-35-02-PM.jpg',
-                passive: { name: 'Olor de la Brecha', description: '20% probabilidad de crítico en todos sus ataques. Cada golpe crítico genera 1 carga. Por cada 2 cargas consumidas, genera 1 carga para un aliado aleatorio.' },
-                abilities: [
-                    { name: 'Vals', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'vals_tanjiro', description: 'El equipo aliado genera 1 punto de carga.' },
-                    { name: 'Cascada de Agua', type: 'special', cost: 5, chargeGain: 0, damage: 2, target: 'aoe', effect: 'cascada_agua', description: 'AOE 2 daño. Genera 1 carga al equipo aliado por cada golpe crítico.' },
-                    { name: 'Danza del Dios del Fuego', type: 'special', cost: 7, chargeGain: 0, damage: 0, target: 'aoe', effect: 'danza_dios_fuego', description: 'Realiza 5 ataques básicos sobre enemigos aleatorios.' },
-                    { name: 'Decimotercera Postura', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'aoe', effect: 'decimotercera_postura', description: 'Realiza 13 ataques básicos sobre enemigos aleatorios. 50% de probabilidad de eliminar 1 carga por golpe.' }
-                ]
-            },
             'Garou': {
                 hp: 20, maxHp: 20, speed: 95, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
