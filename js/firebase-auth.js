@@ -101,7 +101,7 @@
                         var btn = document.createElement('button');
                         btn.id = 'csBackBtn';
                         btn.textContent = '← Volver al Lobby';
-                        btn.setAttribute('onclick', 'showLobby()');
+                        btn.setAttribute('onclick', "document.querySelector('.game-container') && (document.querySelector('.game-container').style.display = 'none'); showScreen('lobbyScreen'); showLobby();");
                         btn.style.cssText = [
                             'position:fixed',
                             'top:14px',
