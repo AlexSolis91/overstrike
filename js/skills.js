@@ -3710,7 +3710,7 @@
                     applyBuff(_n, { name: 'Esquiva Area', type: 'buff', duration: 2, emoji: '🌟', description: 'Esquiva Área: inmune a AOE del enemigo' });
                     // 50% Sigilo
                     if (Math.random() < 0.50) {
-                        applyStealthBuff ? applyStealthBuff(_n, 1) : applyStealth(_n, 1);
+                        applyStealth(_n, 1);
                         addLog('🦇 Bomba de Humo: ' + _n + ' entra en Sigilo', 'buff');
                     }
                 }
