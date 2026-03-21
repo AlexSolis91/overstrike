@@ -428,7 +428,7 @@
                 portrait: 'https://i.ibb.co/bRMTVQVr/Captura-de-pantalla-2026-03-18-131918.png',
                 passive: { name: 'Visión Esmeralda', description: 'Cada vez que recibe un golpe, genera 2 cargas.' },
                 abilities: [
-                    { name: 'Campo de Atracción', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'campo_atraccion', description: 'Se aplica Buff Provocación. Se aplica Buff Protección Sagrada.' },
+                    { name: 'Campo de Atracción', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'campo_atraccion', description: 'Se aplica Buff Provocación. Se aplica Buff Esquivar.' },
                     { name: 'Sincronía Esmeralda', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'sincronia_esmeralda', description: 'Limpia 1 debuff sobre el aliado objetivo y el aliado genera 3 cargas.' },
                     { name: 'Soporte Vital Autónomo', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'soporte_vital', description: 'Selecciona un aliado: ambos (Linterna Verde y el aliado) recuperan 5 HP y disipan todos los debuffs.' },
                     { name: 'La Lanza de Oa', type: 'over', cost: 10, chargeGain: 0, damage: 2, target: 'single', effect: 'lanza_de_oa', description: 'Causa 2 + 5 a 10 daño adicional aleatorio. Aplica debuff Mega Aturdimiento. Linterna Verde recupera HP equivalente al daño total causado.' }
@@ -489,12 +489,12 @@
                 garouSaitamaMode: false,
                 portrait: 'https://i.ibb.co/1YPdwxPw/Captura-de-pantalla-2026-03-20-160048.png',
                 transformPortrait: 'https://i.ibb.co/S4vdmL4s/Captura-de-pantalla-2026-03-20-172015.png',
-                passive: { name: 'Cazador de Héroes', description: 'Cualquier daño directo al HP que fuera a recibir Garou se convierte en cargas. Al inicio de cada turno de Garou aplica Buff Armadura 2 turnos. Si Garou tiene Veneno/Quemadura/Sangrado activo, todos sus ataques causan daño doble.' },
+                passive: { name: 'Cazador de Héroes', description: 'Cualquier daño directo al HP que fuera a recibir Garou se convierte en cargas para Garou, en lugar de causar el daño. Al inicio de cada Turno de Garou, se aplica Buff Armadura por 2 turnos. Si Garou tiene debuff (veneno, quemaduras, sangrado) activo, Garou causa daño doble con todos sus ataques.' },
                 abilities: [
-                    { name: 'Ryusui Gansai-ken', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'ryusui_garou', description: 'Causa 2 daño. Garou se aplica Veneno 2 turnos y Buff Infectar 2 turnos.' },
-                    { name: 'Cross Fang Dragon Slayer Fist', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'single', effect: 'cross_fang_garou', description: 'Causa 4 daño + 2 adicional por cada aliado y enemigo derrotado.' },
-                    { name: 'Gamma Ray Burst', type: 'special', cost: 7, chargeGain: 0, damage: 2, target: 'aoe', effect: 'gamma_ray_garou', description: 'Causa 2 AOE + 1 daño adicional por cada carga del objetivo.' },
-                    { name: 'Saitama Mode', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'saitama_mode_garou', description: 'Reduce -2 puntos el daño recibido por golpe. Todos los ataques de Garou causan +2 de daño adicional permanente. Transformación permanente.' }
+                    { name: 'Ryusui Gansai-ken', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'ryusui_garou', description: 'Garou se aplica debuff Veneno 2 turnos. Garou se aplica Buff Infectar por 2 turnos.' },
+                    { name: 'Cross Fang Dragon Slayer Fist', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'single', effect: 'cross_fang_garou', description: 'Causa +2 de daño adicional por cada aliado y enemigo derrotado.' },
+                    { name: 'Gamma Ray Burst', type: 'special', cost: 7, chargeGain: 0, damage: 2, target: 'aoe', effect: 'gamma_ray_garou', description: 'Causa +1 de daño adicional por cada punto de carga que tenga del objetivo golpeado.' },
+                    { name: 'Saitama Mode', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'saitama_mode_garou', description: 'Reduce -2 puntos el daño por golpe recibido por los enemigos. Todos los Ataques de Garou causan +2 de daño adicional.' }
                 ]
             },
             'Tanjiro Kamado': {
