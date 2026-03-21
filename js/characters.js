@@ -510,19 +510,6 @@
                     { name: 'Decimotercera Postura', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'single', effect: 'decimotercera_tanjiro', description: 'Realiza 13 ataques básicos aleatorios. 50% de probabilidad de eliminar 1 carga al objetivo por golpe.' }
                 ]
             },
-            'Garou': {
-                hp: 20, maxHp: 20, speed: 95, charges: 0, team: 'team1',
-                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                garouSaitamaMode: false,
-                portrait: 'https://i.ibb.co/1YPdwxPw/Captura-de-pantalla-2026-03-20-160048.png',
-                passive: { name: 'Cazador de Héroes', description: 'Cada vez que un enemigo activa su habilidad pasiva, Garou realiza un ataque básico sobre ese enemigo. Cada vez que Garou realiza un ataque básico, recupera 2 HP.' },
-                abilities: [
-                    { name: 'Ryusui Gansai-ken', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'ryusui_garou', description: 'Causa 2 daño. Reduce 2 cargas del objetivo.' },
-                    { name: 'Cross Fang Dragon Slayer Fist', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'single', effect: 'cross_fang_garou', description: 'Causa 4 daño + 2 adicional por cada aliado y enemigo derrotado.' },
-                    { name: 'Gamma Ray Burst', type: 'special', cost: 7, chargeGain: 0, damage: 1, target: 'aoe', effect: 'gamma_ray_garou', description: 'Causa 1 AOE + 1 daño adicional por cada carga del objetivo.' },
-                    { name: 'Saitama Mode', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'saitama_mode_garou', description: 'Transformación. Inmunidad a debuffs y reduce 50% todo daño recibido.' }
-                ]
-            },
             'The Joker': {
                 hp: 20, maxHp: 20, speed: 85, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
