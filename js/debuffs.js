@@ -401,10 +401,17 @@ function applyDebuff(targetName, effectObj) {
         function applyPoison(targetName, duration) {
             const target = gameState.characters[targetName];
             if (!target) return;
-            // Veneno es stackeable: cada aplicación es una instancia independiente
-            applyDebuff(targetName, { name: 'Veneno', type: 'debuff', duration, emoji: '☠️', poisonTick: 0 });
-            const stackCount = target.statusEffects.filter(e => e && normAccent(e.name||'') === 'veneno').length;
-            addLog(`☠️ ${targetName} es envenenado por ${duration} turno${duration > 1 ? 's' : ''} (${stackCount} stack${stackCount > 1 ? 's' : ''})`, 'damage');
+            // Veneno acumulable por duración: si ya existe un stack activo, solo suma turnos
+            // El poisonTick NO se reinicia para mantener el daño progresivo continuo
+            const existing = (target.statusEffects || []).find(e => e && normAccent(e.name||'') === 'veneno');
+            if (existing) {
+                existing.duration = (existing.duration || 0) + duration;
+                addLog(`☠️ ${targetName} acumula +${duration} turnos de Veneno (total: ${existing.duration}t, tick actual: ${existing.poisonTick || 0})`, 'damage');
+            } else {
+                // No existía veneno: crear nuevo stack con poisonTick en 0
+                applyDebuff(targetName, { name: 'Veneno', type: 'debuff', duration, emoji: '☠️', poisonTick: 0 });
+                addLog(`☠️ ${targetName} es envenenado por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
+            }
             if (typeof triggerIzanamiPartB === 'function') triggerIzanamiPartB(targetName);
         }
 
