@@ -674,12 +674,13 @@
             
             // PROTECCION SAGRADA: inmune a nuevos debuffs (handled in applyDebuff)
             // Also: blocks incoming HP DAMAGE from golpes (physical hits)
-            if (attackerName !== null && hasStatusEffect(targetName, 'Proteccion Sagrada') || 
-                (attackerName !== null && hasStatusEffect(targetName, 'Protección Sagrada'))) {
+            if (attackerName !== null && (hasStatusEffect(targetName, 'Proteccion Sagrada') || hasStatusEffect(targetName, 'Protección Sagrada'))) {
                 addLog('🛡️ Protección Sagrada: ' + targetName + ' es inmune al daño de golpe', 'buff');
                 return 0;
             }
-            // ESCUDO SAGRADO: bloquea todo el daño de golpes (no efectos de estado)
+            // ESCUDO SAGRADO: bloquea todo el daño de golpes (no efectos de estado ni daño directo)
+            // attackerName !== null → daño por golpe de un personaje/invocación → bloqueado
+            // attackerName === null → daño directo (efectos, debuffs, habilidades directas) → pasa
             if (attackerName !== null && hasStatusEffect(targetName, 'Escudo Sagrado')) {
                 addLog(`✝️ Escudo Sagrado de ${targetName} bloqueó el golpe de ${attackerName}`, 'buff');
                 return 0;
