@@ -489,6 +489,7 @@
                     if (el) el.style.display = 'none';
                 });
                 document.querySelector('.game-container').style.display = 'block';
+                if (typeof applyBattleBackground === 'function') applyBattleBackground();
 
                 initGame(selectedChars);
                 const modeLabel = csState.gameMode === 'solo' ? '🤖 Modo Solitario — ¡Buena suerte contra la IA!' : '👥 Modo Multijugador';
@@ -512,5 +513,3 @@
                 console.error('Error en csStartGame:', err);
             }
         }
-
-
