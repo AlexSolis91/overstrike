@@ -3830,13 +3830,17 @@
                         let _ccDmg = finalDamage;
                         if (Math.random() < 0.20) { _ccDmg *= 3; addLog('💥 ¡Daño Triple! Ciclón del Caos en ' + _n, 'damage'); }
                         applyDamageWithShield(_n, _ccDmg, gameState.selectedCharacter);
+                        // Check bleed BEFORE hit for passive charge gen
+                        const _ccHadBleed = (_c.statusEffects||[]).some(function(e){
+                            return e && normAccent(e.name||'').toLowerCase() === 'sangrado';
+                        });
                         if (Math.random() < 0.50) {
                             applyBleed(_n, 2);
-                            // PASIVA Dios de la Guerra: +2 cargas si golpea con sangrado
-                            if (_ccK) {
-                                _ccK.charges = Math.min(20, (_ccK.charges || 0) + 2);
-                                addLog('⚔️ Dios de la Guerra: ' + gameState.selectedCharacter + ' genera 2 cargas (Sangrado)', 'buff');
-                            }
+                        }
+                        // PASIVA Dios de la Guerra: +2 cargas si el objetivo YA TENÍA Sangrado antes del golpe
+                        if (_ccHadBleed && _ccK) {
+                            _ccK.charges = Math.min(20, (_ccK.charges || 0) + 2);
+                            addLog('⚔️ Dios de la Guerra: ' + gameState.selectedCharacter + ' genera 2 cargas (Sangrado previo en ' + _n + ')', 'buff');
                         }
                     }
                     addLog('⚔️ Ciclón del Caos: 1 AOE completado', 'damage');
@@ -3853,7 +3857,7 @@
                 // Check bleed for charge gen before applying new bleed
                 if (_hadBleed && _itK) {
                     _itK.charges = Math.min(20, (_itK.charges || 0) + 2);
-                    addLog('⚔️ Dios de la Guerra: ' + gameState.selectedCharacter + ' genera 2 cargas (Sangrado previo)', 'buff');
+                    addLog('⚔️ Dios de la Guerra: ' + gameState.selectedCharacter + ' genera 2 cargas (Sangrado previo en ' + targetName + ')', 'buff');
                 }
                 applyBleed(targetName, 2);
                 if (_hadBleed) {
@@ -3898,7 +3902,7 @@
                         applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
                         if (_cHasBleed && _ikK) {
                             _ikK.charges = Math.min(20, (_ikK.charges || 0) + 2);
-                            addLog('⚔️ Dios de la Guerra: ' + gameState.selectedCharacter + ' genera 2 cargas (Sangrado en ' + _n + ')', 'buff');
+                            addLog('⚔️ Dios de la Guerra: ' + gameState.selectedCharacter + ' genera 2 cargas (Sangrado previo en ' + _n + ')', 'buff');
                         }
                         // 10% instant kill
                         const _cNow = gameState.characters[_n];
