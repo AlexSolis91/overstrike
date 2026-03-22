@@ -1709,7 +1709,7 @@
                         const debuffPool = ['Quemadura','Veneno','Sangrado','Confusion','Debilitar','Congelacion','Silenciar','Miedo','Agotamiento','Aturdimiento'];
                         const chosen = debuffPool[Math.floor(Math.random() * debuffPool.length)];
                         if (chosen === 'Quemadura') applyFlatBurn(n, 2, 1);  // 1T, valor 2HP (10% de 20HP)
-                        else if (chosen === 'Veneno') { c.statusEffects.push({ name: 'Veneno', type: 'debuff', duration: 1, emoji: '🐍', poisonTick: 0 }); }
+                        else if (chosen === 'Veneno') { applyPoison(n, 1); }
                         else if (chosen === 'Sangrado') applyBleed(n, 1);
                         else if (chosen === 'Confusion') applyConfusion(n, 1);
                         else if (chosen === 'Debilitar') applyWeaken(n, 2);  // 2T per table
