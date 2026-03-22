@@ -608,6 +608,19 @@
                 }
             }
 
+            // ── HOMBRE DE ACERO (Superman): reduce 50% daño por GOLPE (attackerName ≠ null) ──
+            if (!passiveExecuting && attackerName && attackerName !== targetName && damage > 0 &&
+                target.passive && target.passive.name === 'Hombre de Acero' && !target.supermanPrimeMode) {
+                damage = Math.max(1, Math.floor(damage * 0.5));
+                addLog('🦸 Hombre de Acero: ' + targetName + ' reduce daño a ' + damage + ' (-50%)', 'buff');
+            }
+            // Prime Mode: also -50%
+            if (!passiveExecuting && attackerName && attackerName !== targetName && damage > 0 &&
+                target.supermanPrimeMode) {
+                damage = Math.max(1, Math.floor(damage * 0.5));
+                addLog('🦸 Forma Prime: ' + targetName + ' reduce daño a ' + damage + ' (-50%)', 'buff');
+            }
+
             // ── SAITAMA MODE (Garou): reduce -2 daño recibido ──
             if (target.garouSaitamaMode && damage > 0) {
                 damage = Math.max(0, damage - 2);
