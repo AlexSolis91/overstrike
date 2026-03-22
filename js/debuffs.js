@@ -159,6 +159,9 @@ function triggerMaboroshi(targetTeam, debuffName) {
         function isImmuneToDebuff(targetName) {
             // Saitama: total debuff immunity
             if ((targetName === 'Saitama' || targetName === 'Saitama v2')) return true;
+            // Superman Forma Prime: debuff immunity
+            const _spChar = gameState.characters[targetName];
+            if (_spChar && _spChar.supermanPrimeMode) return true;
 
             // Proteccion Sagrada: immune to new debuffs
             if (hasStatusEffect(targetName, 'Proteccion Sagrada') || hasStatusEffect(targetName, 'Protección Sagrada')) return true;
@@ -294,6 +297,36 @@ function applyDebuff(targetName, effectObj) {
                     if (target.team === padme.team) {
                         padme.charges = Math.min(20, (padme.charges || 0) + 1);
                         addLog('🌹 Negociaciones Hostiles: Padmé gana 1 carga (' + padme.charges + ')', 'buff');
+                    }
+                }
+            }
+
+            // ── PASIVA DIOS DE LA GUERRA (Kratos): 50% limpia debuff + 2 buffs aleatorios ──
+            if (!passiveExecuting && effectObj && effectObj.type === 'debuff') {
+                const _kratosChar = gameState.characters[targetName];
+                if (_kratosChar && !_kratosChar.isDead && _kratosChar.hp > 0 &&
+                    _kratosChar.passive && _kratosChar.passive.name === 'Dios de la Guerra') {
+                    if (Math.random() < 0.50) {
+                        // Remove the debuff that was just applied
+                        _kratosChar.statusEffects = (_kratosChar.statusEffects || []).filter(function(e){ return e !== effectObj; });
+                        addLog('⚔️ Dios de la Guerra: ' + targetName + ' limpia ' + (effectObj.name||'debuff'), 'buff');
+                        // Apply 2 random buffs
+                        const KRATOS_BUFFS = [
+                            { name: 'Furia', type: 'buff', duration: 2, emoji: '🔥' },
+                            { name: 'Frenesi', type: 'buff', duration: 2, emoji: '⚡' },
+                            { name: 'Armadura', type: 'buff', duration: 2, emoji: '🛡️' },
+                            { name: 'Concentracion', type: 'buff', duration: 2, emoji: '🎯' },
+                            { name: 'Contraataque', type: 'buff', duration: 2, emoji: '⚔️' },
+                            { name: 'Celeridad', type: 'buff', duration: 2, emoji: '💨', speedBonus: 5 }
+                        ];
+                        var _shuffled = KRATOS_BUFFS.slice().sort(function(){ return Math.random()-0.5; });
+                        for (var _ki = 0; _ki < 2; _ki++) {
+                            var _kb = Object.assign({}, _shuffled[_ki]);
+                            _kratosChar.statusEffects.push(_kb);
+                            if (_kb.speedBonus) _kratosChar.speed = (_kratosChar.speed||88) + _kb.speedBonus;
+                            addLog('⚔️ Dios de la Guerra: ' + targetName + ' gana buff ' + _kb.name, 'buff');
+                        }
+                        return; // debuff removed, no further processing
                     }
                 }
             }
