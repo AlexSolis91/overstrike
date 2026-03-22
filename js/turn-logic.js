@@ -403,6 +403,17 @@
                     _epc.statusEffects = (_epc.statusEffects || []);
                     _epc.statusEffects.push({ name: 'Armadura', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🛡️' });
                 }
+                // Superman: Provocación + Cuerpo Perfecto permanentes
+                if (_epc.passive && _epc.passive.name === 'Hombre de Acero') {
+                    if (!hasStatusEffect(_epn, 'Provocacion')) {
+                        _epc.statusEffects = (_epc.statusEffects || []);
+                        _epc.statusEffects.push({ name: 'Provocacion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '⚠️' });
+                    }
+                    if (!hasStatusEffect(_epn, 'Cuerpo Perfecto')) {
+                        _epc.statusEffects = (_epc.statusEffects || []);
+                        _epc.statusEffects.push({ name: 'Cuerpo Perfecto', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '💠' });
+                    }
+                }
             }
             // ── CAZADOR DE HÉROES PASSIVE B (Garou): Buff Armadura 2T al inicio de su turno ──
             if (gameState.selectedCharacter) {
