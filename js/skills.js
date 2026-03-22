@@ -3750,6 +3750,166 @@
                     _conTgt.noChargeGenTurns = 3; // checked in endTurn/startTurn
                     addLog('🦇 Planes de Contingencia: ' + _conDmg + ' daño (' + finalDamage + '+' + _conStolen + ' cargas drenadas). ' + targetName + ' no puede generar cargas por 3 turnos', 'damage');
                 }
+            } else if (ability.effect === 'punio_justicia_superman') {
+                // SUPERMAN — Puño de la Justicia: 3 dmg (x2 si Prime) + recover 2 HP
+                const _pjS = gameState.characters[gameState.selectedCharacter];
+                let _pjDmg = _pjS && _pjS.supermanPrimeMode ? finalDamage * 2 : finalDamage;
+                applyDamageWithShield(targetName, _pjDmg, gameState.selectedCharacter);
+                if (_pjS) {
+                    _pjS.hp = Math.min(_pjS.maxHp, _pjS.hp + 2);
+                    addLog('🦸 Puño de la Justicia: ' + _pjDmg + ' daño + 2 HP recuperados', 'buff');
+                }
+
+            } else if (ability.effect === 'vision_calor_superman') {
+                // SUPERMAN — Visión de Calor: 6 dmg (x2 Prime) + dispel buffs+shield + QS 3T
+                const _vcS = gameState.characters[gameState.selectedCharacter];
+                let _vcDmg = _vcS && _vcS.supermanPrimeMode ? finalDamage * 2 : finalDamage;
+                applyDamageWithShield(targetName, _vcDmg, gameState.selectedCharacter);
+                const _vcTgt = gameState.characters[targetName];
+                if (_vcTgt) {
+                    // Dispel all buffs and shield
+                    const _vcDispelled = (_vcTgt.statusEffects||[]).filter(function(e){return e&&e.type==='buff';}).length;
+                    _vcTgt.statusEffects = (_vcTgt.statusEffects||[]).filter(function(e){return !e||e.type!=='buff';});
+                    _vcTgt.shield = 0; _vcTgt.shieldEffect = null;
+                    if (_vcDispelled > 0) addLog('🔥 Visión de Calor: ' + _vcDispelled + ' buff(s) disipados de ' + targetName, 'debuff');
+                    applySolarBurn(targetName, 15, 3);
+                    addLog('🔥 Visión de Calor: ' + _vcDmg + ' daño + Quemadura Solar 3T a ' + targetName, 'damage');
+                }
+
+            } else if (ability.effect === 'aliento_gelido_superman') {
+                // SUPERMAN — Aliento Gélido: 3 AOE + 50% freeze + 50% weaken per target + kill summons
+                const _agS = gameState.characters[gameState.selectedCharacter];
+                const _agTeam = _agS ? (_agS.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                if (checkAndRedirectAOEMegaProv(_agTeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('❄️ Aliento Gélido redirigido por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _agTeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        let _agDmg = _agS && _agS.supermanPrimeMode ? finalDamage * 2 : finalDamage;
+                        applyDamageWithShield(_n, _agDmg, gameState.selectedCharacter);
+                        if (Math.random() < 0.50) applyFreeze(_n, 2);
+                        if (Math.random() < 0.50) applyWeaken(_n, 2);
+                    }
+                    // Eliminate enemy summons
+                    for (const _sid in gameState.summons) {
+                        const _s = gameState.summons[_sid];
+                        if (!_s || _s.team !== _agTeam || _s.hp <= 0) continue;
+                        addLog('❄️ Aliento Gélido: ¡' + _s.name + ' congelada y eliminada!', 'damage');
+                        delete gameState.summons[_sid];
+                    }
+                    renderSummons();
+                    addLog('❄️ Aliento Gélido: 3 AOE completado', 'damage');
+                }
+
+            } else if (ability.effect === 'forma_prime_superman') {
+                // SUPERMAN — Forma Prime: HP Max 30 + full heal + daño doble + debuff immunity
+                const _fpS = gameState.characters[gameState.selectedCharacter];
+                if (_fpS) {
+                    _fpS.supermanPrimeMode = true;
+                    _fpS.maxHp = 30;
+                    _fpS.hp = 30;
+                    _fpS.immuneToDebuffs = true;
+                    ability.used = true;
+                    if (_fpS.transformPortrait) _fpS.portrait = _fpS.transformPortrait;
+                    addLog('🦸 ¡FORMA PRIME! Superman: HP Max 30, HP restaurado, daño doble, inmunidad a debuffs', 'buff');
+                }
+
+            } else if (ability.effect === 'ciclon_caos_kratos') {
+                // KRATOS — Ciclón del Caos: 1 AOE + 50% sangrado + 20% triple dmg
+                const _ccK = gameState.characters[gameState.selectedCharacter];
+                const _ccTeam = _ccK ? (_ccK.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                if (checkAndRedirectAOEMegaProv(_ccTeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('⚔️ Ciclón del Caos redirigido por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _ccTeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        let _ccDmg = finalDamage;
+                        if (Math.random() < 0.20) { _ccDmg *= 3; addLog('💥 ¡Daño Triple! Ciclón del Caos en ' + _n, 'damage'); }
+                        applyDamageWithShield(_n, _ccDmg, gameState.selectedCharacter);
+                        if (Math.random() < 0.50) {
+                            applyBleed(_n, 2);
+                            // PASIVA Dios de la Guerra: +2 cargas si golpea con sangrado
+                            if (_ccK) {
+                                _ccK.charges = Math.min(20, (_ccK.charges || 0) + 2);
+                                addLog('⚔️ Dios de la Guerra: ' + gameState.selectedCharacter + ' genera 2 cargas (Sangrado)', 'buff');
+                            }
+                        }
+                    }
+                    addLog('⚔️ Ciclón del Caos: 1 AOE completado', 'damage');
+                }
+
+            } else if (ability.effect === 'ira_tartaro_kratos') {
+                // KRATOS — Ira del Tártaro: 3 dmg + Sangrado; si ya tenía Sangrado → Mega Aturdimiento
+                const _itK = gameState.characters[gameState.selectedCharacter];
+                const _itTgt = gameState.characters[targetName];
+                const _hadBleed = _itTgt && (_itTgt.statusEffects||[]).some(function(e){
+                    return e && normAccent(e.name||'').toLowerCase() === 'sangrado';
+                });
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                // Check bleed for charge gen before applying new bleed
+                if (_hadBleed && _itK) {
+                    _itK.charges = Math.min(20, (_itK.charges || 0) + 2);
+                    addLog('⚔️ Dios de la Guerra: ' + gameState.selectedCharacter + ' genera 2 cargas (Sangrado previo)', 'buff');
+                }
+                applyBleed(targetName, 2);
+                if (_hadBleed) {
+                    applyStun(targetName, 2); // Mega Aturdimiento
+                    addLog('⚔️ Ira del Tártaro: ¡' + targetName + ' ya tenía Sangrado → Mega Aturdimiento!', 'debuff');
+                }
+                addLog('⚔️ Ira del Tártaro: ' + finalDamage + ' daño + Sangrado a ' + targetName, 'damage');
+
+            } else if (ability.effect === 'tempestad_jord_kratos') {
+                // KRATOS — Tempestad de Jord: 2 dmg (triple si Sangrado) + 50% crit
+                const _tjK = gameState.characters[gameState.selectedCharacter];
+                const _tjTgt = gameState.characters[targetName];
+                const _tjHasBleed = _tjTgt && (_tjTgt.statusEffects||[]).some(function(e){
+                    return e && normAccent(e.name||'').toLowerCase() === 'sangrado';
+                });
+                let _tjDmg = finalDamage;
+                if (_tjHasBleed) { _tjDmg *= 3; addLog('⚔️ Tempestad de Jord: ¡Daño TRIPLE por Sangrado!', 'damage'); }
+                if (Math.random() < 0.50) { _tjDmg *= 2; addLog('💥 ¡Crítico! Tempestad de Jord', 'damage'); }
+                applyDamageWithShield(targetName, _tjDmg, gameState.selectedCharacter);
+                // Charge gen if target had bleed
+                if (_tjHasBleed && _tjK) {
+                    _tjK.charges = Math.min(20, (_tjK.charges || 0) + 2);
+                    addLog('⚔️ Dios de la Guerra: ' + gameState.selectedCharacter + ' genera 2 cargas (Sangrado)', 'buff');
+                }
+                addLog('⚔️ Tempestad de Jord: ' + _tjDmg + ' daño a ' + targetName, 'damage');
+
+            } else if (ability.effect === 'ira_kratos') {
+                // KRATOS — Ira de Kratos: 7 AOE + 10% instant kill per target
+                const _ikK = gameState.characters[gameState.selectedCharacter];
+                const _ikTeam = _ikK ? (_ikK.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                if (checkAndRedirectAOEMegaProv(_ikTeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('⚔️ Ira de Kratos redirigida por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _ikTeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        // Check bleed for charge gen
+                        const _cHasBleed = (_c.statusEffects||[]).some(function(e){
+                            return e && normAccent(e.name||'').toLowerCase() === 'sangrado';
+                        });
+                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        if (_cHasBleed && _ikK) {
+                            _ikK.charges = Math.min(20, (_ikK.charges || 0) + 2);
+                            addLog('⚔️ Dios de la Guerra: ' + gameState.selectedCharacter + ' genera 2 cargas (Sangrado en ' + _n + ')', 'buff');
+                        }
+                        // 10% instant kill
+                        const _cNow = gameState.characters[_n];
+                        if (_cNow && !_cNow.isDead && _cNow.hp > 0 && Math.random() < 0.10) {
+                            _cNow.hp = 0; _cNow.isDead = true;
+                            addLog('💀 Ira de Kratos: ¡' + _n + ' eliminado (10%)!', 'damage');
+                            if (typeof checkGameOver === 'function') checkGameOver();
+                        }
+                    }
+                    addLog('⚔️ Ira de Kratos: 7 AOE completado', 'damage');
+                }
             } else if (ability.effect === 'genjutsu_itachi') {
                 // ITACHI — Genjutsu: 50% Agotamiento + 50% Posesión, +1 carga por debuff aplicado
                 const _gjAtk = gameState.characters[gameState.selectedCharacter];
