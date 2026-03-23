@@ -94,6 +94,10 @@ function triggerMaboroshi(targetTeam, debuffName) {
             if (hasStatusEffect(targetName, 'Mega Posesion')) {
                 addLog(`👁️ ${targetName} ya tiene Mega Posesión activo`, 'info'); return;
             }
+            const _mpTgt = gameState.characters[targetName];
+            if (_mpTgt && _mpTgt.passive && _mpTgt.passive.name === 'Mente Brillante') {
+                addLog('🪓 Mente Brillante: Ivar es inmune a Mega Posesión', 'buff'); return;
+            }
             applyDebuff(targetName, { name: 'Mega Posesion', type: 'debuff', duration, emoji: '👁️' });
             addLog(`👁️ ${targetName} sufre Mega Posesión (${duration} turno${duration>1?'s':''})`, 'damage');
         }
@@ -355,14 +359,19 @@ function applyDebuff(targetName, effectObj) {
         }
 
         function applyFear(targetName, duration) {
-
-            if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }            applyDebuff(targetName, { name: 'Miedo', type: 'debuff', duration, emoji: '😱' });
+            if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }
+            const _fearTgt = gameState.characters[targetName];
+            if (_fearTgt && _fearTgt.passive && _fearTgt.passive.name === 'Mente Brillante') { addLog('🪓 Mente Brillante: Ivar es inmune a Miedo', 'buff'); return; }
+            if (_fearTgt && _fearTgt.passive && _fearTgt.passive.name === 'Señor de los Nazgul') { addLog('💀 Señor de los Nazgul: Rey Brujo es inmune a Miedo', 'buff'); return; }
+            applyDebuff(targetName, { name: 'Miedo', type: 'debuff', duration, emoji: '😱' });
             addLog(`😱 ${targetName} siente Miedo por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
         }
 
         function applyPossession(targetName, duration) {
-
-            if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }            applyDebuff(targetName, { name: 'Posesion', type: 'debuff', duration, emoji: '👁️' });
+            if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }
+            const _posTgt = gameState.characters[targetName];
+            if (_posTgt && _posTgt.passive && _posTgt.passive.name === 'Mente Brillante') { addLog('🪓 Mente Brillante: Ivar es inmune a Posesión', 'buff'); return; }
+            applyDebuff(targetName, { name: 'Posesion', type: 'debuff', duration, emoji: '👁️' });
             addLog(`👁️ ${targetName} queda Poseído por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
         }
 
@@ -401,6 +410,13 @@ function applyDebuff(targetName, effectObj) {
         function applyPoison(targetName, duration) {
             const target = gameState.characters[targetName];
             if (!target) return;
+            // DONCELLA ESCUDERA (Lagertha): 50% de esquivar Veneno
+            if (target.passive && target.passive.name === 'Doncella Escudera') {
+                if (Math.random() < 0.50) {
+                    addLog('🛡️ Doncella Escudera: Lagertha esquiva Veneno (50%)', 'buff');
+                    return;
+                }
+            }
             // Veneno acumulable por duración: si ya existe un stack activo, solo suma turnos
             // El poisonTick NO se reinicia para mantener el daño progresivo continuo
             const existing = (target.statusEffects || []).find(e => e && normAccent(e.name||'') === 'veneno');
@@ -408,7 +424,6 @@ function applyDebuff(targetName, effectObj) {
                 existing.duration = (existing.duration || 0) + duration;
                 addLog(`☠️ ${targetName} acumula +${duration} turnos de Veneno (total: ${existing.duration}t, tick actual: ${existing.poisonTick || 0})`, 'damage');
             } else {
-                // No existía veneno: crear nuevo stack con poisonTick en 0
                 applyDebuff(targetName, { name: 'Veneno', type: 'debuff', duration, emoji: '☠️', poisonTick: 0 });
                 addLog(`☠️ ${targetName} es envenenado por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
             }
@@ -423,10 +438,13 @@ function applyDebuff(targetName, effectObj) {
         }
 
         function applyConfusion(targetName, duration) {
-
-            if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }            const tgtConf = gameState.characters[targetName];
+            if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }
+            const tgtConf = gameState.characters[targetName];
             if (!tgtConf) return;
-            // Reemplazar confusion existente en lugar de apilar
+            // MENTE BRILLANTE (Ivar): inmune a Confusión
+            if (tgtConf.passive && tgtConf.passive.name === 'Mente Brillante') { addLog('🪓 Mente Brillante: Ivar es inmune a Confusión', 'buff'); return; }
+            // SEÑOR DE LOS NAZGUL (Rey Brujo): inmune a Confusión
+            if (tgtConf.passive && tgtConf.passive.name === 'Señor de los Nazgul') { addLog('💀 Señor de los Nazgul: Rey Brujo es inmune a Confusión', 'buff'); return; }
             if (tgtConf.statusEffects) {
                 tgtConf.statusEffects = tgtConf.statusEffects.filter(e => !e || normAccent(e.name || '') !== 'confusion');
             }
@@ -434,7 +452,6 @@ function applyDebuff(targetName, effectObj) {
             addLog(`😵 ${targetName} queda Confundido por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
             if (typeof triggerIzanamiPartB === 'function') triggerIzanamiPartB(targetName);
         }
-
         // Quemadura Solar: stackeable (a diferencia de Quemadura normal)
         function applySolarBurn(targetName, percent, duration) {
             const target = gameState.characters[targetName];
