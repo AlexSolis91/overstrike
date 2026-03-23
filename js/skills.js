@@ -1992,30 +1992,38 @@
             } else if (ability.effect === 'summon_kamish') {
                 // Check if this is Purgatorio de las Sombras (Over) or simple Kamish summon
                 if (ability.type === 'over' || ability.cost >= 10) {
-                    // Purgatorio de las Sombras: Sacrifica todas las sombras (excepto Kamish) y causa 3 daño por sombra
-                    const purShadows = getSummonsBySummoner(gameState.selectedCharacter).filter(s => s && s.name !== 'Kamish');
-                    if (purShadows.length === 0) {
+                    // Purgatorio de las Sombras: Sacrifica todas las sombras (excepto Kamish) y causa 3 daño AOE por sombra
+                    const purEnemyTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                    // Recoger IDs a sacrificar (sombras del invocador, excluyendo Kamish)
+                    const purIdsToSacrifice = Object.keys(gameState.summons).filter(function(sid) {
+                        const s = gameState.summons[sid];
+                        return s && s.summoner === gameState.selectedCharacter && s.name !== 'Kamish' && s.hp > 0;
+                    });
+                    if (purIdsToSacrifice.length === 0) {
                         addLog('❌ Purgatorio: No hay sombras para sacrificar (excepto Kamish)', 'info');
                     } else {
-                        const purEnemyTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                         let purTotalDmg = 0;
-                        for (const purS of purShadows) {
-                            delete gameState.summons[purS.id];
-                            purTotalDmg += 3;
+                        // Sacrificar cada sombra y acumular daño
+                        for (const purSid of purIdsToSacrifice) {
+                            const purS = gameState.summons[purSid];
+                            if (!purS) continue;
                             addLog('💀 Purgatorio: ' + purS.name + ' sacrificada (+3 daño)', 'damage');
+                            purTotalDmg += 3;
+                            delete gameState.summons[purSid];
                         }
-                        // Apply damage to all enemies
+                        // Aplicar daño AOE a todos los enemigos (personajes)
                         for (let n in gameState.characters) {
                             const c = gameState.characters[n];
                             if (!c || c.team !== purEnemyTeam || c.isDead || c.hp <= 0) continue;
-                            if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                            if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune (Esquiva Área)', 'buff'); continue; }
                             applyDamageWithShield(n, purTotalDmg, charName);
                         }
+                        // Aplicar daño AOE a invocaciones enemigas
                         for (let sid in gameState.summons) {
                             const s = gameState.summons[sid];
                             if (s && s.team === purEnemyTeam && s.hp > 0) applySummonDamage(sid, purTotalDmg, charName);
                         }
-                        addLog('💀 Purgatorio de las Sombras: ' + purTotalDmg + ' daño total a todos los enemigos', 'damage');
+                        addLog('💀 Purgatorio de las Sombras: ' + purTotalDmg + ' daño total (' + purIdsToSacrifice.length + ' sombras × 3) a todos los enemigos', 'damage');
                         renderSummons();
                     }
                 } else {
