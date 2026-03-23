@@ -4021,6 +4021,441 @@
                     addLog('✨ Tenmaku Hōrin: ' + targetName + ' recibe ' + _thNames.map(function(n){ return n.charAt(0).toUpperCase()+n.slice(1); }).join(', '), 'debuff');
                 }
 
+            // ══════════════════════════════════════════════════════
+            // VARIAN WRYNN
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'filotormenta_varian') {
+                // AOE — daño base + bonus consecutivo + 50% crit
+                const _fvAtk = gameState.characters[gameState.selectedCharacter];
+                const _fvEnemyTeam = _fvAtk ? (_fvAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                // Bonus acumulado por usos consecutivos
+                const _fvDmgBonus = (_fvAtk ? (_fvAtk.varianBasicDmgBonus || 0) : 0);
+                const _fvChargeBonus = (_fvAtk ? (_fvAtk.varianBasicChargeBonus || 0) : 0);
+                let _fvDmg = finalDamage + _fvDmgBonus;
+                // 50% crit (Lo'gosh)
+                if (Math.random() < 0.50) { _fvDmg *= 2; addLog('⚔️ Lo\'gosh: ¡Crítico! Filotormenta daño doble', 'buff'); }
+                // Daño doble si transformado
+                if (_fvAtk && _fvAtk.varianTransformed) { _fvDmg *= 2; }
+                if (checkAndRedirectAOEMegaProv(_fvEnemyTeam, _fvDmg, gameState.selectedCharacter)) {
+                    addLog('⚔️ Filotormenta redirigida por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _fvEnemyTeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        applyDamageWithShield(_n, _fvDmg, gameState.selectedCharacter);
+                    }
+                    for (let _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _fvEnemyTeam && _s.hp > 0) applySummonDamage(_sid, _fvDmg, gameState.selectedCharacter); }
+                }
+                addLog('⚔️ Filotormenta: ' + _fvDmg + ' AOE (bonus consecutivo: ' + _fvDmgBonus + ')', 'damage');
+                // Actualizar bonus consecutivo
+                if (_fvAtk) {
+                    _fvAtk.varianBasicDmgBonus = (_fvAtk.varianBasicDmgBonus || 0) + 1;
+                    _fvAtk.varianConsecutiveBasic = (_fvAtk.varianConsecutiveBasic || 0) + 1;
+                }
+                // Cargas extra
+                if (_fvChargeBonus > 0 && _fvAtk) {
+                    _fvAtk.charges = Math.min(20, (_fvAtk.charges || 0) + _fvChargeBonus);
+                    addLog('⚔️ Filotormenta: +' + _fvChargeBonus + ' cargas adicionales por consecutivos', 'buff');
+                }
+
+            } else if (ability.effect === 'grito_guerra_varian') {
+                // AOE aliados — 1 carga por enemigo con Sangrado
+                const _ggAtk = gameState.characters[gameState.selectedCharacter];
+                const _ggMyTeam = _ggAtk ? _ggAtk.team : 'team1';
+                const _ggEnemyTeam = _ggMyTeam === 'team1' ? 'team2' : 'team1';
+                let _ggBleeding = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _ggEnemyTeam || _c.isDead || _c.hp <= 0) continue;
+                    if ((_c.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'sangrado')) _ggBleeding++;
+                }
+                if (_ggBleeding === 0) { addLog('⚔️ Grito de Guerra: Ningún enemigo tiene Sangrado', 'info'); }
+                else {
+                    for (const _an in gameState.characters) {
+                        const _a = gameState.characters[_an];
+                        if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _ggMyTeam) continue;
+                        _a.charges = Math.min(20, (_a.charges || 0) + _ggBleeding);
+                        addLog('⚔️ Grito de Guerra: ' + _an + ' genera ' + _ggBleeding + ' carga(s)', 'buff');
+                    }
+                }
+                // Resetear consecutivos porque usó especial
+                if (_ggAtk) { _ggAtk.varianConsecutiveBasic = 0; _ggAtk.varianBasicDmgBonus = 0; }
+
+            } else if (ability.effect === 'alianza_varian') {
+                // ST — 4 daño + si Sangrado: 50% Miedo al equipo enemigo
+                const _avAtk = gameState.characters[gameState.selectedCharacter];
+                const _avTgt = gameState.characters[targetName];
+                let _avDmg = finalDamage;
+                if (Math.random() < 0.50) { _avDmg *= 2; addLog('⚔️ Lo\'gosh: ¡Crítico!', 'buff'); }
+                if (_avAtk && _avAtk.varianTransformed) _avDmg *= 2;
+                applyDamageWithShield(targetName, _avDmg, gameState.selectedCharacter);
+                addLog('⚔️ Por la Alianza: ' + _avDmg + ' daño a ' + targetName, 'damage');
+                if (_avTgt && (_avTgt.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'sangrado')) {
+                    if (Math.random() < 0.50) {
+                        const _avETeam = _avTgt.team;
+                        for (const _en in gameState.characters) {
+                            const _ec = gameState.characters[_en];
+                            if (!_ec || _ec.team !== _avETeam || _ec.isDead || _ec.hp <= 0) continue;
+                            applyFear(_en, 1);
+                        }
+                        addLog('⚔️ Por la Alianza: Miedo aplicado al equipo enemigo', 'debuff');
+                    }
+                }
+                if (_avAtk) { _avAtk.varianConsecutiveBasic = 0; _avAtk.varianBasicDmgBonus = 0; }
+
+            } else if (ability.effect === 'alto_rey_varian') {
+                // TRANSFORMACIÓN — daño doble, +10 vel aliados, +1 dmgBonus y chargeBonus en básico
+                const _akAtk = gameState.characters[gameState.selectedCharacter];
+                if (_akAtk) {
+                    _akAtk.varianTransformed = true;
+                    const _akTP = _akAtk.transformPortrait || _akAtk.transformationPortrait;
+                    if (_akTP) _akAtk.portrait = _akTP;
+                    ability.used = true;
+                    const _akMyTeam = _akAtk.team;
+                    // +10 vel al equipo aliado
+                    for (const _an in gameState.characters) {
+                        const _a = gameState.characters[_an];
+                        if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _akMyTeam) continue;
+                        _a.speed = (_a.speed || 0) + 10;
+                    }
+                    // +1 bonus daño y carga al básico permanente
+                    _akAtk.varianBasicDmgBonus = (_akAtk.varianBasicDmgBonus || 0) + 1;
+                    _akAtk.varianBasicChargeBonus = (_akAtk.varianBasicChargeBonus || 0) + 1;
+                    addLog('👑 Alto Rey de la Alianza: Transformación activa. Daño doble, +10 vel aliados, Filotormenta mejorada', 'buff');
+                }
+
+            // ══════════════════════════════════════════════════════
+            // IVAR THE BONELESS
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'subestimacion_ivar') {
+                // ST — ignora Prov/MegaProv/Sigilo. Daño triple si Sangrado
+                const _siAtk = gameState.characters[gameState.selectedCharacter];
+                const _siTgt = gameState.characters[targetName];
+                let _siDmg = finalDamage;
+                if (_siTgt && (_siTgt.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'sangrado')) {
+                    _siDmg *= 3;
+                    addLog('🪓 Subestimación: DAÑO TRIPLE por Sangrado', 'damage');
+                }
+                // Ataca directamente ignorando provocaciones (targetName ya fue elegido sin filtro de prov)
+                applyDamageWithShield(targetName, _siDmg, gameState.selectedCharacter);
+                addLog('🪓 Subestimación: ' + _siDmg + ' daño a ' + targetName + ' (ignora Prov/Sigilo)', 'damage');
+
+            } else if (ability.effect === 'estrategia_ivar') {
+                // AOE — 4 efectos con 50% de prob cada uno
+                const _eiAtk = gameState.characters[gameState.selectedCharacter];
+                const _eiMyTeam = _eiAtk ? _eiAtk.team : 'team1';
+                const _eiEnemyTeam = _eiMyTeam === 'team1' ? 'team2' : 'team1';
+                // 50% eliminar 2 cargas al equipo enemigo
+                if (Math.random() < 0.50) {
+                    for (const _n in gameState.characters) { const _c = gameState.characters[_n]; if (_c && _c.team === _eiEnemyTeam && !_c.isDead && _c.hp > 0) { _c.charges = Math.max(0, (_c.charges||0) - 2); } }
+                    addLog('🪓 Estrategia: -2 cargas al equipo enemigo', 'debuff');
+                }
+                // 50% reducir 10% velocidad al equipo enemigo
+                if (Math.random() < 0.50) {
+                    for (const _n in gameState.characters) { const _c = gameState.characters[_n]; if (_c && _c.team === _eiEnemyTeam && !_c.isDead && _c.hp > 0) { _c.speed = Math.max(1, Math.floor((_c.speed||1) * 0.9)); } }
+                    addLog('🪓 Estrategia: -10% velocidad al equipo enemigo', 'debuff');
+                }
+                // 50% generar 2 cargas al equipo aliado
+                if (Math.random() < 0.50) {
+                    for (const _n in gameState.characters) { const _c = gameState.characters[_n]; if (_c && _c.team === _eiMyTeam && !_c.isDead && _c.hp > 0) { _c.charges = Math.min(20, (_c.charges||0) + 2); } }
+                    addLog('🪓 Estrategia: +2 cargas al equipo aliado', 'buff');
+                }
+                // 50% aumentar 10% velocidad al equipo aliado
+                if (Math.random() < 0.50) {
+                    for (const _n in gameState.characters) { const _c = gameState.characters[_n]; if (_c && _c.team === _eiMyTeam && !_c.isDead && _c.hp > 0) { _c.speed = Math.ceil((_c.speed||1) * 1.1); } }
+                    addLog('🪓 Estrategia: +10% velocidad al equipo aliado', 'buff');
+                }
+
+            } else if (ability.effect === 'ragnarson_ivar') {
+                // ST aliado — genera cargas según buffs+debuffs activos en ambos equipos
+                const _riAtk = gameState.characters[gameState.selectedCharacter];
+                const _riTgt = gameState.characters[targetName];
+                if (_riTgt) {
+                    let _riTotal = 0;
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.isDead || _c.hp <= 0) continue;
+                        _riTotal += (_c.statusEffects||[]).filter(e => e).length;
+                    }
+                    _riTgt.charges = Math.min(20, (_riTgt.charges||0) + _riTotal);
+                    addLog('🪓 Ragnarson: ' + targetName + ' genera ' + _riTotal + ' cargas (' + _riTotal + ' efectos activos en ambos equipos)', 'buff');
+                }
+
+            } else if (ability.effect === 'furia_serpiente_ivar') {
+                // AOE 5 daño + buff aleatorio a aliados por cada debuff enemigo + 50% MegaPosesión
+                const _fsiAtk = gameState.characters[gameState.selectedCharacter];
+                const _fsiMyTeam = _fsiAtk ? _fsiAtk.team : 'team1';
+                const _fsiEnemyTeam = _fsiMyTeam === 'team1' ? 'team2' : 'team1';
+                // AOE daño
+                if (checkAndRedirectAOEMegaProv(_fsiEnemyTeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('🐍 Furia de la Serpiente redirigida por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _fsiEnemyTeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) continue;
+                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        // 50% MegaPosesión por enemigo
+                        if (Math.random() < 0.50) applyMegaPosesion(_n, 1);
+                    }
+                    for (let _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _fsiEnemyTeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, gameState.selectedCharacter); }
+                }
+                // Contar debuffs enemigos y aplicar buffs aleatorios a aliados
+                let _fsiDebuffs = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _fsiEnemyTeam || _c.isDead || _c.hp <= 0) continue;
+                    _fsiDebuffs += (_c.statusEffects||[]).filter(e => e && e.type === 'debuff').length;
+                }
+                if (_fsiDebuffs > 0) {
+                    const _fsiBuffPool = ['Frenesi','Furia','Concentracion','Contraataque','Celeridad'];
+                    for (const _an in gameState.characters) {
+                        const _a = gameState.characters[_an];
+                        if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _fsiMyTeam) continue;
+                        for (let _bi = 0; _bi < _fsiDebuffs; _bi++) {
+                            const _chosen = _fsiBuffPool[Math.floor(Math.random() * _fsiBuffPool.length)];
+                            applyBuff(_an, { name: _chosen, type: 'buff', duration: 2, emoji: '✨' });
+                        }
+                        addLog('🐍 Furia de la Serpiente: ' + _an + ' recibe ' + _fsiDebuffs + ' buff(s)', 'buff');
+                    }
+                }
+                addLog('🐍 Furia de la Serpiente: ' + finalDamage + ' AOE completado', 'damage');
+
+            // ══════════════════════════════════════════════════════
+            // LAGERTHA
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'hacha_escudo_lagertha') {
+                // ST — 1 daño + Provocación a Lagertha + 50% Reflejar
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                const _hlAtk = gameState.characters[gameState.selectedCharacter];
+                if (_hlAtk) {
+                    // Provocación
+                    _hlAtk.statusEffects = (_hlAtk.statusEffects||[]).filter(e => !e || normAccent(e.name||'') !== 'provocacion');
+                    _hlAtk.statusEffects.push({ name: 'Provocacion', type: 'buff', duration: 2, emoji: '🛡️' });
+                    // 50% Reflejar
+                    if (Math.random() < 0.50) {
+                        _hlAtk.statusEffects = (_hlAtk.statusEffects||[]).filter(e => !e || normAccent(e.name||'') !== 'reflejar');
+                        _hlAtk.statusEffects.push({ name: 'Reflejar', type: 'buff', duration: 2, emoji: '🪞' });
+                        addLog('🪓 Hacha y Escudo: Lagertha gana Reflejar', 'buff');
+                    }
+                }
+                addLog('🪓 Hacha y Escudo: ' + finalDamage + ' daño + Provocación', 'damage');
+
+            } else if (ability.effect === 'muro_escudo_lagertha') {
+                // AOE aliados — Escudo 5 HP + Protección Sagrada 2T
+                const _mlAtk = gameState.characters[gameState.selectedCharacter];
+                const _mlMyTeam = _mlAtk ? _mlAtk.team : 'team1';
+                for (const _an in gameState.characters) {
+                    const _a = gameState.characters[_an];
+                    if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _mlMyTeam) continue;
+                    _a.shield = (_a.shield || 0) + 5;
+                    _a.statusEffects = (_a.statusEffects||[]).filter(e => !e || normAccent(e.name||'') !== 'proteccion sagrada');
+                    _a.statusEffects.push({ name: 'Proteccion Sagrada', type: 'buff', duration: 2, emoji: '✝️' });
+                    addLog('🛡️ Muro de Escudo: ' + _an + ' recibe Escudo 5 HP + Protección Sagrada 2T', 'buff');
+                }
+
+            } else if (ability.effect === 'furia_freya_lagertha') {
+                // ST — daño directo: 2 + 1 por cada punto de escudo del objetivo
+                const _ffTgt = gameState.characters[targetName];
+                const _ffShield = _ffTgt ? (_ffTgt.shield || 0) : 0;
+                const _ffDmg = finalDamage + _ffShield;
+                // Daño directo (attackerName = null bypasea escudo y Escudo Sagrado)
+                applyDamageWithShield(targetName, _ffDmg, null);
+                addLog('🪓 Furia de Freya: ' + _ffDmg + ' daño directo (' + finalDamage + ' base + ' + _ffShield + ' por escudo del objetivo)', 'damage');
+
+            } else if (ability.effect === 'valquiria_lagertha') {
+                // ST — equipo aliado usa su básico sobre el objetivo + Buff Asistir 3T
+                const _vlAtk = gameState.characters[gameState.selectedCharacter];
+                const _vlMyTeam = _vlAtk ? _vlAtk.team : 'team1';
+                const _vlTgt = gameState.characters[targetName];
+                if (_vlTgt) {
+                    for (const _an in gameState.characters) {
+                        const _a = gameState.characters[_an];
+                        if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _vlMyTeam || _an === gameState.selectedCharacter) continue;
+                        const _basic = _a.abilities && _a.abilities[0];
+                        if (_basic && _basic.damage > 0) {
+                            passiveExecuting = true;
+                            const _savedSel = gameState.selectedCharacter;
+                            const _savedAb = gameState.selectedAbility;
+                            gameState.selectedCharacter = _an;
+                            gameState.selectedAbility = _basic;
+                            applyDamageWithShield(targetName, _basic.damage, _an);
+                            _a.charges = Math.min(20, (_a.charges||0) + (_basic.chargeGain||0));
+                            addLog('⚔️ Valquiria: ' + _an + ' ataca a ' + targetName + ' con ' + _basic.name + ' (' + _basic.damage + ' daño)', 'damage');
+                            gameState.selectedCharacter = _savedSel;
+                            gameState.selectedAbility = _savedAb;
+                            passiveExecuting = false;
+                        }
+                    }
+                }
+                // Buff Asistir 3T al equipo aliado
+                for (const _an in gameState.characters) {
+                    const _a = gameState.characters[_an];
+                    if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _vlMyTeam) continue;
+                    applyBuff(_an, { name: 'Asistir', type: 'buff', duration: 3, emoji: '🤝' });
+                }
+                addLog('⚔️ Valquiria: Equipo aliado atacó. Buff Asistir 3T aplicado', 'buff');
+
+            // ══════════════════════════════════════════════════════
+            // SHINOBU KOCHO
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'danza_mariposa_shinobu') {
+                // SELF — Veneno 2T + Concentración 2T a sí misma
+                applyPoison(gameState.selectedCharacter, 2);
+                applyConcentracion(gameState.selectedCharacter, 2);
+                addLog('🦋 Danza de la Mariposa: Shinobu se aplica Veneno 2T y Concentración 2T', 'buff');
+
+            } else if (ability.effect === 'aguijon_abeja_shinobu') {
+                // AOE aliados — cura 2 HP + 2 adicionales por cada Veneno enemigo
+                const _aaAtk = gameState.characters[gameState.selectedCharacter];
+                const _aaMyTeam = _aaAtk ? _aaAtk.team : 'team1';
+                const _aaEnemyTeam = _aaMyTeam === 'team1' ? 'team2' : 'team1';
+                let _aaVenenos = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _aaEnemyTeam || _c.isDead || _c.hp <= 0) continue;
+                    if ((_c.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'veneno')) _aaVenenos++;
+                }
+                const _aaHealAmt = 2 + (_aaVenenos * 2);
+                for (const _an in gameState.characters) {
+                    const _a = gameState.characters[_an];
+                    if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _aaMyTeam) continue;
+                    _a.hp = Math.min(_a.maxHp, (_a.hp||0) + _aaHealAmt);
+                    addLog('🐝 Aguijón de Abeja: ' + _an + ' recupera ' + _aaHealAmt + ' HP (2 base + ' + (_aaVenenos*2) + ' por venenos)', 'heal');
+                }
+
+            } else if (ability.effect === 'ojo_hexagonal_shinobu') {
+                // MT 5 golpes a enemigos aleatorios — si tiene Veneno: cura 2 HP y genera 2 cargas al equipo
+                const _ohAtk = gameState.characters[gameState.selectedCharacter];
+                const _ohMyTeam = _ohAtk ? _ohAtk.team : 'team1';
+                const _ohEnemyTeam = _ohMyTeam === 'team1' ? 'team2' : 'team1';
+                const _ohEnemies = Object.keys(gameState.characters).filter(n => { const c = gameState.characters[n]; return c && c.team === _ohEnemyTeam && !c.isDead && c.hp > 0; });
+                if (_ohEnemies.length === 0) { addLog('👁️ Ojo Hexagonal: No hay objetivos', 'info'); }
+                else {
+                    for (let _i = 0; _i < 5; _i++) {
+                        const _tn = _ohEnemies[Math.floor(Math.random() * _ohEnemies.length)];
+                        const _tc = gameState.characters[_tn];
+                        if (!_tc || _tc.isDead || _tc.hp <= 0) continue;
+                        const _hasVen = (_tc.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'veneno');
+                        applyDamageWithShield(_tn, 1, gameState.selectedCharacter);
+                        if (_hasVen) {
+                            for (const _an in gameState.characters) { const _a = gameState.characters[_an]; if (_a && _a.team === _ohMyTeam && !_a.isDead && _a.hp > 0) { _a.hp = Math.min(_a.maxHp, (_a.hp||0) + 2); _a.charges = Math.min(20, (_a.charges||0) + 2); } }
+                            addLog('👁️ Ojo Hexagonal: Golpe a ' + _tn + ' (con Veneno) — equipo aliado +2 HP y +2 cargas', 'heal');
+                        } else { addLog('👁️ Ojo Hexagonal: 1 daño a ' + _tn, 'damage'); }
+                    }
+                }
+
+            } else if (ability.effect === 'danza_ciempies_shinobu') {
+                // MT 10 golpes — aplica Veneno 3T por golpe + cura 3 HP y genera 3 cargas a aliado aleatorio por Veneno aplicado
+                const _dcAtk = gameState.characters[gameState.selectedCharacter];
+                const _dcMyTeam = _dcAtk ? _dcAtk.team : 'team1';
+                const _dcEnemyTeam = _dcMyTeam === 'team1' ? 'team2' : 'team1';
+                const _dcEnemies = Object.keys(gameState.characters).filter(n => { const c = gameState.characters[n]; return c && c.team === _dcEnemyTeam && !c.isDead && c.hp > 0; });
+                if (_dcEnemies.length === 0) { addLog('🐛 Danza del Ciempiés: No hay objetivos', 'info'); }
+                else {
+                    for (let _i = 0; _i < 10; _i++) {
+                        const _tn = _dcEnemies[Math.floor(Math.random() * _dcEnemies.length)];
+                        const _tc = gameState.characters[_tn];
+                        if (!_tc || _tc.isDead || _tc.hp <= 0) continue;
+                        applyDamageWithShield(_tn, 1, gameState.selectedCharacter);
+                        applyPoison(_tn, 3);
+                        addLog('🐛 Danza del Ciempiés: Veneno 3T aplicado a ' + _tn, 'debuff');
+                        // Cura 3 HP y genera 3 cargas a un aliado aleatorio
+                        const _allies = Object.keys(gameState.characters).filter(n => { const c = gameState.characters[n]; return c && c.team === _dcMyTeam && !c.isDead && c.hp > 0; });
+                        if (_allies.length > 0) {
+                            const _randAlly = _allies[Math.floor(Math.random() * _allies.length)];
+                            const _ra = gameState.characters[_randAlly];
+                            _ra.hp = Math.min(_ra.maxHp, (_ra.hp||0) + 3);
+                            _ra.charges = Math.min(20, (_ra.charges||0) + 3);
+                            addLog('🐛 Danza del Ciempiés: ' + _randAlly + ' +3 HP y +3 cargas', 'heal');
+                        }
+                    }
+                }
+
+            // ══════════════════════════════════════════════════════
+            // REY BRUJO DE ANGMAR
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'espada_morgul_rba') {
+                // ST — 2 daño + Veneno 1T + si ya tenía Veneno: Esquiva Área 2T al Rey Brujo
+                const _emAtk = gameState.characters[gameState.selectedCharacter];
+                const _emTgt = gameState.characters[targetName];
+                const _emHadVenom = _emTgt && (_emTgt.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'veneno');
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                applyPoison(targetName, 1);
+                addLog('⚔️ Espada Morgul: ' + finalDamage + ' daño + Veneno 1T a ' + targetName, 'damage');
+                if (_emHadVenom && _emAtk) {
+                    _emAtk.statusEffects = (_emAtk.statusEffects||[]).filter(e => !e || normAccent(e.name||'') !== 'esquiva area');
+                    _emAtk.statusEffects.push({ name: 'Esquiva Area', type: 'buff', duration: 2, emoji: '💨' });
+                    addLog('⚔️ Espada Morgul: Rey Brujo gana Esquiva Área 2T (objetivo tenía Veneno)', 'buff');
+                }
+
+            } else if (ability.effect === 'grito_mordor_rba') {
+                // AOE — Silenciar + 50% eliminar 2 cargas si tiene Veneno
+                const _gmAtk = gameState.characters[gameState.selectedCharacter];
+                const _gmEnemyTeam = _gmAtk ? (_gmAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _gmEnemyTeam || _c.isDead || _c.hp <= 0) continue;
+                    applySilenciar(_n, 1);
+                    const _hasVen = (_c.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'veneno');
+                    if (_hasVen && Math.random() < 0.50) {
+                        _c.charges = Math.max(0, (_c.charges||0) - 2);
+                        addLog('💀 Grito de Mordor: ' + _n + ' pierde 2 cargas (tenía Veneno)', 'debuff');
+                    }
+                }
+                addLog('💀 Grito de Mordor: Silenciar AOE aplicado', 'debuff');
+
+            } else if (ability.effect === 'corona_hierro_rba') {
+                // SELF — cura 2 HP por cada Veneno activo en ambos equipos a Rey Brujo y aliado aleatorio
+                const _chAtk = gameState.characters[gameState.selectedCharacter];
+                if (_chAtk) {
+                    let _chVenenos = 0;
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.isDead || _c.hp <= 0) continue;
+                        if ((_c.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'veneno')) _chVenenos++;
+                    }
+                    const _chHeal = _chVenenos * 2;
+                    if (_chHeal === 0) { addLog('👑 Corona de Hierro: No hay Venenos activos', 'info'); }
+                    else {
+                        _chAtk.hp = Math.min(_chAtk.maxHp, (_chAtk.hp||0) + _chHeal);
+                        addLog('👑 Corona de Hierro: Rey Brujo recupera ' + _chHeal + ' HP', 'heal');
+                        // Aliado aleatorio
+                        const _chAllies = Object.keys(gameState.characters).filter(n => { const c = gameState.characters[n]; return c && c.team === _chAtk.team && !c.isDead && c.hp > 0 && n !== gameState.selectedCharacter; });
+                        if (_chAllies.length > 0) {
+                            const _rAlly = _chAllies[Math.floor(Math.random() * _chAllies.length)];
+                            gameState.characters[_rAlly].hp = Math.min(gameState.characters[_rAlly].maxHp, (gameState.characters[_rAlly].hp||0) + _chHeal);
+                            addLog('👑 Corona de Hierro: ' + _rAlly + ' recupera ' + _chHeal + ' HP', 'heal');
+                        }
+                    }
+                }
+
+            } else if (ability.effect === 'mano_sauron_rba') {
+                // AOE — limpia todos los Venenos enemigos y causa daño = turnos restantes de cada Veneno
+                const _msAtk = gameState.characters[gameState.selectedCharacter];
+                const _msEnemyTeam = _msAtk ? (_msAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _msEnemyTeam || _c.isDead || _c.hp <= 0) continue;
+                    const _venEffects = (_c.statusEffects||[]).filter(e => e && normAccent(e.name||'') === 'veneno');
+                    if (_venEffects.length > 0) {
+                        let _msDmg = 0;
+                        _venEffects.forEach(e => { _msDmg += (e.duration || 0); });
+                        _c.statusEffects = (_c.statusEffects||[]).filter(e => !e || normAccent(e.name||'') !== 'veneno');
+                        if (_msDmg > 0) {
+                            applyDamageWithShield(_n, _msDmg, gameState.selectedCharacter);
+                            addLog('🖐️ Mano de Sauron: ' + _n + ' recibe ' + _msDmg + ' daño (turnos de Veneno restantes) y Veneno limpiado', 'damage');
+                        }
+                    }
+                }
+                addLog('🖐️ Mano de Sauron: Todos los Venenos enemigos eliminados', 'debuff');
+
             } else if (ability.effect === 'genjutsu_itachi') {
                 // ITACHI — Genjutsu: 50% Agotamiento + 50% Posesión, +1 carga por debuff aplicado
                 const _gjAtk = gameState.characters[gameState.selectedCharacter];
