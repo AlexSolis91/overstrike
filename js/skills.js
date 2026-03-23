@@ -3915,6 +3915,104 @@
                     }
                     addLog('⚔️ Ira de Kratos: 7 AOE completado', 'damage');
                 }
+            // ══════════════════════════════════════════════════════
+            // SHAKA DE VIRGO
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'kan_shaka') {
+                // SHAKA — Kān: Buff Provocación 2T + Buff Regeneración 10% 2T sobre sí mismo
+                const _kanShaka = gameState.characters[gameState.selectedCharacter];
+                if (_kanShaka) {
+                    _kanShaka.statusEffects = (_kanShaka.statusEffects || []).filter(e => !e || normAccent(e.name||'') !== 'provocacion');
+                    _kanShaka.statusEffects.push({ name: 'Provocacion', type: 'buff', duration: 2, emoji: '🛡️' });
+                    _kanShaka.statusEffects = (_kanShaka.statusEffects || []).filter(e => !e || normAccent(e.name||'') !== 'regeneracion');
+                    _kanShaka.statusEffects.push({ name: 'Regeneracion', type: 'buff', duration: 2, percent: 10, emoji: '💖' });
+                    addLog('✨ Kān: ' + charName + ' gana Provocación 2T y Regeneración 10% 2T', 'buff');
+                }
+
+            } else if (ability.effect === 'octavo_sentido_shaka') {
+                // SHAKA — Octavo Sentido: equipo aliado genera 1 carga por cada debuff activo en AMBOS equipos
+                const _osShaka = gameState.characters[gameState.selectedCharacter];
+                if (_osShaka) {
+                    const _osMyTeam = _osShaka.team;
+                    let _osTotalDebuffs = 0;
+                    for (const _osN in gameState.characters) {
+                        const _osC = gameState.characters[_osN];
+                        if (!_osC || _osC.isDead || _osC.hp <= 0) continue;
+                        _osTotalDebuffs += (_osC.statusEffects || []).filter(e => e && e.type === 'debuff').length;
+                    }
+                    if (_osTotalDebuffs === 0) {
+                        addLog('✨ Octavo Sentido: No hay debuffs activos en ningún equipo', 'info');
+                    } else {
+                        for (const _osAllyN in gameState.characters) {
+                            const _osAlly = gameState.characters[_osAllyN];
+                            if (!_osAlly || _osAlly.isDead || _osAlly.hp <= 0 || _osAlly.team !== _osMyTeam) continue;
+                            _osAlly.charges = Math.min(20, (_osAlly.charges || 0) + _osTotalDebuffs);
+                            addLog('✨ Octavo Sentido: ' + _osAllyN + ' genera ' + _osTotalDebuffs + ' carga' + (_osTotalDebuffs > 1 ? 's' : '') + ' (' + _osTotalDebuffs + ' debuffs activos)', 'buff');
+                        }
+                    }
+                }
+
+            } else if (ability.effect === 'ohm_shaka') {
+                // SHAKA — Ohm: equipo aliado recupera 2 HP por cada debuff activo en AMBOS equipos
+                const _ohmShaka = gameState.characters[gameState.selectedCharacter];
+                if (_ohmShaka) {
+                    const _ohmMyTeam = _ohmShaka.team;
+                    let _ohmTotalDebuffs = 0;
+                    for (const _ohmN in gameState.characters) {
+                        const _ohmC = gameState.characters[_ohmN];
+                        if (!_ohmC || _ohmC.isDead || _ohmC.hp <= 0) continue;
+                        _ohmTotalDebuffs += (_ohmC.statusEffects || []).filter(e => e && e.type === 'debuff').length;
+                    }
+                    if (_ohmTotalDebuffs === 0) {
+                        addLog('✨ Ohm: No hay debuffs activos en ningún equipo', 'info');
+                    } else {
+                        const _ohmHealAmt = _ohmTotalDebuffs * 2;
+                        for (const _ohmAllyN in gameState.characters) {
+                            const _ohmAlly = gameState.characters[_ohmAllyN];
+                            if (!_ohmAlly || _ohmAlly.isDead || _ohmAlly.hp <= 0 || _ohmAlly.team !== _ohmMyTeam) continue;
+                            const _ohmOldHp = _ohmAlly.hp;
+                            _ohmAlly.hp = Math.min(_ohmAlly.maxHp, _ohmAlly.hp + _ohmHealAmt);
+                            const _ohmHealed = _ohmAlly.hp - _ohmOldHp;
+                            if (_ohmHealed > 0) {
+                                addLog('✨ Ohm: ' + _ohmAllyN + ' recupera ' + _ohmHealed + ' HP (' + _ohmTotalDebuffs + ' debuffs × 2)', 'heal');
+                                if (_ohmAllyN === charName && typeof triggerShakaHealDebuff === 'function') {
+                                    triggerShakaHealDebuff(charName);
+                                }
+                            }
+                        }
+                    }
+                }
+
+            } else if (ability.effect === 'tenmaku_horin_shaka') {
+                // SHAKA — Tenmaku Hōrin: 8 daño ST + 3 debuffs aleatorios al objetivo
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('✨ Tenmaku Hōrin: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                const _thTarget = gameState.characters[targetName];
+                if (_thTarget && !_thTarget.isDead && _thTarget.hp > 0) {
+                    const _thNonStack = ['miedo','confusion','posesion','mega posesion','aturdimiento','mega aturdimiento','congelacion','mega congelacion','silenciar'];
+                    const _thDebuffPool = [
+                        { name: 'quemadura',    fn: function() { applyFlatBurn(targetName, 2, 2); } },
+                        { name: 'veneno',       fn: function() { applyPoison(targetName, 2); } },
+                        { name: 'sangrado',     fn: function() { applyBleed(targetName, 2); } },
+                        { name: 'debilitar',    fn: function() { applyWeaken(targetName, 2); } },
+                        { name: 'miedo',        fn: function() { applyFear(targetName, 1); } },
+                        { name: 'confusion',    fn: function() { applyConfusion(targetName, 1); } },
+                        { name: 'aturdimiento', fn: function() { applyStun(targetName, 1); } },
+                        { name: 'congelacion',  fn: function() { applyFreeze(targetName, 1); } },
+                        { name: 'agotamiento',  fn: function() { applyAgotamiento(targetName, 2); } },
+                        { name: 'silenciar',    fn: function() { applySilenciar(targetName, 1); } },
+                    ];
+                    const _thAvailable = _thDebuffPool.filter(function(d) {
+                        if (_thNonStack.includes(d.name) && (_thTarget.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === d.name; })) return false;
+                        return true;
+                    }).sort(function() { return Math.random() - 0.5; });
+                    const _thApply = _thAvailable.slice(0, 3);
+                    const _thNames = [];
+                    _thApply.forEach(function(d) { d.fn(); _thNames.push(d.name); });
+                    addLog('✨ Tenmaku Hōrin: ' + targetName + ' recibe ' + _thNames.map(function(n){ return n.charAt(0).toUpperCase()+n.slice(1); }).join(', '), 'debuff');
+                }
+
             } else if (ability.effect === 'genjutsu_itachi') {
                 // ITACHI — Genjutsu: 50% Agotamiento + 50% Posesión, +1 carga por debuff aplicado
                 const _gjAtk = gameState.characters[gameState.selectedCharacter];
