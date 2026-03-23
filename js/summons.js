@@ -906,7 +906,7 @@
             // PASIVA TESORO DEL CIELO (Shaka de Virgo): al recibir daño cura 1 HP a todos los aliados
             if (remainingDamage > 0 && !passiveExecuting) {
                 const _stkDmgTarget = gameState.characters[targetName];
-                if (_stkDmgTarget && _stkDmgTarget.hp >= 0 && !_stkDmgTarget.isDead) {
+                if (_stkDmgTarget && !_stkDmgTarget.isDead) {
                     for (const _stkName in gameState.characters) {
                         const _stkChar = gameState.characters[_stkName];
                         if (!_stkChar || _stkChar.isDead || _stkChar.hp <= 0) continue;
@@ -921,7 +921,6 @@
                             _stkAlly.hp = Math.min(_stkAlly.maxHp, _stkAlly.hp + 1);
                             if (_stkAlly.hp > _stkHpBefore) {
                                 addLog('✨ Tesoro del Cielo: ' + _stkAllyName + ' recupera 1 HP', 'heal');
-                                // Sub-pasiva: cuando Shaka recupera HP, aplica debuff aleatorio a enemigo aleatorio
                                 if (_stkAllyName === _stkName) {
                                     if (typeof triggerShakaHealDebuff === 'function') triggerShakaHealDebuff(_stkName);
                                 }
@@ -1233,7 +1232,6 @@ function applyRegeneration(targetName, amount, duration) {
         }
 
         function triggerShakaHealDebuff(shakaName) {
-            // Tesoro del Cielo sub-pasiva: cuando Shaka recupera HP, aplica debuff aleatorio a enemigo aleatorio
             const shaka = gameState.characters[shakaName];
             if (!shaka || shaka.isDead || shaka.hp <= 0) return;
             const enemyTeam = shaka.team === 'team1' ? 'team2' : 'team1';
