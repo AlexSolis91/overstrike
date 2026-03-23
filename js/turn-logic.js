@@ -1404,6 +1404,78 @@
                 // PASIVA PROGENITOR DEMONIACO (Muzan): cura al inicio de cada ronda
                 triggerMuzanPassive();
 
+                // PASIVA MENTE BRILLANTE (Ivar the Boneless): buff aleatorio a cada aliado al inicio de ronda
+                (function() {
+                    const _ivar = gameState.characters['Ivar the Boneless'];
+                    if (!_ivar || _ivar.isDead || _ivar.hp <= 0) return;
+                    // Esquiva Área permanente
+                    if (!(_ivar.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'esquiva area')) {
+                        _ivar.statusEffects = (_ivar.statusEffects||[]);
+                        _ivar.statusEffects.push({ name: 'Esquiva Area', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '💨' });
+                    }
+                    const _ivarBuffPool = ['Frenesi','Furia','Concentracion','Contraataque','Celeridad'];
+                    for (const _an in gameState.characters) {
+                        const _a = gameState.characters[_an];
+                        if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _ivar.team) continue;
+                        // 1 buff garantizado
+                        const _b1 = _ivarBuffPool[Math.floor(Math.random() * _ivarBuffPool.length)];
+                        applyBuff(_an, { name: _b1, type: 'buff', duration: 1, emoji: '✨' });
+                        addLog('🪓 Mente Brillante: ' + _an + ' recibe Buff ' + _b1, 'buff');
+                        // 50% de probabilidad de un segundo buff
+                        if (Math.random() < 0.50) {
+                            const _b2 = _ivarBuffPool[Math.floor(Math.random() * _ivarBuffPool.length)];
+                            applyBuff(_an, { name: _b2, type: 'buff', duration: 1, emoji: '✨' });
+                            addLog('🪓 Mente Brillante (50%): ' + _an + ' recibe Buff extra ' + _b2, 'buff');
+                        }
+                    }
+                })();
+
+                // PASIVA SEÑOR DE LOS NAZGUL (Rey Brujo): Megaprovoción permanente + Infectar permanente
+                (function() {
+                    for (const _rbn in gameState.characters) {
+                        const _rb = gameState.characters[_rbn];
+                        if (!_rb || _rb.isDead || _rb.hp <= 0) continue;
+                        if (!_rb.passive || _rb.passive.name !== 'Señor de los Nazgul') continue;
+                        // MegaProvocación permanente
+                        if (!(_rb.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'megaprovocacion')) {
+                            _rb.statusEffects = (_rb.statusEffects||[]);
+                            _rb.statusEffects.push({ name: 'Megaprovocacion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '⚡' });
+                        }
+                        // Infectar permanente: al inicio de ronda aplica Veneno 1T a todos los enemigos
+                        const _rbEnemyTeam = _rb.team === 'team1' ? 'team2' : 'team1';
+                        for (const _en in gameState.characters) {
+                            const _ec = gameState.characters[_en];
+                            if (!_ec || _ec.isDead || _ec.hp <= 0 || _ec.team !== _rbEnemyTeam) continue;
+                            applyPoison(_en, 1);
+                        }
+                        addLog('💀 Infectar (Rey Brujo): Veneno 1T aplicado a todos los enemigos', 'debuff');
+                    }
+                })();
+
+                // PASIVA LO'GOSH (Varian Wrynn): al caer bajo 30% HP activa Regen 10% 3T al equipo
+                (function() {
+                    for (const _vrn in gameState.characters) {
+                        const _vr = gameState.characters[_vrn];
+                        if (!_vr || _vr.isDead || _vr.hp <= 0) continue;
+                        if (!_vr.passive || _vr.passive.name !== 'Lo\'gosh') continue;
+                        if (_vr.varianLowHpBuffTriggered) continue;
+                        if (_vr.hp / _vr.maxHp < 0.30) {
+                            _vr.varianLowHpBuffTriggered = true;
+                            for (const _an in gameState.characters) {
+                                const _a = gameState.characters[_an];
+                                if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _vr.team) continue;
+                                _a.statusEffects = (_a.statusEffects||[]).filter(e => !e || normAccent(e.name||'') !== 'regeneracion');
+                                _a.statusEffects.push({ name: 'Regeneracion', type: 'buff', duration: 3, percent: 10, emoji: '💖' });
+                            }
+                            addLog('⚔️ Lo\'gosh: ¡Varian bajo 30% HP! Equipo aliado recibe Regeneración 10% 3T', 'buff');
+                        }
+                        // Resetear flag si sube de HP (por curación)
+                        if (_vr.hp / _vr.maxHp >= 0.30 && _vr.varianLowHpBuffTriggered) {
+                            _vr.varianLowHpBuffTriggered = false;
+                        }
+                    }
+                })();
+
                 // RAMESSEUM TENTYRIS: aplica QS a enemigos sin QS
                 triggerRamesseumPassive();
 
