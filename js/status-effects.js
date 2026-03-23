@@ -73,6 +73,13 @@
                 triggerDaenerysPassiveBurnHeal('Daenerys Targaryen');
                 return;
             }
+            // DONCELLA ESCUDERA (Lagertha): 50% de esquivar Quemadura
+            if (target.passive && target.passive.name === 'Doncella Escudera') {
+                if (Math.random() < 0.50) {
+                    addLog('🛡️ Doncella Escudera: Lagertha esquiva Quemadura (50%)', 'buff');
+                    return;
+                }
+            }
             if (hasStatusEffect(targetName, 'Proteccion Sagrada') || hasStatusEffect(targetName, 'Protección Sagrada')) {
                 addLog('🛡️ ' + targetName + ' es inmune a Quemadura (Protección Sagrada)', 'buff');
                 return;
@@ -136,17 +143,29 @@ function processBurnEffects(charName) {
             const char = gameState.characters[charName];
             if (!char || !char.statusEffects) return;
 
-            // VENENO: stackeable — cada stack hace daño creciente por turno
-            const allPoison = char.statusEffects.filter(e => e && normAccent(e.name||'') === 'veneno');
-            if (allPoison.length > 0) {
-                let totalVenenoDmg = 0;
-                let hasChargeDrain = false;
-                allPoison.forEach(function(poisonEffect) {
-                    poisonEffect.poisonTick = (poisonEffect.poisonTick || 0) + 1;
-                    totalVenenoDmg += poisonEffect.poisonTick;
-                    if (poisonEffect.poisonChargeDrain) hasChargeDrain = true;
-                });
+            // VENENO: un solo stack consolidado con daño progresivo por continuidad
+            const poisonEffect = char.statusEffects.find(e => e && normAccent(e.name||'') === 'veneno');
+            if (poisonEffect) {
+                poisonEffect.poisonTick = (poisonEffect.poisonTick || 0) + 1;
+                let totalVenenoDmg = poisonEffect.poisonTick;
+                const hasChargeDrain = !!poisonEffect.poisonChargeDrain;
+
+                // PILAR DEL INSECTO (Shinobu Kocho): Veneno activo en enemigos causa daño doble
+                if (!passiveExecuting) {
+                    const _shinTeam = char.team === 'team1' ? 'team2' : 'team1';
+                    for (const _sn in gameState.characters) {
+                        const _sc = gameState.characters[_sn];
+                        if (!_sc || _sc.isDead || _sc.hp <= 0 || _sc.team !== _shinTeam) continue;
+                        if (_sc.passive && _sc.passive.name === 'Pilar del Insecto') {
+                            totalVenenoDmg *= 2;
+                            addLog('🦋 Pilar del Insecto: Veneno daño doble (' + totalVenenoDmg + ')', 'damage');
+                            break;
+                        }
+                    }
+                }
+
                 applyDamageWithShield(charName, totalVenenoDmg, null);
+
                 // ANARQUÍA (Joker): 50% stun when a character takes poison damage
                 if (!passiveExecuting) {
                     const _jkrChar = gameState.characters[charName];
@@ -164,12 +183,26 @@ function processBurnEffects(charName) {
                         }
                     }
                 }
-                addLog('☠️ ' + charName + ' recibe ' + totalVenenoDmg + ' de daño por Veneno', 'damage');
+                addLog('☠️ ' + charName + ' recibe ' + totalVenenoDmg + ' de daño por Veneno (tick ' + poisonEffect.poisonTick + ')', 'damage');
+
+                // PILAR DEL INSECTO (Shinobu): genera 1 carga al equipo aliado cuando Shinobu recibe daño de Veneno
+                if (!passiveExecuting) {
+                    const _shinSelf = gameState.characters[charName];
+                    if (_shinSelf && (_shinSelf.passive && _shinSelf.passive.name === 'Pilar del Insecto')) {
+                        for (const _an in gameState.characters) {
+                            const _a = gameState.characters[_an];
+                            if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _shinSelf.team) continue;
+                            _a.charges = Math.min(20, (_a.charges||0) + 1);
+                        }
+                        addLog('🦋 Pilar del Insecto: Equipo aliado genera 1 carga (Shinobu recibió daño de Veneno)', 'buff');
+                    }
+                }
+
                 // PROGENITOR DEMONIACO (Muzan): genera 1 carga cuando veneno hace daño
                 const muzanP = gameState.characters['Muzan Kibutsuji'];
                 if (muzanP && !muzanP.isDead && muzanP.hp > 0 && muzanP.team !== (gameState.characters[charName] && gameState.characters[charName].team)) {
                     muzanP.charges = Math.min(20, (muzanP.charges || 0) + 1);
-                    addLog('🩸 Progenitor Demoniaco: Muzan genera 1 carga (veneno activo)', 'buff');
+                    addLog('🧛‍♂️ Progenitor Demoniaco: Muzan genera 1 carga (veneno activo)', 'buff');
                 }
                 // LAZO DIVINO (Goku Black): 50% chance de drenar 2 cargas por tick
                 if (hasChargeDrain && Math.random() < 0.5) {
