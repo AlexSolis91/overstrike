@@ -563,6 +563,12 @@
         }
 
         function applyDamageWithShield(targetName, damage, attackerName = null) {
+            // Si el targetName es un summon especial (__summon__:id), redirigir a applySummonDamage
+            if (typeof targetName === 'string' && targetName.startsWith('__summon__:')) {
+                const _sumId = targetName.slice(11);
+                return applySummonDamage(_sumId, damage, attackerName);
+            }
+
             const target = gameState.characters[targetName];
             if (!target) return 0;
 
@@ -674,8 +680,7 @@
             
             // PROTECCION SAGRADA: inmune a nuevos debuffs (handled in applyDebuff)
             // Also: blocks incoming HP DAMAGE from golpes (physical hits)
-            if (attackerName !== null && hasStatusEffect(targetName, 'Proteccion Sagrada') || 
-                (attackerName !== null && hasStatusEffect(targetName, 'Protección Sagrada'))) {
+            if (attackerName !== null && (hasStatusEffect(targetName, 'Proteccion Sagrada') || hasStatusEffect(targetName, 'Protección Sagrada'))) {
                 addLog('🛡️ Protección Sagrada: ' + targetName + ' es inmune al daño de golpe', 'buff');
                 return 0;
             }
@@ -894,6 +899,42 @@
                 if ((targetName === 'Ikki de Fenix' || targetName === 'Ikki de Fenix v2')) {
                     target.deathRound = gameState.currentRound;
                     target.fenixRevived = false;
+                }
+
+                // PASIVA PILAR DEL INSECTO (Shinobu Kocho): al morir aplica Veneno 10T al equipo enemigo
+                if ((targetName === 'Shinobu Kocho' || targetName === 'Shinobu Kocho v2') && !passiveExecuting) {
+                    passiveExecuting = true;
+                    const _shinEnemyTeam = target.team === 'team1' ? 'team2' : 'team1';
+                    for (const _sn in gameState.characters) {
+                        const _sc = gameState.characters[_sn];
+                        if (!_sc || _sc.isDead || _sc.hp <= 0 || _sc.team !== _shinEnemyTeam) continue;
+                        applyPoison(_sn, 10);
+                        addLog('🦋 Pilar del Insecto: ' + _sn + ' recibe Veneno 10T al morir Shinobu', 'debuff');
+                    }
+                    passiveExecuting = false;
+                }
+            }
+
+            // PASIVA DONCELLA ESCUDERA (Lagertha): cuando un enemigo con Sangrado recibe golpe, Lagertha gana Escudo 1 HP
+            if (remainingDamage > 0 && attackerName && !passiveExecuting) {
+                const _ldTarget = gameState.characters[targetName];
+                if (_ldTarget && !_ldTarget.isDead) {
+                    const _ldHasBleeding = (_ldTarget.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'sangrado');
+                    if (_ldHasBleeding) {
+                        // Buscar Lagertha en el equipo atacante
+                        const _ldAttacker = gameState.characters[attackerName];
+                        if (_ldAttacker) {
+                            for (const _lgn in gameState.characters) {
+                                const _lgc = gameState.characters[_lgn];
+                                if (!_lgc || _lgc.isDead || _lgc.hp <= 0) continue;
+                                if (_lgc.team !== _ldAttacker.team) continue;
+                                if (!_lgc.passive || _lgc.passive.name !== 'Doncella Escudera') continue;
+                                _lgc.shield = (_lgc.shield || 0) + 1;
+                                addLog('🛡️ Doncella Escudera: Lagertha gana +1 Escudo (enemigo con Sangrado golpeado)', 'buff');
+                                break;
+                            }
+                        }
+                    }
                 }
             }
 
