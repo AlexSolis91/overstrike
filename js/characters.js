@@ -560,5 +560,67 @@
                     { name: 'Ohm', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'self', effect: 'ohm_shaka', description: 'El equipo aliado recupera 2 HP por cada debuff activo en ambos equipos.' },
                     { name: 'Tenmaku Hōrin', type: 'over', cost: 10, chargeGain: 0, damage: 8, target: 'single', effect: 'tenmaku_horin_shaka', description: 'Causa 8 de daño. Aplica 3 debuffs aleatorios al objetivo.' }
                 ]
+            },
+            'Varian Wrynn': {
+                hp: 25, maxHp: 25, speed: 86, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                varianTransformed: false, varianConsecutiveBasic: 0, varianBasicDmgBonus: 0, varianBasicChargeBonus: 0,
+                portrait: 'https://i.ibb.co/n8KBNCZw/Whats-App-Image-2026-03-23-at-1-55-56-PM.jpg',
+                transformPortrait: 'https://i.ibb.co/V0JBR339/Whats-App-Image-2026-03-23-at-1-56-15-PM.jpg',
+                passive: { name: 'Lo\'gosh', description: 'Varian Wrynn tiene 50% de probabilidad de crítico en todas sus habilidades. Al caer por debajo del 30% de HP, aplica Buff Regeneración 10% por 3 turnos al equipo aliado.' },
+                abilities: [
+                    { name: 'Filotormenta', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'aoe', effect: 'filotormenta_varian', description: 'Causa 1 AOE. Cada vez que se usa consecutivamente, causa +1 daño adicional y genera +1 carga.' },
+                    { name: 'Grito de Guerra', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'ally_aoe', effect: 'grito_guerra_varian', description: 'Genera 1 carga al equipo aliado por cada enemigo con debuff Sangrado activo.' },
+                    { name: 'Por la Alianza', type: 'special', cost: 7, chargeGain: 0, damage: 4, target: 'single', effect: 'alianza_varian', description: 'Causa 4 daño. Si el objetivo tiene Sangrado, 50% de aplicar Miedo al equipo enemigo.' },
+                    { name: 'Alto Rey de la Alianza', type: 'over', cost: 12, chargeGain: 0, damage: 0, target: 'self', effect: 'alto_rey_varian', description: 'TRANSFORMACIÓN: Todos los ataques causan daño doble. Incrementa velocidad +10 al equipo aliado. Filotormenta gana +1 daño adicional y +1 carga.' }
+                ]
+            },
+            'Ivar the Boneless': {
+                hp: 15, maxHp: 15, speed: 85, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/sv9w4j9r/Ragnar-Viking-in-2022-Vikings-ragnar-Bjorn-vikings-Vikings.jpg',
+                passive: { name: 'Mente Brillante', description: 'Efecto pasivo Esquiva Área. Inmune a debuffs Miedo, Confusión y Posesión. Al inicio de cada Ronda aplica 1 buff aleatorio a cada aliado del equipo. Al inicio de cada Ronda, 50% de probabilidad de aplicar 1 buff aleatorio adicional a cada aliado.' },
+                abilities: [
+                    { name: 'Subestimación', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'subestimacion_ivar', description: 'Ignora Provocación, Mega Provocación y Sigilo. Si el objetivo tiene Sangrado, daño triple.' },
+                    { name: 'Estrategia Despiadada', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'aoe', effect: 'estrategia_ivar', description: '50% de eliminar 2 cargas al equipo enemigo. 50% de reducir 10% velocidad al equipo enemigo. 50% de generar 2 cargas al equipo aliado. 50% de aumentar 10% velocidad al equipo aliado.' },
+                    { name: 'Ragnarson', type: 'special', cost: 8, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'ragnarson_ivar', description: 'Otorga 1 carga al objetivo aliado por cada buff y debuff activo en ambos equipos.' },
+                    { name: 'Furia de la Serpiente', type: 'over', cost: 12, chargeGain: 0, damage: 5, target: 'aoe', effect: 'furia_serpiente_ivar', description: 'Causa 5 AOE. Aplica 1 buff aleatorio a cada aliado por cada debuff activo en el equipo enemigo. 50% de Megaposesión a cada enemigo.' }
+                ]
+            },
+            'Lagertha': {
+                hp: 25, maxHp: 25, speed: 80, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/WWWHbctz/Captura-de-pantalla-2026-03-23-135145.png',
+                passive: { name: 'Doncella Escudera', description: 'Cada vez que un enemigo con Sangrado recibe un golpe, Lagertha genera Buff Escudo de 1 HP. Lagertha tiene 50% de probabilidad de esquivar debuff Quemadura y Veneno.' },
+                abilities: [
+                    { name: 'Hacha y Escudo', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'single', effect: 'hacha_escudo_lagertha', description: 'Causa 1 daño. Lagertha se aplica Buff Provocación. 50% de que Lagertha se aplica Buff Reflejar.' },
+                    { name: 'Muro de Escudo', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'ally_aoe', effect: 'muro_escudo_lagertha', description: 'Aplica Buff Escudo de 5 HP al equipo aliado. Aplica Buff Protección Sagrada al equipo aliado por 2 turnos.' },
+                    { name: 'Furia de Freya', type: 'special', cost: 7, chargeGain: 0, damage: 2, target: 'single', effect: 'furia_freya_lagertha', description: 'Causa daño directo: 2 + 1 adicional por cada punto de escudo que tenga el objetivo.' },
+                    { name: 'Valquiria', type: 'over', cost: 12, chargeGain: 0, damage: 0, target: 'single', effect: 'valquiria_lagertha', description: 'El equipo aliado ataca con su básico al objetivo (generando cargas y efectos). Aplica Buff Asistir al equipo aliado por 3 turnos.' }
+                ]
+            },
+            'Shinobu Kocho': {
+                hp: 15, maxHp: 15, speed: 82, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/NgbypqWC/Whats-App-Image-2026-03-23-at-1-48-34-PM.jpg',
+                passive: { name: 'Pilar del Insecto', description: 'Al morir aplica Veneno 10 turnos al equipo enemigo. Debuffs Veneno activos en enemigos causan daño doble. Cada vez que Shinobu recibe daño por Veneno, genera 1 carga al equipo aliado.' },
+                abilities: [
+                    { name: 'Danza de la Mariposa', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'self', effect: 'danza_mariposa_shinobu', description: 'Shinobu se aplica Veneno 2 turnos. Shinobu se aplica Buff Concentración 2 turnos.' },
+                    { name: 'Aguijón de Abeja', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'ally_aoe', effect: 'aguijon_abeja_shinobu', description: 'Cura 2 HP al equipo aliado. Cura 2 HP adicionales por cada Veneno activo en el equipo enemigo.' },
+                    { name: 'Ojo Hexagonal Compuesto', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'multi', effect: 'ojo_hexagonal_shinobu', description: 'Golpea 5 veces a enemigos aleatorios. Por cada golpe a objetivo con Veneno: cura 2 HP y genera 2 cargas al equipo aliado.' },
+                    { name: 'Danza del Ciempiés', type: 'over', cost: 12, chargeGain: 0, damage: 0, target: 'multi', effect: 'danza_ciempies_shinobu', description: 'Golpea 10 veces a enemigos aleatorios. Al golpear aplica Veneno 3 turnos. Por cada Veneno aplicado: cura 3 HP y genera 3 cargas a un aliado aleatorio.' }
+                ]
+            },
+            'Rey Brujo de Angmar': {
+                hp: 30, maxHp: 30, speed: 75, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/VctBXdtg/Whats-App-Image-2026-03-23-at-1-45-05-PM.jpg',
+                passive: { name: 'Señor de los Nazgul', description: 'Inmune a debuffs Miedo y Confusión. Buff Megaprovoción permanente. Efecto pasivo Infectar.' },
+                abilities: [
+                    { name: 'Espada Morgul', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'espada_morgul_rba', description: 'Causa 2 daño. Aplica Veneno 1 turno. Si el objetivo ya tenía Veneno, el Rey Brujo gana Buff Esquiva Área 2 turnos.' },
+                    { name: 'Grito de Mordor', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'aoe', effect: 'grito_mordor_rba', description: 'Aplica Silenciar al equipo enemigo. 50% de eliminar 2 cargas a cada enemigo con Veneno activo.' },
+                    { name: 'Corona de Hierro', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'self', effect: 'corona_hierro_rba', description: 'Cura al Rey Brujo y a un aliado aleatorio 2 HP por cada Veneno activo en ambos equipos.' },
+                    { name: 'Mano de Sauron', type: 'over', cost: 17, chargeGain: 0, damage: 0, target: 'aoe', effect: 'mano_sauron_rba', description: 'Limpia todos los debuffs Veneno del equipo enemigo y causa daño equivalente a los turnos restantes de cada Veneno eliminado.' }
+                ]
             }
         };
