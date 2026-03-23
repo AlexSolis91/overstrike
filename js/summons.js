@@ -674,13 +674,12 @@
             
             // PROTECCION SAGRADA: inmune a nuevos debuffs (handled in applyDebuff)
             // Also: blocks incoming HP DAMAGE from golpes (physical hits)
-            if (attackerName !== null && (hasStatusEffect(targetName, 'Proteccion Sagrada') || hasStatusEffect(targetName, 'Protección Sagrada'))) {
+            if (attackerName !== null && hasStatusEffect(targetName, 'Proteccion Sagrada') || 
+                (attackerName !== null && hasStatusEffect(targetName, 'Protección Sagrada'))) {
                 addLog('🛡️ Protección Sagrada: ' + targetName + ' es inmune al daño de golpe', 'buff');
                 return 0;
             }
-            // ESCUDO SAGRADO: bloquea todo el daño de golpes (no efectos de estado ni daño directo)
-            // attackerName !== null → daño por golpe de un personaje/invocación → bloqueado
-            // attackerName === null → daño directo (efectos, debuffs, habilidades directas) → pasa
+            // ESCUDO SAGRADO: bloquea todo el daño de golpes (no efectos de estado)
             if (attackerName !== null && hasStatusEffect(targetName, 'Escudo Sagrado')) {
                 addLog(`✝️ Escudo Sagrado de ${targetName} bloqueó el golpe de ${attackerName}`, 'buff');
                 return 0;
@@ -902,6 +901,36 @@
             if (attackerName && remainingDamage > 0) {
                 if (!gameState._lastAttacker) gameState._lastAttacker = {};
                 gameState._lastAttacker[targetName] = attackerName;
+            }
+
+            // PASIVA TESORO DEL CIELO (Shaka de Virgo): al recibir daño cura 1 HP a todos los aliados
+            if (remainingDamage > 0 && !passiveExecuting) {
+                const _stkDmgTarget = gameState.characters[targetName];
+                if (_stkDmgTarget && _stkDmgTarget.hp >= 0 && !_stkDmgTarget.isDead) {
+                    for (const _stkName in gameState.characters) {
+                        const _stkChar = gameState.characters[_stkName];
+                        if (!_stkChar || _stkChar.isDead || _stkChar.hp <= 0) continue;
+                        if (_stkChar.team !== _stkDmgTarget.team) continue;
+                        if (!_stkChar.passive || _stkChar.passive.name !== 'Tesoro del Cielo') continue;
+                        passiveExecuting = true;
+                        const _stkTeam = _stkDmgTarget.team;
+                        for (const _stkAllyName in gameState.characters) {
+                            const _stkAlly = gameState.characters[_stkAllyName];
+                            if (!_stkAlly || _stkAlly.isDead || _stkAlly.hp <= 0 || _stkAlly.team !== _stkTeam) continue;
+                            const _stkHpBefore = _stkAlly.hp;
+                            _stkAlly.hp = Math.min(_stkAlly.maxHp, _stkAlly.hp + 1);
+                            if (_stkAlly.hp > _stkHpBefore) {
+                                addLog('✨ Tesoro del Cielo: ' + _stkAllyName + ' recupera 1 HP', 'heal');
+                                // Sub-pasiva: cuando Shaka recupera HP, aplica debuff aleatorio a enemigo aleatorio
+                                if (_stkAllyName === _stkName) {
+                                    if (typeof triggerShakaHealDebuff === 'function') triggerShakaHealDebuff(_stkName);
+                                }
+                            }
+                        }
+                        passiveExecuting = false;
+                        break;
+                    }
+                }
             }
 
             // Disparar pasivas post-golpe si el objetivo sigue vivo
@@ -1201,4 +1230,34 @@ function applyRegeneration(targetName, amount, duration) {
             const randomAlly = aliveAllies[Math.floor(Math.random() * aliveAllies.length)];
             gameState.characters[randomAlly].charges = Math.min(20, (gameState.characters[randomAlly].charges || 0) + 2);
             addLog('✨ Bendición Sagrada: ' + randomAlly + ' genera 2 cargas (aliado recuperó HP)', 'buff');
+        }
+
+        function triggerShakaHealDebuff(shakaName) {
+            // Tesoro del Cielo sub-pasiva: cuando Shaka recupera HP, aplica debuff aleatorio a enemigo aleatorio
+            const shaka = gameState.characters[shakaName];
+            if (!shaka || shaka.isDead || shaka.hp <= 0) return;
+            const enemyTeam = shaka.team === 'team1' ? 'team2' : 'team1';
+            const enemies = Object.keys(gameState.characters).filter(function(n) {
+                const c = gameState.characters[n];
+                return c && c.team === enemyTeam && !c.isDead && c.hp > 0;
+            });
+            if (enemies.length === 0) return;
+            const target = enemies[Math.floor(Math.random() * enemies.length)];
+            applyRandomDebuffShaka(target);
+        }
+
+        function applyRandomDebuffShaka(targetName) {
+            const _stkDebuffPool = [
+                function() { applyFlatBurn(targetName, 2, 2); addLog('✨ Tesoro del Cielo: ' + targetName + ' recibe Quemadura', 'debuff'); },
+                function() { applyPoison(targetName, 2); addLog('✨ Tesoro del Cielo: ' + targetName + ' recibe Veneno', 'debuff'); },
+                function() { applyBleed(targetName, 2); addLog('✨ Tesoro del Cielo: ' + targetName + ' recibe Sangrado', 'debuff'); },
+                function() { applyWeaken(targetName, 2); addLog('✨ Tesoro del Cielo: ' + targetName + ' recibe Debilitar', 'debuff'); },
+                function() { applyFear(targetName, 1); addLog('✨ Tesoro del Cielo: ' + targetName + ' recibe Miedo', 'debuff'); },
+                function() { applyConfusion(targetName, 1); addLog('✨ Tesoro del Cielo: ' + targetName + ' recibe Confusión', 'debuff'); },
+                function() { applyStun(targetName, 1); addLog('✨ Tesoro del Cielo: ' + targetName + ' recibe Aturdimiento', 'debuff'); },
+                function() { applyFreeze(targetName, 1); addLog('✨ Tesoro del Cielo: ' + targetName + ' recibe Congelación', 'debuff'); },
+                function() { applyAgotamiento(targetName, 2); addLog('✨ Tesoro del Cielo: ' + targetName + ' recibe Agotamiento', 'debuff'); },
+            ];
+            const chosen = _stkDebuffPool[Math.floor(Math.random() * _stkDebuffPool.length)];
+            chosen();
         }
