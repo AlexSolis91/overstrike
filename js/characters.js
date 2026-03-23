@@ -268,13 +268,14 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 muzanTransformed: false,
                 portrait: 'https://i.postimg.cc/fL41fCgH/Captura_de_pantalla_2026_02_28_020016.png',
-                transformationPortrait: 'https://i.postimg.cc/nM8HxvTD/Whats_App_Image_2026_03_03_at_3_29_34_PM.jpg',
+                transformPortrait: 'https://i.ibb.co/RTtv2Ytc/descarga-9.jpg',
+                transformationPortrait: 'https://i.ibb.co/RTtv2Ytc/descarga-9.jpg',
                 passive: { name: 'Progenitor Demoniaco', description: 'Al pricipio de cada ronda, Muzan aplica Curacion de 2 HP a Muzan y 1 HP a un aliado aleatorio. Cada vez que un debuff Veneno haga daño, Muzan genera 1 punto de carga.' },
                 abilities: [
                     { name: 'Espinas de Sangre', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'apply_poison', poisonDuration: 2, description: 'Causa 2 de daño. Se aplica Debuff Veneno al objetivo por 2 turnos.' },
                     { name: 'Sangre Demoniaca', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'single', effect: 'sangre_demoniaca', poisonDuration: 3, heal: 3, description: 'Causa 3 de daño. Aplica Debuff Veneno en el objetivo por 3 turnos. Aplica Curación a Muzan por 3 HP.' },
                     { name: 'Sombra de la Noche', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'aoe', effect: 'sombra_noche', poisonDuration: 3, description: 'Causa 3 AOE. Aplica Buff Sigilo por 2 turnos. Aplica Debuff Veneno por 3 turnos.' },
-                    { name: 'Rey de los Demonios Definitivo', type: 'over', cost: 12, chargeGain: 0, damage: 1, target: 'aoe', effect: 'muzan_transformation', description: 'TRANSFORMACIÓN: Causa 1 AOE. Aplica Debuff Veneno por 5 turnos. Aplica Buff Regeneración de 30% por 5 turnos. Aumenta su celeridad 20%. Aumenta su probabilidad de crítico 70%.' }
+                    { name: 'Rey de los Demonios Definitivo', type: 'over', cost: 12, chargeGain: 0, damage: 1, target: 'aoe', effect: 'muzan_transform', description: 'TRANSFORMACIÓN: Causa 1 AOE. Aplica Debuff Veneno por 5 turnos. Aplica Buff Regeneración de 30% por 5 turnos. Aumenta su celeridad 20%. Aumenta su probabilidad de crítico 70%.' }
                 ]
             },
 
