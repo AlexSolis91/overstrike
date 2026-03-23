@@ -547,5 +547,17 @@
                     { name: 'Tempestad de Jord', type: 'special', cost: 6, chargeGain: 0, damage: 2, target: 'single', effect: 'tempestad_jord_kratos', description: 'Causa 2 daño. Si el objetivo tiene Sangrado, daño triple. 50% de golpe crítico.' },
                     { name: 'Ira de Kratos', type: 'over', cost: 12, chargeGain: 0, damage: 7, target: 'aoe', effect: 'ira_kratos', description: 'Causa 7 AOE. 10% de probabilidad de eliminar al enemigo golpeado.' }
                 ]
+            },
+            'Shaka de Virgo': {
+                hp: 30, maxHp: 30, speed: 90, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/5XNLm2Jd/Captura-de-pantalla-2026-03-22-174706.png',
+                passive: { name: 'Tesoro del Cielo', description: 'Cada vez que Shaka de Virgo recibe daño, todos los aliados recuperan 1 HP. Cada vez que Shaka de Virgo recupera HP, aplica un debuff aleatorio en un enemigo aleatorio.' },
+                abilities: [
+                    { name: 'Kān', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'kan_shaka', description: 'Se aplica Buff Provocación por 2 turnos. Se aplica Buff Regeneración 10% por 2 turnos.' },
+                    { name: 'Octavo Sentido', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'ally_aoe', effect: 'octavo_sentido_shaka', description: 'El equipo aliado genera 1 carga por cada debuff activo en ambos equipos.' },
+                    { name: 'Ohm', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'self', effect: 'ohm_shaka', description: 'El equipo aliado recupera 2 HP por cada debuff activo en ambos equipos.' },
+                    { name: 'Tenmaku Hōrin', type: 'over', cost: 10, chargeGain: 0, damage: 8, target: 'single', effect: 'tenmaku_horin_shaka', description: 'Causa 8 de daño. Aplica 3 debuffs aleatorios al objetivo.' }
+                ]
             }
         };
