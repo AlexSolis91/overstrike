@@ -79,13 +79,15 @@
             //    no abrir el modal — reportar en log y terminar el turno ──
             if (ability.target === 'single') {
                 const sauronBypass = sauronIgnoresRestrictions();
-                const hasMegaProv = !sauronBypass && typeof checkKamishMegaProvocation === 'function' && checkKamishMegaProvocation(enemyTeam);
-                const hasProvocacion = !sauronBypass && !hasMegaProv && Object.keys(gameState.characters).some(function(n) {
+                // SUBESTIMACION (Ivar): ignora Provocación, MegaProvocación y Sigilo
+                const ivarBypass = ability.effect === 'subestimacion_ivar';
+                const hasMegaProv = !sauronBypass && !ivarBypass && typeof checkKamishMegaProvocation === 'function' && checkKamishMegaProvocation(enemyTeam);
+                const hasProvocacion = !sauronBypass && !ivarBypass && !hasMegaProv && Object.keys(gameState.characters).some(function(n) {
                     const c = gameState.characters[n];
                     return c && c.team === enemyTeam && !c.isDead && c.hp > 0 &&
                         (c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'provocacion'; });
                 });
-                if (!hasMegaProv && !hasProvocacion && !sauronBypass) {
+                if (!hasMegaProv && !hasProvocacion && !sauronBypass && !ivarBypass) {
                     // Check if every alive enemy has Sigilo
                     const aliveEnemies = Object.keys(gameState.characters).filter(function(n) {
                         const c = gameState.characters[n];
@@ -281,12 +283,13 @@
                 } else {
                     title.textContent = '🎯 Selecciona Objetivo';
                     let hasTargets = false;
+                    const ivarIgnoresStealth = ability && ability.effect === 'subestimacion_ivar';
                     
                     // Personajes enemigos
                     for (let name in gameState.characters) {
                         const char = gameState.characters[name];
                         if (char.team === targetTeam && char.hp > 0 && !char.isDead) {
-                            const hasStealth = !sauronActive && char.statusEffects && char.statusEffects.some(e => e && normAccent(e.name) === 'sigilo');
+                            const hasStealth = !sauronActive && !ivarIgnoresStealth && char.statusEffects && char.statusEffects.some(e => e && normAccent(e.name) === 'sigilo');
                             if (!hasStealth) {
                                 hasTargets = true;
                                 grid.innerHTML += makeTargetBtn(
@@ -822,6 +825,16 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 if (!attacker || !ability) {
                     console.error('executeAbilitySummon: Missing attacker or ability');
                     endTurn();
+                    return;
+                }
+                
+                // Para habilidades ST: delegar a executeAbility usando un targetName especial
+                // que apunta a la invocación. applyDamageWithShield detectará que no es un
+                // personaje y redirigirá el daño a la invocación.
+                if (ability.target === 'single') {
+                    // Guardar el summonId como target activo para que applyDamageWithShield lo resuelva
+                    gameState._activeSummonTarget = summonId;
+                    executeAbility('__summon__:' + summonId);
                     return;
                 }
                 
