@@ -23,6 +23,10 @@
                         addLog(`💖 ${charName} recuperó ${actualHeal} HP por Regeneración`, 'heal');
                         // Activar pasiva de Min Byung si está en el equipo
                         triggerBendicionSagrada(char.team, actualHeal);
+                        // TESORO DEL CIELO sub-pasiva: cuando Shaka recupera HP, aplica debuff aleatorio a enemigo aleatorio
+                        if (char.passive && char.passive.name === 'Tesoro del Cielo') {
+                            if (typeof triggerShakaHealDebuff === 'function') triggerShakaHealDebuff(charName);
+                        }
                         // HECHIZO DE SANGRE (Tamayo): 50% de confusión a enemigo aleatorio en cada tick
                         if (regen.hechizoDeSangre) {
                             if (Math.random() < 0.5) {
@@ -132,13 +136,16 @@ function processBurnEffects(charName) {
             const char = gameState.characters[charName];
             if (!char || !char.statusEffects) return;
 
-            // VENENO: un solo stack consolidado con daño progresivo por continuidad
-            // poisonTick sube cada turno que el veneno permanece activo y causa daño = poisonTick
-            const poisonEffect = char.statusEffects.find(e => e && normAccent(e.name||'') === 'veneno');
-            if (poisonEffect) {
-                poisonEffect.poisonTick = (poisonEffect.poisonTick || 0) + 1;
-                const totalVenenoDmg = poisonEffect.poisonTick;
-                const hasChargeDrain = !!poisonEffect.poisonChargeDrain;
+            // VENENO: stackeable — cada stack hace daño creciente por turno
+            const allPoison = char.statusEffects.filter(e => e && normAccent(e.name||'') === 'veneno');
+            if (allPoison.length > 0) {
+                let totalVenenoDmg = 0;
+                let hasChargeDrain = false;
+                allPoison.forEach(function(poisonEffect) {
+                    poisonEffect.poisonTick = (poisonEffect.poisonTick || 0) + 1;
+                    totalVenenoDmg += poisonEffect.poisonTick;
+                    if (poisonEffect.poisonChargeDrain) hasChargeDrain = true;
+                });
                 applyDamageWithShield(charName, totalVenenoDmg, null);
                 // ANARQUÍA (Joker): 50% stun when a character takes poison damage
                 if (!passiveExecuting) {
@@ -157,7 +164,7 @@ function processBurnEffects(charName) {
                         }
                     }
                 }
-                addLog('☠️ ' + charName + ' recibe ' + totalVenenoDmg + ' de daño por Veneno (tick ' + poisonEffect.poisonTick + ')', 'damage');
+                addLog('☠️ ' + charName + ' recibe ' + totalVenenoDmg + ' de daño por Veneno', 'damage');
                 // PROGENITOR DEMONIACO (Muzan): genera 1 carga cuando veneno hace daño
                 const muzanP = gameState.characters['Muzan Kibutsuji'];
                 if (muzanP && !muzanP.isDead && muzanP.hp > 0 && muzanP.team !== (gameState.characters[charName] && gameState.characters[charName].team)) {
