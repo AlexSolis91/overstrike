@@ -472,6 +472,18 @@ function applyDebuff(targetName, effectObj) {
             // Stackear: cada aplicación se agrega como efecto separado
             target.statusEffects.push({ name: 'Quemadura Solar', type: 'debuff', percent, duration, emoji: '☀️' });
             addLog(`☀️ ${targetName} recibe Quemadura Solar ${percent}% por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
+            // PRIVILEGIO IMPERIAL (Ozymandias): genera 1 carga cuando QS es aplicada sobre un enemigo
+            if (!passiveExecuting) {
+                for (const _ozn in gameState.characters) {
+                    const _ozc = gameState.characters[_ozn];
+                    if (!_ozc || _ozc.isDead || _ozc.hp <= 0) continue;
+                    if (!_ozc.passive || _ozc.passive.name !== 'Privilegio Imperial') continue;
+                    if (_ozc.team === target.team) continue; // Ozymandias debe ser enemigo del objetivo
+                    _ozc.charges = Math.min(20, (_ozc.charges||0) + 1);
+                    addLog('☀️ Privilegio Imperial: Ozymandias genera 1 carga (QS aplicada)', 'buff');
+                    break;
+                }
+            }
         }
 
         function applyFuria(targetName, duration) {
