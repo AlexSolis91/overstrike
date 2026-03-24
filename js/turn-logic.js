@@ -428,6 +428,25 @@
                     addLog('🐆 Cazador de Héroes: ' + gameState.selectedCharacter + ' activa Armadura 2 turnos', 'buff');
                 }
             }
+            // ── VARIAN WRYNN: resetear bonus consecutivos si el turno activo NO es de Varian ──
+            // (si Varian ya jugó pero no usó Filotormenta, el endTurn lo resetea; aquí cubrimos el caso
+            //  en que otro personaje juega su turno y luego vuelve el turno a Varian)
+            if (gameState.selectedCharacter) {
+                const _curChar = gameState.characters[gameState.selectedCharacter];
+                // Si el personaje activo es Varian, no resetear aquí (se resetea al usar habilidad no-básica)
+                // El reset de "turno interrumpido" se maneja en endTurn vía _varianUsedBasicThisTurn
+            }
+            // Resetear bonus de Varian si NO usó básico en su último turno
+            for (const _vrn in gameState.characters) {
+                const _vrc = gameState.characters[_vrn];
+                if (!_vrc || !_vrc.passive || _vrc.passive.name !== 'Lo\'gosh') continue;
+                if (_vrn !== gameState.selectedCharacter && _vrc._varianLastAbilityWasBasic === false) {
+                    _vrc.varianBasicDmgBonus = 0;
+                    _vrc.varianBasicChargeBonus = 0;
+                    _vrc.varianConsecutiveBasic = 0;
+                    _vrc._varianLastAbilityWasBasic = null;
+                }
+            }
             // Online mode: only the player whose team is active can continue
             if (onlineMode) {
                 const myTeam = isRoomHost ? 'team1' : 'team2';
@@ -1248,6 +1267,33 @@
                             _pc.statusEffects.push({ name: 'Aura oscura', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🌑' });
                         }
                     }
+                    // Goku Black: Aura Oscura permanente (Cuerpo Divino)
+                    if (_pname === 'Cuerpo Divino') {
+                        if (!hasStatusEffect(_pn, 'Aura oscura')) {
+                            _pc.statusEffects = (_pc.statusEffects || []);
+                            _pc.statusEffects.push({ name: 'Aura oscura', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🌑' });
+                        }
+                    }
+                    // Anakin Skywalker: Asistir permanente (El Elegido)
+                    if (_pname === 'El Elegido') {
+                        if (!(_pc.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'asistir')) {
+                            _pc.statusEffects = (_pc.statusEffects || []);
+                            _pc.statusEffects.push({ name: 'Asistir', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '⚡' });
+                            _pc.anakinAsistir = true;
+                        }
+                    }
+                    // Anakin transformado: Concentración permanente + 50% Reflejar cada ronda
+                    if (_pname === 'El Elegido' && _pc.darkSideAwakened) {
+                        if (!hasStatusEffect(_pn, 'Concentracion')) {
+                            _pc.statusEffects = (_pc.statusEffects || []);
+                            _pc.statusEffects.push({ name: 'Concentracion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🎯' });
+                        }
+                        if (Math.random() < 0.50) {
+                            _pc.statusEffects = (_pc.statusEffects||[]).filter(e => !e || normAccent(e.name||'') !== 'reflejar');
+                            _pc.statusEffects.push({ name: 'Reflejar', type: 'buff', duration: 2, emoji: '🪞' });
+                            addLog('🌑 Despertar del Lado Oscuro: Anakin gana Reflejar 2T (50%)', 'buff');
+                        }
+                    }
                     // Giyu Tomioka: Armadura permanente
                     if (_pname === 'Pilar del Agua') {
                         if (!hasStatusEffect(_pn, 'Armadura')) {
@@ -1362,30 +1408,31 @@
                 triggerKaiselPassive();
 
 
-                // PHALANX (Leonidas): al inicio de ronda, limpia 1 debuff aleatorio de un aliado
-                // y el ataque básico gana +1 dmg +1 cg por cada debuff limpiado (permanente)
+                // PHALANX (Leonidas): al inicio de ronda, limpia 2 debuffs aleatorios del equipo aliado
                 (function() {
                     const leon = gameState.characters['Leonidas'];
                     if (!leon || leon.isDead || leon.hp <= 0) return;
-                    const allies = Object.keys(gameState.characters).filter(function(n) {
-                        const c = gameState.characters[n];
-                        return c && c.team === leon.team && !c.isDead && c.hp > 0 &&
-                               c.statusEffects && c.statusEffects.some(function(e) { return e && e.type === 'debuff'; });
+                    let cleaned = 0;
+                    // Recoger todos los debuffs de todos los aliados (no permanentes)
+                    const allDebuffPairs = [];
+                    for (const _an in gameState.characters) {
+                        const _a = gameState.characters[_an];
+                        if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== leon.team) continue;
+                        (_a.statusEffects||[]).forEach(function(e) {
+                            if (e && e.type === 'debuff' && !e.permanent) allDebuffPairs.push({ charName: _an, effect: e });
+                        });
+                    }
+                    if (allDebuffPairs.length === 0) return;
+                    // Mezclar y tomar hasta 2
+                    allDebuffPairs.sort(function() { return Math.random() - 0.5; });
+                    const toClean = allDebuffPairs.slice(0, 2);
+                    toClean.forEach(function(pair) {
+                        const _a = gameState.characters[pair.charName];
+                        if (!_a) return;
+                        _a.statusEffects = (_a.statusEffects||[]).filter(function(e) { return e !== pair.effect; });
+                        addLog('⚔️ Phalanx: Leonidas limpia ' + (pair.effect.name || 'Debuff') + ' de ' + pair.charName, 'buff');
+                        cleaned++;
                     });
-                    if (allies.length === 0) return;
-                    const randAlly = allies[Math.floor(Math.random() * allies.length)];
-                    const allyChar = gameState.characters[randAlly];
-                    const debuffs = allyChar.statusEffects.filter(function(e) { return e && e.type === 'debuff'; });
-                    if (debuffs.length === 0) return;
-                    const randDebuff = debuffs[Math.floor(Math.random() * debuffs.length)];
-                    allyChar.statusEffects = allyChar.statusEffects.filter(function(e) { return e !== randDebuff; });
-                    addLog('⚔️ Phalanx (Leonidas): Limpia ' + (randDebuff.name || 'Debuff') + ' de ' + randAlly, 'buff');
-                    // Boost basic attack permanently
-                    if (!leon.phalanxBonusDmg) leon.phalanxBonusDmg = 0;
-                    if (!leon.phalanxBonusCg) leon.phalanxBonusCg = 0;
-                    leon.phalanxBonusDmg += 1;
-                    leon.phalanxBonusCg += 1;
-                    addLog('⚔️ Phalanx: Ataque básico de Leonidas gana +1 daño +1 carga (total: +' + leon.phalanxBonusDmg + ' dmg / +' + leon.phalanxBonusCg + ' cg)', 'buff');
                 })();
 
                 // CUERPO PERFECTO: al final de la ronda, elimina debuffs del usuario
