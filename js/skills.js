@@ -1085,13 +1085,13 @@
                 addLog(`⚔️ Sentencia del Sol: ${dmgSen} daño a ${targetName}`, 'damage');
 
             } else if (ability.effect === 'summon_sphinx') {
-                // OZYMANDIAS - The Sphinx Wehem-Mesut
-                const existingSphinx = Object.values(gameState.summons).find(s => s && s.name === 'Sphinx Wehem-Mesut' && s.summoner === gameState.selectedCharacter);
+                // OZYMANDIAS — invoca Abu el-Hol Sphinx
+                const existingSphinx = Object.values(gameState.summons).find(s => s && (s.name === 'Abu el-Hol Sphinx' || s.name === 'Sphinx Wehem-Mesut') && s.summoner === gameState.selectedCharacter);
                 if (existingSphinx) {
-                    addLog(`❌ Sphinx Wehem-Mesut ya está invocada`, 'info');
+                    addLog('❌ Abu el-Hol Sphinx ya está invocada', 'info');
                 } else {
-                    summonShadow('Sphinx Wehem-Mesut', gameState.selectedCharacter);
-                    addLog(`🦁 Ozymandias invoca a Sphinx Wehem-Mesut`, 'buff');
+                    summonShadow('Abu el-Hol Sphinx', gameState.selectedCharacter);
+                    addLog('🦁 Ozymandias invoca a Abu el-Hol Sphinx', 'buff');
                 }
 
             } else if (ability.effect === 'summon_ramesseum') {
@@ -4215,7 +4215,7 @@
             // ITACHI UCHIHA — handlers actualizados
             // ══════════════════════════════════════════════════════
 
-            } else if (ability.effect === 'genjutsu_itachi') {
+            } else if (ability.effect === 'kan_shaka') {
                 // SHAKA — Kān: Buff Provocación 2T + Buff Regeneración 10% 2T sobre sí mismo
                 const _kanShaka = gameState.characters[gameState.selectedCharacter];
                 if (_kanShaka) {
