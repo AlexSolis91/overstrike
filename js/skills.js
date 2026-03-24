@@ -4755,7 +4755,6 @@
                 addLog('🖐️ Mano de Sauron: Todos los Venenos enemigos eliminados', 'debuff');
 
             } else if (ability.effect === 'susanoo_totsuka') {
-                // ITACHI — Susanoo Espada de Totsuka: 8 daño + roba TODAS las cargas + Mega Aturdimiento + Debilitar
                 const _stTarget = gameState.characters[targetName];
                 const _stAtk = gameState.characters[gameState.selectedCharacter];
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
@@ -4763,11 +4762,41 @@
                     const _stStolen = _stTarget.charges || 0;
                     _stTarget.charges = 0;
                     _stAtk.charges = Math.min(20, (_stAtk.charges || 0) + _stStolen);
-                    if (_stStolen > 0) addLog('⚔️ Susanoo: ' + gameState.selectedCharacter + ' roba ' + _stStolen + ' cargas de ' + targetName, 'buff');
+                    if (_stStolen > 0) addLog('Susanoo: roba ' + _stStolen + ' cargas de ' + targetName, 'buff');
                 }
-                applyMegaStun(targetName, 1);
+                applyDebuff(targetName, { name: 'Mega Aturdimiento', type: 'debuff', duration: 2, emoji: '💫', stun: true });
                 applyWeaken(targetName, 2);
-                addLog('⚔️ Susanoo, Espada de Totsuka: ' + finalDamage + ' daño + Mega Aturdimiento + Debilitar a ' + targetName, 'damage');
+                addLog('Susanoo, Espada de Totsuka: ' + finalDamage + ' dano + Mega Aturdimiento + Debilitar', 'damage');
+
+            } else if (ability.effect === 'genjutsu_itachi') {
+                const _gjAtk = gameState.characters[gameState.selectedCharacter];
+                let _gjGain = 0;
+                if (Math.random() < 0.50) { applyAgotamiento(targetName, 2); addLog('Genjutsu: Agotamiento a ' + targetName, 'debuff'); _gjGain++; }
+                if (Math.random() < 0.50) { applyPossession(targetName, 1); addLog('Genjutsu: Posesion a ' + targetName, 'debuff'); _gjGain++; }
+                if (_gjAtk && _gjGain > 0) {
+                    _gjAtk.charges = Math.min(20, (_gjAtk.charges || 0) + _gjGain);
+                    addLog('Genjutsu: +' + _gjGain + ' carga(s) ganadas', 'buff');
+                } else { addLog('Genjutsu: ningun debuff aplicado esta vez', 'info'); }
+
+            } else if (ability.effect === 'tsukuyomi_itachi') {
+                let _tsCount = 0;
+                for (let _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.isDead) continue;
+                    const _dbs = (_c.statusEffects || []).filter(e => e && e.type === 'debuff' && !e.permanent);
+                    _tsCount += _dbs.length;
+                    _c.statusEffects = (_c.statusEffects || []).filter(e => !e || e.type !== 'debuff' || e.permanent);
+                    if (_dbs.length > 0 && typeof triggerRinneganCleanse === 'function') triggerRinneganCleanse(_n, _dbs.length);
+                }
+                const _tsTotalDmg = finalDamage + _tsCount;
+                applyDamageWithShield(targetName, _tsTotalDmg, gameState.selectedCharacter);
+                addLog('Tsukuyomi: ' + _tsTotalDmg + ' dano (' + finalDamage + ' base + ' + _tsCount + ' por debuffs disipados en ambos equipos)', 'damage');
+
+            } else if (ability.effect === 'amaterasu_itachi') {
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                applyFlatBurn(targetName, 4, 2);
+                addLog('Amaterasu: ' + finalDamage + ' dano + Quemadura 4HP 2T a ' + targetName, 'damage');
+
             } else if (ability.effect === 'vals_tanjiro') {
                 // TANJIRO — Vals: 1 daño + 1 carga a TODO el equipo aliado
                 const _vTk = gameState.characters[gameState.selectedCharacter];
