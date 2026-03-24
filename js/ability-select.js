@@ -79,7 +79,7 @@
             //    no abrir el modal — reportar en log y terminar el turno ──
             if (ability.target === 'single') {
                 const sauronBypass = sauronIgnoresRestrictions();
-                // SUBESTIMACION (Ivar): ignora Provocación, MegaProvocación y Sigilo
+                // SUBESTIMACION (Ivar): ignora Provocacion, MegaProvocacion y Sigilo
                 const ivarBypass = ability.effect === 'subestimacion_ivar';
                 const hasMegaProv = !sauronBypass && !ivarBypass && typeof checkKamishMegaProvocation === 'function' && checkKamishMegaProvocation(enemyTeam);
                 const hasProvocacion = !sauronBypass && !ivarBypass && !hasMegaProv && Object.keys(gameState.characters).some(function(n) {
@@ -827,16 +827,6 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 if (!attacker || !ability) {
                     console.error('executeAbilitySummon: Missing attacker or ability');
                     endTurn();
-                    return;
-                }
-                
-                // Para habilidades ST: delegar a executeAbility usando un targetName especial
-                // que apunta a la invocación. applyDamageWithShield detectará que no es un
-                // personaje y redirigirá el daño a la invocación.
-                if (ability.target === 'single') {
-                    // Guardar el summonId como target activo para que applyDamageWithShield lo resuelva
-                    gameState._activeSummonTarget = summonId;
-                    executeAbility('__summon__:' + summonId);
                     return;
                 }
                 
