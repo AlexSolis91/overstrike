@@ -224,7 +224,7 @@
                 name: 'Ramesseum Tentyris',
                 hp: 20, maxHp: 20, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/qq0BT0rv/Captura_de_pantalla_2026_03_15_002546.png',
-                passive: 'Al final de cada ronda, si hay enemigos sin debuff activo quemadura solar, aplica debuff Quemadura solar sobre esos enemigos. Cada vez que un debuff quemadura solar es aplicado sobre 1 enemigo, todos los aliados de tu equipo recuperan 2 HP por debuff Quemadura Solar aplicado.'
+                passive: 'Al final de cada ronda, si hay enemigos sin debuff activo quemadura solar, aplica debuff Quemadura solar sobre esos enemigos. Cada vez que un debuff quemadura solar es aplicado sobre 1 enemigo, todos los aliados de tu equipo recuperan 2 HP por debuff Quemadura Solar aplicado. Mientras permanezca activa Ozymandias es inmune al daño por golpes.'
             },
             'Fake Black': {
                 name: 'Fake Black',
