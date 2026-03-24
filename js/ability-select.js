@@ -217,10 +217,12 @@
                 
                 // EL OJO QUE TODO LO VE (Sauron): ignora Provocación, MegaProv y Sigilo
                 const sauronActive = sauronIgnoresRestrictions();
+                // SUBESTIMACION (Ivar): ignora Provocación, MegaProvocación y Sigilo
+                const ivarActive = gameState.selectedAbility && gameState.selectedAbility.effect === 'subestimacion_ivar';
 
                 // VERIFICAR MEGA PROVOCACIÓN DE KAMISH/DROGON/ETC PRIMERO
                 const kamishData = checkKamishMegaProvocation(targetTeam);
-                if (kamishData && !sauronActive) {
+                if (kamishData && !sauronActive && !ivarActive) {
                     if (kamishData.isCharacter) {
                         // MegaProv is on a CHARACTER (Darth Vader, Sauron, etc.)
                         const mpName = kamishData.characterName;
@@ -252,12 +254,12 @@
                 
                 // MEGA PROVOCACIÓN tiene prioridad sobre Provocación
                 // Verificar MegaProv PRIMERO — si existe, Provocación se ignora
-                const megaProvFirst = !sauronActive ? checkKamishMegaProvocation(targetTeam) : null;
+                const megaProvFirst = !sauronActive && !ivarActive ? checkKamishMegaProvocation(targetTeam) : null;
 
                 // VERIFICAR PROVOCACIÓN — solo si NO hay Mega Provocación activa
                 let tauntTarget = null;
 
-                if (!sauronActive && !megaProvFirst) {
+                if (!sauronActive && !ivarActive && !megaProvFirst) {
                     for (let n in gameState.characters) {
                         const c = gameState.characters[n];
                         if (!c || c.team !== targetTeam || c.isDead || c.hp <= 0) continue;
@@ -268,7 +270,7 @@
                     }
                 }
 
-                if (tauntTarget && !sauronActive && !megaProvFirst) {
+                if (tauntTarget && !sauronActive && !ivarActive && !megaProvFirst) {
                     const tauntChar = gameState.characters[tauntTarget];
 
                     title.textContent = '⚠️ Provocación Activa — Debes Atacar a ' + tauntTarget;
