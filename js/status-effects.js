@@ -3,6 +3,12 @@
             const char = gameState.characters[charName];
             if (!char || !char.statusEffects) return;
             
+            // QUEMADURA SOLAR: no puede recuperar HP de ninguna fuente
+            if ((char.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'quemadura solar')) {
+                addLog('☀️ Quemadura Solar: ' + charName + ' no puede recuperar HP (Regeneración bloqueada)', 'debuff');
+                return;
+            }
+
             const regenEffects = char.statusEffects.filter(e => e && e.name === 'Regeneracion');
             if (regenEffects.length > 0) {
                 regenEffects.forEach(regen => {
@@ -369,4 +375,14 @@ function processBurnEffects(charName) {
             if (!char || !char.statusEffects) return false;
             const normTarget = normAccent(effectName);
             return char.statusEffects.some(e => e && normAccent(e.name) === normTarget);
+        }
+
+        // QUEMADURA SOLAR: ninguna fuente de curación funciona mientras esté activa
+        function canHeal(charName) {
+            const char = gameState.characters[charName];
+            if (!char || !char.statusEffects) return true;
+            if (char.statusEffects.some(e => e && normAccent(e.name||'') === 'quemadura solar')) {
+                return false;
+            }
+            return true;
         }
