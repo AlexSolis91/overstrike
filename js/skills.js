@@ -483,14 +483,20 @@
                 generateChargesInline(charName, ability.chargeGain);
 
             } else if (ability.effect === 'grito_de_esparta') {
-                // Grito de Esparta: aplica Buff Frenesí a todos los aliados
+                // Grito de Esparta: Limpia 1 debuff a todos los aliados + Buff Frenesi
+                const _geTeam = attacker.team;
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
-                    if (!c || c.team !== attacker.team || c.isDead || c.hp <= 0) continue;
-                    c.statusEffects = (c.statusEffects || []).filter(e => e && e.name !== 'Frenesí' && e.name !== 'Frenesi');
-                    c.statusEffects.push({ name: 'Frenesí', type: 'buff', duration: 1, emoji: '⚡' });
+                    if (!c || c.team !== _geTeam || c.isDead || c.hp <= 0) continue;
+                    const _geDebuffs = (c.statusEffects || []).filter(e => e && e.type === 'debuff' && !e.permanent);
+                    if (_geDebuffs.length > 0) {
+                        const _geRm = _geDebuffs[Math.floor(Math.random() * _geDebuffs.length)];
+                        c.statusEffects = c.statusEffects.filter(e => e !== _geRm);
+                        addLog('⚔️ Grito de Esparta: ' + (_geRm.name||'Debuff') + ' limpiado de ' + n, 'buff');
+                    }
+                    applyFrenesi(n, 2);
                 }
-                addLog('⚡ ¡Grito de Esparta! Frenesí aplicado a todos los aliados', 'buff');
+                addLog('⚔️ Grito de Esparta: Frenesi 2T aplicado a todos los aliados', 'buff');
 
 
             } else if (ability.effect === 'apply_possession_1') {
@@ -1199,11 +1205,18 @@
                 addLog(`⚔️ Enuma Elish: ${dmgEE} daño a ${targetName}`, 'damage');
 
             } else if (ability.effect === 'sangre_de_esparta') {
-                // Sangre de Esparta: sacrifica 10 HP, gana 10 cargas
-                const sacrifice = Math.min(attacker.hp - 1, 10);
-                attacker.hp -= sacrifice;
-                attacker.charges += 10;
-                addLog(`🩸 ${gameState.selectedCharacter} sacrifica ${sacrifice} HP y gana 10 cargas`, 'buff');
+                // Sangre de Esparta: sacrifica 10 HP, todos los aliados (excepto Leonidas) generan 6 cargas
+                const _seAtk = gameState.characters[gameState.selectedCharacter];
+                if (_seAtk) {
+                    _seAtk.hp = Math.max(1, (_seAtk.hp || 0) - 10);
+                    addLog('Sangre de Esparta: ' + charName + ' sacrifica 10 HP', 'damage');
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (!c || c.isDead || c.hp <= 0 || c.team !== _seAtk.team || n === charName) continue;
+                        c.charges = Math.min(20, (c.charges || 0) + 6);
+                        addLog('Sangre de Esparta: ' + n + ' genera 6 cargas', 'buff');
+                    }
+                }
 
             } else if (ability.effect === 'gloria_300') {
                 // Gloria de los 300: AOE 4 + Regen 25% 2T a aliados + limpia 1 debuff a aliados
@@ -1229,17 +1242,19 @@
                     for (let sid in gameState.summons) { const s = gameState.summons[sid]; if (s && s.team === gloriaEnemyTeam && s.hp > 0) applySummonDamage(sid, finalDamage, charName); }
                     addLog('⚔️ Gloria de los 300: ' + finalDamage + ' AOE a todos los enemigos', 'damage');
                 }
-                // Regen 25% 2T + limpia 1 debuff a todos los aliados
+                // Regen 25% 2T + disipa TODOS los debuffs del equipo aliado
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== gloriaAllyTeam || c.isDead || c.hp <= 0) continue;
                     c.statusEffects = (c.statusEffects || []).filter(e => e && !(e.name === 'Regeneracion' && e.gloria300));
                     c.statusEffects.push({ name: 'Regeneracion', type: 'buff', duration: 2, percent: 25, gloria300: true, emoji: '💖' });
-                    // Cleanse 1 debuff
-                    const cDebuffs = c.statusEffects.filter(e => e && e.type === 'debuff' && !e.permanent);
-                    if (cDebuffs.length > 0) { c.statusEffects = c.statusEffects.filter(e => e !== cDebuffs[0]); addLog('✨ Gloria de los 300: Limpia ' + cDebuffs[0].name + ' de ' + n, 'buff'); }
+                    const _g3Debuffs = (c.statusEffects || []).filter(e => e && e.type === 'debuff' && !e.permanent);
+                    if (_g3Debuffs.length > 0) {
+                        c.statusEffects = c.statusEffects.filter(e => !e || e.type !== 'debuff' || e.permanent);
+                        addLog('Gloria de los 300: ' + _g3Debuffs.length + ' debuff(s) disipados de ' + n, 'buff');
+                    }
                 }
-                addLog('⚔️ Gloria de los 300: Regeneración 25% x2T + 1 debuff limpiado a todos los aliados', 'buff');
+                addLog('Gloria de los 300: Regeneracion 25pct 2T + todos los debuffs del equipo aliado disipados', 'buff');
 
             
             } else if (ability.effect === 'self_provocation') {
@@ -4077,7 +4092,7 @@
                 applySolarBurn(targetName, 5, 999); // Quemadura Solar permanente hasta limpiarse
                 addLog('☀️ Animación: ' + finalDamage + ' daño + Quemadura Solar a ' + targetName, 'damage');
                 if (_aoHadQS && Math.random() < 0.50) {
-                    applyMegaStun(targetName, 1);
+                    applyDebuff(targetName, { name: 'Mega Aturdimiento', type: 'debuff', duration: 2, emoji: '💫', stun: true });
                     addLog('☀️ Animación: Mega Aturdimiento (objetivo ya tenía QS)', 'debuff');
                 }
 
