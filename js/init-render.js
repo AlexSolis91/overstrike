@@ -137,8 +137,24 @@
                     poisonMaxDur = Math.max(poisonMaxDur, e.duration || 0);
                     poisonAdded = true;
                 } else {
-                    // Normal single display
-                    display.push({ emoji: e.emoji || '✨', label: e.name, sub: e.duration !== undefined ? e.duration : '', type: e.type });
+                    // Normal single display — con manejo especial para Sigilo y Regeneracion
+                    let _sub = '';
+                    let _label = e.name;
+                    const _nn = normAccent ? normAccent(e.name||'') : (e.name||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+                    if (_nn === 'sigilo') {
+                        // Sigilo: mostrar rondas reales, no 999
+                        _sub = (e.sigiloRoundsLeft !== undefined ? e.sigiloRoundsLeft : (e.duration !== 999 ? e.duration : '?')) + 'R';
+                    } else if (_nn === 'regeneracion') {
+                        // Regeneracion: mostrar % y turnos
+                        const _pct = e.percent || (e.amount ? Math.round(e.amount) : null);
+                        _label = 'Regeneracion' + (_pct ? ' ' + _pct + '%' : '');
+                        _sub = (e.duration !== undefined && e.duration !== 999) ? e.duration + 'T' : '';
+                    } else if (e.permanent || e.duration === 999) {
+                        _sub = '';
+                    } else {
+                        _sub = e.duration !== undefined ? e.duration + 'T' : '';
+                    }
+                    display.push({ emoji: e.emoji || '✨', label: _label, sub: _sub, type: e.type });
                 }
             });
 
