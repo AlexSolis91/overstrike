@@ -3924,10 +3924,298 @@
                     addLog('⚔️ Ira de Kratos: 7 AOE completado', 'damage');
                 }
             // ══════════════════════════════════════════════════════
-            // SHAKA DE VIRGO
+            // SUN JIN WOO — handlers actualizados
             // ══════════════════════════════════════════════════════
 
-            } else if (ability.effect === 'kan_shaka') {
+            } else if (ability.effect === 'sigilo_sombras_sjw') {
+                applyStealth(gameState.selectedCharacter, 2);
+                addLog('👤 Sigilo de las Sombras: ' + charName + ' entra en Sigilo 2T', 'buff');
+
+            } else if (ability.effect === 'autoridad_gobernante') {
+                const _agAtk = gameState.characters[gameState.selectedCharacter];
+                if (_agAtk) {
+                    _agAtk.statusEffects = (_agAtk.statusEffects||[]).filter(e => !e || normAccent(e.name||'') !== 'esquiva area');
+                    _agAtk.statusEffects.push({ name: 'Esquiva Area', type: 'buff', duration: 3, emoji: '💨' });
+                    _agAtk.statusEffects = (_agAtk.statusEffects||[]).filter(e => !e || normAccent(e.name||'') !== 'regeneracion');
+                    _agAtk.statusEffects.push({ name: 'Regeneracion', type: 'buff', duration: 3, percent: 20, emoji: '💖' });
+                    addLog('👑 Autoridad del Gobernante: ' + charName + ' gana Esquiva Área 3T + Regeneración 20% 3T', 'buff');
+                }
+
+            // ══════════════════════════════════════════════════════
+            // LEONIDAS — handlers actualizados
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'precepto') {
+                applyDamageWithShield(targetName, finalDamage, charName);
+                addLog('⚔️ Precepto: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (Math.random() < 0.50) { applyStun(targetName, 1); addLog('⚔️ Precepto: Aturdimiento aplicado', 'debuff'); }
+
+            } else if (ability.effect === 'grito_de_esparta') {
+                const _geAtk = gameState.characters[gameState.selectedCharacter];
+                const _geMyTeam = _geAtk ? _geAtk.team : 'team1';
+                for (const _an in gameState.characters) {
+                    const _a = gameState.characters[_an];
+                    if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _geMyTeam) continue;
+                    const _debuffs = (_a.statusEffects||[]).filter(e => e && e.type === 'debuff' && !e.permanent);
+                    if (_debuffs.length > 0) {
+                        _a.statusEffects = (_a.statusEffects||[]).filter(e => e !== _debuffs[0]);
+                        addLog('⚔️ Grito de Esparta: limpiado ' + _debuffs[0].name + ' de ' + _an, 'buff');
+                    }
+                    applyFrenesi(_an, 2);
+                }
+                addLog('⚔️ Grito de Esparta: Frenesi aplicado al equipo aliado', 'buff');
+
+            } else if (ability.effect === 'sangre_de_esparta') {
+                const _seAtk = gameState.characters[gameState.selectedCharacter];
+                if (_seAtk) {
+                    _seAtk.hp = Math.max(1, (_seAtk.hp||0) - 10);
+                    addLog('⚔️ Sangre de Esparta: ' + charName + ' sacrifica 10 HP', 'damage');
+                    for (const _an in gameState.characters) {
+                        const _a = gameState.characters[_an];
+                        if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _seAtk.team || _an === charName) continue;
+                        _a.charges = Math.min(20, (_a.charges||0) + 6);
+                        addLog('⚔️ Sangre de Esparta: ' + _an + ' genera 6 cargas', 'buff');
+                    }
+                }
+
+            } else if (ability.effect === 'gloria_300') {
+                const _g3Atk = gameState.characters[gameState.selectedCharacter];
+                const _g3EnemyTeam = _g3Atk ? (_g3Atk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                if (checkAndRedirectAOEMegaProv(_g3EnemyTeam, finalDamage, charName)) {
+                    addLog('⚔️ Gloria de los 300: AOE redirigido por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _g3EnemyTeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) continue;
+                        applyDamageWithShield(_n, finalDamage, charName);
+                    }
+                    for (let _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _g3EnemyTeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, charName); }
+                }
+                // Regen 25% 2T + limpiar debuffs aliados
+                const _g3MyTeam = _g3Atk ? _g3Atk.team : 'team1';
+                for (const _an in gameState.characters) {
+                    const _a = gameState.characters[_an];
+                    if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _g3MyTeam) continue;
+                    _a.statusEffects = (_a.statusEffects||[]).filter(e => !e || e.type !== 'debuff' || e.permanent);
+                    _a.statusEffects = (_a.statusEffects||[]).filter(e => !e || normAccent(e.name||'') !== 'regeneracion');
+                    _a.statusEffects.push({ name: 'Regeneracion', type: 'buff', duration: 2, percent: 25, emoji: '💖' });
+                    addLog('⚔️ Gloria de los 300: ' + _an + ' gana Regen 25% 2T, debuffs limpiados', 'buff');
+                }
+                addLog('⚔️ Gloria de los 300: ' + finalDamage + ' AOE', 'damage');
+
+            // ══════════════════════════════════════════════════════
+            // ANAKIN SKYWALKER — handlers actualizados
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'djem_so') {
+                let _djDmg = finalDamage;
+                if (attacker.darkSideAwakened) _djDmg *= 2;
+                if (Math.random() < 0.50) { _djDmg *= 2; addLog('⚡ Djem So: ¡Crítico!', 'buff'); }
+                applyDamageWithShield(targetName, _djDmg, charName);
+                addLog('⚡ Djem So: ' + _djDmg + ' daño a ' + targetName, 'damage');
+
+            } else if (ability.effect === 'estrangular') {
+                const _estETeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                if (checkAndRedirectAOEMegaProv(_estETeam, finalDamage, charName)) {
+                    addLog('⚡ Estrangular: redirigido por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _estETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) continue;
+                        applyDamageWithShield(_n, finalDamage, charName);
+                        _c.charges = Math.max(0, (_c.charges||0) - 1);
+                        if (Math.random() < 0.50) applyStun(_n, 1);
+                    }
+                    for (let _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _estETeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, charName); }
+                }
+                addLog('⚡ Estrangular: ' + finalDamage + ' AOE + -1 carga al equipo enemigo', 'damage');
+
+            } else if (ability.effect === 'general_501') {
+                const _g501ETeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                const _g501Enemies = Object.keys(gameState.characters).filter(n => { const c = gameState.characters[n]; return c && c.team === _g501ETeam && !c.isDead && c.hp > 0; });
+                if (_g501Enemies.length === 0) { addLog('⚡ General de la 501: No hay objetivos', 'info'); }
+                else {
+                    for (let _i = 0; _i < 4; _i++) {
+                        const _tn = _g501Enemies[Math.floor(Math.random() * _g501Enemies.length)];
+                        const _tc = gameState.characters[_tn];
+                        if (!_tc || _tc.isDead || _tc.hp <= 0) continue;
+                        let _g501Dmg = attacker.abilities[0] ? attacker.abilities[0].damage : 2;
+                        if (attacker.darkSideAwakened) _g501Dmg *= 2;
+                        if (Math.random() < 0.50) { _g501Dmg *= 2; }
+                        applyDamageWithShield(_tn, _g501Dmg, charName);
+                        attacker.charges = Math.min(20, (attacker.charges||0) + (attacker.abilities[0] ? attacker.abilities[0].chargeGain : 2));
+                        if (Math.random() < 0.50) applyFear(_tn, 1);
+                        addLog('⚡ General de la 501: ' + _g501Dmg + ' daño a ' + _tn, 'damage');
+                    }
+                }
+
+            } else if (ability.effect === 'dark_side_anakin') {
+                const _dsAtk = gameState.characters[charName];
+                if (_dsAtk) {
+                    _dsAtk.darkSideAwakened = true;
+                    const _dsTP = _dsAtk.transformPortrait || _dsAtk.transformationPortrait;
+                    if (_dsTP) _dsAtk.portrait = _dsTP;
+                    _dsAtk.speed = (_dsAtk.speed||0) + 10;
+                    // Concentración permanente
+                    if (!(_dsAtk.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'concentracion')) {
+                        _dsAtk.statusEffects = (_dsAtk.statusEffects||[]);
+                        _dsAtk.statusEffects.push({ name: 'Concentracion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🎯' });
+                    }
+                    addLog('🌑 Despertar del Lado Oscuro: Anakin transformado. +10 vel, Concentración permanente', 'buff');
+                }
+
+            // ══════════════════════════════════════════════════════
+            // OZYMANDIAS — handlers actualizados
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'animacion_ozymandias') {
+                const _aoTgt = gameState.characters[targetName];
+                const _aoHadQS = _aoTgt && (_aoTgt.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'quemadura solar');
+                applyDamageWithShield(targetName, finalDamage, charName);
+                applySolarBurn(targetName, 5, 999); // Quemadura Solar permanente hasta limpiarse
+                addLog('☀️ Animación: ' + finalDamage + ' daño + Quemadura Solar a ' + targetName, 'damage');
+                if (_aoHadQS && Math.random() < 0.50) {
+                    applyMegaStun(targetName, 1);
+                    addLog('☀️ Animación: Mega Aturdimiento (objetivo ya tenía QS)', 'debuff');
+                }
+
+            } else if (ability.effect === 'sentencia_del_sol') {
+                const _ssAtk = gameState.characters[charName];
+                const _ssETeam = _ssAtk ? (_ssAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                let _ssQsCount = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _ssETeam || _c.isDead || _c.hp <= 0) continue;
+                    if ((_c.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'quemadura solar')) _ssQsCount++;
+                }
+                const _ssTotalDmg = finalDamage + (_ssQsCount * 2);
+                if (checkAndRedirectAOEMegaProv(_ssETeam, _ssTotalDmg, charName)) {
+                    addLog('☀️ Sentencia del Sol: AOE redirigido por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _ssETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) continue;
+                        applyDamageWithShield(_n, _ssTotalDmg, charName);
+                    }
+                    for (let _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _ssETeam && _s.hp > 0) applySummonDamage(_sid, _ssTotalDmg, charName); }
+                }
+                addLog('☀️ Sentencia del Sol: ' + _ssTotalDmg + ' AOE (' + finalDamage + ' base + ' + (_ssQsCount * 2) + ' por ' + _ssQsCount + ' objetivos con QS)', 'damage');
+
+            // ══════════════════════════════════════════════════════
+            // GOKU BLACK — handlers actualizados
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'espada_ki') {
+                applyDamageWithShield(targetName, finalDamage, charName);
+                addLog('⚫ Espada de Ki: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (Math.random() < 0.50) {
+                    const _ekTgt = gameState.characters[targetName];
+                    if (_ekTgt && (_ekTgt.charges||0) > 0) {
+                        _ekTgt.charges = Math.max(0, (_ekTgt.charges||0) - 1);
+                        attacker.charges = Math.min(20, (attacker.charges||0) + 1);
+                        addLog('⚫ Espada de Ki: roba 1 carga de ' + targetName, 'buff');
+                    }
+                }
+
+            } else if (ability.effect === 'kamehame_oscuro') {
+                let _kmDmg = finalDamage;
+                if (Math.random() < 0.50) { _kmDmg *= 2; addLog('⚫ Kamehame Ha Oscuro: ¡Crítico!', 'buff'); }
+                applyDamageWithShield(targetName, _kmDmg, charName);
+                addLog('⚫ Kamehame Ha Oscuro: ' + _kmDmg + ' daño a ' + targetName, 'damage');
+                if (Math.random() < 0.50) applyStun(targetName, 1);
+
+            } else if (ability.effect === 'lazo_divino') {
+                applyDamageWithShield(targetName, finalDamage, charName);
+                addLog('⚫ Lazo Divino: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                // Invocar 3 Fake Black
+                for (let _i = 0; _i < 3; _i++) {
+                    summonFakeBlack(charName);
+                }
+                addLog('⚫ Lazo Divino: 3 Fake Black invocados', 'buff');
+
+            } else if (ability.effect === 'guadania_divina') {
+                const _gdETeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                if (checkAndRedirectAOEMegaProv(_gdETeam, finalDamage, charName)) {
+                    addLog('⚫ Guadaña Divina: AOE redirigido por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _gdETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) continue;
+                        const _hadNoCharges = (_c.charges||0) === 0;
+                        let _gdDmg = finalDamage;
+                        if (_hadNoCharges) { _gdDmg *= 2; addLog('⚫ Guadaña Divina: ¡Crítico en ' + _n + ' (sin cargas)!', 'buff'); }
+                        _c.charges = 0;
+                        applyDamageWithShield(_n, _gdDmg, charName);
+                        addLog('⚫ Guadaña Divina: ' + _gdDmg + ' daño a ' + _n + ' (cargas eliminadas)', 'damage');
+                    }
+                    for (let _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _gdETeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, charName); }
+                }
+
+            // ══════════════════════════════════════════════════════
+            // DOOMSDAY — handlers actualizados
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'rugido_devastador') {
+                const _rdAtk = gameState.characters[charName];
+                if (_rdAtk) {
+                    _rdAtk.statusEffects = (_rdAtk.statusEffects||[]).filter(e => !e || normAccent(e.name||'') !== 'provocacion');
+                    _rdAtk.statusEffects.push({ name: 'Provocacion', type: 'buff', duration: 2, emoji: '🛡️' });
+                    _rdAtk.statusEffects = (_rdAtk.statusEffects||[]).filter(e => !e || normAccent(e.name||'') !== 'cuerpo perfecto');
+                    _rdAtk.statusEffects.push({ name: 'Cuerpo Perfecto', type: 'buff', duration: 2, emoji: '💠' });
+                    addLog('💥 Rugido del Devastador: Provocación + Cuerpo Perfecto aplicados', 'buff');
+                }
+
+            } else if (ability.effect === 'smashing_strike') {
+                const _ssETeam2 = attacker.team === 'team1' ? 'team2' : 'team1';
+                const _ssEnemies = Object.keys(gameState.characters).filter(n => { const c = gameState.characters[n]; return c && c.team === _ssETeam2 && !c.isDead && c.hp > 0; });
+                if (_ssEnemies.length === 0) { addLog('💥 Smashing Strike: Sin objetivos', 'info'); }
+                else {
+                    for (let _i = 0; _i < 2; _i++) {
+                        const _tn = _ssEnemies[Math.floor(Math.random() * _ssEnemies.length)];
+                        applyDamageWithShield(_tn, finalDamage, charName);
+                        addLog('💥 Smashing Strike: ' + finalDamage + ' daño a ' + _tn, 'damage');
+                        if (Math.random() < 0.50) applyStun(_tn, 1);
+                    }
+                }
+
+            } else if (ability.effect === 'skill_drain') {
+                const _sdETeam2 = attacker.team === 'team1' ? 'team2' : 'team1';
+                if (checkAndRedirectAOEMegaProv(_sdETeam2, finalDamage, charName)) {
+                    addLog('💥 Skill Drain: AOE redirigido por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _sdETeam2 || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) continue;
+                        applyDamageWithShield(_n, finalDamage, charName);
+                        if (Math.random() < 0.50) {
+                            const _steal = Math.floor(Math.random() * 3) + 1;
+                            const _stolen = Math.min(_steal, _c.hp);
+                            _c.hp = Math.max(0, _c.hp - _stolen);
+                            attacker.hp = Math.min(attacker.maxHp, (attacker.hp||0) + _stolen);
+                            addLog('💥 Skill Drain: roba ' + _stolen + ' HP de ' + _n, 'heal');
+                        }
+                    }
+                    for (let _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _sdETeam2 && _s.hp > 0) applySummonDamage(_sid, finalDamage, charName); }
+                }
+                addLog('💥 Skill Drain: ' + finalDamage + ' AOE completado', 'damage');
+
+            } else if (ability.effect === 'devastator_punish') {
+                const _dpTgt = gameState.characters[targetName];
+                const _dpDiff = _dpTgt ? Math.max(0, (attacker.hp||0) - (_dpTgt.hp||0)) : 0;
+                const _dpDmg = finalDamage + _dpDiff;
+                applyDamageWithShield(targetName, _dpDmg, charName);
+                addLog('💥 Devastator Punish: ' + _dpDmg + ' daño (' + finalDamage + ' base + ' + _dpDiff + ' por diferencia de HP)', 'damage');
+
+            // ══════════════════════════════════════════════════════
+            // ITACHI UCHIHA — handlers actualizados
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'genjutsu_itachi') {
                 // SHAKA — Kān: Buff Provocación 2T + Buff Regeneración 10% 2T sobre sí mismo
                 const _kanShaka = gameState.characters[gameState.selectedCharacter];
                 if (_kanShaka) {
@@ -3979,6 +4267,7 @@
                         for (const _ohmAllyN in gameState.characters) {
                             const _ohmAlly = gameState.characters[_ohmAllyN];
                             if (!_ohmAlly || _ohmAlly.isDead || _ohmAlly.hp <= 0 || _ohmAlly.team !== _ohmMyTeam) continue;
+                            if (typeof canHeal === 'function' && !canHeal(_ohmAllyN)) { addLog('☀️ QS bloquea curación de ' + _ohmAllyN + ' (Ohm)', 'debuff'); continue; }
                             const _ohmOldHp = _ohmAlly.hp;
                             _ohmAlly.hp = Math.min(_ohmAlly.maxHp, _ohmAlly.hp + _ohmHealAmt);
                             const _ohmHealed = _ohmAlly.hp - _ohmOldHp;
@@ -4029,7 +4318,7 @@
                 // AOE — daño base + bonus consecutivo + 50% crit
                 const _fvAtk = gameState.characters[gameState.selectedCharacter];
                 const _fvEnemyTeam = _fvAtk ? (_fvAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
-                // Bonus acumulado por usos consecutivos
+                // Bonus acumulado por usos PREVIOS consecutivos (se lee antes de incrementar)
                 const _fvDmgBonus = (_fvAtk ? (_fvAtk.varianBasicDmgBonus || 0) : 0);
                 const _fvChargeBonus = (_fvAtk ? (_fvAtk.varianBasicChargeBonus || 0) : 0);
                 let _fvDmg = finalDamage + _fvDmgBonus;
@@ -4048,16 +4337,17 @@
                     }
                     for (let _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _fvEnemyTeam && _s.hp > 0) applySummonDamage(_sid, _fvDmg, gameState.selectedCharacter); }
                 }
-                addLog('⚔️ Filotormenta: ' + _fvDmg + ' AOE (bonus consecutivo: ' + _fvDmgBonus + ')', 'damage');
-                // Actualizar bonus consecutivo
+                // Cargas del turno actual: base (1) + bonus consecutivo acumulado
+                const _fvTotalCharge = (ability.chargeGain || 1) + _fvChargeBonus;
+                if (_fvAtk) {
+                    _fvAtk.charges = Math.min(20, (_fvAtk.charges || 0) + _fvTotalCharge);
+                }
+                addLog('⚔️ Filotormenta: ' + _fvDmg + ' AOE | +' + _fvTotalCharge + ' cargas (uso consecutivo #' + (_fvDmgBonus + 1) + ')', 'damage');
+                // Incrementar bonus para el PRÓXIMO uso consecutivo
                 if (_fvAtk) {
                     _fvAtk.varianBasicDmgBonus = (_fvAtk.varianBasicDmgBonus || 0) + 1;
+                    _fvAtk.varianBasicChargeBonus = (_fvAtk.varianBasicChargeBonus || 0) + 1;
                     _fvAtk.varianConsecutiveBasic = (_fvAtk.varianConsecutiveBasic || 0) + 1;
-                }
-                // Cargas extra
-                if (_fvChargeBonus > 0 && _fvAtk) {
-                    _fvAtk.charges = Math.min(20, (_fvAtk.charges || 0) + _fvChargeBonus);
-                    addLog('⚔️ Filotormenta: +' + _fvChargeBonus + ' cargas adicionales por consecutivos', 'buff');
                 }
 
             } else if (ability.effect === 'grito_guerra_varian') {
@@ -4081,7 +4371,7 @@
                     }
                 }
                 // Resetear consecutivos porque usó especial
-                if (_ggAtk) { _ggAtk.varianConsecutiveBasic = 0; _ggAtk.varianBasicDmgBonus = 0; }
+                if (_ggAtk) { _ggAtk.varianConsecutiveBasic = 0; _ggAtk.varianBasicDmgBonus = 0; _ggAtk.varianBasicChargeBonus = 0; }
 
             } else if (ability.effect === 'alianza_varian') {
                 // ST — 4 daño + si Sangrado: 50% Miedo al equipo enemigo
@@ -4103,7 +4393,7 @@
                         addLog('⚔️ Por la Alianza: Miedo aplicado al equipo enemigo', 'debuff');
                     }
                 }
-                if (_avAtk) { _avAtk.varianConsecutiveBasic = 0; _avAtk.varianBasicDmgBonus = 0; }
+                if (_avAtk) { _avAtk.varianConsecutiveBasic = 0; _avAtk.varianBasicDmgBonus = 0; _avAtk.varianBasicChargeBonus = 0; }
 
             } else if (ability.effect === 'alto_rey_varian') {
                 // TRANSFORMACIÓN — daño doble, +10 vel aliados, +1 dmgBonus y chargeBonus en básico
@@ -4325,12 +4615,13 @@
                 for (const _an in gameState.characters) {
                     const _a = gameState.characters[_an];
                     if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _aaMyTeam) continue;
+                    if (typeof canHeal === 'function' && !canHeal(_an)) { addLog('☀️ QS bloquea curación de ' + _an + ' (Aguijón de Abeja)', 'debuff'); continue; }
                     _a.hp = Math.min(_a.maxHp, (_a.hp||0) + _aaHealAmt);
                     addLog('🐝 Aguijón de Abeja: ' + _an + ' recupera ' + _aaHealAmt + ' HP (2 base + ' + (_aaVenenos*2) + ' por venenos)', 'heal');
                 }
 
             } else if (ability.effect === 'ojo_hexagonal_shinobu') {
-                // MT 5 golpes a enemigos aleatorios — si tiene Veneno: cura 2 HP y genera 2 cargas al equipo
+                // MT 5 golpes a enemigos aleatorios — si tiene Veneno: cura 1 HP y genera 1 carga al equipo
                 const _ohAtk = gameState.characters[gameState.selectedCharacter];
                 const _ohMyTeam = _ohAtk ? _ohAtk.team : 'team1';
                 const _ohEnemyTeam = _ohMyTeam === 'team1' ? 'team2' : 'team1';
@@ -4344,8 +4635,14 @@
                         const _hasVen = (_tc.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'veneno');
                         applyDamageWithShield(_tn, 1, gameState.selectedCharacter);
                         if (_hasVen) {
-                            for (const _an in gameState.characters) { const _a = gameState.characters[_an]; if (_a && _a.team === _ohMyTeam && !_a.isDead && _a.hp > 0) { _a.hp = Math.min(_a.maxHp, (_a.hp||0) + 2); _a.charges = Math.min(20, (_a.charges||0) + 2); } }
-                            addLog('👁️ Ojo Hexagonal: Golpe a ' + _tn + ' (con Veneno) — equipo aliado +2 HP y +2 cargas', 'heal');
+                            for (const _an in gameState.characters) {
+                                const _a = gameState.characters[_an];
+                                if (_a && _a.team === _ohMyTeam && !_a.isDead && _a.hp > 0) {
+                                    _a.hp = Math.min(_a.maxHp, (_a.hp||0) + 1);
+                                    _a.charges = Math.min(20, (_a.charges||0) + 1);
+                                }
+                            }
+                            addLog('👁️ Ojo Hexagonal: Golpe a ' + _tn + ' (con Veneno) — equipo aliado +1 HP y +1 carga', 'heal');
                         } else { addLog('👁️ Ojo Hexagonal: 1 daño a ' + _tn, 'damage'); }
                     }
                 }
@@ -4370,9 +4667,10 @@
                         if (_allies.length > 0) {
                             const _randAlly = _allies[Math.floor(Math.random() * _allies.length)];
                             const _ra = gameState.characters[_randAlly];
+                            if (typeof canHeal === 'function' && !canHeal(_randAlly)) { addLog('☀️ QS bloquea curación (Danza del Ciempiés)', 'debuff'); } else {
                             _ra.hp = Math.min(_ra.maxHp, (_ra.hp||0) + 3);
+                            addLog('🐛 Danza del Ciempiés: ' + _randAlly + ' +3 HP y +3 cargas', 'heal'); }
                             _ra.charges = Math.min(20, (_ra.charges||0) + 3);
-                            addLog('🐛 Danza del Ciempiés: ' + _randAlly + ' +3 HP y +3 cargas', 'heal');
                         }
                     }
                 }
@@ -4456,66 +4754,20 @@
                 }
                 addLog('🖐️ Mano de Sauron: Todos los Venenos enemigos eliminados', 'debuff');
 
-            } else if (ability.effect === 'genjutsu_itachi') {
-                // ITACHI — Genjutsu: 50% Agotamiento + 50% Posesión, +1 carga por debuff aplicado
-                const _gjAtk = gameState.characters[gameState.selectedCharacter];
-                let _gjGain = 0;
-                if (Math.random() < 0.50) {
-                    applyDebuff(targetName, { name: 'Agotamiento', type: 'debuff', duration: 2, emoji: '😴', description: 'Agotamiento: no genera cargas' });
-                    addLog('😴 Genjutsu: ' + targetName + ' sufre Agotamiento', 'debuff');
-                    _gjGain++;
-                }
-                if (Math.random() < 0.50) {
-                    applyPossession(targetName, 1);
-                    addLog('👁️ Genjutsu: ' + targetName + ' sufre Posesión', 'debuff');
-                    _gjGain++;
-                }
-                if (_gjGain > 0 && _gjAtk) {
-                    _gjAtk.charges = Math.min(20, (_gjAtk.charges || 0) + _gjGain);
-                    addLog('👁️ Genjutsu: ' + gameState.selectedCharacter + ' gana ' + _gjGain + ' carga' + (_gjGain>1?'s':'') + ' por debuffs aplicados', 'buff');
-                }
-
-            } else if (ability.effect === 'tsukuyomi_itachi') {
-                // ITACHI — Tsukuyomi: 2 daño + disipa TODOS los debuffs de AMBOS equipos, +2 por debuff disipado
-                const _tsAtk = gameState.characters[gameState.selectedCharacter];
-                const _tsTarget = gameState.characters[targetName];
-                let _tsDebuffCount = 0;
-                // Count + remove debuffs from ALL characters both teams
-                for (let _n in gameState.characters) {
-                    const _c = gameState.characters[_n];
-                    if (!_c || _c.isDead) continue;
-                    const _dbs = (_c.statusEffects || []).filter(e => e && e.type === 'debuff' && !e.permanent);
-                    _tsDebuffCount += _dbs.length;
-                    _c.statusEffects = (_c.statusEffects || []).filter(e => !e || e.type !== 'debuff' || e.permanent);
-                    // Rinnegan trigger for Madara
-                    if (_dbs.length > 0 && typeof triggerRinneganCleanse === 'function') triggerRinneganCleanse(_n, _dbs.length);
-                }
-                const _tsBonusDmg = _tsDebuffCount * 2;
-                const _tsTotalDmg = finalDamage + _tsBonusDmg;
-                applyDamageWithShield(targetName, _tsTotalDmg, gameState.selectedCharacter);
-                addLog('🌙 Tsukuyomi: ' + _tsTotalDmg + ' daño (' + finalDamage + ' base + ' + _tsBonusDmg + ' por ' + _tsDebuffCount + ' debuffs disipados)', 'damage');
-
-            } else if (ability.effect === 'amaterasu_itachi') {
-                // ITACHI — Amaterasu: 4 daño + Quemadura 4HP. Si el objetivo es una Invocación: elimínala + Quemadura 6HP AOE
-                // NOTE: This handler fires for character targets; summon targets handled separately below
+            } else if (ability.effect === 'susanoo_totsuka') {
+                // ITACHI — Susanoo Espada de Totsuka: 8 daño + roba TODAS las cargas + Mega Aturdimiento + Debilitar
+                const _stTarget = gameState.characters[targetName];
+                const _stAtk = gameState.characters[gameState.selectedCharacter];
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                applyFlatBurn(targetName, 4, 2);
-                addLog('🔥 Amaterasu: ' + finalDamage + ' daño + Quemadura 4HP a ' + targetName, 'damage');
-
-            } else if (ability.effect === 'totsuka_itachi') {
-                // ITACHI — Espada de Totsuka: 8 daño + roba TODAS las cargas + Mega Aturdimiento + Debilitar
-                const _totTarget = gameState.characters[targetName];
-                const _totAtk = gameState.characters[gameState.selectedCharacter];
-                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                if (_totTarget && _totAtk) {
-                    const _totStolen = _totTarget.charges || 0;
-                    _totTarget.charges = 0;
-                    _totAtk.charges = Math.min(20, (_totAtk.charges || 0) + _totStolen);
-                    if (_totStolen > 0) addLog('⚡ Espada de Totsuka: ' + gameState.selectedCharacter + ' roba ' + _totStolen + ' cargas de ' + targetName, 'buff');
+                if (_stTarget && _stAtk) {
+                    const _stStolen = _stTarget.charges || 0;
+                    _stTarget.charges = 0;
+                    _stAtk.charges = Math.min(20, (_stAtk.charges || 0) + _stStolen);
+                    if (_stStolen > 0) addLog('⚔️ Susanoo: ' + gameState.selectedCharacter + ' roba ' + _stStolen + ' cargas de ' + targetName, 'buff');
                 }
-                applyStun(targetName, 2); // Mega Aturdimiento
-                applyDebuff(targetName, { name: 'Debilitar', type: 'debuff', duration: 2, emoji: '💔' });
-                addLog('⚔️ Espada de Totsuka: ' + finalDamage + ' daño + Mega Aturdimiento + Debilitar a ' + targetName, 'damage');
+                applyMegaStun(targetName, 1);
+                applyWeaken(targetName, 2);
+                addLog('⚔️ Susanoo, Espada de Totsuka: ' + finalDamage + ' daño + Mega Aturdimiento + Debilitar a ' + targetName, 'damage');
             } else if (ability.effect === 'vals_tanjiro') {
                 // TANJIRO — Vals: 1 daño + 1 carga a TODO el equipo aliado
                 const _vTk = gameState.characters[gameState.selectedCharacter];
@@ -4923,6 +5175,50 @@
             if (ability && (ability.type === 'special' || ability.type === 'over') && 
                 ability.target === 'single' && targetName) {
                 triggerAsistir(gameState.selectedCharacter, targetName, ability.type);
+            }
+
+            // EL ELEGIDO (Anakin): 50% Frenesi + Furia 2T cuando un enemigo usa especial/over sobre un aliado
+            if (ability && (ability.type === 'special' || ability.type === 'over') && !passiveExecuting) {
+                const _elAtk = gameState.characters[gameState.selectedCharacter];
+                if (_elAtk) {
+                    const _elEnemyTeam = _elAtk.team;
+                    // Buscar Anakin en el equipo que recibe el ataque
+                    for (const _an in gameState.characters) {
+                        const _ac = gameState.characters[_an];
+                        if (!_ac || _ac.isDead || _ac.hp <= 0) continue;
+                        if (_ac.team === _elEnemyTeam) continue; // Anakin debe estar en el equipo que recibe
+                        if (!_ac.passive || _ac.passive.name !== 'El Elegido') continue;
+                        if (Math.random() < 0.50) {
+                            passiveExecuting = true;
+                            applyFrenesi(_an, 2);
+                            applyFuria(_an, 2);
+                            addLog('⚡ El Elegido: Anakin se aplica Frenesi + Furia 2T (aliado recibió especial)', 'buff');
+                            passiveExecuting = false;
+                        }
+                        break;
+                    }
+                }
+            }
+
+            // PHALANX (Leonidas): recupera 3 HP cuando un enemigo usa especial/over
+            if (ability && (ability.type === 'special' || ability.type === 'over') && !passiveExecuting) {
+                const _plAtk = gameState.characters[gameState.selectedCharacter];
+                if (_plAtk) {
+                    const _plDefTeam = _plAtk.team === 'team1' ? 'team2' : 'team1';
+                    for (const _ln in gameState.characters) {
+                        const _lc = gameState.characters[_ln];
+                        if (!_lc || _lc.isDead || _lc.hp <= 0 || _lc.team !== _plDefTeam) continue;
+                        if (!_lc.passive || _lc.passive.name !== 'Phalanx') continue;
+                        if (typeof canHeal === 'function' && !canHeal(_ln)) {
+                            addLog('☀️ QS bloquea curación de Leonidas (Phalanx)', 'debuff'); break;
+                        }
+                        passiveExecuting = true;
+                        _lc.hp = Math.min(_lc.maxHp, (_lc.hp||0) + 3);
+                        addLog('⚔️ Phalanx: Leonidas recupera 3 HP (enemigo usó ' + ability.type + ')', 'heal');
+                        passiveExecuting = false;
+                        break;
+                    }
+                }
             }
 
 
