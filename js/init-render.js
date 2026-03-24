@@ -181,7 +181,8 @@
                                       (name === 'Anakin Skywalker' && char.darkSideAwakened) ||
                                       (name === 'Muzan Kibutsuji' && char.muzanTransformed) ||
                                       (name === 'Garou' && char.garouSaitamaMode) ||
-                                      (name === 'Superman' && char.supermanPrimeMode);
+                                      (name === 'Superman' && char.supermanPrimeMode) ||
+                                      (name === 'Varian Wrynn' && char.varianTransformed);
                 const activePortrait = char.portrait || char.transformPortrait || char.transformationPortrait || '';
                 const portraitHTML = activePortrait
                     ? `<img class="character-portrait${isDefeated ? ' defeated-img' : ''}" src="${activePortrait}" alt="${name}" loading="eager" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="character-portrait-placeholder" style="display:none">⚔️</div>`
