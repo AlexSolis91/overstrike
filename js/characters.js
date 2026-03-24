@@ -21,16 +21,15 @@
             'Sun Jin Woo': {
                 hp: 20, maxHp: 20, speed: 96, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/3rSZSvdF/Captura_de_pantalla_2026_03_11_105214.png',
-                passive: { name: 'Arise!', description: 'Al inicio de su turno realiza una Invocacion aleatoria. Cada vez que una Invocacion es eliminada o sacrificada genera 2 cargas.' },
+                portrait: 'https://i.postimg.cc/T13zZdKD/Captura_de_pantalla_2026_03_11_145542.png',
+                passive: { name: 'Arise!', description: 'Al inicio de su turno invoca una sombra aleatoria. Cada vez que una invocación es eliminada genera 2 cargas.' },
                 abilities: [
-                    { name: 'Sigilo de la Sombras', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'sjw_sigilo', description: 'Se aplica Buff Sigilo por 1 turno.' },
-                    { name: 'Daga de Kamish', type: 'special', cost: 3, chargeGain: 0, damage: 2, target: 'single', effect: 'daga_kamish', description: 'Causa 2 de daño +1 adicional por cada Sombra Invocada en tu equipo. Roba 1 carga por cada sombra invocada en tu equipo.' },
-                    { name: 'Extracción de Sombras', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'self', effect: 'sacrifice_shadow', description: 'Sacrificando una Sombra (Aleatoria excepto Kamish) puedes eliminar todos los debuffs activos en todos los aliados y limpiar todos los buffs activos en todos los enemigos.' },
-                    { name: 'Purgatorio de las Sombras', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'aoe', effect: 'summon_kamish', description: 'Sacrifica todas sus sombras (excepto Kamish), causa 3 de daño por cada sombra sacrificada.' }
+                    { name: 'Sigilo de las Sombras', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'sigilo_sombras_sjw', description: 'Se aplica Buff Sigilo por 2 turnos.' },
+                    { name: 'Daga de Kamish', type: 'special', cost: 3, chargeGain: 0, damage: 2, target: 'single', effect: 'daga_kamish', description: 'Causa +1 daño adicional por cada sombra invocada. Roba 1 carga por cada sombra invocada.' },
+                    { name: 'Autoridad del Gobernante', type: 'special', cost: 8, chargeGain: 0, damage: 0, target: 'self', effect: 'autoridad_gobernante', description: 'Se aplica Buff Esquiva Área 3 turnos. Se aplica Buff Regeneración 20% por 3 turnos.' },
+                    { name: 'Purgatorio de las Sombras', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'aoe', effect: 'summon_kamish', description: 'Sacrifica todas sus sombras (excepto Kamish), causa 3 daño AOE por sombra sacrificada.' }
                 ]
             },
-
             'Aldebaran': {
                 hp: 30, maxHp: 30, speed: 83, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
@@ -47,16 +46,15 @@
             'Leonidas': {
                 hp: 20, maxHp: 20, speed: 79, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/TYJdgC3L/Captura_de_pantalla_2026_03_06_001254.png',
-                passive: { name: 'Phalanx', description: 'Al inicio de cada ronda Limpia 1 debuff aleatorio de un aliado. Cada vez que un debuff es limpiado de un aliado, el ataque basico gana +1 de daño y +1 generacion de cargas permanente.' },
+                portrait: 'https://i.postimg.cc/RFh0T2JL/Captura_de_pantalla_2026_03_11_145303.png',
+                passive: { name: 'Phalanx', description: 'Al inicio de cada ronda limpia 2 debuffs aleatorios del equipo aliado. Cada vez que un enemigo realiza un ataque especial u Over, Leonidas recupera 3 HP.' },
                 abilities: [
-                    { name: 'Precepto', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'precepto', description: 'Causa 1 de daño. 50% de probabilidad de aplicar debuff Aturdimiento.' },
-                    { name: 'Grito de Esparta', type: 'special', cost: 2, chargeGain: 0, damage: 0, target: 'ally_team', effect: 'grito_de_esparta', description: 'Aplica Buff Frenesí en todos los Aliados.' },
-                    { name: 'Sangre de Esparta', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'self', effect: 'sangre_esparta', description: 'Sacrifica 10 HP y genera 10 cargas.' },
-                    { name: 'Gloria de los 300', type: 'over', cost: 10, chargeGain: 0, damage: 4, target: 'aoe', effect: 'gloria_300', description: 'Causa 4 AOE. Aplica Buff Regeneración 25% 2 turnos en todos los aliados. Limpia 1 debuff en todos los aliados.' }
+                    { name: 'Precepto', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'single', effect: 'precepto', description: 'Causa 1 daño. 50% de probabilidad de aplicar Aturdimiento.' },
+                    { name: 'Grito de Esparta', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'ally_aoe', effect: 'grito_de_esparta', description: 'Limpia 1 debuff a todos los aliados. Aplica Buff Frenesi a todos los aliados.' },
+                    { name: 'Sangre de Esparta', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'self', effect: 'sangre_de_esparta', description: 'Sacrifica 10 HP. Todos los aliados generan 6 cargas (excepto Leonidas).' },
+                    { name: 'Gloria de los 300', type: 'over', cost: 10, chargeGain: 0, damage: 4, target: 'aoe', effect: 'gloria_300', description: 'Causa 4 AOE. Aplica Buff Regeneración 25% 2 turnos a todos los aliados. Disipa todos los debuffs del equipo aliado.' }
                 ]
             },
-
             'Min Byung': {
                 hp: 15, maxHp: 15, speed: 81, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
@@ -138,20 +136,19 @@
             },
 
             'Anakin Skywalker': {
-                hp: 20, maxHp: 20, speed: 87, charges: 0, team: 'team1',
+                hp: 20, maxHp: 20, speed: 86, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 darkSideAwakened: false,
-                portrait: 'https://i.postimg.cc/7hYjCpBh/Captura_de_pantalla_2026_02_21_231859.png',
-                transformationPortrait: 'https://i.postimg.cc/Vk6t5wFQ/Whats_App_Image_2026_03_03_at_12_16_07_PM.jpg',
-                passive: { name: 'El Elegido', description: 'Efecto pasivo Asistir.' },
+                portrait: 'https://i.ibb.co/KxhjpvTZ/Captura-de-pantalla-2026-03-22-004655.png',
+                transformPortrait: 'https://i.ibb.co/gbGRNhmq/Captura-de-pantalla-2026-03-22-011451.png',
+                passive: { name: 'El Elegido', description: 'Efecto pasivo Asistir. 50% de probabilidad de que Anakin se aplique Buff Frenesi y Furia 2 turnos cuando un aliado recibe un ataque especial.' },
                 abilities: [
-                    { name: 'Djem So', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'single', effect: 'djem_so', description: 'Causa 1 de daño. Sin efecto adicional.' },
-                    { name: 'Estrangular', type: 'special', cost: 5, chargeGain: 0, damage: 5, target: 'single', effect: 'estrangular', description: 'Causa 5 de daño. Aplica Buff Concentración. Cada vez que Anakin usa esta habilidad, aumenta +1 el daño de Djem So permanentemente.' },
-                    { name: 'Onda de Fuerza', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'aoe', effect: 'onda_fuerza', description: 'Causa 3 AOE. Elimina 3 puntos de carga de los enemigos golpeados.' },
-                    { name: 'Despertar del lado Oscuro', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'despertar_lado_oscuro', description: 'TRANSFORMACIÓN: Aumenta el daño de sus ataques 2 puntos y todas las habilidades de Anakin tienen 50% de probabilidad de crítico.' }
+                    { name: 'Djem So', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'djem_so', description: 'Causa 2 daño. 50% de probabilidad de crítico.' },
+                    { name: 'Estrangular', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'aoe', effect: 'estrangular', description: 'Causa 3 AOE. Elimina 1 carga del equipo enemigo. 50% de Aturdimiento por enemigo.' },
+                    { name: 'General de la 501', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'multi', effect: 'general_501', description: 'Ataca 4 veces con su básico a objetivos aleatorios. 50% de Miedo por golpe.' },
+                    { name: 'Despertar del Lado Oscuro', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'dark_side_anakin', description: 'TRANSFORMACIÓN: +10 velocidad. Efecto pasivo Concentración permanente. Al inicio de cada ronda 50% de buff Reflejar 2 turnos.' }
                 ]
             },
-
             // ═══ TEAM REAPERS ══════════════════════════════════════
 
             'Goku': {
@@ -198,19 +195,17 @@
             },
 
             'Ozymandias': {
-                hp: 20, maxHp: 20, speed: 88, charges: 0, team: 'team2',
+                hp: 20, maxHp: 20, speed: 88, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                ozyBonusChargeGain: 0,
-                portrait: 'https://i.postimg.cc/6qGzz1Hp/Captura_de_pantalla_2026_02_26_131502.png',
-                passive: { name: 'Privilegio Imperial', description: 'Si es golpeado por un enemigo aplica Quemadura Solar sobre ese enemigo.' },
+                portrait: 'https://i.postimg.cc/6qw6XwKQ/Captura_de_pantalla_2026_03_15_002404.png',
+                passive: { name: 'Privilegio Imperial', description: 'Cada vez que un debuff Quemadura Solar es aplicado sobre un enemigo, Ozymandias genera 1 carga. Si Ozymandias es atacado por un enemigo con Quemadura Solar, reduce 50% el daño recibido.' },
                 abilities: [
-                    { name: 'Animación', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'ozy_basic', description: 'Causa 1 de daño. Si este ataque golpea a un enemigo con debuff Quemadura Solar, incrementa en +1 (permanente) la cantidad de cargas que genera este ataque.' },
-                    { name: 'Sentencia del Sol', type: 'special', cost: 2, chargeGain: 0, damage: 2, target: 'single', effect: 'sentencia_sol', description: 'Causa 2 de daño. Si el enemigo golpeado tiene debuff Quemadura Solar, causa de 1-3 de daño adicional.' },
-                    { name: 'Noble Phantasm Abu el-Hol Sphinx', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'self', effect: 'summon_sphinx', description: 'INVOCACIÓN: Invoca a Abu el-Hol Sphinx.' },
-                    { name: 'Noble Phantasm Ramesseum Tentyris', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'summon_ramesseum', description: 'INVOCACIÓN: Invoca a Ramesseum Tentyris.' }
+                    { name: 'Animación', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'animacion_ozymandias', description: 'Causa 2 daño. Aplica Quemadura Solar al objetivo. Si el objetivo ya tenía QS antes de este turno, 50% de Mega Aturdimiento.' },
+                    { name: 'Noble Phantasm Abu el-Hol Sphinx', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'self', effect: 'summon_sphinx', description: 'Invoca a Abu el-Hol Sphinx.' },
+                    { name: 'Sentencia del Sol', type: 'special', cost: 8, chargeGain: 0, damage: 2, target: 'aoe', effect: 'sentencia_del_sol', description: 'Causa 2 AOE + 2 daño adicional por cada enemigo con Quemadura Solar activa.' },
+                    { name: 'Noble Phantasm Ramesseum Tentyris', type: 'over', cost: 12, chargeGain: 0, damage: 0, target: 'self', effect: 'summon_ramesseum', description: 'Invoca a Ramesseum Tentyris.' }
                 ]
             },
-
             'Gilgamesh': {
                 hp: 20, maxHp: 20, speed: 89, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
@@ -225,18 +220,17 @@
             },
 
             'Goku Black': {
-                hp: 20, maxHp: 20, speed: 95, charges: 0, team: 'team2',
+                hp: 20, maxHp: 20, speed: 95, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/SsGwxyGp/Captura_de_pantalla_2026_02_22_014009.png',
-                passive: { name: 'Cuerpo Divino', description: 'Cada vez que Goku Black recibe daño, tiene un 50% de robar 1 carga del atacante. Cada vez que Goku Black inflige daño tiene un 50% de aplicar debuff debilidad.' },
+                portrait: 'https://i.postimg.cc/T13zZdKD/Captura_de_pantalla_2026_03_11_145542.png',
+                passive: { name: 'Cuerpo Divino', description: 'Efecto pasivo Aura Oscura. Cada vez que Goku Black recibe daño genera 2 puntos de carga.' },
                 abilities: [
-                    { name: 'Espada de Ki', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'espada_ki', description: 'Causa 2 de daño. 50% de probabilidad de aplicar Buff Aura Oscura sobre Goku Black.' },
-                    { name: 'Teletransportación', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'single', effect: 'teleportacion_confusion', description: 'Aplica Debuff Confusión. Roba 2 puntos de carga del objetivo.' },
-                    { name: 'Lazo Divino', type: 'special', cost: 6, chargeGain: 0, damage: 5, target: 'single', effect: 'lazo_divino', poisonDuration: 4, description: 'Causa 5 de daño. Aplica debuff Veneno durante 4 turnos. Cada tick de Veneno tiene 50% de probabilidad de eliminar 2 cargas.' },
-                    { name: 'Guadaña Divina', type: 'over', cost: 10, chargeGain: 0, damage: 7, target: 'aoe', effect: 'guadana_divina', description: 'Causa 7 AOE. Reduce a 0 todas las cargas de los enemigos golpeados.' }
+                    { name: 'Espada de Ki', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'espada_ki', description: 'Causa 2 daño. 50% de probabilidad de robar 1 carga del objetivo.' },
+                    { name: 'Kamehame Ha Oscuro', type: 'special', cost: 3, chargeGain: 0, damage: 2, target: 'single', effect: 'kamehame_oscuro', description: 'Causa 2 daño. 50% de crítico. 50% de Aturdimiento.' },
+                    { name: 'Lazo Divino', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'single', effect: 'lazo_divino', description: 'Causa 3 daño. Invoca 3 Fake Black.' },
+                    { name: 'Guadaña Divina', type: 'over', cost: 12, chargeGain: 0, damage: 7, target: 'aoe', effect: 'guadania_divina', description: 'Causa 7 AOE. Elimina todos los puntos de carga de los enemigos. Si algún objetivo no tenía cargas, 100% de crítico en ese objetivo.' }
                 ]
             },
-
             'Saga de Geminis': {
                 hp: 20, maxHp: 20, speed: 91, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
@@ -398,18 +392,17 @@
             },
 
             'Doomsday': {
-                hp: 30, maxHp: 30, speed: 84, charges: 0, team: 'team2',
+                hp: 30, maxHp: 30, speed: 84, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/hjJDWnn6/Captura_de_pantalla_2026_03_06_003242.png',
-                passive: { name: 'Adaptacion Reactiva', description: 'Cada vez que recibe un golpe, recupera 2 HP.' },
+                portrait: 'https://i.ibb.co/LdtjKDm8/Captura-de-pantalla-2026-03-21-235142.png',
+                passive: { name: 'Adaptación Reactiva', description: 'Cada vez que recibe un golpe, recupera 2 HP. Cada vez que Doomsday recupera HP, elimina 1 carga de un enemigo aleatorio.' },
                 abilities: [
                     { name: 'Rugido del Devastador', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'rugido_devastador', description: 'Se aplica Buff Provocación. Se aplica Buff Cuerpo Perfecto.' },
-                    { name: 'Smashing Strike', type: 'special', cost: 3, chargeGain: 0, damage: 3, target: 'single', effect: 'aoe_stun_chance', description: 'Causa 3 de daño. Aplica debuff Aturdimiento.' },
-                    { name: 'Skill Drain', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'aoe', effect: 'skill_drain', description: 'Causa de 1 a 3 de daño a cada enemigo y recupera la misma cantidad de HP equivalente al daño total inflingido.' },
-                    { name: 'Devastator Punish', type: 'over', cost: 12, chargeGain: 0, damage: 10, target: 'single', effect: 'doomsday_punish', critChance: 0.30, description: 'Causa 10 de daño. 30% probabilidad de crítico.' }
+                    { name: 'Smashing Strike', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'multi', effect: 'smashing_strike', description: 'Ataca 2 veces a enemigos aleatorios. Cada golpe tiene 50% de Aturdimiento.' },
+                    { name: 'Skill Drain', type: 'special', cost: 7, chargeGain: 0, damage: 3, target: 'aoe', effect: 'skill_drain', description: 'Causa 3 AOE. 50% de robar 1-3 HP por enemigo golpeado.' },
+                    { name: 'Devastator Punish', type: 'over', cost: 10, chargeGain: 0, damage: 5, target: 'single', effect: 'devastator_punish', description: 'Causa 5 daño + 1 adicional por cada punto de HP de diferencia positiva sobre el objetivo.' }
                 ]
             },
-
             'Ikki de Fenix': {
                 hp: 20, maxHp: 20, speed: 85, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
@@ -463,14 +456,13 @@
             'Itachi Uchiha': {
                 hp: 20, maxHp: 20, speed: 88, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                izanamiUsedThisRound: false,
                 portrait: 'https://i.ibb.co/HDhTPLvR/91a611f2e00a9c83e9a8dd1607a2c50a.jpg',
-                passive: { name: 'Izanami', description: 'La primera vez por ronda que Itachi fuera a recibir un golpe de 3+ daño, esquiva y roba hasta 5 cargas del atacante. Cada vez que un debuff (Posesión, Veneno, Quemadura, Confusión) es aplicado sobre un aliado, limpia hasta 2 debuffs del equipo aliado y genera 2 cargas por cada debuff limpiado.' },
+                passive: { name: 'Izanami', description: 'La primera vez por ronda que Itachi fuera a recibir un golpe de 3+ daño, esquiva y roba hasta 2 cargas del atacante. Cada vez que un debuff (Posesion, Veneno, Quemaduras, Confusion) es aplicado sobre un aliado, limpia hasta 1 debuff activo del equipo aliado y genera 2 cargas por debuff limpiado.' },
                 abilities: [
-                    { name: 'Genjutsu', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'single', effect: 'genjutsu_itachi', description: '50% Debuff Agotamiento. 50% Debuff Posesión. Genera 1 carga por cada debuff aplicado.' },
-                    { name: 'Tsukuyomi', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'single', effect: 'tsukuyomi_itachi', description: 'Disipa TODOS los debuffs de ambos equipos. +2 daño adicional por cada debuff disipado.' },
-                    { name: 'Amaterasu', type: 'special', cost: 7, chargeGain: 0, damage: 4, target: 'single', effect: 'amaterasu_itachi', description: 'Quemadura 4HP al objetivo. Si el objetivo es una Invocación, la elimina y aplica Quemadura 6HP AOE a todos los enemigos.' },
-                    { name: 'Susanoo, Espada de Totsuka', type: 'over', cost: 9, chargeGain: 2, damage: 8, target: 'single', effect: 'totsuka_itachi', description: 'Roba TODAS las cargas del objetivo. Aplica Mega Aturdimiento. Aplica Debilitar.' }
+                    { name: 'Genjutsu', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'single', effect: 'genjutsu_itachi', description: '50% de Agotamiento. 50% de Posesión. Genera 1 carga por cada debuff aplicado.' },
+                    { name: 'Tsukuyomi', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'single', effect: 'tsukuyomi_itachi', description: 'Disipa todos los debuffs de ambos equipos. Causa +1 daño adicional por cada debuff disipado.' },
+                    { name: 'Amaterasu', type: 'special', cost: 7, chargeGain: 0, damage: 4, target: 'single', effect: 'amaterasu_itachi', description: 'Causa 4 daño. Aplica Quemadura 4HP. Si el objetivo es invocación, la elimina y aplica Quemadura 6HP AOE.' },
+                    { name: 'Susanoo, Espada de Totsuka', type: 'over', cost: 9, chargeGain: 2, damage: 8, target: 'single', effect: 'susanoo_totsuka', description: 'Causa 8 daño. Roba todas las cargas del objetivo. Aplica Mega Aturdimiento. Aplica Debilitar.' }
                 ]
             },
             'Garou': {
@@ -603,12 +595,12 @@
                 hp: 15, maxHp: 15, speed: 82, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/NgbypqWC/Whats-App-Image-2026-03-23-at-1-48-34-PM.jpg',
-                passive: { name: 'Pilar del Insecto', description: 'Al morir aplica Veneno 10 turnos al equipo enemigo. Debuffs Veneno activos en enemigos causan daño doble. Cada vez que Shinobu recibe daño por Veneno, genera 1 carga al equipo aliado.' },
+                passive: { name: 'Pilar del Insecto', description: 'Al morir aplica Veneno 10T al equipo enemigo. Debuffs Veneno activos en enemigos causan daño doble. Cada vez que Shinobu recibe daño por Veneno, genera 1 carga al equipo aliado.' },
                 abilities: [
-                    { name: 'Danza de la Mariposa', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'self', effect: 'danza_mariposa_shinobu', description: 'Shinobu se aplica Veneno 2 turnos. Shinobu se aplica Buff Concentración 2 turnos.' },
-                    { name: 'Aguijón de Abeja', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'ally_aoe', effect: 'aguijon_abeja_shinobu', description: 'Cura 2 HP al equipo aliado. Cura 2 HP adicionales por cada Veneno activo en el equipo enemigo.' },
-                    { name: 'Ojo Hexagonal Compuesto', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'multi', effect: 'ojo_hexagonal_shinobu', description: 'Golpea 5 veces a enemigos aleatorios. Por cada golpe a objetivo con Veneno: cura 2 HP y genera 2 cargas al equipo aliado.' },
-                    { name: 'Danza del Ciempiés', type: 'over', cost: 12, chargeGain: 0, damage: 0, target: 'multi', effect: 'danza_ciempies_shinobu', description: 'Golpea 10 veces a enemigos aleatorios. Al golpear aplica Veneno 3 turnos. Por cada Veneno aplicado: cura 3 HP y genera 3 cargas a un aliado aleatorio.' }
+                    { name: 'Danza de la Mariposa', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'self', effect: 'danza_mariposa_shinobu', description: 'Shinobu se aplica Veneno 2T y Buff Concentración 2T.' },
+                    { name: 'Aguijón de Abeja', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'ally_aoe', effect: 'aguijon_abeja_shinobu', description: 'Cura 2 HP al equipo aliado. Cura 2 HP adicionales a cada aliado si el objetivo enemigo tiene Veneno activo.' },
+                    { name: 'Ojo Hexagonal Compuesto', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'multi', effect: 'ojo_hexagonal_shinobu', description: 'Golpea 5 veces a enemigos aleatorios. Por cada golpe a objetivo con Veneno: cura 1 HP y genera 1 carga al equipo aliado.' },
+                    { name: 'Danza del Ciempiés', type: 'over', cost: 12, chargeGain: 0, damage: 0, target: 'multi', effect: 'danza_ciempies_shinobu', description: 'Golpea 10 veces a enemigos aleatorios. Al golpear aplica Veneno 3T. Por Veneno aplicado: cura 3 HP y genera 3 cargas a aliado aleatorio.' }
                 ]
             },
             'Rey Brujo de Angmar': {
