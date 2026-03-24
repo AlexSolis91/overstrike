@@ -103,6 +103,30 @@
                 addLog(`🎭 Señuelo derrotado: todo el equipo aliado gana 2 cargas`, 'buff');
             }
             
+            // FAKE BLACK: al morir causa 3 AOE + 2 cargas al equipo aliado
+            if (summon.name === 'Fake Black' && reason !== 'summoner_dead' && !passiveExecuting) {
+                passiveExecuting = true;
+                const _fbETeam = summon.team === 'team1' ? 'team2' : 'team1';
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _fbETeam || _c.isDead || _c.hp <= 0) continue;
+                    if (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(_n)) continue;
+                    applyDamageWithShield(_n, 3, 'Fake Black');
+                }
+                for (const _sid in gameState.summons) {
+                    const _s = gameState.summons[_sid];
+                    if (!_s || _s.team !== _fbETeam || _s.hp <= 0 || _sid === summonId) continue;
+                    applySummonDamage(_sid, 3, 'Fake Black');
+                }
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== summon.team || _c.isDead || _c.hp <= 0) continue;
+                    _c.charges = Math.min(20, (_c.charges||0) + 2);
+                }
+                addLog('Fake Black: Explosion - 3 dano AOE + 2 cargas al equipo aliado', 'damage');
+                passiveExecuting = false;
+            }
+
             delete gameState.summons[summonId];
             // NO llamar renderSummons aquí - se llama al final del turno
         }
@@ -166,6 +190,21 @@
             
             renderSummons();
             return damage;
+        }
+
+
+        function summonFakeBlack(summonerName) {
+            const summoner = gameState.characters[summonerName];
+            if (!summoner) return;
+            const summonId = 'FakeBlack_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+            gameState.summons[summonId] = {
+                id: summonId, name: 'Fake Black',
+                hp: 2, maxHp: 2, summoner: summonerName, team: summoner.team,
+                statusEffects: [], img: '',
+                passive: 'Explosion: Al morir causa 3 puntos de dano AOE y genera 2 puntos de carga en el equipo aliado',
+                dragonEffect: 'fake_black_explosion', megaProvocation: false
+            };
+            addLog('Fake Black invocado por ' + summonerName, 'buff');
         }
 
         function summonDragon(dragonName, summoner, team) {
@@ -284,60 +323,45 @@
         }
         function triggerIgrisPassive(summonerName) {
             try {
-                // Prevenir cascadas de pasivas
                 if (passiveExecuting) return;
-                
                 const igrisSummons = Object.keys(gameState.summons).filter(id => {
-                    const summon = gameState.summons[id];
-                    return summon && summon.name === 'Igris' && summon.summoner === summonerName && summon.hp > 0;
+                    const s = gameState.summons[id];
+                    return s && s.name === 'Igris' && s.summoner === summonerName && s.hp > 0;
                 });
-                
                 if (igrisSummons.length === 0) return;
-                
                 passiveExecuting = true;
-                
                 igrisSummons.forEach(igrisId => {
                     const igris = gameState.summons[igrisId];
                     if (!igris) return;
-                    
                     const enemyTeam = igris.team === 'team1' ? 'team2' : 'team1';
-                    
-                    // Buscar enemigos vivos (personajes e invocaciones)
-                    const enemies = [];
-                    
-                    // Agregar personajes enemigos
-                    for (let name in gameState.characters) {
-                        const char = gameState.characters[name];
-                        if (char.team === enemyTeam && !char.isDead && char.hp > 0) {
-                            enemies.push({ type: 'character', name: name });
-                        }
+                    // Comandante Rojo Sangriento: 2 dano AOE a TODOS los enemigos
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== enemyTeam || _c.isDead || _c.hp <= 0) continue;
+                        applyDamageWithShield(_n, 2, 'Igris');
                     }
-                    
-                    // Agregar invocaciones enemigas
-                    for (let summonId in gameState.summons) {
-                        const summon = gameState.summons[summonId];
-                        if (summon && summon.team === enemyTeam && summon.hp > 0 && summonId !== igrisId) {
-                            enemies.push({ type: 'summon', id: summonId, name: summon.name });
-                        }
+                    for (const _sid in gameState.summons) {
+                        const _s = gameState.summons[_sid];
+                        if (!_s || _s.team !== enemyTeam || _s.hp <= 0 || _sid === igrisId) continue;
+                        applySummonDamage(_sid, 2, 'Igris');
                     }
-                    
-                    if (enemies.length > 0) {
-                        const randomEnemy = enemies[Math.floor(Math.random() * enemies.length)];
-                        
-                        if (randomEnemy.type === 'character') {
-                            applyDamageWithShield(randomEnemy.name, 2, 'Igris');
-                            addLog(`⚔️ Igris (Pasiva) ataca a ${randomEnemy.name} causando 2 de daño`, 'damage');
-                        } else {
-                            applySummonDamage(randomEnemy.id, 2, 'Igris');
-                            addLog(`⚔️ Igris (Pasiva) ataca a ${randomEnemy.name} causando 2 de daño`, 'damage');
-                        }
+                    addLog('Igris (Comandante Rojo): 2 dano AOE a todos los enemigos', 'damage');
+                    // Eliminar 1 invocacion enemiga aleatoria
+                    const enemySummonIds = Object.keys(gameState.summons).filter(sid => {
+                        const _s = gameState.summons[sid];
+                        return _s && _s.team === enemyTeam && _s.hp > 0;
+                    });
+                    if (enemySummonIds.length > 0) {
+                        const toElim = enemySummonIds[Math.floor(Math.random() * enemySummonIds.length)];
+                        const elimName = gameState.summons[toElim] ? gameState.summons[toElim].name : 'Invocacion';
+                        delete gameState.summons[toElim];
+                        addLog('Igris: Elimina a ' + elimName + ' del campo enemigo', 'damage');
                     }
                 });
-                
                 passiveExecuting = false;
             } catch (error) {
                 console.error('Error en triggerIgrisPassive:', error);
-                passiveExecuting = false; // Asegurar que se resetea incluso si hay error
+                passiveExecuting = false;
             }
         }
         
@@ -407,29 +431,18 @@
         // Pasiva de Kaisel: aplica debuff aleatorio a 2 enemigos al final de ronda
         function triggerKaiselPassive() {
             if (passiveExecuting) return;
-            Object.keys(gameState.summons).forEach(function(sid) {
-                const kais = gameState.summons[sid];
+            Object.keys(gameState.summons).forEach(function(kaisId) {
+                const kais = gameState.summons[kaisId];
                 if (!kais || kais.name !== 'Kaisel' || kais.hp <= 0) return;
                 passiveExecuting = true;
                 const enemyTeam = kais.team === 'team1' ? 'team2' : 'team1';
-                const enemies = Object.keys(gameState.characters).filter(n => {
-                    const c = gameState.characters[n];
-                    return c && c.team === enemyTeam && !c.isDead && c.hp > 0;
-                });
-                if (enemies.length === 0) { passiveExecuting = false; return; }
-                // Pick 2 random enemies (or 1 if only 1)
-                const shuffled = enemies.slice().sort(() => Math.random() - 0.5);
-                const targets = shuffled.slice(0, Math.min(2, shuffled.length));
-                const debuffs = ['applyBurn', 'applyPoison', 'applyBleed', 'applyFreeze', 'applyStun', 'applyFear', 'applyWeaken'];
-                targets.forEach(function(tgt) {
-                    const rand = Math.floor(Math.random() * 5);
-                    if (rand === 0) applyFlatBurn(tgt, 2, 1);
-                    else if (rand === 1) applyPoison(tgt, 1);
-                    else if (rand === 2) applyBleed(tgt, 1);
-                    else if (rand === 3) applyFreeze(tgt, 1);
-                    else applyFear(tgt, 1);
-                    addLog(`🐲 Kaisel (Maldición): aplica debuff aleatorio a ${tgt}`, 'damage');
-                });
+                // Maldicion de Kaisel: reduce 3 cargas a TODOS los enemigos
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== enemyTeam || _c.isDead || _c.hp <= 0) continue;
+                    _c.charges = Math.max(0, (_c.charges||0) - 3);
+                    addLog('Kaisel (Maldicion): ' + _n + ' pierde 3 cargas', 'debuff');
+                }
                 passiveExecuting = false;
             });
         }
@@ -614,6 +627,16 @@
                 }
             }
 
+            // ── PRIVILEGIO IMPERIAL (Ozymandias): reduce 50% daño si atacante tiene QS ──
+            if (!passiveExecuting && attackerName && attackerName !== targetName && damage > 0 &&
+                target.passive && target.passive.name === 'Privilegio Imperial') {
+                const _ozAtk = gameState.characters[attackerName];
+                if (_ozAtk && (_ozAtk.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'quemadura solar')) {
+                    damage = Math.max(1, Math.floor(damage * 0.5));
+                    addLog('Privilegio Imperial: Ozymandias reduce dano al 50% (atacante tiene QS)', 'buff');
+                }
+            }
+
             // ── HOMBRE DE ACERO (Superman): reduce 50% daño por GOLPE (attackerName ≠ null) ──
             if (!passiveExecuting && attackerName && attackerName !== targetName && damage > 0 &&
                 target.passive && target.passive.name === 'Hombre de Acero' && !target.supermanPrimeMode) {
@@ -678,17 +701,12 @@
                 }
             }
             
-            // PROTECCION SAGRADA: inmune a nuevos debuffs (handled in applyDebuff)
-            // Also: blocks incoming HP DAMAGE from golpes (physical hits)
-            if (attackerName !== null && (hasStatusEffect(targetName, 'Proteccion Sagrada') || hasStatusEffect(targetName, 'Protección Sagrada'))) {
-                addLog('🛡️ Protección Sagrada: ' + targetName + ' es inmune al daño de golpe', 'buff');
-                return 0;
-            }
-            // ESCUDO SAGRADO: bloquea todo el daño de golpes (no efectos de estado)
+            // ESCUDO SAGRADO: bloquea daño de golpe (no efectos de estado)
             if (attackerName !== null && hasStatusEffect(targetName, 'Escudo Sagrado')) {
-                addLog(`✝️ Escudo Sagrado de ${targetName} bloqueó el golpe de ${attackerName}`, 'buff');
+                addLog('✝️ Escudo Sagrado: ' + targetName + ' bloqueó el golpe de ' + attackerName, 'buff');
                 return 0;
             }
+            // PROTECCION SAGRADA: solo bloquea debuffs (gestionado en applyDebuff), NO bloquea daño
 
             // PASIVA JIKUUKAN KEKKAI: Minato esquiva el primer golpe por ronda
             if (attackerName !== null && checkMinatoDodge(targetName)) {
@@ -938,6 +956,44 @@
                 }
             }
 
+            // PASIVA CUERPO DIVINO (Goku Black): genera 2 cargas al recibir dano
+            if (remainingDamage > 0 && !passiveExecuting) {
+                const _gbChar = gameState.characters[targetName];
+                if (_gbChar && !_gbChar.isDead && _gbChar.passive && _gbChar.passive.name === 'Cuerpo Divino') {
+                    _gbChar.charges = Math.min(20, (_gbChar.charges||0) + 2);
+                    addLog('Cuerpo Divino: Goku Black genera 2 cargas al recibir dano', 'buff');
+                }
+            }
+
+            // PASIVA ADAPTACION REACTIVA (Doomsday): recupera 2 HP al recibir golpe
+            if (remainingDamage > 0 && attackerName && !passiveExecuting) {
+                const _ddChar = gameState.characters[targetName];
+                if (_ddChar && !_ddChar.isDead && _ddChar.passive && _ddChar.passive.name === 'Adaptación Reactiva') {
+                    if (typeof canHeal !== 'function' || canHeal(targetName)) {
+                        passiveExecuting = true;
+                        const _ddOld = _ddChar.hp;
+                        _ddChar.hp = Math.min(_ddChar.maxHp, (_ddChar.hp||0) + 2);
+                        const _ddHealed = _ddChar.hp - _ddOld;
+                        if (_ddHealed > 0) {
+                            addLog('Adaptacion Reactiva: Doomsday recupera ' + _ddHealed + ' HP', 'heal');
+                            const _ddAtkObj = gameState.characters[attackerName];
+                            if (_ddAtkObj) {
+                                const _ddEnms = Object.keys(gameState.characters).filter(n => {
+                                    const c = gameState.characters[n];
+                                    return c && c.team === _ddAtkObj.team && !c.isDead && c.hp > 0 && (c.charges||0) > 0;
+                                });
+                                if (_ddEnms.length > 0) {
+                                    const _ddR = _ddEnms[Math.floor(Math.random() * _ddEnms.length)];
+                                    gameState.characters[_ddR].charges = Math.max(0, (gameState.characters[_ddR].charges||0) - 1);
+                                    addLog('Adaptacion Reactiva: ' + _ddR + ' pierde 1 carga', 'debuff');
+                                }
+                            }
+                        }
+                        passiveExecuting = false;
+                    }
+                }
+            }
+
             // Track last attacker for abilities like Corazón en Llamas
             if (attackerName && remainingDamage > 0) {
                 if (!gameState._lastAttacker) gameState._lastAttacker = {};
@@ -958,6 +1014,7 @@
                         for (const _stkAllyName in gameState.characters) {
                             const _stkAlly = gameState.characters[_stkAllyName];
                             if (!_stkAlly || _stkAlly.isDead || _stkAlly.hp <= 0 || _stkAlly.team !== _stkTeam) continue;
+                            if (typeof canHeal === 'function' && !canHeal(_stkAllyName)) { addLog('Tesoro del Cielo: QS bloquea curacion de ' + _stkAllyName, 'debuff'); continue; }
                             const _stkHpBefore = _stkAlly.hp;
                             _stkAlly.hp = Math.min(_stkAlly.maxHp, _stkAlly.hp + 1);
                             if (_stkAlly.hp > _stkHpBefore) {
