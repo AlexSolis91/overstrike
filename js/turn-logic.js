@@ -1057,7 +1057,18 @@
                 
                 // (Sigilo no bloquea ninguna habilidad — la restricción era de apertura_camino que ya no existe)
                 const blockedBySigilo = false;
-                const disabled = !canUse || !canRevive || !canSacrifice || !canSummon || !canSummonKamish || blockedByFreeze || blockedBySigilo;
+                // Bloquear habilidades marcadas con lockedWhenTransformed (ej: Despertar del Lado Oscuro)
+                let blockedByTransform = false;
+                if (ability.lockedWhenTransformed) {
+                    const _charName = gameState.selectedCharacter;
+                    const _c = gameState.characters[_charName];
+                    if (_c && (_c.darkSideAwakened || _c.rikudoMode || _c.ultraInstinto || _c.muzanTransformed ||
+                        _c.varianTransformed || _c.garouSaitamaMode || _c.supermanPrimeMode ||
+                        _c.dragonFormActive || _c.fenixArmorActive || _c.kuramaMode)) {
+                        blockedByTransform = true;
+                    }
+                }
+                const disabled = !canUse || !canRevive || !canSacrifice || !canSummon || !canSummonKamish || blockedByFreeze || blockedBySigilo || blockedByTransform;
                 
                 const button = document.createElement('button');
                 button.className = 'action-ability-btn';
@@ -1067,7 +1078,7 @@
                 let reasonTag = '';
                 // (freeze no longer blocks abilities)
                 
-                const SMAP_ACTION = { 'summon_shadows': ['Igris','Tusk','Beru'], 'summon_kamish': ['Kamish'], 'el_rey_caido': ['Sindragosa','Kel Thuzad','Darion Morgraine','Bolvar Fordragon','Tirion Fordring'], 'summon_sphinx': ['Sphinx Wehem-Mesut'], 'summon_ramesseum': ['Ramesseum Tentyris'], 'enkidu': ['Enkidu'] };
+                const SMAP_ACTION = { 'summon_shadows': ['Igris','Tusk','Beru'], 'summon_kamish': ['Kamish'], 'el_rey_caido': ['Sindragosa','Kel Thuzad','Darion Morgraine','Bolvar Fordragon','Tirion Fordring'], 'summon_sphinx': ['Abu el-Hol Sphinx'], 'summon_ramesseum': ['Ramesseum Tentyris'], 'enkidu': ['Enkidu'] };
                 const sSummonList = SMAP_ACTION[ability.effect];
                 const sSummonBtns = sSummonList ? sSummonList.map(n => '<button onclick="showSummonInfo(\'' + n.replace(/'/g,"\'") + '\',event)" style="background:rgba(168,85,247,0.2);border:1px solid #a855f7;color:#a855f7;border-radius:6px;cursor:pointer;padding:2px 7px;font-size:.65rem;margin:2px 2px 0 0;display:inline-block;" title="Info invocación">🔮 ' + n + '</button>').join('') : '';
                 button.innerHTML = `
