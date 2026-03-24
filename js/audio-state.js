@@ -122,7 +122,7 @@
                 name: 'Igris',
                 hp: 5, maxHp: 5, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/T13zZdKD/Captura_de_pantalla_2026_03_11_145542.png',
-                passive: 'Comandante Rojo Sangriento: Al final de cada ronda causa 2 de daño a todos los enemigos (incluyendo invocaciones enemigas)'
+                passive: 'Comandante Rojo Sangriento: Al final de cada ronda causa 2 de daño AOE a todos los enemigos (incluyendo invocaciones). Al final de cada ronda elimina una invocación enemiga aleatoria del campo.'
             },
             'Iron': {
                 name: 'Iron',
@@ -152,7 +152,7 @@
                 name: 'Kaisel',
                 hp: 7, maxHp: 7, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/GtmWZL41/Captura_de_pantalla_2026_03_11_151735.png',
-                passive: 'Maldicion de Kaisel: Al final de cada ronda aplica un Debuff aleatorio sobre 2 enemigos aleatorios.'
+                passive: 'Maldicion de Kaisel: Al final de cada ronda reduce 3 cargas a todos los enemigos.'
             },
             'Kamish': {
                 name: 'Kamish',
@@ -225,5 +225,11 @@
                 hp: 20, maxHp: 20, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/qq0BT0rv/Captura_de_pantalla_2026_03_15_002546.png',
                 passive: 'Al final de cada ronda, si hay enemigos sin debuff activo quemadura solar, aplica debuff Quemadura solar sobre esos enemigos. Cada vez que un debuff quemadura solar es aplicado sobre 1 enemigo, todos los aliados de tu equipo recuperan 2 HP por debuff Quemadura Solar aplicado.'
-            }
+            },
+            'Fake Black': {
+                name: 'Fake Black',
+                hp: 2, maxHp: 2, summoner: null, team: null, statusEffects: [],
+                img: '',
+                passive: 'Explosion: Al morir causa 3 puntos de daño AOE al equipo enemigo y genera 2 puntos de carga en el equipo aliado.'
+            },
         };
