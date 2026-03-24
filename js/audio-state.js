@@ -218,7 +218,7 @@
                 name: 'Abu el-Hol Sphinx',
                 hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/6qw6XwKQ/Captura_de_pantalla_2026_03_15_002404.png',
-                passive: 'Al final de cada ronda todos los enemigos con Quemadura Solar pierden 2 cargas.'
+                passive: 'Al final de cada ronda todos los enemigos con Quemadura Solar pierden 2 cargas. Mientras permanezca activa Ozymandias es inmune a Debuffs.'
             },
             'Ramesseum Tentyris': {
                 name: 'Ramesseum Tentyris',
