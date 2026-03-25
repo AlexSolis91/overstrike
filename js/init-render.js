@@ -71,6 +71,23 @@
                     ch.immuneToPosesion = true;
                     ch.immuneToCongelacion = true;
                 }
+                // Rey Brujo de Angmar: Mega Provocacion permanente + inmunidades
+                if (passiveName === 'Señor de los Nazgul') {
+                    ch.statusEffects = ch.statusEffects || [];
+                    ch.statusEffects.push({ name: 'Mega Provocacion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '⚡' });
+                    ch.immuneToMiedo = true;
+                    ch.immuneToConfusion = true;
+                }
+                // Ivar the Boneless: Esquiva Area permanente + inmunidades
+                if (passiveName === 'Mente Brillante') {
+                    ch.statusEffects = ch.statusEffects || [];
+                    if (!ch.statusEffects.some(e => e && (e.name||'').toLowerCase().replace(/[^a-z]/g,'') === 'esquivaarea')) {
+                        ch.statusEffects.push({ name: 'Esquiva Area', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '💨' });
+                    }
+                    ch.immuneToMiedo = true;
+                    ch.immuneToConfusion = true;
+                    ch.immuneToPosesion = true;
+                }
             }
 
             // Calcular orden de turnos
