@@ -269,7 +269,7 @@
                     { name: 'Espinas de Sangre', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'apply_poison', poisonDuration: 2, description: 'Causa 2 de daño. Se aplica Debuff Veneno al objetivo por 2 turnos.' },
                     { name: 'Sangre Demoniaca', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'single', effect: 'sangre_demoniaca', poisonDuration: 3, heal: 3, description: 'Causa 3 de daño. Aplica Debuff Veneno en el objetivo por 3 turnos. Aplica Curación a Muzan por 3 HP.' },
                     { name: 'Sombra de la Noche', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'aoe', effect: 'sombra_noche', poisonDuration: 3, description: 'Causa 3 AOE. Aplica Buff Sigilo por 2 turnos. Aplica Debuff Veneno por 3 turnos.' },
-                    { name: 'Rey de los Demonios Definitivo', type: 'over', cost: 12, chargeGain: 0, damage: 1, target: 'aoe', effect: 'muzan_transform', description: 'TRANSFORMACIÓN: Causa 1 AOE. Aplica Debuff Veneno por 5 turnos. Aplica Buff Regeneración de 30% por 5 turnos. Aumenta su celeridad 20%. Aumenta su probabilidad de crítico 70%.' }
+                    { name: 'Rey de los Demonios Definitivo', type: 'over', cost: 12, chargeGain: 0, damage: 1, target: 'aoe', effect: 'muzan_transform', description: 'TRANSFORMACIÓN: Causa 1 AOE. Aplica Debuff Veneno por 5 turnos. Aumenta la velocidad de Muzan Kibutsuji en 10 puntos. Los ataques de Muzan activan los ticks de veneno causando el daño correspondiente.' }
                 ]
             },
 
@@ -483,10 +483,10 @@
                 hp: 20, maxHp: 20, speed: 88, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/x8qLNcDN/Whats-App-Image-2026-03-20-at-3-35-02-PM.jpg',
-                passive: { name: 'Olor de la Brecha', description: '20% probabilidad de crítico en todos sus ataques. Al asestar un crítico, genera 1 carga. Por cada 2 cargas consumidas, genera 1 carga al equipo aliado.' },
+                passive: { name: 'Olor de la Brecha', description: 'El ataque básico de Tanjiro Kamado tiene 50% de probabilidad de generar 1 carga al equipo aliado.' },
                 abilities: [
                     { name: 'Vals', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'vals_tanjiro', description: 'Causa 1 daño. El equipo aliado genera 1 carga.' },
-                    { name: 'Cascada de Agua', type: 'special', cost: 5, chargeGain: 0, damage: 2, target: 'aoe', effect: 'cascada_agua_tanjiro', description: '2 AOE. Genera 1 carga al equipo aliado por cada golpe crítico.' },
+                    { name: 'Cascada de Agua', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'aoe', effect: 'cascada_agua_tanjiro', description: 'Causa 2 AOE. 50% de probabilidad de robar 1 carga de cada objetivo golpeado.' },
                     { name: 'Danza del Dios del Fuego', type: 'special', cost: 7, chargeGain: 0, damage: 0, target: 'single', effect: 'danza_fuego_tanjiro', description: 'Realiza 5 ataques básicos sobre enemigos aleatorios.' },
                     { name: 'Decimotercera Postura', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'single', effect: 'decimotercera_tanjiro', description: 'Realiza 13 ataques básicos aleatorios. 50% de probabilidad de eliminar 1 carga al objetivo por golpe.' }
                 ]
