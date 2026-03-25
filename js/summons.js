@@ -998,6 +998,23 @@
                 }
             }
 
+            // MUZAN muzanVenomOnHit: sus ataques activan el tick de veneno del objetivo
+            if (remainingDamage > 0 && attackerName && !passiveExecuting) {
+                const _mzAtk = gameState.characters[attackerName];
+                if (_mzAtk && _mzAtk.muzanVenomOnHit && !_mzAtk.isDead) {
+                    const _mzTgt = gameState.characters[targetName];
+                    if (_mzTgt && !_mzTgt.isDead && _mzTgt.hp > 0) {
+                        const _mzPoison = (_mzTgt.statusEffects||[]).find(e => e && normAccent(e.name||'') === 'veneno');
+                        if (_mzPoison && _mzPoison.poisonTick > 0) {
+                            passiveExecuting = true;
+                            applyDamageWithShield(targetName, _mzPoison.poisonTick, null);
+                            addLog('🩸 Muzan (Progenitor Demoniaco): ataque activa tick de veneno (' + _mzPoison.poisonTick + ' daño) en ' + targetName, 'damage');
+                            passiveExecuting = false;
+                        }
+                    }
+                }
+            }
+
             // Track last attacker for abilities like Corazón en Llamas
             if (attackerName && remainingDamage > 0) {
                 if (!gameState._lastAttacker) gameState._lastAttacker = {};
