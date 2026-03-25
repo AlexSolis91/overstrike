@@ -255,11 +255,7 @@
                 attacker.charges = Math.min(20, (attacker.charges||0) + stolen);
                 addLog('🌀 Teletransportación: Confusión + roba ' + stolen + ' cargas de ' + targetName, 'damage');
 
-            } else if (ability.effect === 'lazo_divino') {
-                applyDamageWithShield(targetName, finalDamage, charName);
-                // Poison with 50% chance to drain 2 charges per tick
-                applyDebuff(targetName, { name: 'Veneno', type: 'debuff', duration: ability.poisonDuration || 4, emoji: '☠️', poisonPercent: 5, poisonChargeDrain: true, poisonChargeDrainAmount: 2 });
-                addLog('☠️ Lazo Divino: ' + finalDamage + ' daño + Veneno 4t a ' + targetName + ' (50% -2 cargas/tick)', 'damage');
+            // lazo_divino viejo eliminado — usar handler nuevo (Goku Black Fake Black)
 
             } else if (ability.effect === 'guadana_divina') {
                 const enemyTeamGD = attacker.team === 'team1' ? 'team2' : 'team1';
@@ -720,20 +716,22 @@
                 addLog(`⚔️ Golpes Normales Consecutivos: ${hits} golpe${hits>1?'s':''}, ${totalConsDmg} daño total`, 'damage');
 
             } else if (ability.effect === 'golpe_grave') {
-                // SAITAMA - Golpe Grave: 20 daño, si mata genera turno adicional
+                // SAITAMA - Golpe Grave: Elimina directamente al objetivo + turno adicional
                 const tgtGrave = gameState.characters[targetName];
-                const wasAliveBefore = tgtGrave && !tgtGrave.isDead && tgtGrave.hp > 0;
-                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                addLog(`💀 ${gameState.selectedCharacter} usa Golpe Grave en ${targetName} causando ${finalDamage} daño`, 'damage');
-                if (wasAliveBefore && tgtGrave && (tgtGrave.isDead || tgtGrave.hp <= 0)) {
-                    addLog(`💪 ¡DERROTA! Saitama gana un turno adicional`, 'buff');
-                    // ANTICIPACION: chars with this buff fire 3 basics on the attacker
+                if (tgtGrave && !tgtGrave.isDead && tgtGrave.hp > 0) {
+                    // Forzar eliminación ignorando escudo e invulnerabilidad
+                    tgtGrave.hp = 0;
+                    tgtGrave.isDead = true;
+                    addLog('💀 ¡GOLPE GRAVE! ' + gameState.selectedCharacter + ' elimina a ' + targetName + ' de un solo golpe', 'damage');
+                    if (typeof checkGameOver === 'function') checkGameOver();
+                    // Turno adicional
                     triggerAnticipacion(gameState.selectedCharacter, attacker.team);
-                    // Turno adicional: no incrementar turno, abrir selección de habilidades
                     renderCharacters();
                     renderSummons();
                     showContinueButton();
-                    return; // No llamar endTurn
+                    return;
+                } else {
+                    addLog('💀 Golpe Grave: ' + targetName + ' no es un objetivo válido', 'info');
                 }
 
             } else if (ability.effect === 'apply_confusion') {
@@ -2452,22 +2450,7 @@
                 addLog('⚔️ Djem So / Corte Oscuro: ' + djemDmg + ' daño a ' + targetName, 'damage');
 
             // ── ESTRANGULAR (Anakin - Debilitar, nueva versión) ──
-            } else if (ability.effect === 'estrangular') {
-                let stDmg = finalDamage;
-                if (attacker.darkSideAwakened) {
-                    stDmg += 2;
-                    if (Math.random() < 0.5) { stDmg *= 2; addLog('💥 Lado Oscuro: ¡Crítico en Estrangular!', 'damage'); }
-                }
-                applyDamageWithShield(targetName, stDmg, charName);
-                // Buff Concentración a Anakin
-                attacker.statusEffects = (attacker.statusEffects || []).filter(e => e && e.name !== 'Concentración');
-                attacker.statusEffects.push({ name: 'Concentración', type: 'buff', duration: 2, emoji: '🎯' });
-                addLog('🎯 Estrangular: ' + charName + ' gana Buff Concentración', 'buff');
-                // +1 daño permanente al básico Djem So
-                if (!attacker.djemSoBonus) attacker.djemSoBonus = 0;
-                attacker.djemSoBonus += 1;
-                addLog('⚔️ Estrangular: Djem So de ' + charName + ' gana +1 daño permanente (total +' + attacker.djemSoBonus + ')', 'buff');
-                addLog('💔 Estrangular: ' + targetName + ' recibe ' + stDmg + ' de daño', 'damage');
+            // estrangular viejo eliminado — usar handler nuevo más abajo
 
             } else if (ability.effect === 'apply_stun_dmg') {
                 let stunDmg = finalDamage;
@@ -4089,7 +4072,7 @@
                 const _aoTgt = gameState.characters[targetName];
                 const _aoHadQS = _aoTgt && (_aoTgt.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'quemadura solar');
                 applyDamageWithShield(targetName, finalDamage, charName);
-                applySolarBurn(targetName, 5, 999); // Quemadura Solar permanente hasta limpiarse
+                applySolarBurn(targetName, 0, 999); // Quemadura Solar permanente hasta limpiarse
                 addLog('☀️ Animación: ' + finalDamage + ' daño + Quemadura Solar a ' + targetName, 'damage');
                 if (_aoHadQS && Math.random() < 0.50) {
                     applyDebuff(targetName, { name: 'Mega Aturdimiento', type: 'debuff', duration: 2, emoji: '💫', stun: true });
@@ -5232,11 +5215,14 @@
                         if (!_ac || _ac.isDead || _ac.hp <= 0) continue;
                         if (_ac.team === _elEnemyTeam) continue; // Anakin debe estar en el equipo que recibe
                         if (!_ac.passive || _ac.passive.name !== 'El Elegido') continue;
-                        if (Math.random() < 0.50) {
+                        // Solo activar si Anakin no tiene ya Frenesi Y Furia activos
+                        const _hasFrenesi = (_ac.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'frenesi');
+                        const _hasFuria = (_ac.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'furia');
+                        if (!(_hasFrenesi && _hasFuria) && Math.random() < 0.50) {
                             passiveExecuting = true;
                             applyFrenesi(_an, 2);
                             applyFuria(_an, 2);
-                            addLog('⚡ El Elegido: Anakin se aplica Frenesi + Furia 2T (aliado recibió especial)', 'buff');
+                            addLog('El Elegido: Anakin gana Frenesi + Furia 2T', 'buff');
                             passiveExecuting = false;
                         }
                         break;
