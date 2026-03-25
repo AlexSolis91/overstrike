@@ -902,12 +902,14 @@
 
             
             } else if (ability.effect === 'muzan_transform') {
-                // MUZAN - Rey de los Demonios Definitivo
+                // MUZAN - Rey de los Demonios Definitivo: TRANSFORMACION
+                // 1 AOE + Veneno 5T + +10 velocidad + ataques activan ticks de veneno
                 attacker.muzanTransformed = true;
                 const _mzTP = attacker.transformPortrait || attacker.transformationPortrait;
                 if (_mzTP) { attacker.portrait = _mzTP; }
                 const mzTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                 checkAndRemoveStealth(mzTeam);
+                // 1 daño AOE
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (c && c.team === mzTeam && !c.isDead && c.hp > 0) {
@@ -915,14 +917,16 @@
                         applyPoison(n, 5);
                     }
                 }
-                // Regen 30% x5 turnos en sí mismo
-                attacker.statusEffects.push({ name: 'Regeneracion', type: 'buff', duration: 5, amount: Math.ceil(attacker.maxHp * 0.30), emoji: '💖' });
-                // +20% velocidad
-                attacker.speed = Math.ceil(attacker.speed * 1.20);
-                // +70% crit chance (almacenado en el personaje)
-                attacker.muzanCritBonus = (attacker.muzanCritBonus || 0) + 0.70;
+                for (let sid in gameState.summons) {
+                    const s = gameState.summons[sid];
+                    if (s && s.team === mzTeam && s.hp > 0) applySummonDamage(sid, finalDamage, gameState.selectedCharacter);
+                }
+                // +10 velocidad permanente
+                attacker.speed = (attacker.speed || 86) + 10;
+                // Flag: ataques de Muzan activarán ticks de veneno (procesado en applyDamageWithShield)
+                attacker.muzanVenomOnHit = true;
                 ability.used = true;
-                addLog(`👹 ¡Rey de los Demonios Definitivo! Daño AOE, Veneno 5t, Regen 30%, +20% VEL, +70% crit`, 'buff');
+                addLog('👹 ¡Rey de los Demonios Definitivo! 1 AOE + Veneno 5T al equipo enemigo. Muzan gana +10 VEL. Sus ataques activarán ticks de veneno.', 'buff');
 
             } else if (ability.effect === 'apply_fear_1') {
                 // SAURON Voluntad de Mordor / DARTH VADER Intimidación del Imperio
@@ -3432,57 +3436,46 @@
                 generateChargesInline(charName, ability.chargeGain);
 
             } else if (ability.effect === 'vals_tanjiro') {
-                // TANJIRO — Vals: 1 dmg + 1 carga a TODOS los aliados + passive crit 20%
+                // TANJIRO — Básico: daño + 50% de generar 1 carga al equipo aliado (Olor de la Brecha)
                 const _tjAtk = gameState.characters[gameState.selectedCharacter];
                 let _tjDmg = finalDamage;
-                // Passive: Olor de la Brecha — 20% crit
-                if (_tjAtk && _tjAtk.passive && _tjAtk.passive.name === 'Olor de la Brecha' && Math.random() < 0.20) {
-                    _tjDmg *= 2;
-                    _tjAtk.charges = Math.min(20, (_tjAtk.charges || 0) + 1);
-                    addLog('🌊 ¡Crítico! Olor de la Brecha: ' + gameState.selectedCharacter + ' gana 1 carga', 'buff');
-                }
                 applyDamageWithShield(targetName, _tjDmg, gameState.selectedCharacter);
-                // All allies gain 1 charge
-                for (const _aln in gameState.characters) {
-                    const _alc = gameState.characters[_aln];
-                    if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== (_tjAtk ? _tjAtk.team : '')) continue;
-                    _alc.charges = Math.min(20, (_alc.charges || 0) + 1);
+                addLog('🌊 Vals: ' + _tjDmg + ' daño a ' + targetName, 'damage');
+                // Olor de la Brecha: 50% genera 1 carga al equipo aliado
+                if (_tjAtk && _tjAtk.passive && _tjAtk.passive.name === 'Olor de la Brecha' && Math.random() < 0.50) {
+                    for (const _aln in gameState.characters) {
+                        const _alc = gameState.characters[_aln];
+                        if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== _tjAtk.team) continue;
+                        _alc.charges = Math.min(20, (_alc.charges || 0) + 1);
+                    }
+                    addLog('🌊 Olor de la Brecha: +1 carga al equipo aliado (50%)', 'buff');
                 }
-                addLog('🌊 Vals: ' + _tjDmg + ' daño a ' + targetName + ' + 1 carga al equipo aliado', 'buff');
 
             } else if (ability.effect === 'cascada_agua_tanjiro') {
-                // TANJIRO — Cascada de Agua: 2 AOE + 1 carga aliado por critico + passive crit
+                // TANJIRO — Cascada de Agua: 2 AOE + 50% robar 1 carga de cada objetivo
                 const _caAtk = gameState.characters[gameState.selectedCharacter];
                 const _caTeam = _caAtk ? (_caAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
-                let _caCrits = 0;
                 if (checkAndRedirectAOEMegaProv(_caTeam, finalDamage, gameState.selectedCharacter)) {
                     addLog('🌊 Cascada de Agua redirigida por Mega Provocación', 'damage');
                 } else {
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _caTeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
-                        let _caDmg = finalDamage;
-                        // 20% crit per hit
-                        if (_caAtk && _caAtk.passive && _caAtk.passive.name === 'Olor de la Brecha' && Math.random() < 0.20) {
-                            _caDmg *= 2;
-                            _caAtk.charges = Math.min(20, (_caAtk.charges || 0) + 1);
-                            _caCrits++;
-                            addLog('💥 ¡Crítico! Cascada de Agua en ' + _n, 'damage');
+                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('💨 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        // 50% robar 1 carga del objetivo
+                        if (Math.random() < 0.50 && _c.charges > 0 && _caAtk) {
+                            _c.charges = Math.max(0, (_c.charges||0) - 1);
+                            _caAtk.charges = Math.min(20, (_caAtk.charges||0) + 1);
+                            addLog('🌊 Cascada de Agua: roba 1 carga de ' + _n + ' (50%)', 'buff');
                         }
-                        applyDamageWithShield(_n, _caDmg, gameState.selectedCharacter);
+                    }
+                    for (let _sid in gameState.summons) {
+                        const _s = gameState.summons[_sid];
+                        if (_s && _s.team === _caTeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, gameState.selectedCharacter);
                     }
                 }
-                // Allies gain 1 charge per crit
-                if (_caCrits > 0 && _caAtk) {
-                    for (const _aln in gameState.characters) {
-                        const _alc = gameState.characters[_aln];
-                        if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== _caAtk.team) continue;
-                        _alc.charges = Math.min(20, (_alc.charges || 0) + _caCrits);
-                    }
-                    addLog('🌊 Cascada de Agua: ' + _caCrits + ' crítico' + (_caCrits>1?'s':'') + ' — equipo aliado gana ' + _caCrits + ' carga' + (_caCrits>1?'s':''), 'buff');
-                }
-                addLog('🌊 Cascada de Agua: 2 daño AOE', 'damage');
+                addLog('🌊 Cascada de Agua: ' + finalDamage + ' AOE', 'damage');
 
             } else if (ability.effect === 'danza_fuego_tanjiro') {
                 // TANJIRO — Danza del Dios del Fuego: 5 ataques básicos aleatorios
