@@ -514,7 +514,11 @@
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== targetTeam || c.isDead || c.hp <= 0) continue;
-                    if (c.statusEffects && c.statusEffects.some(e => e && normAccent(e.name || '') === 'megaprovocacion')) {
+                    if (c.statusEffects && c.statusEffects.some(e => {
+                        if (!e) return false;
+                        const _nn = normAccent(e.name || '');
+                        return _nn === 'megaprovocacion' || _nn === 'mega provocacion';
+                    })) {
                         return { id: null, holder: c, isCharacter: true, characterName: n, kamish: c };
                     }
                 }
@@ -1000,17 +1004,18 @@
                 gameState._lastAttacker[targetName] = attackerName;
             }
 
-            // PASIVA TESORO DEL CIELO (Shaka de Virgo): al recibir daño cura 1 HP a todos los aliados
+            // PASIVA TESORO DEL CIELO (Shaka de Virgo): SOLO cuando SHAKA recibe daño, cura 1 HP a todos los aliados
             if (remainingDamage > 0 && !passiveExecuting) {
                 const _stkDmgTarget = gameState.characters[targetName];
-                if (_stkDmgTarget && !_stkDmgTarget.isDead) {
-                    for (const _stkName in gameState.characters) {
-                        const _stkChar = gameState.characters[_stkName];
-                        if (!_stkChar || _stkChar.isDead || _stkChar.hp <= 0) continue;
-                        if (_stkChar.team !== _stkDmgTarget.team) continue;
-                        if (!_stkChar.passive || _stkChar.passive.name !== 'Tesoro del Cielo') continue;
-                        passiveExecuting = true;
-                        const _stkTeam = _stkDmgTarget.team;
+                // Verificar que el objetivo ES Shaka (tiene la pasiva Tesoro del Cielo)
+                if (_stkDmgTarget && !_stkDmgTarget.isDead &&
+                    _stkDmgTarget.passive && _stkDmgTarget.passive.name === 'Tesoro del Cielo') {
+                    // Shaka recibió daño — curar 1 HP a todos sus aliados
+                    passiveExecuting = true;
+                    const _stkTeam = _stkDmgTarget.team;
+                    // Encontrar nombre de Shaka para el trigger del sub-pasiva
+                    const _stkName = targetName;
+                    { // bloque de curación
                         for (const _stkAllyName in gameState.characters) {
                             const _stkAlly = gameState.characters[_stkAllyName];
                             if (!_stkAlly || _stkAlly.isDead || _stkAlly.hp <= 0 || _stkAlly.team !== _stkTeam) continue;
@@ -1025,8 +1030,7 @@
                             }
                         }
                         passiveExecuting = false;
-                        break;
-                    }
+                    } // fin bloque curación
                 }
             }
 
