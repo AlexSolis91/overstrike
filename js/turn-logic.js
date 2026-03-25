@@ -1471,19 +1471,25 @@
                         _ivar.statusEffects = (_ivar.statusEffects||[]);
                         _ivar.statusEffects.push({ name: 'Esquiva Area', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '💨' });
                     }
-                    const _ivarBuffPool = ['Frenesi','Furia','Concentracion','Contraataque','Celeridad'];
+                    // Mente Brillante: usar funciones específicas para que cada buff funcione correctamente
+                    function _applyMenteBrillanteBuff(allyName) {
+                        const _pool = ['Frenesi','Furia','Concentracion','Contraataque','Celeridad'];
+                        const _chosen = _pool[Math.floor(Math.random() * _pool.length)];
+                        if (_chosen === 'Frenesi') { if (typeof applyFrenesi === 'function') applyFrenesi(allyName, 1); else applyBuff(allyName, { name: 'Frenesi', type: 'buff', duration: 1, emoji: '🔥' }); }
+                        else if (_chosen === 'Furia') { if (typeof applyFuria === 'function') applyFuria(allyName, 1); else applyBuff(allyName, { name: 'Furia', type: 'buff', duration: 1, emoji: '⚡' }); }
+                        else if (_chosen === 'Concentracion') { if (typeof applyConcentracion === 'function') applyConcentracion(allyName, 1); else applyBuff(allyName, { name: 'Concentracion', type: 'buff', duration: 1, emoji: '🎯' }); }
+                        else if (_chosen === 'Contraataque') { applyBuff(allyName, { name: 'Contraataque', type: 'buff', duration: 1, emoji: '🔄' }); }
+                        else if (_chosen === 'Celeridad') { applyBuff(allyName, { name: 'Celeridad', type: 'buff', duration: 1, percent: 10, emoji: '💨' }); }
+                        return _chosen;
+                    }
                     for (const _an in gameState.characters) {
                         const _a = gameState.characters[_an];
                         if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _ivar.team) continue;
-                        // 1 buff garantizado
-                        const _b1 = _ivarBuffPool[Math.floor(Math.random() * _ivarBuffPool.length)];
-                        applyBuff(_an, { name: _b1, type: 'buff', duration: 1, emoji: '✨' });
-                        addLog('🪓 Mente Brillante: ' + _an + ' recibe Buff ' + _b1, 'buff');
-                        // 50% de probabilidad de un segundo buff
+                        const _b1 = _applyMenteBrillanteBuff(_an);
+                        addLog('Mente Brillante: ' + _an + ' recibe ' + _b1, 'buff');
                         if (Math.random() < 0.50) {
-                            const _b2 = _ivarBuffPool[Math.floor(Math.random() * _ivarBuffPool.length)];
-                            applyBuff(_an, { name: _b2, type: 'buff', duration: 1, emoji: '✨' });
-                            addLog('🪓 Mente Brillante (50%): ' + _an + ' recibe Buff extra ' + _b2, 'buff');
+                            const _b2 = _applyMenteBrillanteBuff(_an);
+                            addLog('Mente Brillante (50%): ' + _an + ' recibe ' + _b2 + ' extra', 'buff');
                         }
                     }
                 })();
