@@ -4,7 +4,9 @@
         // If Itachi is on that character's team, he cleanses up to 2 debuffs + 2 charges each.
         function triggerIzanamiPartB(targetName) {
             // Itachi Izanami Parte B: al recibir debuff un aliado, limpia 1 debuff de un aliado ALEATORIO + 2 cargas
+            // Flag por turno para evitar que un AOE limpie múltiples debuffs
             if (passiveExecuting) return;
+            if (gameState._izanamiUsedThisTurn) return;
             const target = gameState.characters[targetName];
             if (!target || target.isDead || target.hp <= 0) return;
             const _izAllyTeam = target.team;
@@ -20,6 +22,7 @@
                         (c.statusEffects || []).some(function(e) { return e && e.type === 'debuff' && !e.permanent; });
                 });
                 if (_alliesWithDebuff.length > 0) {
+                    gameState._izanamiUsedThisTurn = true; // Un solo disparo por turno
                     // Elegir aliado aleatorio con debuff
                     const _randAlly = _alliesWithDebuff[Math.floor(Math.random() * _alliesWithDebuff.length)];
                     const _alc = gameState.characters[_randAlly];
@@ -469,7 +472,9 @@ function applyDebuff(targetName, effectObj) {
             if (typeof triggerIzanamiPartB === 'function') triggerIzanamiPartB(targetName);
         }
         // Quemadura Solar: stackeable (a diferencia de Quemadura normal)
-        function applySolarBurn(targetName, percent, duration) {
+        function applySolarBurn(targetName, durationOrPercent, duration) {
+            // QS ahora funciona por TURNOS (bloquea curación). percent ignorado.
+            // Para compatibilidad backward: si se llama con (name, percent, duration), usar duration
             const target = gameState.characters[targetName];
             if (!target || !target.statusEffects) return;
             if (hasStatusEffect(targetName, 'Proteccion Sagrada') || hasStatusEffect(targetName, 'Protección Sagrada')) {
@@ -485,9 +490,11 @@ function applyDebuff(targetName, effectObj) {
                 addLog('🦸 Saitama es inmune a Quemadura Solar', 'buff');
                 return;
             }
-            // Stackear: cada aplicación se agrega como efecto separado
-            target.statusEffects.push({ name: 'Quemadura Solar', type: 'debuff', percent, duration, emoji: '☀️' });
-            addLog(`☀️ ${targetName} recibe Quemadura Solar ${percent}% por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
+            // QS: debuff por TURNOS. Solo bloquea curación, no hace daño por %
+            // Si ya tiene QS activa, reemplazar
+            target.statusEffects = (target.statusEffects || []).filter(e => !e || e.name !== 'Quemadura Solar');
+            target.statusEffects.push({ name: 'Quemadura Solar', type: 'debuff', duration: duration, emoji: '☀️' });
+            addLog('☀️ ' + targetName + ' recibe Quemadura Solar ' + duration + 'T (no puede recuperar HP)', 'damage');
             // PRIVILEGIO IMPERIAL (Ozymandias): genera 1 carga cuando QS es aplicada sobre un enemigo
             if (!passiveExecuting) {
                 for (const _ozn in gameState.characters) {
