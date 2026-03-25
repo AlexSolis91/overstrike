@@ -234,43 +234,13 @@ function processBurnEffects(charName) {
             if (hasStatusEffect(charName, 'Proteccion Sagrada')) return;
             const solarEffects = char.statusEffects.filter(e => e && e.name === 'Quemadura Solar');
             if (solarEffects.length === 0) return;
-            const totalPercent = solarEffects.reduce((sum, e) => sum + (e.percent || 0), 0);
-            const damage = Math.ceil(char.maxHp * (totalPercent / 100));
-            if (damage > 0) {
-                applyDamageWithShield(charName, damage, null);
-                addLog(`☀️ ${charName} recibe ${damage} de daño por Quemadura Solar (${totalPercent}%)`, 'damage');
-                // Quemadura Solar: pierde 1 carga por cada tick
-                if (char.charges > 0) {
-                    char.charges = Math.max(0, char.charges - 1);
-                    addLog(`☀️ Quemadura Solar: ${charName} pierde 1 carga`, 'damage');
-                }
-                // SPHINX WEHEM-MESUT: cada vez que un enemigo recibe daño de QS, pierde 2 cargas adicionales
-                const sphinx = Object.values(gameState.summons).find(s => s && s.name === 'Sphinx Wehem-Mesut' && s.team !== char.team);
-                if (sphinx) {
-                    char.charges = Math.max(0, char.charges - 2);
-                    addLog(`🦁 Sphinx Wehem-Mesut: ${charName} pierde 2 cargas por Quemadura Solar`, 'damage');
-                }
-                // RAMESSEUM TENTYRIS: todos los aliados del Ramesseum recuperan 1 HP
-                const ram = Object.values(gameState.summons).find(s => s && s.name === 'Ramesseum Tentyris' && s.team !== char.team);
-                if (ram) {
-                    const ramTeam = ram.team;
-                    for (let n in gameState.characters) {
-                        const c = gameState.characters[n];
-                        if (c && c.team === ramTeam && !c.isDead && c.hp > 0 && c.hp < c.maxHp) {
-                            c.hp = Math.min(c.maxHp, c.hp + 1);
-                        }
-                    }
-                    addLog(`🏛️ Ramesseum Tentyris: aliados recuperan 1 HP`, 'heal');
-                }
-                // PROGENITOR DEMONIACO (Muzan): genera 1 carga cada vez que veneno/QS hace daño -- handled in poison, this is solar
-                // MUZAN: 1 carga si fue su veneno (not solar, handled separately)
-                const muzan = gameState.characters['Muzan Kibutsuji'];
-                if (muzan && !muzan.isDead && muzan.hp > 0) {
-                    // Muzan gains 1 charge if solar burn does damage on enemy
-                    if (muzan.team !== char.team) {
-                        muzan.charges += 1;
-                    }
-                }
+            // QS ya no hace daño por %. Solo bloquea curación (gestionado por canHeal())
+            addLog('☀️ ' + charName + ' tiene Quemadura Solar activa (no puede recuperar HP)', 'debuff');
+            // SPHINX WEHEM-MESUT: pierde 2 cargas adicionales por tener QS activa
+            const sphinx = Object.values(gameState.summons).find(s => s && (s.name === 'Sphinx Wehem-Mesut' || s.name === 'Abu el-Hol Sphinx') && s.team !== char.team);
+            if (sphinx) {
+                char.charges = Math.max(0, char.charges - 2);
+                addLog('🦁 Sphinx: ' + charName + ' pierde 2 cargas por Quemadura Solar', 'damage');
             }
         }
 
