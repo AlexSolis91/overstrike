@@ -41,6 +41,8 @@
                         // (evita procesamiento doble — cada cliente procesa solo sus propios personajes)
                         const _isMyCharOnline = !onlineMode || (isRoomHost ? currentChar.team === 'team1' : currentChar.team === 'team2');
                         if (_isMyCharOnline) {
+                            // Resetear flags de pasivas de un disparo por turno
+                            gameState._izanamiUsedThisTurn = false;
                             // VENENO: aplica al INICIO del turno del personaje con el debuff
                             processNewDebuffEffects(currentCharName);
                         }
@@ -1278,13 +1280,9 @@
                             _pc.statusEffects.push({ name: 'Aura oscura', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🌑' });
                         }
                     }
-                    // Goku Black: Aura Oscura permanente (Cuerpo Divino)
-                    if (_pname === 'Cuerpo Divino') {
-                        if (!hasStatusEffect(_pn, 'Aura oscura')) {
-                            _pc.statusEffects = (_pc.statusEffects || []);
-                            _pc.statusEffects.push({ name: 'Aura oscura', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🌑' });
-                        }
-                    }
+                    // Goku Black: Cuerpo Divino — el efecto de Aura Oscura se aplica
+                    // directamente en applyDamageWithShield (summons.js), no como buff visible
+                    // NO se agrega a statusEffects para que no aparezca en la barra de efectos
                     // Anakin Skywalker: Asistir permanente (El Elegido)
                     if (_pname === 'El Elegido') {
                         if (!(_pc.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'asistir')) {
@@ -1475,11 +1473,24 @@
                     function _applyMenteBrillanteBuff(allyName) {
                         const _pool = ['Frenesi','Furia','Concentracion','Contraataque','Celeridad'];
                         const _chosen = _pool[Math.floor(Math.random() * _pool.length)];
-                        if (_chosen === 'Frenesi') { if (typeof applyFrenesi === 'function') applyFrenesi(allyName, 1); else applyBuff(allyName, { name: 'Frenesi', type: 'buff', duration: 1, emoji: '🔥' }); }
-                        else if (_chosen === 'Furia') { if (typeof applyFuria === 'function') applyFuria(allyName, 1); else applyBuff(allyName, { name: 'Furia', type: 'buff', duration: 1, emoji: '⚡' }); }
-                        else if (_chosen === 'Concentracion') { if (typeof applyConcentracion === 'function') applyConcentracion(allyName, 1); else applyBuff(allyName, { name: 'Concentracion', type: 'buff', duration: 1, emoji: '🎯' }); }
-                        else if (_chosen === 'Contraataque') { applyBuff(allyName, { name: 'Contraataque', type: 'buff', duration: 1, emoji: '🔄' }); }
-                        else if (_chosen === 'Celeridad') { applyBuff(allyName, { name: 'Celeridad', type: 'buff', duration: 1, percent: 10, emoji: '💨' }); }
+                        const _a = gameState.characters[allyName];
+                        if (_chosen === 'Frenesi') {
+                            if (typeof applyFrenesi === 'function') applyFrenesi(allyName, 1);
+                            else applyBuff(allyName, { name: 'Frenesi', type: 'buff', duration: 1, emoji: '🔥' });
+                        } else if (_chosen === 'Furia') {
+                            if (typeof applyFuria === 'function') applyFuria(allyName, 1);
+                            else applyBuff(allyName, { name: 'Furia', type: 'buff', duration: 1, emoji: '⚡' });
+                        } else if (_chosen === 'Concentracion') {
+                            if (typeof applyConcentracion === 'function') applyConcentracion(allyName, 1);
+                            else applyBuff(allyName, { name: 'Concentracion', type: 'buff', duration: 1, emoji: '🎯' });
+                        } else if (_chosen === 'Contraataque') {
+                            applyBuff(allyName, { name: 'Contraataque', type: 'buff', duration: 1, emoji: '🔄' });
+                        } else if (_chosen === 'Celeridad') {
+                            // Celeridad: aumenta velocidad real +10% del speed base
+                            const _speedBonus = _a ? Math.ceil((_a.speed||80) * 0.10) : 8;
+                            if (_a) _a.speed = (_a.speed||80) + _speedBonus;
+                            applyBuff(allyName, { name: 'Celeridad', type: 'buff', duration: 1, emoji: '💨', speedBonus: _speedBonus });
+                        }
                         return _chosen;
                     }
                     for (const _an in gameState.characters) {
