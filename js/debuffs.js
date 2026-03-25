@@ -3,6 +3,7 @@
         // when a trigger debuff (Quemadura/Veneno/Posesion/Confusion) hits any character.
         // If Itachi is on that character's team, he cleanses up to 2 debuffs + 2 charges each.
         function triggerIzanamiPartB(targetName) {
+            // Itachi Izanami Parte B: al recibir debuff un aliado, limpia 1 debuff de un aliado ALEATORIO + 2 cargas
             if (passiveExecuting) return;
             const target = gameState.characters[targetName];
             if (!target || target.isDead || target.hp <= 0) return;
@@ -12,26 +13,25 @@
                 if (!_izc || _izc.isDead || _izc.hp <= 0 || _izc.team !== _izAllyTeam) continue;
                 if (!_izc.passive || _izc.passive.name !== 'Izanami') continue;
                 passiveExecuting = true;
-                let _izCleaned = 0;
-                const _allies = Object.keys(gameState.characters).filter(function(n) {
+                // Recoger aliados con al menos 1 debuff
+                const _alliesWithDebuff = Object.keys(gameState.characters).filter(function(n) {
                     const c = gameState.characters[n];
-                    return c && !c.isDead && c.hp > 0 && c.team === _izAllyTeam;
+                    return c && !c.isDead && c.hp > 0 && c.team === _izAllyTeam &&
+                        (c.statusEffects || []).some(function(e) { return e && e.type === 'debuff' && !e.permanent; });
                 });
-                for (let i = 0; i < _allies.length && _izCleaned < 2; i++) {
-                    const _alc = gameState.characters[_allies[i]];
-                    const _dbs = (_alc.statusEffects || []).filter(function(e) {
-                        return e && e.type === 'debuff' && !e.permanent;
-                    });
-                    if (_dbs.length === 0) continue;
-                    const _rem = _dbs[0];
-                    _alc.statusEffects = (_alc.statusEffects || []).filter(function(e) { return e !== _rem; });
-                    addLog('👁️ Izanami: Debuff ' + _rem.name + ' limpiado de ' + _allies[i], 'buff');
-                    if (typeof triggerRinneganCleanse === 'function') triggerRinneganCleanse(_allies[i], 1);
-                    _izCleaned++;
-                }
-                if (_izCleaned > 0) {
-                    _izc.charges = Math.min(20, (_izc.charges || 0) + _izCleaned * 2);
-                    addLog('👁️ Izanami: ' + _izn + ' genera ' + (_izCleaned * 2) + ' cargas (' + _izCleaned + ' debuff' + (_izCleaned > 1 ? 's' : '') + ' limpiados)', 'buff');
+                if (_alliesWithDebuff.length > 0) {
+                    // Elegir aliado aleatorio con debuff
+                    const _randAlly = _alliesWithDebuff[Math.floor(Math.random() * _alliesWithDebuff.length)];
+                    const _alc = gameState.characters[_randAlly];
+                    const _dbs = (_alc.statusEffects || []).filter(function(e) { return e && e.type === 'debuff' && !e.permanent; });
+                    if (_dbs.length > 0) {
+                        const _rem = _dbs[Math.floor(Math.random() * _dbs.length)];
+                        _alc.statusEffects = (_alc.statusEffects || []).filter(function(e) { return e !== _rem; });
+                        addLog('Izanami: ' + (_rem.name||'Debuff') + ' limpiado de ' + _randAlly + ' (aliado aleatorio)', 'buff');
+                        if (typeof triggerRinneganCleanse === 'function') triggerRinneganCleanse(_randAlly, 1);
+                        _izc.charges = Math.min(20, (_izc.charges || 0) + 2);
+                        addLog('Izanami: ' + _izn + ' genera 2 cargas', 'buff');
+                    }
                 }
                 passiveExecuting = false;
                 break;
@@ -184,15 +184,31 @@ function triggerMaboroshi(targetTeam, debuffName) {
 function applyDebuff(targetName, effectObj) {
             const target = gameState.characters[targetName];
             if (!target || !target.statusEffects) return;
-            // ESQUIVA ÁREA + MEGA PROVOCACIÓN: inmune a debuffs AOE de enemigos
+            // ESQUIVA ÁREA: inmune a TODOS los debuffs y efectos AOE de enemigos
+            // También bloquea debuffs de movimientos NO-AOE si el objetivo tiene Esquiva Area activa
+            if (gameState.selectedAbility && gameState.selectedCharacter) {
+                const _attacker = gameState.characters[gameState.selectedCharacter];
+                const _isEnemyAttack = _attacker && _attacker.team !== target.team;
+                const _isAOEOrAll = gameState.selectedAbility.target === 'aoe' ||
+                    gameState.selectedAbility.target === 'team' ||
+                    gameState.selectedAbility.target === 'multi';
+                if (_isEnemyAttack) {
+                    // Esquiva Área bloquea debuffs de ataques AOE/multi Y debuffs de cualquier ataque
+                    if (_isAOEOrAll && (checkAsprosAOEImmunity(targetName) || checkMinatoAOEImmunity(targetName))) {
+                        addLog('💨 Esquiva Area: ' + targetName + ' es inmune al debuff AOE', 'buff');
+                        return;
+                    }
+                    // Para ataques no-AOE: Esquiva Área también bloquea debuffs directos
+                    if (!_isAOEOrAll && hasStatusEffect(targetName, 'Esquiva Area')) {
+                        addLog('💨 Esquiva Area: ' + targetName + ' es inmune al debuff (Esquiva Area activa)', 'buff');
+                        return;
+                    }
+                }
+            }
+            // MEGA PROVOCACIÓN: solo el portador puede recibir debuffs AOE
             if (gameState.selectedAbility && (gameState.selectedAbility.target === 'aoe' || gameState.selectedAbility.target === 'team')) {
                 const _attacker = gameState.characters[gameState.selectedCharacter];
                 if (_attacker && _attacker.team !== target.team) {
-                    // Esquiva Área check
-                    if (checkAsprosAOEImmunity(targetName) || checkMinatoAOEImmunity(targetName)) {
-                        addLog('🌟 ' + targetName + ' es inmune al debuff AOE (Esquiva Área)', 'buff');
-                        return;
-                    }
                     // MEGA PROVOCACIÓN: solo el portador de MegaProv puede recibir debuffs/buffs AOE del enemigo
                     const _mpDebData = (typeof checkKamishMegaProvocation === 'function')
                         ? checkKamishMegaProvocation(target.team)
