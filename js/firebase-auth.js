@@ -1097,249 +1097,543 @@
         }
 
         // ════════════════════════════════════════════════
-        // RANKED STATS — guardar resultado al final de la partida
+        // RANKED STATS — Sistema de Puntuación v2
         // ════════════════════════════════════════════════
-        function saveRankedResult(winnerTeam, playerTeam, playerChars, opponentName, opponentChars) {
+
+        // ── Ligas ──
+        var LEAGUES = [
+            { name: 'Bronce',     min: 0,    max: 499,  icon: '⚔️',  subs: ['III','II','I'] },
+            { name: 'Plata',      min: 500,  max: 999,  icon: '🥈',  subs: ['III','II','I'] },
+            { name: 'Oro',        min: 1000, max: 1999, icon: '🥇',  subs: ['III','II','I'] },
+            { name: 'Diamante',   min: 2000, max: 3499, icon: '💎',  subs: ['III','II','I'] },
+            { name: 'Maestro',    min: 3500, max: 4999, icon: '👑',  subs: [] },
+            { name: 'Gran Maestro', min: 5000, max: Infinity, icon: '🔱', subs: [] }
+        ];
+
+        function getLeague(points) {
+            var p = Math.max(0, points || 0);
+            for (var i = LEAGUES.length - 1; i >= 0; i--) {
+                if (p >= LEAGUES[i].min) {
+                    var lg = LEAGUES[i];
+                    var sub = '';
+                    if (lg.subs.length > 0) {
+                        var range = lg.max - lg.min + 1;
+                        var subSize = Math.floor(range / 3);
+                        var offset = p - lg.min;
+                        var subIdx = Math.min(2, Math.floor(offset / subSize));
+                        // subIdx 0 = III (lowest), 1 = II, 2 = I (highest)
+                        sub = lg.subs[2 - subIdx];
+                    }
+                    return { name: lg.name, icon: lg.icon, sub: sub, full: lg.icon + ' ' + lg.name + (sub ? ' ' + sub : '') };
+                }
+            }
+            return { name: 'Bronce', icon: '⚔️', sub: 'III', full: '⚔️ Bronce III' };
+        }
+
+        function getLeagueIndex(points) {
+            var p = Math.max(0, points || 0);
+            for (var i = LEAGUES.length - 1; i >= 0; i--) {
+                if (p >= LEAGUES[i].min) return i;
+            }
+            return 0;
+        }
+
+        // ── Calcular puntos de ataque ──
+        function calcAttackPoints(won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLeagueIdx, oppLeagueIdx) {
+            var base = won ? 100 : 15;
+            var bonus = 0;
+
+            if (won) {
+                // Personajes vivos
+                var aliveRatio = totalAllies > 0 ? survivingAllies / totalAllies : 0;
+                if (aliveRatio >= 1.0)       bonus += 40;
+                else if (aliveRatio >= 0.67) bonus += 20;
+                else if (aliveRatio > 0)     bonus += 5;
+                // Velocidad de victoria
+                if (roundsElapsed <= 3)      bonus += 25;
+                else if (roundsElapsed <= 5) bonus += 10;
+                // Eliminación total
+                if (enemiesEliminated >= totalEnemies) bonus += 15;
+            } else {
+                // Derrota — bonus por daño causado
+                if (enemiesEliminated >= 2)  bonus += 20;
+                else if (enemiesEliminated >= 1) bonus += 10;
+            }
+
+            var total = base + bonus;
+
+            // Multiplicador por diferencia de liga
+            var diff = oppLeagueIdx - myLeagueIdx;
+            var mult = diff >= 2 ? 1.5 : diff === 1 ? 1.25 : diff === 0 ? 1.0 : diff === -1 ? 0.75 : 0.5;
+            total = Math.round(total * mult);
+
+            return Math.max(1, total);
+        }
+
+        // ── Calcular puntos de defensa ──
+        function calcDefensePoints(defenseWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defTotalHpRemaining, defTotalHpMax) {
+            var base = defenseWon ? 60 : 10;
+            var bonus = 0;
+
+            if (defenseWon) {
+                var defAliveRatio = totalDefenders > 0 ? survivingDefenders / totalDefenders : 0;
+                if (defAliveRatio >= 0.67)   bonus += 30;
+                else if (defAliveRatio > 0)  bonus += 15;
+                if (attackersEliminated >= totalAttackers)  bonus += 25;
+                else if (attackersEliminated >= 2)          bonus += 15;
+                else if (attackersEliminated >= 1)          bonus += 8;
+            } else {
+                // Derrota defensiva — bonus por resistencia
+                if (roundsElapsed >= 6)      bonus += 20;
+                else if (roundsElapsed >= 4) bonus += 10;
+                var hpRatio = defTotalHpMax > 0 ? defTotalHpRemaining / defTotalHpMax : 0;
+                if (hpRatio > 0.5)           bonus += 15;
+                if (attackersEliminated >= 2) bonus += 15;
+                else if (attackersEliminated >= 1) bonus += 8;
+            }
+
+            return Math.max(1, base + bonus);
+        }
+
+        // ── Multiplicador diario (decreciente por volumen) ──
+        function getDailyMultiplier(battlesPlayedToday) {
+            if (battlesPlayedToday < 3)  return 1.0;
+            if (battlesPlayedToday < 10) return 0.10;
+            return 0.05;
+        }
+
+        // ── Obtener día actual como string YYYY-MM-DD ──
+        function getTodayKey() {
+            var d = new Date();
+            return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        }
+
+        // ── Obtener semana actual como string YYYY-Www ──
+        function getCurrentSeasonKey() {
+            var d = new Date();
+            // ISO week: Monday-Sunday
+            var dayOfWeek = d.getDay() || 7; // 1=Mon, 7=Sun
+            var monday = new Date(d);
+            monday.setDate(d.getDate() - (dayOfWeek - 1));
+            var year = monday.getFullYear();
+            var start = new Date(year, 0, 1);
+            var week = Math.ceil(((monday - start) / 86400000 + start.getDay() + 1) / 7);
+            return year + '-W' + String(week).padStart(2,'0');
+        }
+
+        function saveRankedResult(winnerTeam, playerTeam, playerChars, opponentName, opponentChars, battleStats) {
             if (!currentUser || !window._rankedMode) return;
             window._rankedMode = false;
-            // LEADERBOARD PROTECTION: only save results from real Ranked matchmaking
-            // (Buscar Rival button or online PvP). Test battles never count.
             if (!window._rankedFromMatchmaking || window._rankedSelfTest) {
                 window._rankedFromMatchmaking = false;
                 window._rankedSelfTest = false;
-                addLog('🧪 Modo Prueba: los resultados NO se registran en el Leaderboard', 'info');
+                addLog('Modo Prueba: los resultados NO se registran en el Leaderboard', 'info');
                 return;
             }
             window._rankedFromMatchmaking = false;
             window._rankedSelfTest = false;
-            const myUid = currentUser.uid;
-            const myName = currentUser.displayName || 'Jugador';
-            const won = (winnerTeam === playerTeam);
-            const fakeOpp = window._rankedFakeOpponent || opponentName;
+
+            var myUid   = currentUser.uid;
+            var myName  = currentUser.displayName || 'Jugador';
+            var won     = (winnerTeam === playerTeam);
+            var fakeOpp = window._rankedFakeOpponent || opponentName;
             window._rankedFakeOpponent = null;
-            const defOwnerUid = window._rankedDefenseOwnerUid || null;
+            var defOwnerUid = window._rankedDefenseOwnerUid || null;
             window._rankedDefenseOwnerUid = null;
 
-            // ── Save MY stats (attack) ──
-            const myRef = db.ref('ranked_stats/' + myUid);
+            // Extraer stats de batalla (pasados desde turn-logic o defaults)
+            var bs = battleStats || {};
+            var survivingAllies    = bs.survivingAllies    || 0;
+            var totalAllies        = bs.totalAllies        || 3;
+            var roundsElapsed      = bs.roundsElapsed      || 5;
+            var enemiesEliminated  = bs.enemiesEliminated  || 0;
+            var totalEnemies       = bs.totalEnemies       || 3;
+            var survivingDefenders = bs.survivingDefenders || 0;
+            var totalDefenders     = bs.totalDefenders     || 3;
+            var attackersEliminated= bs.attackersEliminated|| 0;
+            var totalAttackers     = bs.totalAttackers     || 3;
+            var defHpRemaining     = bs.defHpRemaining     || 0;
+            var defHpMax           = bs.defHpMax           || 1;
+
+            var seasonKey = getCurrentSeasonKey();
+            var todayKey  = getTodayKey();
+            var myRef     = db.ref('ranked_stats/' + myUid);
+
             myRef.once('value', function(snap) {
-                const cur = snap.val() || {};
+                var cur = snap.val() || {};
                 cur.name = myName;
-                // Global wins = atkWins + defWins
-                cur.atkWins   = (cur.atkWins   || 0) + (won ? 1 : 0);
-                cur.atkLosses = (cur.atkLosses || 0) + (won ? 0 : 1);
-                cur.defWins   = cur.defWins   || 0;
-                cur.defLosses = cur.defLosses || 0;
-                cur.globalWins = (cur.atkWins || 0) + (cur.defWins || 0);
-                // Attack char usage
-                cur.atkCharUsage = cur.atkCharUsage || {};
-                (playerChars || []).forEach(function(c) { cur.atkCharUsage[c] = (cur.atkCharUsage[c] || 0) + 1; });
-                // defCharUsage = los personajes del PROPIO equipo de defensa del jugador
-                cur.defCharUsage = cur.defCharUsage || {};
-                db.ref('ranked_teams/' + myUid).once('value', function(myTeamSnap) {
-                    const myTeamData = myTeamSnap.val() || {};
-                    const myDefTeam = (myTeamData.defense || []).filter(Boolean);
-                    [...new Set(myDefTeam)].forEach(function(c) { cur.defCharUsage[c] = (cur.defCharUsage[c] || 0) + 1; });
-                    myRef.set(cur);
-                });
+
+                // Obtener índice de liga propio y del oponente
+                var myPoints  = cur.points || 0;
+                var myLgIdx   = getLeagueIndex(myPoints);
+                // Para oponente buscar sus puntos en DB (asíncrono simplificado — usar liga 0 si no se encuentra)
+                var oppLgIdx  = 0;
+                if (defOwnerUid) {
+                    db.ref('ranked_stats/' + defOwnerUid + '/points').once('value', function(oppSnap) {
+                        oppLgIdx = getLeagueIndex(oppSnap.val() || 0);
+                        _finalizeSaveAttacker(cur, myRef, myUid, myName, won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLgIdx, oppLgIdx, seasonKey, todayKey, playerChars, defOwnerUid, fakeOpp, won, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, opponentChars);
+                    });
+                } else {
+                    _finalizeSaveAttacker(cur, myRef, myUid, myName, won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLgIdx, oppLgIdx, seasonKey, todayKey, playerChars, defOwnerUid, fakeOpp, won, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, opponentChars);
+                }
+            });
+        }
+
+        function _finalizeSaveAttacker(cur, myRef, myUid, myName, won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLgIdx, oppLgIdx, seasonKey, todayKey, playerChars, defOwnerUid, fakeOpp, atkWon, survivingDefenders, totalDefenders, roundsElapsed2, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, opponentChars) {
+            // ── Contador diario de batallas ──
+            cur.dailyBattles = cur.dailyBattles || {};
+            if (cur.dailyBattles.day !== todayKey) {
+                cur.dailyBattles = { day: todayKey, count: 0 };
+            }
+            var battlesPlayedToday = cur.dailyBattles.count || 0;
+            var dailyMult = getDailyMultiplier(battlesPlayedToday);
+            cur.dailyBattles.count = battlesPlayedToday + 1;
+
+            // ── Puntos de ataque ──
+            var rawAtkPoints = calcAttackPoints(won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLgIdx, oppLgIdx);
+            var atkPoints    = Math.max(1, Math.round(rawAtkPoints * dailyMult));
+
+            // ── Stats ──
+            cur.points       = Math.max(0, (cur.points || 0) + atkPoints);
+            cur.atkWins      = (cur.atkWins   || 0) + (won ? 1 : 0);
+            cur.atkLosses    = (cur.atkLosses || 0) + (won ? 0 : 1);
+            cur.defWins      = cur.defWins    || 0;
+            cur.defLosses    = cur.defLosses  || 0;
+            cur.atkPoints    = (cur.atkPoints || 0) + atkPoints;
+            cur.defPoints    = cur.defPoints  || 0;
+            cur.seasonKey    = seasonKey;
+
+            // ── Char usage para meta ──
+            cur.charStats = cur.charStats || {};
+            (playerChars || []).forEach(function(c) {
+                if (!c) return;
+                cur.charStats[c] = cur.charStats[c] || { used: 0, wins: 0 };
+                cur.charStats[c].used++;
+                if (won) cur.charStats[c].wins++;
             });
 
-            // ── Notify + update defense owner if vs real player's defense ──
+            // ── Equipo de ataque actual ──
+            db.ref('ranked_teams/' + myUid).once('value', function(myTeamSnap) {
+                var myTeamData  = myTeamSnap.val() || {};
+                cur.currentAtkTeam = (myTeamData.attack  || []).filter(Boolean).slice(0,3);
+                cur.currentDefTeam = (myTeamData.defense || []).filter(Boolean).slice(0,3);
+                myRef.set(cur);
+                addLog('🏆 Puntos Ranked: +' + atkPoints + (dailyMult < 1 ? ' (' + Math.round(dailyMult*100) + '% por límite diario)' : '') + ' | Total: ' + cur.points, 'buff');
+            });
+
+            // ── Guardar stats del defensor (defOwnerUid) ──
             if (defOwnerUid) {
-                const notifRef = db.ref('ranked_notifications/' + defOwnerUid).push();
-                notifRef.set({
+                _saveDef(defOwnerUid, fakeOpp, !won, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, seasonKey, todayKey, opponentChars);
+                // Notificación
+                db.ref('ranked_notifications/' + defOwnerUid).push().set({
                     type: 'defense_attacked', attackerName: myName, attackerUid: myUid,
                     defenseWon: !won, ts: Date.now(), read: false
                 });
-                const oppRef = db.ref('ranked_stats/' + defOwnerUid);
-                oppRef.once('value', function(snap) {
-                    const cur = snap.val() || {};
-                    // Preserve or set name from ranked_teams data
-                    if (!cur.name || cur.name === defOwnerUid) {
-                        // Try to get the name from ranked_teams
-                        db.ref('ranked_teams/' + defOwnerUid).once('value', function(teamSnap) {
-                            const teamData = teamSnap.val() || {};
-                            cur.name = teamData.name || fakeOpp || cur.name || defOwnerUid;
-                            cur.defWins   = (cur.defWins   || 0) + (!won ? 1 : 0);
-                            cur.defLosses = (cur.defLosses || 0) + (won  ? 1 : 0);
-                            cur.atkWins   = cur.atkWins   || 0;
-                            cur.atkLosses = cur.atkLosses || 0;
-                            cur.globalWins = (cur.atkWins || 0) + (cur.defWins || 0);
-                            // defCharUsage = los personajes del EQUIPO DE DEFENSA del defOwner
-                            cur.defCharUsage = cur.defCharUsage || {};
-                            const defTeam = (teamData.defense || []).filter(Boolean);
-                            [...new Set(defTeam)].forEach(function(c) { cur.defCharUsage[c] = (cur.defCharUsage[c] || 0) + 1; });
-                            oppRef.set(cur);
-                        });
-                    } else {
-                        cur.defWins   = (cur.defWins   || 0) + (!won ? 1 : 0);
-                        cur.defLosses = (cur.defLosses || 0) + (won  ? 1 : 0);
-                        cur.atkWins   = cur.atkWins   || 0;
-                        cur.atkLosses = cur.atkLosses || 0;
-                        cur.globalWins = (cur.atkWins || 0) + (cur.defWins || 0);
-                        // defCharUsage = los personajes del EQUIPO DE DEFENSA del defOwner
-                        cur.defCharUsage = cur.defCharUsage || {};
-                        db.ref('ranked_teams/' + defOwnerUid).once('value', function(tSnap2) {
-                            const tData2 = tSnap2.val() || {};
-                            const defTeam2 = (tData2.defense || []).filter(Boolean);
-                            [...new Set(defTeam2)].forEach(function(c) { cur.defCharUsage[c] = (cur.defCharUsage[c] || 0) + 1; });
-                            oppRef.set(cur);
-                        });
-                    }
-                });
             }
 
-            // ── Save fake opponent stats if vs CPU defense ──
-            if (!defOwnerUid && fakeOpp && fakeOpp !== 'CPU') {
-                const oppKey = 'fake_' + fakeOpp.replace(/[^a-zA-Z0-9]/g, '_');
-                const oppRef = db.ref('ranked_stats/' + oppKey);
-                oppRef.once('value', function(snap) {
-                    const cur = snap.val() || { name: fakeOpp, isFake: true };
-                    cur.defWins   = (cur.defWins   || 0) + (!won ? 1 : 0);
-                    cur.defLosses = (cur.defLosses || 0) + (won  ? 1 : 0);
-                    cur.atkWins   = cur.atkWins   || 0;
-                    cur.atkLosses = cur.atkLosses || 0;
-                    cur.globalWins = (cur.atkWins || 0) + (cur.defWins || 0);
-                    cur.defCharUsage = cur.defCharUsage || {};
-                    (opponentChars || []).forEach(function(c) { cur.defCharUsage[c] = (cur.defCharUsage[c] || 0) + 1; });
-                    oppRef.set(cur);
-                });
-            }
+            // ── Personajes del meta global ──
+            _saveGlobalCharStats(playerChars, won, seasonKey);
         }
 
+        function _saveDef(defOwnerUid, defOwnerName, defWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, seasonKey, todayKey, opponentChars) {
+            var defRef = db.ref('ranked_stats/' + defOwnerUid);
+            defRef.once('value', function(snap) {
+                var cur = snap.val() || {};
+
+                // Nombre
+                if (!cur.name) {
+                    db.ref('ranked_teams/' + defOwnerUid).once('value', function(tSnap) {
+                        var tData = tSnap.val() || {};
+                        cur.name = tData.name || defOwnerName || defOwnerUid;
+                        _applyDefPoints(cur, defRef, defOwnerUid, defWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, seasonKey, todayKey, opponentChars);
+                    });
+                } else {
+                    _applyDefPoints(cur, defRef, defOwnerUid, defWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, seasonKey, todayKey, opponentChars);
+                }
+            });
+        }
+
+        function _applyDefPoints(cur, defRef, defOwnerUid, defWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, seasonKey, todayKey, opponentChars) {
+            cur.dailyBattles = cur.dailyBattles || {};
+            if (cur.dailyBattles.day !== todayKey) cur.dailyBattles = { day: todayKey, count: 0 };
+            var dailyMult = getDailyMultiplier(cur.dailyBattles.count || 0);
+            // Defensa no consume cupo diario del defensor (la IA jugó por él)
+            // pero sí aplicamos el multiplicador para evitar farming extremo
+            var rawDefPoints = calcDefensePoints(defWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax);
+            var defPoints    = Math.max(1, Math.round(rawDefPoints * dailyMult));
+
+            cur.points    = Math.max(0, (cur.points || 0) + defPoints);
+            cur.defWins   = (cur.defWins   || 0) + (defWon ? 1 : 0);
+            cur.defLosses = (cur.defLosses || 0) + (defWon ? 0 : 1);
+            cur.atkWins   = cur.atkWins   || 0;
+            cur.atkLosses = cur.atkLosses || 0;
+            cur.defPoints = (cur.defPoints || 0) + defPoints;
+            cur.atkPoints = cur.atkPoints || 0;
+            cur.seasonKey = seasonKey;
+
+            // Char stats de defensa para meta global
+            db.ref('ranked_teams/' + defOwnerUid).once('value', function(tSnap) {
+                var tData = tSnap.val() || {};
+                cur.currentDefTeam = (tData.defense || []).filter(Boolean).slice(0,3);
+                cur.currentAtkTeam = cur.currentAtkTeam || (tData.attack || []).filter(Boolean).slice(0,3);
+                var defChars = (tData.defense || []).filter(Boolean);
+                cur.charStats = cur.charStats || {};
+                defChars.forEach(function(c) {
+                    if (!c) return;
+                    cur.charStats[c] = cur.charStats[c] || { used: 0, wins: 0 };
+                    cur.charStats[c].used++;
+                    if (defWon) cur.charStats[c].wins++;
+                });
+                defRef.set(cur);
+            });
+            _saveGlobalCharStats(opponentChars, defWon, seasonKey);
+        }
+
+        // ── Guardar stats globales de personajes (para panel de Meta) ──
+        function _saveGlobalCharStats(chars, won, seasonKey) {
+            if (!chars || !chars.length) return;
+            var metaRef = db.ref('ranked_meta/' + seasonKey);
+            metaRef.once('value', function(snap) {
+                var meta = snap.val() || {};
+                meta.totalBattles = (meta.totalBattles || 0) + 1;
+                meta.chars = meta.chars || {};
+                chars.forEach(function(c) {
+                    if (!c) return;
+                    meta.chars[c] = meta.chars[c] || { used: 0, wins: 0 };
+                    meta.chars[c].used++;
+                    if (won) meta.chars[c].wins++;
+                });
+                metaRef.set(meta);
+            });
+        }
+
+
         // ════════════════════════════════════════════════
-        // LEADERBOARD
+        // LEADERBOARD v2 — Sistema de Ligas + Puntuación Dual
         // ════════════════════════════════════════════════
+
         function showLeaderboard() {
-            let modal = document.getElementById('leaderboardModal');
+            var modal = document.getElementById('leaderboardModal');
             if (!modal) {
                 modal = document.createElement('div');
                 modal.id = 'leaderboardModal';
-                modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:10000;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px;box-sizing:border-box;';
-                document.body.appendChild(modal); // append FIRST
+                modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:10000;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px;box-sizing:border-box;';
+                document.body.appendChild(modal);
                 modal.innerHTML = [
-                    '<div style="width:100%;max-width:900px;background:linear-gradient(135deg,#0a0e17,#0d1525);border:2px solid #ffaa00;border-radius:20px;padding:28px;box-shadow:0 0 60px rgba(255,170,0,0.2);">',
-                    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;border-bottom:1px solid rgba(255,170,0,0.15);padding-bottom:18px;">',
-                    '<div>',
-                        '<div style="font-family:Orbitron,sans-serif;font-size:1.4rem;font-weight:900;color:#ffaa00;text-shadow:0 0 20px rgba(255,170,0,0.6);letter-spacing:.08em;">&#x1F3C6; RANKED LEADERBOARD</div>',
-                        '<div style="font-size:.75rem;color:#555;margin-top:4px;letter-spacing:.05em;">Estadísticas globales · Solo partidas Ranked</div>',
+                    '<div style="width:100%;max-width:960px;background:linear-gradient(135deg,#0a0e17,#0d1525);border:2px solid #ffaa00;border-radius:20px;padding:28px;box-shadow:0 0 60px rgba(255,170,0,0.2);">',
+                    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid rgba(255,170,0,0.15);padding-bottom:16px;flex-wrap:wrap;gap:10px;">',
+                        '<div>',
+                            '<div style="font-family:Orbitron,sans-serif;font-size:1.4rem;font-weight:900;color:#ffaa00;text-shadow:0 0 20px rgba(255,170,0,0.6);letter-spacing:.08em;">🏆 RANKED LEADERBOARD</div>',
+                            '<div id="leaderboardSeasonLabel" style="font-size:.72rem;color:#555;margin-top:3px;letter-spacing:.05em;">Temporada actual</div>',
+                        '</div>',
+                        '<div style="display:flex;gap:8px;align-items:center;">',
+                            '<button id="lbBtnRanking" onclick="lbShowTab(\'ranking\')" style="background:rgba(255,170,0,0.2);border:1px solid #ffaa00;color:#ffaa00;border-radius:8px;padding:7px 14px;cursor:pointer;font-size:.78rem;font-family:Orbitron,sans-serif;">🏅 RANKING</button>',
+                            '<button id="lbBtnMeta" onclick="lbShowTab(\'meta\')" style="background:rgba(100,200,100,0.1);border:1px solid #4a4;color:#8f8;border-radius:8px;padding:7px 14px;cursor:pointer;font-size:.78rem;font-family:Orbitron,sans-serif;">📊 META</button>',
+                            '<button id="leaderboardCloseBtn" style="background:rgba(255,68,102,0.2);border:2px solid #ff4466;color:#ff4466;font-size:1.1rem;width:36px;height:36px;border-radius:50%;cursor:pointer;">✕</button>',
+                        '</div>',
                     '</div>',
-                    '<button id="leaderboardCloseBtn" style="background:rgba(255,68,102,0.2);border:2px solid #ff4466;color:#ff4466;font-size:1.1rem;width:38px;height:38px;border-radius:50%;cursor:pointer;">&#x2715;</button>',
-                    '</div>',
-                    '<div id="leaderboardContent" style="color:#888;text-align:center;padding:3rem;font-size:.9rem;">Cargando estadísticas...</div>',
+                    '<div id="leaderboardContent" style="color:#888;text-align:center;padding:3rem;font-size:.9rem;">Cargando...</div>',
+                    '<div id="leaderboardMetaContent" style="display:none;color:#888;text-align:center;padding:3rem;font-size:.9rem;">Cargando Meta...</div>',
                     '</div>'
                 ].join('');
-                modal.querySelector('#leaderboardCloseBtn').onclick = function() {
-                    modal.style.display = 'none';
-                };
+                modal.querySelector('#leaderboardCloseBtn').onclick = function() { modal.style.display = 'none'; };
             }
+            // Actualizar label de temporada
+            var slabel = modal.querySelector('#leaderboardSeasonLabel');
+            if (slabel) slabel.textContent = 'Temporada ' + getCurrentSeasonKey() + ' · Solo partidas Ranked · Lunes–Domingo';
             modal.style.display = 'flex';
-            loadLeaderboardData();
+            lbShowTab('ranking');
         }
 
+        window.lbShowTab = function(tab) {
+            var rankingDiv = document.getElementById('leaderboardContent');
+            var metaDiv    = document.getElementById('leaderboardMetaContent');
+            var btnR = document.getElementById('lbBtnRanking');
+            var btnM = document.getElementById('lbBtnMeta');
+            if (!rankingDiv || !metaDiv) return;
+            if (tab === 'ranking') {
+                rankingDiv.style.display = '';
+                metaDiv.style.display    = 'none';
+                if (btnR) { btnR.style.background = 'rgba(255,170,0,0.35)'; btnR.style.borderColor = '#ffcc44'; }
+                if (btnM) { btnM.style.background = 'rgba(100,200,100,0.1)'; btnM.style.borderColor = '#4a4'; }
+                loadLeaderboardData();
+            } else {
+                rankingDiv.style.display = 'none';
+                metaDiv.style.display    = '';
+                if (btnM) { btnM.style.background = 'rgba(100,200,100,0.3)'; btnM.style.borderColor = '#6f6'; }
+                if (btnR) { btnR.style.background = 'rgba(255,170,0,0.2)'; btnR.style.borderColor = '#ffaa00'; }
+                loadMetaData();
+            }
+        };
+
         function loadLeaderboardData() {
+            var container = document.getElementById('leaderboardContent');
+            if (container) container.innerHTML = '<div style="color:#888;text-align:center;padding:2rem;">Cargando...</div>';
             db.ref('ranked_stats').once('value', function(snap) {
-                const data = snap.val() || {};
-                const entries = Object.entries(data).map(function([key, v]) {
-                    const atkW = v.atkWins   || v.wins   || 0;  // backwards compat
-                    const atkL = v.atkLosses || v.losses || 0;
-                    const defW = v.defWins   || 0;
-                    const defL = v.defLosses || 0;
-                    const globalW = atkW + defW;
-                    const totalAtk = atkW + atkL;
-                    const totalDef = defW + defL;
-                    const totalAll = totalAtk + totalDef;
-                    const globalWR = totalAll > 0 ? Math.round((globalW / totalAll) * 100) : 0;
-                    return {
-                        key, name: v.name || key, isFake: v.isFake || false,
-                        atkWins: atkW, atkLosses: atkL,
-                        defWins: defW, defLosses: defL,
-                        globalWins: globalW, globalWR,
-                        atkCharUsage: v.atkCharUsage || v.charUsage || {},
-                        defCharUsage: v.defCharUsage || {}
-                    };
-                });
-                // Sort by globalWins desc
-                entries.sort(function(a, b) { return b.globalWins - a.globalWins || b.globalWR - a.globalWR; });
+                var data = snap.val() || {};
+                var seasonKey = getCurrentSeasonKey();
+                var entries = Object.entries(data)
+                    .filter(function(e) { return !e[1].isFake; })
+                    .map(function(e) {
+                        var v = e[1];
+                        var pts    = Math.max(0, v.points || 0);
+                        var atkW   = v.atkWins   || 0;
+                        var atkL   = v.atkLosses || 0;
+                        var defW   = v.defWins   || 0;
+                        var defL   = v.defLosses || 0;
+                        var totalG = atkW + defW;
+                        var totalB = atkW + atkL + defW + defL;
+                        var wr     = totalB > 0 ? Math.round((totalG / totalB) * 100) : 0;
+                        return {
+                            uid: e[0], name: v.name || e[0],
+                            points: pts, league: getLeague(pts),
+                            atkWins: atkW, atkLosses: atkL,
+                            defWins: defW, defLosses: defL,
+                            totalWins: totalG, totalLosses: atkL + defL,
+                            totalBattles: totalB, winRate: wr,
+                            atkPoints: v.atkPoints || 0,
+                            defPoints: v.defPoints || 0,
+                            currentAtkTeam: v.currentAtkTeam || [],
+                            currentDefTeam: v.currentDefTeam || [],
+                        };
+                    });
+                entries.sort(function(a, b) { return b.points - a.points || b.winRate - a.winRate; });
                 renderLeaderboard(entries);
             });
         }
 
         function renderLeaderboard(entries) {
-            const container = document.getElementById('leaderboardContent');
+            var container = document.getElementById('leaderboardContent');
             if (!container) return;
             if (!entries.length) {
-                container.innerHTML = '<div style="color:#555;text-align:center;padding:3rem;font-size:1rem;">Aún no hay partidas Ranked jugadas.<br><span style="color:#444;font-size:.85rem;">¡Sé el primero en jugar!</span></div>';
+                container.innerHTML = '<div style="color:#555;text-align:center;padding:3rem;">Aún no hay partidas Ranked.<br><span style="font-size:.85rem;color:#444;">¡Sé el primero en jugar!</span></div>';
                 return;
             }
-            const rows = entries.map(function(e, i) {
-                const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '<span style="font-family:Orbitron,sans-serif;font-size:.85rem;color:#666;">' + (i + 1) + '</span>';
-                const rankColor = i === 0 ? '#ffd700' : i === 1 ? '#c0c0c0' : i === 2 ? '#cd7f32' : '#555';
-                const bgGlow = i === 0 ? 'rgba(255,215,0,0.07)' : i === 1 ? 'rgba(192,192,192,0.04)' : i === 2 ? 'rgba(205,127,50,0.04)' : 'rgba(255,170,0,0.02)';
-                const borderColor = i === 0 ? 'rgba(255,215,0,0.3)' : i === 1 ? 'rgba(192,192,192,0.15)' : i === 2 ? 'rgba(205,127,50,0.15)' : 'rgba(255,170,0,0.08)';
-                const fakeTag = e.isFake ? '<span style="font-size:.58rem;color:#777;background:rgba(255,255,255,0.05);border:1px solid #444;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:middle;">IA</span>' : '';
-                const wrColor = e.globalWR >= 60 ? '#00ff88' : e.globalWR >= 40 ? '#ffaa00' : '#ff4466';
 
-                // Top 5 attack chars
-                const topAtk = getTopChars(e.atkCharUsage, 5);
-                const atkImgs = topAtk.map(function(c) {
+            // Liga top-3 Gran Maestro
+            var top3 = entries.filter(function(e) { return e.league.name === 'Gran Maestro'; }).slice(0,3);
+
+            var rows = entries.map(function(e, i) {
+                var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '<span style="font-family:Orbitron,sans-serif;font-size:.8rem;color:#666;">' + (i+1) + '</span>';
+                var bgGlow  = i === 0 ? 'rgba(255,215,0,0.06)' : i === 1 ? 'rgba(192,192,192,0.04)' : i === 2 ? 'rgba(205,127,50,0.04)' : 'rgba(255,170,0,0.015)';
+                var border  = i === 0 ? 'rgba(255,215,0,0.25)' : i === 1 ? 'rgba(192,192,192,0.12)' : i === 2 ? 'rgba(205,127,50,0.12)' : 'rgba(255,170,0,0.07)';
+                var wrColor = e.winRate >= 60 ? '#00ff88' : e.winRate >= 40 ? '#ffaa00' : '#ff4466';
+
+                // Equipos actuales
+                var atkTeamHtml = (e.currentAtkTeam||[]).map(function(c) {
                     return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">' +
                         '<img src="' + getCharPortrait(c) + '" title="' + escapeHtml(c) + '" referrerpolicy="no-referrer" ' +
-                        'style="width:59px;height:59px;border-radius:7px;border:2px solid rgba(79,195,247,0.4);object-fit:cover;background:#111;" onerror="this.style.opacity=0.15">' +
-                        '<span style="font-size:.56rem;color:#4fc3f7;max-width:59px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(c.split(' ')[0]) + '</span>' +
+                        'style="width:50px;height:50px;border-radius:7px;border:2px solid rgba(79,195,247,0.5);object-fit:cover;background:#111;" onerror="this.style.opacity=0.15">' +
+                        '<span style="font-size:.52rem;color:#4fc3f7;max-width:50px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml((c||'').split(' ')[0]) + '</span>' +
                         '</div>';
                 }).join('');
-
-                // Top 5 defense chars
-                const topDef = getTopChars(e.defCharUsage, 5);
-                const defImgs = topDef.map(function(c) {
+                var defTeamHtml = (e.currentDefTeam||[]).map(function(c) {
                     return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">' +
                         '<img src="' + getCharPortrait(c) + '" title="' + escapeHtml(c) + '" referrerpolicy="no-referrer" ' +
-                        'style="width:59px;height:59px;border-radius:7px;border:2px solid rgba(200,100,255,0.4);object-fit:cover;background:#111;" onerror="this.style.opacity=0.15">' +
-                        '<span style="font-size:.56rem;color:#c864ff;max-width:59px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml(c.split(' ')[0]) + '</span>' +
+                        'style="width:50px;height:50px;border-radius:7px;border:2px solid rgba(200,100,255,0.5);object-fit:cover;background:#111;" onerror="this.style.opacity=0.15">' +
+                        '<span style="font-size:.52rem;color:#c864ff;max-width:50px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml((c||'').split(' ')[0]) + '</span>' +
                         '</div>';
                 }).join('');
-
-                const atkTotal = e.atkWins + e.atkLosses;
-                const defTotal = e.defWins + e.defLosses;
-                const atkWR = atkTotal > 0 ? Math.round((e.atkWins / atkTotal) * 100) : 0;
-                const defWR = defTotal > 0 ? Math.round((e.defWins / defTotal) * 100) : 0;
 
                 return [
-                    '<div style="background:' + bgGlow + ';border:1px solid ' + borderColor + ';border-radius:14px;padding:16px 18px;margin-bottom:10px;">',
-                    // Row 1: rank + name + global stats
-                    '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px;">',
-                        '<div style="font-size:1.5rem;min-width:34px;text-align:center;">' + medal + '</div>',
-                        '<div style="flex:1;min-width:140px;">',
-                            '<div style="font-family:Orbitron,sans-serif;font-weight:700;color:#fff;font-size:.95rem;">' + escapeHtml(e.name) + fakeTag + '</div>',
-                            '<div style="font-size:.75rem;color:#888;margin-top:3px;">',
-                                '🌐 <span style="color:#ffaa00;font-weight:700;">' + e.globalWins + '</span> Wins Globales &nbsp;',
-                                '<span style="color:' + wrColor + ';font-weight:700;background:rgba(255,255,255,0.05);border-radius:5px;padding:1px 6px;">' + e.globalWR + '% WR</span>',
-                            '</div>',
+                    '<div style="background:' + bgGlow + ';border:1px solid ' + border + ';border-radius:14px;padding:14px 16px;margin-bottom:9px;">',
+                    // Row 1: posición + nombre + liga + puntos
+                    '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;">',
+                        '<div style="font-size:1.4rem;min-width:30px;text-align:center;">' + medal + '</div>',
+                        '<div style="flex:1;min-width:120px;">',
+                            '<div style="font-family:Orbitron,sans-serif;font-weight:700;color:#fff;font-size:.9rem;">' + escapeHtml(e.name) + '</div>',
+                            '<div style="font-size:.72rem;color:#aaa;margin-top:2px;">' + e.league.full + '</div>',
                         '</div>',
-                        // Attack stats box
-                        '<div style="background:rgba(79,195,247,0.07);border:1px solid rgba(79,195,247,0.2);border-radius:8px;padding:8px 12px;text-align:center;min-width:110px;">',
-                            '<div style="font-size:.65rem;color:#4fc3f7;letter-spacing:.05em;margin-bottom:4px;">🗡️ ATAQUE</div>',
-                            '<div style="font-size:.85rem;"><span style="color:#00ff88;font-weight:700;">' + e.atkWins + 'W</span> <span style="color:#555;">/</span> <span style="color:#ff4466;font-weight:700;">' + e.atkLosses + 'L</span></div>',
-                            '<div style="font-size:.68rem;color:' + (atkWR>=50?'#00ff88':'#ff4466') + ';margin-top:2px;">' + atkWR + '% WR</div>',
+                        // Puntos globales
+                        '<div style="background:rgba(255,170,0,0.1);border:1px solid rgba(255,170,0,0.3);border-radius:8px;padding:7px 12px;text-align:center;min-width:90px;">',
+                            '<div style="font-size:.6rem;color:#ffaa00;letter-spacing:.05em;margin-bottom:3px;">⭐ PUNTOS</div>',
+                            '<div style="font-family:Orbitron,sans-serif;font-size:1rem;color:#ffaa00;font-weight:900;">' + e.points.toLocaleString() + '</div>',
+                            '<div style="font-size:.6rem;color:#888;margin-top:2px;">' + e.atkPoints + ' atk · ' + e.defPoints + ' def</div>',
                         '</div>',
-                        // Defense stats box
-                        '<div style="background:rgba(200,100,255,0.07);border:1px solid rgba(200,100,255,0.2);border-radius:8px;padding:8px 12px;text-align:center;min-width:110px;">',
-                            '<div style="font-size:.65rem;color:#c864ff;letter-spacing:.05em;margin-bottom:4px;">🛡️ DEFENSA</div>',
-                            '<div style="font-size:.85rem;"><span style="color:#00ff88;font-weight:700;">' + e.defWins + 'W</span> <span style="color:#555;">/</span> <span style="color:#ff4466;font-weight:700;">' + e.defLosses + 'L</span></div>',
-                            '<div style="font-size:.68rem;color:' + (defWR>=50?'#00ff88':'#ff4466') + ';margin-top:2px;">' + defWR + '% WR</div>',
+                        // V/D global
+                        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:7px 12px;text-align:center;min-width:100px;">',
+                            '<div style="font-size:.6rem;color:#888;letter-spacing:.05em;margin-bottom:3px;">V / D GLOBAL</div>',
+                            '<div style="font-size:.85rem;"><span style="color:#00ff88;font-weight:700;">' + e.totalWins + 'V</span> <span style="color:#444;">·</span> <span style="color:#ff4466;font-weight:700;">' + e.totalLosses + 'D</span></div>',
+                            '<div style="font-size:.62rem;color:' + wrColor + ';margin-top:2px;">' + e.winRate + '% WR</div>',
                         '</div>',
                     '</div>',
-                    // Row 2: character images
-                    '<div style="display:flex;gap:20px;flex-wrap:nowrap;align-items:flex-start;overflow:visible;">',
-                        topAtk.length ? '<div><div style="font-size:.62rem;color:#4fc3f7;margin-bottom:6px;letter-spacing:.05em;">🗡️ MÁS USADOS ATAQUE</div><div style="display:flex;gap:5px;">' + atkImgs + '</div></div>' : '',
-                        topDef.length ? '<div style="margin-left:28px;min-width:0;"><div style="font-size:.62rem;color:#c864ff;margin-bottom:6px;letter-spacing:.05em;">🛡️ MÁS USADOS DEFENSA</div><div style="display:flex;gap:5px;">' + defImgs + '</div></div>' : '',
+                    // Row 2: equipos actuales
+                    '<div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">',
+                        atkTeamHtml ? '<div><div style="font-size:.58rem;color:#4fc3f7;margin-bottom:5px;letter-spacing:.05em;">🗡️ EQUIPO ATAQUE</div><div style="display:flex;gap:5px;">' + atkTeamHtml + '</div></div>' : '',
+                        defTeamHtml ? '<div><div style="font-size:.58rem;color:#c864ff;margin-bottom:5px;letter-spacing:.05em;">🛡️ EQUIPO DEFENSA</div><div style="display:flex;gap:5px;">' + defTeamHtml + '</div></div>' : '',
                     '</div>',
                     '</div>'
                 ].join('');
             });
             container.innerHTML = rows.join('');
         }
+
+        // ── Panel de Meta ──
+        function loadMetaData() {
+            var container = document.getElementById('leaderboardMetaContent');
+            if (container) container.innerHTML = '<div style="color:#888;text-align:center;padding:2rem;">Cargando Meta...</div>';
+            var seasonKey = getCurrentSeasonKey();
+            db.ref('ranked_meta/' + seasonKey).once('value', function(snap) {
+                var meta = snap.val() || {};
+                var chars = meta.chars || {};
+                var totalBattles = meta.totalBattles || 0;
+                var totalPlayers = 0;
+                db.ref('ranked_stats').once('value', function(snap2) {
+                    var players = snap2.val() || {};
+                    totalPlayers = Object.keys(players).filter(function(k) { return !players[k].isFake; }).length;
+
+                    var entries = Object.entries(chars).map(function(e) {
+                        var c = e[1];
+                        var used = c.used || 0;
+                        var wins = c.wins || 0;
+                        var wr   = used > 0 ? Math.round((wins / used) * 100) : 0;
+                        var pr   = totalBattles > 0 ? Math.round((used / (totalBattles * 2)) * 100) : 0; // *2 porque hay 2 equipos
+                        return { name: e[0], used: used, wins: wins, wr: wr, pr: Math.min(100, pr) };
+                    });
+
+                    // Ordenar por winrate desc
+                    entries.sort(function(a, b) { return b.wr - a.wr || b.used - a.used; });
+
+                    if (!entries.length) {
+                        container.innerHTML = '<div style="color:#555;text-align:center;padding:3rem;">Sin datos de Meta para esta temporada todavía.</div>';
+                        return;
+                    }
+
+                    var headerHtml = [
+                        '<div style="margin-bottom:16px;">',
+                            '<div style="font-family:Orbitron,sans-serif;font-size:1rem;color:#8f8;margin-bottom:4px;">📊 META — Personajes más usados</div>',
+                            '<div style="font-size:.72rem;color:#555;">Temporada ' + seasonKey + ' · ' + totalBattles + ' batallas · Ordenado por Winrate</div>',
+                        '</div>',
+                        '<div style="display:flex;gap:8px;margin-bottom:12px;font-size:.65rem;color:#666;padding:0 8px;">',
+                            '<div style="width:30px;">#</div>',
+                            '<div style="flex:1;">Personaje</div>',
+                            '<div style="width:80px;text-align:center;">Pick Rate</div>',
+                            '<div style="width:80px;text-align:center;">Winrate</div>',
+                            '<div style="width:60px;text-align:center;">Partidas</div>',
+                        '</div>'
+                    ].join('');
+
+                    var rowsHtml = entries.map(function(e, i) {
+                        var wrColor  = e.wr >= 60 ? '#00ff88' : e.wr >= 50 ? '#ffaa00' : e.wr >= 40 ? '#ff8844' : '#ff4466';
+                        var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1);
+                        var portrait = getCharPortrait(e.name);
+                        return [
+                            '<div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:8px 10px;margin-bottom:5px;">',
+                                '<div style="width:30px;text-align:center;font-size:.85rem;">' + medal + '</div>',
+                                '<img src="' + portrait + '" referrerpolicy="no-referrer" style="width:38px;height:38px;border-radius:6px;object-fit:cover;border:1px solid rgba(255,255,255,0.1);background:#111;" onerror="this.style.opacity=0.15">',
+                                '<div style="flex:1;font-size:.82rem;color:#ddd;font-weight:600;">' + escapeHtml(e.name) + '</div>',
+                                '<div style="width:80px;text-align:center;font-size:.78rem;color:#88ccff;">' + e.pr + '%</div>',
+                                '<div style="width:80px;text-align:center;font-family:Orbitron,sans-serif;font-size:.82rem;font-weight:700;color:' + wrColor + ';">' + e.wr + '%</div>',
+                                '<div style="width:60px;text-align:center;font-size:.75rem;color:#666;">' + e.used + '</div>',
+                            '</div>'
+                        ].join('');
+                    }).join('');
+
+                    container.innerHTML = headerHtml + rowsHtml;
+                });
+            });
+        }
+
         function getTopChars(charUsage, n) {
             if (!charUsage) return [];
             return Object.entries(charUsage)
@@ -1348,49 +1642,48 @@
                 .map(function(e) { return e[0]; });
         }
 
-        function getCharPortrait(charName) {
-            // Use actual portrait URLs from characters.js
-            if (typeof characterData !== 'undefined' && characterData[charName] && characterData[charName].portrait) {
-                return characterData[charName].portrait;
-            }
-            // Fallback map with correct URLs
-            const portraits = {
-                'Madara Uchiha':        'https://i.postimg.cc/KzWJPy5j/Captura_de_pantalla_2026_02_26_134301.png',
-                'Sun Jin Woo':          'https://i.postimg.cc/3rSZSvdF/Captura_de_pantalla_2026_03_11_105214.png',
-                'Aldebaran':            'https://i.postimg.cc/PJr0LB6N/Captura_de_pantalla_2026_02_21_230603.png',
-                'Leonidas':             'https://i.postimg.cc/TYJdgC3L/Captura_de_pantalla_2026_03_06_001254.png',
-                'Min Byung':            'https://i.postimg.cc/Y9xJCpxr/Captura_de_pantalla_2026_02_22_002441.png',
-                'Rengoku':              'https://i.postimg.cc/wTWCgJY2/Captura_de_pantalla_2026_03_15_021343.png',
-                'Aspros de Gemini':     'https://i.postimg.cc/NMZcBh8m/Captura_de_pantalla_2026_02_27_201323.png',
-                'Ymir':                 'https://i.postimg.cc/D0PFfyFL/Captura_de_pantalla_2026_03_03_125024.png',
-                'Thestalos':            'https://i.postimg.cc/9f6kNBpV/Gemini_Generated_Image_ac4u14ac4u14ac4u.png',
-                'Alexstrasza':          'https://i.postimg.cc/V6F3kYFw/Captura_de_pantalla_2026_02_21_233329.png',
-                'Anakin Skywalker':     'https://i.postimg.cc/7hYjCpBh/Captura_de_pantalla_2026_02_21_231859.png',
-                'Goku':                 'https://i.postimg.cc/wMsFFbWT/Captura_de_pantalla_2026_02_26_132013.png',
-                'Ragnar Lothbrok':      'https://i.postimg.cc/9XqFNYqW/Captura_de_pantalla_2026_03_11_234717.png',
-                'Saitama':              'https://i.postimg.cc/Qtz0QrqV/Captura_de_pantalla_2026_02_26_132109.png',
-                'Ozymandias':           'https://i.postimg.cc/6qGzz1Hp/Captura_de_pantalla_2026_02_26_131502.png',
-                'Gilgamesh':            'https://i.postimg.cc/nzNJp8K7/Captura_de_pantalla_2026_02_27_201309.png',
-                'Goku Black':           'https://i.postimg.cc/SsGwxyGp/Captura_de_pantalla_2026_02_22_014009.png',
-                'Saga de Geminis':      'https://i.postimg.cc/wBvTDG7f/Captura_de_pantalla_2026_02_24_103109.png',
-                'Minato Namikaze':      'https://i.postimg.cc/qvNv9NQN/Captura_de_pantalla_2026_03_11_215715.png',
-                'Muzan Kibutsuji':      'https://i.postimg.cc/fL41fCgH/Captura_de_pantalla_2026_02_28_020016.png',
-                'Nakime':               'https://i.postimg.cc/858xm4nX/Captura_de_pantalla_2026_02_28_020047.png',
-                'Sauron':               'https://i.postimg.cc/858xm4n0/Captura_de_pantalla_2026_02_28_020119.png',
-                'Darth Vader':          'https://i.postimg.cc/63sFfc1F/Captura_de_pantalla_2026_02_28_015421.png',
-                'Lich King':            'https://i.postimg.cc/W3Rxw8ff/Captura_de_pantalla_2026_02_28_015847.png',
-                'Padme Amidala':        'https://i.postimg.cc/pV63g1B4/Whats_App_Image_2026_03_05_at_9_39_15_AM.jpg',
-                'Daenerys Targaryen':   'https://i.postimg.cc/Gm8k90V5/Whats_App_Image_2026_03_15_at_1_59_17_AM.jpg',
-                'Tamayo':               'https://i.postimg.cc/9XnsvNBS/Whats_App_Image_2026_03_05_at_9_42_52_AM.jpg',
-                'Emperador Palpatine':  'https://i.postimg.cc/DfMRtYcj/Whats_App_Image_2026_03_05_at_9_50_54_AM.jpg',
-                'Gandalf':              'https://i.postimg.cc/1RjbLYHx/Whats_App_Image_2026_03_05_at_9_53_24_AM.jpg',
-                'Doomsday':             'https://i.postimg.cc/hjJDWnn6/Captura_de_pantalla_2026_03_06_003242.png',
-                'Ikki de Fenix':        'https://i.postimg.cc/LsX6jbnD/Captura_de_pantalla_2026_02_24_103509.png',
-            };
-            return portraits[charName] || portraits['Aldebaran'];
+        // ── Reset semanal (Lunes–Domingo) ──
+        function checkLeaderboardReset() {
+            db.ref('leaderboard_meta/lastSeasonKey').once('value', function(snap) {
+                var lastSeason  = snap.val() || '';
+                var thisSeason  = getCurrentSeasonKey();
+                if (lastSeason !== thisSeason) {
+                    // Nueva temporada — archivar y resetear
+                    db.ref('ranked_stats').once('value', function(archSnap) {
+                        var archive = archSnap.val() || {};
+                        if (Object.keys(archive).length > 0) {
+                            // Guardar temporada anterior como archivo
+                            db.ref('ranked_seasons/' + lastSeason).set(archive);
+                            // Aplicar decaída del 30% y reset stats de batalla (mantener puntos reducidos)
+                            var updates = {};
+                            Object.entries(archive).forEach(function(e) {
+                                var uid = e[0], v = e[1];
+                                updates[uid] = {
+                                    name: v.name,
+                                    points: Math.floor((v.points || 0) * 0.70), // 30% decay
+                                    atkPoints: 0, defPoints: 0,
+                                    atkWins: 0, atkLosses: 0,
+                                    defWins: 0, defLosses: 0,
+                                    charStats: {},
+                                    currentAtkTeam: v.currentAtkTeam || [],
+                                    currentDefTeam: v.currentDefTeam || [],
+                                    seasonKey: thisSeason,
+                                    dailyBattles: {}
+                                };
+                            });
+                            db.ref('ranked_stats').set(updates).then(function() {
+                                db.ref('leaderboard_meta/lastSeasonKey').set(thisSeason);
+                                console.log('[RANKED] Nueva temporada: ' + thisSeason + '. Puntos anteriores reducidos 30%.');
+                            });
+                        } else {
+                            db.ref('leaderboard_meta/lastSeasonKey').set(thisSeason);
+                        }
+                    });
+                }
+            });
         }
 
-                // ── Defense Attack Notifications ──
+        // ── Defense Attack Notifications ──
         function listenForDefenseNotifications() {
             if (!currentUser) return;
             db.ref('ranked_notifications/' + currentUser.uid)
