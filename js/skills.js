@@ -5463,8 +5463,25 @@
                         return c && c.team === opponentTeam;
                     });
                     const opponentName = window._rankedOpponentName || window._rankedFakeOpponent || 'Oponente';
-                    saveRankedResult(winnerTeam, playerTeam, playerChars, opponentName, opponentChars);
-                    console.log('[RANKED] saveRankedResult called — winner:', winnerTeam, 'playerTeam:', playerTeam);
+                    // Recopilar battleStats para el nuevo sistema de puntuación
+                    var _bs = {};
+                    var _chars = gameState.characters || {};
+                    var _allAlly = Object.keys(_chars).filter(function(n){ var c=_chars[n]; return c && c.team===playerTeam; });
+                    var _allOpp  = Object.keys(_chars).filter(function(n){ var c=_chars[n]; return c && c.team===opponentTeam; });
+                    _bs.survivingAllies    = _allAlly.filter(function(n){ var c=_chars[n]; return c && !c.isDead && c.hp>0; }).length;
+                    _bs.totalAllies        = _allAlly.length || 3;
+                    _bs.survivingDefenders = _allOpp.filter(function(n){ var c=_chars[n]; return c && !c.isDead && c.hp>0; }).length;
+                    _bs.totalDefenders     = _allOpp.length || 3;
+                    _bs.enemiesEliminated  = _allOpp.filter(function(n){ var c=_chars[n]; return c && (c.isDead || c.hp<=0); }).length;
+                    _bs.attackersEliminated= _allAlly.filter(function(n){ var c=_chars[n]; return c && (c.isDead || c.hp<=0); }).length;
+                    _bs.totalEnemies       = _allOpp.length || 3;
+                    _bs.totalAttackers     = _allAlly.length || 3;
+                    _bs.roundsElapsed      = gameState.currentRound || 5;
+                    // HP restante del equipo defensor
+                    _bs.defHpRemaining = _allOpp.reduce(function(s,n){ var c=_chars[n]; return s+(c&&!c.isDead?c.hp:0); }, 0);
+                    _bs.defHpMax       = _allOpp.reduce(function(s,n){ var c=_chars[n]; return s+(c?c.maxHp||0:0); }, 0) || 1;
+                    saveRankedResult(winnerTeam, playerTeam, playerChars, opponentName, opponentChars, _bs);
+                    console.log('[RANKED] saveRankedResult v2 called — winner:', winnerTeam, 'pts calculados desde battleStats');
                 } catch(e) {
                     console.error('[RANKED] Error saving ranked result:', e);
                 }
