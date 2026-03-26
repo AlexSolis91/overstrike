@@ -1331,8 +1331,14 @@
                 });
             }
 
-            // ── Personajes del meta global ──
+            // ── Personajes del meta global (tanto atacante como defensor) ──
             _saveGlobalCharStats(playerChars, won, seasonKey);
+            // Los personajes del defensor también se registran en meta
+            // (se registran desde _applyDefPoints cuando existe defOwnerUid;
+            //  para CPU defense, registrar aquí con opponentChars)
+            if (!defOwnerUid && opponentChars && opponentChars.length) {
+                _saveGlobalCharStats(opponentChars, !won, seasonKey);
+            }
         }
 
         function _saveDef(defOwnerUid, defOwnerName, defWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, seasonKey, todayKey, opponentChars) {
@@ -1384,9 +1390,10 @@
                     cur.charStats[c].used++;
                     if (defWon) cur.charStats[c].wins++;
                 });
+                // Guardar stats globales de personajes DEFENSORES para el panel Meta
+                _saveGlobalCharStats(defChars, defWon, seasonKey);
                 defRef.set(cur);
             });
-            _saveGlobalCharStats(opponentChars, defWon, seasonKey);
         }
 
         // ── Guardar stats globales de personajes (para panel de Meta) ──
