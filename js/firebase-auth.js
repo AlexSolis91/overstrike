@@ -1683,7 +1683,50 @@
             });
         }
 
-        // ── Defense Attack Notifications ──
+        function getCharPortrait(charName) {
+            if (typeof characterData !== 'undefined' && characterData[charName] && characterData[charName].portrait) {
+                return characterData[charName].portrait;
+            }
+            var portraits = {
+                'Madara Uchiha':        'https://i.postimg.cc/KzWJPy5j/Captura_de_pantalla_2026_02_26_134301.png',
+                'Sun Jin Woo':          'https://i.postimg.cc/3rSZSvdF/Captura_de_pantalla_2026_03_11_105214.png',
+                'Aldebaran':            'https://i.postimg.cc/PJr0LB6N/Captura_de_pantalla_2026_02_21_230603.png',
+                'Leonidas':             'https://i.postimg.cc/TYJdgC3L/Captura_de_pantalla_2026_03_06_001254.png',
+                'Min Byung':            'https://i.postimg.cc/Y9xJCpxr/Captura_de_pantalla_2026_02_22_002441.png',
+                'Rengoku':              'https://i.postimg.cc/wTWCgJY2/Captura_de_pantalla_2026_03_15_021343.png',
+                'Aspros de Gemini':     'https://i.postimg.cc/NMZcBh8m/Captura_de_pantalla_2026_02_27_201323.png',
+                'Ymir':                 'https://i.postimg.cc/D0PFfyFL/Captura_de_pantalla_2026_03_03_125024.png',
+                'Thestalos':            'https://i.postimg.cc/9f6kNBpV/Gemini_Generated_Image_ac4u14ac4u14ac4u.png',
+                'Alexstrasza':          'https://i.postimg.cc/V6F3kYFw/Captura_de_pantalla_2026_02_21_233329.png',
+                'Anakin Skywalker':     'https://i.postimg.cc/7hYjCpBh/Captura_de_pantalla_2026_02_21_231859.png',
+                'Goku':                 'https://i.postimg.cc/wMsFFbWT/Captura_de_pantalla_2026_02_26_132013.png',
+                'Ragnar Lothbrok':      'https://i.postimg.cc/9XqFNYqW/Captura_de_pantalla_2026_03_11_234717.png',
+                'Saitama':              'https://i.postimg.cc/Qtz0QrqV/Captura_de_pantalla_2026_02_26_132109.png',
+                'Ozymandias':           'https://i.postimg.cc/6qGzz1Hp/Captura_de_pantalla_2026_02_26_131502.png',
+                'Gilgamesh':            'https://i.postimg.cc/nzNJp8K7/Captura_de_pantalla_2026_02_27_201309.png',
+                'Goku Black':           'https://i.postimg.cc/SsGwxyGp/Captura_de_pantalla_2026_02_22_014009.png',
+                'Saga de Geminis':      'https://i.postimg.cc/wBvTDG7f/Captura_de_pantalla_2026_02_24_103109.png',
+                'Minato Namikaze':      'https://i.postimg.cc/qvNv9NQN/Captura_de_pantalla_2026_03_11_215715.png',
+                'Muzan Kibutsuji':      'https://i.postimg.cc/fL41fCgH/Captura_de_pantalla_2026_02_28_020016.png',
+                'Nakime':               'https://i.postimg.cc/858xm4nX/Captura_de_pantalla_2026_02_28_020047.png',
+                'Sauron':               'https://i.postimg.cc/858xm4n0/Captura_de_pantalla_2026_02_28_020119.png',
+                'Darth Vader':          'https://i.postimg.cc/63sFfc1F/Captura_de_pantalla_2026_02_28_015421.png',
+                'Lich King':            'https://i.postimg.cc/W3Rxw8ff/Captura_de_pantalla_2026_02_28_015847.png',
+                'Padme Amidala':        'https://i.postimg.cc/pV63g1B4/Whats_App_Image_2026_03_05_at_9_39_15_AM.jpg',
+                'Daenerys Targaryen':   'https://i.postimg.cc/Gm8k90V5/Whats_App_Image_2026_03_15_at_1_59_17_AM.jpg',
+                'Tamayo':               'https://i.postimg.cc/9XnsvNBS/Whats_App_Image_2026_03_05_at_9_42_52_AM.jpg',
+                'Emperador Palpatine':  'https://i.postimg.cc/DfMRtYcj/Whats_App_Image_2026_03_05_at_9_50_54_AM.jpg',
+                'Gandalf':              'https://i.postimg.cc/1RjbLYHx/Whats_App_Image_2026_03_05_at_9_53_24_AM.jpg',
+                'Doomsday':             'https://i.postimg.cc/hjJDWnn6/Captura_de_pantalla_2026_03_06_003242.png',
+                'Ikki de Fenix':        'https://i.postimg.cc/LsX6jbnD/Captura_de_pantalla_2026_02_24_103509.png',
+                'Itachi Uchiha':        'https://i.ibb.co/HDhTPLvR/91a611f2e00a9c83e9a8dd1607a2c50a.jpg',
+                'Shinobu Kocho':        'https://i.postimg.cc/9XnsvNBS/Whats_App_Image_2026_03_05_at_9_42_52_AM.jpg',
+                'Tanjiro Kamado':       'https://i.postimg.cc/9XnsvNBS/Whats_App_Image_2026_03_05_at_9_42_52_AM.jpg',
+            };
+            return portraits[charName] || 'https://i.postimg.cc/PJr0LB6N/Captura_de_pantalla_2026_02_21_230603.png';
+        }
+
+                // ── Defense Attack Notifications ──
         function listenForDefenseNotifications() {
             if (!currentUser) return;
             db.ref('ranked_notifications/' + currentUser.uid)
