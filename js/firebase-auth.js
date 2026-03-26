@@ -1315,8 +1315,8 @@
             // ── Equipo de ataque actual ──
             db.ref('ranked_teams/' + myUid).once('value', function(myTeamSnap) {
                 var myTeamData  = myTeamSnap.val() || {};
-                cur.currentAtkTeam = (myTeamData.attack  || []).filter(Boolean).slice(0,3);
-                cur.currentDefTeam = (myTeamData.defense || []).filter(Boolean).slice(0,3);
+                cur.currentAtkTeam = (myTeamData.attack  || []).filter(Boolean).slice(0,5);
+                cur.currentDefTeam = (myTeamData.defense || []).filter(Boolean).slice(0,5);
                 myRef.set(cur);
                 addLog('🏆 Puntos Ranked: +' + atkPoints + (dailyMult < 1 ? ' (' + Math.round(dailyMult*100) + '% por límite diario)' : '') + ' | Total: ' + cur.points, 'buff');
             });
@@ -1380,8 +1380,8 @@
             // Char stats de defensa para meta global
             db.ref('ranked_teams/' + defOwnerUid).once('value', function(tSnap) {
                 var tData = tSnap.val() || {};
-                cur.currentDefTeam = (tData.defense || []).filter(Boolean).slice(0,3);
-                cur.currentAtkTeam = cur.currentAtkTeam || (tData.attack || []).filter(Boolean).slice(0,3);
+                cur.currentDefTeam = (tData.defense || []).filter(Boolean).slice(0,5);
+                cur.currentAtkTeam = cur.currentAtkTeam || (tData.attack || []).filter(Boolean).slice(0,5);
                 var defChars = (tData.defense || []).filter(Boolean);
                 cur.charStats = cur.charStats || {};
                 defChars.forEach(function(c) {
@@ -1522,8 +1522,18 @@
 
             var rows = entries.map(function(e, i) {
                 var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '<span style="font-family:Orbitron,sans-serif;font-size:.8rem;color:#666;">' + (i+1) + '</span>';
-                var bgGlow  = i === 0 ? 'rgba(255,215,0,0.06)' : i === 1 ? 'rgba(192,192,192,0.04)' : i === 2 ? 'rgba(205,127,50,0.04)' : 'rgba(255,170,0,0.015)';
-                var border  = i === 0 ? 'rgba(255,215,0,0.25)' : i === 1 ? 'rgba(192,192,192,0.12)' : i === 2 ? 'rgba(205,127,50,0.12)' : 'rgba(255,170,0,0.07)';
+                // Colores por liga
+                var lgColors = {
+                    'Bronce':      { bg: 'rgba(180,100,30,0.10)',  border: 'rgba(205,127,50,0.40)',  glow: 'rgba(205,127,50,0.12)',  accent: '#cd7f32' },
+                    'Plata':       { bg: 'rgba(180,180,200,0.08)', border: 'rgba(192,192,192,0.35)', glow: 'rgba(192,192,192,0.10)', accent: '#c0c0c0' },
+                    'Oro':         { bg: 'rgba(255,200,0,0.09)',   border: 'rgba(255,215,0,0.40)',   glow: 'rgba(255,215,0,0.14)',   accent: '#ffd700' },
+                    'Diamante':    { bg: 'rgba(0,200,255,0.08)',   border: 'rgba(0,220,255,0.35)',   glow: 'rgba(0,200,255,0.12)',   accent: '#00d4ff' },
+                    'Maestro':     { bg: 'rgba(160,0,255,0.10)',   border: 'rgba(180,50,255,0.40)',  glow: 'rgba(160,0,255,0.16)',   accent: '#b432ff' },
+                    'Gran Maestro':{ bg: 'rgba(255,100,0,0.10)',   border: 'rgba(255,130,0,0.45)',   glow: 'rgba(255,100,0,0.18)',   accent: '#ff8800' },
+                };
+                var lgC = lgColors[e.league.name] || lgColors['Bronce'];
+                var bgGlow  = lgC.bg;
+                var border  = lgC.border;
                 var wrColor = e.winRate >= 60 ? '#00ff88' : e.winRate >= 40 ? '#ffaa00' : '#ff4466';
 
                 // Equipos actuales
@@ -1543,13 +1553,13 @@
                 }).join('');
 
                 return [
-                    '<div style="background:' + bgGlow + ';border:1px solid ' + border + ';border-radius:14px;padding:14px 16px;margin-bottom:9px;">',
+                    '<div style="background:' + bgGlow + ';border:1px solid ' + border + ';border-radius:14px;padding:14px 16px;margin-bottom:9px;box-shadow:0 0 18px ' + lgC.glow + ';">',
                     // Row 1: posición + nombre + liga + puntos
                     '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;">',
                         '<div style="font-size:1.4rem;min-width:30px;text-align:center;">' + medal + '</div>',
                         '<div style="flex:1;min-width:120px;">',
                             '<div style="font-family:Orbitron,sans-serif;font-weight:700;color:#fff;font-size:.9rem;">' + escapeHtml(e.name) + '</div>',
-                            '<div style="font-size:.72rem;color:#aaa;margin-top:2px;">' + e.league.full + '</div>',
+                            '<div style="font-size:.72rem;color:' + lgC.accent + ';margin-top:2px;font-weight:600;">' + e.league.full + '</div>',
                         '</div>',
                         // Puntos globales
                         '<div style="background:rgba(255,170,0,0.1);border:1px solid rgba(255,170,0,0.3);border-radius:8px;padding:7px 12px;text-align:center;min-width:90px;">',
@@ -1606,37 +1616,64 @@
                         return;
                     }
 
+                    // Estado de ordenamiento en ventana
+                    if (!window._metaSortBy) window._metaSortBy = 'wr';
+                    window._metaEntries = entries; // guardar para re-ordenar sin refetch
+                    window.renderMetaRows = function(sortBy) {
+                        window._metaSortBy = sortBy || 'wr';
+                        var sorted = (window._metaEntries || []).slice();
+                        if (sortBy === 'pr')      sorted.sort(function(a,b){ return b.pr - a.pr || b.used - a.used; });
+                        else if (sortBy === 'games') sorted.sort(function(a,b){ return b.used - a.used || b.wr - a.wr; });
+                        else                     sorted.sort(function(a,b){ return b.wr - a.wr || b.used - a.used; });
+                        var rowsH = sorted.map(function(e, i) {
+                            var wrColor  = e.wr >= 60 ? '#00ff88' : e.wr >= 50 ? '#ffaa00' : e.wr >= 40 ? '#ff8844' : '#ff4466';
+                            var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1);
+                            var portrait = getCharPortrait(e.name);
+                            return [
+                                '<div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:8px 10px;margin-bottom:5px;">',
+                                    '<div style="width:30px;text-align:center;font-size:.85rem;">' + medal + '</div>',
+                                    '<img src="' + portrait + '" referrerpolicy="no-referrer" style="width:38px;height:38px;border-radius:6px;object-fit:cover;border:1px solid rgba(255,255,255,0.1);background:#111;" onerror="this.style.opacity=0.15">',
+                                    '<div style="flex:1;font-size:.82rem;color:#ddd;font-weight:600;">' + escapeHtml(e.name) + '</div>',
+                                    '<div style="width:80px;text-align:center;font-size:.78rem;color:#88ccff;">' + e.pr + '%</div>',
+                                    '<div style="width:80px;text-align:center;font-family:Orbitron,sans-serif;font-size:.82rem;font-weight:700;color:' + wrColor + ';">' + e.wr + '%</div>',
+                                    '<div style="width:60px;text-align:center;font-size:.75rem;color:#666;">' + e.used + '</div>',
+                                '</div>'
+                            ].join('');
+                        }).join('');
+                        var rowsDiv = document.getElementById('metaRowsDiv');
+                        if (rowsDiv) rowsDiv.innerHTML = rowsH;
+                        // Actualizar estilos de botones activos
+                        ['wr','pr','games'].forEach(function(s) {
+                            var btn = document.getElementById('metaSort_' + s);
+                            if (btn) btn.style.background = (s === sortBy) ? 'rgba(100,200,100,0.35)' : 'rgba(100,200,100,0.08)';
+                        });
+                    };
                     var headerHtml = [
-                        '<div style="margin-bottom:16px;">',
+                        '<div style="margin-bottom:12px;">',
                             '<div style="font-family:Orbitron,sans-serif;font-size:1rem;color:#8f8;margin-bottom:4px;">📊 META — Personajes más usados</div>',
-                            '<div style="font-size:.72rem;color:#555;">Temporada ' + seasonKey + ' · ' + totalBattles + ' batallas · Ordenado por Winrate</div>',
+                            '<div style="font-size:.72rem;color:#555;margin-bottom:10px;">Temporada ' + seasonKey + ' · ' + totalBattles + ' batallas</div>',
+                            // Botones de orden
+                            '<div style="display:flex;gap:6px;margin-bottom:12px;">',
+                                '<span style="font-size:.65rem;color:#666;align-self:center;margin-right:4px;">Ordenar por:</span>',
+                                '<button id="metaSort_wr" onclick="window.renderMetaRows(\'wr\')" style="background:rgba(100,200,100,0.35);border:1px solid #4a4;color:#8f8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.7rem;">🏆 Winrate</button>',
+                                '<button id="metaSort_pr" onclick="window.renderMetaRows(\'pr\')" style="background:rgba(100,200,100,0.08);border:1px solid #4a4;color:#8f8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.7rem;">📊 Pick Rate</button>',
+                                '<button id="metaSort_games" onclick="window.renderMetaRows(\'games\')" style="background:rgba(100,200,100,0.08);border:1px solid #4a4;color:#8f8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.7rem;">🎮 Partidas</button>',
+                            '</div>',
                         '</div>',
-                        '<div style="display:flex;gap:8px;margin-bottom:12px;font-size:.65rem;color:#666;padding:0 8px;">',
+                        '<div style="display:flex;gap:8px;margin-bottom:8px;font-size:.65rem;color:#555;padding:0 8px;">',
                             '<div style="width:30px;">#</div>',
+                            '<div style="width:38px;"></div>',
                             '<div style="flex:1;">Personaje</div>',
                             '<div style="width:80px;text-align:center;">Pick Rate</div>',
                             '<div style="width:80px;text-align:center;">Winrate</div>',
                             '<div style="width:60px;text-align:center;">Partidas</div>',
-                        '</div>'
+                        '</div>',
+                        '<div id="metaRowsDiv"></div>',
                     ].join('');
 
-                    var rowsHtml = entries.map(function(e, i) {
-                        var wrColor  = e.wr >= 60 ? '#00ff88' : e.wr >= 50 ? '#ffaa00' : e.wr >= 40 ? '#ff8844' : '#ff4466';
-                        var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1);
-                        var portrait = getCharPortrait(e.name);
-                        return [
-                            '<div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:8px 10px;margin-bottom:5px;">',
-                                '<div style="width:30px;text-align:center;font-size:.85rem;">' + medal + '</div>',
-                                '<img src="' + portrait + '" referrerpolicy="no-referrer" style="width:38px;height:38px;border-radius:6px;object-fit:cover;border:1px solid rgba(255,255,255,0.1);background:#111;" onerror="this.style.opacity=0.15">',
-                                '<div style="flex:1;font-size:.82rem;color:#ddd;font-weight:600;">' + escapeHtml(e.name) + '</div>',
-                                '<div style="width:80px;text-align:center;font-size:.78rem;color:#88ccff;">' + e.pr + '%</div>',
-                                '<div style="width:80px;text-align:center;font-family:Orbitron,sans-serif;font-size:.82rem;font-weight:700;color:' + wrColor + ';">' + e.wr + '%</div>',
-                                '<div style="width:60px;text-align:center;font-size:.75rem;color:#666;">' + e.used + '</div>',
-                            '</div>'
-                        ].join('');
-                    }).join('');
-
-                    container.innerHTML = headerHtml + rowsHtml;
+                    container.innerHTML = headerHtml;
+                    // Renderizar filas con el orden por defecto (winrate)
+                    window.renderMetaRows('wr');
                 });
             });
         }
