@@ -3529,7 +3529,8 @@
                 const _seAtk = gameState.characters[gameState.selectedCharacter];
                 // Cooldown check
                 if (_seAtk && _seAtk._singularidadCooldown > 0) {
-                    addLog('⚡ Singularidad Escarlata en cooldown: ' + _seAtk._singularidadCooldown + ' turno(s) restantes', 'info');
+                    addLog('⚡ Singularidad Escarlata en cooldown: ' + _seAtk._singularidadCooldown + ' turno(s) restante(s) — habilidad bloqueada', 'info');
+                    endTurn();
                     return;
                 }
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
