@@ -29,6 +29,17 @@
                         addLog(`💖 ${charName} recuperó ${actualHeal} HP por Regeneración`, 'heal');
                         // Activar pasiva de Min Byung si está en el equipo
                         triggerBendicionSagrada(char.team, actualHeal);
+                        // PRESENCIA OSCURA (Darth Vader): +1 carga cuando enemigo recupera HP
+                        const _psEnemyTeam = char.team === 'team1' ? 'team2' : 'team1';
+                        for (const _psn in gameState.characters) {
+                            const _psc = gameState.characters[_psn];
+                            if (_psc && !_psc.isDead && _psc.hp > 0 && _psc.team === _psEnemyTeam &&
+                                _psc.passive && _psc.passive.name === 'Presencia Oscura') {
+                                _psc.charges = Math.min(20, (_psc.charges || 0) + 1);
+                                addLog('🌑 Presencia Oscura: Darth Vader gana 1 carga (' + charName + ' regeneró HP)', 'buff');
+                                break;
+                            }
+                        }
                         // TESORO DEL CIELO sub-pasiva: cuando Shaka recupera HP, aplica debuff aleatorio a enemigo aleatorio
                         if (char.passive && char.passive.name === 'Tesoro del Cielo') {
                             if (typeof triggerShakaHealDebuff === 'function') triggerShakaHealDebuff(charName);
