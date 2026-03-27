@@ -110,7 +110,7 @@
                 for (const _n in gameState.characters) {
                     const _c = gameState.characters[_n];
                     if (!_c || _c.team !== _fbETeam || _c.isDead || _c.hp <= 0) continue;
-                    if (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(_n)) continue;
+                    if (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(_n, true)) continue;
                     applyDamageWithShield(_n, 3, 'Fake Black');
                 }
                 for (const _sid in gameState.summons) {
