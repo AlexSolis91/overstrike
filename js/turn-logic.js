@@ -43,6 +43,12 @@
                         if (_isMyCharOnline) {
                             // Resetear flags de pasivas de un disparo por turno
                             gameState._izanamiUsedThisTurn = false;
+                            // FLASH — decrementar cooldown Singularidad Escarlata
+                            const _flashCd = gameState.characters[currentCharName];
+                            if (_flashCd && _flashCd._singularidadCooldown > 0) {
+                                _flashCd._singularidadCooldown--;
+                                if (_flashCd._singularidadCooldown === 0) addLog('⚡ Singularidad Escarlata: cooldown listo', 'buff');
+                            }
                             // VENENO: aplica al INICIO del turno del personaje con el debuff
                             processNewDebuffEffects(currentCharName);
                         }
@@ -565,32 +571,32 @@
         }
 
         function executePossessionAttack(charName) {
+            // POSESIÓN / MEGA POSESIÓN: ataque genérico de 1-5 daño a un aliado aleatorio
             const char = gameState.characters[charName];
-            // Filtrar habilidades usables (cargas suficientes, no usadas)
-            const usable = char.abilities.filter(ab => !ab.used && char.charges >= ab.cost && ab.damage > 0);
-            if (usable.length === 0) {
-                addLog(`👁️ ${charName} no tiene ataques disponibles para usar bajo Posesión`, 'info');
-                endTurn();
-                return;
-            }
-            // Elegir habilidad aleatoria
-            const ability = usable[Math.floor(Math.random() * usable.length)];
+            if (!char) { endTurn(); return; }
             // Elegir aliado aleatorio vivo (excluye al propio personaje)
-            const allies = Object.keys(gameState.characters).filter(n => {
+            const allies = Object.keys(gameState.characters).filter(function(n) {
                 const c = gameState.characters[n];
-                return c.team === char.team && n !== charName && !c.isDead && c.hp > 0;
+                return c && c.team === char.team && n !== charName && !c.isDead && c.hp > 0;
             });
             if (allies.length === 0) {
-                addLog(`👁️ ${charName} no tiene aliados a quien atacar bajo Posesión`, 'info');
+                addLog('👁️ Posesión: ' + charName + ' no tiene aliados a quien atacar', 'info');
                 endTurn();
                 return;
             }
             const target = allies[Math.floor(Math.random() * allies.length)];
-            // Guardar ability seleccionada y ejecutar
-            gameState.selectedAbility = ability;
-            gameState.adjustedCost = ability.cost;
-            addLog(`👁️ Posesión: ${charName} usa ${ability.name} contra su aliado ${target}!`, 'damage');
-            executeAbility(target);
+            const dmg = Math.floor(Math.random() * 5) + 1; // 1-5 daño
+            // Ataque genérico — no usa ni consume cargas ni habilidades
+            if (typeof applyDamageWithShield === 'function') {
+                applyDamageWithShield(target, dmg, charName);
+            } else {
+                const tgtC = gameState.characters[target];
+                if (tgtC) tgtC.hp = Math.max(0, tgtC.hp - dmg);
+            }
+            addLog('👁️ Posesión: ' + charName + ' realiza Ataque a Aliado — ' + dmg + ' daño a ' + target, 'damage');
+            if (typeof renderCharacters === 'function') renderCharacters();
+            if (typeof renderSummons === 'function') renderSummons();
+            endTurn();
         }
 
         function executeConfusionAttack(charName) {
@@ -1209,6 +1215,17 @@
                     
                     gameState.currentRound++;
                     gameState.turnsInRound = 0;
+
+                    // ── EMPATE: ronda 30 sin ganador ──
+                    if (gameState.currentRound > 30 && !gameState.gameOver) {
+                        gameState.gameOver = true;
+                        gameState.winner = 'EMPATE';
+                        addLog('⚖️ ¡RONDA 30! La batalla termina en EMPATE.', 'info');
+                        if (typeof showGameOver === 'function') {
+                            showGameOver('⚖️ ¡EMPATE! — La batalla llegó a la ronda 30');
+                        }
+                        return;
+                    }
                     // IZANAMI (Itachi): reset dodge flag each round
                     for (const _in in gameState.characters) {
                         const _ic = gameState.characters[_in];
