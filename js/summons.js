@@ -998,6 +998,20 @@
                 }
             }
 
+
+            // CADENAS DE HIELO (Lich King): +1 carga al recibir daño con Provocacion activa
+            if (remainingDamage > 0 && !passiveExecuting) {
+                const _lichTgt = gameState.characters[targetName];
+                if (_lichTgt && !_lichTgt.isDead && _lichTgt.lichKingCadenasActive &&
+                    (_lichTgt.statusEffects||[]).some(function(e) {
+                        if (!e) return false;
+                        var _nn = normAccent(e.name||'');
+                        return _nn === 'provocacion' || _nn === 'mega provocacion';
+                    })) {
+                    _lichTgt.charges = Math.min(20, (_lichTgt.charges||0) + 1);
+                    addLog('Cadenas de Hielo: Lich King gana 1 carga (recibio danio con Provocacion)', 'buff');
+                }
+            }
             // MUZAN muzanVenomOnHit: sus ataques activan el tick de veneno del objetivo
             if (remainingDamage > 0 && attackerName && !passiveExecuting) {
                 const _mzAtk = gameState.characters[attackerName];
