@@ -504,6 +504,17 @@ function triggerMaboroshi(targetTeam, debuffName) {
             return false;
         }
 
+        // Llamar cuando un personaje esquiva para activar pasivas de esquiva
+        function triggerDodgePassives(charName) {
+            const c = gameState.characters[charName];
+            if (!c || c.isDead) return;
+            // ACELERACIÓN CONSTANTE (Flash): +3 cargas al esquivar
+            if (c.passive && c.passive.name === 'Aceleración Constante') {
+                c.charges = Math.min(20, (c.charges || 0) + 3);
+                addLog('⚡ Aceleración Constante: Flash esquiva y gana 3 cargas', 'buff');
+            }
+        }
+
         // ── PASIVA EL OJO QUE TODO LO VE (Sauron): ignora Provocación/Sigilo ──
         function sauronIgnoresRestrictions() {
             const sauron = gameState.characters['Sauron'];
