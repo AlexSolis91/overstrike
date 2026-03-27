@@ -739,7 +739,9 @@
             if (attackerName !== null && !passiveExecuting) {
                 if (target.hasDodge || hasStatusEffect(targetName, 'Esquivar')) {
                     if (Math.random() < 0.50) {
-                        addLog(`💨 ${targetName} esquiva el ataque de ${attackerName}!`, 'buff');
+                        addLog('💨 ' + targetName + ' esquiva el ataque de ' + attackerName + '!', 'buff');
+                        // Activar pasivas de esquiva (ej: Flash +2 cargas)
+                        if (typeof triggerDodgePassives === 'function') triggerDodgePassives(targetName);
                         // Si es Goku con Ultra Instinto, contraataca
                         if ((targetName === 'Goku' || targetName === 'Goku v2') && target.ultraInstinto) {
                             triggerCounterattack(targetName, attackerName);
