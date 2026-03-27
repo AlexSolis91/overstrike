@@ -930,7 +930,28 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 if (checkGameOver()) {
                     return;
                 }
-                
+
+                // Habilidades con turno adicional (ej: Singularidad Escarlata, Golpe de Masa Infinita)
+                const _extraTurnEffects = ['singularidad_escarlata', 'golpe_masa_infinita'];
+                if (ability && _extraTurnEffects.includes(ability.effect)) {
+                    // Singularidad: aplicar lógica específica
+                    if (ability.effect === 'singularidad_escarlata') {
+                        if (attacker._singularidadCooldown > 0) {
+                            addLog('⚡ Singularidad Escarlata en cooldown: ' + attacker._singularidadCooldown + ' turno(s) restante(s)', 'info');
+                            endTurn();
+                            return;
+                        }
+                        attacker.charges = Math.min(20, (attacker.charges || 0) + 20);
+                        addLog('🔴 Singularidad Escarlata: Flash gana 20 cargas', 'buff');
+                        attacker._singularidadCooldown = 3;
+                    }
+                    if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, attacker.team);
+                    renderCharacters();
+                    renderSummons();
+                    showContinueButton();
+                    return;
+                }
+
                 // Finalizar turno
                 endTurn();
             } catch (error) {
