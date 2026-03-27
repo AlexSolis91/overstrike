@@ -456,7 +456,7 @@
             'Itachi Uchiha': {
                 hp: 20, maxHp: 20, speed: 88, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.ibb.co/HDhTPLvR/91a611f2e00a9c83e9a8dd1607a2c50a.jpg',
+                portrait: 'https://i.ibb.co/JRPVCpGp/Captura-de-pantalla-2026-03-26-230228.png',
                 passive: { name: 'Izanami', description: 'La primera vez por ronda que Itachi fuera a recibir un golpe de 3+ daño, esquiva y roba hasta 2 cargas del atacante. Cada vez que un debuff (Posesion, Veneno, Quemaduras, Confusion) es aplicado sobre un aliado, limpia hasta 1 debuff activo del equipo aliado y genera 2 cargas por debuff limpiado.' },
                 abilities: [
                     { name: 'Genjutsu', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'single', effect: 'genjutsu_itachi', description: '50% de Agotamiento. 50% de Posesión. Genera 1 carga por cada debuff aplicado.' },
@@ -548,9 +548,9 @@
                 passive: { name: 'Tesoro del Cielo', description: 'Cada vez que Shaka de Virgo recibe daño, todos los aliados recuperan 1 HP. Cada vez que Shaka de Virgo recupera HP, aplica un debuff aleatorio en un enemigo aleatorio.' },
                 abilities: [
                     { name: 'Kān', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'kan_shaka', description: 'Se aplica Buff Provocación por 2 turnos. Se aplica Buff Regeneración 10% por 2 turnos.' },
-                    { name: 'Octavo Sentido', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'ally_aoe', effect: 'octavo_sentido_shaka', description: 'El equipo aliado genera 1 carga por cada debuff activo en ambos equipos.' },
-                    { name: 'Ohm', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'self', effect: 'ohm_shaka', description: 'El equipo aliado recupera 2 HP por cada debuff activo en ambos equipos.' },
-                    { name: 'Tenmaku Hōrin', type: 'over', cost: 10, chargeGain: 0, damage: 8, target: 'single', effect: 'tenmaku_horin_shaka', description: 'Causa 8 de daño. Aplica 3 debuffs aleatorios al objetivo.' }
+                    { name: 'Octavo Sentido', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'ally_aoe', effect: 'octavo_sentido_shaka', description: 'El equipo aliado genera 1 carga por cada 2 debuffs activos en ambos equipos (total debuffs / 2).' },
+                    { name: 'Ohm', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'self', effect: 'ohm_shaka', description: 'El equipo aliado recupera 1 HP por cada debuff activo en ambos equipos.' },
+                    { name: 'Tenmaku Hōrin', type: 'over', cost: 10, chargeGain: 0, damage: 8, target: 'single', effect: 'tenmaku_horin_shaka', description: 'Causa 8 daño. Aplica Mega Posesión 3 turnos. Aplica Agotamiento 3 turnos al objetivo.' }
                 ]
             },
             'Varian Wrynn': {
@@ -625,7 +625,7 @@
                     { name: 'Patada Relámpago', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'patada_relampago', description: 'Causa 2 daño. Se aplica Buff Esquivar 2 turnos. 50% de probabilidad de golpe crítico.' },
                     { name: 'Electroquinesis', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'aoe', effect: 'electroquinesis_flash', description: 'Causa 3 AOE. 50% de probabilidad de robar 2 cargas del enemigo golpeado. 50% de probabilidad de golpe crítico.' },
                     { name: 'Golpe de Masa Infinita', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'single', effect: 'golpe_masa_infinita', description: 'Causa 2 daño. Gana un turno adicional. 50% de probabilidad de golpe crítico.' },
-                    { name: 'Singularidad Escarlata', type: 'over', cost: 15, chargeGain: 20, damage: 10, target: 'single', effect: 'singularidad_escarlata', description: 'Causa 10 daño. Gana un turno adicional. Esta habilidad tiene cooldown de 3 turnos.' }
+                    { name: 'Singularidad Escarlata', type: 'over', cost: 15, chargeGain: 20, damage: 10, target: 'single', effect: 'singularidad_escarlata', description: 'Causa 10 daño. Gana un turno adicional. Genera 20 cargas. Esta habilidad tiene cooldown de 3 turnos.' }
                 ]
             },
         };
