@@ -3435,6 +3435,113 @@
                 }
                 generateChargesInline(charName, ability.chargeGain);
 
+
+            // ══════════════════════════════════════════════════════
+            // FLASH — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'patada_relampago') {
+                // FLASH — Patada Relámpago: 2 daño + Esquivar 2T + 50% crit
+                const _plAtk = gameState.characters[gameState.selectedCharacter];
+                let _plDmg = finalDamage;
+                const _plCrit = Math.random() < 0.50;
+                if (_plCrit) {
+                    _plDmg *= 2;
+                    // Pasiva: crit → Flash recupera 2 HP
+                    if (_plAtk && _plAtk.passive && _plAtk.passive.name === 'Aceleración Constante') {
+                        if (typeof canHeal === 'function' ? canHeal(gameState.selectedCharacter) : true) {
+                            _plAtk.hp = Math.min(_plAtk.maxHp, (_plAtk.hp || 0) + 2);
+                            addLog('⚡ Aceleración Constante: Flash recupera 2 HP (crítico)', 'heal');
+                        }
+                    }
+                    addLog('💥 Patada Relámpago: ¡Crítico! ' + _plDmg + ' daño', 'damage');
+                }
+                applyDamageWithShield(targetName, _plDmg, gameState.selectedCharacter);
+                // Buff Esquivar 2T
+                if (_plAtk) {
+                    _plAtk.statusEffects = (_plAtk.statusEffects || []).filter(e => !e || normAccent(e.name||'') !== 'esquivar');
+                    _plAtk.statusEffects.push({ name: 'Esquivar', type: 'buff', duration: 2, emoji: '💨' });
+                }
+                addLog('⚡ Patada Relámpago: ' + _plDmg + ' daño + Esquivar 2T a ' + gameState.selectedCharacter, 'damage');
+
+            } else if (ability.effect === 'electroquinesis_flash') {
+                // FLASH — Electroquinesis: 3 AOE + 50% robar 2 cargas + 50% crit por objetivo
+                const _eqAtk = gameState.characters[gameState.selectedCharacter];
+                const _eqETeam = _eqAtk ? (_eqAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                if (checkAndRedirectAOEMegaProv(_eqETeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('⚡ Electroquinesis redirigida por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _eqETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('💨 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        let _eqDmg = finalDamage;
+                        const _eqCrit = Math.random() < 0.50;
+                        if (_eqCrit) {
+                            _eqDmg *= 2;
+                            if (_eqAtk && _eqAtk.passive && _eqAtk.passive.name === 'Aceleración Constante') {
+                                if (typeof canHeal === 'function' ? canHeal(gameState.selectedCharacter) : true) {
+                                    _eqAtk.hp = Math.min(_eqAtk.maxHp, (_eqAtk.hp||0) + 2);
+                                }
+                            }
+                            addLog('💥 Electroquinesis: ¡Crítico en ' + _n + '!', 'damage');
+                        }
+                        applyDamageWithShield(_n, _eqDmg, gameState.selectedCharacter);
+                        // 50% robar 2 cargas
+                        if (Math.random() < 0.50 && _c.charges > 0 && _eqAtk) {
+                            const stolen = Math.min(2, _c.charges);
+                            _c.charges = Math.max(0, _c.charges - stolen);
+                            _eqAtk.charges = Math.min(20, (_eqAtk.charges||0) + stolen);
+                            addLog('⚡ Electroquinesis: roba ' + stolen + ' cargas de ' + _n, 'buff');
+                        }
+                    }
+                    for (let _sid in gameState.summons) {
+                        const _s = gameState.summons[_sid];
+                        if (_s && _s.team === _eqETeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, gameState.selectedCharacter);
+                    }
+                }
+                addLog('⚡ Electroquinesis: ' + finalDamage + ' AOE', 'damage');
+
+            } else if (ability.effect === 'golpe_masa_infinita') {
+                // FLASH — Golpe de Masa Infinita: 2 daño + turno adicional + 50% crit
+                const _gmiAtk = gameState.characters[gameState.selectedCharacter];
+                let _gmiDmg = finalDamage;
+                const _gmiCrit = Math.random() < 0.50;
+                if (_gmiCrit) {
+                    _gmiDmg *= 2;
+                    if (_gmiAtk && _gmiAtk.passive && _gmiAtk.passive.name === 'Aceleración Constante') {
+                        if (typeof canHeal === 'function' ? canHeal(gameState.selectedCharacter) : true) {
+                            _gmiAtk.hp = Math.min(_gmiAtk.maxHp, (_gmiAtk.hp||0) + 2);
+                        }
+                    }
+                    addLog('💥 Golpe de Masa Infinita: ¡Crítico! ' + _gmiDmg + ' daño', 'damage');
+                }
+                applyDamageWithShield(targetName, _gmiDmg, gameState.selectedCharacter);
+                addLog('⚡ Golpe de Masa Infinita: ' + _gmiDmg + ' daño a ' + targetName + ' + turno adicional', 'damage');
+                if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, _gmiAtk ? _gmiAtk.team : 'team1');
+                renderCharacters();
+                renderSummons();
+                showContinueButton();
+                return;
+
+            } else if (ability.effect === 'singularidad_escarlata') {
+                // FLASH — Singularidad Escarlata: 10 daño + turno adicional + cooldown 3T
+                const _seAtk = gameState.characters[gameState.selectedCharacter];
+                // Cooldown check
+                if (_seAtk && _seAtk._singularidadCooldown > 0) {
+                    addLog('⚡ Singularidad Escarlata en cooldown: ' + _seAtk._singularidadCooldown + ' turno(s) restantes', 'info');
+                    return;
+                }
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('🔴 Singularidad Escarlata: ' + finalDamage + ' daño a ' + targetName + ' + turno adicional', 'damage');
+                // Activar cooldown de 3 turnos
+                if (_seAtk) _seAtk._singularidadCooldown = 3;
+                if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, _seAtk ? _seAtk.team : 'team1');
+                renderCharacters();
+                renderSummons();
+                showContinueButton();
+                return;
+
             } else if (ability.effect === 'vals_tanjiro') {
                 // TANJIRO — Básico: daño + 50% de generar 1 carga al equipo aliado (Olor de la Brecha)
                 const _tjAtk = gameState.characters[gameState.selectedCharacter];
@@ -4788,23 +4895,7 @@
                 applyFlatBurn(targetName, 4, 2);
                 addLog('Amaterasu: ' + finalDamage + ' dano + Quemadura 4HP 2T a ' + targetName, 'damage');
 
-            } else if (ability.effect === 'vals_tanjiro') {
-                // TANJIRO — Vals: 1 daño + 1 carga a TODO el equipo aliado
-                const _vTk = gameState.characters[gameState.selectedCharacter];
-                let _vDmg = finalDamage;
-                // Passive: 20% crítico → x2 daño + 1 carga
-                const _vCrit = _vTk && _vTk.passive && _vTk.passive.name === 'Olor de la Brecha' && Math.random() < 0.20;
-                if (_vCrit) { _vDmg *= 2; if (_vTk) { _vTk.charges = Math.min(20, (_vTk.charges||0)+1); } addLog('💥 Olor de la Brecha: ¡Crítico! Tanjiro +1 carga', 'buff'); }
-                applyDamageWithShield(targetName, _vDmg, gameState.selectedCharacter);
-                // +1 carga a todos los aliados vivos
-                const _vTeam = _vTk ? _vTk.team : attacker.team;
-                for (const _n in gameState.characters) {
-                    const _c = gameState.characters[_n];
-                    if (_c && !_c.isDead && _c.hp > 0 && _c.team === _vTeam) {
-                        _c.charges = Math.min(20, (_c.charges||0) + 1);
-                    }
-                }
-                addLog('⚔️ Vals: ' + _vDmg + ' daño + el equipo aliado gana 1 carga', 'buff');
+            // vals_tanjiro viejo eliminado — usar handler nuevo más arriba
 
             } else if (ability.effect === 'cascada_agua') {
                 // TANJIRO — Cascada de Agua: 2 AOE + 1 carga al equipo aliado por crit
@@ -5447,8 +5538,10 @@
             // ══ RANKED STATS: guardar resultado si es partida Ranked ══
             if (typeof saveRankedResult === 'function' && window._rankedMode) {
                 try {
+                    // Detectar empate
+                    const isDraw = message.includes('EMPATE');
                     // Determinar equipo ganador
-                    const winnerTeam = message.includes('HUNTERS') ? 'team1' : 'team2';
+                    const winnerTeam = isDraw ? 'draw' : message.includes('HUNTERS') ? 'team1' : 'team2';
                     // Equipo del jugador local
                     const playerTeam = window._rankedPlayerTeam || 'team1';
                     // Personajes usados por el jugador
