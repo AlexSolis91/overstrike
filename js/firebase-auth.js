@@ -960,6 +960,7 @@
                 if (eligible.length === 0) {
                     // No defense teams available — fall back to random IA with random team
                     window._rankedMode = true;
+                    window._rankedFromMatchmaking = true;
                     window._rankedPlayerTeam = 'team1'; // player always attacks as team1 vs CPU
                     window._rankedFakeOpponent = 'CPU';
                     window._rankedDefenseOwnerUid = null;
@@ -974,6 +975,7 @@
                 const [defOwnerUid, defData] = eligible[Math.floor(Math.random() * eligible.length)];
                 const defOwnerName = defData.name || 'Rival';
                 window._rankedMode = true;
+                window._rankedFromMatchmaking = true;
                 window._rankedPlayerTeam = 'team1'; // player always attacks as team1
                 window._rankedFakeOpponent = defOwnerName;
                 window._rankedDefenseOwnerUid = defOwnerUid;
@@ -988,6 +990,7 @@
         function _launchRankedVsIAWithTeam(attackTeam, defenseTeam, opponentName) {
             const myName = currentUser ? (currentUser.displayName || 'Jugador') : 'Jugador';
             window._rankedMode = true;
+            window._rankedFromMatchmaking = true;
             window._rankedPlayerTeam = 'team1'; // player always attacks as team1 in vs-IA ranked
             window._rankedFakeOpponent = opponentName;
 
