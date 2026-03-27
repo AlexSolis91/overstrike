@@ -14,7 +14,7 @@
             for (let n in gameState.characters) {
                 const c = gameState.characters[n];
                 if (c && c.team === enemyTeam && !c.isDead && c.hp > 0) {
-                    if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) {
+                    if (checkAsprosAOEImmunity(n, true) || checkMinatoAOEImmunity(n)) {
                         addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff');
                         continue;
                     }
@@ -51,7 +51,7 @@
             // Returns actual damage dealt (0 if EA immune)
             const c = gameState.characters[n];
             if (!c || c.team !== targetTeam || c.isDead || c.hp <= 0) return -1; // skip
-            if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) {
+            if (checkAsprosAOEImmunity(n, true) || checkMinatoAOEImmunity(n)) {
                 addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff');
                 return 0; // immune
             }
@@ -266,7 +266,7 @@
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== enemyTeamGD || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff'); continue; }
+                    if (checkAsprosAOEImmunity(n, true) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff'); continue; }
                     applyDamageWithShield(n, finalDamage, charName);
                     c.charges = 0;
                     addLog('⚰️ Guadaña Divina: ' + n + ' pierde todas sus cargas', 'damage');
@@ -321,7 +321,7 @@
                 for (let _n in gameState.characters) {
                     const _c = gameState.characters[_n];
                     if (_c && _c.team === _egTeam && !_c.isDead && _c.hp > 0) {
-                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' esquiva el AOE (Esquiva Área)', 'buff'); continue; }
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' esquiva el AOE (Esquiva Área)', 'buff'); continue; }
                         const _isCrit = Math.random() < _critChance;
                         const _dmg = _isCrit ? finalDamage * 2 : finalDamage;
                         applyDamageWithShield(_n, _dmg, gameState.selectedCharacter);
@@ -348,7 +348,7 @@
                 for (let _n in gameState.characters) {
                     const _c = gameState.characters[_n];
                     if (_c && _c.team === _gmTeam && !_c.isDead && _c.hp > 0) {
-                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' esquiva el AOE (Esquiva Área)', 'buff'); continue; }
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' esquiva el AOE (Esquiva Área)', 'buff'); continue; }
                         applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
                         if (Math.random() < 0.5) {
                             applyPossession(_n, 1);
@@ -617,7 +617,7 @@
                         const c = gameState.characters[n];
                         if (c && c.team === critAoeTeam && !c.isDead && c.hp > 0) {
                             // ESQUIVA ÁREA: Aspros, Min Byung, Minato, y cualquier personaje con buff/pasiva
-                            if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff'); continue; }
+                            if (checkAsprosAOEImmunity(n, true) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff'); continue; }
                             // Each enemy gets its own crit roll
                             const darionB2 = Object.values(gameState.summons).find(s => s && s.name === 'Darion Morgraine' && s.team === attacker.team);
                             const criB2 = darionB2 ? 0.50 : 0;
@@ -889,7 +889,7 @@
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (c && c.team === snTeam && !c.isDead && c.hp > 0) {
-                        if (!checkAsprosAOEImmunity(n)) {
+                        if (!checkAsprosAOEImmunity(n, true)) {
                             applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
                             applyPoison(n, 3);
                         }
@@ -1148,7 +1148,7 @@
                         const c = gameState.characters[n];
                         if (!c || c.team !== emTeam || c.isDead || c.hp <= 0) continue;
                         // ESQUIVA ÁREA: inmune a todo efecto AOE
-                        if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) {
+                        if (checkAsprosAOEImmunity(n, true) || checkMinatoAOEImmunity(n)) {
                             addLog('🌟 ' + n + ' es inmune a Espada Merodach (Esquiva Área)', 'buff');
                             continue; // skip damage AND charge drain
                         }
@@ -1238,7 +1238,7 @@
                     for (let n in gameState.characters) {
                         const c = gameState.characters[n];
                         if (!c || c.team !== gloriaEnemyTeam || c.isDead || c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE', 'buff'); continue; }
+                        if (checkAsprosAOEImmunity(n, true)) { addLog('🌟 ' + n + ' es inmune al AOE', 'buff'); continue; }
                         applyDamageWithShield(n, finalDamage, charName);
                     }
                     for (let sid in gameState.summons) { const s = gameState.summons[sid]; if (s && s.team === gloriaEnemyTeam && s.hp > 0) applySummonDamage(sid, finalDamage, charName); }
@@ -1349,7 +1349,7 @@
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== enemyTeam || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n)) { addLog(`🌌 Esquiva Área: Aspros es inmune al ataque AOE`, 'buff'); continue; }
+                    if (checkAsprosAOEImmunity(n, true)) { addLog(`🌌 Esquiva Área: Aspros es inmune al ataque AOE`, 'buff'); continue; }
                     const isCrit = Math.random() < Math.min(1, (ability.critChance || 0.1) + totalCritBonus);
                     const dmg = isCrit ? finalDamage * 2 : finalDamage;
                     applyDamageWithShield(n, dmg, gameState.selectedCharacter);
@@ -1720,7 +1720,7 @@
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== enemyTeamDD || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
+                    if (checkAsprosAOEImmunity(n, true)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
                     applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
                     if (c.speed < attacker.speed) {
                         // Enemigo más lento: debuff aleatorio 2 turnos
@@ -1762,7 +1762,7 @@
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== enemyTeamRS2 || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
+                    if (checkAsprosAOEImmunity(n, true)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
                     applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
                     if (Math.random() < 0.5 && c.charges > 0) {
                         const stolen = Math.min(3, c.charges);
@@ -1840,7 +1840,7 @@
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== enemyTeamTF || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
+                    if (checkAsprosAOEImmunity(n, true)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
                     const hadBurn = hasStatusEffect(n, 'Quemadura');
                     applyDamageWithShield(n, finalDamage, charName);
                     applyFlatBurn(n, 2, 2);
@@ -2032,7 +2032,7 @@
                         for (let n in gameState.characters) {
                             const c = gameState.characters[n];
                             if (!c || c.team !== purEnemyTeam || c.isDead || c.hp <= 0) continue;
-                            if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                            if (checkAsprosAOEImmunity(n, true) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune (Esquiva Área)', 'buff'); continue; }
                             applyDamageWithShield(n, purTotalDmg, charName);
                         }
                         // Aplicar daño AOE a invocaciones enemigas
@@ -2230,7 +2230,7 @@
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== enemyTeamTN || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
+                    if (checkAsprosAOEImmunity(n, true)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
                     applyDamageWithShield(n, finalDamage, charName);
                     // 50% aplicar Sangrado
                     if (Math.random() < 0.5) {
@@ -2253,7 +2253,7 @@
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== enemyTeamTNv2 || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
+                    if (checkAsprosAOEImmunity(n, true)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
                     applyDamageWithShield(n, finalDamage, charName);
                     const hadBleed = hasStatusEffect(n, 'Sangrado');
                     if (Math.random() < 0.5) applyBleed(n, 1);
@@ -2268,7 +2268,7 @@
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== enemyTeamRP || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
+                    if (checkAsprosAOEImmunity(n, true)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
                     const hadBleedRP = hasStatusEffect(n, 'Sangrado');
                     applyDamageWithShield(n, finalDamage, charName);
                     applyBleed(n, 2);
@@ -2309,7 +2309,7 @@
                     for (let _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _sdTeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        if (checkAsprosAOEImmunity(_n, true)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
                         applyDamageWithShield(_n, _sdDmg, gameState.selectedCharacter);
                         _sdTotalDmg += _sdDmg;
                     }
@@ -2336,7 +2336,7 @@
                     for (let _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _mcTeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        if (checkAsprosAOEImmunity(_n, true)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
                         applyDamageWithShield(_n, _mcDmgPerTarget, gameState.selectedCharacter);
                     }
                 }
@@ -2382,7 +2382,7 @@
                     for (let _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _rkTeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
                         let _rkDmg = finalDamage;
                         if (Math.random() < 0.50) _rkDmg += Math.floor(Math.random() * 3); // 0-2 bonus
                         // Daño directo — bypass shields, go straight to HP
@@ -2432,7 +2432,7 @@
                     for (let _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _efTeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
                         applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
                         if (Math.random() < 0.50) { applyStun(_n, 1); addLog('⭐ ' + _n + ' recibe Aturdimiento (Explosión de la Fuerza)', 'debuff'); }
                         if (Math.random() < 0.50) { applyDebuff(_n, { name: 'Debilitar', type: 'debuff', duration: 2, emoji: '💔' }); addLog('💔 ' + _n + ' recibe Debilitar (Explosión de la Fuerza)', 'debuff'); }
@@ -2547,7 +2547,7 @@
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== enemyTeamMN || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
+                    if (checkAsprosAOEImmunity(n, true)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
                     const hasProv = hasStatusEffect(n, 'Provocacion') || hasStatusEffect(n, 'MegaProvocacion') || hasStatusEffect(n, 'Sigilo');
                     const mnDmg = hasProv ? finalDamage * 2 : finalDamage;
                     if (hasProv) addLog('💥 Mano Negra: ¡Crítico vs ' + n + ' (tiene Provoc/Sigilo)!', 'damage');
@@ -2645,7 +2645,7 @@
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== enemyTeamLT || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff'); continue; }
+                    if (checkAsprosAOEImmunity(n, true) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff'); continue; }
                     applyDamageWithShield(n, finalDamage, charName);
                 }
                 applyAOEDamageToSummons(attacker.team, finalDamage, charName);
@@ -2666,7 +2666,7 @@
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== enemyTeamDC || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff'); continue; }
+                    if (checkAsprosAOEImmunity(n, true) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff'); continue; }
                     applyDamageWithShield(n, finalDamage, charName);
                     applyFlatBurn(n, 4, 2);
                 }
@@ -2762,7 +2762,7 @@
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== enemyTeamOS || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n)) continue;
+                    if (checkAsprosAOEImmunity(n, true)) continue;
                     applyDamageWithShield(n, finalDamage, charName);
                 }
                 let debuffsCleared = 0;
@@ -2796,7 +2796,7 @@
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== enemyTeamPL || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff'); continue; }
+                    if (checkAsprosAOEImmunity(n, true) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff'); continue; }
                     applyDamageWithShield(n, finalDamage, charName);
                     if (Math.random() < 0.5) applyStun(n, 2);
                 }
@@ -2885,7 +2885,7 @@
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== mfTeam2 || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n) || checkMinatoAOEImmunity(n)) {
+                    if (checkAsprosAOEImmunity(n, true) || checkMinatoAOEImmunity(n)) {
                         addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff');
                         continue;
                     }
@@ -2903,7 +2903,7 @@
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== enemyTeamEI || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
+                    if (checkAsprosAOEImmunity(n, true)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
                     applyDamageWithShield(n, finalDamage, charName);
                     // If burning: steal 1 charge
                     const cAfter = gameState.characters[n];
@@ -3043,7 +3043,7 @@
                     for (let n in gameState.characters) {
                         const c = gameState.characters[n];
                         if (!c || c.team !== susEnemyTeam || c.isDead || c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE', 'buff'); continue; }
+                        if (checkAsprosAOEImmunity(n, true)) { addLog('🌟 ' + n + ' es inmune al AOE', 'buff'); continue; }
                         let susDmg = finalDamage;
                         if (Math.random() < 0.50) {
                             susDmg *= 2; // critical
@@ -3474,7 +3474,7 @@
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _eqETeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('💨 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('💨 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
                         let _eqDmg = finalDamage;
                         const _eqCrit = Math.random() < 0.50;
                         if (_eqCrit) {
@@ -3533,6 +3533,11 @@
                     return;
                 }
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                // Generar 20 cargas a Flash
+                if (_seAtk) {
+                    _seAtk.charges = Math.min(20, (_seAtk.charges || 0) + 20);
+                    addLog('🔴 Singularidad Escarlata: Flash gana 20 cargas', 'buff');
+                }
                 addLog('🔴 Singularidad Escarlata: ' + finalDamage + ' daño a ' + targetName + ' + turno adicional', 'damage');
                 // Activar cooldown de 3 turnos
                 if (_seAtk) _seAtk._singularidadCooldown = 3;
@@ -3568,7 +3573,7 @@
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _caTeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('💨 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('💨 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
                         applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
                         // 50% robar 1 carga del objetivo
                         if (Math.random() < 0.50 && _c.charges > 0 && _caAtk) {
@@ -3686,7 +3691,7 @@
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _grTeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
                         let _grDmg = finalDamage + (_c.charges || 0);
                         if (_grHasDoT) { _grDmg *= 2; }
                         if (_grAtk && _grAtk.garouSaitamaMode) _grDmg += 2;
@@ -3751,7 +3756,7 @@
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _gjTeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        if (checkAsprosAOEImmunity(_n, true)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
                         applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
                         applyPoison(_n, 3);
                     }
@@ -3767,7 +3772,7 @@
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _djTeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        if (checkAsprosAOEImmunity(_n, true)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
                         applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
                         const _hasVenAturd = (_c.statusEffects||[]).some(function(e){
                             const nm = normAccent(e&&e.name||'').toLowerCase();
@@ -3832,7 +3837,7 @@
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _anTeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        if (checkAsprosAOEImmunity(_n, true)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
                         applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
                         // Block 1 random ability for 2 turns (apply Silenciar on random category)
                         if (!(_c.statusEffects||[]).some(function(e){return e&&normAccent(e.name||'')==='silenciar';})) {
@@ -3893,7 +3898,7 @@
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _agTeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
                         let _agDmg = _agS && _agS.supermanPrimeMode ? finalDamage * 2 : finalDamage;
                         applyDamageWithShield(_n, _agDmg, gameState.selectedCharacter);
                         if (Math.random() < 0.50) applyFreeze(_n, 2);
@@ -3933,7 +3938,7 @@
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _ccTeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
                         let _ccDmg = finalDamage;
                         if (Math.random() < 0.20) { _ccDmg *= 3; addLog('💥 ¡Daño Triple! Ciclón del Caos en ' + _n, 'damage'); }
                         applyDamageWithShield(_n, _ccDmg, gameState.selectedCharacter);
@@ -4001,7 +4006,7 @@
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _ikTeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
                         // Check bleed for charge gen
                         const _cHasBleed = (_c.statusEffects||[]).some(function(e){
                             return e && normAccent(e.name||'').toLowerCase() === 'sangrado';
@@ -4085,7 +4090,7 @@
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _g3EnemyTeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) continue;
                         applyDamageWithShield(_n, finalDamage, charName);
                     }
                     for (let _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _g3EnemyTeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, charName); }
@@ -4121,7 +4126,7 @@
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _estETeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) continue;
                         applyDamageWithShield(_n, finalDamage, charName);
                         _c.charges = Math.max(0, (_c.charges||0) - 1);
                         if (Math.random() < 0.50) applyStun(_n, 1);
@@ -4195,7 +4200,7 @@
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _ssETeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) continue;
                         applyDamageWithShield(_n, _ssTotalDmg, charName);
                     }
                     for (let _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _ssETeam && _s.hp > 0) applySummonDamage(_sid, _ssTotalDmg, charName); }
@@ -4242,7 +4247,7 @@
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _gdETeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) continue;
                         const _hadNoCharges = (_c.charges||0) === 0;
                         let _gdDmg = finalDamage;
                         if (_hadNoCharges) { _gdDmg *= 2; addLog('⚫ Guadaña Divina: ¡Crítico en ' + _n + ' (sin cargas)!', 'buff'); }
@@ -4288,7 +4293,7 @@
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _sdETeam2 || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) continue;
                         applyDamageWithShield(_n, finalDamage, charName);
                         if (Math.random() < 0.50) {
                             const _steal = Math.floor(Math.random() * 3) + 1;
@@ -4325,7 +4330,7 @@
                 }
 
             } else if (ability.effect === 'octavo_sentido_shaka') {
-                // SHAKA — Octavo Sentido: equipo aliado genera 1 carga por cada debuff activo en AMBOS equipos
+                // SHAKA — Octavo Sentido: 1 carga por cada 2 debuffs activos en AMBOS equipos
                 const _osShaka = gameState.characters[gameState.selectedCharacter];
                 if (_osShaka) {
                     const _osMyTeam = _osShaka.team;
@@ -4335,14 +4340,15 @@
                         if (!_osC || _osC.isDead || _osC.hp <= 0) continue;
                         _osTotalDebuffs += (_osC.statusEffects || []).filter(e => e && e.type === 'debuff').length;
                     }
-                    if (_osTotalDebuffs === 0) {
-                        addLog('✨ Octavo Sentido: No hay debuffs activos en ningún equipo', 'info');
+                    const _osCharges = Math.floor(_osTotalDebuffs / 2);
+                    if (_osCharges === 0) {
+                        addLog('✨ Octavo Sentido: No suficientes debuffs (' + _osTotalDebuffs + ' debuffs, mínimo 2)', 'info');
                     } else {
                         for (const _osAllyN in gameState.characters) {
                             const _osAlly = gameState.characters[_osAllyN];
                             if (!_osAlly || _osAlly.isDead || _osAlly.hp <= 0 || _osAlly.team !== _osMyTeam) continue;
-                            _osAlly.charges = Math.min(20, (_osAlly.charges || 0) + _osTotalDebuffs);
-                            addLog('✨ Octavo Sentido: ' + _osAllyN + ' genera ' + _osTotalDebuffs + ' carga' + (_osTotalDebuffs > 1 ? 's' : '') + ' (' + _osTotalDebuffs + ' debuffs activos)', 'buff');
+                            _osAlly.charges = Math.min(20, (_osAlly.charges || 0) + _osCharges);
+                            addLog('✨ Octavo Sentido: ' + _osAllyN + ' genera ' + _osCharges + ' carga(s) (' + _osTotalDebuffs + ' debuffs / 2)', 'buff');
                         }
                     }
                 }
@@ -4361,7 +4367,7 @@
                     if (_ohmTotalDebuffs === 0) {
                         addLog('✨ Ohm: No hay debuffs activos en ningún equipo', 'info');
                     } else {
-                        const _ohmHealAmt = _ohmTotalDebuffs * 2;
+                        const _ohmHealAmt = _ohmTotalDebuffs * 1;
                         for (const _ohmAllyN in gameState.characters) {
                             const _ohmAlly = gameState.characters[_ohmAllyN];
                             if (!_ohmAlly || _ohmAlly.isDead || _ohmAlly.hp <= 0 || _ohmAlly.team !== _ohmMyTeam) continue;
@@ -4370,7 +4376,7 @@
                             _ohmAlly.hp = Math.min(_ohmAlly.maxHp, _ohmAlly.hp + _ohmHealAmt);
                             const _ohmHealed = _ohmAlly.hp - _ohmOldHp;
                             if (_ohmHealed > 0) {
-                                addLog('✨ Ohm: ' + _ohmAllyN + ' recupera ' + _ohmHealed + ' HP (' + _ohmTotalDebuffs + ' debuffs × 2)', 'heal');
+                                addLog('✨ Ohm: ' + _ohmAllyN + ' recupera ' + _ohmHealed + ' HP (' + _ohmTotalDebuffs + ' debuffs × 1)', 'heal');
                                 if (_ohmAllyN === charName && typeof triggerShakaHealDebuff === 'function') {
                                     triggerShakaHealDebuff(charName);
                                 }
@@ -4380,32 +4386,16 @@
                 }
 
             } else if (ability.effect === 'tenmaku_horin_shaka') {
-                // SHAKA — Tenmaku Hōrin: 8 daño ST + 3 debuffs aleatorios al objetivo
+                // SHAKA — Tenmaku Hōrin: 8 daño + Mega Posesión + Agotamiento 3T
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 addLog('✨ Tenmaku Hōrin: ' + finalDamage + ' daño a ' + targetName, 'damage');
                 const _thTarget = gameState.characters[targetName];
                 if (_thTarget && !_thTarget.isDead && _thTarget.hp > 0) {
-                    const _thNonStack = ['miedo','confusion','posesion','mega posesion','aturdimiento','mega aturdimiento','congelacion','mega congelacion','silenciar'];
-                    const _thDebuffPool = [
-                        { name: 'quemadura',    fn: function() { applyFlatBurn(targetName, 2, 2); } },
-                        { name: 'veneno',       fn: function() { applyPoison(targetName, 2); } },
-                        { name: 'sangrado',     fn: function() { applyBleed(targetName, 2); } },
-                        { name: 'debilitar',    fn: function() { applyWeaken(targetName, 2); } },
-                        { name: 'miedo',        fn: function() { applyFear(targetName, 1); } },
-                        { name: 'confusion',    fn: function() { applyConfusion(targetName, 1); } },
-                        { name: 'aturdimiento', fn: function() { applyStun(targetName, 1); } },
-                        { name: 'congelacion',  fn: function() { applyFreeze(targetName, 1); } },
-                        { name: 'agotamiento',  fn: function() { applyAgotamiento(targetName, 2); } },
-                        { name: 'silenciar',    fn: function() { applySilenciar(targetName, 1); } },
-                    ];
-                    const _thAvailable = _thDebuffPool.filter(function(d) {
-                        if (_thNonStack.includes(d.name) && (_thTarget.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === d.name; })) return false;
-                        return true;
-                    }).sort(function() { return Math.random() - 0.5; });
-                    const _thApply = _thAvailable.slice(0, 3);
-                    const _thNames = [];
-                    _thApply.forEach(function(d) { d.fn(); _thNames.push(d.name); });
-                    addLog('✨ Tenmaku Hōrin: ' + targetName + ' recibe ' + _thNames.map(function(n){ return n.charAt(0).toUpperCase()+n.slice(1); }).join(', '), 'debuff');
+                    // Mega Posesión 3T
+                    applyDebuff(targetName, { name: 'Mega Posesion', type: 'debuff', duration: 3, emoji: '👁️', megaPossession: true });
+                    // Agotamiento 3T
+                    applyAgotamiento(targetName, 3);
+                    addLog('✨ Tenmaku Hōrin: ' + targetName + ' recibe Mega Posesión 3T + Agotamiento 3T', 'debuff');
                 }
 
             // ══════════════════════════════════════════════════════
@@ -4430,7 +4420,7 @@
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _fvEnemyTeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
                         applyDamageWithShield(_n, _fvDmg, gameState.selectedCharacter);
                     }
                     for (let _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _fvEnemyTeam && _s.hp > 0) applySummonDamage(_sid, _fvDmg, gameState.selectedCharacter); }
@@ -4584,7 +4574,7 @@
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _fsiEnemyTeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) continue;
                         applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
                         // 50% MegaPosesión por enemigo
                         if (Math.random() < 0.50) applyMegaPosesion(_n, 1);
@@ -4909,7 +4899,7 @@
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _caEnemyTeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
                         const _caCrit = _caAtk && _caAtk.passive && _caAtk.passive.name === 'Olor de la Brecha' && Math.random() < 0.20;
                         let _caDmg = finalDamage;
                         if (_caCrit) { _caDmg *= 2; _caCritCount++; addLog('💥 ¡Crítico! Cascada de Agua en ' + _n, 'damage'); }
@@ -5009,7 +4999,7 @@
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _grEnemyTeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
                         const _grDmg = finalDamage + (_c.charges || 0);
                         applyDamageWithShield(_n, _grDmg, gameState.selectedCharacter);
                         addLog('🐾 Gamma Ray Burst: ' + _grDmg + ' daño a ' + _n + ' (' + (_c.charges||0) + ' cargas)', 'damage');
