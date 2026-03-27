@@ -197,14 +197,8 @@ function applyDebuff(targetName, effectObj) {
                     gameState.selectedAbility.target === 'multi';
                 if (_isEnemyAttack) {
                     // Esquiva Área bloquea debuffs de ataques AOE/multi Y debuffs de cualquier ataque
-                    if (_isAOEOrAll && (checkAsprosAOEImmunity(targetName) || checkMinatoAOEImmunity(targetName))) {
-                        addLog('💨 Esquiva Area: ' + targetName + ' es inmune al debuff AOE', 'buff');
-                        return;
-                    }
-                    // Para ataques no-AOE: Esquiva Área también bloquea debuffs directos
-                    if (!_isAOEOrAll && hasStatusEffect(targetName, 'Esquiva Area')) {
-                        addLog('💨 Esquiva Area: ' + targetName + ' es inmune al debuff (Esquiva Area activa)', 'buff');
-                        if (typeof triggerDodgePassives === 'function') triggerDodgePassives(targetName);
+                    if (_isAOEOrAll && (checkAsprosAOEImmunity(targetName, true) || checkMinatoAOEImmunity(targetName))) {
+                        addLog('💨 Esquiva Area: ' + targetName + ' esquiva el debuff AOE', 'buff');
                         return;
                     }
                 }
