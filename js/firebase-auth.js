@@ -1235,7 +1235,8 @@
 
             var myUid   = currentUser.uid;
             var myName  = currentUser.displayName || 'Jugador';
-            var won     = (winnerTeam === playerTeam);
+            var isDraw  = (winnerTeam === 'draw');
+            var won     = !isDraw && (winnerTeam === playerTeam);
             var fakeOpp = window._rankedFakeOpponent || opponentName;
             window._rankedFakeOpponent = null;
             var defOwnerUid = window._rankedDefenseOwnerUid || null;
@@ -1296,7 +1297,8 @@
             // ── Stats ──
             cur.points       = Math.max(0, (cur.points || 0) + atkPoints);
             cur.atkWins      = (cur.atkWins   || 0) + (won ? 1 : 0);
-            cur.atkLosses    = (cur.atkLosses || 0) + (won ? 0 : 1);
+            cur.atkLosses    = (cur.atkLosses || 0) + (!won && !isDraw ? 1 : 0);
+            cur.atkDraws     = (cur.atkDraws  || 0) + (isDraw ? 1 : 0);
             cur.defWins      = cur.defWins    || 0;
             cur.defLosses    = cur.defLosses  || 0;
             cur.atkPoints    = (cur.atkPoints || 0) + atkPoints;
@@ -1763,7 +1765,8 @@
                 'Gandalf':              'https://i.postimg.cc/1RjbLYHx/Whats_App_Image_2026_03_05_at_9_53_24_AM.jpg',
                 'Doomsday':             'https://i.postimg.cc/hjJDWnn6/Captura_de_pantalla_2026_03_06_003242.png',
                 'Ikki de Fenix':        'https://i.postimg.cc/LsX6jbnD/Captura_de_pantalla_2026_02_24_103509.png',
-                'Itachi Uchiha':        'https://i.ibb.co/HDhTPLvR/91a611f2e00a9c83e9a8dd1607a2c50a.jpg',
+                'Flash':                'https://i.ibb.co/JRMKVsj5/Captura-de-pantalla-2026-03-26-174229.png',
+                'Itachi Uchiha':        'https://i.ibb.co/JRPVCpGp/Captura-de-pantalla-2026-03-26-230228.png',
                 'Shinobu Kocho':        'https://i.postimg.cc/9XnsvNBS/Whats_App_Image_2026_03_05_at_9_42_52_AM.jpg',
                 'Tanjiro Kamado':       'https://i.postimg.cc/9XnsvNBS/Whats_App_Image_2026_03_05_at_9_42_52_AM.jpg',
             };
