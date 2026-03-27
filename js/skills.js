@@ -3956,6 +3956,14 @@
                             addLog('⚔️ Dios de la Guerra: ' + gameState.selectedCharacter + ' genera 2 cargas (Sangrado previo en ' + _n + ')', 'buff');
                         }
                     }
+                    // Daño a invocaciones enemigas
+                    for (const _sid in gameState.summons) {
+                        const _s = gameState.summons[_sid];
+                        if (!_s || _s.team !== _ccTeam || _s.hp <= 0) continue;
+                        let _ccSDmg = finalDamage;
+                        if (Math.random() < 0.20) { _ccSDmg *= 3; addLog('💥 ¡Daño Triple! Ciclón del Caos en ' + _s.name, 'damage'); }
+                        applySummonDamage(_sid, _ccSDmg, gameState.selectedCharacter);
+                    }
                     addLog('⚔️ Ciclón del Caos: 1 AOE completado', 'damage');
                 }
 
