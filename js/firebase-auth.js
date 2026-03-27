@@ -1572,12 +1572,7 @@
                             '<div style="font-family:Orbitron,sans-serif;font-size:1rem;color:#ffaa00;font-weight:900;">' + e.points.toLocaleString() + '</div>',
                             '<div style="font-size:.6rem;color:#888;margin-top:2px;">' + e.atkPoints + ' atk · ' + e.defPoints + ' def</div>',
                         '</div>',
-                        // V/D global
-                        '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:7px 12px;text-align:center;min-width:100px;">',
-                            '<div style="font-size:.6rem;color:#888;letter-spacing:.05em;margin-bottom:3px;">V / D GLOBAL</div>',
-                            '<div style="font-size:.85rem;"><span style="color:#00ff88;font-weight:700;">' + e.totalWins + 'V</span> <span style="color:#444;">·</span> <span style="color:#ff4466;font-weight:700;">' + e.totalLosses + 'D</span></div>',
-                            '<div style="font-size:.62rem;color:' + wrColor + ';margin-top:2px;">' + e.winRate + '% WR</div>',
-                        '</div>',
+                        // V/D GLOBAL eliminado por solicitud del usuario
                     '</div>',
                     // Row 2: equipos actuales
                     '<div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">',
