@@ -1604,12 +1604,14 @@
                         var used = c.used || 0;
                         var wins = c.wins || 0;
                         var wr   = used > 0 ? Math.round((wins / used) * 100) : 0;
-                        var pr   = totalBattles > 0 ? Math.round((used / (totalBattles * 2)) * 100) : 0; // *2 porque hay 2 equipos
-                        return { name: e[0], used: used, wins: wins, wr: wr, pr: Math.min(100, pr) };
+                        var pr   = totalBattles > 0 ? Math.round((used / (totalBattles * 2)) * 100) : 0;
+                        // Índice de Dominio: WR% × log10(partidas + 1) × 10
+                        var id   = Math.round((wr / 100) * Math.log10(used + 1) * 100) / 10;
+                        return { name: e[0], used: used, wins: wins, wr: wr, pr: Math.min(100, pr), id: id };
                     });
 
-                    // Ordenar por winrate desc
-                    entries.sort(function(a, b) { return b.wr - a.wr || b.used - a.used; });
+                    // Ordenar por Índice de Dominio por defecto
+                    entries.sort(function(a, b) { return b.id - a.id || b.used - a.used; });
 
                     if (!entries.length) {
                         container.innerHTML = '<div style="color:#555;text-align:center;padding:3rem;">Sin datos de Meta para esta temporada todavía.</div>';
@@ -1620,11 +1622,12 @@
                     if (!window._metaSortBy) window._metaSortBy = 'wr';
                     window._metaEntries = entries; // guardar para re-ordenar sin refetch
                     window.renderMetaRows = function(sortBy) {
-                        window._metaSortBy = sortBy || 'wr';
+                        window._metaSortBy = sortBy || 'id';
                         var sorted = (window._metaEntries || []).slice();
                         if (sortBy === 'pr')      sorted.sort(function(a,b){ return b.pr - a.pr || b.used - a.used; });
                         else if (sortBy === 'games') sorted.sort(function(a,b){ return b.used - a.used || b.wr - a.wr; });
-                        else                     sorted.sort(function(a,b){ return b.wr - a.wr || b.used - a.used; });
+                        else if (sortBy === 'wr') sorted.sort(function(a,b){ return b.wr - a.wr || b.used - a.used; });
+                        else                     sorted.sort(function(a,b){ return b.id - a.id || b.used - a.used; }); // default: Índice de Dominio
                         var rowsH = sorted.map(function(e, i) {
                             var wrColor  = e.wr >= 60 ? '#00ff88' : e.wr >= 50 ? '#ffaa00' : e.wr >= 40 ? '#ff8844' : '#ff4466';
                             var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1);
@@ -1634,18 +1637,19 @@
                                     '<div style="width:30px;text-align:center;font-size:.85rem;">' + medal + '</div>',
                                     '<img src="' + portrait + '" referrerpolicy="no-referrer" style="width:38px;height:38px;border-radius:6px;object-fit:cover;border:1px solid rgba(255,255,255,0.1);background:#111;" onerror="this.style.opacity=0.15">',
                                     '<div style="flex:1;font-size:.82rem;color:#ddd;font-weight:600;">' + escapeHtml(e.name) + '</div>',
-                                    '<div style="width:80px;text-align:center;font-size:.78rem;color:#88ccff;">' + e.pr + '%</div>',
-                                    '<div style="width:80px;text-align:center;font-family:Orbitron,sans-serif;font-size:.82rem;font-weight:700;color:' + wrColor + ';">' + e.wr + '%</div>',
-                                    '<div style="width:60px;text-align:center;font-size:.75rem;color:#666;">' + e.used + '</div>',
+                                    '<div style="width:70px;text-align:center;font-size:.78rem;color:#88ccff;">' + e.pr + '%</div>',
+                                    '<div style="width:70px;text-align:center;font-family:Orbitron,sans-serif;font-size:.82rem;font-weight:700;color:' + wrColor + ';">' + e.wr + '%</div>',
+                                    '<div style="width:55px;text-align:center;font-size:.75rem;color:#666;">' + e.used + '</div>',
+                                    '<div style="width:70px;text-align:center;font-family:Orbitron,sans-serif;font-size:.85rem;font-weight:900;color:#ffd700;">' + e.id.toFixed(1) + '</div>',
                                 '</div>'
                             ].join('');
                         }).join('');
                         var rowsDiv = document.getElementById('metaRowsDiv');
                         if (rowsDiv) rowsDiv.innerHTML = rowsH;
                         // Actualizar estilos de botones activos
-                        ['wr','pr','games'].forEach(function(s) {
+                        ['id','wr','pr','games'].forEach(function(s) {
                             var btn = document.getElementById('metaSort_' + s);
-                            if (btn) btn.style.background = (s === sortBy) ? 'rgba(100,200,100,0.35)' : 'rgba(100,200,100,0.08)';
+                            if (btn) btn.style.background = (s === sortBy || (!sortBy && s === 'id')) ? 'rgba(100,200,100,0.35)' : 'rgba(100,200,100,0.08)';
                         });
                     };
                     var headerHtml = [
@@ -1655,7 +1659,8 @@
                             // Botones de orden
                             '<div style="display:flex;gap:6px;margin-bottom:12px;">',
                                 '<span style="font-size:.65rem;color:#666;align-self:center;margin-right:4px;">Ordenar por:</span>',
-                                '<button id="metaSort_wr" onclick="window.renderMetaRows(\'wr\')" style="background:rgba(100,200,100,0.35);border:1px solid #4a4;color:#8f8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.7rem;">🏆 Winrate</button>',
+                                '<button id="metaSort_id" onclick="window.renderMetaRows(\'id\')" style="background:rgba(100,200,100,0.08);border:1px solid #4a4;color:#8f8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.7rem;">⭐ Puntuación</button>',
+                                '<button id="metaSort_wr" onclick="window.renderMetaRows(\'wr\')" style="background:rgba(100,200,100,0.08);border:1px solid #4a4;color:#8f8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.7rem;">🏆 Winrate</button>',
                                 '<button id="metaSort_pr" onclick="window.renderMetaRows(\'pr\')" style="background:rgba(100,200,100,0.08);border:1px solid #4a4;color:#8f8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.7rem;">📊 Pick Rate</button>',
                                 '<button id="metaSort_games" onclick="window.renderMetaRows(\'games\')" style="background:rgba(100,200,100,0.08);border:1px solid #4a4;color:#8f8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.7rem;">🎮 Partidas</button>',
                             '</div>',
@@ -1664,16 +1669,17 @@
                             '<div style="width:30px;">#</div>',
                             '<div style="width:38px;"></div>',
                             '<div style="flex:1;">Personaje</div>',
-                            '<div style="width:80px;text-align:center;">Pick Rate</div>',
-                            '<div style="width:80px;text-align:center;">Winrate</div>',
-                            '<div style="width:60px;text-align:center;">Partidas</div>',
+                            '<div style="width:70px;text-align:center;">Pick Rate</div>',
+                            '<div style="width:70px;text-align:center;">Winrate</div>',
+                            '<div style="width:55px;text-align:center;">Partidas</div>',
+                            '<div style="width:70px;text-align:center;">⭐ Punt.</div>',
                         '</div>',
                         '<div id="metaRowsDiv"></div>',
                     ].join('');
 
                     container.innerHTML = headerHtml;
                     // Renderizar filas con el orden por defecto (winrate)
-                    window.renderMetaRows('wr');
+                    window.renderMetaRows('id');
                 });
             });
         }
