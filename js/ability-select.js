@@ -523,10 +523,10 @@ function triggerMaboroshi(targetTeam, debuffName) {
         function triggerDodgePassives(charName) {
             const c = gameState.characters[charName];
             if (!c || c.isDead) return;
-            // ACELERACIÓN CONSTANTE (Flash): +3 cargas al esquivar
+            // ACELERACIÓN CONSTANTE (Flash): +2 cargas al esquivar
             if (c.passive && c.passive.name === 'Aceleración Constante') {
-                c.charges = Math.min(20, (c.charges || 0) + 3);
-                addLog('⚡ Aceleración Constante: Flash esquiva y gana 3 cargas', 'buff');
+                c.charges = Math.min(20, (c.charges || 0) + 2);
+                addLog('⚡ Aceleración Constante: Flash esquiva y gana 2 cargas', 'buff');
             }
         }
 
