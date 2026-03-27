@@ -1275,15 +1275,15 @@
                 if (defOwnerUid) {
                     db.ref('ranked_stats/' + defOwnerUid + '/points').once('value', function(oppSnap) {
                         oppLgIdx = getLeagueIndex(oppSnap.val() || 0);
-                        _finalizeSaveAttacker(cur, myRef, myUid, myName, won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLgIdx, oppLgIdx, seasonKey, todayKey, playerChars, defOwnerUid, fakeOpp, won, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, opponentChars);
+                        _finalizeSaveAttacker(cur, myRef, myUid, myName, won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLgIdx, oppLgIdx, seasonKey, todayKey, playerChars, defOwnerUid, fakeOpp, won, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, opponentChars, isDraw);
                     });
                 } else {
-                    _finalizeSaveAttacker(cur, myRef, myUid, myName, won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLgIdx, oppLgIdx, seasonKey, todayKey, playerChars, defOwnerUid, fakeOpp, won, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, opponentChars);
+                    _finalizeSaveAttacker(cur, myRef, myUid, myName, won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLgIdx, oppLgIdx, seasonKey, todayKey, playerChars, defOwnerUid, fakeOpp, won, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, opponentChars, isDraw);
                 }
             });
         }
 
-        function _finalizeSaveAttacker(cur, myRef, myUid, myName, won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLgIdx, oppLgIdx, seasonKey, todayKey, playerChars, defOwnerUid, fakeOpp, atkWon, survivingDefenders, totalDefenders, roundsElapsed2, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, opponentChars) {
+        function _finalizeSaveAttacker(cur, myRef, myUid, myName, won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLgIdx, oppLgIdx, seasonKey, todayKey, playerChars, defOwnerUid, fakeOpp, atkWon, survivingDefenders, totalDefenders, roundsElapsed2, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, opponentChars, isDraw) {
             // ── Contador diario de batallas ──
             cur.dailyBattles = cur.dailyBattles || {};
             if (cur.dailyBattles.day !== todayKey) {
