@@ -483,24 +483,39 @@ function triggerMaboroshi(targetTeam, debuffName) {
 
 
         // ── PASIVA ESQUIVA AREA (Aspros): no recibe daño AOE ──
-        function checkAsprosAOEImmunity(targetName) {
-            // Check ANY character with Esquiva Area passive or buff — supports v2 names
+        function checkAsprosAOEImmunity(targetName, triggerPassive) {
+            // Esquiva Area: el personaje ESQUIVA (no es inmune), activa pasivas de esquiva si triggerPassive=true
             const c = gameState.characters[targetName];
             if (!c || c.isDead || c.hp <= 0) return false;
             // 1. Check passive flag (set by initGame using baseName)
-            if (c.esquivaAreaPassive) return true;
+            if (c.esquivaAreaPassive) {
+                if (triggerPassive) triggerDodgePassives(targetName);
+                return true;
+            }
             // 2. Check Esquiva Area buff
-            if (hasStatusEffect(targetName, 'Esquiva Area') || hasStatusEffect(targetName, 'Esquiva Área')) return true;
+            if (hasStatusEffect(targetName, 'Esquiva Area') || hasStatusEffect(targetName, 'Esquiva Área')) {
+                if (triggerPassive) triggerDodgePassives(targetName);
+                return true;
+            }
             // 3. Check passive.name — covers v2 variants automatically
             //    Esquiva Area passives: Bendicion Sagrada (Min Byung), Face of Geminga (Aspros), Hiraishin no Jutsu (Minato)
             const ESQUIVA_PASSIVE_NAMES = ['Bendicion Sagrada', 'Bendición Sagrada', 'Face of Geminga', 'Hiraishin no Jutsu'];
-            if (c.passive && c.passive.name && ESQUIVA_PASSIVE_NAMES.includes(c.passive.name)) return true;
+            if (c.passive && c.passive.name && ESQUIVA_PASSIVE_NAMES.includes(c.passive.name)) {
+                if (triggerPassive) triggerDodgePassives(targetName);
+                return true;
+            }
             // 4. Check passive description for 'Esquiva' keyword (catch-all for future chars)
             if (c.passive && c.passive.description && c.passive.description.includes('Esquiva') && 
-                c.passive.description.toLowerCase().includes('area')) return true;
+                c.passive.description.toLowerCase().includes('area')) {
+                if (triggerPassive) triggerDodgePassives(targetName);
+                return true;
+            }
             // 5. Legacy hardcoded names (for exact match safety)
             const baseName = targetName.replace(/ v\d+$/, '').trim();
-            if (baseName === 'Aspros de Gemini' || baseName === 'Min Byung' || (baseName === 'Minato Namikaze' || baseName === 'Minato Namikaze v2')) return true;
+            if (baseName === 'Aspros de Gemini' || baseName === 'Min Byung' || (baseName === 'Minato Namikaze' || baseName === 'Minato Namikaze v2')) {
+                if (triggerPassive) triggerDodgePassives(targetName);
+                return true;
+            }
             return false;
         }
 
