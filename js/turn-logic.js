@@ -1076,7 +1076,17 @@
                         blockedByTransform = true;
                     }
                 }
-                const disabled = !canUse || !canRevive || !canSacrifice || !canSummon || !canSummonKamish || blockedByFreeze || blockedBySigilo || blockedByTransform;
+                // Bloquear habilidades con cooldown activo (ej: Singularidad Escarlata)
+                let blockedByCooldown = false;
+                let cooldownLabel = '';
+                if (ability.effect === 'singularidad_escarlata') {
+                    const _cdChar = gameState.characters[gameState.selectedCharacter];
+                    if (_cdChar && _cdChar._singularidadCooldown > 0) {
+                        blockedByCooldown = true;
+                        cooldownLabel = '⏳ Cooldown: ' + _cdChar._singularidadCooldown + 'T';
+                    }
+                }
+                const disabled = !canUse || !canRevive || !canSacrifice || !canSummon || !canSummonKamish || blockedByFreeze || blockedBySigilo || blockedByTransform || blockedByCooldown;
                 
                 const button = document.createElement('button');
                 button.className = 'action-ability-btn';
@@ -1084,7 +1094,9 @@
                 button.onclick = () => selectAbilityFromModal(index);
 
                 let reasonTag = '';
-                // (freeze no longer blocks abilities)
+                if (blockedByCooldown && cooldownLabel) {
+                    reasonTag = '<div style="font-size:.65rem;color:#ff8844;margin-top:4px;font-weight:700;">' + cooldownLabel + '</div>';
+                }
                 
                 const SMAP_ACTION = { 'summon_shadows': ['Igris','Tusk','Beru'], 'summon_kamish': ['Kamish'], 'el_rey_caido': ['Sindragosa','Kel Thuzad','Darion Morgraine','Bolvar Fordragon','Tirion Fordring'], 'summon_sphinx': ['Abu el-Hol Sphinx'], 'summon_ramesseum': ['Ramesseum Tentyris'], 'enkidu': ['Enkidu'] };
                 const sSummonList = SMAP_ACTION[ability.effect];
