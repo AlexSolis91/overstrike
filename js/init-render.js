@@ -78,6 +78,14 @@
                     ch.immuneToMiedo = true;
                     ch.immuneToConfusion = true;
                 }
+                // Flash: Esquiva Area permanente
+                if (passiveName === 'Aceleración Constante') {
+                    ch.statusEffects = ch.statusEffects || [];
+                    if (!ch.statusEffects.some(e => e && normAccent(e.name||'').replace(/\s/g,'') === 'esquivaarea')) {
+                        ch.statusEffects.push({ name: 'Esquiva Area', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '⚡' });
+                    }
+                    ch.esquivaAreaPassive = true;
+                }
                 // Ivar the Boneless: Esquiva Area permanente + inmunidades
                 if (passiveName === 'Mente Brillante') {
                     ch.statusEffects = ch.statusEffects || [];
