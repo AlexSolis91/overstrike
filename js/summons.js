@@ -735,6 +735,22 @@
                 }
             }
 
+            // INMUNIDAD POR INVOCACIONES DE OZYMANDIAS
+            // Ramesseum Tentyris activa: Ozymandias inmune a daño por golpes
+            if (attackerName && attackerName !== targetName) {
+                const _tgtC = gameState.characters[targetName];
+                const _atkC = gameState.characters[attackerName];
+                if (_tgtC && _atkC && _atkC.team !== _tgtC.team) {
+                    const _hasRam = Object.values(gameState.summons).some(function(s) {
+                        return s && s.name === 'Ramesseum Tentyris' && s.summoner === targetName && s.hp > 0;
+                    });
+                    if (_hasRam) {
+                        addLog('🏛️ Ramesseum Tentyris: ' + targetName + ' es inmune al daño por golpes', 'buff');
+                        return 0;
+                    }
+                }
+            }
+
             // BUFF ESQUIVAR (Goku UI, Sauron, etc): 50% de esquivar
             if (attackerName !== null && !passiveExecuting) {
                 if (target.hasDodge || hasStatusEffect(targetName, 'Esquivar')) {
@@ -1170,6 +1186,22 @@
         }
 
         
+        // Helper: activar Presencia Oscura (Darth Vader) cuando un personaje del equipo ENEMIGO recupera HP
+        function triggerPresenciaOscura(healedCharName) {
+            if (!healedCharName) return;
+            const healedChar = gameState.characters[healedCharName];
+            if (!healedChar) return;
+            const _dvEnemyTeam = healedChar.team === 'team1' ? 'team2' : 'team1';
+            for (const _dvn in gameState.characters) {
+                const _dvc = gameState.characters[_dvn];
+                if (!_dvc || _dvc.isDead || _dvc.hp <= 0 || _dvc.team !== _dvEnemyTeam) continue;
+                if (!_dvc.passive || _dvc.passive.name !== 'Presencia Oscura') continue;
+                _dvc.charges = Math.min(20, (_dvc.charges || 0) + 1);
+                addLog('🌑 Presencia Oscura: ' + _dvn + ' gana 1 carga (' + healedCharName + ' recuperó HP)', 'buff');
+                break;
+            }
+        }
+
         function healCharacter(charName, amount) {
             const c = gameState.characters[charName];
             if (!c || c.isDead) return 0;
@@ -1190,16 +1222,7 @@
             if (_hcActual > 0) {
                 triggerBendicionSagrada(c.team, _hcActual);
                 // PRESENCIA OSCURA (Darth Vader): +1 carga cuando un enemigo recupera HP
-                const _enemyTeamHC = c.team === 'team1' ? 'team2' : 'team1';
-                for (const _dvn in gameState.characters) {
-                    const _dvc = gameState.characters[_dvn];
-                    if (_dvc && !_dvc.isDead && _dvc.hp > 0 && _dvc.team === _enemyTeamHC &&
-                        _dvc.passive && _dvc.passive.name === 'Presencia Oscura') {
-                        _dvc.charges = Math.min(20, (_dvc.charges || 0) + 1);
-                        addLog('🌑 Presencia Oscura: ' + _dvn + ' gana 1 carga (' + charName + ' recuperó HP)', 'buff');
-                        break;
-                    }
-                }
+                triggerPresenciaOscura(charName);
             }
             return _hcActual;
         }
