@@ -319,8 +319,8 @@
                 portrait: 'https://i.postimg.cc/W3Rxw8ff/Captura_de_pantalla_2026_02_28_015847.png',
                 passive: { name: 'Aura de Hielo', description: 'Efecto pasivo de Aura Gelida. Lich King es inmune a debuffs de Miedo, Posesion y Congelacion.' },
                 abilities: [
-                    { name: 'Agonía de Escarcha', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'agonia_escarcha', description: 'Causa 1 de daño. Roba 1 HP del objetivo.' },
-                    { name: 'Cadenas de Hielo', type: 'special', cost: 2, chargeGain: 0, damage: 0, target: 'self', effect: 'cadenas_hielo', description: 'Aplica Buff Provocación en Lich King. Cada vez que Lich King recibe daño con Buff Provocación activo, genera 1 carga.' },
+                    { name: 'Agonía de Escarcha', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'agonia_escarcha', description: 'Causa 1 daño. Roba 1 HP del objetivo. Se aplica Buff Provocación 2 turnos.' },
+                    { name: 'Cadenas de Hielo', type: 'special', cost: 2, chargeGain: 0, damage: 0, target: 'self', effect: 'cadenas_hielo', description: 'Aplica Debuff Congelación a 2 enemigos aleatorios.' },
                     { name: 'Segador de Almas', type: 'special', cost: 8, chargeGain: 0, damage: 5, target: 'single', effect: 'segador_almas', description: 'Causa 5 de daño. Si el enemigo muere con este ataque, es revivido como aliado con un 50% de vida y 0 puntos de carga.' },
                     { name: 'El Rey Caído', type: 'over', cost: 9, chargeGain: 0, damage: 0, target: 'self', effect: 'el_rey_caido', description: 'INVOCACIÓN: Esta habilidad realiza 3 invocaciones aleatorias.' }
                 ]
@@ -483,12 +483,12 @@
                 hp: 20, maxHp: 20, speed: 88, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/x8qLNcDN/Whats-App-Image-2026-03-20-at-3-35-02-PM.jpg',
-                passive: { name: 'Olor de la Brecha', description: 'El ataque básico de Tanjiro Kamado tiene 50% de probabilidad de generar 1 carga al equipo aliado.' },
+                passive: { name: 'Olor de la Brecha', description: 'Cada vez que Tanjiro acierta un ataque básico, tiene 50% de probabilidad de generar 1 carga al equipo aliado.' },
                 abilities: [
                     { name: 'Vals', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'vals_tanjiro', description: 'Causa 1 daño. El equipo aliado genera 1 carga.' },
                     { name: 'Cascada de Agua', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'aoe', effect: 'cascada_agua_tanjiro', description: 'Causa 2 AOE. 50% de probabilidad de robar 1 carga de cada objetivo golpeado.' },
-                    { name: 'Danza del Dios del Fuego', type: 'special', cost: 7, chargeGain: 0, damage: 0, target: 'single', effect: 'danza_fuego_tanjiro', description: 'Realiza 5 ataques básicos sobre enemigos aleatorios.' },
-                    { name: 'Decimotercera Postura', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'single', effect: 'decimotercera_tanjiro', description: 'Realiza 13 ataques básicos aleatorios. 50% de probabilidad de eliminar 1 carga al objetivo por golpe.' }
+                    { name: 'Danza del Dios del Fuego', type: 'special', cost: 7, chargeGain: 0, damage: 0, target: 'single', effect: 'danza_fuego_tanjiro', description: 'Realiza 5 ataques básicos sobre enemigos aleatorios. Cada golpe aplica el daño y efectos del básico. Cada golpe acertado activa Olor de la Brecha (50% de generar 1 carga al equipo aliado).' },
+                    { name: 'Decimotercera Postura', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'single', effect: 'decimotercera_tanjiro', description: 'Realiza 13 ataques básicos aleatorios. Cada golpe aplica el daño y efectos del básico. 50% de eliminar 1 carga al objetivo. Cada golpe acertado activa Olor de la Brecha (50% de generar 1 carga al equipo aliado).' }
                 ]
             },
             'The Joker': {
