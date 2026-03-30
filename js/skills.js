@@ -995,26 +995,44 @@
                 addLog(`⚡ Ira del Elegido Caído: ${iraTotal} daño AOE (${finalDamage} base + ${iraBonusDmg} por HP perdido)`, 'damage');
 
             } else if (ability.effect === 'agonia_escarcha') {
-                // LICH KING - Agonía de Escarcha: 1 daño + roba 1 HP adicional del objetivo + cura 1 HP a LK
+                // LICH KING - Agonía de Escarcha: 1 daño + roba 1 HP + Buff Provocación 2T
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                // Robo de vida: elimina 1 HP adicional del objetivo (si sigue vivo)
                 const tgtAE = gameState.characters[targetName];
                 if (tgtAE && !tgtAE.isDead && tgtAE.hp > 0) {
                     tgtAE.hp = Math.max(0, tgtAE.hp - 1);
-                    if (tgtAE.hp <= 0) { tgtAE.isDead = true; addLog(`💀 ${targetName} fue derrotado`, 'damage'); }
-                    else { addLog(`❄️ Agonía de Escarcha: roba 1 HP adicional de ${targetName}`, 'damage'); }
+                    if (tgtAE.hp <= 0) { tgtAE.isDead = true; addLog('💀 ' + targetName + ' fue derrotado', 'damage'); }
+                    else {
+                        addLog('❄️ Agonía de Escarcha: roba 1 HP de ' + targetName, 'damage');
+                        // Curar 1 HP a Lich King
+                        if (typeof canHeal === 'function' ? canHeal(charName) : true) {
+                            attacker.hp = Math.min(attacker.maxHp, (attacker.hp||0) + 1);
+                            addLog('❄️ Lich King recupera 1 HP (robo de vida)', 'heal');
+                        }
+                    }
                 }
-                // Curar 1 HP a Lich King
-                const lkHeal = Math.min(1, attacker.maxHp - attacker.hp);
-                if (lkHeal > 0) { attacker.hp = Math.min(attacker.maxHp, attacker.hp + lkHeal); addLog(`❄️ Lich King recupera 1 HP (robo de vida)`, 'heal'); }
-                addLog(`❄️ Agonía de Escarcha: ${finalDamage} daño a ${targetName}`, 'damage');
+                // Buff Provocación 2T a Lich King
+                attacker.statusEffects = (attacker.statusEffects||[]).filter(e => !e || normAccent(e.name||'') !== 'provocacion');
+                attacker.statusEffects.push({ name: 'Provocacion', type: 'buff', duration: 2, emoji: '🛡️' });
+                addLog('🛡️ Agonía de Escarcha: Lich King gana Provocación 2T', 'buff');
+                addLog('❄️ Agonía de Escarcha: ' + finalDamage + ' daño a ' + targetName, 'damage');
 
             } else if (ability.effect === 'cadenas_hielo') {
-                // LICH KING - Cadenas de Hielo: Provocación 3 turnos
-                attacker.statusEffects = attacker.statusEffects.filter(e => normAccent(e.name || '') !== 'provocacion');
-                attacker.statusEffects.push({ name: 'Provocación', type: 'buff', duration: 3, emoji: '🛡️' });
-                attacker.lichKingCadenasActive = true;
-                addLog(`🛡️ Lich King activa Provocación por 3 turnos (reduce celeridad atacante 5% si recibe daño)`, 'buff');
+                // LICH KING - Cadenas de Hielo: Congelación a 2 enemigos aleatorios
+                const _chETeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                const _chEnemies = Object.keys(gameState.characters).filter(function(n) {
+                    const c = gameState.characters[n];
+                    return c && c.team === _chETeam && !c.isDead && c.hp > 0;
+                }).sort(function() { return Math.random() - 0.5; });
+                const _chTargets = _chEnemies.slice(0, 2);
+                if (_chTargets.length === 0) {
+                    addLog('❄️ Cadenas de Hielo: no hay objetivos válidos', 'info');
+                } else {
+                    _chTargets.forEach(function(t) {
+                        applyFreeze(t, 1);
+                        addLog('❄️ Cadenas de Hielo: ' + t + ' congelado 1T', 'debuff');
+                    });
+                }
+                addLog('❄️ Cadenas de Hielo: Congelación aplicada a ' + _chTargets.length + ' enemigo(s)', 'debuff');
 
             } else if (ability.effect === 'segador_almas') {
                 // LICH KING - Segador de Almas: 5 daño, si mata revive como aliado
@@ -3554,14 +3572,16 @@
                 let _tjDmg = finalDamage;
                 applyDamageWithShield(targetName, _tjDmg, gameState.selectedCharacter);
                 addLog('🌊 Vals: ' + _tjDmg + ' daño a ' + targetName, 'damage');
-                // Olor de la Brecha: 50% genera 1 carga al equipo aliado
-                if (_tjAtk && _tjAtk.passive && _tjAtk.passive.name === 'Olor de la Brecha' && Math.random() < 0.50) {
-                    for (const _aln in gameState.characters) {
-                        const _alc = gameState.characters[_aln];
-                        if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== _tjAtk.team) continue;
-                        _alc.charges = Math.min(20, (_alc.charges || 0) + 1);
+                // Olor de la Brecha: siempre intentar 50% — activo independientemente de si el golpe fue esquivado
+                if (_tjAtk) {
+                    if (Math.random() < 0.50) {
+                        for (const _aln in gameState.characters) {
+                            const _alc = gameState.characters[_aln];
+                            if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== _tjAtk.team) continue;
+                            _alc.charges = Math.min(20, (_alc.charges || 0) + 1);
+                        }
+                        addLog('🌊 Olor de la Brecha: +1 carga al equipo aliado (50%)', 'buff');
                     }
-                    addLog('🌊 Olor de la Brecha: +1 carga al equipo aliado (50%)', 'buff');
                 }
 
             } else if (ability.effect === 'cascada_agua_tanjiro') {
@@ -3591,32 +3611,44 @@
                 addLog('🌊 Cascada de Agua: ' + finalDamage + ' AOE', 'damage');
 
             } else if (ability.effect === 'danza_fuego_tanjiro') {
-                // TANJIRO — Danza del Dios del Fuego: 5 ataques básicos aleatorios
+                // TANJIRO — Danza del Dios del Fuego: 5 ataques básicos
+                // Cada golpe aplica daño, efectos y chargeGain del básico + activa Olor de la Brecha (50%)
                 const _dfAtk = gameState.characters[gameState.selectedCharacter];
                 const _dfEnemyTeam = _dfAtk ? (_dfAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
-                const _dfBasicDmg = (_dfAtk && _dfAtk.abilities && _dfAtk.abilities[0]) ? (_dfAtk.abilities[0].damage || 1) : 1;
+                const _dfBasic = (_dfAtk && _dfAtk.abilities) ? _dfAtk.abilities[0] : null;
+                const _dfBasicDmg = _dfBasic ? (_dfBasic.damage || 1) : 1;
+                const _dfBasicCg = _dfBasic ? (_dfBasic.chargeGain || 0) : 0;
                 for (let _i = 0; _i < 5; _i++) {
                     const _alive = Object.keys(gameState.characters).filter(function(n) {
                         const c = gameState.characters[n]; return c && c.team === _dfEnemyTeam && !c.isDead && c.hp > 0;
                     });
                     if (_alive.length === 0) break;
                     const _tgt = _alive[Math.floor(Math.random() * _alive.length)];
-                    let _dfDmg = _dfBasicDmg;
-                    if (_dfAtk && _dfAtk.passive && _dfAtk.passive.name === 'Olor de la Brecha' && Math.random() < 0.20) {
-                        _dfDmg *= 2;
-                        _dfAtk.charges = Math.min(20, (_dfAtk.charges || 0) + 1);
-                        addLog('💥 ¡Crítico! Danza del Fuego golpe ' + (_i+1) + ' en ' + _tgt, 'damage');
+                    applyDamageWithShield(_tgt, _dfBasicDmg, gameState.selectedCharacter);
+                    addLog('🔥 Danza del Fuego golpe ' + (_i+1) + ': ' + _dfBasicDmg + ' daño a ' + _tgt, 'damage');
+                    // Chargesgain del básico por cada golpe
+                    if (_dfBasicCg > 0 && _dfAtk) {
+                        _dfAtk.charges = Math.min(20, (_dfAtk.charges||0) + _dfBasicCg);
                     }
-                    applyDamageWithShield(_tgt, _dfDmg, gameState.selectedCharacter);
-                    addLog('🔥 Danza del Fuego golpe ' + (_i+1) + ': ' + _dfDmg + ' daño a ' + _tgt, 'damage');
+                    // Olor de la Brecha: 50% genera 1 carga al equipo aliado por cada golpe acertado
+                    if (_dfAtk && Math.random() < 0.50) {
+                        for (const _aln in gameState.characters) {
+                            const _alc = gameState.characters[_aln];
+                            if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== _dfAtk.team) continue;
+                            _alc.charges = Math.min(20, (_alc.charges||0) + 1);
+                        }
+                        addLog('🌊 Olor de la Brecha (golpe ' + (_i+1) + '): +1 carga al equipo aliado', 'buff');
+                    }
                 }
 
             } else if (ability.effect === 'decimotercera_tanjiro') {
-                // TANJIRO — Decimotercera Postura: 13 ataques aleatorios + 50% -1 carga por golpe
+                // TANJIRO — Decimotercera Postura: 13 ataques básicos aleatorios
+                // Cada golpe aplica daño + chargeGain del básico + Olor de la Brecha (50%) + 50% -1 carga al objetivo
                 const _dpAtk = gameState.characters[gameState.selectedCharacter];
                 const _dpEnemyTeam = _dpAtk ? (_dpAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
-                const _dpBasicDmg = (_dpAtk && _dpAtk.abilities && _dpAtk.abilities[0]) ? (_dpAtk.abilities[0].damage || 1) : 1;
-                let _dpCrits = 0;
+                const _dpBasic = (_dpAtk && _dpAtk.abilities) ? _dpAtk.abilities[0] : null;
+                const _dpBasicDmg = _dpBasic ? (_dpBasic.damage || 1) : 1;
+                const _dpBasicCg = _dpBasic ? (_dpBasic.chargeGain || 0) : 0;
                 for (let _i = 0; _i < 13; _i++) {
                     const _alive = Object.keys(gameState.characters).filter(function(n) {
                         const c = gameState.characters[n]; return c && c.team === _dpEnemyTeam && !c.isDead && c.hp > 0;
@@ -3624,21 +3656,28 @@
                     if (_alive.length === 0) break;
                     const _tgt = _alive[Math.floor(Math.random() * _alive.length)];
                     const _tgtChar = gameState.characters[_tgt];
-                    let _dpDmg = _dpBasicDmg;
-                    // 20% crit
-                    if (_dpAtk && _dpAtk.passive && _dpAtk.passive.name === 'Olor de la Brecha' && Math.random() < 0.20) {
-                        _dpDmg *= 2;
-                        _dpAtk.charges = Math.min(20, (_dpAtk.charges || 0) + 1);
-                        _dpCrits++;
+                    applyDamageWithShield(_tgt, _dpBasicDmg, gameState.selectedCharacter);
+                    addLog('🌊 Decimotercera Postura golpe ' + (_i+1) + ': ' + _dpBasicDmg + ' daño a ' + _tgt, 'damage');
+                    // ChargeGain del básico por cada golpe
+                    if (_dpBasicCg > 0 && _dpAtk) {
+                        _dpAtk.charges = Math.min(20, (_dpAtk.charges||0) + _dpBasicCg);
                     }
-                    applyDamageWithShield(_tgt, _dpDmg, gameState.selectedCharacter);
-                    // 50% drain 1 charge
+                    // 50% -1 carga al objetivo
                     if (_tgtChar && !_tgtChar.isDead && Math.random() < 0.50 && _tgtChar.charges > 0) {
                         _tgtChar.charges = Math.max(0, _tgtChar.charges - 1);
                         addLog('⚡ Decimotercera Postura: ' + _tgt + ' pierde 1 carga', 'damage');
                     }
+                    // Olor de la Brecha: 50% genera 1 carga al equipo aliado por cada golpe
+                    if (_dpAtk && Math.random() < 0.50) {
+                        for (const _aln in gameState.characters) {
+                            const _alc = gameState.characters[_aln];
+                            if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== _dpAtk.team) continue;
+                            _alc.charges = Math.min(20, (_alc.charges||0) + 1);
+                        }
+                        addLog('🌊 Olor de la Brecha (golpe ' + (_i+1) + '): +1 carga al equipo aliado', 'buff');
+                    }
                 }
-                addLog('🌊 Decimotercera Postura: 13 golpes completados (' + _dpCrits + ' críticos)', 'damage');
+                addLog('🌊 Decimotercera Postura: 13 golpes completados', 'damage');
             } else if (ability.effect === 'ryusui_garou') {
                 // GAROU — Ryusui Gansai-ken: 2 dmg + Garou se aplica Veneno 2T + Infectar 2T
                 const _rgAtk = gameState.characters[gameState.selectedCharacter];
@@ -4946,11 +4985,12 @@
                 }
 
             } else if (ability.effect === 'decimotercera_postura') {
-                // TANJIRO — Decimotercera Postura: 13 ataques aleatorios, 50% drain 1 carga por golpe
+                // TANJIRO — Decimotercera Postura (alias) — misma lógica nueva
                 const _dpAtk = gameState.characters[gameState.selectedCharacter];
                 const _dpEnemyTeam = _dpAtk ? (_dpAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
-                const _dpBaseDmg = ((_dpAtk && _dpAtk.abilities && _dpAtk.abilities[0]) ? (_dpAtk.abilities[0].damage || 1) : 1);
-                let _dpCostPaid = ability.cost || 15;
+                const _dpBasic = (_dpAtk && _dpAtk.abilities) ? _dpAtk.abilities[0] : null;
+                const _dpBaseDmg = _dpBasic ? (_dpBasic.damage || 1) : 1;
+                const _dpBaseCg = _dpBasic ? (_dpBasic.chargeGain || 0) : 0;
                 for (let _i = 0; _i < 13; _i++) {
                     const _enemies = Object.keys(gameState.characters).filter(function(n) {
                         const c = gameState.characters[n]; return c && c.team === _dpEnemyTeam && !c.isDead && c.hp > 0;
@@ -4958,17 +4998,23 @@
                     if (_enemies.length === 0) break;
                     const _tgt = _enemies[Math.floor(Math.random() * _enemies.length)];
                     const _tgtChar = gameState.characters[_tgt];
-                    let _dpDmg = _dpBaseDmg;
-                    const _dpCrit = _dpAtk && _dpAtk.passive && _dpAtk.passive.name === 'Olor de la Brecha' && Math.random() < 0.20;
-                    if (_dpCrit) { _dpDmg *= 2; if (_dpAtk) _dpAtk.charges = Math.min(20, (_dpAtk.charges||0)+1); addLog('💥 ¡Crítico! Postura golpe ' + (_i+1), 'damage'); }
-                    applyDamageWithShield(_tgt, _dpDmg, gameState.selectedCharacter);
-                    // 50% drain 1 carga
-                    if (_tgtChar && Math.random() < 0.50 && _tgtChar.charges > 0) {
+                    applyDamageWithShield(_tgt, _dpBaseDmg, gameState.selectedCharacter);
+                    addLog('🌊 Decimotercera Postura golpe ' + (_i+1) + ': ' + _dpBaseDmg + ' daño a ' + _tgt, 'damage');
+                    if (_dpBaseCg > 0 && _dpAtk) _dpAtk.charges = Math.min(20, (_dpAtk.charges||0) + _dpBaseCg);
+                    if (_tgtChar && !_tgtChar.isDead && Math.random() < 0.50 && _tgtChar.charges > 0) {
                         _tgtChar.charges = Math.max(0, _tgtChar.charges - 1);
-                        addLog('⚡ Decimotercera Postura: ' + _tgt + ' pierde 1 carga', 'debuff');
+                        addLog('⚡ Decimotercera Postura: ' + _tgt + ' pierde 1 carga', 'damage');
+                    }
+                    if (_dpAtk && Math.random() < 0.50) {
+                        for (const _aln in gameState.characters) {
+                            const _alc = gameState.characters[_aln];
+                            if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== _dpAtk.team) continue;
+                            _alc.charges = Math.min(20, (_alc.charges||0) + 1);
+                        }
+                        addLog('🌊 Olor de la Brecha (golpe ' + (_i+1) + '): +1 carga al equipo aliado', 'buff');
                     }
                 }
-                addLog('⚔️ Decimotercera Postura: 13 golpes completados', 'damage');
+                addLog('🌊 Decimotercera Postura: 13 golpes completados', 'damage');
             } else if (ability.effect === 'ryusui_garou') {
                 // GAROU — Ryusui Gansai-ken: 2 daño + reduce 2 cargas + Garou recupera 2 HP
                 const _rgAtk = gameState.characters[gameState.selectedCharacter];
