@@ -224,6 +224,17 @@ function applyDebuff(targetName, effectObj) {
                     }
                 }
             }
+            // ABU EL-HOL SPHINX: Ozymandias inmune a debuffs cuando está activa
+            if (effectObj && effectObj.type === 'debuff' && gameState && gameState.summons) {
+                const _hasSphinx = Object.values(gameState.summons).some(function(s) {
+                    return s && (s.name === 'Abu el-Hol Sphinx' || s.name === 'Sphinx Wehem-Mesut') &&
+                        s.summoner === targetName && s.hp > 0;
+                });
+                if (_hasSphinx) {
+                    addLog('🦁 Abu el-Hol Sphinx: ' + targetName + ' es inmune a debuffs', 'buff');
+                    return;
+                }
+            }
             // Proteccion Sagrada bloquea todos los debuffs
             if (hasStatusEffect(targetName, 'Proteccion Sagrada')) {
                 addLog(`🛡️ ${targetName} es inmune a debuffs (Protección Sagrada)`, 'buff');
