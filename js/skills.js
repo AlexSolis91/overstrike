@@ -3908,8 +3908,18 @@
                 let _pjDmg = _pjS && _pjS.supermanPrimeMode ? finalDamage * 2 : finalDamage;
                 applyDamageWithShield(targetName, _pjDmg, gameState.selectedCharacter);
                 if (_pjS) {
-                    _pjS.hp = Math.min(_pjS.maxHp, _pjS.hp + 2);
-                    addLog('🦸 Puño de la Justicia: ' + _pjDmg + ' daño + 2 HP recuperados', 'buff');
+                    if (typeof canHeal === 'function' && !canHeal(gameState.selectedCharacter)) {
+                        addLog('☀️ Quemadura Solar: ' + gameState.selectedCharacter + ' no puede recuperar HP (Puño de la Justicia)', 'debuff');
+                    } else {
+                        const _pjOldHp = _pjS.hp;
+                        _pjS.hp = Math.min(_pjS.maxHp, _pjS.hp + 2);
+                        const _pjHealed = _pjS.hp - _pjOldHp;
+                        if (_pjHealed > 0) {
+                            addLog('🦸 Puño de la Justicia: ' + _pjDmg + ' daño + ' + _pjHealed + ' HP recuperados', 'buff');
+                            if (typeof triggerPresenciaOscura === 'function') triggerPresenciaOscura(gameState.selectedCharacter);
+                            if (typeof triggerBendicionSagrada === 'function') triggerBendicionSagrada(_pjS.team, _pjHealed);
+                        }
+                    }
                 }
 
             } else if (ability.effect === 'vision_calor_superman') {
