@@ -176,13 +176,13 @@
                 name: 'Darion Morgraine',
                 hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/26njMysy/Captura_de_pantalla_2026_03_15_003106.png',
-                passive: 'Sirviente de la Muerte: Aumenta la celeridad del equipo aliado un 20%'
+                passive: 'Sirviente de la Muerte: Al final de cada ronda, aumenta la velocidad del equipo aliado en 10 puntos.'
             },
             'Bolvar Fordragon': {
                 name: 'Bolvar Fordragon',
                 hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/mkRZsR4R/Captura_de_pantalla_2026_03_15_003129.png',
-                passive: 'Castigo de la Muerte: Reduce 2 puntos de carga el costo de todos los especiales y over del equipo aliado'
+                passive: 'Castigo de la Muerte: Al final de cada ronda, inflige 3 daño a todos los enemigos (personajes e invocaciones).'
             },
             'Tirion Fordring': {
                 name: 'Tirion Fordring',
