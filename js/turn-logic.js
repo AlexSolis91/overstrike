@@ -1580,8 +1580,50 @@
                     }
                 })();
 
-                // RAMESSEUM TENTYRIS: aplica QS a enemigos sin QS
-                triggerRamesseumPassive();
+                // RAMESSEUM TENTYRIS: aplica QS a enemigos sin QS + cura 2 HP aliados por cada QS aplicada
+                (function triggerRamesseumPassive() {
+                    const ram = Object.values(gameState.summons).find(function(s) {
+                        return s && s.name === 'Ramesseum Tentyris' && s.hp > 0;
+                    });
+                    if (!ram) return;
+                    const ramAllyTeam  = ram.team;
+                    const ramEnemyTeam = ram.team === 'team1' ? 'team2' : 'team1';
+                    let qsApplied = 0;
+                    for (const n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== ramEnemyTeam || c.isDead || c.hp <= 0) continue;
+                        const hasQS = (c.statusEffects || []).some(function(e) {
+                            return e && normAccent(e.name || '') === 'quemadura solar';
+                        });
+                        if (!hasQS) {
+                            if (typeof applySolarBurn === 'function') {
+                                applySolarBurn(n, 0, 2);
+                            } else {
+                                c.statusEffects = c.statusEffects || [];
+                                c.statusEffects.push({ name: 'Quemadura Solar', type: 'debuff', duration: 2, emoji: '☀️' });
+                                addLog('☀️ Ramesseum Tentyris: ' + n + ' recibe Quemadura Solar 2T', 'debuff');
+                            }
+                            qsApplied++;
+                        }
+                    }
+                    if (qsApplied > 0) {
+                        // Curar 2 HP a cada aliado por cada QS aplicada
+                        const healPerAlly = qsApplied * 2;
+                        for (const n in gameState.characters) {
+                            const c = gameState.characters[n];
+                            if (!c || c.team !== ramAllyTeam || c.isDead || c.hp <= 0) continue;
+                            if (typeof canHeal === 'function' && !canHeal(n)) continue;
+                            const oldHp = c.hp;
+                            c.hp = Math.min(c.maxHp, c.hp + healPerAlly);
+                            const healed = c.hp - oldHp;
+                            if (healed > 0) {
+                                addLog('🏛️ Ramesseum Tentyris: ' + n + ' recupera ' + healed + ' HP (' + qsApplied + ' QS aplicadas)', 'heal');
+                                if (typeof triggerBendicionSagrada === 'function') triggerBendicionSagrada(ramAllyTeam, healed);
+                                if (typeof triggerPresenciaOscura === 'function') triggerPresenciaOscura(n);
+                            }
+                        }
+                    }
+                })();
 
                 // ABU EL-HOL SPHINX: todos los enemigos con QS pierden 2 cargas
                 const sphinx = Object.values(gameState.summons).find(s => s && (s.name === 'Abu el-Hol Sphinx' || s.name === 'Sphinx Wehem-Mesut') && s.hp > 0);
@@ -1618,8 +1660,36 @@
                         }
                     }
                 }
-                // Darion Morgraine: +50% crit chance buff marker (tracked via summon presence)
-                // Bolvar Fordragon: +100% ability damage (tracked via summon presence)
+                // Darion Morgraine: Sirviente de la Muerte — +10 velocidad al equipo aliado
+                const darion = Object.values(gameState.summons).find(function(s) { return s && s.name === 'Darion Morgraine' && s.hp > 0; });
+                if (darion) {
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (c && c.team === darion.team && !c.isDead && c.hp > 0) {
+                            c.speed = (c.speed || 80) + 10;
+                            addLog('⚔️ Darion Morgraine (Sirviente de la Muerte): ' + n + ' gana +10 velocidad', 'buff');
+                        }
+                    }
+                }
+                // Bolvar Fordragon: Castigo de la Muerte — 3 daño al equipo enemigo
+                const bolvar = Object.values(gameState.summons).find(function(s) { return s && s.name === 'Bolvar Fordragon' && s.hp > 0; });
+                if (bolvar) {
+                    const bolvarETeam = bolvar.team === 'team1' ? 'team2' : 'team1';
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (c && c.team === bolvarETeam && !c.isDead && c.hp > 0) {
+                            applyDamageWithShield(n, 3, null);
+                            addLog('🔥 Bolvar Fordragon (Castigo de la Muerte): ' + n + ' recibe 3 daño', 'damage');
+                        }
+                    }
+                    // Daño a invocaciones enemigas también
+                    for (let sid in gameState.summons) {
+                        const s = gameState.summons[sid];
+                        if (s && s.team === bolvarETeam && s.hp > 0 && s.name !== 'Bolvar Fordragon') {
+                            applySummonDamage(sid, 3, null);
+                        }
+                    }
+                }
                 // Tirion Fordring: cura 5 HP y 5 cargas al equipo
                 const tirion = Object.values(gameState.summons).find(s => s && s.name === 'Tirion Fordring');
                 if (tirion) {
