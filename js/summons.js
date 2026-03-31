@@ -767,6 +767,27 @@
                 }
             }
 
+            // SUPERACION DE LIMITES (Goku SSBlue): contraataca con 3 básicos al recibir golpe
+            if (attackerName && attackerName !== targetName && !passiveExecuting) {
+                const _gokuSSB = gameState.characters[targetName];
+                const _atkrSSB = gameState.characters[attackerName];
+                if (_gokuSSB && !_gokuSSB.isDead && _gokuSSB.hp > 0 &&
+                    _gokuSSB.gokuForm === 'ssblue' && _atkrSSB && _atkrSSB.team !== _gokuSSB.team) {
+                    passiveExecuting = true;
+                    const _gokuBasic = (_gokuSSB.abilities && _gokuSSB.abilities[0]) ? _gokuSSB.abilities[0] : null;
+                    const _gokuBDmg = _gokuBasic ? (_gokuBasic.damage || 3) : 3;
+                    addLog('🔵 SS Blue: ' + targetName + ' contraataca con 3 ataques básicos a ' + attackerName, 'buff');
+                    for (let _ci = 0; _ci < 3; _ci++) {
+                        if (!_atkrSSB || _atkrSSB.isDead || _atkrSSB.hp <= 0) break;
+                        applyDamageWithShield(attackerName, _gokuBDmg, targetName);
+                        addLog('🔵 SS Blue contraataque ' + (_ci+1) + ': ' + _gokuBDmg + ' daño a ' + attackerName, 'damage');
+                        // SS1 bonus cargas por golpe
+                        if (_gokuSSB.gokuForm === 'ss1') _gokuSSB.charges = Math.min(20, (_gokuSSB.charges||0)+3);
+                    }
+                    passiveExecuting = false;
+                }
+            }
+
             // PRESENCIA OSCURA (Darth Vader): 20% de esquivar ataques especiales/over
             if (attackerName !== null && !passiveExecuting && (targetName === 'Darth Vader' || targetName === 'Darth Vader v2')) {
                 const atkAbility = gameState.selectedAbility;
