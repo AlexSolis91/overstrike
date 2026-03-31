@@ -643,11 +643,148 @@
                     addLog(`⚔️ ${gameState.selectedCharacter} usa ${ability.name} en ${targetName} causando ${baseDmgCrit} daño`, 'damage');
                 }
 
+
+            // ══════════════════════════════════════════════════════
+            // GOKU — handlers nuevos
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'kame_hame_ha_goku') {
+                // GOKU — Kame Hame Ha: 3 daño ST
+                const _kkhG = gameState.characters[gameState.selectedCharacter];
+                let _kkhDmg = finalDamage;
+                // UI: +5 daño adicional
+                if (_kkhG && _kkhG.gokuForm === 'ui') _kkhDmg += 5;
+                // SS3: crítico siempre
+                if (_kkhG && _kkhG.gokuForm === 'ss3') { _kkhDmg *= 2; addLog('💥 SS3: daño crítico automático', 'damage'); }
+                applyDamageWithShield(targetName, _kkhDmg, gameState.selectedCharacter);
+                addLog('🔵 Kame Hame Ha: ' + _kkhDmg + ' daño a ' + targetName, 'damage');
+                // SS1: +3 cargas por golpe
+                if (_kkhG && _kkhG.gokuForm === 'ss1') {
+                    _kkhG.charges = Math.min(20, (_kkhG.charges||0) + 3);
+                    addLog('⚡ SS1: Goku genera 3 cargas adicionales', 'buff');
+                }
+
+            } else if (ability.effect === 'kaio_ken_goku') {
+                // GOKU — Kaio Ken: Buff Contraataque 3T + Buff Furia 3T
+                const _kkG = gameState.characters[gameState.selectedCharacter];
+                applyBuff(gameState.selectedCharacter, { name: 'Contraataque', type: 'buff', duration: 3, emoji: '⚔️' });
+                applyFuria(gameState.selectedCharacter, 3);
+                addLog('🔥 Kaio Ken: ' + gameState.selectedCharacter + ' gana Contraataque 3T + Furia 3T', 'buff');
+
+            } else if (ability.effect === 'transformacion_goku') {
+                // GOKU — Transformacion: 35% SS1 / 30% SS3 / 25% SSBlue / 10% UI
+                const _tG = gameState.characters[gameState.selectedCharacter];
+                if (!_tG) { endTurn(); return; }
+                const _tRoll = Math.random();
+                let _tForm, _tPortrait, _tFormName;
+                if (_tRoll < 0.35) {
+                    _tForm = 'ss1'; _tPortrait = _tG.portraitSS1;
+                    _tFormName = 'Super Sayajin';
+                } else if (_tRoll < 0.65) {
+                    _tForm = 'ss3'; _tPortrait = _tG.portraitSS3;
+                    _tFormName = 'Super Sayajin 3';
+                } else if (_tRoll < 0.90) {
+                    _tForm = 'ssblue'; _tPortrait = _tG.portraitSSBlue;
+                    _tFormName = 'Super Sayajin Blue';
+                } else {
+                    _tForm = 'ui'; _tPortrait = _tG.portraitUI;
+                    _tFormName = 'Ultra Instinto';
+                }
+                _tG.gokuForm = _tForm;
+                // Cambiar portrait
+                if (_tPortrait) {
+                    _tG.portrait = _tPortrait;
+                    _tG.currentPortrait = _tPortrait;
+                }
+                // Recuperar 5 HP (pasiva)
+                if (typeof canHeal === 'function' ? canHeal(gameState.selectedCharacter) : true) {
+                    _tG.hp = Math.min(_tG.maxHp, (_tG.hp||0) + 5);
+                    addLog('💚 Superacion de Limites: Goku recupera 5 HP al transformarse', 'heal');
+                }
+                addLog('✨ Goku se transforma en ' + _tFormName + '!', 'buff');
+                // UI: aplicar Esquiva Area + Esquivar permanentes
+                if (_tForm === 'ui') {
+                    _tG.statusEffects = (_tG.statusEffects||[]).filter(function(e){ return !e || (normAccent(e.name||'') !== 'esquiva area' && normAccent(e.name||'') !== 'esquivar'); });
+                    _tG.statusEffects.push({ name: 'Esquiva Area', type: 'buff', duration: 999, permanent: true, passiveHidden: false, emoji: '💨' });
+                    _tG.hasDodge = true;
+                    addLog('💨 Ultra Instinto: Goku gana Esquiva Área + Esquivar permanentes', 'buff');
+                }
+                // SS3: limpiar flags de formas anteriores
+                if (_tForm !== 'ui') {
+                    _tG.hasDodge = false;
+                    _tG.statusEffects = (_tG.statusEffects||[]).filter(function(e){ return !e || (normAccent(e.name||'') !== 'esquiva area' && normAccent(e.name||'') !== 'esquivar'); });
+                }
+                // Turno adicional
+                if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, _tG.team);
+                renderCharacters();
+                renderSummons();
+                showContinueButton();
+                return;
+
+            } else if (ability.effect === 'genkidama_goku') {
+                // GOKU — Genkidama: 8 AOE con efectos por forma
+                const _gdG = gameState.characters[gameState.selectedCharacter];
+                const _gdETeam = _gdG ? (_gdG.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _gdForm = _gdG ? _gdG.gokuForm : null;
+                const _gdSS3 = _gdForm === 'ss3'; // SS3: ignora esquivar y esquiva area
+
+                if (checkAndRedirectAOEMegaProv(_gdETeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('💥 Genkidama redirigida por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _gdETeam || _c.isDead || _c.hp <= 0) continue;
+                        // SS3 ignora esquivas
+                        if (!_gdSS3 && (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n))) {
+                            addLog('💨 ' + _n + ' esquiva Genkidama (Esquiva Área)', 'buff'); continue;
+                        }
+                        let _gdDmg = finalDamage;
+                        // UI: +5 daño
+                        if (_gdForm === 'ui') _gdDmg += 5;
+                        // SS3: crítico
+                        if (_gdSS3) { _gdDmg *= 2; addLog('💥 SS3: Genkidama crítico en ' + _n, 'damage'); }
+                        applyDamageWithShield(_n, _gdDmg, gameState.selectedCharacter);
+                        if (_c.isDead || _c.hp <= 0) continue;
+                        // SS1: roba 5 cargas
+                        if (_gdForm === 'ss1') {
+                            const stolen = Math.min(5, _c.charges||0);
+                            _c.charges = Math.max(0, (_c.charges||0) - stolen);
+                            if (_gdG) _gdG.charges = Math.min(20, (_gdG.charges||0) + stolen);
+                            addLog('⚡ SS1 Genkidama: roba ' + stolen + ' cargas de ' + _n, 'buff');
+                        }
+                        // SS Blue: reduce cargas a 0
+                        if (_gdForm === 'ssblue') {
+                            _c.charges = 0;
+                            addLog('🔵 SS Blue Genkidama: cargas de ' + _n + ' reducidas a 0', 'debuff');
+                        }
+                        // UI: 50% eliminar
+                        if (_gdForm === 'ui' && Math.random() < 0.50) {
+                            _c.hp = 0; _c.isDead = true;
+                            addLog('✨ Ultra Instinto Genkidama: ¡' + _n + ' eliminado!', 'damage');
+                            if (typeof checkGameOver === 'function') checkGameOver();
+                        }
+                        // SS1: +3 cargas por golpe
+                        if (_gdForm === 'ss1' && _gdG) {
+                            _gdG.charges = Math.min(20, (_gdG.charges||0) + 3);
+                        }
+                    }
+                    // Daño a invocaciones
+                    for (const _sid in gameState.summons) {
+                        const _s = gameState.summons[_sid];
+                        if (!_s || _s.team !== _gdETeam || _s.hp <= 0) continue;
+                        let _gsdDmg = finalDamage;
+                        if (_gdForm === 'ui') _gsdDmg += 5;
+                        if (_gdSS3) _gsdDmg *= 2;
+                        applySummonDamage(_sid, _gsdDmg, gameState.selectedCharacter);
+                    }
+                }
+                addLog('💥 Genkidama: ' + finalDamage + ' AOE' + (_gdForm ? ' (' + _gdForm.toUpperCase() + ')' : ''), 'damage');
+
             } else if (ability.effect === 'kaio_ken') {
-                // GOKU - Kaio Ken: aplica Furia + Frenesí 2 turnos
+                // GOKU (legacy) - Kaio Ken: aplica Furia + Frenesí 2 turnos
                 applyFuria(gameState.selectedCharacter, 2);
                 applyFrenesi(gameState.selectedCharacter, 2);
-                addLog(`🔥 ${gameState.selectedCharacter} activa Kaio Ken (Furia + Frenesí 2 turnos)`, 'buff');
+                addLog('🔥 ' + gameState.selectedCharacter + ' activa Kaio Ken (Furia + Frenesí 2 turnos)', 'buff');
 
             } else if (ability.effect === 'genkidama') {
                 // GOKU - Genkidama: AOE, críticos reducen cargas a 0
