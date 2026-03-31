@@ -226,13 +226,21 @@
                                       (char.fenixArmorActive && name === 'Ikki de Fenix') ||
                                       (char.kuramaMode && name === 'Minato Namikaze') ||
                                       (name === 'Alexstrasza' && char.dragonFormActive) ||
-                                      (name === 'Goku' && char.ultraInstinto) ||
+                                      (name === 'Goku' && (char.ultraInstinto || char.gokuForm)) ||
                                       (name === 'Anakin Skywalker' && char.darkSideAwakened) ||
                                       (name === 'Muzan Kibutsuji' && char.muzanTransformed) ||
                                       (name === 'Garou' && char.garouSaitamaMode) ||
                                       (name === 'Superman' && char.supermanPrimeMode) ||
                                       (name === 'Varian Wrynn' && char.varianTransformed);
-                const activePortrait = char.portrait || char.transformPortrait || char.transformationPortrait || '';
+                // Seleccionar portrait correcto según forma de Goku
+                let _gokuPortrait = char.portrait;
+                if (name === 'Goku' && char.gokuForm) {
+                    if (char.gokuForm === 'ss1' && char.portraitSS1) _gokuPortrait = char.portraitSS1;
+                    else if (char.gokuForm === 'ss3' && char.portraitSS3) _gokuPortrait = char.portraitSS3;
+                    else if (char.gokuForm === 'ssblue' && char.portraitSSBlue) _gokuPortrait = char.portraitSSBlue;
+                    else if (char.gokuForm === 'ui' && char.portraitUI) _gokuPortrait = char.portraitUI;
+                }
+                const activePortrait = (name === 'Goku' && char.gokuForm) ? _gokuPortrait : (char.portrait || char.transformPortrait || char.transformationPortrait || '');
                 const portraitHTML = activePortrait
                     ? `<img class="character-portrait${isDefeated ? ' defeated-img' : ''}" src="${activePortrait}" alt="${name}" loading="eager" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="character-portrait-placeholder" style="display:none">⚔️</div>`
                     : `<div class="character-portrait-placeholder">⚔️</div>`;
