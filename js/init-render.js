@@ -54,10 +54,14 @@
                     ch.statusEffects = ch.statusEffects || [];
                     ch.statusEffects.push({ name: 'Esquiva Area', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '⚡' });
                 }
-                // Darth Vader: inmune a Miedo y Confusión (flag)
+                // Darth Vader: inmune a Miedo y Confusión + Aura Oscura permanente
                 if (baseName === 'Darth Vader') {
                     ch.immuneToMiedo = true;
                     ch.immuneToConfusion = true;
+                    ch.statusEffects = ch.statusEffects || [];
+                    if (!ch.statusEffects.some(function(e){ return e && normAccent(e.name||'') === 'aura oscura'; })) {
+                        ch.statusEffects.push({ name: 'Aura oscura', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🌑' });
+                    }
                 }
                 // Gandalf: inmune a Posesión, Confusión y Miedo (flag)
                 if (baseName === 'Gandalf') {
