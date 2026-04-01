@@ -59,6 +59,15 @@
         }
 
         // ── AOE MEGAPROV HELPER: check if MegaProv exists and redirect total AOE damage ──
+        // Helper: aplicar daño AOE a todas las invocaciones enemigas
+        function applyAOEToSummons(targetTeam, damage, attackerName) {
+            for (const _sid in gameState.summons) {
+                const _s = gameState.summons[_sid];
+                if (!_s || _s.team !== targetTeam || _s.hp <= 0) continue;
+                applySummonDamage(_sid, damage, attackerName);
+            }
+        }
+
         function checkAndRedirectAOEMegaProv(targetTeam, dmgPerTarget, attackerName) {
             // EL REY PROMETIDO: activar pasiva de Jon Snow cuando el enemigo usa AOE
             if (typeof triggerElReyPrometido === 'function') triggerElReyPrometido(attackerName);
@@ -338,6 +347,7 @@
                         _c.charges = Math.max(0, _c.charges - 1);
                     }
                 }
+                applyAOEToSummons(_egTeam, finalDamage, gameState.selectedCharacter);
                 addLog('💥 Explosión de Galaxias: ' + _egLog.join(', '), 'damage');
             } else if (ability.effect === 'genro_maoken') {
                 // Genrō Maō Ken: 3 AOE + 50% Posesión por objetivo
@@ -361,6 +371,7 @@
                     }
                 }
                 }
+                applyAOEToSummons(_gmTeam, finalDamage, gameState.selectedCharacter);
                 addLog('👁️ Genrō Maō Ken: ' + finalDamage + ' AOE — ' + _gmLog.join(', '), 'damage');
             } else if (ability.effect === 'apply_possession') {
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
@@ -738,7 +749,8 @@
                         if (!_c || _c.team !== _gdETeam || _c.isDead || _c.hp <= 0) continue;
                         // SS3 ignora esquivas
                         if (!_gdSS3 && (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n))) {
-                            addLog('💨 ' + _n + ' esquiva Genkidama (Esquiva Área)', 'buff'); continue;
+                            applyAOEToSummons(_gdETeam, finalDamage, gameState.selectedCharacter);
+                addLog('💨 ' + _n + ' esquiva Genkidama (Esquiva Área)', 'buff'); continue;
                         }
                         let _gdDmg = finalDamage;
                         // UI: +5 daño
@@ -1346,7 +1358,7 @@
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (c && c.team === enkTeam && !c.isDead && c.hp > 0 && c.charges > 5) {
-                        applyMegaStun(n);
+                        applyStun(n);
                         addLog('⛓️ Enkidu: ' + n + ' queda Mega Aturdido (tenía ' + c.charges + ' cargas)', 'damage');
                     }
                 }
@@ -1985,6 +1997,7 @@
                 // burnAmount: 1HP flat. Using 10% as standard Quemadura (≈1-2HP on avg chars)
                 const burnPct = (ability.burnAmount || 1) <= 1 ? 5 : 10;
                 applyFlatBurn(targetName, ability.burnAmount || 1, 1);
+                applyAOEToSummons(enemyTeamTF, finalDamage, gameState.selectedCharacter);
                 addLog('☀️ Sol Ascendente: ' + targetName + ' recibe Quemadura ' + (ability.burnAmount||1) + 'HP', 'damage');
 
             // ── TIGRE DE FUEGO V2 (Rengoku updated) ──
@@ -2015,6 +2028,7 @@
                 }
                 }
                 applyAOEDamageToSummons(attacker.team, finalDamage, charName);
+                applyAOEToSummons(enemyTeamTF, finalDamage, gameState.selectedCharacter);
                 addLog('🐯 Tigre de Fuego: ' + finalDamage + ' daño AOE + Quemadura', 'damage');
 
             // ── PURGATORIO V2 (Rengoku Over - ST + Mega Aturdimiento) ──
@@ -2476,6 +2490,7 @@
                     applyShield(gameState.selectedCharacter, _sdTotalDmg);
                     addLog('🌊 Superficie Muerta: ' + gameState.selectedCharacter + ' gana Escudo ' + _sdTotalDmg + ' HP', 'buff');
                 }
+                applyAOEToSummons(_sdTeam, finalDamage, gameState.selectedCharacter);
                 addLog('🌊 Superficie Muerta: ' + _sdDmg + ' daño AOE', 'damage');
 
             } else if (ability.effect === 'marca_cazador') {
@@ -2528,6 +2543,7 @@
                         addLog('💥 Big Bang Attack: ' + gameState.selectedCharacter + ' gana ' + _bbaGain + ' cargas (' + _bbaEffects + ' efectos en ' + targetName + ')', 'buff');
                     }
                 }
+                applyAOEToSummons(_rkTeam, finalDamage, gameState.selectedCharacter);
                 addLog('💥 Big Bang Attack: ' + _bbaDmg + ' daño a ' + targetName, 'damage');
 
             } else if (ability.effect === 'rafagas_ki') {
@@ -2550,6 +2566,7 @@
                         addLog('💥 Ráfagas de Ki: ' + _n + ' recibe ' + _rkDmg + ' daño directo', 'damage');
                     }
                 }
+                applyAOEToSummons(_rkETeam, finalDamage, gameState.selectedCharacter);
                 addLog('💥 Ráfagas de Ki: AOE completado', 'damage');
 
             } else if (ability.effect === 'final_flash') {
@@ -2568,6 +2585,7 @@
                     _ffAttacker.charges = Math.min(20, (_ffAttacker.charges || 0) + 10);
                     addLog('💥 Final Flash: ¡' + targetName + ' derrotado! ' + gameState.selectedCharacter + ' gana 10 cargas', 'buff');
                 }
+                applyAOEToSummons(_efTeam, finalDamage, gameState.selectedCharacter);
                 addLog('⚡ Final Flash: ' + _ffDmg + ' daño ignorando Provocación/Sigilo a ' + targetName, 'damage');
             } else if (ability.effect === 'intimidacion_sith') {
                 // DARTH VADER — Intimidación Sith: 4dmg + 3 per buff on target
@@ -2595,6 +2613,7 @@
                         if (Math.random() < 0.50) { applyDebuff(_n, { name: 'Debilitar', type: 'debuff', duration: 2, emoji: '💔' }); addLog('💔 ' + _n + ' recibe Debilitar (Explosión de la Fuerza)', 'debuff'); }
                     }
                 }
+                applyAOEToSummons(_efTeam, finalDamage, gameState.selectedCharacter);
                 addLog('🌑 Explosión de la Fuerza: ' + finalDamage + ' AOE a todos los enemigos', 'damage');
             } else if (ability.effect === 'djem_so') {
                 let djemDmg = finalDamage + (attacker.djemSoBonus || 0); // +1 per Estrangular use
@@ -3657,6 +3676,7 @@
                         if (_s && _s.team === _eqETeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, gameState.selectedCharacter);
                     }
                 }
+                applyAOEToSummons(_eqETeam, finalDamage, _eqAtk);
                 addLog('⚡ Electroquinesis: ' + finalDamage + ' AOE', 'damage');
 
             } else if (ability.effect === 'golpe_masa_infinita') {
@@ -3744,7 +3764,7 @@
                 if (_rsTgt && !_rsTgt.isDead && _rsTgt.hp > 0) {
                     const _hasBuff = (_rsTgt.statusEffects||[]).some(function(e){ return e && e.type === 'buff'; });
                     if (_hasBuff) {
-                        applyMegaStun(targetName, 2);
+                        applyStun(targetName, 2);
                         addLog('💠 Rasengan: Mega Aturdimiento 2T aplicado a ' + targetName + ' (tenía buffs)', 'debuff');
                     }
                     // Baryon: cargas = daño causado
@@ -3779,6 +3799,7 @@
                         if (_s && _s.team === _rnETeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, gameState.selectedCharacter);
                     }
                 }
+                applyAOEToSummons(_rnETeam, finalDamage, gameState.selectedCharacter);
                 addLog('🌪️ Futon Rasenshuriken: AOE completado', 'damage');
                 if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, _rnN ? _rnN.team : 'team1');
                 renderCharacters(); renderSummons(); showContinueButton(); return;
@@ -3832,7 +3853,7 @@
                 addLog('🐺 Carga del Lobo: ' + finalDamage + ' daño a ' + targetName, 'damage');
                 const _clTgt = gameState.characters[targetName];
                 if (_clTgt && !_clTgt.isDead && _clTgt.hp > 0 && Math.random() < 0.30) {
-                    applyMegaStun(targetName, 1);
+                    applyStun(targetName, 1);
                     addLog('🐺 Carga del Lobo: Mega Aturdimiento aplicado a ' + targetName, 'debuff');
                 }
 
@@ -4033,6 +4054,7 @@
                         if (_grHasDoT) { _grDmg *= 2; }
                         if (_grAtk && _grAtk.garouSaitamaMode) _grDmg += 2;
                         applyDamageWithShield(_n, _grDmg, gameState.selectedCharacter);
+                applyAOEToSummons(_grTeam, finalDamage, gameState.selectedCharacter);
                         addLog('☢️ Gamma Ray: ' + _grDmg + ' daño a ' + _n, 'damage');
                     }
                 }
@@ -4082,6 +4104,7 @@
                 // JOKER — Naipes Impregnados: 1 dmg + Veneno 2T
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 applyPoison(targetName, 2);
+                applyAOEToSummons(_gjTeam, finalDamage, gameState.selectedCharacter);
                 addLog('🃏 Naipes Impregnados: ' + finalDamage + ' daño + Veneno 2T a ' + targetName, 'damage');
 
             } else if (ability.effect === 'granada_joker') {
@@ -4098,6 +4121,7 @@
                         applyPoison(_n, 3);
                     }
                 }
+                applyAOEToSummons(_gjTeam, finalDamage, gameState.selectedCharacter);
                 addLog('🃏 Granada de Humo Púrpura: 1 AOE + Veneno 3T a todos los enemigos', 'damage');
 
             } else if (ability.effect === 'detonador_joker') {
@@ -4232,6 +4256,7 @@
                     _vcTgt.shield = 0; _vcTgt.shieldEffect = null;
                     if (_vcDispelled > 0) addLog('🔥 Visión de Calor: ' + _vcDispelled + ' buff(s) disipados de ' + targetName, 'debuff');
                     applySolarBurn(targetName, 15, 3);
+                applyAOEToSummons(_agTeam, finalDamage, gameState.selectedCharacter);
                     addLog('🔥 Visión de Calor: ' + _vcDmg + ' daño + Quemadura Solar 3T a ' + targetName, 'damage');
                 }
 
@@ -4259,6 +4284,7 @@
                         delete gameState.summons[_sid];
                     }
                     renderSummons();
+                applyAOEToSummons(_agTeam, finalDamage, gameState.selectedCharacter);
                     addLog('❄️ Aliento Gélido: 3 AOE completado', 'damage');
                 }
 
@@ -4349,6 +4375,7 @@
                     _tjK.charges = Math.min(20, (_tjK.charges || 0) + 2);
                     addLog('⚔️ Dios de la Guerra: ' + gameState.selectedCharacter + ' genera 2 cargas (Sangrado)', 'buff');
                 }
+                applyAOEToSummons(_ikTeam, finalDamage, gameState.selectedCharacter);
                 addLog('⚔️ Tempestad de Jord: ' + _tjDmg + ' daño a ' + targetName, 'damage');
 
             } else if (ability.effect === 'ira_kratos') {
@@ -4379,6 +4406,7 @@
                             if (typeof checkGameOver === 'function') checkGameOver();
                         }
                     }
+                applyAOEToSummons(_ikTeam, finalDamage, gameState.selectedCharacter);
                     addLog('⚔️ Ira de Kratos: 7 AOE completado', 'damage');
                 }
             // ══════════════════════════════════════════════════════
@@ -5270,7 +5298,8 @@
                         }
                         addLog('💧 Cascada de Agua: el equipo gana ' + _caCritCount + ' carga' + (_caCritCount>1?'s':'') + ' por críticos', 'buff');
                     }
-                    addLog('💧 Cascada de Agua: ' + finalDamage + ' AOE', 'damage');
+                    applyAOEToSummons(_caEnemyTeam, finalDamage, gameState.selectedCharacter);
+                addLog('💧 Cascada de Agua: ' + finalDamage + ' AOE', 'damage');
                 }
 
             } else if (ability.effect === 'danza_dios_fuego') {
@@ -5364,7 +5393,8 @@
                         if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
                         const _grDmg = finalDamage + (_c.charges || 0);
                         applyDamageWithShield(_n, _grDmg, gameState.selectedCharacter);
-                        addLog('🐾 Gamma Ray Burst: ' + _grDmg + ' daño a ' + _n + ' (' + (_c.charges||0) + ' cargas)', 'damage');
+                        applyAOEToSummons(_grEnemyTeam, finalDamage, gameState.selectedCharacter);
+                addLog('🐾 Gamma Ray Burst: ' + _grDmg + ' daño a ' + _n + ' (' + (_c.charges||0) + ' cargas)', 'damage');
                     }
                 }
 
