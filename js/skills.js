@@ -60,6 +60,8 @@
 
         // ── AOE MEGAPROV HELPER: check if MegaProv exists and redirect total AOE damage ──
         function checkAndRedirectAOEMegaProv(targetTeam, dmgPerTarget, attackerName) {
+            // EL REY PROMETIDO: activar pasiva de Jon Snow cuando el enemigo usa AOE
+            if (typeof triggerElReyPrometido === 'function') triggerElReyPrometido(attackerName);
             const mpData = checkKamishMegaProvocation(targetTeam);
             if (!mpData) return false;
             const mult = countMegaProvMultiplier(targetTeam, mpData);
@@ -3702,6 +3704,164 @@
                 renderSummons();
                 showContinueButton();
                 return;
+
+
+            // ══════════════════════════════════════════════════════
+            // NARUTO — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'kage_bunshin_naruto') {
+                // NARUTO — Kage Bunshin: 1-4 golpes, 1 carga por golpe
+                const _kbN = gameState.characters[gameState.selectedCharacter];
+                const hits = Math.floor(Math.random() * 4) + 1;
+                let _kbTotal = 0;
+                for (let _i = 0; _i < hits; _i++) {
+                    const _tgt = gameState.characters[targetName];
+                    if (!_tgt || _tgt.isDead || _tgt.hp <= 0) break;
+                    let _kbDmg = ability.damage || 1;
+                    // Baryon: daño doble
+                    if (_kbN && _kbN.narutoForm === 'baryon') _kbDmg *= 2;
+                    applyDamageWithShield(targetName, _kbDmg, gameState.selectedCharacter);
+                    _kbTotal += _kbDmg;
+                    // 1 carga por golpe
+                    if (_kbN) _kbN.charges = Math.min(20, (_kbN.charges||0) + 1);
+                    // Baryon: cargas adicionales = daño causado
+                    if (_kbN && _kbN.narutoForm === 'baryon') {
+                        _kbN.charges = Math.min(20, (_kbN.charges||0) + _kbDmg);
+                    }
+                    addLog('🌀 Kage Bunshin golpe ' + (_i+1) + '/' + hits + ': ' + _kbDmg + ' daño a ' + targetName, 'damage');
+                }
+                addLog('🌀 Kage Bunshin: ' + hits + ' golpes, ' + _kbTotal + ' daño total', 'damage');
+
+            } else if (ability.effect === 'rasengan_naruto') {
+                // NARUTO — Rasengan: 3 daño + Mega Aturdimiento 2T si tiene buffs
+                const _rsN = gameState.characters[gameState.selectedCharacter];
+                let _rsDmg = finalDamage;
+                if (_rsN && _rsN.narutoForm === 'baryon') _rsDmg *= 2;
+                applyDamageWithShield(targetName, _rsDmg, gameState.selectedCharacter);
+                addLog('💠 Rasengan: ' + _rsDmg + ' daño a ' + targetName, 'damage');
+                const _rsTgt = gameState.characters[targetName];
+                if (_rsTgt && !_rsTgt.isDead && _rsTgt.hp > 0) {
+                    const _hasBuff = (_rsTgt.statusEffects||[]).some(function(e){ return e && e.type === 'buff'; });
+                    if (_hasBuff) {
+                        applyMegaStun(targetName, 2);
+                        addLog('💠 Rasengan: Mega Aturdimiento 2T aplicado a ' + targetName + ' (tenía buffs)', 'debuff');
+                    }
+                    // Baryon: cargas = daño causado
+                    if (_rsN && _rsN.narutoForm === 'baryon') {
+                        _rsN.charges = Math.min(20, (_rsN.charges||0) + _rsDmg);
+                    }
+                }
+
+            } else if (ability.effect === 'rasenshuriken_naruto') {
+                // NARUTO — Futon Rasenshuriken: 5 AOE + Debilitar + Sangrado + turno adicional
+                const _rnN = gameState.characters[gameState.selectedCharacter];
+                const _rnETeam = _rnN ? (_rnN.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                if (checkAndRedirectAOEMegaProv(_rnETeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('🌪️ Rasenshuriken redirigido por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _rnETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('💨 ' + _n + ' esquiva Rasenshuriken', 'buff'); continue; }
+                        let _rnDmg = finalDamage;
+                        if (_rnN && _rnN.narutoForm === 'baryon') _rnDmg *= 2;
+                        applyDamageWithShield(_n, _rnDmg, gameState.selectedCharacter);
+                        applyWeaken(_n, 2);
+                        applyBleed(_n, 2);
+                        addLog('🌪️ Rasenshuriken: ' + _rnDmg + ' daño + Debilitar + Sangrado a ' + _n, 'damage');
+                        if (_rnN && _rnN.narutoForm === 'baryon') {
+                            _rnN.charges = Math.min(20, (_rnN.charges||0) + _rnDmg);
+                        }
+                    }
+                    for (const _sid in gameState.summons) {
+                        const _s = gameState.summons[_sid];
+                        if (_s && _s.team === _rnETeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, gameState.selectedCharacter);
+                    }
+                }
+                addLog('🌪️ Futon Rasenshuriken: AOE completado', 'damage');
+                if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, _rnN ? _rnN.team : 'team1');
+                renderCharacters(); renderSummons(); showContinueButton(); return;
+
+            } else if (ability.effect === 'voluntad_hoja_naruto') {
+                // NARUTO — Voluntad de la Hoja: 50% HP + Quemadura 5HP 2T
+                const _vlTgt = gameState.characters[targetName];
+                if (_vlTgt && !_vlTgt.isDead && _vlTgt.hp > 0) {
+                    const _vlDmg = Math.ceil(_vlTgt.hp * 0.50);
+                    applyDamageWithShield(targetName, _vlDmg, gameState.selectedCharacter);
+                    addLog('🔥 Voluntad de la Hoja: ' + _vlDmg + ' daño (50% HP) a ' + targetName, 'damage');
+                    if (!_vlTgt.isDead && _vlTgt.hp > 0) {
+                        applyFlatBurn(targetName, 5, 2);
+                        addLog('🔥 Voluntad de la Hoja: Quemadura 5HP 2T a ' + targetName, 'debuff');
+                    }
+                }
+
+            // ══════════════════════════════════════════════════════
+            // JON SNOW — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'garra_bastarda_jon') {
+                // JON SNOW — Garra Bastarda: 2 daño + 1 por cada buff en objetivo
+                const _gbTgt = gameState.characters[targetName];
+                let _gbDmg = finalDamage;
+                if (_gbTgt) {
+                    const _buffCount = (_gbTgt.statusEffects||[]).filter(function(e){ return e && e.type === 'buff'; }).length;
+                    if (_buffCount > 0) {
+                        _gbDmg += _buffCount;
+                        addLog('⚔️ Garra Bastarda: +' + _buffCount + ' daño por buffs del objetivo', 'damage');
+                    }
+                }
+                applyDamageWithShield(targetName, _gbDmg, gameState.selectedCharacter);
+                addLog('⚔️ Garra Bastarda: ' + _gbDmg + ' daño a ' + targetName, 'damage');
+
+            } else if (ability.effect === 'summon_ghost') {
+                // JON SNOW — invoca a Ghost
+                const existingGhost = Object.values(gameState.summons).find(function(s) {
+                    return s && s.name === 'Ghost' && s.summoner === gameState.selectedCharacter;
+                });
+                if (existingGhost) {
+                    addLog('❌ Ghost ya está invocado', 'info');
+                } else {
+                    summonShadow('Ghost', gameState.selectedCharacter);
+                    addLog('🐺 Jon Snow invoca a Ghost', 'buff');
+                }
+
+            } else if (ability.effect === 'carga_lobo_jon') {
+                // JON SNOW — Carga del Lobo: 5 daño + 30% Mega Aturdimiento
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('🐺 Carga del Lobo: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                const _clTgt = gameState.characters[targetName];
+                if (_clTgt && !_clTgt.isDead && _clTgt.hp > 0 && Math.random() < 0.30) {
+                    applyMegaStun(targetName, 1);
+                    addLog('🐺 Carga del Lobo: Mega Aturdimiento aplicado a ' + targetName, 'debuff');
+                }
+
+            } else if (ability.effect === 'rey_del_norte_jon') {
+                // JON SNOW — El Rey del Norte: todos los aliados ejecutan su Over sin costo
+                const _rjAtk = gameState.characters[gameState.selectedCharacter];
+                if (!_rjAtk) { endTurn(); return; }
+                const _rjAllyTeam = _rjAtk.team;
+                const _rjEnemyTeam = _rjAllyTeam === 'team1' ? 'team2' : 'team1';
+                addLog('👑 El Rey del Norte: ¡todos los aliados ejecutan su Over!', 'buff');
+                for (const _aln in gameState.characters) {
+                    const _alc = gameState.characters[_aln];
+                    if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== _rjAllyTeam || _aln === gameState.selectedCharacter) continue;
+                    // Encontrar habilidad Over
+                    const _overAb = (_alc.abilities||[]).find(function(ab){ return ab && ab.type === 'over'; });
+                    if (!_overAb) continue;
+                    // Para over con daño: aplicar a enemigo aleatorio
+                    const _aliveEnemies = Object.keys(gameState.characters).filter(function(n){
+                        const c = gameState.characters[n]; return c && c.team === _rjEnemyTeam && !c.isDead && c.hp > 0;
+                    });
+                    if (_overAb.damage > 0 && _aliveEnemies.length > 0) {
+                        const _randEnemy = _aliveEnemies[Math.floor(Math.random() * _aliveEnemies.length)];
+                        applyDamageWithShield(_randEnemy, _overAb.damage, _aln);
+                        addLog('👑 ' + _aln + ' (' + _overAb.name + '): ' + _overAb.damage + ' daño a ' + _randEnemy, 'damage');
+                    } else if (_overAb.damage === 0) {
+                        // Over sin daño (buff/heal/etc): aplicar sobre sí mismo
+                        addLog('👑 ' + _aln + ' activa ' + _overAb.name + ' (Over)', 'buff');
+                    }
+                }
 
             } else if (ability.effect === 'vals_tanjiro') {
                 // TANJIRO — Básico: daño + 50% de generar 1 carga al equipo aliado (Olor de la Brecha)
