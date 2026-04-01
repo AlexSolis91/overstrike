@@ -1260,6 +1260,63 @@
                     // Nuevo snapshot de vivos para la ronda que comienza
                     gameState.aliveCountAtRoundStart = Object.values(gameState.characters).filter(c => c && !c.isDead && c.hp > 0).length;
                     addLog(`⏱️ ¡RONDA ${gameState.currentRound} COMIENZA!`, 'info');
+
+                    // ── CAMINO NINJA (Naruto): transformación al inicio de ronda ──
+                    for (const _naruN in gameState.characters) {
+                        const _naruC = gameState.characters[_naruN];
+                        if (!_naruC || _naruC.isDead || _naruC.hp <= 0) continue;
+                        if (!_naruC.passive || _naruC.passive.name !== 'Camino Ninja') continue;
+                        const _naruRoll = Math.random();
+                        let _naruForm = null, _naruFormName = '', _naruPortrait = _naruC.portrait;
+                        if (_naruRoll < 0.20) {
+                            _naruForm = 'baryon'; _naruFormName = 'Modo Baryon';
+                            _naruPortrait = _naruC.portraitBaryon || _naruC.portrait;
+                            _naruC.speed = (_naruC.speed || 87) + 10;
+                            addLog('🟠 Camino Ninja: ' + _naruN + ' entra en Modo Baryon (vel+10, daño doble, cargas=daño)', 'buff');
+                        } else if (_naruRoll < 0.60) {
+                            _naruForm = 'kyubi'; _naruFormName = 'Modo Kyubi';
+                            _naruPortrait = _naruC.portraitKyubi || _naruC.portrait;
+                            addLog('🦊 Camino Ninja: ' + _naruN + ' entra en Modo Kyubi (50% esquivar, prioridad al esquivar)', 'buff');
+                        } else if (_naruRoll < 1.00) {
+                            _naruForm = 'sabio'; _naruFormName = 'Modo Sabio';
+                            _naruPortrait = _naruC.portraitSabio || _naruC.portrait;
+                            addLog('🐸 Camino Ninja: ' + _naruN + ' entra en Modo Sabio (cargas=daño recibido)', 'buff');
+                        }
+                        if (_naruForm) {
+                            // Resetear velocidad si cambia de Baryon
+                            if (_naruC.narutoForm === 'baryon' && _naruForm !== 'baryon') {
+                                _naruC.speed = Math.max(87, (_naruC.speed||87) - 10);
+                            }
+                            _naruC.narutoForm = _naruForm;
+                            _naruC.portrait = _naruPortrait;
+                            _naruC.currentPortrait = _naruPortrait;
+                            // Kyubi: buff Esquivar 999T
+                            if (_naruForm === 'kyubi') {
+                                _naruC.hasDodge = true;
+                                if (!(_naruC.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'esquivar'; })) {
+                                    _naruC.statusEffects.push({ name: 'Esquivar', type: 'buff', duration: 999, permanent: true, emoji: '💨' });
+                                }
+                            } else {
+                                _naruC.hasDodge = false;
+                                _naruC.statusEffects = (_naruC.statusEffects||[]).filter(function(e){ return !e || normAccent(e.name||'') !== 'esquivar'; });
+                            }
+                        }
+                    }
+                    // ── EL REY PROMETIDO (Jon Snow): revivir al inicio de ronda ──
+                    for (const _jsN in gameState.characters) {
+                        const _jsC = gameState.characters[_jsN];
+                        if (!_jsC || !_jsC.isDead || _jsC.jonSnowReviveUsed) continue;
+                        if (!_jsC.passive || _jsC.passive.name !== 'El Rey Prometido') continue;
+                        if (Math.random() < 0.50) {
+                            _jsC.isDead = false;
+                            _jsC.hp = 15;
+                            _jsC.charges = 18;
+                            _jsC.statusEffects = [];
+                            _jsC.jonSnowReviveUsed = true;
+                            addLog('⚔️ El Rey Prometido: ¡' + _jsN + ' revive con 15 HP y 18 cargas!', 'buff');
+                            renderCharacters();
+                        }
+                    }
                     // Snapshot HP de todos los personajes al inicio de ronda (para Aspecto de la Vida)
                     for (let n in gameState.characters) {
                         const c = gameState.characters[n];
@@ -1702,6 +1759,30 @@
                         }
                     }
                 }
+                // GHOST (Jon Snow): al final de ronda — 1 daño + Veneno 1T a cada enemigo + elimina 1 invocación enemiga
+                const _ghostS = Object.values(gameState.summons).find(function(s){ return s && s.name === 'Ghost' && s.hp > 0; });
+                if (_ghostS) {
+                    const _ghostETeam = _ghostS.team === 'team1' ? 'team2' : 'team1';
+                    // 1 daño + Veneno 1T a cada enemigo
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _ghostETeam || _c.isDead || _c.hp <= 0) continue;
+                        applyDamageWithShield(_n, 1, null);
+                        applyPoison(_n, 1);
+                        addLog('🐺 Ghost (Huargo Bastardo): ' + _n + ' recibe 1 daño + Veneno 1T', 'damage');
+                    }
+                    // Eliminar 1 invocación enemiga aleatoria
+                    const _enemySummons = Object.entries(gameState.summons).filter(function(e){
+                        return e[1] && e[1].team === _ghostETeam && e[1].hp > 0 && e[1].name !== 'Ghost';
+                    });
+                    if (_enemySummons.length > 0) {
+                        const _toKill = _enemySummons[Math.floor(Math.random() * _enemySummons.length)];
+                        addLog('🐺 Ghost: elimina la invocación ' + _toKill[1].name + ' del equipo enemigo', 'damage');
+                        delete gameState.summons[_toKill[0]];
+                        if (typeof renderSummons === 'function') renderSummons();
+                    }
+                }
+
                 // ═══ PASIVAS DE DRAGONES (Daenerys) AL FINAL DE RONDA ═══
                 for (let sid in gameState.summons) {
                     const s = gameState.summons[sid];
