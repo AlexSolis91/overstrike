@@ -277,9 +277,15 @@ function processBurnEffects(charName) {
                         addLog(`🐉 Alexstrasza vuelve a su forma normal`, 'info');
                     }
                     // Restaurar velocidad si era congelacion
-                    if ((nname === 'congelacion' || nname === 'mega congelacion') && effect.speedPenalty) {
-                        char.speed = Math.round(char.speed / (1 - effect.speedPenalty));
-                        addLog(`${effect.emoji || '❄️'} ${charName} se descongela (velocidad restaurada)`, 'buff');
+                    if ((nname === 'congelacion' || nname === 'mega congelacion') && (effect.speedPenalty || effect.speedPenaltyFlat)) {
+                        if (effect.speedPenaltyFlat) {
+                            // Nuevo sistema: suma plana
+                            char.speed = Math.min(char.baseSpeed || 999, char.speed + effect.speedPenaltyFlat);
+                        } else {
+                            // Sistema viejo: multiplicativo (compatibilidad)
+                            char.speed = Math.round(char.speed / (1 - effect.speedPenalty));
+                        }
+                        addLog((effect.emoji || '❄️') + ' ' + charName + ' se descongela (velocidad restaurada)', 'buff');
                     }
                     // Restaurar velocidad si era celeridad
                     if (nname === 'celeridad' && effect.speedBonus) {
