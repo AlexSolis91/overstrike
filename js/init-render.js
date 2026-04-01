@@ -240,7 +240,16 @@
                     else if (char.gokuForm === 'ssblue' && char.portraitSSBlue) _gokuPortrait = char.portraitSSBlue;
                     else if (char.gokuForm === 'ui' && char.portraitUI) _gokuPortrait = char.portraitUI;
                 }
-                const activePortrait = (name === 'Goku' && char.gokuForm) ? _gokuPortrait : (char.portrait || char.transformPortrait || char.transformationPortrait || '');
+                // Seleccionar portrait correcto según forma de Naruto
+                let _naruPortrait = char.portrait;
+                if (name === 'Naruto' && char.narutoForm) {
+                    if (char.narutoForm === 'sabio' && char.portraitSabio) _naruPortrait = char.portraitSabio;
+                    else if (char.narutoForm === 'kyubi' && char.portraitKyubi) _naruPortrait = char.portraitKyubi;
+                    else if (char.narutoForm === 'baryon' && char.portraitBaryon) _naruPortrait = char.portraitBaryon;
+                }
+                const activePortrait = (name === 'Goku' && char.gokuForm) ? _gokuPortrait :
+                                       (name === 'Naruto' && char.narutoForm) ? _naruPortrait :
+                                       (char.portrait || char.transformPortrait || char.transformationPortrait || '');
                 const portraitHTML = activePortrait
                     ? `<img class="character-portrait${isDefeated ? ' defeated-img' : ''}" src="${activePortrait}" alt="${name}" loading="eager" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="character-portrait-placeholder" style="display:none">⚔️</div>`
                     : `<div class="character-portrait-placeholder">⚔️</div>`;
