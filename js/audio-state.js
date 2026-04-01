@@ -232,4 +232,11 @@
                 img: 'https://i.ibb.co/V0N5r6WR/Whats-App-Image-2026-03-31-at-1-22-44-PM.jpg',
                 passive: 'Explosion: Al morir causa 3 puntos de daño AOE al equipo enemigo y genera 2 puntos de carga en el equipo aliado.'
             },
+
+            'Ghost': {
+                name: 'Ghost',
+                hp: 6, maxHp: 6, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.ibb.co/QvK9cxfc/Whats-App-Image-2026-03-31-at-1-19-10-PM.jpg',
+                passive: 'Huargo Bastardo: Al final de cada ronda inflige 1 daño a cada enemigo y aplica Veneno 1T. Al final de cada ronda elimina una invocacion del equipo enemigo.'
+            },
         };
