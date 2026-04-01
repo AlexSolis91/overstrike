@@ -320,31 +320,21 @@
                     }
                     
                     if (!hasTargets) {
-                        // All enemies in Sigilo — auto-resolve: fire the move but it misses
-                        // This prevents getting stuck on the "no targets" screen
-                        const sigiloChar = Object.keys(gameState.characters).find(function(n) {
+                        // No hay objetivos válidos — cerrar modal y terminar turno automáticamente
+                        // Esto cubre: todos en Sigilo, MegaProv+Sigilo, o cualquier combinación
+                        const _noTgtAbilName = ability ? (ability.name || 'El movimiento') : 'El movimiento';
+                        const _sigiloAny = Object.keys(gameState.characters).find(function(n) {
                             const c = gameState.characters[n];
                             return c && c.team === targetTeam && !c.isDead && c.hp > 0 &&
-                                c.statusEffects && c.statusEffects.some(function(e) {
-                                    return e && normAccent(e.name || '') === 'sigilo';
-                                });
+                                (c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'sigilo'; });
                         });
-                        if (sigiloChar) {
-                            // Auto-execute: the move fires but misses due to Sigilo
-                            const abilityName = ability ? (ability.name || 'El movimiento') : 'El movimiento';
-                            addLog('👤 ' + abilityName + ' no afectó a ' + sigiloChar + ' ya que tiene Sigilo activo', 'info');
-                            modal.classList.remove('show');
-                            if (typeof endTurn === 'function') endTurn();
+                        if (_sigiloAny) {
+                            addLog('👤 ' + _noTgtAbilName + ': no hay objetivos seleccionables — ' + _sigiloAny + ' tiene Sigilo activo', 'info');
                         } else {
-                            grid.innerHTML = '<div style="text-align:center;padding:20px;color:var(--warning);">' +
-                                '<div style="font-size:1.2rem;margin-bottom:12px;">⚠️ No hay objetivos válidos</div>' +
-                                '<div style="font-size:.85rem;color:#888;margin-bottom:16px;">Todos los enemigos están en Sigilo</div>' +
-                                '<button onclick="document.getElementById(\'targetModal\').classList.remove(\'show\')" ' +
-                                'style="background:rgba(255,170,0,0.15);border:2px solid rgba(255,170,0,0.5);color:#ffaa00;' +
-                                'padding:10px 24px;border-radius:10px;cursor:pointer;font-family:Orbitron,sans-serif;' +
-                                'font-size:.85rem;letter-spacing:.05em;">↩ VOLVER</button>' +
-                                '</div>';
+                            addLog('⚠️ ' + _noTgtAbilName + ': no hay objetivos válidos disponibles', 'info');
                         }
+                        modal.classList.remove('show');
+                        if (typeof endTurn === 'function') endTurn();
                     }
                 }
             }
