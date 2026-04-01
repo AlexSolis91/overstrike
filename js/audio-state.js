@@ -229,7 +229,7 @@
             'Fake Black': {
                 name: 'Fake Black',
                 hp: 2, maxHp: 2, summoner: null, team: null, statusEffects: [],
-                img: '',
+                img: 'https://i.ibb.co/V0N5r6WR/Whats-App-Image-2026-03-31-at-1-22-44-PM.jpg',
                 passive: 'Explosion: Al morir causa 3 puntos de daño AOE al equipo enemigo y genera 2 puntos de carga en el equipo aliado.'
             },
         };
