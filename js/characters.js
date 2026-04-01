@@ -632,4 +632,35 @@
                     { name: 'Singularidad Escarlata', type: 'over', cost: 15, chargeGain: 20, damage: 10, target: 'single', effect: 'singularidad_escarlata', description: 'Causa 10 daño. Gana un turno adicional. Genera 20 cargas. Esta habilidad tiene cooldown de 3 turnos.' }
                 ]
             },
+
+            'Naruto': {
+                hp: 20, maxHp: 20, speed: 87, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                narutoForm: null, // null | 'sabio' | 'kyubi' | 'baryon'
+                portrait: 'https://i.ibb.co/Zz12M6bp/Naruto-Uzumaki.jpg',
+                portraitSabio:  'https://i.ibb.co/FqfDcN61/Captura-de-pantalla-2026-04-01-001846.png',
+                portraitKyubi:  'https://i.ibb.co/tTJZ2gKH/descarga-29.jpg',
+                portraitBaryon: 'https://i.ibb.co/zTDfzbwN/Captura-de-pantalla-2026-04-01-001421.png',
+                passive: { name: 'Camino Ninja', description: 'Al inicio de cada ronda: 20% Modo Baryon (vel+10, daño doble, cargas=daño causado), 40% Modo Kyubi (50% esquivar, al esquivar gana prioridad), 60% Modo Sabio (cargas=daño recibido). Solo una transformacion activa a la vez.' },
+                abilities: [
+                    { name: 'Kage Bunshin no Jutsu', type: 'basic', cost: 0, chargeGain: 0, damage: 1, target: 'single', effect: 'kage_bunshin_naruto', description: 'Realiza de 1 a 4 golpes. Genera 1 carga por cada golpe acertado.' },
+                    { name: 'Rasengan', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'single', effect: 'rasengan_naruto', description: 'Causa 3 daño. Si el objetivo tiene Buffs activos, aplica Mega Aturdimiento 2T.' },
+                    { name: 'Futon Rasenshuriken', type: 'special', cost: 6, chargeGain: 0, damage: 5, target: 'aoe', effect: 'rasenshuriken_naruto', description: 'Causa 5 AOE. Aplica Debilitar y Sangrado a los objetivos. Naruto gana un turno adicional.' },
+                    { name: 'Voluntad de la Hoja', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'single', effect: 'voluntad_hoja_naruto', description: 'Elimina el 50% del HP del objetivo y aplica Quemadura de 5 HP por 2 turnos.' }
+                ]
+            },
+
+            'Jon Snow': {
+                hp: 20, maxHp: 20, speed: 83, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                jonSnowReviveUsed: false,
+                portrait: 'https://i.ibb.co/NgZhjQd7/Whats-App-Image-2026-03-31-at-1-17-09-PM.jpg',
+                passive: { name: 'El Rey Prometido', description: 'Cada vez que un enemigo usa AOE, el equipo aliado gana Esquiva Área 2T y 1 carga. Al morir, 50% de revivir (solo una vez) con 15 HP y 18 cargas en la siguiente ronda.' },
+                abilities: [
+                    { name: 'Garra Bastarda', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'garra_bastarda_jon', description: 'Causa 2 daño + 1 adicional por cada buff activo en el objetivo.' },
+                    { name: 'Ghost', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'self', effect: 'summon_ghost', description: 'Invoca a Ghost.' },
+                    { name: 'Carga del Lobo', type: 'special', cost: 6, chargeGain: 0, damage: 5, target: 'single', effect: 'carga_lobo_jon', description: 'Causa 5 daño. 30% de aplicar Mega Aturdimiento al objetivo.' },
+                    { name: 'El Rey del Norte', type: 'over', cost: 18, chargeGain: 0, damage: 0, target: 'self', effect: 'rey_del_norte_jon', description: 'Todos los aliados ejecutan su Over sin costo. Daños ST se aplican a objetivos aleatorios.' }
+                ]
+            },
         };
