@@ -758,6 +758,12 @@
                         addLog('💨 ' + targetName + ' esquiva el ataque de ' + attackerName + '!', 'buff');
                         // Activar pasivas de esquiva (ej: Flash +2 cargas)
                         if (typeof triggerDodgePassives === 'function') triggerDodgePassives(targetName);
+                        // MODO KYUBI (Naruto): al esquivar, gana prioridad de turno
+                        if (target.narutoForm === 'kyubi') {
+                            if (!gameState._kyubiPriorityQueue) gameState._kyubiPriorityQueue = [];
+                            gameState._kyubiPriorityQueue.push(targetName);
+                            addLog('🦊 Modo Kyubi: ' + targetName + ' esquiva y gana prioridad de turno', 'buff');
+                        }
                         // Si es Goku con Ultra Instinto, contraataca
                         if ((targetName === 'Goku' || targetName === 'Goku v2') && target.ultraInstinto) {
                             triggerCounterattack(targetName, attackerName);
@@ -1038,6 +1044,14 @@
             }
 
 
+            // MODO SABIO (Naruto): cargas = daño recibido
+            if (remainingDamage > 0 && !passiveExecuting) {
+                const _naruSabio = gameState.characters[targetName];
+                if (_naruSabio && !_naruSabio.isDead && _naruSabio.narutoForm === 'sabio') {
+                    _naruSabio.charges = Math.min(20, (_naruSabio.charges||0) + remainingDamage);
+                    addLog('🐸 Modo Sabio: ' + targetName + ' gana ' + remainingDamage + ' cargas (daño recibido)', 'buff');
+                }
+            }
             // CADENAS DE HIELO (Lich King): +1 carga al recibir daño con Provocacion activa
             if (remainingDamage > 0 && !passiveExecuting) {
                 const _lichTgt = gameState.characters[targetName];
@@ -1207,6 +1221,30 @@
         }
 
         
+        // Helper: El Rey Prometido (Jon Snow) — activar cuando enemigo usa AOE
+        function triggerElReyPrometido(attackerName) {
+            if (!attackerName) return;
+            const _attC = gameState.characters[attackerName];
+            if (!_attC) return;
+            const _defTeam = _attC.team === 'team1' ? 'team2' : 'team1';
+            // Buscar Jon Snow en el equipo defensor
+            for (const _jsN in gameState.characters) {
+                const _jsC = gameState.characters[_jsN];
+                if (!_jsC || _jsC.isDead || _jsC.hp <= 0 || _jsC.team !== _defTeam) continue;
+                if (!_jsC.passive || _jsC.passive.name !== 'El Rey Prometido') continue;
+                // Aplicar Esquiva Area 2T a todo el equipo aliado
+                for (const _an in gameState.characters) {
+                    const _ac = gameState.characters[_an];
+                    if (!_ac || _ac.isDead || _ac.hp <= 0 || _ac.team !== _defTeam) continue;
+                    _ac.statusEffects = (_ac.statusEffects||[]).filter(function(e){ return !e || normAccent(e.name||'') !== 'esquiva area'; });
+                    _ac.statusEffects.push({ name: 'Esquiva Area', type: 'buff', duration: 2, emoji: '🛡️' });
+                    _ac.charges = Math.min(20, (_ac.charges||0) + 1);
+                }
+                addLog('⚔️ El Rey Prometido: equipo aliado gana Esquiva Área 2T + 1 carga (AOE enemigo)', 'buff');
+                break;
+            }
+        }
+
         // Helper: activar Presencia Oscura (Darth Vader) cuando un personaje del equipo ENEMIGO recupera HP
         function triggerPresenciaOscura(healedCharName) {
             if (!healedCharName) return;
