@@ -426,10 +426,14 @@ function applyDebuff(targetName, effectObj) {
             const speedPenalty = mega ? 0.20 : 0.10;
             const target = gameState.characters[targetName];
             if (!target) return;
-            applyDebuff(targetName, { name, type: 'debuff', duration, emoji, speedPenalty });
-            // Reducir velocidad
-            target.speed = Math.floor(target.speed * (1 - speedPenalty));
-            addLog(`${emoji} ${targetName} queda ${mega ? 'Mega Congelado' : 'Congelado'} (vel -${speedPenalty*100}%) por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
+            // Guardar velocidad base antes de penalizar
+            const _freezeBaseSpeed = target.baseSpeed || target.speed;
+            target.baseSpeed = _freezeBaseSpeed;
+            const _freezeActualPenalty = Math.floor(_freezeBaseSpeed * speedPenalty);
+            applyDebuff(targetName, { name, type: 'debuff', duration, emoji, speedPenalty, speedPenaltyFlat: _freezeActualPenalty });
+            // Reducir velocidad (se restaurará cuando expire el debuff)
+            target.speed = Math.max(1, target.speed - _freezeActualPenalty);
+            addLog(emoji + ' ' + targetName + ' queda ' + (mega ? 'Mega Congelado' : 'Congelado') + ' (vel -' + _freezeActualPenalty + ') por ' + duration + ' turno' + (duration > 1 ? 's' : ''), 'damage');
         }
 
         function applyPoison(targetName, duration) {
