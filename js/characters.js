@@ -159,7 +159,7 @@
                 portrait: 'https://i.ibb.co/fzSb6PzW/Whats-App-Image-2026-03-31-at-11-17-10-AM.jpg',
                 transformPortrait: 'https://i.ibb.co/nsjHhRk9/Whats-App-Image-2026-03-31-at-11-17-12-AM-1.jpg',
                 portraitSS1:   'https://i.ibb.co/F4W59Rsr/Whats-App-Image-2026-03-31-at-11-17-12-AM.jpg',
-                portraitSS3:   'https://i.ibb.co/n846bNWN/Whats-App-Image-2026-03-31-at-11-17-12-AM-2.jpg',
+                portraitSS3:   'https://i.ibb.co/tPFjc1L1/Captura-de-pantalla-2026-03-31-232531.png',
                 portraitSSBlue:'https://i.ibb.co/Y7VFy7tG/Captura-de-pantalla-2026-03-31-111625.png',
                 portraitUI:    'https://i.ibb.co/nsjHhRk9/Whats-App-Image-2026-03-31-at-11-17-12-AM-1.jpg',
                 passive: { name: 'Superacion de Limites', description: 'Cada vez que Goku se transforma, recupera 5 HP. Transformado en SS1: cada golpe genera 3 cargas. SS3: todos los ataques causan daño crítico. SS Blue: contraataca con 3 básicos al recibir un golpe. Ultra Instinto: Esquiva Área + Esquivar + +5 daño en todos los ataques.' },
@@ -226,7 +226,7 @@
             'Goku Black': {
                 hp: 20, maxHp: 20, speed: 95, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/SsGwxyGp/Captura_de_pantalla_2026_02_22_014009.png',
+                portrait: 'https://i.ibb.co/Sw26gc9V/Whats-App-Image-2026-03-31-at-1-24-06-PM.jpg',
                 passive: { name: 'Cuerpo Divino', description: 'Efecto pasivo Aura Oscura. Cada vez que Goku Black recibe daño genera 2 puntos de carga.' },
                 abilities: [
                     { name: 'Espada de Ki', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'espada_ki', description: 'Causa 2 daño. 50% de probabilidad de robar 1 carga del objetivo.' },
