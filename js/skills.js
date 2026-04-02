@@ -93,7 +93,7 @@
                 const attacker = gameState.characters[gameState.selectedCharacter];
                 const charName = gameState.selectedCharacter;
                 const ability = gameState.selectedAbility;
-                const adjustedCost = gameState.adjustedCost || ability.cost;
+                const adjustedCost = (gameState.adjustedCost !== undefined && gameState.adjustedCost !== null) ? gameState.adjustedCost : ability.cost;
                 
                 // ── SILENCIAR: bloquea la categoría silenciada ──────────────
                 if (ability && attacker) {
@@ -3877,7 +3877,7 @@
                     // Setear contexto temporal para ejecutar el over
                     gameState.selectedCharacter = _aln;
                     gameState.selectedAbility = _overAb;
-                    gameState.adjustedCost = 0; // sin costo
+                    gameState.adjustedCost = 0; // sin costo — no usar || en la lectura
                     // Determinar target: para AOE null, para ST enemigo aleatorio, para self el aliado
                     const _rjAlive = Object.keys(gameState.characters).filter(function(n){
                         const c = gameState.characters[n]; return c && c.team === _rjEnemyTeam && !c.isDead && c.hp > 0;
@@ -3913,6 +3913,13 @@
                 gameState.selectedCharacter = _rjOrigChar;
                 gameState.selectedAbility = _rjOrigAbility;
                 gameState.adjustedCost = _rjOrigCost;
+                // Protección: asegurar que ningún aliado tenga cargas negativas
+                for (const _safen in gameState.characters) {
+                    const _safec = gameState.characters[_safen];
+                    if (_safec && _safec.team === _rjAllyTeam) {
+                        _safec.charges = Math.max(0, Math.min(20, _safec.charges || 0));
+                    }
+                }
 
             } else if (ability.effect === 'vals_tanjiro') {
                 // TANJIRO — Básico: daño + 50% de generar 1 carga al equipo aliado (Olor de la Brecha)
@@ -6010,9 +6017,15 @@
             entry.textContent = message;
             logContent.insertBefore(entry, logContent.firstChild);
             
-            // Mantener solo los últimos 15 mensajes
-            while (logContent.children.length > 15) {
+            // Mantener hasta 200 mensajes (scroll permite ver todos)
+            while (logContent.children.length > 200) {
                 logContent.removeChild(logContent.lastChild);
+            }
+            // Asegurar scroll habilitado en el contenedor
+            if (logContent.style.overflowY !== 'auto' && logContent.style.overflowY !== 'scroll') {
+                logContent.style.overflowY = 'auto';
+                logContent.style.maxHeight = logContent.style.maxHeight || '420px';
+                logContent.style.scrollbarWidth = 'thin';
             }
         }
 
