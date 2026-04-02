@@ -1599,7 +1599,20 @@
                     var players = snap2.val() || {};
                     totalPlayers = Object.keys(players).filter(function(k) { return !players[k].isFake; }).length;
 
-                    var entries = Object.entries(chars).map(function(e) {
+                    // Normalizar nombres: fusionar 'X v2' con 'X'
+                    var normalizedChars = {};
+                    Object.entries(chars).forEach(function(e) {
+                        var rawName = e[0];
+                        // Quitar sufijo ' v2', ' v3', etc.
+                        var baseName = rawName.replace(/\s+v\d+$/i, '').trim();
+                        if (!normalizedChars[baseName]) {
+                            normalizedChars[baseName] = { used: 0, wins: 0 };
+                        }
+                        normalizedChars[baseName].used += (e[1].used || 0);
+                        normalizedChars[baseName].wins += (e[1].wins || 0);
+                    });
+
+                    var entries = Object.entries(normalizedChars).map(function(e) {
                         var c = e[1];
                         var used = c.used || 0;
                         var wins = c.wins || 0;
