@@ -16,7 +16,13 @@
             // Clear all summons completely
             // Clear battle log
             const logEl = document.getElementById('battleLogContent');
-            if (logEl) logEl.innerHTML = '';
+            if (logEl) {
+                logEl.innerHTML = '';
+                // Scroll habilitado desde inicio
+                logEl.style.overflowY = 'auto';
+                logEl.style.maxHeight = '420px';
+                logEl.style.scrollbarWidth = 'thin';
+            }
             gameState.battleLog = [];
             for (let k in gameState.summons) { delete gameState.summons[k]; }
             // Usar personajes seleccionados o todos por defecto
