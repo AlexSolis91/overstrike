@@ -3864,25 +3864,55 @@
                 const _rjAllyTeam = _rjAtk.team;
                 const _rjEnemyTeam = _rjAllyTeam === 'team1' ? 'team2' : 'team1';
                 addLog('👑 El Rey del Norte: ¡todos los aliados ejecutan su Over!', 'buff');
+                // Guardar estado actual para restaurar después
+                const _rjOrigChar = gameState.selectedCharacter;
+                const _rjOrigAbility = gameState.selectedAbility;
+                const _rjOrigCost = gameState.adjustedCost;
                 for (const _aln in gameState.characters) {
                     const _alc = gameState.characters[_aln];
-                    if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== _rjAllyTeam || _aln === gameState.selectedCharacter) continue;
-                    // Encontrar habilidad Over
+                    if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== _rjAllyTeam || _aln === _rjOrigChar) continue;
                     const _overAb = (_alc.abilities||[]).find(function(ab){ return ab && ab.type === 'over'; });
                     if (!_overAb) continue;
-                    // Para over con daño: aplicar a enemigo aleatorio
-                    const _aliveEnemies = Object.keys(gameState.characters).filter(function(n){
+                    addLog('👑 ' + _aln + ' ejecuta ' + _overAb.name, 'buff');
+                    // Setear contexto temporal para ejecutar el over
+                    gameState.selectedCharacter = _aln;
+                    gameState.selectedAbility = _overAb;
+                    gameState.adjustedCost = 0; // sin costo
+                    // Determinar target: para AOE null, para ST enemigo aleatorio, para self el aliado
+                    const _rjAlive = Object.keys(gameState.characters).filter(function(n){
                         const c = gameState.characters[n]; return c && c.team === _rjEnemyTeam && !c.isDead && c.hp > 0;
                     });
-                    if (_overAb.damage > 0 && _aliveEnemies.length > 0) {
-                        const _randEnemy = _aliveEnemies[Math.floor(Math.random() * _aliveEnemies.length)];
-                        applyDamageWithShield(_randEnemy, _overAb.damage, _aln);
-                        addLog('👑 ' + _aln + ' (' + _overAb.name + '): ' + _overAb.damage + ' daño a ' + _randEnemy, 'damage');
-                    } else if (_overAb.damage === 0) {
-                        // Over sin daño (buff/heal/etc): aplicar sobre sí mismo
-                        addLog('👑 ' + _aln + ' activa ' + _overAb.name + ' (Over)', 'buff');
+                    let _rjTarget = null;
+                    if (_overAb.target === 'single' && _rjAlive.length > 0) {
+                        _rjTarget = _rjAlive[Math.floor(Math.random() * _rjAlive.length)];
+                    } else if (_overAb.target === 'self') {
+                        _rjTarget = _aln;
+                    } else if (_overAb.target === 'aoe') {
+                        _rjTarget = _rjAlive.length > 0 ? _rjAlive[0] : null;
                     }
+                    try {
+                        // Parchear endTurn temporalmente para que no interrumpa el loop
+                        var _rjEndTurnOrig = endTurn;
+                        var _rjShowContOrig = typeof showContinueButton !== 'undefined' ? showContinueButton : null;
+                        endTurn = function() {}; // no-op durante el loop
+                        if (_rjShowContOrig) showContinueButton = function() {};
+                        // Ejecutar el over del aliado
+                        var _execTarget = _rjTarget || _aln;
+                        executeAbility(_execTarget);
+                        // Restaurar funciones
+                        endTurn = _rjEndTurnOrig;
+                        if (_rjShowContOrig) showContinueButton = _rjShowContOrig;
+                    } catch(e) {
+                        addLog('👑 Error ejecutando Over de ' + _aln + ': ' + e.message, 'info');
+                        // Asegurar restauración aunque haya error
+                        if (typeof _rjEndTurnOrig !== 'undefined') endTurn = _rjEndTurnOrig;
+                    }
+                    // Pequeña pausa entre ejecuciones para evitar conflictos
                 }
+                // Restaurar estado original
+                gameState.selectedCharacter = _rjOrigChar;
+                gameState.selectedAbility = _rjOrigAbility;
+                gameState.adjustedCost = _rjOrigCost;
 
             } else if (ability.effect === 'vals_tanjiro') {
                 // TANJIRO — Básico: daño + 50% de generar 1 carga al equipo aliado (Olor de la Brecha)
