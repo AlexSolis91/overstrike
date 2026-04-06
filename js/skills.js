@@ -1249,36 +1249,28 @@
                 finalChargeGain += (attacker.animacionBonusChargeGain || 0);
                 addLog(`⚔️ Animación: ${finalDamage} daño a ${targetName}`, 'damage');
 
-            } else if (ability.effect === 'sentencia_del_sol') {
-                // OZYMANDIAS - Sentencia del Sol
-                const tgtSen = gameState.characters[targetName];
-                let dmgSen = finalDamage;
-                if (tgtSen && tgtSen.statusEffects && tgtSen.statusEffects.some(e => e && e.name === 'Quemadura Solar')) {
-                    const bonusSen = Math.floor(Math.random() * 3) + 1;
-                    dmgSen += bonusSen;
-                    addLog(`☀️ Sentencia del Sol: +${bonusSen} daño adicional (Quemadura Solar activa)`, 'damage');
-                }
-                applyDamageWithShield(targetName, dmgSen, gameState.selectedCharacter);
-                addLog(`⚔️ Sentencia del Sol: ${dmgSen} daño a ${targetName}`, 'damage');
+            // sentencia_del_sol viejo eliminado — usar handler AOE más abajo
 
             } else if (ability.effect === 'summon_sphinx') {
-                // OZYMANDIAS — invoca Abu el-Hol Sphinx
-                const existingSphinx = Object.values(gameState.summons).find(s => s && (s.name === 'Abu el-Hol Sphinx' || s.name === 'Sphinx Wehem-Mesut') && s.summoner === gameState.selectedCharacter);
+                // OZYMANDIAS — invoca Abu el-Hol Sphinx (bloqueado si ya está activa)
+                const existingSphinx = Object.values(gameState.summons).find(function(s){ return s && (s.name === 'Abu el-Hol Sphinx' || s.name === 'Sphinx Wehem-Mesut') && s.hp > 0; });
                 if (existingSphinx) {
-                    addLog('❌ Abu el-Hol Sphinx ya está invocada', 'info');
+                    addLog('❌ Abu el-Hol Sphinx ya está activa en el campo — no puede invocarse de nuevo', 'info');
+                    endTurn(); return;
                 } else {
                     summonShadow('Abu el-Hol Sphinx', gameState.selectedCharacter);
                     addLog('🦁 Ozymandias invoca a Abu el-Hol Sphinx', 'buff');
                 }
 
             } else if (ability.effect === 'summon_ramesseum') {
-                // OZYMANDIAS - Ramesseum Tentyris
-                const existingRam = Object.values(gameState.summons).find(s => s && s.name === 'Ramesseum Tentyris' && s.summoner === gameState.selectedCharacter);
+                // OZYMANDIAS — Ramesseum Tentyris (bloqueado si ya está activa)
+                const existingRam = Object.values(gameState.summons).find(function(s){ return s && s.name === 'Ramesseum Tentyris' && s.hp > 0; });
                 if (existingRam) {
-                    addLog(`❌ Ramesseum Tentyris ya está invocado`, 'info');
+                    addLog('❌ Ramesseum Tentyris ya está activa en el campo — no puede invocarse de nuevo', 'info');
+                    endTurn(); return;
                 } else {
                     summonShadow('Ramesseum Tentyris', gameState.selectedCharacter);
-                    addLog(`🏛️ Ozymandias invoca a Ramesseum Tentyris`, 'buff');
+                    addLog('🏛️ Ozymandias invoca a Ramesseum Tentyris', 'buff');
                 }
 
             } else if (ability.effect === 'espada_merodach') {
@@ -3189,10 +3181,10 @@
                 // Buff Contraataque al atacante
                 attacker.statusEffects = (attacker.statusEffects || []).filter(e => e && e.name !== 'Contraataque');
                 attacker.statusEffects.push({ name: 'Contraataque', type: 'buff', duration: 2, emoji: '⚔️' });
-                // Buff Concentración al atacante
-                attacker.statusEffects = (attacker.statusEffects || []).filter(e => e && e.name !== 'Concentración' && e.name !== 'Concentracion');
-                attacker.statusEffects.push({ name: 'Concentración', type: 'buff', duration: 2, emoji: '🎯' });
-                addLog('👁️ Mangekyō Sharingan: ' + finalDamage + ' daño a ' + targetName + ' + Contraataque + Concentración a ' + charName, 'damage');
+                // Buff Provocación 2T al atacante (reemplaza Concentración)
+                attacker.statusEffects = (attacker.statusEffects || []).filter(e => e && normAccent(e.name||'') !== 'provocacion');
+                attacker.statusEffects.push({ name: 'Provocacion', type: 'buff', duration: 2, emoji: '🛡️' });
+                addLog('👁️ Mangekyō Sharingan: ' + finalDamage + ' daño a ' + targetName + ' + Contraataque + Provocación 2T a ' + charName, 'damage');
 
             
             } else if (ability.effect === 'rikudo_transformation') {
@@ -3956,27 +3948,20 @@
                 addLog("🐉 Dragon's Fear: 2 AOE completado", 'damage');
 
             } else if (ability.effect === 'tormenta_fuego_antares') {
+                // ANTARES — Tormenta de Fuego (ST): 3 daño + Quemadura 2HP a todos enemigos; si Buff → 5HP
                 const _tfAnt = gameState.characters[gameState.selectedCharacter];
                 const _tfETeam = _tfAnt ? (_tfAnt.team === 'team1' ? 'team2' : 'team1') : 'team2';
-                if (checkAndRedirectAOEMegaProv(_tfETeam, 0, gameState.selectedCharacter)) {
-                    addLog('🔥 Tormenta de Fuego redirigida', 'damage');
-                } else {
-                    for (const _n in gameState.characters) {
-                        const _c = gameState.characters[_n];
-                        if (!_c || _c.team !== _tfETeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) continue;
-                        const _hasBuff = (_c.statusEffects||[]).some(function(e){ return e && e.type === 'buff'; });
-                        if (_hasBuff) {
-                            applyFlatBurn(_n, 2, 2);
-                            const _stolen = Math.min(5, _c.charges || 0);
-                            _c.charges = Math.max(0, (_c.charges||0) - _stolen);
-                            if (_tfAnt) _tfAnt.charges = Math.min(20, (_tfAnt.charges||0) + _stolen);
-                            addLog('🔥 Tormenta de Fuego: Quemadura 2HP + ' + _stolen + ' cargas robadas de ' + _n, 'debuff');
-                        } else if (Math.random() < 0.50) {
-                            applyFlatBurn(_n, 2, 2);
-                            addLog('🔥 Tormenta de Fuego: Quemadura 2HP a ' + _n, 'debuff');
-                        }
-                    }
+                // Daño ST al objetivo seleccionado
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('🔥 Tormenta de Fuego: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                // Quemadura a TODOS los enemigos vivos
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _tfETeam || _c.isDead || _c.hp <= 0) continue;
+                    const _hasBuff = (_c.statusEffects||[]).some(function(e){ return e && e.type === 'buff'; });
+                    const _burnAmt = _hasBuff ? 5 : 2;
+                    applyFlatBurn(_n, _burnAmt, 2);
+                    addLog('🔥 Tormenta de Fuego: Quemadura ' + _burnAmt + 'HP a ' + _n + (_hasBuff ? ' (Buff activo → 5HP)' : ''), 'debuff');
                 }
                 addLog('🔥 Tormenta de Fuego completada', 'damage');
 
@@ -4016,8 +4001,17 @@
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _adETeam || _c.isDead || _c.hp <= 0) continue;
-                        // IGNORA Esquiva Area — no checkear
+                        // IGNORA Esquiva Area (buff Y pasiva) — aplicar sin checkear inmunidad
+                        // Desactivar temporalmente esquivaAreaPassive para este ataque
+                        const _savedEAP = _c.esquivaAreaPassive;
+                        const _savedEABuff = (_c.statusEffects||[]).find(function(e){ return e && normAccent(e.name||'') === 'esquiva area'; });
+                        const _savedEADur = _savedEABuff ? _savedEABuff.duration : null;
+                        _c.esquivaAreaPassive = false;
+                        if (_savedEABuff) _savedEABuff.duration = 0; // ocultar temporalmente
                         applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        // Restaurar
+                        _c.esquivaAreaPassive = _savedEAP;
+                        if (_savedEABuff && _savedEADur !== null) _savedEABuff.duration = _savedEADur;
                         if (_adTrans) { applyFlatBurn(_n, 5, 2); addLog('🐉 Aliento: Quemadura 5HP a ' + _n, 'debuff'); }
                     }
                     for (const _sid in gameState.summons) {
@@ -4037,19 +4031,27 @@
                 addLog('⚡ Corte Kusanagi: ' + finalDamage + ' daño + Agotamiento 3T a ' + targetName, 'damage');
 
             } else if (ability.effect === 'chidori_sasuke') {
+                // SASUKE — Chidori: 4 daño + roba hasta 4 cargas; si queda en 0 → crítico
                 const _chTgt = gameState.characters[targetName];
+                const _chAtk = gameState.characters[gameState.selectedCharacter];
                 let _chDmg = finalDamage;
-                if (_chTgt && (_chTgt.charges || 0) === 0) { _chDmg *= 2; addLog('⚡ Chidori: ¡Crítico! Sin cargas en ' + targetName, 'damage'); }
-                applyDamageWithShield(targetName, _chDmg, gameState.selectedCharacter);
+                // Primero robar las cargas
+                let _chGotCrit = false;
                 if (_chTgt) {
                     const _stolen = Math.min(4, _chTgt.charges || 0);
                     if (_stolen > 0) {
                         _chTgt.charges = Math.max(0, (_chTgt.charges||0) - _stolen);
-                        const _sAtk = gameState.characters[gameState.selectedCharacter];
-                        if (_sAtk) _sAtk.charges = Math.min(20, (_sAtk.charges||0) + _stolen);
+                        if (_chAtk) _chAtk.charges = Math.min(20, (_chAtk.charges||0) + _stolen);
                         addLog('⚡ Chidori: roba ' + _stolen + ' cargas de ' + targetName, 'buff');
                     }
+                    // Si tras el robo el objetivo tiene 0 cargas → crítico
+                    if ((_chTgt.charges || 0) === 0) {
+                        _chDmg *= 2;
+                        _chGotCrit = true;
+                        addLog('⚡ Chidori: ¡Crítico! ' + targetName + ' quedó en 0 cargas', 'damage');
+                    }
                 }
+                applyDamageWithShield(targetName, _chDmg, gameState.selectedCharacter);
                 addLog('⚡ Chidori: ' + _chDmg + ' daño a ' + targetName, 'damage');
 
             } else if (ability.effect === 'kirin_sasuke') {
@@ -4771,15 +4773,18 @@
                 }
 
             } else if (ability.effect === 'sentencia_del_sol') {
+                // OZYMANDIAS — Sentencia del Sol: 2 AOE + 2 daño adicional POR CADA enemigo con QS
                 const _ssAtk = gameState.characters[charName];
                 const _ssETeam = _ssAtk ? (_ssAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                // Contar enemigos con QS para calcular bonus
                 let _ssQsCount = 0;
                 for (const _n in gameState.characters) {
                     const _c = gameState.characters[_n];
                     if (!_c || _c.team !== _ssETeam || _c.isDead || _c.hp <= 0) continue;
-                    if ((_c.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'quemadura solar')) _ssQsCount++;
+                    if ((_c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'quemadura solar'; })) _ssQsCount++;
                 }
-                const _ssTotalDmg = finalDamage + (_ssQsCount * 2);
+                const _ssBonus = _ssQsCount * 2;
+                const _ssTotalDmg = finalDamage + _ssBonus;
                 if (checkAndRedirectAOEMegaProv(_ssETeam, _ssTotalDmg, charName)) {
                     addLog('☀️ Sentencia del Sol: AOE redirigido por Mega Provocación', 'damage');
                 } else {
@@ -4788,10 +4793,11 @@
                         if (!_c || _c.team !== _ssETeam || _c.isDead || _c.hp <= 0) continue;
                         if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) continue;
                         applyDamageWithShield(_n, _ssTotalDmg, charName);
+                        addLog('☀️ Sentencia del Sol: ' + _ssTotalDmg + ' daño a ' + _n + ' (' + finalDamage + '+' + _ssBonus + ')', 'damage');
                     }
                     for (let _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _ssETeam && _s.hp > 0) applySummonDamage(_sid, _ssTotalDmg, charName); }
                 }
-                addLog('☀️ Sentencia del Sol: ' + _ssTotalDmg + ' AOE (' + finalDamage + ' base + ' + (_ssQsCount * 2) + ' por ' + _ssQsCount + ' objetivos con QS)', 'damage');
+                if (_ssQsCount > 0) addLog('☀️ Sentencia del Sol: +' + _ssBonus + ' bonus (' + _ssQsCount + ' enemigos con QS)', 'damage');
 
             // ══════════════════════════════════════════════════════
             // GOKU BLACK — handlers actualizados
