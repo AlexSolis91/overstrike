@@ -160,6 +160,13 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 }
             }
             target.statusEffects.push(effectObj);
+            // MONARCA DE LA DESTRUCCION: 3 daño si se aplica Buff a un enemigo
+            if (gameState.selectedCharacter && gameState.selectedCharacter !== targetName) {
+                const _buffAtk = gameState.characters[gameState.selectedCharacter];
+                if (_buffAtk && target && _buffAtk.team !== target.team) {
+                    if (typeof triggerMonarcaDestruccion === 'function') triggerMonarcaDestruccion(targetName);
+                }
+            }
         }
 
 
