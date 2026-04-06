@@ -670,7 +670,7 @@
                 antaresTransformed: false, antaresTransformTurns: 0,
                 portrait: 'https://i.ibb.co/Fprz6Sh/Captura-de-pantalla-2026-04-06-101230.png',
                 transformPortrait: 'https://i.ibb.co/t1CXkkY/Captura-de-pantalla-2026-04-06-101549.png',
-                passive: { name: 'Monarca de la Destruccion', description: 'Por cada Buff aplicado sobre un enemigo, aplica 3 daño directo sobre ese enemigo. Inmune a Quemaduras y Quemadura Solar. Cada vez que un enemigo recibe daño directo (por efectos, quemaduras, veneno, etc.), Antares genera 1 carga. El daño por golpe no cuenta como daño directo.' },
+                passive: { name: 'Monarca de la Destruccion', description: 'Por cada Buff aplicado sobre un enemigo, aplica 3 daño directo sobre ese enemigo (y Antares genera 2 cargas por ese daño). Inmune a Quemaduras y Quemadura Solar. Cada vez que un enemigo recibe daño directo (quemaduras, veneno, efectos), Antares genera 2 cargas. El daño por golpe no cuenta.' },
                 abilities: [
                     { name: "Dragon's Fear", type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'aoe', effect: 'dragons_fear_antares', description: "Causa 2 AOE. 50% de aplicar Miedo 2T a los objetivos. 30% de daño triple sobre enemigos con Miedo o Quemaduras." },
                     { name: 'Tormenta de Fuego', type: 'special', cost: 5, chargeGain: 0, damage: 3, target: 'single', effect: 'tormenta_fuego_antares', description: 'Causa 3 daño al objetivo. Aplica Quemadura 2HP a todos los enemigos. Si el enemigo tiene Buff activo, la Quemadura es de 5HP en lugar de 2HP.' },
