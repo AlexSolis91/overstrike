@@ -18,7 +18,6 @@
             const logEl = document.getElementById('battleLogContent');
             if (logEl) {
                 logEl.innerHTML = '';
-                // Scroll habilitado desde inicio
                 logEl.style.overflowY = 'auto';
                 logEl.style.maxHeight = '420px';
                 logEl.style.scrollbarWidth = 'thin';
@@ -60,12 +59,20 @@
                     ch.statusEffects = ch.statusEffects || [];
                     ch.statusEffects.push({ name: 'Esquiva Area', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '⚡' });
                 }
+                // Flash: Esquiva Área permanente (Aceleración Constante)
+                if (baseName === 'Flash') {
+                    ch.statusEffects = ch.statusEffects || [];
+                    if (!ch.statusEffects.some(function(e){ return e && (e.name||'').toLowerCase().replace(/\s/g,'') === 'esquivaarea'; })) {
+                        ch.statusEffects.push({ name: 'Esquiva Area', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '⚡' });
+                    }
+                    ch.esquivaAreaPassive = true;
+                }
                 // Darth Vader: inmune a Miedo y Confusión + Aura Oscura permanente
                 if (baseName === 'Darth Vader') {
                     ch.immuneToMiedo = true;
                     ch.immuneToConfusion = true;
                     ch.statusEffects = ch.statusEffects || [];
-                    if (!ch.statusEffects.some(function(e){ return e && normAccent(e.name||'') === 'aura oscura'; })) {
+                    if (!ch.statusEffects.some(function(e){ return e && (e.name||'').toLowerCase().replace(/\s/g,'') === 'auraoscura'; })) {
                         ch.statusEffects.push({ name: 'Aura oscura', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🌑' });
                     }
                 }
@@ -80,31 +87,6 @@
                     ch.immuneToMiedo = true;
                     ch.immuneToPosesion = true;
                     ch.immuneToCongelacion = true;
-                }
-                // Rey Brujo de Angmar: Mega Provocacion permanente + inmunidades
-                if (passiveName === 'Señor de los Nazgul') {
-                    ch.statusEffects = ch.statusEffects || [];
-                    ch.statusEffects.push({ name: 'Mega Provocacion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '⚡' });
-                    ch.immuneToMiedo = true;
-                    ch.immuneToConfusion = true;
-                }
-                // Flash: Esquiva Area permanente
-                if (passiveName === 'Aceleración Constante') {
-                    ch.statusEffects = ch.statusEffects || [];
-                    if (!ch.statusEffects.some(e => e && normAccent(e.name||'').replace(/\s/g,'') === 'esquivaarea')) {
-                        ch.statusEffects.push({ name: 'Esquiva Area', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '⚡' });
-                    }
-                    ch.esquivaAreaPassive = true;
-                }
-                // Ivar the Boneless: Esquiva Area permanente + inmunidades
-                if (passiveName === 'Mente Brillante') {
-                    ch.statusEffects = ch.statusEffects || [];
-                    if (!ch.statusEffects.some(e => e && (e.name||'').toLowerCase().replace(/[^a-z]/g,'') === 'esquivaarea')) {
-                        ch.statusEffects.push({ name: 'Esquiva Area', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '💨' });
-                    }
-                    ch.immuneToMiedo = true;
-                    ch.immuneToConfusion = true;
-                    ch.immuneToPosesion = true;
                 }
             }
 
@@ -147,7 +129,7 @@
             if (!statusEffects || statusEffects.length === 0) return [];
             const display = [];
             let burnPct = 0, burnFlat = 0, burnDur = 0, burnAdded = false;
-            let solarPct = 0, solarDur = 0, solarAdded = false;
+            let solarPct = 0, solarAdded = false;
             let bleedStack = 0, bleedAdded = false;
             let poisonMaxDur = 0, poisonStacks = 0, poisonAdded = false;
 
@@ -162,8 +144,7 @@
                     if (e.duration !== undefined) burnDur = Math.max(burnDur, e.duration);
                     burnAdded = true;
                 } else if (nn === 'quemadura solar') {
-                    solarPct += (e.percent || 0);
-                    solarDur = Math.max(solarDur, e.duration || 0);
+                    solarPct += (e.percent || 5);
                     solarAdded = true;
                 } else if (nn === 'sangrado') {
                     bleedStack += 1;
@@ -173,24 +154,8 @@
                     poisonMaxDur = Math.max(poisonMaxDur, e.duration || 0);
                     poisonAdded = true;
                 } else {
-                    // Normal single display — con manejo especial para Sigilo y Regeneracion
-                    let _sub = '';
-                    let _label = e.name;
-                    const _nn = normAccent ? normAccent(e.name||'') : (e.name||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-                    if (_nn === 'sigilo') {
-                        // Sigilo: mostrar rondas reales, no 999
-                        _sub = (e.sigiloRoundsLeft !== undefined ? e.sigiloRoundsLeft : (e.duration !== 999 ? e.duration : '?')) + 'R';
-                    } else if (_nn === 'regeneracion') {
-                        // Regeneracion: mostrar % y turnos
-                        const _pct = e.percent || (e.amount ? Math.round(e.amount) : null);
-                        _label = 'Regeneracion' + (_pct ? ' ' + _pct + '%' : '');
-                        _sub = (e.duration !== undefined && e.duration !== 999) ? e.duration + 'T' : '';
-                    } else if (e.permanent || e.duration === 999) {
-                        _sub = '';
-                    } else {
-                        _sub = e.duration !== undefined ? e.duration + 'T' : '';
-                    }
-                    display.push({ emoji: e.emoji || '✨', label: _label, sub: _sub, type: e.type });
+                    // Normal single display
+                    display.push({ emoji: e.emoji || '✨', label: e.name, sub: e.duration !== undefined ? e.duration : '', type: e.type });
                 }
             });
 
@@ -199,10 +164,7 @@
                 else if (burnPct > 0) display.push({ emoji: '🔥', label: 'Quemadura ' + burnPct + '%', sub: '', type: 'debuff' });
                 else display.push({ emoji: '🔥', label: 'Quemadura', sub: '', type: 'debuff' });
             }
-            if (solarAdded) {
-                const _qsLabel = solarDur > 0 && solarDur < 990 ? 'Quemadura Solar ' + solarDur + 'T' : 'Quemadura Solar';
-                display.push({ emoji: '☀️', label: _qsLabel, sub: '', type: 'debuff' });
-            }
+            if (solarAdded)  display.push({ emoji: '☀️', label: 'QS ' + solarPct + '%',         sub: '', type: 'debuff' });
             if (bleedAdded)  display.push({ emoji: '🩸', label: 'Sangrado ' + bleedStack,        sub: '', type: 'debuff' });
             if (poisonAdded) display.push({ emoji: '☠️', label: 'Veneno',                        sub: poisonMaxDur + 'T', type: 'debuff' });
 
@@ -228,34 +190,31 @@
                 const container = char.team === 'team1' ? team1Container : team2Container;
                 
                 const isDefeated = char.hp <= 0;
-                const isTransformed = (char.rikudoMode && name === 'Madara Uchiha') ||
-                                      (char.fenixArmorActive && name === 'Ikki de Fenix') ||
-                                      (char.kuramaMode && name === 'Minato Namikaze') ||
-                                      (name === 'Alexstrasza' && char.dragonFormActive) ||
-                                      (name === 'Goku' && (char.ultraInstinto || char.gokuForm)) ||
-                                      (name === 'Anakin Skywalker' && char.darkSideAwakened) ||
-                                      (name === 'Muzan Kibutsuji' && char.muzanTransformed) ||
+                const isTransformed = (char.rikudoMode && (name === 'Madara Uchiha' || name === 'Madara Uchiha v2')) ||
+                                      (char.fenixArmorActive && (name === 'Ikki de Fenix' || name === 'Ikki de Fenix v2')) ||
+                                      (char.kuramaMode && (name === 'Minato Namikaze' || name === 'Minato Namikaze v2')) ||
+                                      ((name === 'Alexstrasza' || name === 'Alexstrasza v2') && char.dragonFormActive) ||
+                                      ((name === 'Goku' || name === 'Goku v2') && (char.ultraInstinto || char.gokuForm)) ||
+                                      ((name === 'Naruto' || name === 'Naruto v2') && char.narutoForm) ||
+                                      ((name === 'Anakin Skywalker' || name === 'Anakin Skywalker v2') && char.darkSideAwakened) ||
+                                      ((name === 'Muzan Kibutsuji' || name === 'Muzan Kibutsuji v2') && char.muzanTransformed) ||
                                       (name === 'Garou' && char.garouSaitamaMode) ||
-                                      (name === 'Superman' && char.supermanPrimeMode) ||
-                                      (name === 'Varian Wrynn' && char.varianTransformed);
-                // Seleccionar portrait correcto según forma de Goku
-                let _gokuPortrait = char.portrait;
-                if (name === 'Goku' && char.gokuForm) {
-                    if (char.gokuForm === 'ss1' && char.portraitSS1) _gokuPortrait = char.portraitSS1;
-                    else if (char.gokuForm === 'ss3' && char.portraitSS3) _gokuPortrait = char.portraitSS3;
-                    else if (char.gokuForm === 'ssblue' && char.portraitSSBlue) _gokuPortrait = char.portraitSSBlue;
-                    else if (char.gokuForm === 'ui' && char.portraitUI) _gokuPortrait = char.portraitUI;
+                                      ((name === 'Superman' || name === 'Superman v2') && char.supermanPrimeMode) ||
+                                      ((name === 'Varian Wrynn' || name === 'Varian Wrynn v2') && char.varianTransformed);
+
+                // Portrait dinámico por forma (Goku y Naruto)
+                let _dynPortrait = char.portrait || char.transformPortrait || char.transformationPortrait || '';
+                if ((name === 'Goku' || name === 'Goku v2') && char.gokuForm) {
+                    if (char.gokuForm === 'ss1' && char.portraitSS1) _dynPortrait = char.portraitSS1;
+                    else if (char.gokuForm === 'ss3' && char.portraitSS3) _dynPortrait = char.portraitSS3;
+                    else if (char.gokuForm === 'ssblue' && char.portraitSSBlue) _dynPortrait = char.portraitSSBlue;
+                    else if (char.gokuForm === 'ui' && char.portraitUI) _dynPortrait = char.portraitUI;
+                } else if ((name === 'Naruto' || name === 'Naruto v2') && char.narutoForm) {
+                    if (char.narutoForm === 'sabio' && char.portraitSabio) _dynPortrait = char.portraitSabio;
+                    else if (char.narutoForm === 'kyubi' && char.portraitKyubi) _dynPortrait = char.portraitKyubi;
+                    else if (char.narutoForm === 'baryon' && char.portraitBaryon) _dynPortrait = char.portraitBaryon;
                 }
-                // Seleccionar portrait correcto según forma de Naruto
-                let _naruPortrait = char.portrait;
-                if (name === 'Naruto' && char.narutoForm) {
-                    if (char.narutoForm === 'sabio' && char.portraitSabio) _naruPortrait = char.portraitSabio;
-                    else if (char.narutoForm === 'kyubi' && char.portraitKyubi) _naruPortrait = char.portraitKyubi;
-                    else if (char.narutoForm === 'baryon' && char.portraitBaryon) _naruPortrait = char.portraitBaryon;
-                }
-                const activePortrait = (name === 'Goku' && char.gokuForm) ? _gokuPortrait :
-                                       (name === 'Naruto' && char.narutoForm) ? _naruPortrait :
-                                       (char.portrait || char.transformPortrait || char.transformationPortrait || '');
+                const activePortrait = _dynPortrait;
                 const portraitHTML = activePortrait
                     ? `<img class="character-portrait${isDefeated ? ' defeated-img' : ''}" src="${activePortrait}" alt="${name}" loading="eager" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="character-portrait-placeholder" style="display:none">⚔️</div>`
                     : `<div class="character-portrait-placeholder">⚔️</div>`;
