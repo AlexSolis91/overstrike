@@ -794,6 +794,24 @@
                 }
             }
 
+            // VENGANZA ETERNA (Sasuke): esquiva primer Special/OVER por ronda y contraataca con 5 daño
+            if (attackerName && attackerName !== targetName && !passiveExecuting) {
+                const _sasukeC = gameState.characters[targetName];
+                const _sasukeAtk = gameState.characters[attackerName];
+                if (_sasukeC && !_sasukeC.isDead && _sasukeC.hp > 0 &&
+                    _sasukeC.passive && _sasukeC.passive.name === 'Venganza Eterna' &&
+                    !_sasukeC.sasukeEvasionUsedThisRound && _sasukeAtk &&
+                    gameState.selectedAbility && (gameState.selectedAbility.type === 'special' || gameState.selectedAbility.type === 'over')) {
+                    _sasukeC.sasukeEvasionUsedThisRound = true;
+                    passiveExecuting = true;
+                    _sasukeAtk.hp = Math.max(0, (_sasukeAtk.hp||0) - 5);
+                    if (_sasukeAtk.hp <= 0) _sasukeAtk.isDead = true;
+                    passiveExecuting = false;
+                    addLog('⚡ Venganza Eterna: ' + targetName + ' esquiva el ' + gameState.selectedAbility.type + ' de ' + attackerName + ' y responde con 5 daño', 'buff');
+                    return 0;
+                }
+            }
+
             // PRESENCIA OSCURA (Darth Vader): 20% de esquivar ataques especiales/over
             if (attackerName !== null && !passiveExecuting && (targetName === 'Darth Vader' || targetName === 'Darth Vader v2')) {
                 const atkAbility = gameState.selectedAbility;
@@ -948,6 +966,19 @@
                     addLog(`💀 ${targetName} fue derrotado por ${attackerName}`, 'damage');
                 } else {
                     addLog(`💀 ${targetName} fue derrotado`, 'damage');
+                }
+                // VENGANZA ETERNA (Sasuke): +20 cargas + turno adicional cuando aliado cae
+                if (!passiveExecuting) {
+                    for (const _sn in gameState.characters) {
+                        const _sc = gameState.characters[_sn];
+                        if (!_sc || _sc.isDead || _sc.hp <= 0 || _sc.team !== target.team || _sn === targetName) continue;
+                        if (!_sc.passive || _sc.passive.name !== 'Venganza Eterna') continue;
+                        _sc.charges = Math.min(20, (_sc.charges||0) + 20);
+                        addLog('⚡ Venganza Eterna: ' + _sn + ' gana 20 cargas (' + targetName + ' cayó)', 'buff');
+                        if (!gameState._sasukeRevengeQueue) gameState._sasukeRevengeQueue = [];
+                        gameState._sasukeRevengeQueue.push(_sn);
+                        break;
+                    }
                 }
 
                 // PASIVA CORAZÓN ARDIENTE (Rengoku): al morir aturde a todos los enemigos
@@ -1128,6 +1159,20 @@
                 triggerOnHitPassives(targetName, attackerName, null);
                 // AURA DE HIELO (Lich King): congela al atacante
                 triggerLichKingAura(targetName, attackerName);
+                // MONARCA DE LA DESTRUCCION: +1 carga cuando enemigo recibe daño directo
+                if (!passiveExecuting) {
+                    const _mdTgt = gameState.characters[targetName];
+                    if (_mdTgt) {
+                        const _mdAntTeam = _mdTgt.team === 'team1' ? 'team2' : 'team1';
+                        for (const _mn in gameState.characters) {
+                            const _mc = gameState.characters[_mn];
+                            if (!_mc || _mc.isDead || _mc.hp <= 0 || _mc.team !== _mdAntTeam) continue;
+                            if (!_mc.passive || _mc.passive.name !== 'Monarca de la Destruccion') continue;
+                            _mc.charges = Math.min(20, (_mc.charges||0) + 1);
+                            break;
+                        }
+                    }
+                }
                 // CADENAS DE HIELO (Lich King): genera 1 carga cuando recibe daño con Provocación
                 if (targetName === 'Lich King' || targetName === 'Lich King v2') {
                     const lichChar = gameState.characters[targetName];
@@ -1257,6 +1302,22 @@
                 if (!_dvc.passive || _dvc.passive.name !== 'Presencia Oscura') continue;
                 _dvc.charges = Math.min(20, (_dvc.charges || 0) + 1);
                 addLog('🌑 Presencia Oscura: ' + _dvn + ' gana 1 carga (' + healedCharName + ' recuperó HP)', 'buff');
+                break;
+            }
+        }
+
+        // MONARCA DE LA DESTRUCCION: 3 daño cuando Buff se aplica a enemigo
+        function triggerMonarcaDestruccion(buffTargetName) {
+            const _btC = gameState.characters[buffTargetName];
+            if (!_btC || _btC.isDead || _btC.hp <= 0) return;
+            const _antTeam = _btC.team === 'team1' ? 'team2' : 'team1';
+            for (const _an in gameState.characters) {
+                const _ac = gameState.characters[_an];
+                if (!_ac || _ac.isDead || _ac.hp <= 0 || _ac.team !== _antTeam) continue;
+                if (!_ac.passive || _ac.passive.name !== 'Monarca de la Destruccion') continue;
+                _btC.hp = Math.max(0, (_btC.hp||0) - 3);
+                if (_btC.hp <= 0) _btC.isDead = true;
+                addLog('🔥 Monarca de la Destruccion: 3 daño a ' + buffTargetName + ' (Buff aplicado)', 'damage');
                 break;
             }
         }
