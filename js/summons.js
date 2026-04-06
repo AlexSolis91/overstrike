@@ -956,6 +956,22 @@
                 }
             }
             
+            // MONARCA DE LA DESTRUCCION: +2 cargas cuando enemigo recibe daño directo (por efectos)
+            if (!passiveExecuting && attackerName === null && remainingDamage > 0) {
+                const _mdTgtDir = gameState.characters[targetName];
+                if (_mdTgtDir) {
+                    const _mdAntTeam2 = _mdTgtDir.team === 'team1' ? 'team2' : 'team1';
+                    for (const _mn2 in gameState.characters) {
+                        const _mc2 = gameState.characters[_mn2];
+                        if (!_mc2 || _mc2.isDead || _mc2.hp <= 0 || _mc2.team !== _mdAntTeam2) continue;
+                        if (!_mc2.passive || _mc2.passive.name !== 'Monarca de la Destruccion') continue;
+                        _mc2.charges = Math.min(20, (_mc2.charges||0) + 2);
+                        addLog('🔥 Monarca de la Destruccion: ' + _mn2 + ' gana 2 cargas (daño directo a ' + targetName + ')', 'buff');
+                        break;
+                    }
+                }
+            }
+
             // Verificar si fue derrotado
             if (target.hp <= 0 && oldHp > 0) {
                 target.isDead = true;
@@ -1159,21 +1175,6 @@
                 triggerOnHitPassives(targetName, attackerName, null);
                 // AURA DE HIELO (Lich King): congela al atacante
                 triggerLichKingAura(targetName, attackerName);
-                // MONARCA DE LA DESTRUCCION: +1 carga SOLO con daño directo (no por golpe)
-                // Daño directo = causado por efectos, no por ataque (attackerName === null)
-                if (!passiveExecuting && attackerName === null) {
-                    const _mdTgt = gameState.characters[targetName];
-                    if (_mdTgt) {
-                        const _mdAntTeam = _mdTgt.team === 'team1' ? 'team2' : 'team1';
-                        for (const _mn in gameState.characters) {
-                            const _mc = gameState.characters[_mn];
-                            if (!_mc || _mc.isDead || _mc.hp <= 0 || _mc.team !== _mdAntTeam) continue;
-                            if (!_mc.passive || _mc.passive.name !== 'Monarca de la Destruccion') continue;
-                            _mc.charges = Math.min(20, (_mc.charges||0) + 1);
-                            break;
-                        }
-                    }
-                }
                 // CADENAS DE HIELO (Lich King): genera 1 carga cuando recibe daño con Provocación
                 if (targetName === 'Lich King' || targetName === 'Lich King v2') {
                     const lichChar = gameState.characters[targetName];
@@ -1307,7 +1308,7 @@
             }
         }
 
-        // MONARCA DE LA DESTRUCCION: 3 daño cuando Buff se aplica a enemigo
+        // MONARCA DE LA DESTRUCCION: 3 daño directo por cada Buff aplicado a un enemigo
         function triggerMonarcaDestruccion(buffTargetName) {
             const _btC = gameState.characters[buffTargetName];
             if (!_btC || _btC.isDead || _btC.hp <= 0) return;
@@ -1316,9 +1317,16 @@
                 const _ac = gameState.characters[_an];
                 if (!_ac || _ac.isDead || _ac.hp <= 0 || _ac.team !== _antTeam) continue;
                 if (!_ac.passive || _ac.passive.name !== 'Monarca de la Destruccion') continue;
+                // 3 daño directo al objetivo
+                const _btOldHp = _btC.hp;
                 _btC.hp = Math.max(0, (_btC.hp||0) - 3);
                 if (_btC.hp <= 0) _btC.isDead = true;
-                addLog('🔥 Monarca de la Destruccion: 3 daño a ' + buffTargetName + ' (Buff aplicado)', 'damage');
+                addLog('🔥 Monarca de la Destruccion: 3 daño directo a ' + buffTargetName + ' (Buff aplicado sobre enemigo)', 'damage');
+                // Generar 2 cargas por el daño directo causado
+                if (_btOldHp > _btC.hp) {
+                    _ac.charges = Math.min(20, (_ac.charges||0) + 2);
+                    addLog('🔥 Monarca de la Destruccion: ' + _an + ' gana 2 cargas (daño directo)', 'buff');
+                }
                 break;
             }
         }
