@@ -3921,6 +3921,172 @@
                     }
                 }
 
+
+            // ══════════════════════════════════════════════════════
+            // ANTARES — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'dragons_fear_antares') {
+                const _dfAnt = gameState.characters[gameState.selectedCharacter];
+                const _dfETeam = _dfAnt ? (_dfAnt.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                if (checkAndRedirectAOEMegaProv(_dfETeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog("🐉 Dragon's Fear redirigido por Mega Provocación", 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _dfETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('💨 ' + _n + ' esquiva (Esquiva Área)', 'buff'); continue; }
+                        let _dfDmg = finalDamage;
+                        const _hasMiedoOrBurn = (_c.statusEffects||[]).some(function(e){
+                            if (!e) return false; const _nn = normAccent(e.name||'').toLowerCase();
+                            return _nn === 'miedo' || _nn.includes('quemadura');
+                        });
+                        if (_hasMiedoOrBurn && Math.random() < 0.30) {
+                            _dfDmg *= 3;
+                            addLog("💥 Dragon's Fear: ¡Triple daño en " + _n + "!", 'damage');
+                        }
+                        applyDamageWithShield(_n, _dfDmg, gameState.selectedCharacter);
+                        if (Math.random() < 0.50) { applyFear(_n, 2); addLog("😱 Dragon's Fear: Miedo 2T a " + _n, 'debuff'); }
+                    }
+                    for (const _sid in gameState.summons) {
+                        const _s = gameState.summons[_sid];
+                        if (_s && _s.team === _dfETeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, gameState.selectedCharacter);
+                    }
+                }
+                addLog("🐉 Dragon's Fear: 2 AOE completado", 'damage');
+
+            } else if (ability.effect === 'tormenta_fuego_antares') {
+                const _tfAnt = gameState.characters[gameState.selectedCharacter];
+                const _tfETeam = _tfAnt ? (_tfAnt.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                if (checkAndRedirectAOEMegaProv(_tfETeam, 0, gameState.selectedCharacter)) {
+                    addLog('🔥 Tormenta de Fuego redirigida', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _tfETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) continue;
+                        const _hasBuff = (_c.statusEffects||[]).some(function(e){ return e && e.type === 'buff'; });
+                        if (_hasBuff) {
+                            applyFlatBurn(_n, 2, 2);
+                            const _stolen = Math.min(5, _c.charges || 0);
+                            _c.charges = Math.max(0, (_c.charges||0) - _stolen);
+                            if (_tfAnt) _tfAnt.charges = Math.min(20, (_tfAnt.charges||0) + _stolen);
+                            addLog('🔥 Tormenta de Fuego: Quemadura 2HP + ' + _stolen + ' cargas robadas de ' + _n, 'debuff');
+                        } else if (Math.random() < 0.50) {
+                            applyFlatBurn(_n, 2, 2);
+                            addLog('🔥 Tormenta de Fuego: Quemadura 2HP a ' + _n, 'debuff');
+                        }
+                    }
+                }
+                addLog('🔥 Tormenta de Fuego completada', 'damage');
+
+            } else if (ability.effect === 'dragon_destruccion_antares') {
+                const _ddAnt = gameState.characters[gameState.selectedCharacter];
+                const _ddETeam = _ddAnt ? (_ddAnt.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                if (checkAndRedirectAOEMegaProv(_ddETeam, 4, gameState.selectedCharacter)) {
+                    addLog('🐉 Dragon de la Destruccion AOE redirigido', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _ddETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) continue;
+                        applyDamageWithShield(_n, 4, gameState.selectedCharacter);
+                    }
+                    for (const _sid in gameState.summons) {
+                        const _s = gameState.summons[_sid];
+                        if (_s && _s.team === _ddETeam && _s.hp > 0) applySummonDamage(_sid, 4, gameState.selectedCharacter);
+                    }
+                }
+                if (_ddAnt) {
+                    _ddAnt.antaresTransformed = true;
+                    _ddAnt.antaresTransformTurns = 3;
+                    _ddAnt.basePortrait = _ddAnt.basePortrait || _ddAnt.portrait;
+                    _ddAnt.portrait = _ddAnt.transformPortrait || _ddAnt.portrait;
+                    addLog('🐉 Antares se transforma en Dragon de la Destruccion (3 turnos)', 'buff');
+                }
+                renderCharacters();
+
+            } else if (ability.effect === 'aliento_destruccion_antares') {
+                const _adAnt = gameState.characters[gameState.selectedCharacter];
+                const _adETeam = _adAnt ? (_adAnt.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _adTrans = _adAnt && _adAnt.antaresTransformed;
+                if (checkAndRedirectAOEMegaProv(_adETeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('🐉 Aliento de la Destruccion redirigido', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _adETeam || _c.isDead || _c.hp <= 0) continue;
+                        // IGNORA Esquiva Area — no checkear
+                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        if (_adTrans) { applyFlatBurn(_n, 5, 2); addLog('🐉 Aliento: Quemadura 5HP a ' + _n, 'debuff'); }
+                    }
+                    for (const _sid in gameState.summons) {
+                        const _s = gameState.summons[_sid];
+                        if (_s && _s.team === _adETeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, gameState.selectedCharacter);
+                    }
+                }
+                addLog('🐉 Aliento de la Destruccion: ' + finalDamage + ' AOE completado', 'damage');
+
+            // ══════════════════════════════════════════════════════
+            // SASUKE UCHIHA — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'kusanagi_sasuke') {
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                applyAgotamiento(targetName, 3);
+                addLog('⚡ Corte Kusanagi: ' + finalDamage + ' daño + Agotamiento 3T a ' + targetName, 'damage');
+
+            } else if (ability.effect === 'chidori_sasuke') {
+                const _chTgt = gameState.characters[targetName];
+                let _chDmg = finalDamage;
+                if (_chTgt && (_chTgt.charges || 0) === 0) { _chDmg *= 2; addLog('⚡ Chidori: ¡Crítico! Sin cargas en ' + targetName, 'damage'); }
+                applyDamageWithShield(targetName, _chDmg, gameState.selectedCharacter);
+                if (_chTgt) {
+                    const _stolen = Math.min(4, _chTgt.charges || 0);
+                    if (_stolen > 0) {
+                        _chTgt.charges = Math.max(0, (_chTgt.charges||0) - _stolen);
+                        const _sAtk = gameState.characters[gameState.selectedCharacter];
+                        if (_sAtk) _sAtk.charges = Math.min(20, (_sAtk.charges||0) + _stolen);
+                        addLog('⚡ Chidori: roba ' + _stolen + ' cargas de ' + targetName, 'buff');
+                    }
+                }
+                addLog('⚡ Chidori: ' + _chDmg + ' daño a ' + targetName, 'damage');
+
+            } else if (ability.effect === 'kirin_sasuke') {
+                const _kirTgt = gameState.characters[targetName];
+                let _kirDmg = finalDamage;
+                if (_kirTgt && (_kirTgt.charges || 0) < 5 && Math.random() < 0.50) { _kirDmg *= 2; addLog('⚡ Kirin: ¡Crítico! (<5 cargas)', 'damage'); }
+                applyDamageWithShield(targetName, _kirDmg, gameState.selectedCharacter);
+                addLog('⚡ Kirin: ' + _kirDmg + ' daño a ' + targetName + ' (ignora Provocación)', 'damage');
+                if (_kirTgt && (_kirTgt.isDead || _kirTgt.hp <= 0)) {
+                    const _kirMyTeam = (gameState.characters[gameState.selectedCharacter]||{}).team;
+                    const _kirDefTeam = _kirMyTeam === 'team1' ? 'team2' : 'team1';
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (_c && _c.team === _kirDefTeam && !_c.isDead && _c.hp > 0) _c.charges = Math.max(0, (_c.charges||0) - 10);
+                    }
+                    addLog('⚡ Kirin: ¡Eliminado! Todos los enemigos pierden 10 cargas', 'debuff');
+                }
+
+            } else if (ability.effect === 'flecha_indra_sasuke') {
+                const _fiAtk = gameState.characters[gameState.selectedCharacter];
+                const _fiETeam = _fiAtk ? (_fiAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('⚡ Flecha de Indra: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (Math.random() < 0.50) {
+                    const _fiAlive = Object.keys(gameState.characters).filter(function(n){
+                        const c = gameState.characters[n]; return c && c.team === _fiETeam && !c.isDead && c.hp > 0;
+                    });
+                    if (_fiAlive.length > 0) {
+                        const _fiRand = _fiAlive[Math.floor(Math.random() * _fiAlive.length)];
+                        applyDamageWithShield(_fiRand, finalDamage, gameState.selectedCharacter);
+                        addLog('⚡ Flecha de Indra: ¡Se divide! ' + finalDamage + ' daño adicional a ' + _fiRand, 'damage');
+                    }
+                }
+                addLog('⚡ Flecha de Indra: Sasuke gana turno adicional', 'buff');
+                if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, _fiAtk ? _fiAtk.team : 'team1');
+                renderCharacters(); renderSummons(); showContinueButton(); return;
+
             } else if (ability.effect === 'vals_tanjiro') {
                 // TANJIRO — Básico: daño + 50% de generar 1 carga al equipo aliado (Olor de la Brecha)
                 const _tjAtk = gameState.characters[gameState.selectedCharacter];
