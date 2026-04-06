@@ -1159,8 +1159,9 @@
                 triggerOnHitPassives(targetName, attackerName, null);
                 // AURA DE HIELO (Lich King): congela al atacante
                 triggerLichKingAura(targetName, attackerName);
-                // MONARCA DE LA DESTRUCCION: +1 carga cuando enemigo recibe daño directo
-                if (!passiveExecuting) {
+                // MONARCA DE LA DESTRUCCION: +1 carga SOLO con daño directo (no por golpe)
+                // Daño directo = causado por efectos, no por ataque (attackerName === null)
+                if (!passiveExecuting && attackerName === null) {
                     const _mdTgt = gameState.characters[targetName];
                     if (_mdTgt) {
                         const _mdAntTeam = _mdTgt.team === 'team1' ? 'team2' : 'team1';
