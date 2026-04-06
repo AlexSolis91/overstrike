@@ -68,6 +68,10 @@
             }
         }
         function applyFlatBurn(targetName, flatHp, duration) {
+            if (targetName === 'Antares' || targetName === 'Antares v2') {
+                addLog('🐉 Monarca de la Destruccion: Antares es inmune a Quemadura', 'buff');
+                return;
+            }
             // Apply a burn that does flat HP damage (not percent)
             const target = gameState.characters[targetName];
             if (!target) return;
@@ -224,6 +228,11 @@ function processBurnEffects(charName) {
         }
 
         function processSolarBurnEffects(charName) {
+            if (charName === 'Antares' || charName === 'Antares v2') {
+                const _antC = gameState.characters[charName];
+                if (_antC) _antC.statusEffects = (_antC.statusEffects||[]).filter(e => !e || normAccent(e.name||'') !== 'quemadura solar');
+                return;
+            }
             const char = gameState.characters[charName];
             if (!char || !char.statusEffects) return;
             // DAENERYS: immune to Quemadura Solar
