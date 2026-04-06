@@ -1,5 +1,17 @@
 // ==================== LÓGICA DE TURNOS ====================
         function startTurn() {
+            // VENGANZA ETERNA (Sasuke): procesar turno adicional pendiente
+            if (gameState._sasukeRevengeQueue && gameState._sasukeRevengeQueue.length > 0) {
+                const _saTurnChar = gameState._sasukeRevengeQueue.shift();
+                const _saC = gameState.characters[_saTurnChar];
+                if (_saC && !_saC.isDead && _saC.hp > 0) {
+                    gameState.selectedCharacter = _saTurnChar;
+                    addLog('⚡ Venganza Eterna: ¡' + _saTurnChar + ' gana turno adicional!', 'buff');
+                    if (typeof renderCharacters === 'function') renderCharacters();
+                    if (typeof showActionModal === 'function') showActionModal();
+                    return;
+                }
+            }
             if (gameState.gameOver) return;
 
             // ONLINE MODE: Only run startTurn if it will be my team's turn
@@ -53,6 +65,21 @@
                             processNewDebuffEffects(currentCharName);
                         }
                         
+                        // DRAGON DE LA DESTRUCCION (Antares): regen 5HP/turno mientras transformado
+                        if (currentChar.antaresTransformed && currentChar.antaresTransformTurns > 0) {
+                            if (typeof canHeal !== 'function' || canHeal(currentCharName)) {
+                                const _antOldHp = currentChar.hp;
+                                currentChar.hp = Math.min(currentChar.maxHp, currentChar.hp + 5);
+                                if (currentChar.hp > _antOldHp) addLog('🐉 Dragon de la Destruccion: ' + currentCharName + ' recupera 5 HP', 'heal');
+                            }
+                            currentChar.antaresTransformTurns--;
+                            if (currentChar.antaresTransformTurns <= 0) {
+                                currentChar.antaresTransformed = false;
+                                if (currentChar.basePortrait) currentChar.portrait = currentChar.basePortrait;
+                                addLog('🐉 Dragon de la Destruccion: ' + currentCharName + ' vuelve a su forma base', 'info');
+                                renderCharacters();
+                            }
+                        }
                         // PASIVA LIMBO: Madara en Modo Rikudō regenera 1 HP por turno
                         if (((currentCharName === 'Madara Uchiha' || currentCharName.startsWith('Madara Uchiha')) || currentCharName === 'Madara Uchiha v2') && currentChar.rikudoMode && currentChar.hp > 0) {
                             const oldHp = currentChar.hp;
@@ -1260,6 +1287,11 @@
                     // Nuevo snapshot de vivos para la ronda que comienza
                     gameState.aliveCountAtRoundStart = Object.values(gameState.characters).filter(c => c && !c.isDead && c.hp > 0).length;
                     addLog(`⏱️ ¡RONDA ${gameState.currentRound} COMIENZA!`, 'info');
+                    // RESET EVASIÓN SASUKE al inicio de ronda
+                    for (const _sn in gameState.characters) {
+                        const _sc = gameState.characters[_sn];
+                        if (_sc && _sc.passive && _sc.passive.name === 'Venganza Eterna') _sc.sasukeEvasionUsedThisRound = false;
+                    }
 
                     // ── CAMINO NINJA (Naruto): transformación al inicio de ronda ──
                     for (const _naruN in gameState.characters) {
