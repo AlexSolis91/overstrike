@@ -663,4 +663,33 @@
                     { name: 'El Rey del Norte', type: 'over', cost: 18, chargeGain: 0, damage: 0, target: 'self', effect: 'rey_del_norte_jon', description: 'Todos los aliados ejecutan su Over sin costo. Daños ST se aplican a objetivos aleatorios.' }
                 ]
             },
+
+            'Antares': {
+                hp: 25, maxHp: 25, speed: 95, charges: 0, team: 'team2',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                antaresTransformed: false, antaresTransformTurns: 0,
+                portrait: 'https://i.ibb.co/Fprz6Sh/Captura-de-pantalla-2026-04-06-101230.png',
+                transformPortrait: 'https://i.ibb.co/t1CXkkY/Captura-de-pantalla-2026-04-06-101549.png',
+                passive: { name: 'Monarca de la Destruccion', description: 'Por cada Buff aplicado sobre un enemigo, aplica 3 daño directo sobre ese enemigo. Inmune a Quemaduras y Quemadura Solar. Cada vez que un enemigo recibe daño directo, Antares genera 1 carga.' },
+                abilities: [
+                    { name: "Dragon's Fear", type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'aoe', effect: 'dragons_fear_antares', description: "Causa 2 AOE. 50% de aplicar Miedo 2T a los objetivos. 30% de daño triple sobre enemigos con Miedo o Quemaduras." },
+                    { name: 'Tormenta de Fuego', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'aoe', effect: 'tormenta_fuego_antares', description: '50% de aplicar Quemadura 2HP a los enemigos. Si el enemigo tiene Buff activo: 100% de acierto y roba 5 cargas.' },
+                    { name: 'Dragon de la Destruccion', type: 'special', cost: 8, chargeGain: 0, damage: 4, target: 'self', effect: 'dragon_destruccion_antares', description: 'Causa 4 AOE y se transforma 3 turnos. Transformado: recupera 5 HP por turno y duplica el daño directo recibido por enemigos.' },
+                    { name: 'Aliento de la Destruccion', type: 'over', cost: 12, chargeGain: 0, damage: 5, target: 'aoe', effect: 'aliento_destruccion_antares', description: 'Causa 5 AOE. Ignora Esquiva Área. Transformado en Dragon: aplica Quemadura 5HP a los objetivos.' }
+                ]
+            },
+
+            'Sasuke Uchiha': {
+                hp: 20, maxHp: 20, speed: 87, charges: 0, team: 'team2',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                sasukeEvasionUsedThisRound: false,
+                portrait: 'https://i.ibb.co/nNQ9Q0MB/Captura-de-pantalla-2026-04-06-105515.png',
+                passive: { name: 'Venganza Eterna', description: 'Cada vez que un aliado es derrotado, Sasuke genera 20 cargas y gana 1 turno adicional. La primera vez por ronda que vaya a recibir un Special u OVER, esquiva ese ataque y el atacante recibe 5 daño directo.' },
+                abilities: [
+                    { name: 'Corte: Espada Kusanagi', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'single', effect: 'kusanagi_sasuke', description: 'Causa 1 daño. Aplica Agotamiento 3 turnos al objetivo.' },
+                    { name: 'Chidori', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'single', effect: 'chidori_sasuke', description: 'Causa 4 daño. Roba 4 cargas del objetivo. Si el objetivo no tiene cargas, causa daño crítico.' },
+                    { name: 'Kirin', type: 'special', cost: 6, chargeGain: 0, damage: 6, target: 'single', effect: 'kirin_sasuke', description: 'Causa 6 daño. Ignora Provocación y Mega Provocación. Si elimina al objetivo, reduce 10 cargas a todos los enemigos. 50% de crítico si el objetivo tiene menos de 5 cargas.' },
+                    { name: 'Flecha de Indra', type: 'over', cost: 10, chargeGain: 0, damage: 10, target: 'single', effect: 'flecha_indra_sasuke', description: 'Causa 10 daño. 50% de dividirse y golpear a un enemigo aleatorio adicional. Sasuke gana 1 turno adicional.' }
+                ]
+            },
         };
