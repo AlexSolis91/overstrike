@@ -436,13 +436,16 @@
             'Vegeta': {
                 hp: 20, maxHp: 20, speed: 96, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.ibb.co/DfBgpQLQ/Captura-de-pantalla-2026-03-19-113940.png',
-                passive: { name: 'Príncipe de los Sayajins', description: 'Todos sus ataques tienen 20% de probabilidad de causar daño triple. Los debuffs tienen 50% menos precisión contra Vegeta.' },
+                vegetaForm: null, // null | 'ssblue_evo' | 'ultra_ego'
+                portrait: 'https://i.postimg.cc/C55Ssj7Q/Whats_App_Image_2026_03_17_at_2_07_04_AM.jpg',
+                portraitSSBlueEvo: 'https://i.ibb.co/PZGp5fKN/Whats-App-Image-2026-04-07-at-2-42-40-PM-1.jpg',
+                portraitUltraEgo: 'https://i.ibb.co/hJBTVdHL/Whats-App-Image-2026-04-07-at-2-42-40-PM.jpg',
+                passive: { name: 'Principe de los Sayajins', description: 'Si un enemigo tiene Buffs activos al ser golpeado, elimina sus buffs antes del daño. Por cada buff eliminado/disipado en enemigos, Vegeta genera 2 cargas. Al 40-70% HP: Super Sayajin Blue Evolution (cargas = cargas del objetivo al golpear). Al 1-39% HP: Ultra Ego (50% menos daño por golpe e inmune a daño directo).' },
                 abilities: [
-                    { name: 'Galick Gun', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'galick_gun', description: 'Causa 2 daño. Aplica Buff Frenesí 1 turno.' },
-                    { name: 'Big Bang Attack', type: 'special', cost: 2, chargeGain: 0, damage: 3, target: 'single', effect: 'big_bang_attack', description: 'Causa 3 daño. Genera +2 cargas adicionales por cada Buff y Debuff activo en el objetivo.' },
-                    { name: 'Ráfagas de Ki', type: 'special', cost: 5, chargeGain: 0, damage: 2, target: 'aoe', effect: 'rafagas_ki', description: 'Causa 2 AOE. 50% de probabilidad de causar 0-2 daño adicional. El daño se considera daño directo, no golpe.' },
-                    { name: 'Final Flash', type: 'over', cost: 12, chargeGain: 0, damage: 12, target: 'single', effect: 'final_flash', description: 'Causa 12 daño. Ignora Provocación, Mega Provocación y Sigilo. Si el objetivo es derrotado, genera 10 cargas.' }
+                    { name: 'Rafagas de Ki', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'aoe', effect: 'rafagas_ki_vegeta', description: 'Causa 1 AOE. 50% de probabilidad de daño triple.' },
+                    { name: 'Big Bang Attack', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'single', effect: 'big_bang_attack_vegeta', description: 'Causa 4 daño. Aplica Debilitar y Sangrado 3 turnos al objetivo.' },
+                    { name: 'Resplandor Final', type: 'special', cost: 10, chargeGain: 0, damage: 10, target: 'single', effect: 'resplandor_final_vegeta', description: 'Causa 10 daño. Si elimina al objetivo, causa 4 de daño directo a todos los enemigos.' },
+                    { name: 'Explosion Final', type: 'over', cost: 15, chargeGain: 0, damage: 10, target: 'aoe', effect: 'explosion_final_vegeta', description: 'Vegeta sacrifica todo su HP. Por cada HP sacrificado +1 daño adicional. Si muere, revive en las próximas 3 rondas con 50% HP y 10 cargas.' }
                 ]
             },
             'Giyu Tomioka': {
@@ -690,6 +693,32 @@
                     { name: 'Chidori', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'single', effect: 'chidori_sasuke', description: 'Causa 4 daño. Roba hasta 4 cargas del objetivo. Si tras el robo el objetivo queda en 0 cargas, causa daño crítico.' },
                     { name: 'Kirin', type: 'special', cost: 6, chargeGain: 0, damage: 6, target: 'single', effect: 'kirin_sasuke', description: 'Causa 6 daño. Ignora Provocación y Mega Provocación. Si elimina al objetivo, reduce 10 cargas a todos los enemigos. 50% de crítico si el objetivo tiene menos de 5 cargas.' },
                     { name: 'Flecha de Indra', type: 'over', cost: 10, chargeGain: 0, damage: 10, target: 'single', effect: 'flecha_indra_sasuke', description: 'Causa 10 daño. 50% de dividirse y golpear a un enemigo aleatorio adicional. Sasuke gana 1 turno adicional.' }
+                ]
+            },
+
+            'Douma': {
+                hp: 25, maxHp: 25, speed: 88, charges: 0, team: 'team2',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/BXDJNW7/Whats-App-Image-2026-04-07-at-2-47-47-PM.jpg',
+                passive: { name: 'Luna Superior Dos', description: 'Al aplicar Congelacion: cura 2 HP a aliado aleatorio. Al aplicar Megacongelacion: cura 4 HP. Al expirar/limpiar Congelacion: equipo aliado +1 carga. Al expirar/limpiar Megacongelacion: equipo aliado +3 cargas.' },
+                abilities: [
+                    { name: 'Abanicos de Hielo', type: 'basic', cost: 0, chargeGain: 1, damage: 3, target: 'single', effect: 'abanicos_hielo_douma', description: 'Causa 3 daño. 10% de aplicar Megacongelacion al objetivo.' },
+                    { name: 'Estatua de Hielo', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'self', effect: 'summon_douma_hielo', description: 'Invoca 1 Douma de Hielo.' },
+                    { name: 'Niebla Congelante', type: 'special', cost: 8, chargeGain: 0, damage: 5, target: 'aoe', effect: 'niebla_congelante_douma', description: 'Causa 5 AOE. Critico garantizado en objetivos con Congelacion o Megacongelacion. 50% de aturdir a los objetivos.' },
+                    { name: 'Loto de Hielo Celestial', type: 'over', cost: 14, chargeGain: 0, damage: 0, target: 'self', effect: 'summon_gigante_hielo', description: 'Invoca al Gigante de Hielo.' }
+                ]
+            },
+
+            'Jaina Proudmoore': {
+                hp: 20, maxHp: 20, speed: 79, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/PGkg0qnK/Whats-App-Image-2026-04-07-at-2-46-11-PM.jpg',
+                passive: { name: 'Archimaga del Kirin Tor', description: 'Cada vez que se aplica un debuff a un enemigo, también aplica Congelacion en ese enemigo. 100% de crítico sobre enemigos con Congelacion activa.' },
+                abilities: [
+                    { name: 'Descarga de Hielo', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'descarga_hielo_jaina', description: 'Causa 2 daño + aplica Congelacion. Si el objetivo ya tenía Congelacion, 50% de daño triple.' },
+                    { name: 'Anillo de Escarcha', type: 'special', cost: 5, chargeGain: 0, damage: 2, target: 'aoe', effect: 'anillo_escarcha_jaina', description: 'Causa 2 AOE + aplica Congelacion. Si ya tenían Congelacion: reemplaza por Megacongelacion. Si ya tenían Megacongelacion: daño triple.' },
+                    { name: 'Bloque de Hielo', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'self', effect: 'bloque_hielo_jaina', description: 'Disipar debuffs del equipo aliado. Aplica Proteccion Sagrada 2T al equipo aliado.' },
+                    { name: 'Invierno sin Remordimientos', type: 'over', cost: 12, chargeGain: 0, damage: 2, target: 'aoe', effect: 'invierno_jaina', description: 'Causa 2 AOE + aplica Megacongelacion. Si tenía Congelacion: reduce cargas a 0. Si tenía Megacongelacion: daño triple y -20 velocidad permanente.' }
                 ]
             },
         };
