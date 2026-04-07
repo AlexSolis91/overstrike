@@ -186,6 +186,19 @@
                     addLog(`💀 ${summon.name} fue derrotado por ${attackerName}`, 'damage');
                 }
                 removeSummon(summonId, 'derrotado');
+            } else if (summon.hp > 0 && damage > 0) {
+                // COPIA DE HIELO (Douma de Hielo): si la estatua sobrevive → Douma gana turno adicional
+                if (summon.name === 'Douma de Hielo' && summon.summoner) {
+                    const _dSummoner = summon.summoner;
+                    const _dSummonerChar = gameState.characters[_dSummoner];
+                    if (_dSummonerChar && !_dSummonerChar.isDead && _dSummonerChar.hp > 0) {
+                        if (!gameState._sasukeRevengeQueue) gameState._sasukeRevengeQueue = [];
+                        if (!gameState._sasukeRevengeQueue.includes(_dSummoner)) {
+                            gameState._sasukeRevengeQueue.push(_dSummoner);
+                            addLog('❄️ Copia de Hielo: ' + _dSummoner + ' gana turno adicional (estatua recibió daño y sobrevivió)', 'buff');
+                        }
+                    }
+                }
             }
             
             renderSummons();
@@ -1203,18 +1216,6 @@
                     addLog('💚 Visión Esmeralda: ' + targetName + ' genera 2 cargas al recibir golpe', 'buff');
                 }
                 triggerOnHitPassives(targetName, attackerName, null);
-                // DOUMA DE HIELO: si recibe daño y sobrevive → Douma gana turno adicional
-                const _dhSummon = Object.entries(gameState.summons).find(function(e){ return e[1] && e[1].name === 'Douma de Hielo'; });
-                if (_dhSummon && _dhSummon[0] && gameState.summons[_dhSummon[0]] && targetName === _dhSummon[0]) {
-                    if (target.hp > 0 && !target.isDead) {
-                        const _dSummoner = _dhSummon[1].summoner;
-                        if (!gameState._sasukeRevengeQueue) gameState._sasukeRevengeQueue = [];
-                        if (_dSummoner && !gameState._sasukeRevengeQueue.includes(_dSummoner)) {
-                            gameState._sasukeRevengeQueue.push(_dSummoner);
-                            addLog('❄️ Copia de Hielo: ' + _dSummoner + ' gana turno adicional (estatua recibió daño)', 'buff');
-                        }
-                    }
-                }
                 // AURA DE HIELO (Lich King): congela al atacante
                 triggerLichKingAura(targetName, attackerName);
                 // CADENAS DE HIELO (Lich King): genera 1 carga cuando recibe daño con Provocación
@@ -1326,7 +1327,12 @@
                     const _ac = gameState.characters[_an];
                     if (!_ac || _ac.isDead || _ac.hp <= 0 || _ac.team !== _defTeam) continue;
                     _ac.statusEffects = (_ac.statusEffects||[]).filter(function(e){ return !e || normAccent(e.name||'') !== 'esquiva area'; });
-                    _ac.statusEffects.push({ name: 'Esquiva Area', type: 'buff', duration: 2, emoji: '🛡️' });
+                    // Usar applyBuff para activar Monarca de la Destruccion
+                    if (typeof applyBuff === 'function') {
+                        applyBuff(_an, { name: 'Esquiva Area', type: 'buff', duration: 2, emoji: '🛡️' });
+                    } else {
+                        _ac.statusEffects.push({ name: 'Esquiva Area', type: 'buff', duration: 2, emoji: '🛡️' });
+                    }
                     _ac.charges = Math.min(20, (_ac.charges||0) + 1);
                 }
                 addLog('⚔️ El Rey Prometido: equipo aliado gana Esquiva Área 2T + 1 carga (AOE enemigo)', 'buff');
