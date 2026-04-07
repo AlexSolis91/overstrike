@@ -240,9 +240,11 @@
                         const mpSummon = kamishData.kamish;
                         const mpSummonName = mpSummon.name || 'Invocación';
                         title.textContent = '🐉 MEGA PROVOCACIÓN — Debes Atacar a ' + mpSummonName;
+                        const _mpSumData = typeof summonData !== 'undefined' ? summonData[mpSummonName] : null;
+                        const _mpImg = mpSummon.img || (_mpSumData && _mpSumData.img) || null;
                         grid.innerHTML = makeTargetBtn(
                             `executeAbilitySummon('${kamishData.id}')`,
-                            null,
+                            _mpImg,
                             mpSummonName,
                             `<strong>🐉 ${mpSummonName}</strong><br><small>HP: ${mpSummon.hp}/${mpSummon.maxHp}</small><br><small style="color:#ff6600;">🐉 MEGA PROVOCACIÓN</small>`,
                             'border-color:#ff6600; background: linear-gradient(135deg, rgba(255,102,0,0.3), rgba(255,68,0,0.2));'
@@ -309,9 +311,12 @@
                         const summon = gameState.summons[summonId];
                         if (summon && summon.team === targetTeam && summon.hp > 0) {
                             hasTargets = true;
+                            // Obtener imagen de la invocación desde summonData
+                            const _sumData = typeof summonData !== 'undefined' ? summonData[summon.name] : null;
+                            const _sumImg = (summon.img) || (_sumData && _sumData.img) || null;
                             grid.innerHTML += makeTargetBtn(
                                 `executeAbilitySummon('${summonId}')`,
-                                null,
+                                _sumImg,
                                 summon.name,
                                 `<strong>👻 ${summon.name}</strong><br><small>HP: ${summon.hp}/${summon.maxHp}</small><br><small style="opacity:0.7;">de ${summon.summoner}</small>`,
                                 'border-color: rgba(138, 43, 226, 0.6);'
