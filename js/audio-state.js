@@ -239,4 +239,17 @@
                 img: 'https://i.ibb.co/QvK9cxfc/Whats-App-Image-2026-03-31-at-1-19-10-PM.jpg',
                 passive: 'Huargo Bastardo: Al final de cada ronda inflige 1 daño a cada enemigo y aplica Veneno 1T. Al final de cada ronda elimina una invocacion del equipo enemigo.'
             },
+
+            'Douma de Hielo': {
+                name: 'Douma de Hielo',
+                hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.ibb.co/Q3Yc2jqv/Whats-App-Image-2026-04-07-at-2-51-14-PM.jpg',
+                passive: 'Copia de Hielo: Cada vez que la estatua recibe daño y sobrevive, Douma gana un turno adicional.'
+            },
+            'Gigante de Hielo': {
+                name: 'Gigante de Hielo',
+                hp: 30, maxHp: 30, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.ibb.co/wF1XvPYT/Whats-App-Image-2026-04-07-at-2-48-51-PM.jpg',
+                passive: 'Flores de Hielo: Mega Provocacion. Al inicio de ronda: 50% de Congelacion a enemigos y 50% de Megacongelacion. Al final de ronda: 5 daño a enemigos con Congelacion, 10 daño a enemigos con Megacongelacion.'
+            },
         };
