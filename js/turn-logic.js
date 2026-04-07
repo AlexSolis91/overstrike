@@ -65,6 +65,25 @@
                             processNewDebuffEffects(currentCharName);
                         }
                         
+                        // VEGETA — Check transformación por HP
+                        if (currentChar.passive && currentChar.passive.name === 'Principe de los Sayajins' && !currentChar.isDead && currentChar.hp > 0) {
+                            const _vHpPct = (currentChar.hp / currentChar.maxHp) * 100;
+                            if (_vHpPct >= 40 && _vHpPct <= 70 && currentChar.vegetaForm !== 'ssblue_evo') {
+                                currentChar.vegetaForm = 'ssblue_evo';
+                                if (currentChar.portraitSSBlueEvo) currentChar.portrait = currentChar.portraitSSBlueEvo;
+                                addLog('💠 Vegeta → Super Sayajin Blue Evolution (HP 40-70%)', 'buff');
+                                renderCharacters();
+                            } else if (_vHpPct >= 1 && _vHpPct < 40 && currentChar.vegetaForm !== 'ultra_ego') {
+                                currentChar.vegetaForm = 'ultra_ego';
+                                if (currentChar.portraitUltraEgo) currentChar.portrait = currentChar.portraitUltraEgo;
+                                addLog('👁️ Vegeta → Ultra Ego (HP < 40%)', 'buff');
+                                renderCharacters();
+                            } else if (_vHpPct > 70 && currentChar.vegetaForm !== null) {
+                                currentChar.vegetaForm = null;
+                                currentChar.portrait = 'https://i.postimg.cc/C55Ssj7Q/Whats_App_Image_2026_03_17_at_2_07_04_AM.jpg';
+                                renderCharacters();
+                            }
+                        }
                         // DRAGON DE LA DESTRUCCION (Antares): regen 5HP/turno mientras transformado
                         if (currentChar.antaresTransformed && currentChar.antaresTransformTurns > 0) {
                             if (typeof canHeal !== 'function' || canHeal(currentCharName)) {
@@ -1287,12 +1306,34 @@
                     // Nuevo snapshot de vivos para la ronda que comienza
                     gameState.aliveCountAtRoundStart = Object.values(gameState.characters).filter(c => c && !c.isDead && c.hp > 0).length;
                     addLog(`⏱️ ¡RONDA ${gameState.currentRound} COMIENZA!`, 'info');
+                    // ── EXPLOSIÓN FINAL (Vegeta): countdown revivir ──
+                    for (const _vn in gameState.characters) {
+                        const _vc = gameState.characters[_vn];
+                        if (!_vc || !_vc._vegetaRevivePending || _vc._vegetaRevivePending <= 0) continue;
+                        _vc._vegetaRevivePending--;
+                        if (_vc._vegetaRevivePending <= 0) {
+                            _vc.isDead = false; _vc.hp = Math.ceil(_vc.maxHp * 0.50); _vc.charges = 10; _vc.statusEffects = [];
+                            addLog('💥 Explosión Final: ¡' + _vn + ' revive con ' + _vc.hp + ' HP y 10 cargas!', 'buff');
+                            renderCharacters();
+                        }
+                    }
                     // RESET EVASIÓN SASUKE al inicio de ronda
                     for (const _sn in gameState.characters) {
                         const _sc = gameState.characters[_sn];
                         if (_sc && _sc.passive && _sc.passive.name === 'Venganza Eterna') _sc.sasukeEvasionUsedThisRound = false;
                     }
 
+                    // ── GIGANTE DE HIELO: 50% Congelacion + 50% Megacongelacion al inicio de ronda ──
+                    const _gH = Object.values(gameState.summons).find(function(s){ return s && s.name === 'Gigante de Hielo' && s.hp > 0; });
+                    if (_gH) {
+                        const _gHETeam = _gH.team === 'team1' ? 'team2' : 'team1';
+                        for (const _n in gameState.characters) {
+                            const _c = gameState.characters[_n];
+                            if (!_c || _c.team !== _gHETeam || _c.isDead || _c.hp <= 0) continue;
+                            if (Math.random() < 0.50) { applyFreeze(_n, 1); addLog('❄️ Gigante de Hielo: Congelacion a ' + _n + ' (inicio ronda)', 'debuff'); }
+                            if (Math.random() < 0.50) { applyFreeze(_n, 2, true); addLog('🧊 Gigante de Hielo: Megacongelacion a ' + _n + ' (inicio ronda)', 'debuff'); }
+                        }
+                    }
                     // ── CAMINO NINJA (Naruto): transformación al inicio de ronda ──
                     for (const _naruN in gameState.characters) {
                         const _naruC = gameState.characters[_naruN];
@@ -1789,6 +1830,20 @@
                             c.charges += 5;
                             addLog(`⚔️ Tirion Fordring: ${n} recupera 5 HP y 5 cargas`, 'heal');
                         }
+                    }
+                }
+                // GIGANTE DE HIELO (Douma): al inicio de ronda congelaciones + al final daño
+                // Al inicio de ronda se maneja abajo — aquí el daño al final de ronda
+                const _gigante = Object.values(gameState.summons).find(function(s){ return s && s.name === 'Gigante de Hielo' && s.hp > 0; });
+                if (_gigante) {
+                    const _gETeam = _gigante.team === 'team1' ? 'team2' : 'team1';
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _gETeam || _c.isDead || _c.hp <= 0) continue;
+                        const _isCong = (_c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'congelacion'; });
+                        const _isMega = (_c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'mega congelacion'; });
+                        if (_isMega) { applyDamageWithShield(_n, 10, null); addLog('🧊 Gigante de Hielo: 10 daño a ' + _n + ' (Megacongelacion)', 'damage'); }
+                        else if (_isCong) { applyDamageWithShield(_n, 5, null); addLog('❄️ Gigante de Hielo: 5 daño a ' + _n + ' (Congelacion)', 'damage'); }
                     }
                 }
                 // GHOST (Jon Snow): al final de ronda — 1 daño + Veneno 1T a cada enemigo + elimina 1 invocación enemiga
