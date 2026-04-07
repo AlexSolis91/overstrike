@@ -437,7 +437,7 @@
                 hp: 20, maxHp: 20, speed: 96, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 vegetaForm: null, // null | 'ssblue_evo' | 'ultra_ego'
-                portrait: 'https://i.postimg.cc/C55Ssj7Q/Whats_App_Image_2026_03_17_at_2_07_04_AM.jpg',
+                portrait: 'https://i.ibb.co/G301wx8Z/Captura-de-pantalla-2026-03-19-113940.png',
                 portraitSSBlueEvo: 'https://i.ibb.co/PZGp5fKN/Whats-App-Image-2026-04-07-at-2-42-40-PM-1.jpg',
                 portraitUltraEgo: 'https://i.ibb.co/hJBTVdHL/Whats-App-Image-2026-04-07-at-2-42-40-PM.jpg',
                 passive: { name: 'Principe de los Sayajins', description: 'Si un enemigo tiene Buffs activos al ser golpeado, elimina sus buffs antes del daño. Por cada buff eliminado/disipado en enemigos, Vegeta genera 2 cargas. Al 40-70% HP: Super Sayajin Blue Evolution (cargas = cargas del objetivo al golpear). Al 1-39% HP: Ultra Ego (50% menos daño por golpe e inmune a daño directo).' },
