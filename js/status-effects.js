@@ -285,6 +285,28 @@ function processBurnEffects(charName) {
                         char.dragonFormActive = false;
                         addLog(`🐉 Alexstrasza vuelve a su forma normal`, 'info');
                     }
+                    // LUNA SUPERIOR DOS (Douma): cargas al expirar Congelacion
+                    if (nname === 'congelacion' || nname === 'mega congelacion') {
+                        const _lsdChar = gameState.characters[charName];
+                        if (_lsdChar) {
+                            const _lsdETeam = _lsdChar.team === 'team1' ? 'team2' : 'team1';
+                            const _chargesGain = (nname === 'mega congelacion') ? 3 : 1;
+                            for (const _dn in gameState.characters) {
+                                const _dc = gameState.characters[_dn];
+                                if (!_dc || _dc.isDead || _dc.hp <= 0 || _dc.team !== _lsdETeam) continue;
+                                if (!_dc.passive || _dc.passive.name !== 'Luna Superior Dos') continue;
+                                // +cargas a todo el equipo aliado de Douma
+                                for (const _an in gameState.characters) {
+                                    const _ac = gameState.characters[_an];
+                                    if (_ac && !_ac.isDead && _ac.hp > 0 && _ac.team === _lsdETeam) {
+                                        _ac.charges = Math.min(20, (_ac.charges||0) + _chargesGain);
+                                    }
+                                }
+                                addLog('❄️ Luna Superior Dos: equipo aliado +' + _chargesGain + ' cargas (' + (nname === 'mega congelacion' ? 'Megacongelacion' : 'Congelacion') + ' expiró en ' + charName + ')', 'buff');
+                                break;
+                            }
+                        }
+                    }
                     // Restaurar velocidad si era congelacion
                     if ((nname === 'congelacion' || nname === 'mega congelacion') && (effect.speedPenalty || effect.speedPenaltyFlat)) {
                         if (effect.speedPenaltyFlat) {
