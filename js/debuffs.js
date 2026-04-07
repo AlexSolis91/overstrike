@@ -295,6 +295,24 @@ function applyDebuff(targetName, effectObj) {
             target.statusEffects.push(effectObj);
             // PASIVA MABOROSHI: Saga gana 1 carga al aplicar debuff en enemigo
             triggerMaboroshi(target.team, effectObj.name);
+            // ARCHIMAGA DEL KIRIN TOR (Jaina): aplica Congelacion al enemigo que recibe debuff
+            if (gameState.selectedCharacter && gameState.selectedCharacter !== targetName) {
+                const _jainaAtk = gameState.characters[gameState.selectedCharacter];
+                if (_jainaAtk && target && _jainaAtk.team !== target.team &&
+                    _jainaAtk.passive && _jainaAtk.passive.name === 'Archimaga del Kirin Tor') {
+                    const _dEffN = normAccent(effectObj.name||'');
+                    if (_dEffN !== 'congelacion' && _dEffN !== 'mega congelacion') {
+                        if (typeof applyFreeze === 'function') applyFreeze(targetName, 1);
+                    }
+                }
+            }
+            // LUNA SUPERIOR DOS (Douma): cura al aplicar Congelacion/Megacongelacion
+            {
+                const _lsdEffN = normAccent(effectObj.name||'');
+                if (_lsdEffN === 'congelacion' || _lsdEffN === 'mega congelacion') {
+                    if (typeof triggerLunaSuperiorDos === 'function') triggerLunaSuperiorDos(targetName, _lsdEffN === 'mega congelacion');
+                }
+            }
             // PASIVA PRÍNCIPE DE LOS SAYAJINS (Vegeta): 50% debuff miss chance
             {
                 const _vegDebTarget = gameState.characters[targetName];
