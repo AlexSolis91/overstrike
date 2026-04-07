@@ -751,6 +751,36 @@
                 }
             }
 
+            // ULTRA EGO (Vegeta): 50% menos daño por golpe y se reduce a la mitad
+            if (attackerName && attackerName !== targetName && !passiveExecuting) {
+                const _ueC = gameState.characters[targetName];
+                if (_ueC && !_ueC.isDead && _ueC.vegetaForm === 'ultra_ego') {
+                    damage = Math.max(1, Math.ceil(damage * 0.50));
+                    addLog('👁️ Ultra Ego: ' + targetName + ' recibe solo el 50% del daño por golpe', 'buff');
+                }
+            }
+            // ULTRA EGO: inmune a daño directo
+            if (!attackerName && !passiveExecuting) {
+                const _ueDir = gameState.characters[targetName];
+                if (_ueDir && !_ueDir.isDead && _ueDir.vegetaForm === 'ultra_ego') {
+                    addLog('👁️ Ultra Ego: ' + targetName + ' es inmune a daño directo', 'buff');
+                    return 0;
+                }
+            }
+
+            // ARCHIMAGA DEL KIRIN TOR (Jaina): crítico garantizado sobre congelados
+            if (attackerName && attackerName !== targetName && !passiveExecuting) {
+                const _jainaAtkC = gameState.characters[attackerName];
+                const _jainaTgtC = gameState.characters[targetName];
+                if (_jainaAtkC && _jainaTgtC && _jainaAtkC.passive && _jainaAtkC.passive.name === 'Archimaga del Kirin Tor') {
+                    const _isFrozen = (_jainaTgtC.statusEffects||[]).some(function(e){
+                        if (!e) return false; const _nn = normAccent(e.name||'');
+                        return _nn === 'congelacion' || _nn === 'mega congelacion';
+                    });
+                    if (_isFrozen) { damage *= 2; addLog('❄️ Archimaga del Kirin Tor: ¡Crítico! ' + targetName + ' está congelado', 'damage'); }
+                }
+            }
+
             // BUFF ESQUIVAR (Goku UI, Sauron, etc): 50% de esquivar
             if (attackerName !== null && !passiveExecuting) {
                 if (target.hasDodge || hasStatusEffect(targetName, 'Esquivar')) {
@@ -1173,6 +1203,18 @@
                     addLog('💚 Visión Esmeralda: ' + targetName + ' genera 2 cargas al recibir golpe', 'buff');
                 }
                 triggerOnHitPassives(targetName, attackerName, null);
+                // DOUMA DE HIELO: si recibe daño y sobrevive → Douma gana turno adicional
+                const _dhSummon = Object.entries(gameState.summons).find(function(e){ return e[1] && e[1].name === 'Douma de Hielo'; });
+                if (_dhSummon && _dhSummon[0] && gameState.summons[_dhSummon[0]] && targetName === _dhSummon[0]) {
+                    if (target.hp > 0 && !target.isDead) {
+                        const _dSummoner = _dhSummon[1].summoner;
+                        if (!gameState._sasukeRevengeQueue) gameState._sasukeRevengeQueue = [];
+                        if (_dSummoner && !gameState._sasukeRevengeQueue.includes(_dSummoner)) {
+                            gameState._sasukeRevengeQueue.push(_dSummoner);
+                            addLog('❄️ Copia de Hielo: ' + _dSummoner + ' gana turno adicional (estatua recibió daño)', 'buff');
+                        }
+                    }
+                }
                 // AURA DE HIELO (Lich King): congela al atacante
                 triggerLichKingAura(targetName, attackerName);
                 // CADENAS DE HIELO (Lich King): genera 1 carga cuando recibe daño con Provocación
@@ -1326,6 +1368,47 @@
                 if (_btOldHp > _btC.hp) {
                     _ac.charges = Math.min(20, (_ac.charges||0) + 2);
                     addLog('🔥 Monarca de la Destruccion: ' + _an + ' gana 2 cargas (daño directo)', 'buff');
+                }
+                break;
+            }
+        }
+
+        // VEGETA — Príncipe de los Sayajins: eliminar buffs del enemigo antes del daño
+        function triggerVegetaPasiva(targetName, vegetaName) {
+            const _vtgt = gameState.characters[targetName];
+            const _vatk = gameState.characters[vegetaName];
+            if (!_vtgt || !_vatk) return;
+            const buffs = (_vtgt.statusEffects||[]).filter(function(e){ return e && e.type === 'buff' && !e.permanent; });
+            if (buffs.length === 0) return;
+            // Eliminar buffs no permanentes
+            _vtgt.statusEffects = (_vtgt.statusEffects||[]).filter(function(e){ return !e || e.type !== 'buff' || e.permanent; });
+            // +2 cargas por cada buff eliminado
+            const gained = buffs.length * 2;
+            _vatk.charges = Math.min(20, (_vatk.charges||0) + gained);
+            addLog('⚡ Príncipe de los Sayajins: ' + buffs.length + ' buff(s) eliminados de ' + targetName + ' → Vegeta +' + gained + ' cargas', 'buff');
+        }
+
+        // LUNA SUPERIOR DOS (Douma): trigger al aplicar Congelacion/Megacongelacion
+        function triggerLunaSuperiorDos(targetName, isMega) {
+            if (!targetName) return;
+            const _tgt = gameState.characters[targetName];
+            if (!_tgt) return;
+            // Buscar Douma en el mismo equipo del atacante (equipo contrario al objetivo)
+            const _doumaTeam = _tgt.team === 'team1' ? 'team2' : 'team1';
+            for (const _dn in gameState.characters) {
+                const _dc = gameState.characters[_dn];
+                if (!_dc || _dc.isDead || _dc.hp <= 0 || _dc.team !== _doumaTeam) continue;
+                if (!_dc.passive || _dc.passive.name !== 'Luna Superior Dos') continue;
+                // Curar aliado aleatorio
+                const healAmt = isMega ? 4 : 2;
+                const _allies = Object.keys(gameState.characters).filter(function(n){
+                    const c = gameState.characters[n]; return c && c.team === _doumaTeam && !c.isDead && c.hp > 0 && c.hp < c.maxHp;
+                });
+                if (_allies.length > 0) {
+                    const _healed = _allies[Math.floor(Math.random() * _allies.length)];
+                    if (typeof healCharacter === 'function') healCharacter(_healed, healAmt);
+                    else gameState.characters[_healed].hp = Math.min(gameState.characters[_healed].maxHp, gameState.characters[_healed].hp + healAmt);
+                    addLog('❄️ Luna Superior Dos: ' + _healed + ' recupera ' + healAmt + ' HP (' + (isMega ? 'Megacongelacion' : 'Congelacion') + ' aplicada)', 'heal');
                 }
                 break;
             }
