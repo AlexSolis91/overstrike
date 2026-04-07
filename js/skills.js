@@ -4089,6 +4089,249 @@
                 if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, _fiAtk ? _fiAtk.team : 'team1');
                 renderCharacters(); renderSummons(); showContinueButton(); return;
 
+
+            // ══════════════════════════════════════════════════════
+            // VEGETA — handlers actualizados
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'rafagas_ki_vegeta') {
+                // VEGETA — Ráfagas de Ki: 1 AOE + 50% triple
+                const _rkV = gameState.characters[gameState.selectedCharacter];
+                const _rkETeam = _rkV ? (_rkV.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                if (checkAndRedirectAOEMegaProv(_rkETeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('💥 Ráfagas de Ki redirigido por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _rkETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) continue;
+                        // Pasiva: eliminar buffs antes del daño
+                        triggerVegetaPasiva(_n, gameState.selectedCharacter);
+                        let _rkDmg = finalDamage;
+                        if (Math.random() < 0.50) { _rkDmg *= 3; addLog('💥 ¡Triple daño! Ráfagas de Ki en ' + _n, 'damage'); }
+                        applyDamageWithShield(_n, _rkDmg, gameState.selectedCharacter);
+                        // SSBlue Evo: +cargas del objetivo
+                        if (_rkV && _rkV.vegetaForm === 'ssblue_evo') {
+                            const _stolen = _c.charges || 0;
+                            if (_stolen > 0) { _rkV.charges = Math.min(20, (_rkV.charges||0) + _stolen); addLog('💠 SS Blue Evo: Vegeta gana ' + _stolen + ' cargas de ' + _n, 'buff'); }
+                        }
+                    }
+                    for (const _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _rkETeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, gameState.selectedCharacter); }
+                }
+                addLog('💥 Ráfagas de Ki: 1 AOE completado', 'damage');
+
+            } else if (ability.effect === 'big_bang_attack_vegeta') {
+                // VEGETA — Big Bang Attack: 4 daño + Debilitar + Sangrado 3T
+                triggerVegetaPasiva(targetName, gameState.selectedCharacter);
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                applyWeaken(targetName, 3);
+                applyBleed(targetName, 3);
+                addLog('💥 Big Bang Attack: ' + finalDamage + ' daño + Debilitar + Sangrado 3T a ' + targetName, 'damage');
+                // SSBlue Evo: cargas del objetivo
+                const _bbV = gameState.characters[gameState.selectedCharacter];
+                const _bbTgt = gameState.characters[targetName];
+                if (_bbV && _bbV.vegetaForm === 'ssblue_evo' && _bbTgt) {
+                    const _stolen = _bbTgt.charges || 0;
+                    if (_stolen > 0) { _bbV.charges = Math.min(20, (_bbV.charges||0) + _stolen); addLog('💠 SS Blue Evo: Vegeta gana ' + _stolen + ' cargas de ' + targetName, 'buff'); }
+                }
+
+            } else if (ability.effect === 'resplandor_final_vegeta') {
+                // VEGETA — Resplandor Final: 10 daño; si elimina → 4 daño directo AOE
+                const _rfV = gameState.characters[gameState.selectedCharacter];
+                const _rfETeam = _rfV ? (_rfV.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                triggerVegetaPasiva(targetName, gameState.selectedCharacter);
+                const _rfTgtBefore = gameState.characters[targetName];
+                const _rfAlive = _rfTgtBefore && !_rfTgtBefore.isDead && _rfTgtBefore.hp > 0;
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('💥 Resplandor Final: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                const _rfTgtAfter = gameState.characters[targetName];
+                if (_rfAlive && _rfTgtAfter && (_rfTgtAfter.isDead || _rfTgtAfter.hp <= 0)) {
+                    // Eliminó al objetivo → 4 daño directo AOE
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _rfETeam || _c.isDead || _c.hp <= 0) continue;
+                        applyDamageWithShield(_n, 4, null); // daño directo
+                        addLog('💥 Resplandor Final: 4 daño directo a ' + _n, 'damage');
+                    }
+                    for (const _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _rfETeam && _s.hp > 0) { _s.hp = Math.max(0, _s.hp - 4); if (_s.hp <= 0) { addLog('💀 ' + _s.name + ' eliminado (Resplandor Final)', 'damage'); delete gameState.summons[_sid]; } } }
+                }
+
+            } else if (ability.effect === 'explosion_final_vegeta') {
+                // VEGETA — Explosión Final: sacrifica HP + daño bonus + revivir
+                const _efV = gameState.characters[gameState.selectedCharacter];
+                const _efETeam = _efV ? (_efV.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _efHP = _efV ? _efV.hp : 0;
+                const _efDmg = finalDamage + _efHP; // 10 base + HP sacrificado
+                // Eliminar a Vegeta
+                if (_efV) {
+                    _efV.hp = 0;
+                    _efV.isDead = true;
+                    _efV._vegetaRevivePending = 3; // revivir en 3 rondas
+                    addLog('💥 Explosión Final: Vegeta sacrifica ' + _efHP + ' HP → ' + _efDmg + ' daño AOE!', 'damage');
+                }
+                if (checkAndRedirectAOEMegaProv(_efETeam, _efDmg, gameState.selectedCharacter)) {
+                    addLog('💥 Explosión Final redirigida por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _efETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n, true)) continue;
+                        applyDamageWithShield(_n, _efDmg, gameState.selectedCharacter);
+                    }
+                    for (const _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _efETeam && _s.hp > 0) applySummonDamage(_sid, _efDmg, gameState.selectedCharacter); }
+                }
+                renderCharacters(); renderSummons();
+                checkGameOver();
+
+            // ══════════════════════════════════════════════════════
+            // DOUMA — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'abanicos_hielo_douma') {
+                // DOUMA — Abanicos de Hielo: 3 daño + 10% Megacongelacion
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('❄️ Abanicos de Hielo: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (Math.random() < 0.10) {
+                    applyFreeze(targetName, 2, true); // Megacongelacion
+                    addLog('🧊 Abanicos de Hielo: ¡Megacongelacion! a ' + targetName, 'debuff');
+                }
+
+            } else if (ability.effect === 'summon_douma_hielo') {
+                // DOUMA — Estatua de Hielo: invoca Douma de Hielo
+                const existingDH = Object.values(gameState.summons).find(function(s){ return s && s.name === 'Douma de Hielo' && s.hp > 0; });
+                if (existingDH) {
+                    addLog('❌ Douma de Hielo ya está activa', 'info');
+                    endTurn(); return;
+                }
+                summonShadow('Douma de Hielo', gameState.selectedCharacter);
+                addLog('❄️ Douma invoca una Estatua de Hielo', 'buff');
+
+            } else if (ability.effect === 'niebla_congelante_douma') {
+                // DOUMA — Niebla Congelante: 5 AOE + crit garantizado si congelado + 50% aturdir
+                const _ncD = gameState.characters[gameState.selectedCharacter];
+                const _ncETeam = _ncD ? (_ncD.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                if (checkAndRedirectAOEMegaProv(_ncETeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('❄️ Niebla Congelante redirigida', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _ncETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) continue;
+                        const _isFrozen = (_c.statusEffects||[]).some(function(e){
+                            if (!e) return false; const _nn = normAccent(e.name||'');
+                            return _nn === 'congelacion' || _nn === 'mega congelacion';
+                        });
+                        let _ncDmg = finalDamage;
+                        if (_isFrozen) { _ncDmg *= 2; addLog('💥 Niebla Congelante: ¡Crítico! (congelado) ' + _n, 'damage'); }
+                        applyDamageWithShield(_n, _ncDmg, gameState.selectedCharacter);
+                        if (Math.random() < 0.50) { applyStun(_n, 1); addLog('❄️ Niebla Congelante: Aturdimiento a ' + _n, 'debuff'); }
+                    }
+                    for (const _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _ncETeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, gameState.selectedCharacter); }
+                }
+                addLog('❄️ Niebla Congelante: 5 AOE completado', 'damage');
+
+            } else if (ability.effect === 'summon_gigante_hielo') {
+                // DOUMA — Loto de Hielo Celestial: invoca Gigante de Hielo
+                const existingGH = Object.values(gameState.summons).find(function(s){ return s && s.name === 'Gigante de Hielo' && s.hp > 0; });
+                if (existingGH) {
+                    addLog('❌ Gigante de Hielo ya está activo', 'info');
+                    endTurn(); return;
+                }
+                summonShadow('Gigante de Hielo', gameState.selectedCharacter);
+                addLog('🧊 Douma invoca al Gigante de Hielo', 'buff');
+
+            // ══════════════════════════════════════════════════════
+            // JAINA PROUDMOORE — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'descarga_hielo_jaina') {
+                // JAINA — Descarga de Hielo: 2 daño + Congelacion; si ya congelado → 50% triple
+                const _dhTgt = gameState.characters[targetName];
+                const _hadFreeze = _dhTgt && (_dhTgt.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'congelacion'; });
+                let _dhDmg = finalDamage;
+                if (_hadFreeze && Math.random() < 0.50) { _dhDmg *= 3; addLog('💥 Descarga de Hielo: ¡Triple daño! (ya congelado)', 'damage'); }
+                applyDamageWithShield(targetName, _dhDmg, gameState.selectedCharacter);
+                applyFreeze(targetName, 1);
+                addLog('❄️ Descarga de Hielo: ' + _dhDmg + ' daño + Congelacion a ' + targetName, 'damage');
+
+            } else if (ability.effect === 'anillo_escarcha_jaina') {
+                // JAINA — Anillo de Escarcha: 2 AOE + Congelacion; si Congelado → Megacongelacion; si MegaCongelado → triple
+                const _aeJ = gameState.characters[gameState.selectedCharacter];
+                const _aeETeam = _aeJ ? (_aeJ.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                if (checkAndRedirectAOEMegaProv(_aeETeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('❄️ Anillo de Escarcha redirigido', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _aeETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) continue;
+                        const _hadCongelacion = (_c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'congelacion'; });
+                        const _hadMegaCongelacion = (_c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'mega congelacion'; });
+                        let _aeDmg = finalDamage;
+                        if (_hadMegaCongelacion) { _aeDmg *= 3; addLog('💥 Anillo de Escarcha: ¡Triple! (Megacongelacion activa en ' + _n + ')', 'damage'); }
+                        applyDamageWithShield(_n, _aeDmg, gameState.selectedCharacter);
+                        if (_hadCongelacion && !_hadMegaCongelacion) {
+                            // Reemplazar Congelacion por Megacongelacion
+                            _c.statusEffects = (_c.statusEffects||[]).filter(function(e){ return !e || normAccent(e.name||'') !== 'congelacion'; });
+                            applyFreeze(_n, 2, true);
+                            addLog('🧊 Anillo de Escarcha: Congelacion → Megacongelacion en ' + _n, 'debuff');
+                        } else if (!_hadCongelacion) {
+                            applyFreeze(_n, 1);
+                            addLog('❄️ Anillo de Escarcha: Congelacion a ' + _n, 'debuff');
+                        }
+                    }
+                    for (const _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _aeETeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, gameState.selectedCharacter); }
+                }
+                addLog('❄️ Anillo de Escarcha: 2 AOE completado', 'damage');
+
+            } else if (ability.effect === 'bloque_hielo_jaina') {
+                // JAINA — Bloque de Hielo: disipar debuffs aliados + Proteccion Sagrada 2T
+                const _bjAtk = gameState.characters[gameState.selectedCharacter];
+                const _bjTeam = _bjAtk ? _bjAtk.team : 'team1';
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _bjTeam || _c.isDead || _c.hp <= 0) continue;
+                    // Disipar debuffs
+                    _c.statusEffects = (_c.statusEffects||[]).filter(function(e){ return !e || e.type !== 'debuff'; });
+                    // Proteccion Sagrada 2T
+                    _c.statusEffects = (_c.statusEffects||[]).filter(function(e){ return !e || normAccent(e.name||'') !== 'proteccion sagrada'; });
+                    _c.statusEffects.push({ name: 'Proteccion Sagrada', type: 'buff', duration: 2, emoji: '🛡️' });
+                    addLog('🛡️ Bloque de Hielo: Debuffs disipados + Proteccion Sagrada 2T a ' + _n, 'buff');
+                }
+
+            } else if (ability.effect === 'invierno_jaina') {
+                // JAINA — Invierno sin Remordimientos: 2 AOE + Megacongelacion; efectos según estado previo
+                const _iwJ = gameState.characters[gameState.selectedCharacter];
+                const _iwETeam = _iwJ ? (_iwJ.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                if (checkAndRedirectAOEMegaProv(_iwETeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('🧊 Invierno sin Remordimientos redirigido', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _iwETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) continue;
+                        const _hadCong = (_c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'congelacion'; });
+                        const _hadMega = (_c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'mega congelacion'; });
+                        let _iwDmg = finalDamage;
+                        if (_hadMega) {
+                            _iwDmg *= 3;
+                            _c.speed = Math.max(1, (_c.speed||80) - 20);
+                            addLog('🧊 Invierno: ¡Triple daño! -20 vel permanente a ' + _n, 'debuff');
+                        }
+                        applyDamageWithShield(_n, _iwDmg, gameState.selectedCharacter);
+                        if (_hadCong && !_hadMega) {
+                            _c.charges = 0;
+                            addLog('🧊 Invierno: Cargas a 0 (' + _n + ' tenía Congelacion)', 'debuff');
+                        }
+                        // Aplicar Megacongelacion a todos
+                        _c.statusEffects = (_c.statusEffects||[]).filter(function(e){ return !e || (normAccent(e.name||'') !== 'congelacion' && normAccent(e.name||'') !== 'mega congelacion'); });
+                        applyFreeze(_n, 2, true);
+                        addLog('🧊 Invierno sin Remordimientos: Megacongelacion a ' + _n, 'debuff');
+                    }
+                    for (const _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _iwETeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, gameState.selectedCharacter); }
+                }
+                addLog('🧊 Invierno sin Remordimientos: 2 AOE completado', 'damage');
+
             } else if (ability.effect === 'vals_tanjiro') {
                 // TANJIRO — Básico: daño + 50% de generar 1 carga al equipo aliado (Olor de la Brecha)
                 const _tjAtk = gameState.characters[gameState.selectedCharacter];
