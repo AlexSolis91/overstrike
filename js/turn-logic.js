@@ -1317,10 +1317,48 @@
                             renderCharacters();
                         }
                     }
+                    // ── SABAKU TAISŌ (Gaara): countdown de revivir en 2 rondas ──
+                    for (const _svN in gameState.characters) {
+                        const _svC = gameState.characters[_svN];
+                        if (!_svC || !_svC._sabakuRevivePending || _svC._sabakuRevivePending <= 0) continue;
+                        _svC._sabakuRevivePending--;
+                        if (_svC._sabakuRevivePending <= 0) {
+                            _svC.isDead = false;
+                            _svC.hp = _svC._sabakuReviveHp || Math.ceil(_svC.maxHp * 0.50);
+                            _svC.charges = 0;
+                            _svC.statusEffects = [];
+                            delete _svC._sabakuRevivePending;
+                            delete _svC._sabakuReviveHp;
+                            addLog('🏜️ Sabaku Taisō: ¡' + _svN + ' revive con ' + _svC.hp + ' HP y 0 cargas!', 'buff');
+                            renderCharacters();
+                        }
+                    }
                     // RESET EVASIÓN SASUKE al inicio de ronda
                     for (const _sn in gameState.characters) {
                         const _sc = gameState.characters[_sn];
                         if (_sc && _sc.passive && _sc.passive.name === 'Venganza Eterna') _sc.sasukeEvasionUsedThisRound = false;
+                    }
+
+                    // ── DEFENSA ABSOLUTA (Gaara): inicio de ronda → Buff Armadura propio + 50% a aliados ──
+                    for (const _gaaN in gameState.characters) {
+                        const _gaaC = gameState.characters[_gaaN];
+                        if (!_gaaC || _gaaC.isDead || _gaaC.hp <= 0) continue;
+                        if (!_gaaC.passive || _gaaC.passive.name !== 'Defensa Absoluta') continue;
+                        // Armadura propia
+                        _gaaC.statusEffects = (_gaaC.statusEffects||[]).filter(function(e){ return !e || normAccent(e.name||'') !== 'armadura'; });
+                        _gaaC.statusEffects.push({ name: 'Armadura', type: 'buff', duration: 2, emoji: '🛡️' });
+                        addLog('🏜️ Defensa Absoluta: ' + _gaaN + ' obtiene Buff Armadura al inicio de ronda', 'buff');
+                        // 50% Armadura a cada aliado
+                        for (const _aaN in gameState.characters) {
+                            const _aaC = gameState.characters[_aaN];
+                            if (!_aaC || _aaC.isDead || _aaC.hp <= 0 || _aaC.team !== _gaaC.team || _aaN === _gaaN) continue;
+                            if (Math.random() < 0.50) {
+                                _aaC.statusEffects = (_aaC.statusEffects||[]).filter(function(e){ return !e || normAccent(e.name||'') !== 'armadura'; });
+                                _aaC.statusEffects.push({ name: 'Armadura', type: 'buff', duration: 2, emoji: '🛡️' });
+                                addLog('🏜️ Defensa Absoluta: ' + _aaN + ' obtiene Buff Armadura (50%)', 'buff');
+                            }
+                        }
+                        break; // Solo 1 Gaara puede estar en el campo
                     }
 
                     // ── GIGANTE DE HIELO: 50% Congelacion + 50% Megacongelacion al inicio de ronda ──
