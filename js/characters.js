@@ -721,4 +721,32 @@
                     { name: 'Invierno sin Remordimientos', type: 'over', cost: 12, chargeGain: 0, damage: 2, target: 'aoe', effect: 'invierno_jaina', description: 'Causa 2 AOE + aplica Megacongelacion. Si tenía Congelacion: reduce cargas a 0. Si tenía Megacongelacion: daño triple y -20 velocidad permanente.' }
                 ]
             },
+
+                'Gaara': {
+                hp: 25, maxHp: 25, speed: 85, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/dJ5TWsF0/Captura-de-pantalla-2026-04-08-103556.png',
+                passive: { name: 'Defensa Absoluta', description: '50% de reducir a 0 el daño por golpe recibido. Al inicio de ronda: Buff Armadura propio + 50% Armadura a aliados. Si un aliado fuera a recibir ataque ST de 3+ daño, Gaara intercepta automáticamente el ataque.' },
+                abilities: [
+                    { name: 'Garra de Arena', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'garra_arena_gaara', description: 'Causa 2 daño. Aplica Buff Esquivar 2T. 50% de aplicar Buff Esquiva Area 2T.' },
+                    { name: 'Arenas Movedizas', type: 'special', cost: 2, chargeGain: 0, damage: 1, target: 'aoe', effect: 'arenas_movedizas_gaara', description: 'Causa 1 AOE. 50% de reducir 20% velocidad por 2T. 50% de robar 1 carga de cada objetivo.' },
+                    { name: 'Granizo de Arena Imperial', type: 'special', cost: 7, chargeGain: 0, damage: 1, target: 'aoe', effect: 'granizo_arena_gaara', description: 'Causa 1 AOE. Ignora Esquiva Area y Mega Provocacion. +2 daño por cada Buff/Debuff activo en el objetivo. Invocaciones eliminadas no activan su pasiva al morir.' },
+                    { name: 'Sabaku Taisō', type: 'over', cost: 14, chargeGain: 0, damage: 0, target: 'single', effect: 'sabaku_taiso_gaara', description: 'Elimina al objetivo. El eliminado revive con 50% HP y 0 cargas en las próximas 2 rondas.' }
+                ]
+            },
+ 
+            'Rey de la Noche': {
+                hp: 15, maxHp: 15, speed: 82, charges: 0, team: 'team2',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                immuneToMiedo: true,
+                ignoresProvocacion: true,
+                portrait: 'https://i.ibb.co/fBN5rMW/Captura-de-pantalla-2026-04-08-105928.png',
+                passive: { name: 'Invierno Eterno', description: 'Inmune a Miedo, Quemaduras y Sangrado. Al aplicar Congelacion/Megacongelacion en enemigo: 2 daño directo. Ignora Provocacion, Megaprovocacion y Sigilo.' },
+                abilities: [
+                    { name: 'Lanza de Hielo', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'lanza_hielo_rdn', description: 'Causa 1 daño. Si objetivo tiene Prov/MegaProv/Sigilo: -5 vel. Si tenía Congelacion/Megacongelacion: -2 cargas. Si es invocacion: el equipo aliado toma el control.' },
+                    { name: 'Tormenta Invernal', type: 'special', cost: 3, chargeGain: 0, damage: 2, target: 'aoe', effect: 'tormenta_invernal_rdn', description: 'Causa 2 AOE. Aplica Congelacion. 50% de aplicar Posesion.' },
+                    { name: 'Toque de la Muerte', type: 'special', cost: 10, chargeGain: 0, damage: 8, target: 'single', effect: 'toque_muerte_rdn', description: 'Causa 8 daño. Aplica Megacongelacion. Si el enemigo muere, revive como aliado con 50% HP y 0 cargas.' },
+                    { name: 'Frío Eterno', type: 'over', cost: 16, chargeGain: 0, damage: 5, target: 'aoe', effect: 'frio_eterno_rdn', description: 'Causa 5 AOE. Critico sobre objetivos con Congelacion. Triple daño sobre objetivos con Megacongelacion. Si el enemigo muere, revive como aliado con 50% HP y 0 cargas.' }
+                ]
+            },
         };
