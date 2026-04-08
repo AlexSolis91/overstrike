@@ -404,7 +404,10 @@ function applyDebuff(targetName, effectObj) {
 
         function applyBleed(targetName, duration) {
 
-            if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }            applyDebuff(targetName, { name: 'Sangrado', type: 'debuff', duration, emoji: '🩸' });
+            if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }
+            const _bleedTgt = gameState.characters[targetName];
+            if (_bleedTgt && _bleedTgt.passive && _bleedTgt.passive.name === 'Invierno Eterno') { addLog('☠️ Invierno Eterno: Rey de la Noche es inmune a Sangrado', 'buff'); return; }
+            applyDebuff(targetName, { name: 'Sangrado', type: 'debuff', duration, emoji: '🩸' });
             addLog(`🩸 ${targetName} sufre Sangrado por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
         }
 
@@ -413,6 +416,7 @@ function applyDebuff(targetName, effectObj) {
             const _fearTgt = gameState.characters[targetName];
             if (_fearTgt && _fearTgt.passive && _fearTgt.passive.name === 'Mente Brillante') { addLog('🪓 Mente Brillante: Ivar es inmune a Miedo', 'buff'); return; }
             if (_fearTgt && _fearTgt.passive && _fearTgt.passive.name === 'Señor de los Nazgul') { addLog('💀 Señor de los Nazgul: Rey Brujo es inmune a Miedo', 'buff'); return; }
+            if (_fearTgt && _fearTgt.passive && _fearTgt.passive.name === 'Invierno Eterno') { addLog('☠️ Invierno Eterno: Rey de la Noche es inmune a Miedo', 'buff'); return; }
             applyDebuff(targetName, { name: 'Miedo', type: 'debuff', duration, emoji: '😱' });
             addLog(`😱 ${targetName} siente Miedo por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
         }
@@ -459,6 +463,28 @@ function applyDebuff(targetName, effectObj) {
             // Reducir velocidad (se restaurará cuando expire el debuff)
             target.speed = Math.max(1, target.speed - _freezeActualPenalty);
             addLog(emoji + ' ' + targetName + ' queda ' + (mega ? 'Mega Congelado' : 'Congelado') + ' (vel -' + _freezeActualPenalty + ') por ' + duration + ' turno' + (duration > 1 ? 's' : ''), 'damage');
+
+            // ── INVIERNO ETERNO (Rey de la Noche): 2 daño directo al objetivo cuando su equipo aplica Congelacion/Megacongelacion ──
+            if (!passiveExecuting) {
+                const _tgtRDN = gameState.characters[targetName];
+                if (_tgtRDN) {
+                    // Buscar al Rey de la Noche en el equipo contrario al objetivo
+                    const _rdnEnemyTeam = _tgtRDN.team;
+                    const _rdnAllyTeam = _rdnEnemyTeam === 'team1' ? 'team2' : 'team1';
+                    for (const _rdnN in gameState.characters) {
+                        const _rdnC = gameState.characters[_rdnN];
+                        if (!_rdnC || _rdnC.isDead || _rdnC.hp <= 0 || _rdnC.team !== _rdnAllyTeam) continue;
+                        if (_rdnC.passive && _rdnC.passive.name === 'Invierno Eterno') {
+                            passiveExecuting = true;
+                            _tgtRDN.hp = Math.max(0, (_tgtRDN.hp||0) - 2);
+                            if (_tgtRDN.hp <= 0) _tgtRDN.isDead = true;
+                            addLog('☠️ Invierno Eterno: ' + _rdnN + ' inflige 2 daño directo a ' + targetName + ' (congelación aplicada)', 'damage');
+                            passiveExecuting = false;
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         function applyPoison(targetName, duration) {
