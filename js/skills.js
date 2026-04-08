@@ -4342,6 +4342,223 @@
                 }
                 addLog('🧊 Invierno sin Remordimientos: 2 AOE completado', 'damage');
 
+            // ══════════════════════════════════════════════════════
+            // GAARA — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'garra_arena_gaara') {
+                // GAARA — Garra de Arena: 2 daño + Buff Esquivar 2T + 50% Buff Esquiva Area 2T
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('🏜️ Garra de Arena: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                const _gaAtk = gameState.characters[gameState.selectedCharacter];
+                if (_gaAtk) {
+                    _gaAtk.statusEffects = (_gaAtk.statusEffects||[]).filter(function(e){ return !e || normAccent(e.name||'') !== 'esquivar'; });
+                    _gaAtk.statusEffects.push({ name: 'Esquivar', type: 'buff', duration: 2, emoji: '💨' });
+                    addLog('💨 Garra de Arena: Gaara obtiene Buff Esquivar 2T', 'buff');
+                    if (Math.random() < 0.50) {
+                        _gaAtk.statusEffects = (_gaAtk.statusEffects||[]).filter(function(e){ return !e || normAccent(e.name||'') !== 'esquiva area'; });
+                        _gaAtk.statusEffects.push({ name: 'Esquiva Area', type: 'buff', duration: 2, emoji: '🌀' });
+                        addLog('🌀 Garra de Arena: Gaara obtiene Buff Esquiva Área 2T (50%)', 'buff');
+                    }
+                }
+
+            } else if (ability.effect === 'arenas_movedizas_gaara') {
+                // GAARA — Arenas Movedizas: 1 AOE + 50% -20% vel 2T + 50% robar 1 carga por objetivo
+                const _amAtk = gameState.characters[gameState.selectedCharacter];
+                const _amETeam = _amAtk ? (_amAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                if (checkAndRedirectAOEMegaProv(_amETeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('🏜️ Arenas Movedizas redirigida', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _amETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('💨 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        // 50% reducir velocidad 20% por 2 turnos (temporal, guardado en statusEffects)
+                        if (Math.random() < 0.50) {
+                            const _velRed = Math.floor((_c.speed||80) * 0.20);
+                            _c.speed = Math.max(1, (_c.speed||80) - _velRed);
+                            _c.statusEffects = (_c.statusEffects||[]).filter(function(e){ return !e || e.name !== 'Arena_VelDebuff'; });
+                            _c.statusEffects.push({ name: 'Arena_VelDebuff', type: 'debuff', duration: 2, emoji: '🏜️', _velRestored: _velRed, passiveHidden: true });
+                            addLog('🏜️ Arenas Movedizas: ' + _n + ' -' + _velRed + ' vel por 2T (50%)', 'debuff');
+                        }
+                        // 50% robar 1 carga del objetivo
+                        if (Math.random() < 0.50 && _c.charges > 0 && _amAtk) {
+                            _c.charges = Math.max(0, (_c.charges||0) - 1);
+                            _amAtk.charges = Math.min(20, (_amAtk.charges||0) + 1);
+                            addLog('⚡ Arenas Movedizas: roba 1 carga de ' + _n + ' (50%)', 'buff');
+                        }
+                    }
+                    for (const _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _amETeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, gameState.selectedCharacter); }
+                }
+                addLog('🏜️ Arenas Movedizas: 1 AOE completado', 'damage');
+
+            } else if (ability.effect === 'granizo_arena_gaara') {
+                // GAARA — Granizo de Arena Imperial: 1 AOE, ignora EA y MegaProv, +2 daño por buff/debuff, invocaciones eliminadas no activan pasiva
+                const _grAtk = gameState.characters[gameState.selectedCharacter];
+                const _grETeam = _grAtk ? (_grAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                // EL REY PROMETIDO: avisar que hay AOE
+                if (typeof triggerElReyPrometido === 'function') triggerElReyPrometido(gameState.selectedCharacter);
+                // NO redirigir MegaProv — este ataque la ignora
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _grETeam || _c.isDead || _c.hp <= 0) continue;
+                    // Ignora Esquiva Área — no saltamos ni siquiera si tiene EA
+                    const _buffsCount = (_c.statusEffects||[]).filter(function(e){ return e && e.type === 'buff'; }).length;
+                    const _debuffsCount = (_c.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff'; }).length;
+                    const _bonusDmg = (_buffsCount + _debuffsCount) * 2;
+                    const _grFinalDmg = finalDamage + _bonusDmg;
+                    if (_bonusDmg > 0) addLog('🏜️ Granizo Imperial: +' + _bonusDmg + ' daño adicional en ' + _n + ' (' + (_buffsCount+_debuffsCount) + ' efectos activos)', 'damage');
+                    applyDamageWithShield(_n, _grFinalDmg, gameState.selectedCharacter);
+                }
+                // Invocaciones enemigas: eliminarlas sin activar pasiva
+                for (const _sid in gameState.summons) {
+                    const _s = gameState.summons[_sid];
+                    if (!_s || _s.team !== _grETeam || _s.hp <= 0) continue;
+                    const _buffsS = (_s.statusEffects||[]).filter(function(e){ return e && e.type === 'buff'; }).length;
+                    const _debuffsS = (_s.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff'; }).length;
+                    const _bonusS = (_buffsS + _debuffsS) * 2;
+                    addLog('🏜️ Granizo Imperial elimina invocación ' + _s.name + ' sin activar pasiva', 'damage');
+                    _s._skipDeathPassive = true; // flag para suprimir pasiva al morir
+                    applySummonDamage(_sid, _s.hp + 1, gameState.selectedCharacter); // daño letal
+                }
+                addLog('🏜️ Granizo de Arena Imperial: AOE completado (ignora EA/MegaProv)', 'damage');
+
+            } else if (ability.effect === 'sabaku_taiso_gaara') {
+                // GAARA — Sabaku Taisō: elimina al objetivo; revive con 50% HP y 0 cargas en 2 rondas
+                const _stTgt = gameState.characters[targetName];
+                if (_stTgt && !_stTgt.isDead && _stTgt.hp > 0) {
+                    addLog('🏜️ Sabaku Taisō: Gaara aplasta a ' + targetName + ' — ¡eliminado!', 'damage');
+                    _stTgt.hp = 0;
+                    _stTgt.isDead = true;
+                    // Programar revivir en 2 rondas
+                    _stTgt._sabakuRevivePending = 2;
+                    _stTgt._sabakuReviveHp = Math.ceil(_stTgt.maxHp * 0.50);
+                    addLog('⏳ Sabaku Taisō: ' + targetName + ' revivirá con ' + _stTgt._sabakuReviveHp + ' HP y 0 cargas en 2 rondas', 'info');
+                }
+
+            // ══════════════════════════════════════════════════════
+            // REY DE LA NOCHE — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'lanza_hielo_rdn') {
+                // RDN — Lanza de Hielo: 1 daño. Si Prov/MegaProv/Sigilo: -5 vel. Si Congelado antes: -2 cargas. Si invocación: el equipo aliado la controla.
+                const _lhAtk = gameState.characters[gameState.selectedCharacter];
+                // Comprobar si el objetivo es una invocación
+                const _lhSummon = (typeof targetName === 'string' && targetName.startsWith('__summon__:'))
+                    ? gameState.summons[targetName.slice(11)] : null;
+                if (_lhSummon) {
+                    // Tomar control de la invocación
+                    addLog('❄️ Lanza de Hielo: ¡El Rey de la Noche toma control de ' + _lhSummon.name + '!', 'buff');
+                    _lhSummon.team = _lhAtk ? _lhAtk.team : 'team1';
+                    _lhSummon.summoner = gameState.selectedCharacter;
+                } else {
+                    const _lhTgt = gameState.characters[targetName];
+                    const _hadFreezeLH = _lhTgt && (_lhTgt.statusEffects||[]).some(function(e){
+                        if (!e) return false; const _nn = normAccent(e.name||'');
+                        return _nn === 'congelacion' || _nn === 'mega congelacion';
+                    });
+                    const _hasTauntLH = _lhTgt && (_lhTgt.statusEffects||[]).some(function(e){
+                        if (!e) return false; const _nn = normAccent(e.name||'');
+                        return _nn === 'provocacion' || _nn === 'megaprovocacion' || _nn === 'sigilo';
+                    });
+                    applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                    addLog('❄️ Lanza de Hielo: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                    if (_hasTauntLH && _lhTgt) {
+                        _lhTgt.speed = Math.max(1, (_lhTgt.speed||80) - 5);
+                        addLog('❄️ Lanza de Hielo: ' + targetName + ' pierde 5 vel (tenía Prov/MegaProv/Sigilo)', 'debuff');
+                    }
+                    if (_hadFreezeLH && _lhTgt) {
+                        _lhTgt.charges = Math.max(0, (_lhTgt.charges||0) - 2);
+                        addLog('❄️ Lanza de Hielo: ' + targetName + ' pierde 2 cargas (estaba congelado)', 'debuff');
+                    }
+                }
+
+            } else if (ability.effect === 'tormenta_invernal_rdn') {
+                // RDN — Tormenta Invernal: 2 AOE + Congelacion + 50% Posesion
+                const _tiAtk = gameState.characters[gameState.selectedCharacter];
+                const _tiETeam = _tiAtk ? (_tiAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                if (checkAndRedirectAOEMegaProv(_tiETeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('❄️ Tormenta Invernal redirigida', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _tiETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('💨 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        applyFreeze(_n, 1);
+                        addLog('❄️ Tormenta Invernal: Congelacion a ' + _n, 'debuff');
+                        if (Math.random() < 0.50) {
+                            _c.statusEffects = (_c.statusEffects||[]).filter(function(e){ return !e || normAccent(e.name||'') !== 'posesion'; });
+                            _c.statusEffects.push({ name: 'Posesion', type: 'debuff', duration: 1, emoji: '👁️' });
+                            addLog('👁️ Tormenta Invernal: Posesion a ' + _n + ' (50%)', 'debuff');
+                        }
+                    }
+                    for (const _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _tiETeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, gameState.selectedCharacter); }
+                }
+                addLog('❄️ Tormenta Invernal: 2 AOE + Congelacion completado', 'damage');
+
+            } else if (ability.effect === 'toque_muerte_rdn') {
+                // RDN — Toque de la Muerte: 8 daño + Megacongelacion. Si muere → revive como aliado con 50% HP y 0 cargas.
+                const _tdAtk = gameState.characters[gameState.selectedCharacter];
+                const _tdTgt = gameState.characters[targetName];
+                const _tdWasAlive = _tdTgt && !_tdTgt.isDead && _tdTgt.hp > 0;
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                if (_tdTgt && !_tdTgt.isDead) {
+                    applyFreeze(targetName, 2, true);
+                    addLog('🧊 Toque de la Muerte: Megacongelacion a ' + targetName, 'debuff');
+                }
+                if (_tdWasAlive && _tdTgt && (_tdTgt.isDead || _tdTgt.hp <= 0)) {
+                    // Revivir como aliado
+                    _tdTgt.isDead = false;
+                    _tdTgt.hp = Math.ceil(_tdTgt.maxHp * 0.50);
+                    _tdTgt.charges = 0;
+                    _tdTgt.statusEffects = [];
+                    const _rdnTeam = _tdAtk ? _tdAtk.team : 'team1';
+                    _tdTgt.team = _rdnTeam;
+                    addLog('☠️ Toque de la Muerte: ¡' + targetName + ' revive como aliado del Rey de la Noche con ' + _tdTgt.hp + ' HP!', 'buff');
+                    renderCharacters();
+                }
+                addLog('❄️ Toque de la Muerte: ' + finalDamage + ' daño a ' + targetName, 'damage');
+
+            } else if (ability.effect === 'frio_eterno_rdn') {
+                // RDN — Frío Eterno: 5 AOE. Crit sobre Congelacion. Triple daño sobre Megacongelacion. Si muere → aliado 50% HP 0 cargas.
+                const _feAtk = gameState.characters[gameState.selectedCharacter];
+                const _feETeam = _feAtk ? (_feAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                if (checkAndRedirectAOEMegaProv(_feETeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('🧊 Frío Eterno redirigido', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _feETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('💨 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        const _hadCongFE = (_c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'congelacion'; });
+                        const _hadMegaFE = (_c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'mega congelacion'; });
+                        let _feDmg = finalDamage;
+                        if (_hadMegaFE) {
+                            _feDmg *= 3;
+                            addLog('🧊 Frío Eterno: ¡Triple daño! sobre ' + _n + ' (Megacongelacion)', 'damage');
+                        } else if (_hadCongFE) {
+                            _feDmg *= 2;
+                            addLog('❄️ Frío Eterno: ¡Crítico! sobre ' + _n + ' (Congelacion)', 'damage');
+                        }
+                        const _feWasAlive = !_c.isDead && _c.hp > 0;
+                        applyDamageWithShield(_n, _feDmg, gameState.selectedCharacter);
+                        // Si muere → revivir como aliado
+                        if (_feWasAlive && (_c.isDead || _c.hp <= 0) && _feAtk) {
+                            _c.isDead = false;
+                            _c.hp = Math.ceil(_c.maxHp * 0.50);
+                            _c.charges = 0;
+                            _c.statusEffects = [];
+                            _c.team = _feAtk.team;
+                            addLog('☠️ Frío Eterno: ¡' + _n + ' revive como aliado del Rey de la Noche con ' + _c.hp + ' HP!', 'buff');
+                        }
+                    }
+                    for (const _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _feETeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, gameState.selectedCharacter); }
+                    renderCharacters();
+                }
+                addLog('🧊 Frío Eterno: 5 AOE completado', 'damage');
+
             } else if (ability.effect === 'vals_tanjiro') {
                 // TANJIRO — Básico: daño + 50% de generar 1 carga al equipo aliado (Olor de la Brecha)
                 const _tjAtk = gameState.characters[gameState.selectedCharacter];
