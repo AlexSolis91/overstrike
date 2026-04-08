@@ -85,6 +85,11 @@
                 triggerDaenerysPassiveBurnHeal('Daenerys Targaryen');
                 return;
             }
+            // INVIERNO ETERNO (Rey de la Noche): inmune a Quemaduras
+            if (target.passive && target.passive.name === 'Invierno Eterno') {
+                addLog('☠️ Invierno Eterno: Rey de la Noche es inmune a Quemadura', 'buff');
+                return;
+            }
             // DONCELLA ESCUDERA (Lagertha): 50% de esquivar Quemadura
             if (target.passive && target.passive.name === 'Doncella Escudera') {
                 if (Math.random() < 0.50) {
@@ -323,6 +328,11 @@ function processBurnEffects(charName) {
                         char.speed = Math.max(1, char.speed - effect.speedBonus);
                         addLog(`💨 Celeridad de ${charName} expira (velocidad restaurada)`, 'info');
                     }
+                    // Restaurar velocidad si era Arena_VelDebuff (Gaara - Arenas Movedizas)
+                    if (nname === 'arena_veldebuff' && effect._velRestored) {
+                        char.speed = Math.min((char.baseSpeed || 999), char.speed + effect._velRestored);
+                        addLog('🏜️ Arenas Movedizas: velocidad de ' + charName + ' restaurada', 'info');
+                    }
                     return false;
                 }
                 return true;
@@ -338,6 +348,11 @@ function processBurnEffects(charName) {
             // SAITAMA: inmune a todos los debuffs incluyendo Quemadura
             if ((targetName === 'Saitama' || targetName === 'Saitama v2')) {
                 addLog('🦸 Saitama es inmune a Quemadura (Espíritu del Héroe)', 'buff');
+                return;
+            }
+            // INVIERNO ETERNO (Rey de la Noche): inmune a Quemaduras
+            if (target.passive && target.passive.name === 'Invierno Eterno') {
+                addLog('☠️ Invierno Eterno: Rey de la Noche es inmune a Quemadura', 'buff');
                 return;
             }
             // Guard: never apply burns with 0% or undefined percent
