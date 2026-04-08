@@ -876,7 +876,18 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 // Consumir cargas
                 attacker.charges -= adjustedCost;
                 
-                // Aplicar daño a la invocación
+                // LANZA DE HIELO (Rey de la Noche): tomar control de la invocación — NO aplica daño
+                if (ability.effect === 'lanza_hielo_rdn') {
+                    const _lhSumCtrl = gameState.summons[summonId];
+                    if (_lhSumCtrl) {
+                        const _lhPrevTeam = _lhSumCtrl.team;
+                        _lhSumCtrl.team = attacker.team;
+                        _lhSumCtrl.summoner = gameState.selectedCharacter;
+                        addLog('❄️ Lanza de Hielo: ¡El Rey de la Noche toma control de ' + _lhSumCtrl.name + '! (era del equipo ' + _lhPrevTeam + ')', 'buff');
+                        renderSummons();
+                    }
+                } else {
+                // Aplicar daño a la invocación (para todos los demás skills)
                 applySummonDamage(summonId, finalDamage, gameState.selectedCharacter);
                 addLog(`⚔️ ${gameState.selectedCharacter} usa ${ability.name} causando ${finalDamage} de daño`, 'damage');
 
@@ -897,6 +908,7 @@ function triggerMaboroshi(targetTeam, debuffName) {
                         addLog('🔥 Amaterasu AOE: ' + _n + ' recibe Quemadura 6HP', 'debuff');
                     }
                 }
+                } // fin else (no lanza_hielo_rdn)
                 
                 // Ganar cargas
                 let finalChargeGain = ability.chargeGain || 0;
