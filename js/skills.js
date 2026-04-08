@@ -4171,7 +4171,7 @@
                 const _efV = gameState.characters[gameState.selectedCharacter];
                 const _efETeam = _efV ? (_efV.team === 'team1' ? 'team2' : 'team1') : 'team2';
                 const _efHP = _efV ? _efV.hp : 0;
-                const _efDmg = finalDamage + _efHP; // 10 base + HP sacrificado
+                const _efDmg = finalDamage + _efHP; // base + HP sacrificado
                 // Eliminar a Vegeta
                 if (_efV) {
                     _efV.hp = 0;
@@ -4179,12 +4179,24 @@
                     _efV._vegetaRevivePending = 3; // revivir en 3 rondas
                     addLog('💥 Explosión Final: Vegeta sacrifica ' + _efHP + ' HP → ' + _efDmg + ' daño AOE!', 'damage');
                 }
+                // ── PRIMERO: eliminar Buff Esquiva Área de TODOS los enemigos (ignora Jon Snow/EA) ──
+                for (const _efN in gameState.characters) {
+                    const _efC = gameState.characters[_efN];
+                    if (!_efC || _efC.team !== _efETeam || _efC.isDead || _efC.hp <= 0) continue;
+                    const _hadEA = (_efC.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'esquiva area'; });
+                    if (_hadEA) {
+                        _efC.statusEffects = (_efC.statusEffects||[]).filter(function(e){ return !e || normAccent(e.name||'') !== 'esquiva area'; });
+                        addLog('💥 Explosión Final: Buff Esquiva Área eliminado de ' + _efN + ' antes del impacto', 'damage');
+                    }
+                }
                 if (checkAndRedirectAOEMegaProv(_efETeam, _efDmg, gameState.selectedCharacter)) {
                     addLog('💥 Explosión Final redirigida por Mega Provocación', 'damage');
                 } else {
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _efETeam || _c.isDead || _c.hp <= 0) continue;
+                        // checkAsprosAOEImmunity: los buffs EA ya fueron eliminados arriba,
+                        // solo quedarían inmunidades pasivas permanentes — se respetan
                         if (checkAsprosAOEImmunity(_n, true)) continue;
                         applyDamageWithShield(_n, _efDmg, gameState.selectedCharacter);
                     }
