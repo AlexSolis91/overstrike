@@ -4181,31 +4181,32 @@
                 else if (_efPct > 0.09) _efBonus = 8;
                 else if (_efPct > 0) _efBonus = 15;
                 const _efDmg = 5 + _efBonus;
-                // Eliminar a Vegeta
+                // Eliminar a Vegeta ANTES de ejecutar el AOE
                 if (_efV) {
                     _efV.hp = 0;
                     _efV.isDead = true;
                     _efV._vegetaRevivePending = 3;
                     addLog('💥 Explosión Final: Vegeta (' + Math.round(_efPct*100) + '% HP) → ' + _efDmg + ' daño AOE (5 base + ' + _efBonus + ' bonus)!', 'damage');
                 }
-                // ── Eliminar Buff Esquiva Área de TODOS los enemigos antes del impacto ──
-                for (const _efN in gameState.characters) {
-                    const _efC = gameState.characters[_efN];
-                    if (!_efC || _efC.team !== _efETeam || _efC.isDead || _efC.hp <= 0) continue;
-                    const _hadEA = (_efC.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'esquiva area'; });
-                    if (_hadEA) {
-                        _efC.statusEffects = (_efC.statusEffects||[]).filter(function(e){ return !e || normAccent(e.name||'') !== 'esquiva area'; });
-                        addLog('💥 Explosión Final: Buff Esquiva Área eliminado de ' + _efN + ' antes del impacto', 'damage');
-                    }
-                }
                 if (checkAndRedirectAOEMegaProv(_efETeam, _efDmg, gameState.selectedCharacter)) {
                     addLog('💥 Explosión Final redirigida por Mega Provocación', 'damage');
                 } else {
+                    // ── PASO 1: activar Jon Snow PRIMERO para que aplique EA ──
+                    if (typeof triggerElReyPrometido === 'function') triggerElReyPrometido(gameState.selectedCharacter);
+                    // ── PASO 2: por cada enemigo, limpiar buffs con pasiva de Vegeta ANTES del daño ──
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _efETeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n, true)) continue;
+                        // Pasiva Vegeta elimina todos los buffs (incluyendo EA aplicado por Jon Snow)
+                        triggerVegetaPasiva(_n, gameState.selectedCharacter);
+                        // Solo bloquear si tiene EA como pasiva permanente (no como buff temporal)
+                        if (_c.esquivaAreaPassive) continue;
                         applyDamageWithShield(_n, _efDmg, gameState.selectedCharacter);
+                        // SSBlue Evo: cargas del objetivo
+                        if (_efV && _efV.vegetaForm === 'ssblue_evo') {
+                            const _stolen = _c.charges || 0;
+                            if (_stolen > 0) { _efV.charges = Math.min(20, (_efV.charges||0) + _stolen); addLog('💠 SS Blue Evo: Vegeta gana ' + _stolen + ' cargas de ' + _n, 'buff'); }
+                        }
                     }
                     for (const _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _efETeam && _s.hp > 0) applySummonDamage(_sid, _efDmg, gameState.selectedCharacter); }
                 }
