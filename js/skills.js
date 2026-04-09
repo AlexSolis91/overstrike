@@ -4167,19 +4167,28 @@
                 }
 
             } else if (ability.effect === 'explosion_final_vegeta') {
-                // VEGETA — Explosión Final: sacrifica HP + daño bonus + revivir
+                // VEGETA — Explosión Final: daño base 5 + bonus por % HP al usar
                 const _efV = gameState.characters[gameState.selectedCharacter];
                 const _efETeam = _efV ? (_efV.team === 'team1' ? 'team2' : 'team1') : 'team2';
                 const _efHP = _efV ? _efV.hp : 0;
-                const _efDmg = finalDamage + _efHP; // base + HP sacrificado
+                const _efMaxHP = _efV ? (_efV.maxHp || 20) : 20;
+                const _efPct = _efMaxHP > 0 ? (_efHP / _efMaxHP) : 0;
+                // Tabla de daño adicional por % HP
+                let _efBonus = 0;
+                if (_efPct > 0.89) _efBonus = 1;
+                else if (_efPct > 0.59) _efBonus = 3;
+                else if (_efPct > 0.29) _efBonus = 5;
+                else if (_efPct > 0.09) _efBonus = 8;
+                else if (_efPct > 0) _efBonus = 15;
+                const _efDmg = 5 + _efBonus;
                 // Eliminar a Vegeta
                 if (_efV) {
                     _efV.hp = 0;
                     _efV.isDead = true;
-                    _efV._vegetaRevivePending = 3; // revivir en 3 rondas
-                    addLog('💥 Explosión Final: Vegeta sacrifica ' + _efHP + ' HP → ' + _efDmg + ' daño AOE!', 'damage');
+                    _efV._vegetaRevivePending = 3;
+                    addLog('💥 Explosión Final: Vegeta (' + Math.round(_efPct*100) + '% HP) → ' + _efDmg + ' daño AOE (5 base + ' + _efBonus + ' bonus)!', 'damage');
                 }
-                // ── PRIMERO: eliminar Buff Esquiva Área de TODOS los enemigos (ignora Jon Snow/EA) ──
+                // ── Eliminar Buff Esquiva Área de TODOS los enemigos antes del impacto ──
                 for (const _efN in gameState.characters) {
                     const _efC = gameState.characters[_efN];
                     if (!_efC || _efC.team !== _efETeam || _efC.isDead || _efC.hp <= 0) continue;
@@ -4195,8 +4204,6 @@
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _efETeam || _c.isDead || _c.hp <= 0) continue;
-                        // checkAsprosAOEImmunity: los buffs EA ya fueron eliminados arriba,
-                        // solo quedarían inmunidades pasivas permanentes — se respetan
                         if (checkAsprosAOEImmunity(_n, true)) continue;
                         applyDamageWithShield(_n, _efDmg, gameState.selectedCharacter);
                     }
