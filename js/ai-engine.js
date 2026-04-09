@@ -378,7 +378,70 @@
                 // Pick best ability
                 // ─────────────────────────────────────────────────────────────────
                 usable.sort((a,b) => scoreAbility(b) - scoreAbility(a));
-                const chosen = usable[0];
+                let chosen = usable[0];
+
+                // ═══════════════════════════════════════════════════════════════════
+                // PERSONAJES ESPECIALES — lógica personalizada de IA
+                // ═══════════════════════════════════════════════════════════════════
+
+                // ── PADME AMIDALA: priorizar Over > Especial2 > Especial1 > Básico ──
+                if (charName === 'Padme Amidala' || charName === 'Padme Amidala v2') {
+                    const _padmeOver = usable.find(ab => ab.type === 'over');
+                    const _padmeSp2  = usable.filter(ab => ab.type === 'special')[1];
+                    const _padmeSp1  = usable.filter(ab => ab.type === 'special')[0];
+                    const _padmeBasic= usable.find(ab => ab.type === 'basic');
+                    chosen = _padmeOver || _padmeSp2 || _padmeSp1 || _padmeBasic || chosen;
+                }
+
+                // ── MADARA UCHIHA: priorizar Over si disponible; si no Rikudo no está activo priorizar Modo Rikudō;
+                //    si Rikudo activo → Susanoo AOE > Mangekyō > Básico ──
+                if (charName === 'Madara Uchiha' || charName === 'Madara Uchiha v2') {
+                    const _mChar = gameState.characters[charName];
+                    const _mOver  = usable.find(ab => ab.type === 'over');
+                    const _mSp    = usable.filter(ab => ab.type === 'special');
+                    const _mBasic = usable.find(ab => ab.type === 'basic');
+                    if (_mChar && _mChar.rikudoMode) {
+                        // En Rikudō: Susanoo (AOE) > Mangekyō > Básico
+                        const _susanoo = _mSp.find(ab => ab.effect === 'susanoo' || ab.target === 'aoe');
+                        const _mangekyou = _mSp.find(ab => ab.effect === 'sharingan_aoe');
+                        chosen = _susanoo || _mangekyou || _mBasic || chosen;
+                    } else {
+                        // Sin Rikudō: Over (transformación) si disponible
+                        chosen = _mOver || _mSp[1] || _mSp[0] || _mBasic || chosen;
+                    }
+                }
+
+                // ── SAITAMA: básico siempre salvo que pueda matar con especial,
+                //    o tenga 20 cargas → Over sobre el enemigo más peligroso ──
+                if (charName === 'Saitama' || charName === 'Saitama v2') {
+                    const _sOver  = usable.find(ab => ab.type === 'over');
+                    const _sSp    = usable.filter(ab => ab.type === 'special');
+                    const _sBasic = usable.find(ab => ab.type === 'basic');
+                    const _sChar  = gameState.characters[charName];
+                    // Over si tiene 20 cargas
+                    if (_sOver && _sChar && _sChar.charges >= 20) {
+                        chosen = _sOver;
+                    } else {
+                        // Puede matar con especial?
+                        const _killWithSp = _sSp.find(ab => {
+                            return enemies.some(n => {
+                                const c = gameState.characters[n];
+                                return c && c.hp > 0 && ab.damage >= c.hp;
+                            });
+                        });
+                        chosen = _killWithSp || _sBasic || chosen;
+                    }
+                }
+
+                // ── REY DE LA NOCHE: priorizar Tormenta Invernal (AOE+congelación) y Toque de la Muerte ──
+                if (charName === 'Rey de la Noche' || charName === 'Rey de la Noche v2') {
+                    const _rdnOver  = usable.find(ab => ab.type === 'over');
+                    const _rdnSp    = usable.filter(ab => ab.type === 'special');
+                    const _rdnBasic = usable.find(ab => ab.type === 'basic');
+                    const _rdnSp2   = _rdnSp.find(ab => ab.effect === 'toque_muerte_rdn');
+                    const _rdnSp1   = _rdnSp.find(ab => ab.effect === 'tormenta_invernal_rdn');
+                    chosen = _rdnOver || _rdnSp2 || _rdnSp1 || _rdnBasic || chosen;
+                }
 
                 // ─────────────────────────────────────────────────────────────────
                 // PICK TARGET — uses all improvements
@@ -480,8 +543,23 @@
 
                 const target = pickTarget(chosen);
 
+                // ── SAITAMA Over: si tiene 20 cargas, apuntar al enemigo más peligroso ──
+                let _saitamaOverride = null;
+                if ((charName === 'Saitama' || charName === 'Saitama v2') &&
+                    chosen.type === 'over' && enemies.length > 0) {
+                    // Peligroso = mayor HP + mayor cantidad de cargas
+                    _saitamaOverride = enemies.reduce(function(best, n) {
+                        const cb = gameState.characters[best];
+                        const cn = gameState.characters[n];
+                        if (!cn) return best;
+                        const scoreB = (cb ? cb.hp : 0) + (cb ? cb.charges : 0) * 2;
+                        const scoreN = (cn.hp || 0) + (cn.charges || 0) * 2;
+                        return scoreN > scoreB ? n : best;
+                    }, enemies[0]);
+                }
+
                 // AMATERASU override: if there's an enemy summon, target it instead
-                let _finalTarget = target;
+                let _finalTarget = _saitamaOverride || target;
                 let _amaterasuSummonId = null;
                 if (chosen.effect === 'amaterasu_itachi') {
                     const _amSummonEntry = Object.entries(gameState.summons).find(function(e) {
