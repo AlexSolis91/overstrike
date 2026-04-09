@@ -445,7 +445,7 @@
                     { name: 'Rafagas de Ki', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'aoe', effect: 'rafagas_ki_vegeta', description: 'Causa 1 AOE. 50% de probabilidad de daño triple.' },
                     { name: 'Big Bang Attack', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'single', effect: 'big_bang_attack_vegeta', description: 'Causa 4 daño. Aplica Debilitar y Sangrado 3 turnos al objetivo.' },
                     { name: 'Resplandor Final', type: 'special', cost: 10, chargeGain: 0, damage: 10, target: 'single', effect: 'resplandor_final_vegeta', description: 'Causa 10 daño. Si elimina al objetivo, causa 4 de daño directo a todos los enemigos.' },
-                    { name: 'Explosion Final', type: 'over', cost: 15, chargeGain: 0, damage: 10, target: 'aoe', effect: 'explosion_final_vegeta', description: 'Vegeta sacrifica todo su HP. Por cada HP sacrificado +1 daño adicional. Si muere, revive en las próximas 3 rondas con 50% HP y 10 cargas.' }
+                    { name: 'Explosion Final', type: 'over', cost: 15, chargeGain: 0, damage: 5, target: 'aoe', effect: 'explosion_final_vegeta', description: 'AOE. Vegeta muere al usarlo y revive en 3 rondas (50% HP, 10 cargas). Daño: 5 base + bonus según HP actual: 90-100%→+1, 60-89%→+3, 30-59%→+5, 10-29%→+8, 1-9%→+15. Elimina Esquiva Área enemiga antes de impactar.' }
                 ]
             },
             'Giyu Tomioka': {
