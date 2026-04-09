@@ -277,6 +277,15 @@
 
         function renderAbilities(charName, char) {
             let html = '';
+            // Mapeo de effect → nombre de la invocación única que genera
+            const SINGLE_SUMMON_MAP = {
+                'summon_sphinx':       'Abu el-Hol Sphinx',
+                'summon_ramesseum':    'Ramesseum Tentyris',
+                'summon_douma_hielo':  'Douma de Hielo',
+                'summon_gigante_hielo':'Gigante de Hielo',
+                'summon_señuelo':      'Señuelo',
+                'summon_ghost':        'Ghost',
+            };
             char.abilities.forEach((ability, index) => {
                 // Calcular costo ajustado por modo Rikudō
                 let adjustedCost = ability.cost;
@@ -288,12 +297,24 @@
                 // Verificar Silenciar
                 const silEffect2 = (char.statusEffects||[]).find(e => e && normAccent(e.name||'')==='silenciar');
                 const blockedBySilence = silEffect2 && ability.type === silEffect2.silencedCategory;
-                const disabled = !canUse || char.hp <= 0 || blockedBySilence;
+
+                // Verificar si es invocación única ya activa en campo
+                let blockedBySummon = false;
+                const _summonName = SINGLE_SUMMON_MAP[ability.effect];
+                if (_summonName && typeof gameState !== 'undefined' && gameState.summons) {
+                    blockedBySummon = Object.values(gameState.summons).some(function(s) {
+                        return s && s.name === _summonName && s.hp > 0 &&
+                               s.summoner === charName;
+                    });
+                }
+
+                const disabled = !canUse || char.hp <= 0 || blockedBySilence || blockedBySummon;
+                const _disabledTitle = blockedBySummon ? ' title="' + _summonName + ' ya está en campo"' : '';
                 
                 html += `
                     <button class="ability-btn" 
                             onclick="selectAbility('${charName}', ${index})"
-                            ${disabled ? 'disabled' : ''}>
+                            ${disabled ? 'disabled' : ''}${_disabledTitle}>
                         ${ability.name}
                         <span class="ability-cost">💎 ${adjustedCost}</span>
                     </button>
