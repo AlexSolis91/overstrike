@@ -822,6 +822,16 @@
                 }
             }
 
+            // PROTECCIÓN SAGRADA: bloquea daño directo (attackerName === null), NO bloquea golpes
+            if (!attackerName && !passiveExecuting) {
+                const _psC = gameState.characters[targetName];
+                if (_psC && !_psC.isDead && _psC.hp > 0 &&
+                    (hasStatusEffect(targetName, 'Proteccion Sagrada') || hasStatusEffect(targetName, 'Protección Sagrada'))) {
+                    addLog('✝️ Protección Sagrada: ' + targetName + ' es inmune a daño directo', 'buff');
+                    return 0;
+                }
+            }
+
             // ARCHIMAGA DEL KIRIN TOR (Jaina): crítico garantizado sobre congelados
             if (attackerName && attackerName !== targetName && !passiveExecuting) {
                 const _jainaAtkC = gameState.characters[attackerName];
