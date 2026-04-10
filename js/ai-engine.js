@@ -30,7 +30,26 @@
                     });
                 }
                 function getUsableAbilities() {
-                    return char.abilities.filter(ab => !ab.used && char.charges >= ab.cost);
+                    const SINGLE_SUMMON_MAP_AI = {
+                        'summon_sphinx':       'Abu el-Hol Sphinx',
+                        'summon_ramesseum':    'Ramesseum Tentyris',
+                        'summon_douma_hielo':  'Douma de Hielo',
+                        'summon_gigante_hielo':'Gigante de Hielo',
+                        'summon_señuelo':      'Señuelo',
+                        'summon_ghost':        'Ghost',
+                    };
+                    return char.abilities.filter(function(ab) {
+                        if (ab.used || char.charges < ab.cost) return false;
+                        // Bloquear si la invocación única ya está activa
+                        const _sName = SINGLE_SUMMON_MAP_AI[ab.effect];
+                        if (_sName) {
+                            const alreadyActive = Object.values(gameState.summons).some(function(s) {
+                                return s && s.name === _sName && s.hp > 0 && s.summoner === charName;
+                            });
+                            if (alreadyActive) return false;
+                        }
+                        return true;
+                    });
                 }
                 function hpPct(n) {
                     const c = gameState.characters[n]; return c ? c.hp / c.maxHp : 1;
