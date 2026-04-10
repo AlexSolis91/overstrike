@@ -144,7 +144,7 @@
                     if (e.duration !== undefined) burnDur = Math.max(burnDur, e.duration);
                     burnAdded = true;
                 } else if (nn === 'quemadura solar') {
-                    solarPct += (e.percent || 5);
+                    solarPct += (e.duration || 1); // acumular turnos en lugar de %
                     solarAdded = true;
                 } else if (nn === 'sangrado') {
                     bleedStack += 1;
@@ -164,7 +164,7 @@
                 else if (burnPct > 0) display.push({ emoji: '🔥', label: 'Quemadura ' + burnPct + '%', sub: '', type: 'debuff' });
                 else display.push({ emoji: '🔥', label: 'Quemadura', sub: '', type: 'debuff' });
             }
-            if (solarAdded)  display.push({ emoji: '☀️', label: 'QS ' + solarPct + '%',         sub: '', type: 'debuff' });
+            if (solarAdded)  display.push({ emoji: '☀️', label: 'QS',  sub: solarPct + 'T', type: 'debuff' });
             if (bleedAdded)  display.push({ emoji: '🩸', label: 'Sangrado ' + bleedStack,        sub: '', type: 'debuff' });
             if (poisonAdded) display.push({ emoji: '☠️', label: 'Veneno',                        sub: poisonMaxDur + 'T', type: 'debuff' });
 
