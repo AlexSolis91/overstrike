@@ -296,6 +296,12 @@
                             else                          score += 5;         // not needed, low prio
                         }
                         if (ab.shieldAmount) score += lowestPct < 0.4 ? 65 : 30;
+                        // ALEXSTRASZA: priorizar Fuego Vital / Llama Preservadora si aliado no tiene Aura de fuego
+                        if (ab.effect === 'fuego_vital' || ab.effect === 'llama_preservadora') {
+                            const _axAlliesNoAura = allies.filter(function(n) { return !hasStatusEffect(n, 'Aura de fuego'); });
+                            if (_axAlliesNoAura.length > 0) score += allyNeedsHeal() ? 200 : 120;
+                            else score -= 50; // todos ya tienen aura, baja prioridad
+                        }
                         if (ab.effect && (ab.effect.includes('regen') || ab.effect === 'leyenda_nordica')) {
                             score += allyNeedsHeal() ? 60 : 20;
                         }
@@ -462,6 +468,29 @@
                     chosen = _rdnOver || _rdnSp2 || _rdnSp1 || _rdnBasic || chosen;
                 }
 
+                // ── ALEXSTRASZA: curar al aliado más herido con básico/especial; Over cuando hay
+                //    enemigos con quemaduras o aliados debilitados ──
+                if (charName === 'Alexstrasza' || charName === 'Alexstrasza v2') {
+                    const _axOver  = usable.find(ab => ab.type === 'over');
+                    const _axSp    = usable.filter(ab => ab.type === 'special');
+                    const _axBasic = usable.find(ab => ab.type === 'basic');
+                    const _axLowestAlly = allies.reduce((a, b) => hpPct(a) < hpPct(b) ? a : b, allies[0]);
+                    const _axLowestPct  = _axLowestAlly ? hpPct(_axLowestAlly) : 1;
+                    const _axAllyNeedsShield = _axLowestPct < 0.70;
+                    // Over: priorizar si cualquier aliado está por debajo de 50% HP
+                    if (_axOver && _axLowestPct < 0.50) {
+                        chosen = _axOver;
+                    // Especial Llama Preservadora si aliado necesita escudo+aura
+                    } else if (_axSp.length > 0 && _axAllyNeedsShield) {
+                        // Llama Preservadora (mayor escudo) antes que Fuego Vital
+                        const _axLlama = _axSp.find(ab => ab.effect === 'llama_preservadora');
+                        const _axFuego = _axSp.find(ab => ab.effect === 'fuego_vital');
+                        chosen = _axLlama || _axFuego || _axBasic || chosen;
+                    } else {
+                        chosen = _axBasic || chosen;
+                    }
+                }
+
                 // ─────────────────────────────────────────────────────────────────
                 // PICK TARGET — uses all improvements
                 // ─────────────────────────────────────────────────────────────────
@@ -476,6 +505,12 @@
                                 return c && c.team === myTeam && c.isDead;
                             });
                             if (_dead) return _dead;
+                        }
+                        // ALEXSTRASZA — Fuego Vital / Llama Preservadora: preferir aliado sin Aura de fuego y con menos HP
+                        if (ab.effect === 'fuego_vital' || ab.effect === 'llama_preservadora') {
+                            const _noAura = allies.filter(function(n) { return !hasStatusEffect(n, 'Aura de fuego'); });
+                            const _pool = _noAura.length > 0 ? _noAura : allies;
+                            return _pool.reduce((a, b) => hpPct(a) < hpPct(b) ? a : b);
                         }
                         // IMPROVEMENT 6: pick ally that needs heal most (lowest HP)
                         if (ab.effect && (ab.effect.includes('heal') || ab.effect === 'don_de_la_vida')) {
