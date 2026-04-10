@@ -557,24 +557,6 @@
             }
         }
 
-        // ── DEFENSA ABSOLUTA (Gaara): intercepta ataques ST de 3+ daño dirigidos a aliados ──
-        function checkGaaraIntercept(originalTargetName, damage, attackerName) {
-            // Solo aplica a ataques ST de golpe (attackerName != null), daño >= 3
-            if (!attackerName || damage < 3) return null;
-            const tgtC = gameState.characters[originalTargetName];
-            if (!tgtC || tgtC.isDead || tgtC.hp <= 0) return null;
-            // Buscar Gaara vivo en el mismo equipo
-            for (const _gn in gameState.characters) {
-                if (_gn === originalTargetName) continue; // Gaara no se intercepta a sí mismo
-                const _gc = gameState.characters[_gn];
-                if (!_gc || _gc.isDead || _gc.hp <= 0 || _gc.team !== tgtC.team) continue;
-                if (_gc.passive && _gc.passive.name === 'Defensa Absoluta') {
-                    return _gn; // Devuelve el nombre de Gaara
-                }
-            }
-            return null;
-        }
-
         // ── HELPER: Count total alive team members (chars + summons) excluding MegaProv holder ──
         function countMegaProvMultiplier(team, mpData) {
             let count = 0;
@@ -733,23 +715,6 @@
                 }
             }
 
-            // ── DEFENSA ABSOLUTA (Gaara): intercepta ataques ST de 3+ daño a aliados ──
-            if (!passiveExecuting && attackerName && attackerName !== targetName && damage >= 3) {
-                const _atkrGI = gameState.characters[attackerName];
-                const _selAbGI = gameState.selectedAbility;
-                // Solo aplica si es ataque ST (single) y NO es ya Gaara el objetivo
-                if (_atkrGI && _selAbGI && _selAbGI.target === 'single') {
-                    const _gaaraInterceptor = checkGaaraIntercept(targetName, damage, attackerName);
-                    if (_gaaraInterceptor) {
-                        addLog('🏜️ Defensa Absoluta: ' + _gaaraInterceptor + ' intercepta el ataque de ' + attackerName + ' dirigido a ' + targetName + '!', 'buff');
-                        passiveExecuting = true;
-                        const _interceptResult = applyDamageWithShield(_gaaraInterceptor, damage, attackerName);
-                        passiveExecuting = false;
-                        return _interceptResult;
-                    }
-                }
-            }
-
             // VERIFICAR IRON PRIMERO - Iron absorbe TODO el daño, pero NUNCA se protege a sí mismo
             // ni protege cuando el daño proviene de efectos de estado (attackerName === null indica burn/regen)
             if (attackerName !== null) {
@@ -845,12 +810,13 @@
                 }
             }
 
-            // ── DEFENSA ABSOLUTA (Gaara): 50% de reducir daño a 0 por golpe ──
-            if (attackerName && attackerName !== targetName && !passiveExecuting && damage > 0) {
+            // ── DEFENSA ABSOLUTA (Gaara): inmune a daño por golpes Y daño directo si tiene debuffs activos ──
+            if (!passiveExecuting && damage > 0) {
                 const _gaC = gameState.characters[targetName];
                 if (_gaC && !_gaC.isDead && _gaC.hp > 0 && _gaC.passive && _gaC.passive.name === 'Defensa Absoluta') {
-                    if (Math.random() < 0.50) {
-                        addLog('🏜️ Defensa Absoluta: Gaara bloquea el golpe de ' + attackerName + ' (50%)', 'buff');
+                    const _gaDebuffCount = (_gaC.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff'; }).length;
+                    if (_gaDebuffCount > 0) {
+                        addLog('🏜️ Defensa Absoluta: Gaara es inmune al daño (' + _gaDebuffCount + ' debuff(s) activos)', 'buff');
                         return 0;
                     }
                 }
