@@ -726,12 +726,12 @@
                 hp: 25, maxHp: 25, speed: 85, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/dJ5TWsF0/Captura-de-pantalla-2026-04-08-103556.png',
-                passive: { name: 'Defensa Absoluta', description: '50% de reducir a 0 el daño por golpe recibido. Al inicio de ronda: Buff Armadura propio + 50% Armadura a aliados. Si un aliado fuera a recibir ataque ST de 3+ daño, Gaara intercepta automáticamente el ataque.' },
+                passive: { name: 'Defensa Absoluta', description: 'Mientras Gaara tenga Debuffs activos, es inmune a daño por golpes y daño directo. Al inicio de cada ronda, 50% de probabilidad de aplicar Buff Escudo Sagrado a cada aliado.' },
                 abilities: [
-                    { name: 'Garra de Arena', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'garra_arena_gaara', description: 'Causa 2 daño. Aplica Buff Esquivar 2T. 50% de aplicar Buff Esquiva Area 2T.' },
-                    { name: 'Arenas Movedizas', type: 'special', cost: 2, chargeGain: 0, damage: 1, target: 'aoe', effect: 'arenas_movedizas_gaara', description: 'Causa 1 AOE. 50% de reducir 20% velocidad por 2T. 50% de robar 1 carga de cada objetivo.' },
-                    { name: 'Granizo de Arena Imperial', type: 'special', cost: 7, chargeGain: 0, damage: 1, target: 'aoe', effect: 'granizo_arena_gaara', description: 'Causa 1 AOE. Ignora Esquiva Area y Mega Provocacion. +2 daño por cada Buff/Debuff activo en el objetivo. Invocaciones eliminadas no activan su pasiva al morir.' },
-                    { name: 'Sabaku Taisō', type: 'over', cost: 14, chargeGain: 0, damage: 0, target: 'single', effect: 'sabaku_taiso_gaara', description: 'Elimina al objetivo. El eliminado revive con 50% HP y 0 cargas en las próximas 2 rondas.' }
+                    { name: 'Garra de Arena', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'garra_arena_gaara', description: 'Causa 2 daño. 50% de aplicar Debuff Aturdimiento. Genera 1 carga adicional por cada debuff activo en el objetivo.' },
+                    { name: 'Arenas Movedizas', type: 'special', cost: 3, chargeGain: 0, damage: 2, target: 'aoe', effect: 'arenas_movedizas_gaara', description: 'Causa 2 AOE. Enemigos golpeados pierden 20% velocidad por 3 rondas. Si el objetivo tiene 80 vel o menos, roba todas sus cargas.' },
+                    { name: 'Granizo de Arena Imperial', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'aoe', effect: 'granizo_arena_gaara', description: 'Causa 3 AOE. Ignora Esquiva Área y Mega Provocación. Triple daño si el objetivo tiene 70 vel o menos. Invocaciones eliminadas no activan su pasiva.' },
+                    { name: 'Sabaku Taisō', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'single', effect: 'sabaku_taiso_gaara', description: 'Elimina al objetivo. Revive con 50% HP y 0 cargas en 2 rondas.' }
                 ]
             },
  
