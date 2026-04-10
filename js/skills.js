@@ -87,6 +87,10 @@
 
         function executeAbility(targetName) {
             audioManager.playSelect(); // SFX on every ability/action
+            // SFX especial para OVER
+            if (gameState.selectedAbility && gameState.selectedAbility.type === 'over') {
+                audioManager.playOverSfx();
+            }
             try {
                 closeTargetModal();
                 
@@ -714,6 +718,7 @@
                     _tG.hp = Math.min(_tG.maxHp, (_tG.hp||0) + 5);
                     addLog('💚 Superacion de Limites: Goku recupera 5 HP al transformarse', 'heal');
                 }
+                audioManager.playTransformSfx();
                 addLog('✨ Goku se transforma en ' + _tFormName + '!', 'buff');
                 // UI: aplicar Esquiva Area + Esquivar permanentes
                 if (_tForm === 'ui') {
@@ -836,6 +841,7 @@
                 attacker.ultraInstinto = true;
                 applyDodge(gameState.selectedCharacter);
                 ability.used = true;
+                audioManager.playTransformSfx();
                 addLog(`✨ ¡${gameState.selectedCharacter} activa Ultra Instinto! Buff Esquivar permanente`, 'buff');
 
             } else if (ability.effect === 'apply_weaken') {
@@ -1058,6 +1064,7 @@
                 attacker.muzanTransformed = true;
                 const _mzTP = attacker.transformPortrait || attacker.transformationPortrait;
                 if (_mzTP) { attacker.portrait = _mzTP; }
+                audioManager.playTransformSfx();
                 const mzTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                 checkAndRemoveStealth(mzTeam);
                 // 1 daño AOE
@@ -1833,6 +1840,7 @@
                 // Support both field names (transformPortrait and transformationPortrait)
                 const _alexTP = attacker.transformPortrait || attacker.transformationPortrait;
                 if (_alexTP) { attacker.portrait = _alexTP; }
+                audioManager.playTransformSfx();
                 addLog(`🐉 Dragón de la Vida: Burn 30% en enemigos, Regen 30% en aliados, Escudo Sagrado en ${gameState.selectedCharacter}`, 'buff');
 
             } else if (ability.effect === 'kiiroi_senko' || ability.effect === 'kiiroi_senko_v2') {
@@ -3191,7 +3199,8 @@
                 // Modo Rikudō - Transformación permanente
                 attacker.rikudoMode = true;
                 if (attacker.transformPortrait) { attacker.portrait = attacker.transformPortrait; }
-                ability.used = true; // Marcar como usada para no poder usarla de nuevo
+                ability.used = true;
+                audioManager.playTransformSfx();
                 addLog(`✨ ${gameState.selectedCharacter} activa el ${ability.name}! Poder duplicado, costos reducidos a la mitad`, 'buff');
                 
             } else if (ability.effect === 'double_on_burn') {
@@ -3990,6 +3999,7 @@
                     _ddAnt.antaresTransformTurns = 3;
                     _ddAnt.basePortrait = _ddAnt.basePortrait || _ddAnt.portrait;
                     _ddAnt.portrait = _ddAnt.transformPortrait || _ddAnt.portrait;
+                    audioManager.playTransformSfx();
                     addLog('🐉 Antares se transforma en Dragon de la Destruccion (3 turnos)', 'buff');
                 }
                 renderCharacters();
@@ -4760,8 +4770,8 @@
                 if (_smGarou) {
                     _smGarou.garouSaitamaMode = true;
                     ability.used = true;
-                    // Apply transformation portrait
                     if (_smGarou.transformPortrait) _smGarou.portrait = _smGarou.transformPortrait;
+                    audioManager.playTransformSfx();
                     addLog('💪 ¡SAITAMA MODE! ' + gameState.selectedCharacter + ' activa -2 daño recibido y +2 daño en todos los ataques permanente', 'buff');
                 }
             } else if (ability.effect === 'golpe_serio_saitama') {
