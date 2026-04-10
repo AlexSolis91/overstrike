@@ -84,13 +84,15 @@
                 // INVIERNO ETERNO (Rey de la Noche): ignora Provocacion, MegaProvocacion y Sigilo
                 const _rdnAttacker = gameState.characters[gameState.selectedCharacter];
                 const rdnBypass = !!((_rdnAttacker && _rdnAttacker.passive && _rdnAttacker.passive.name === 'Invierno Eterno'));
-                const hasMegaProv = !sauronBypass && !ivarBypass && !rdnBypass && typeof checkKamishMegaProvocation === 'function' && checkKamishMegaProvocation(enemyTeam);
-                const hasProvocacion = !sauronBypass && !ivarBypass && !rdnBypass && !hasMegaProv && Object.keys(gameState.characters).some(function(n) {
+                // GOLPE GRAVE (Saitama): ignora Provocacion y MegaProvocacion
+                const golpeGraveBypass = ability.effect === 'golpe_grave';
+                const hasMegaProv = !sauronBypass && !ivarBypass && !rdnBypass && !golpeGraveBypass && typeof checkKamishMegaProvocation === 'function' && checkKamishMegaProvocation(enemyTeam);
+                const hasProvocacion = !sauronBypass && !ivarBypass && !rdnBypass && !golpeGraveBypass && !hasMegaProv && Object.keys(gameState.characters).some(function(n) {
                     const c = gameState.characters[n];
                     return c && c.team === enemyTeam && !c.isDead && c.hp > 0 &&
                         (c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'provocacion'; });
                 });
-                if (!hasMegaProv && !hasProvocacion && !sauronBypass && !ivarBypass && !rdnBypass) {
+                if (!hasMegaProv && !hasProvocacion && !sauronBypass && !ivarBypass && !rdnBypass && !golpeGraveBypass) {
                     // Check if every alive enemy has Sigilo
                     const aliveEnemies = Object.keys(gameState.characters).filter(function(n) {
                         const c = gameState.characters[n];
@@ -225,10 +227,12 @@
                 // INVIERNO ETERNO (Rey de la Noche): ignora Provocación, MegaProvocación y Sigilo
                 const _rdnAtkChar = gameState.characters[gameState.selectedCharacter];
                 const rdnActive = !!(_rdnAtkChar && _rdnAtkChar.passive && _rdnAtkChar.passive.name === 'Invierno Eterno');
+                // GOLPE GRAVE (Saitama): ignora Provocación y MegaProvocación
+                const golpeGraveActive = !!(gameState.selectedAbility && gameState.selectedAbility.effect === 'golpe_grave');
 
                 // VERIFICAR MEGA PROVOCACIÓN DE KAMISH/DROGON/ETC PRIMERO
                 const kamishData = checkKamishMegaProvocation(targetTeam);
-                if (kamishData && !sauronActive && !ivarActive && !rdnActive) {
+                if (kamishData && !sauronActive && !ivarActive && !rdnActive && !golpeGraveActive) {
                     if (kamishData.isCharacter) {
                         // MegaProv is on a CHARACTER (Darth Vader, Sauron, etc.)
                         const mpName = kamishData.characterName;
@@ -262,12 +266,12 @@
                 
                 // MEGA PROVOCACIÓN tiene prioridad sobre Provocación
                 // Verificar MegaProv PRIMERO — si existe, Provocación se ignora
-                const megaProvFirst = !sauronActive && !ivarActive && !rdnActive ? checkKamishMegaProvocation(targetTeam) : null;
+                const megaProvFirst = !sauronActive && !ivarActive && !rdnActive && !golpeGraveActive ? checkKamishMegaProvocation(targetTeam) : null;
 
                 // VERIFICAR PROVOCACIÓN — solo si NO hay Mega Provocación activa
                 let tauntTarget = null;
 
-                if (!sauronActive && !ivarActive && !rdnActive && !megaProvFirst) {
+                if (!sauronActive && !ivarActive && !rdnActive && !golpeGraveActive && !megaProvFirst) {
                     for (let n in gameState.characters) {
                         const c = gameState.characters[n];
                         if (!c || c.team !== targetTeam || c.isDead || c.hp <= 0) continue;
@@ -278,7 +282,7 @@
                     }
                 }
 
-                if (tauntTarget && !sauronActive && !ivarActive && !rdnActive && !megaProvFirst) {
+                if (tauntTarget && !sauronActive && !ivarActive && !rdnActive && !golpeGraveActive && !megaProvFirst) {
                     const tauntChar = gameState.characters[tauntTarget];
 
                     title.textContent = '⚠️ Provocación Activa — Debes Atacar a ' + tauntTarget;
