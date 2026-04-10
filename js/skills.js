@@ -4114,18 +4114,17 @@
                 if (checkAndRedirectAOEMegaProv(_rkETeam, finalDamage, gameState.selectedCharacter)) {
                     addLog('💥 Ráfagas de Ki redirigido por Mega Provocación', 'damage');
                 } else {
-                    // VEGETA: activar Jon Snow PRIMERO para que aplique EA, luego limpiar con pasiva
+                    // Activar Jon Snow PRIMERO para que aplique EA, luego la pasiva de Vegeta la limpia
                     if (typeof triggerElReyPrometido === 'function') triggerElReyPrometido(gameState.selectedCharacter);
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _rkETeam || _c.isDead || _c.hp <= 0) continue;
-                        // Pasiva Vegeta: limpiar TODOS los buffs (incluyendo EA de Jon Snow) ANTES del check
+                        // Pasiva Vegeta: elimina buffs (incluyendo EA temporal de Jon Snow) ANTES del daño
                         triggerVegetaPasiva(_n, gameState.selectedCharacter);
-                        // Ahora verificar EA — si quedan después de que Vegeta los limpió, respetar
-                        if (_c.passive && _c.passive.name === 'Mente Brillante') continue; // pasiva permanente, no buff
-                        if (!_c.passive || _c.passive.name !== 'Mente Brillante') {
-                            // Solo bloquear si tiene EA permanente (pasiva, no buff temporal)
-                            if (_c.esquivaAreaPassive) continue; // Pasiva permanente de EA
+                        // Solo respetar EA si es PASIVA PERMANENTE (esquivaAreaPassive), no buff temporal
+                        if (_c.esquivaAreaPassive) {
+                            addLog('💨 ' + _n + ' es inmune al AOE (Esquiva Área permanente)', 'buff');
+                            continue;
                         }
                         let _rkDmg = finalDamage;
                         if (Math.random() < 0.50) { _rkDmg *= 3; addLog('💥 ¡Triple daño! Ráfagas de Ki en ' + _n, 'damage'); }
