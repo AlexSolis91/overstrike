@@ -194,6 +194,11 @@ function triggerMaboroshi(targetTeam, debuffName) {
 function applyDebuff(targetName, effectObj) {
             const target = gameState.characters[targetName];
             if (!target || !target.statusEffects) return;
+            // BUFF REFLEJAR: el portador es inmune a nuevos debuffs mientras Reflejar esté activo
+            if (hasStatusEffect(targetName, 'Reflejar')) {
+                addLog('🪞 Reflejar: ' + targetName + ' es inmune al debuff (Reflejar activo)', 'buff');
+                return;
+            }
             // ESQUIVA ÁREA: inmune a TODOS los debuffs y efectos AOE de enemigos
             // También bloquea debuffs de movimientos NO-AOE si el objetivo tiene Esquiva Area activa
             if (gameState.selectedAbility && gameState.selectedCharacter) {
