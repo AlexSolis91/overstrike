@@ -1142,9 +1142,21 @@
                 }
                 const disabled = !canUse || !canRevive || !canSacrifice || !canSummon || !canSummonKamish || blockedByFreeze || blockedBySigilo || blockedByTransform || blockedByCooldown;
                 
+                // Bloquear invocación única si ya está activa en campo
+                const SINGLE_SUMMON_BLOCK = {
+                    'summon_sphinx': 'Abu el-Hol Sphinx', 'summon_ramesseum': 'Ramesseum Tentyris',
+                    'summon_douma_hielo': 'Douma de Hielo', 'summon_gigante_hielo': 'Gigante de Hielo',
+                    'summon_señuelo': 'Señuelo', 'summon_ghost': 'Ghost'
+                };
+                const _singleSummonName = SINGLE_SUMMON_BLOCK[ability.effect];
+                const blockedBySingleSummon = !!(_singleSummonName && Object.values(gameState.summons).some(function(s){
+                    return s && s.name === _singleSummonName && s.hp > 0 && s.summoner === gameState.selectedCharacter;
+                }));
+                const finalDisabled = disabled || blockedBySingleSummon;
+                
                 const button = document.createElement('button');
                 button.className = 'action-ability-btn';
-                button.disabled = disabled;
+                button.disabled = finalDisabled;
                 button.onclick = () => selectAbilityFromModal(index);
 
                 let reasonTag = '';
@@ -1456,6 +1468,17 @@
                         const c = gameState.characters[n];
                         if (c && !c.isDead && c.hp > 0) c.hpAtRoundStart = c.hp;
                     }
+                    // ── RECALCULAR ORDEN DE TURNOS por velocidad actual (incluye revividos) ──
+                    const _aliveNamesNew = Object.keys(gameState.characters).filter(function(n) {
+                        const c = gameState.characters[n]; return c && !c.isDead && c.hp > 0;
+                    });
+                    _aliveNamesNew.sort(function(a, b) {
+                        return (gameState.characters[b].speed || 0) - (gameState.characters[a].speed || 0);
+                    });
+                    gameState.turnOrder = _aliveNamesNew;
+                    gameState.currentTurnIndex = 0;
+                    gameState.aliveCountAtRoundStart = _aliveNamesNew.length;
+                    gameState.turnsInRound = 0;
                 }
                 
                 gameState.currentTurnIndex = (gameState.currentTurnIndex + 1) % gameState.turnOrder.length;
