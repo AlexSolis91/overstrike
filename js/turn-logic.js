@@ -1,6 +1,6 @@
 // ==================== LÓGICA DE TURNOS ====================
         function startTurn() {
-            // VENGANZA ETERNA (Sasuke) y otros turnos adicionales: procesar cola pendiente
+            // Cola de turnos adicionales: procesar pendientes
             if (gameState._sasukeRevengeQueue && gameState._sasukeRevengeQueue.length > 0) {
                 const _saTurnChar = gameState._sasukeRevengeQueue.shift();
                 const _saC = gameState.characters[_saTurnChar];
@@ -1325,10 +1325,62 @@
                             renderCharacters();
                         }
                     }
+                    // ── SABAKU TAISŌ (Gaara): countdown de revivir en 2 rondas ──
+                    for (const _svN in gameState.characters) {
+                        const _svC = gameState.characters[_svN];
+                        if (!_svC || !_svC._sabakuRevivePending || _svC._sabakuRevivePending <= 0) continue;
+                        _svC._sabakuRevivePending--;
+                        if (_svC._sabakuRevivePending <= 0) {
+                            _svC.isDead = false;
+                            _svC.hp = _svC._sabakuReviveHp || Math.ceil(_svC.maxHp * 0.50);
+                            _svC.charges = 0;
+                            _svC.statusEffects = [];
+                            delete _svC._sabakuRevivePending;
+                            delete _svC._sabakuReviveHp;
+                            addLog('🏜️ Sabaku Taisō: ¡' + _svN + ' revive con ' + _svC.hp + ' HP y 0 cargas!', 'buff');
+                            renderCharacters();
+                        }
+                    }
                     // RESET EVASIÓN SASUKE al inicio de ronda
                     for (const _sn in gameState.characters) {
                         const _sc = gameState.characters[_sn];
                         if (_sc && _sc.passive && _sc.passive.name === 'Venganza Eterna') _sc.sasukeEvasionUsedThisRound = false;
+                    }
+
+                    // ── DEFENSA ABSOLUTA (Gaara): inicio de ronda → 50% Buff Escudo Sagrado a cada aliado ──
+                    for (const _gaaN in gameState.characters) {
+                        const _gaaC = gameState.characters[_gaaN];
+                        if (!_gaaC || _gaaC.isDead || _gaaC.hp <= 0) continue;
+                        if (!_gaaC.passive || _gaaC.passive.name !== 'Defensa Absoluta') continue;
+                        // 50% Escudo Sagrado a cada aliado (incluido Gaara)
+                        for (const _aaN in gameState.characters) {
+                            const _aaC = gameState.characters[_aaN];
+                            if (!_aaC || _aaC.isDead || _aaC.hp <= 0 || _aaC.team !== _gaaC.team) continue;
+                            if (Math.random() < 0.50) {
+                                _aaC.statusEffects = (_aaC.statusEffects||[]).filter(function(e){ return !e || normAccent(e.name||'') !== 'escudo sagrado'; });
+                                _aaC.statusEffects.push({ name: 'Escudo Sagrado', type: 'buff', duration: 2, emoji: '✝️' });
+                                addLog('🏜️ Defensa Absoluta: ' + _aaN + ' recibe Buff Escudo Sagrado 2T (50%)', 'buff');
+                            }
+                        }
+                        // Decrementar Arena_VelDebuff por ronda (_roundsLeft)
+                        for (const _dvN in gameState.characters) {
+                            const _dvC = gameState.characters[_dvN];
+                            if (!_dvC || _dvC.isDead) continue;
+                            (_dvC.statusEffects||[]).forEach(function(e) {
+                                if (!e || e.name !== 'Arena_VelDebuff' || e._roundsLeft === undefined) return;
+                                e._roundsLeft--;
+                                if (e._roundsLeft <= 0) {
+                                    // Restaurar velocidad al expirar
+                                    if (e._velRestored) {
+                                        _dvC.speed = Math.min((_dvC.baseSpeed || 999), (_dvC.speed||80) + e._velRestored);
+                                        addLog('🏜️ Arenas Movedizas: velocidad de ' + _dvN + ' restaurada (expiró efecto)', 'info');
+                                    }
+                                    e.duration = 0; // marcar para eliminar
+                                }
+                            });
+                            _dvC.statusEffects = (_dvC.statusEffects||[]).filter(function(e){ return !e || e.name !== 'Arena_VelDebuff' || (e._roundsLeft !== undefined ? e._roundsLeft > 0 : true); });
+                        }
+                        break; // Solo 1 Gaara puede estar en el campo
                     }
 
                     // ── GIGANTE DE HIELO: 50% Congelacion + 50% Megacongelacion al inicio de ronda ──
