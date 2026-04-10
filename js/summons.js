@@ -1268,12 +1268,12 @@
                     passiveExecuting = false;
                     return 0; // El portador NO recibe el daño
                 }
-                // AURA DE FUEGO: atacante recibe Quemadura 2HP (independiente de passiveExecuting)
+                // AURA DE FUEGO: atacante recibe Quemadura 2HP por 2 turnos
                 if (attackerName && (hasStatusEffect(targetName, 'Aura de fuego') || hasStatusEffect(targetName, 'Aura de Fuego'))) {
                     const _prevPE = passiveExecuting;
                     passiveExecuting = true;
-                    applyFlatBurn(attackerName, 2, 1);
-                    addLog('🔥 Aura de Fuego: ' + attackerName + ' recibe Quemadura 2HP por atacar a ' + targetName, 'debuff');
+                    applyFlatBurn(attackerName, 2, 2);
+                    addLog('🔥 Aura de Fuego: ' + attackerName + ' recibe Quemadura 2HP (2T) por atacar a ' + targetName, 'debuff');
                     passiveExecuting = _prevPE;
                 }
                 // AURA GELIDA: atacante recibe Congelación 1T
