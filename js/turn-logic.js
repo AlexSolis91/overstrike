@@ -1476,7 +1476,7 @@
                         return (gameState.characters[b].speed || 0) - (gameState.characters[a].speed || 0);
                     });
                     gameState.turnOrder = _aliveNamesNew;
-                    gameState.currentTurnIndex = 0;
+                    gameState.currentTurnIndex = -1; // el +1 posterior lo llevará a 0 (primer personaje)
                     gameState.aliveCountAtRoundStart = _aliveNamesNew.length;
                     gameState.turnsInRound = 0;
                 }
