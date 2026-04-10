@@ -1259,13 +1259,14 @@
                 triggerOzyPassive(targetName, attackerName);
                 // CONTRAATAQUE (Darth Vader, Goku UI, cualquier personaje con buff)
                 if (!passiveExecuting) triggerCounterattack(targetName, attackerName);
-                // BUFF REFLEJAR: cuando el portador recibe un ataque, el atacante recibe el mismo daño
-                if (!passiveExecuting && hasStatusEffect(targetName, 'Reflejar') && attackerName && damage > 0) {
+                // BUFF REFLEJAR: cuando el portador recibe un ataque, refleja el daño al atacante y NO recibe daño
+                if (!passiveExecuting && hasStatusEffect(targetName, 'Reflejar') && attackerName && attackerName !== targetName && damage > 0) {
                     passiveExecuting = true;
                     const reflectDmg = damage;
                     applyDamageWithShield(attackerName, reflectDmg, targetName);
-                    addLog('🪞 Reflejar: ' + attackerName + ' recibe ' + reflectDmg + ' de daño reflejado', 'damage');
+                    addLog('🪞 Reflejar: ' + attackerName + ' recibe ' + reflectDmg + ' daño reflejado — ' + targetName + ' no recibe daño', 'buff');
                     passiveExecuting = false;
+                    return 0; // El portador NO recibe el daño
                 }
                 // AURA DE FUEGO: atacante recibe Quemadura 2HP (independiente de passiveExecuting)
                 if (attackerName && (hasStatusEffect(targetName, 'Aura de fuego') || hasStatusEffect(targetName, 'Aura de Fuego'))) {
