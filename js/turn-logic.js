@@ -77,11 +77,13 @@
                             if (_vHpPct >= 40 && _vHpPct <= 70 && currentChar.vegetaForm !== 'ssblue_evo') {
                                 currentChar.vegetaForm = 'ssblue_evo';
                                 if (currentChar.portraitSSBlueEvo) currentChar.portrait = currentChar.portraitSSBlueEvo;
+                                audioManager.playTransformSfx();
                                 addLog('💠 Vegeta → Super Sayajin Blue Evolution (HP 40-70%)', 'buff');
                                 renderCharacters();
                             } else if (_vHpPct >= 1 && _vHpPct < 40 && currentChar.vegetaForm !== 'ultra_ego') {
                                 currentChar.vegetaForm = 'ultra_ego';
                                 if (currentChar.portraitUltraEgo) currentChar.portrait = currentChar.portraitUltraEgo;
+                                audioManager.playTransformSfx();
                                 addLog('👁️ Vegeta → Ultra Ego (HP < 40%)', 'buff');
                                 renderCharacters();
                             } else if (_vHpPct > 70 && currentChar.vegetaForm !== null) {
@@ -1369,6 +1371,7 @@
                             _naruC.narutoForm = _naruForm;
                             _naruC.portrait = _naruPortrait;
                             _naruC.currentPortrait = _naruPortrait;
+                            audioManager.playTransformSfx();
                             // Kyubi: buff Esquivar 999T
                             if (_naruForm === 'kyubi') {
                                 _naruC.hasDodge = true;
