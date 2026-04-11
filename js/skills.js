@@ -3184,24 +3184,18 @@
                 }
                 
             } else if (ability.effect === 'mangekyou_madara_new') {
-                // MADARA — Mangekyō Sharingan (nuevo): 2 daño directo + Silenciar 2T
+                // MADARA — Mangekyō Sharingan (nuevo): 2 daño directo + Silenciar 2T + genera 2 cargas
                 const _mmAtk = gameState.characters[gameState.selectedCharacter];
                 const _mmTgt = gameState.characters[targetName];
                 // Daño directo (attackerName=null: ignora escudo)
                 if (_mmTgt && !_mmTgt.isDead && _mmTgt.hp > 0) {
-                    _mmTgt.hp = Math.max(0, (_mmTgt.hp||0) - 2);
+                    let _mmDmg = 2;
+                    if (_mmAtk && _mmAtk.rikudoMode) _mmDmg *= 2;
+                    _mmTgt.hp = Math.max(0, (_mmTgt.hp||0) - _mmDmg);
                     if (_mmTgt.hp <= 0) _mmTgt.isDead = true;
-                    addLog('👁️ Mangekyō Sharingan: 2 daño directo a ' + targetName, 'damage');
+                    addLog('👁️ Mangekyō Sharingan: ' + _mmDmg + ' daño directo a ' + targetName, 'damage');
                 }
-                // Rikudō: duplicar daño directo
-                if (_mmAtk && _mmAtk.rikudoMode) {
-                    if (_mmTgt && !_mmTgt.isDead && _mmTgt.hp > 0) {
-                        _mmTgt.hp = Math.max(0, (_mmTgt.hp||0) - 2);
-                        if (_mmTgt.hp <= 0) _mmTgt.isDead = true;
-                        addLog('🌀 Modo Rikudō: +2 daño directo adicional (daño doble)', 'damage');
-                    }
-                }
-                applySilence(targetName, 2);
+                applySilenciar(targetName, 2);
                 addLog('👁️ Mangekyō Sharingan: Silenciar 2T a ' + targetName, 'debuff');
 
             } else if (ability.effect === 'susanoo_madara_new') {
