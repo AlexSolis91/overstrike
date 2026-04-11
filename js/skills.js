@@ -3183,6 +3183,70 @@
                     addLog(`⚔️ ${gameState.selectedCharacter} usa ${ability.name} en ${targetName} causando ${finalDamage} de daño`, 'damage');
                 }
                 
+            } else if (ability.effect === 'mangekyou_madara_new') {
+                // MADARA — Mangekyō Sharingan (nuevo): 2 daño directo + Silenciar 2T
+                const _mmAtk = gameState.characters[gameState.selectedCharacter];
+                const _mmTgt = gameState.characters[targetName];
+                // Daño directo (attackerName=null: ignora escudo)
+                if (_mmTgt && !_mmTgt.isDead && _mmTgt.hp > 0) {
+                    _mmTgt.hp = Math.max(0, (_mmTgt.hp||0) - 2);
+                    if (_mmTgt.hp <= 0) _mmTgt.isDead = true;
+                    addLog('👁️ Mangekyō Sharingan: 2 daño directo a ' + targetName, 'damage');
+                }
+                // Rikudō: duplicar daño directo
+                if (_mmAtk && _mmAtk.rikudoMode) {
+                    if (_mmTgt && !_mmTgt.isDead && _mmTgt.hp > 0) {
+                        _mmTgt.hp = Math.max(0, (_mmTgt.hp||0) - 2);
+                        if (_mmTgt.hp <= 0) _mmTgt.isDead = true;
+                        addLog('🌀 Modo Rikudō: +2 daño directo adicional (daño doble)', 'damage');
+                    }
+                }
+                applySilence(targetName, 2);
+                addLog('👁️ Mangekyō Sharingan: Silenciar 2T a ' + targetName, 'debuff');
+
+            } else if (ability.effect === 'susanoo_madara_new') {
+                // MADARA — Susanoo (nuevo): 4 daño + Buff Escudo igual al daño causado + contraataque al perder escudo
+                const _smAtk = gameState.characters[gameState.selectedCharacter];
+                let _smDmg = finalDamage;
+                if (_smAtk && _smAtk.rikudoMode) _smDmg *= 2;
+                const _smTgt = gameState.characters[targetName];
+                const _smBefore = _smTgt ? _smTgt.hp : 0;
+                applyDamageWithShield(targetName, _smDmg, gameState.selectedCharacter);
+                const _smAfter = _smTgt ? _smTgt.hp : 0;
+                const _smActualDmg = Math.max(0, _smBefore - _smAfter);
+                if (_smActualDmg > 0 && _smAtk) {
+                    _smAtk.shield = (_smAtk.shield||0) + _smActualDmg;
+                    _smAtk.shieldEffect = 'susanoo_counter_madara';
+                    addLog('🛡️ Susanoo: ' + gameState.selectedCharacter + ' obtiene Escudo ' + _smActualDmg + ' HP (= daño causado)', 'buff');
+                }
+                addLog('👁️ Susanoo: ' + _smDmg + ' daño a ' + targetName, 'damage');
+
+            } else if (ability.effect === 'tengai_shinsei_madara') {
+                // MADARA — Tengai Shinsei: 10 AOE + 25% daño extra a objetivos con Esquiva Área
+                const _tsAtk = gameState.characters[gameState.selectedCharacter];
+                const _tsETeam = _tsAtk ? (_tsAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                let _tsDmg = finalDamage;
+                if (_tsAtk && _tsAtk.rikudoMode) _tsDmg *= 2;
+                if (checkAndRedirectAOEMegaProv(_tsETeam, _tsDmg, gameState.selectedCharacter)) {
+                    addLog('☄️ Tengai Shinsei redirigido por Mega Provocación', 'damage');
+                } else {
+                    if (typeof triggerElReyPrometido === 'function') triggerElReyPrometido(gameState.selectedCharacter);
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _tsETeam || _c.isDead || _c.hp <= 0) continue;
+                        let _nDmg = _tsDmg;
+                        // +25% daño si tiene EA activa (buff o pasiva)
+                        const _hasEA = (_c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'esquiva area'; }) || _c.esquivaAreaPassive;
+                        if (_hasEA) {
+                            _nDmg = Math.ceil(_tsDmg * 1.25);
+                            addLog('☄️ Tengai Shinsei: +25% daño en ' + _n + ' (Esquiva Área activa) → ' + _nDmg, 'damage');
+                        }
+                        applyDamageWithShield(_n, _nDmg, gameState.selectedCharacter);
+                    }
+                    for (const _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _tsETeam && _s.hp > 0) applySummonDamage(_sid, _tsDmg, gameState.selectedCharacter); }
+                }
+                addLog('☄️ Tengai Shinsei: 10 AOE completado', 'damage');
+
             } else if (ability.effect === 'sharingan_aoe') {
                 // Mangekyō Sharingan (Madara): SINGLE TARGET 3 daño + Buff Contraataque + Buff Concentración
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
