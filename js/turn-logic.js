@@ -1700,6 +1700,40 @@
                     c.statusEffects = (c.statusEffects || []).filter(e => !e || e.type !== 'debuff' || e.permanent);
                     addLog('💠 Cuerpo Perfecto: ' + n + ' elimina sus debuffs (' + debuffsBefore.length + ')', 'buff');
                 });
+
+                // ── CÉLULAS DE HASHIRAMA (Madara Uchiha): fin de ronda ──
+                for (const _mN in gameState.characters) {
+                    const _mC = gameState.characters[_mN];
+                    if (!_mC || _mC.isDead || _mC.hp <= 0) continue;
+                    if (!_mC.passive || _mC.passive.name !== 'Células de Hashirama') continue;
+                    // Contar buffs activos en el equipo enemigo
+                    const _mEnemyTeam = _mC.team === 'team1' ? 'team2' : 'team1';
+                    let _mBuffCount = 0;
+                    for (const _en in gameState.characters) {
+                        const _ec = gameState.characters[_en];
+                        if (!_ec || _ec.isDead || _ec.hp <= 0 || _ec.team !== _mEnemyTeam) continue;
+                        _mBuffCount += (_ec.statusEffects||[]).filter(function(e){ return e && e.type === 'buff' && !e.passiveHidden; }).length;
+                    }
+                    // +1 HP y +1 carga por cada buff enemigo
+                    if (_mBuffCount > 0) {
+                        if (typeof canHeal === 'function' ? canHeal(_mN) : true) {
+                            _mC.hp = Math.min(_mC.maxHp, (_mC.hp||0) + _mBuffCount);
+                        }
+                        _mC.charges = Math.min(20, (_mC.charges||0) + _mBuffCount);
+                        addLog('🌿 Células de Hashirama: ' + _mN + ' recupera ' + _mBuffCount + ' HP y +' + _mBuffCount + ' cargas (' + _mBuffCount + ' buffs enemigos)', 'heal');
+                    }
+                    // 50% (100% en Rikudō) de limpiar 1 debuff
+                    const _mDebuffs = (_mC.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff' && !e.permanent; });
+                    if (_mDebuffs.length > 0) {
+                        const _mCleanChance = _mC.rikudoMode ? 1.00 : 0.50;
+                        if (Math.random() < _mCleanChance) {
+                            const _mToClean = _mDebuffs[Math.floor(Math.random() * _mDebuffs.length)];
+                            _mC.statusEffects = (_mC.statusEffects||[]).filter(function(e){ return e !== _mToClean; });
+                            addLog('🌿 Células de Hashirama: ' + _mN + ' limpia ' + (_mToClean.name || 'Debuff') + (_mC.rikudoMode ? ' (100% Rikudō)' : ' (50%)'), 'buff');
+                        }
+                    }
+                    break; // Solo 1 Madara
+                }
                 // PASIVA PROGENITOR DEMONIACO (Muzan): cura al inicio de cada ronda
                 triggerMuzanPassive();
 
