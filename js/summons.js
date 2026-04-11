@@ -894,10 +894,10 @@
                 }
             }
 
-            // PASIVA LIMBO: Madara en Modo Rikudō recibe 50% menos de daño
+            // CÉLULAS DE HASHIRAMA (Madara en Modo Rikudō): -50% daño recibido
             if ((targetName === 'Madara Uchiha' || targetName === 'Madara Uchiha v2') && target.rikudoMode) {
                 const reduced = Math.ceil(damage / 2);
-                addLog(`🌀 Limbo: Madara absorbe ${damage - reduced} de daño (50% reducción)`, 'buff');
+                addLog(`🌀 Modo Rikudō: Madara absorbe ${damage - reduced} de daño (50% reducción)`, 'buff');
                 damage = reduced;
             }
 
@@ -948,7 +948,19 @@
                     const shieldBefore = target.shield;
                     target.shield -= damage;
                     addLog(`🛡️ El escudo de ${targetName} absorbe ${damage} de daño (Escudo restante: ${target.shield})`, 'buff');
-                    
+
+                    // SUSANOO (Madara): contraataca con básico cada vez que el escudo pierde HP
+                    if (target.shieldEffect === 'susanoo_counter_madara' && !passiveExecuting && attackerName && damage > 0) {
+                        passiveExecuting = true;
+                        const _susAtk = gameState.characters[targetName];
+                        const _susBasic = _susAtk && _susAtk.abilities ? _susAtk.abilities[0] : null;
+                        const _susDmg = (_susBasic ? (_susBasic.damage || 2) : 2) * (_susAtk && _susAtk.rikudoMode ? 2 : 1);
+                        if (_susDmg > 0) {
+                            applyDamageWithShield(attackerName, _susDmg, targetName);
+                            addLog('👁️ Susanoo: Madara contraataca a ' + attackerName + ' con ' + _susDmg + ' daño (escudo golpeado)', 'damage');
+                        }
+                        passiveExecuting = false;
+                    }
 
                     // fire_charge_regen (Llama Preservadora): genera 1 carga a Alexstrasza por punto absorbido (escudo debe seguir activo)
                     if (target.shieldEffect === 'fire_charge_regen' && target.shield > 0 && !passiveExecuting) {
@@ -1385,16 +1397,19 @@
             }
         }
 
-        // MONARCA DE LA DESTRUCCION: 3 daño directo por cada Buff aplicado a un enemigo
+        // MONARCA DE LA DESTRUCCION: 3 daño directo por cada Buff aplicado a un enemigo de Antares
         function triggerMonarcaDestruccion(buffTargetName) {
+            if (passiveExecuting) return; // evitar recursión
             const _btC = gameState.characters[buffTargetName];
             if (!_btC || _btC.isDead || _btC.hp <= 0) return;
+            // Buscar Antares en el equipo CONTRARIO al objetivo del buff
             const _antTeam = _btC.team === 'team1' ? 'team2' : 'team1';
             for (const _an in gameState.characters) {
                 const _ac = gameState.characters[_an];
                 if (!_ac || _ac.isDead || _ac.hp <= 0 || _ac.team !== _antTeam) continue;
                 if (!_ac.passive || _ac.passive.name !== 'Monarca de la Destruccion') continue;
-                // 3 daño directo al objetivo
+                // 3 daño directo al objetivo (attackerName=null = daño directo)
+                passiveExecuting = true;
                 const _btOldHp = _btC.hp;
                 _btC.hp = Math.max(0, (_btC.hp||0) - 3);
                 if (_btC.hp <= 0) _btC.isDead = true;
@@ -1404,6 +1419,7 @@
                     _ac.charges = Math.min(20, (_ac.charges||0) + 2);
                     addLog('🔥 Monarca de la Destruccion: ' + _an + ' gana 2 cargas (daño directo)', 'buff');
                 }
+                passiveExecuting = false;
                 break;
             }
         }
