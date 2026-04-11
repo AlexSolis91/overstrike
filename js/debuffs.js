@@ -160,12 +160,10 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 }
             }
             target.statusEffects.push(effectObj);
-            // MONARCA DE LA DESTRUCCION: 3 daño si se aplica Buff a un enemigo
-            if (gameState.selectedCharacter && gameState.selectedCharacter !== targetName) {
-                const _buffAtk = gameState.characters[gameState.selectedCharacter];
-                if (_buffAtk && target && _buffAtk.team !== target.team) {
-                    if (typeof triggerMonarcaDestruccion === 'function') triggerMonarcaDestruccion(targetName);
-                }
+            // MONARCA DE LA DESTRUCCION: 3 daño si se aplica Buff a un personaje que es enemigo de Antares
+            // (funciona sin importar quién sea selectedCharacter)
+            if (typeof triggerMonarcaDestruccion === 'function') {
+                triggerMonarcaDestruccion(targetName);
             }
         }
 
@@ -194,11 +192,6 @@ function triggerMaboroshi(targetTeam, debuffName) {
 function applyDebuff(targetName, effectObj) {
             const target = gameState.characters[targetName];
             if (!target || !target.statusEffects) return;
-            // BUFF REFLEJAR: el portador es inmune a nuevos debuffs mientras Reflejar esté activo
-            if (hasStatusEffect(targetName, 'Reflejar')) {
-                addLog('🪞 Reflejar: ' + targetName + ' es inmune al debuff (Reflejar activo)', 'buff');
-                return;
-            }
             // ESQUIVA ÁREA: inmune a TODOS los debuffs y efectos AOE de enemigos
             // También bloquea debuffs de movimientos NO-AOE si el objetivo tiene Esquiva Area activa
             if (gameState.selectedAbility && gameState.selectedCharacter) {
@@ -331,18 +324,17 @@ function applyDebuff(targetName, effectObj) {
                 }
             }
 
-            // PASIVA RINNEGAN (Madara Uchiha): 70% chance debuff is cleansed + 3 charges
+            // CÉLULAS DE HASHIRAMA (Madara): 50% de limpiar debuff al recibirlo (100% en Rikudō)
             {
-                const _rinTarget = gameState.characters[targetName];
-                if (_rinTarget && !_rinTarget.isDead && _rinTarget.hp > 0 &&
-                    _rinTarget.passive && _rinTarget.passive.name === 'Rinnegan' &&
+                const _hashTarget = gameState.characters[targetName];
+                if (_hashTarget && !_hashTarget.isDead && _hashTarget.hp > 0 &&
+                    _hashTarget.passive && _hashTarget.passive.name === 'Células de Hashirama' &&
                     effectObj.type === 'debuff') {
-                    if (Math.random() < 0.70) {
-                        // Cleanse: remove the debuff that was just added
-                        _rinTarget.statusEffects = (_rinTarget.statusEffects || []).filter(e => e !== effectObj);
-                        _rinTarget.charges = Math.min(20, (_rinTarget.charges || 0) + 3);
-                        addLog('👁️ Rinnegan: ' + targetName + ' disipa ' + effectObj.name + ' y genera 3 cargas (70%)', 'buff');
-                        return; // debuff was removed
+                    const _hashChance = _hashTarget.rikudoMode ? 1.00 : 0.50;
+                    if (Math.random() < _hashChance) {
+                        _hashTarget.statusEffects = (_hashTarget.statusEffects || []).filter(e => e !== effectObj);
+                        addLog('🌿 Células de Hashirama: ' + targetName + ' limpia ' + effectObj.name + (_hashTarget.rikudoMode ? ' (100% Rikudō)' : ' (50%)'), 'buff');
+                        return;
                     }
                 }
             }
@@ -409,10 +401,7 @@ function applyDebuff(targetName, effectObj) {
 
         function applyBleed(targetName, duration) {
 
-            if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }
-            const _bleedTgt = gameState.characters[targetName];
-            if (_bleedTgt && _bleedTgt.passive && _bleedTgt.passive.name === 'Invierno Eterno') { addLog('☠️ Invierno Eterno: Rey de la Noche es inmune a Sangrado', 'buff'); return; }
-            applyDebuff(targetName, { name: 'Sangrado', type: 'debuff', duration, emoji: '🩸' });
+            if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }            applyDebuff(targetName, { name: 'Sangrado', type: 'debuff', duration, emoji: '🩸' });
             addLog(`🩸 ${targetName} sufre Sangrado por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
         }
 
@@ -421,7 +410,6 @@ function applyDebuff(targetName, effectObj) {
             const _fearTgt = gameState.characters[targetName];
             if (_fearTgt && _fearTgt.passive && _fearTgt.passive.name === 'Mente Brillante') { addLog('🪓 Mente Brillante: Ivar es inmune a Miedo', 'buff'); return; }
             if (_fearTgt && _fearTgt.passive && _fearTgt.passive.name === 'Señor de los Nazgul') { addLog('💀 Señor de los Nazgul: Rey Brujo es inmune a Miedo', 'buff'); return; }
-            if (_fearTgt && _fearTgt.passive && _fearTgt.passive.name === 'Invierno Eterno') { addLog('☠️ Invierno Eterno: Rey de la Noche es inmune a Miedo', 'buff'); return; }
             applyDebuff(targetName, { name: 'Miedo', type: 'debuff', duration, emoji: '😱' });
             addLog(`😱 ${targetName} siente Miedo por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
         }
@@ -468,28 +456,6 @@ function applyDebuff(targetName, effectObj) {
             // Reducir velocidad (se restaurará cuando expire el debuff)
             target.speed = Math.max(1, target.speed - _freezeActualPenalty);
             addLog(emoji + ' ' + targetName + ' queda ' + (mega ? 'Mega Congelado' : 'Congelado') + ' (vel -' + _freezeActualPenalty + ') por ' + duration + ' turno' + (duration > 1 ? 's' : ''), 'damage');
-
-            // ── INVIERNO ETERNO (Rey de la Noche): 2 daño directo al objetivo cuando su equipo aplica Congelacion/Megacongelacion ──
-            if (!passiveExecuting) {
-                const _tgtRDN = gameState.characters[targetName];
-                if (_tgtRDN) {
-                    // Buscar al Rey de la Noche en el equipo contrario al objetivo
-                    const _rdnEnemyTeam = _tgtRDN.team;
-                    const _rdnAllyTeam = _rdnEnemyTeam === 'team1' ? 'team2' : 'team1';
-                    for (const _rdnN in gameState.characters) {
-                        const _rdnC = gameState.characters[_rdnN];
-                        if (!_rdnC || _rdnC.isDead || _rdnC.hp <= 0 || _rdnC.team !== _rdnAllyTeam) continue;
-                        if (_rdnC.passive && _rdnC.passive.name === 'Invierno Eterno') {
-                            passiveExecuting = true;
-                            _tgtRDN.hp = Math.max(0, (_tgtRDN.hp||0) - 2);
-                            if (_tgtRDN.hp <= 0) _tgtRDN.isDead = true;
-                            addLog('☠️ Invierno Eterno: ' + _rdnN + ' inflige 2 daño directo a ' + targetName + ' (congelación aplicada)', 'damage');
-                            passiveExecuting = false;
-                            break;
-                        }
-                    }
-                }
-            }
         }
 
         function applyPoison(targetName, duration) {
