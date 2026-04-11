@@ -27,6 +27,34 @@
             // Usar personajes seleccionados o todos por defecto
             const source = selectedCharacters || characterData;
             gameState.characters = JSON.parse(JSON.stringify(source));
+
+            // ── PROXY: interceptar statusEffects.push para activar Monarca de la Destruccion ──
+            // Esto garantiza que CUALQUIER buff aplicado (con push directo) active la pasiva
+            function _wrapStatusEffects(charName) {
+                const ch = gameState.characters[charName];
+                if (!ch || !Array.isArray(ch.statusEffects)) return;
+                const _origArr = ch.statusEffects;
+                const _proxied = new Proxy(_origArr, {
+                    get(target, prop) {
+                        if (prop === 'push') {
+                            return function(...items) {
+                                const result = Array.prototype.push.apply(target, items);
+                                // Activar Monarca si se agrega un buff a un personaje enemigo de Antares
+                                items.forEach(function(item) {
+                                    if (item && item.type === 'buff' && !item.passiveHidden &&
+                                        typeof triggerMonarcaDestruccion === 'function') {
+                                        triggerMonarcaDestruccion(charName);
+                                    }
+                                });
+                                return result;
+                            };
+                        }
+                        return target[prop];
+                    }
+                });
+                ch.statusEffects = _proxied;
+            }
+            for (const _cn in gameState.characters) { _wrapStatusEffects(_cn); }
             
             // ── PASIVAS PERMANENTES (buffs que no expiran ni pueden limpiarse) ──
             for (const charName in gameState.characters) {
