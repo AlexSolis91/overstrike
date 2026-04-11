@@ -7,14 +7,14 @@
                 hp: 20, maxHp: 20, speed: 90, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 rikudoMode: false,
-                portrait: 'https://i.postimg.cc/KzWJPy5j/Captura_de_pantalla_2026_02_26_134301.png',
-                transformPortrait: 'https://i.postimg.cc/kGtwwhj9/Captura_de_pantalla_2026_02_26_135949.png',
-                passive: { name: 'Rinnegan', description: 'Cada vez que recibe un debuff, hay 70% de probabilidad de que ese debuff sea limpiado automáticamente. Cada vez que un debuff es limpiado o disipado en Madara, genera 3 cargas.' },
+                portrait: 'https://i.ibb.co/spKxL75H/descarga.jpg',
+                transformPortrait: 'https://i.ibb.co/nMJG3RBJ/descarga-1.jpg',
+                passive: { name: 'Células de Hashirama', description: 'Al final de cada ronda: +1 HP y +1 carga por cada Buff activo en el equipo enemigo. 50% de limpiar 1 debuff aplicado sobre Madara (100% en Modo Rikudō). En Modo Rikudō: -50% daño recibido y daño doble en todos sus ataques.' },
                 abilities: [
-                    { name: 'Gakidō: Fūjutsu Kyūin', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'single', effect: 'lifesteal_basic', description: 'Causa 1 daño. Roba 2 HP del objetivo.' },
-                    { name: 'Mangekyō Sharingan', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'single', effect: 'sharingan_aoe', description: 'Causa 4 daño. Se aplica Buff Contraataque. Se aplica Buff Provocación 2 turnos.' },
-                    { name: 'Susanoo', type: 'special', cost: 8, chargeGain: 0, damage: 3, target: 'aoe', effect: 'double_on_burn', critChance: 0.50, description: 'Causa 3 AOE con 50% de probabilidad de golpe crítico. Aplica Buff Escudo con +3 HP por cada golpe crítico acertado.' },
-                    { name: 'Modo Rikudō', type: 'over', cost: 12, chargeGain: 0, damage: 0, target: 'self', effect: 'rikudo_transformation', description: 'Transformación permanente. Todos los ataques cuestan la mitad de cargas. Todos los ataques causan daño doble.' }
+                    { name: 'Mangekyō Sharingan', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'single', effect: 'mangekyou_madara_new', description: 'Causa 2 daño directo al objetivo. Aplica Debuff Silenciar 2 turnos.' },
+                    { name: 'Susanoo', type: 'special', cost: 6, chargeGain: 0, damage: 4, target: 'single', effect: 'susanoo_madara_new', description: 'Causa 4 daño. Aplica Buff Escudo equivalente al daño causado. Cada vez que el escudo pierde HP, Madara contraataca con un ataque básico.' },
+                    { name: 'Modo Rikudō', type: 'special', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'rikudo_transformation', description: 'Transformación permanente. Todos los ataques cuestan la mitad de cargas. En Modo Rikudō: daño doble y -50% daño recibido.' },
+                    { name: 'Tengai Shinsei', type: 'over', cost: 20, chargeGain: 0, damage: 10, target: 'aoe', effect: 'tengai_shinsei_madara', description: 'Causa 10 AOE. Causa 25% del daño adicional a enemigos con Buff Esquiva Área o pasiva Esquiva Área.' }
                 ]
             },
 
