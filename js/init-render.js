@@ -30,13 +30,14 @@
 
             // ── BATTLE STATS: contadores para la pantalla de resultado épica ──
             gameState.battleStats = {
-                totalDamage: {},    // { charName: N } daño total causado por cada personaje
-                crits: 0,           // golpes críticos totales
-                summonsKilled: 0,   // invocaciones destruidas
-                oversUsed: 0,       // Overs ejecutados
-                healsGiven: 0,      // HP curado total
-                team1Damage: 0,     // daño total equipo 1
-                team2Damage: 0      // daño total equipo 2
+                totalDamage: {},
+                crits: 0,
+                summonsKilled: 0,
+                oversUsed: 0,
+                healsGiven: 0,
+                team1Damage: 0,
+                team2Damage: 0,
+                killMap: {}
             };
 
             // ── PROXY: interceptar statusEffects.push para activar Monarca de la Destruccion ──
