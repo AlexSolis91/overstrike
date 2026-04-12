@@ -838,14 +838,17 @@
                 }
             }
 
-            // ── DEFENSA ABSOLUTA (Gaara): inmune a daño por golpes Y daño directo si tiene debuffs activos ──
+            // ── DEFENSA ABSOLUTA (Gaara): consume cargas equivalentes al daño que fuera a recibir ──
             if (!passiveExecuting && damage > 0) {
                 const _gaC = gameState.characters[targetName];
                 if (_gaC && !_gaC.isDead && _gaC.hp > 0 && _gaC.passive && _gaC.passive.name === 'Defensa Absoluta') {
-                    const _gaDebuffCount = (_gaC.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff'; }).length;
-                    if (_gaDebuffCount > 0) {
-                        addLog('🏜️ Defensa Absoluta: Gaara es inmune al daño (' + _gaDebuffCount + ' debuff(s) activos)', 'buff');
-                        return 0;
+                    if ((_gaC.charges || 0) > 0) {
+                        // Consumir hasta 'damage' cargas; el daño que queda es lo que supera las cargas
+                        const _gaConsumed = Math.min(_gaC.charges, damage);
+                        _gaC.charges = Math.max(0, (_gaC.charges||0) - _gaConsumed);
+                        damage = damage - _gaConsumed;
+                        addLog('🏜️ Defensa Absoluta: Gaara absorbe ' + _gaConsumed + ' daño con cargas (restante: ' + damage + ')', 'buff');
+                        if (damage <= 0) return 0; // todo absorbido por cargas
                     }
                 }
             }
