@@ -598,6 +598,32 @@
             return 0; // El invocador no recibe daño
         }
 
+        // ==================== ANIMACIONES DE BATALLA ====================
+        function _animCard(charName, animClass, durationMs) {
+            const id = 'char-' + (charName || '').replace(/\s+/g, '-');
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.remove('anim-shake','anim-hit','anim-crit','anim-heal','anim-charge','anim-debuff','anim-over','anim-transform','anim-defeat');
+            void el.offsetWidth; // reflow para reiniciar
+            el.classList.add(animClass);
+            setTimeout(function() { el.classList.remove(animClass); }, durationMs || 600);
+        }
+
+        function _spawnDmgNumber(charName, text, type) {
+            const id = 'char-' + (charName || '').replace(/\s+/g, '-');
+            const el = document.getElementById(id);
+            if (!el) return;
+            const rect = el.getBoundingClientRect();
+            const num = document.createElement('div');
+            num.className = 'damage-number ' + (type || 'dmg');
+            num.textContent = text;
+            num.style.left = (rect.left + rect.width * 0.3 + Math.random() * rect.width * 0.4) + 'px';
+            num.style.top  = (rect.top  + rect.height * 0.2) + 'px';
+            document.body.appendChild(num);
+            setTimeout(function() { if (num.parentNode) num.parentNode.removeChild(num); }, 1050);
+        }
+        // ==================== END ANIMACIONES ====================
+
         function applyDamageWithShield(targetName, damage, attackerName = null) {
             // Si el targetName es un summon especial (__summon__:id), redirigir a applySummonDamage
             if (typeof targetName === 'string' && targetName.startsWith('__summon__:')) {
@@ -1007,6 +1033,14 @@
             if (isNaN(remainingDamage)) remainingDamage = 0;
             const oldHp = target.hp;
             target.hp = Math.max(0, target.hp - remainingDamage);
+
+            // ── ANIMACIÓN: shake + flash rojo + número flotante al recibir daño ──
+            if (remainingDamage > 0 && typeof _animCard === 'function') {
+                const _isCrit = remainingDamage >= 6; // daño alto = crítico visual
+                _animCard(targetName, _isCrit ? 'anim-crit' : 'anim-hit', 500);
+                _animCard(targetName, 'anim-shake', 450);
+                _spawnDmgNumber(targetName, (_isCrit ? '💥 ' : '-') + remainingDamage, _isCrit ? 'crit' : 'dmg');
+            }
             // DOOMSDAY Adaptación Reactiva: recover 2HP after taking damage (if still alive)
             if (target._doomsdayHealPending) {
                 target._doomsdayHealPending = false;
@@ -1058,6 +1092,7 @@
             // Verificar si fue derrotado
             if (target.hp <= 0 && oldHp > 0) {
                 target.isDead = true;
+                if (typeof _animCard === 'function') _animCard(targetName, 'anim-defeat', 700);
                 // Immediate game-over check after every kill
                 if (typeof checkGameOver === 'function') checkGameOver();
                 
@@ -1483,6 +1518,10 @@
             c.hp = Math.min(c.maxHp, c.hp + finalHeal);
             const _hcActual = c.hp - before;
             if (_hcActual > 0) {
+                if (typeof _animCard === 'function') {
+                    _animCard(charName, 'anim-heal', 500);
+                    _spawnDmgNumber(charName, '+' + _hcActual, 'heal');
+                }
                 triggerBendicionSagrada(c.team, _hcActual);
                 // PRESENCIA OSCURA (Darth Vader): +1 carga cuando un enemigo recupera HP
                 triggerPresenciaOscura(charName);
