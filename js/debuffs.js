@@ -160,6 +160,10 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 }
             }
             target.statusEffects.push(effectObj);
+            // Animación buff en el portador
+            if (typeof _animCard === 'function' && !effectObj.passiveHidden) {
+                _animCard(targetName, 'anim-charge', 550);
+            }
             // MONARCA DE LA DESTRUCCION: 3 daño si se aplica Buff a un personaje que es enemigo de Antares
             // (funciona sin importar quién sea selectedCharacter)
             if (typeof triggerMonarcaDestruccion === 'function') {
@@ -296,6 +300,10 @@ function applyDebuff(targetName, effectObj) {
                 }
             }
             target.statusEffects.push(effectObj);
+            // Animación debuff en el portador
+            if (typeof _animCard === 'function') {
+                _animCard(targetName, 'anim-debuff', 500);
+            }
             // PASIVA MABOROSHI: Saga gana 1 carga al aplicar debuff en enemigo
             triggerMaboroshi(target.team, effectObj.name);
             // ARCHIMAGA DEL KIRIN TOR (Jaina): aplica Congelacion al enemigo que recibe debuff
