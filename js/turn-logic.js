@@ -1326,6 +1326,8 @@
                     // Nuevo snapshot de vivos para la ronda que comienza
                     gameState.aliveCountAtRoundStart = Object.values(gameState.characters).filter(c => c && !c.isDead && c.hp > 0).length;
                     addLog(`⏱️ ¡RONDA ${gameState.currentRound} COMIENZA!`, 'info');
+                    // ── BANNER CINEMATOGRÁFICO DE RONDA ──
+                    _showRoundBanner(gameState.currentRound);
                     // ── EXPLOSIÓN FINAL (Vegeta): countdown revivir ──
                     for (const _vn in gameState.characters) {
                         const _vc = gameState.characters[_vn];
@@ -2077,3 +2079,112 @@
                 console.error('Error en processEndOfRoundEffects:', error);
             }
         }
+
+        // ==================== VFX FUNCTIONS ====================
+
+        // ── 6. Banner cinematográfico de ronda ──
+        function _showRoundBanner(round) {
+            const existing = document.getElementById('roundBanner');
+            if (existing) existing.remove();
+            const banner = document.createElement('div');
+            banner.id = 'roundBanner';
+            banner.innerHTML = `
+                <div style="text-align:center;position:relative;">
+                    <div class="round-banner-lines top"></div>
+                    <div class="round-text">RONDA ${round}</div>
+                    <div class="round-sub">· OVERSTRIKE ·</div>
+                    <div class="round-banner-lines bottom"></div>
+                </div>`;
+            document.body.appendChild(banner);
+            setTimeout(function() { if (banner.parentNode) banner.parentNode.removeChild(banner); }, 1650);
+        }
+
+        // ── 7. Power Up: flash blanco + partículas ──
+        function _triggerPowerUp(charName, team) {
+            // Flash blanco en pantalla
+            const fl = document.createElement('div');
+            fl.id = 'powerUpFlash';
+            document.body.appendChild(fl);
+            setTimeout(function() { if (fl.parentNode) fl.parentNode.removeChild(fl); }, 500);
+            // Partículas desde el card del personaje
+            const cardId = 'char-' + (charName || '').replace(/\s+/g, '-');
+            const card = document.getElementById(cardId);
+            if (!card) return;
+            const rect = card.getBoundingClientRect();
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            const color = team === 'team1' ? '#00c4ff' : '#ff4466';
+            const count = 18;
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div');
+                p.className = 'pu-particle';
+                const angle = (i / count) * Math.PI * 2;
+                const dist = 60 + Math.random() * 80;
+                const tx = Math.cos(angle) * dist;
+                const ty = Math.sin(angle) * dist;
+                const dur = (0.6 + Math.random() * 0.6).toFixed(2) + 's';
+                const size = (4 + Math.random() * 6) + 'px';
+                p.style.cssText = `
+                    left:${cx}px; top:${cy}px;
+                    width:${size}; height:${size};
+                    background:${color};
+                    box-shadow: 0 0 6px ${color};
+                    --tx:${tx}px; --ty:${ty}px; --dur:${dur};`;
+                document.body.appendChild(p);
+                setTimeout(function(el) { if (el.parentNode) el.parentNode.removeChild(el); }, 1300, p);
+            }
+        }
+
+        // ── Pop de número de cargas ──
+        function _triggerChargePop(charName) {
+            const id = 'chval-' + (charName || '').replace(/\s+/g, '-');
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.remove('charge-pop');
+            void el.offsetWidth;
+            el.classList.add('charge-pop');
+            setTimeout(function() { el.classList.remove('charge-pop'); }, 400);
+        }
+
+        // ── 13. Efectos de clima AOE ──
+        function _triggerAOEWeather(type) {
+            // type: 'fire' | 'ice' | 'dark' | 'wind' | 'generic'
+            const count = type === 'generic' ? 12 : 20;
+            const dur_base = type === 'ice' ? 1.8 : 2.2;
+            for (let i = 0; i < count; i++) {
+                setTimeout(function() {
+                    const p = document.createElement('div');
+                    p.className = 'aoe-particle';
+                    const left = (Math.random() * 100).toFixed(1) + '%';
+                    const dur  = (dur_base + Math.random() * 1.2).toFixed(2) + 's';
+                    const rot  = (Math.random() * 720 - 360).toFixed(0) + 'deg';
+                    const sx   = (Math.random() * 80 - 40).toFixed(0) + 'px';
+                    let symbol, size, animName;
+                    if (type === 'fire') {
+                        symbol = ['🔥','✨','💫','⚡'][Math.floor(Math.random()*4)];
+                        size = (14 + Math.random() * 12) + 'px';
+                        animName = 'aoeAshFall';
+                    } else if (type === 'ice') {
+                        symbol = ['❄️','💠','🔷','✦'][Math.floor(Math.random()*4)];
+                        size = (12 + Math.random() * 10) + 'px';
+                        animName = 'aoeIceFall';
+                    } else if (type === 'dark') {
+                        symbol = ['💀','🌑','⬛','🖤'][Math.floor(Math.random()*4)];
+                        size = (10 + Math.random() * 10) + 'px';
+                        animName = 'aoeAshFall';
+                    } else {
+                        symbol = ['⭐','✨','💥','🌀'][Math.floor(Math.random()*4)];
+                        size = (12 + Math.random() * 10) + 'px';
+                        animName = 'aoeParticleFall';
+                    }
+                    p.style.cssText = `left:${left}; top:-20px; font-size:${size};
+                        --dur:${dur}; --rot:${rot}; --sx:${sx};
+                        animation-name:${animName};`;
+                    p.textContent = symbol;
+                    document.body.appendChild(p);
+                    setTimeout(function() { if (p.parentNode) p.parentNode.removeChild(p); }, parseFloat(dur)*1000 + 200);
+                }, i * 80);
+            }
+        }
+
+        // ==================== END VFX FUNCTIONS ====================
