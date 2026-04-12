@@ -289,17 +289,17 @@
                                             <span>${char.hp}/${char.maxHp}</span>
                                         </div>
                                         <div class="bar-container">
-                                            <div class="bar-fill hp-bar" style="width: ${(char.hp / char.maxHp) * 100}%"></div>
+                                            <div class="bar-fill hp-bar ${(char.hp/char.maxHp) > 0.6 ? '' : (char.hp/char.maxHp) > 0.3 ? 'hp-medium' : 'hp-critical'}" style="width: ${(char.hp / char.maxHp) * 100}%"></div>
                                         </div>
                                     </div>
                                     
                                     <div class="stat-bar">
                                         <div class="stat-label">
                                             <span>⚡ CARGAS</span>
-                                            <span>${char.charges}</span>
+                                            <span id="chval-${name.replace(/\s+/g,'-')}" class="">${char.charges}</span>
                                         </div>
                                         <div class="bar-container">
-                                            <div class="bar-fill charge-bar" style="width: ${(char.charges / 20) * 100}%"></div>
+                                            <div class="bar-fill charge-bar ${char.charges >= 20 ? 'charge-full' : ''}" style="width: ${(char.charges / 20) * 100}%"></div>
                                         </div>
                                     </div>
                                 </div>
@@ -349,9 +349,11 @@
 
                 const disabled = !canUse || char.hp <= 0 || blockedBySilence || blockedBySummon;
                 const _disabledTitle = blockedBySummon ? ' title="' + _summonName + ' ya está en campo"' : '';
+                // Over listo: el Over es usable y no está bloqueado
+                const isOverReady = ability.type === 'over' && !disabled;
                 
                 html += `
-                    <button class="ability-btn" 
+                    <button class="ability-btn${isOverReady ? ' over-ready' : ''}" 
                             onclick="selectAbility('${charName}', ${index})"
                             ${disabled ? 'disabled' : ''}${_disabledTitle}>
                         ${ability.name}
