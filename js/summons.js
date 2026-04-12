@@ -79,6 +79,8 @@
             if (!summon) return;
             
             addLog(`💨 ${summon.name} ha ${reason === 'sacrificed' ? 'sido sacrificado' : 'sido derrotado'}`, 'damage');
+            // ── BATTLE STATS: contar invocación destruida ──
+            if (reason === 'derrotado' && gameState.battleStats) gameState.battleStats.summonsKilled++;
 
             // GRANIZO DE ARENA IMPERIAL (Gaara): si la invocación tiene el flag, no activar pasiva
             if (summon._skipDeathPassive) {
@@ -1041,6 +1043,21 @@
                 _animCard(targetName, 'anim-shake', 450);
                 _spawnDmgNumber(targetName, (_isCrit ? '💥 ' : '-') + remainingDamage, _isCrit ? 'crit' : 'dmg');
             }
+
+            // ── BATTLE STATS: acumular daño y crits ──
+            if (remainingDamage > 0 && gameState.battleStats) {
+                // Daño por atacante
+                if (attackerName) {
+                    gameState.battleStats.totalDamage[attackerName] = (gameState.battleStats.totalDamage[attackerName] || 0) + remainingDamage;
+                    const _atkChar = gameState.characters[attackerName];
+                    if (_atkChar) {
+                        if (_atkChar.team === 'team1') gameState.battleStats.team1Damage += remainingDamage;
+                        else gameState.battleStats.team2Damage += remainingDamage;
+                    }
+                }
+                // Crítico visual
+                if (remainingDamage >= 6 && attackerName) gameState.battleStats.crits++;
+            }
             // DOOMSDAY Adaptación Reactiva: recover 2HP after taking damage (if still alive)
             if (target._doomsdayHealPending) {
                 target._doomsdayHealPending = false;
@@ -1522,6 +1539,7 @@
                     _animCard(charName, 'anim-heal', 500);
                     _spawnDmgNumber(charName, '+' + _hcActual, 'heal');
                 }
+                if (gameState.battleStats) gameState.battleStats.healsGiven += _hcActual;
                 triggerBendicionSagrada(c.team, _hcActual);
                 // PRESENCIA OSCURA (Darth Vader): +1 carga cuando un enemigo recupera HP
                 triggerPresenciaOscura(charName);
