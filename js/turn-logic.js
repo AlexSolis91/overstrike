@@ -1359,20 +1359,23 @@
                         if (_sc && _sc.passive && _sc.passive.name === 'Venganza Eterna') _sc.sasukeEvasionUsedThisRound = false;
                     }
 
-                    // ── DEFENSA ABSOLUTA (Gaara): inicio de ronda → 50% Buff Escudo Sagrado a cada aliado ──
+                    // ── DEFENSA ABSOLUTA (Gaara): inicio de ronda → Escudo Sagrado al aliado con menos HP ──
                     for (const _gaaN in gameState.characters) {
                         const _gaaC = gameState.characters[_gaaN];
                         if (!_gaaC || _gaaC.isDead || _gaaC.hp <= 0) continue;
                         if (!_gaaC.passive || _gaaC.passive.name !== 'Defensa Absoluta') continue;
-                        // 50% Escudo Sagrado a cada aliado (incluido Gaara)
+                        // Encontrar el aliado con menos HP (incluido Gaara)
+                        let _lowName = null, _lowHp = Infinity;
                         for (const _aaN in gameState.characters) {
                             const _aaC = gameState.characters[_aaN];
                             if (!_aaC || _aaC.isDead || _aaC.hp <= 0 || _aaC.team !== _gaaC.team) continue;
-                            if (Math.random() < 0.50) {
-                                _aaC.statusEffects = (_aaC.statusEffects||[]).filter(function(e){ return !e || normAccent(e.name||'') !== 'escudo sagrado'; });
-                                _aaC.statusEffects.push({ name: 'Escudo Sagrado', type: 'buff', duration: 2, emoji: '✝️' });
-                                addLog('🏜️ Defensa Absoluta: ' + _aaN + ' recibe Buff Escudo Sagrado 2T (50%)', 'buff');
-                            }
+                            if (_aaC.hp < _lowHp) { _lowHp = _aaC.hp; _lowName = _aaN; }
+                        }
+                        if (_lowName) {
+                            const _lowC = gameState.characters[_lowName];
+                            _lowC.statusEffects = (_lowC.statusEffects||[]).filter(function(e){ return !e || normAccent(e.name||'') !== 'escudo sagrado'; });
+                            _lowC.statusEffects.push({ name: 'Escudo Sagrado', type: 'buff', duration: 2, emoji: '✝️' });
+                            addLog('🏜️ Defensa Absoluta: ' + _lowName + ' recibe Buff Escudo Sagrado (aliado con menos HP: ' + _lowHp + ' HP)', 'buff');
                         }
                         // Decrementar Arena_VelDebuff por ronda (_roundsLeft)
                         for (const _dvN in gameState.characters) {
@@ -1700,6 +1703,16 @@
                     c.statusEffects = (c.statusEffects || []).filter(e => !e || e.type !== 'debuff' || e.permanent);
                     addLog('💠 Cuerpo Perfecto: ' + n + ' elimina sus debuffs (' + debuffsBefore.length + ')', 'buff');
                 });
+
+                // ── DEFENSA ABSOLUTA (Gaara): fin de ronda → genera 5 cargas ──
+                for (const _gfN in gameState.characters) {
+                    const _gfC = gameState.characters[_gfN];
+                    if (!_gfC || _gfC.isDead || _gfC.hp <= 0) continue;
+                    if (!_gfC.passive || _gfC.passive.name !== 'Defensa Absoluta') continue;
+                    _gfC.charges = Math.min(20, (_gfC.charges||0) + 5);
+                    addLog('🏜️ Defensa Absoluta: ' + _gfN + ' genera 5 cargas al final de la ronda', 'buff');
+                    break;
+                }
 
                 // ── CÉLULAS DE HASHIRAMA (Madara Uchiha): fin de ronda ──
                 for (const _mN in gameState.characters) {
