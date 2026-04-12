@@ -4453,7 +4453,7 @@
                 }
 
             } else if (ability.effect === 'arenas_movedizas_gaara') {
-                // GAARA — Arenas Movedizas: 2 AOE + -20% vel 3 rondas + si vel<=80 roba todas las cargas
+                // GAARA — Arenas Movedizas: 2 AOE + -10% vel 3 rondas + si vel<=80 roba 2 cargas
                 const _amAtk = gameState.characters[gameState.selectedCharacter];
                 const _amETeam = _amAtk ? (_amAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
                 if (checkAndRedirectAOEMegaProv(_amETeam, finalDamage, gameState.selectedCharacter)) {
@@ -4464,18 +4464,20 @@
                         if (!_c || _c.team !== _amETeam || _c.isDead || _c.hp <= 0) continue;
                         if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('💨 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
                         applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
-                        // -20% vel por 3 rondas
-                        const _velRed = Math.floor((_c.speed||80) * 0.20);
+                        // -10% vel por 3 rondas
+                        const _velRed = Math.max(1, Math.floor((_c.speed||80) * 0.10));
                         _c.speed = Math.max(1, (_c.speed||80) - _velRed);
                         _c.statusEffects = (_c.statusEffects||[]).filter(function(e){ return !e || e.name !== 'Arena_VelDebuff'; });
                         _c.statusEffects.push({ name: 'Arena_VelDebuff', type: 'debuff', duration: 999, _roundsLeft: 3, emoji: '🏜️', _velRestored: _velRed, passiveHidden: true });
                         addLog('🏜️ Arenas Movedizas: ' + _n + ' pierde -' + _velRed + ' vel por 3 rondas', 'debuff');
-                        // Si vel<=80 tras penalización, roba TODAS las cargas
-                        if ((_c.speed||0) <= 80 && _c.charges > 0 && _amAtk) {
-                            const _stolen = _c.charges;
-                            _amAtk.charges = Math.min(20, (_amAtk.charges||0) + _stolen);
-                            _c.charges = 0;
-                            addLog('⚡ Arenas Movedizas: Gaara roba ' + _stolen + ' cargas de ' + _n + ' (vel ≤ 80)', 'buff');
+                        // Si vel<=80 roba 2 cargas
+                        if ((_c.speed||0) <= 80 && _amAtk) {
+                            const _stolen = Math.min(2, _c.charges||0);
+                            if (_stolen > 0) {
+                                _amAtk.charges = Math.min(20, (_amAtk.charges||0) + _stolen);
+                                _c.charges = Math.max(0, (_c.charges||0) - _stolen);
+                                addLog('⚡ Arenas Movedizas: Gaara roba ' + _stolen + ' carga(s) de ' + _n + ' (vel ≤ 80)', 'buff');
+                            }
                         }
                     }
                     for (const _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _amETeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, gameState.selectedCharacter); }
@@ -4483,7 +4485,7 @@
                 addLog('🏜️ Arenas Movedizas: 2 AOE completado', 'damage');
 
             } else if (ability.effect === 'granizo_arena_gaara') {
-                // GAARA — Granizo de Arena Imperial: 3 AOE, ignora EA y MegaProv, triple si vel<=70, invocaciones sin pasiva
+                // GAARA — Granizo de Arena Imperial: 3 AOE, ignora EA y MegaProv, triple si vel<=70, 50% eliminar invocaciones sin pasiva
                 const _grAtk = gameState.characters[gameState.selectedCharacter];
                 const _grETeam = _grAtk ? (_grAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
                 if (typeof triggerElReyPrometido === 'function') triggerElReyPrometido(gameState.selectedCharacter);
@@ -4497,12 +4499,17 @@
                     }
                     applyDamageWithShield(_n, _grDmg, gameState.selectedCharacter);
                 }
+                // Invocaciones enemigas: 50% de eliminarlas sin activar pasiva
                 for (const _sid in gameState.summons) {
                     const _s = gameState.summons[_sid];
                     if (!_s || _s.team !== _grETeam || _s.hp <= 0) continue;
-                    addLog('🏜️ Granizo Imperial elimina invocación ' + _s.name + ' sin activar pasiva', 'damage');
-                    _s._skipDeathPassive = true;
-                    applySummonDamage(_sid, _s.hp + 1, gameState.selectedCharacter);
+                    if (Math.random() < 0.50) {
+                        addLog('🏜️ Granizo Imperial: elimina invocación ' + _s.name + ' sin activar pasiva (50%)', 'damage');
+                        _s._skipDeathPassive = true;
+                        applySummonDamage(_sid, _s.hp + 1, gameState.selectedCharacter);
+                    } else {
+                        applySummonDamage(_sid, finalDamage, gameState.selectedCharacter);
+                    }
                 }
                 addLog('🏜️ Granizo de Arena Imperial: AOE completado (ignora EA/MegaProv)', 'damage');
 
