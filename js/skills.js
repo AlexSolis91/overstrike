@@ -91,8 +91,8 @@
             // SFX especial para OVER
             if (gameState.selectedAbility && gameState.selectedAbility.type === 'over') {
                 audioManager.playOverSfx();
-                // Animación Over en el personaje atacante
                 if (typeof _animCard === 'function') _animCard(gameState.selectedCharacter, 'anim-over', 700);
+                if (gameState.battleStats) gameState.battleStats.oversUsed++;
             }
             try {
                 closeTargetModal();
@@ -6673,35 +6673,20 @@
             gameState.winner = message;
             hideContinueButton();
             updateWaitingIndicator('', false);
-            document.getElementById('gameOverText').textContent = message;
-            document.getElementById('gameOverModal').classList.add('show');
             audioManager.stopBattleMusic();
             audioManager.play('audioMenu');
 
-            // ══ RANKED STATS: guardar resultado si es partida Ranked ══
+            // ══ RANKED STATS ══
             if (typeof saveRankedResult === 'function' && window._rankedMode) {
                 try {
-                    // Detectar empate
                     const isDraw = message.includes('EMPATE');
-                    // Determinar equipo ganador
                     const winnerTeam = isDraw ? 'draw' : message.includes('HUNTERS') ? 'team1' : 'team2';
-                    // Equipo del jugador local
                     const playerTeam = window._rankedPlayerTeam || 'team1';
-                    // Personajes usados por el jugador
-                    const playerChars = Object.keys(gameState.characters || {}).filter(function(n) {
-                        const c = gameState.characters[n];
-                        return c && c.team === playerTeam;
-                    });
-                    // Personajes del oponente
+                    const playerChars = Object.keys(gameState.characters || {}).filter(function(n){ const c=gameState.characters[n]; return c && c.team===playerTeam; });
                     const opponentTeam = playerTeam === 'team1' ? 'team2' : 'team1';
-                    const opponentChars = Object.keys(gameState.characters || {}).filter(function(n) {
-                        const c = gameState.characters[n];
-                        return c && c.team === opponentTeam;
-                    });
+                    const opponentChars = Object.keys(gameState.characters || {}).filter(function(n){ const c=gameState.characters[n]; return c && c.team===opponentTeam; });
                     const opponentName = window._rankedOpponentName || window._rankedFakeOpponent || 'Oponente';
-                    // Recopilar battleStats para el nuevo sistema de puntuación
-                    var _bs = {};
-                    var _chars = gameState.characters || {};
+                    var _bs = {}, _chars = gameState.characters || {};
                     var _allAlly = Object.keys(_chars).filter(function(n){ var c=_chars[n]; return c && c.team===playerTeam; });
                     var _allOpp  = Object.keys(_chars).filter(function(n){ var c=_chars[n]; return c && c.team===opponentTeam; });
                     _bs.survivingAllies    = _allAlly.filter(function(n){ var c=_chars[n]; return c && !c.isDead && c.hp>0; }).length;
@@ -6713,24 +6698,192 @@
                     _bs.totalEnemies       = _allOpp.length || 3;
                     _bs.totalAttackers     = _allAlly.length || 3;
                     _bs.roundsElapsed      = gameState.currentRound || 5;
-                    // HP restante del equipo defensor
                     _bs.defHpRemaining = _allOpp.reduce(function(s,n){ var c=_chars[n]; return s+(c&&!c.isDead?c.hp:0); }, 0);
                     _bs.defHpMax       = _allOpp.reduce(function(s,n){ var c=_chars[n]; return s+(c?c.maxHp||0:0); }, 0) || 1;
                     saveRankedResult(winnerTeam, playerTeam, playerChars, opponentName, opponentChars, _bs);
-                    console.log('[RANKED] saveRankedResult v2 called — winner:', winnerTeam, 'pts calculados desde battleStats');
-                } catch(e) {
-                    console.error('[RANKED] Error saving ranked result:', e);
+                } catch(e) { console.error('[RANKED] Error saving ranked result:', e); }
+            }
+
+            // Online: push game over
+            if (onlineMode && currentRoomId) {
+                db.ref('rooms/' + currentRoomId + '/gameState').update({ gameOver: true, winner: message, pushedBy: currentUser ? currentUser.uid : 'unknown' });
+            }
+
+            // ══ PANTALLA ÉPICA DE RESULTADO ══
+            _showEpicResultScreen(message);
+        }
+
+        function _showEpicResultScreen(message) {
+            const isDraw   = message.includes('EMPATE');
+            const team1Win = message.includes('HUNTERS');
+            const winTeam  = isDraw ? null : (team1Win ? 'team1' : 'team2');
+            const loseTeam = isDraw ? null : (team1Win ? 'team2' : 'team1');
+
+            // ── MVP: personaje vivo del equipo ganador con más daño causado ──
+            let mvpName = null, mvpPortrait = '', mvpDmg = 0;
+            if (winTeam) {
+                const dmgMap = (gameState.battleStats && gameState.battleStats.totalDamage) || {};
+                for (const n in gameState.characters) {
+                    const c = gameState.characters[n];
+                    if (!c || c.team !== winTeam) continue;
+                    const d = dmgMap[n] || 0;
+                    if (d > mvpDmg || (!mvpName && !c.isDead && c.hp > 0)) { mvpDmg = d; mvpName = n; }
+                }
+                if (mvpName) {
+                    const mc = gameState.characters[mvpName];
+                    mvpPortrait = mc.portrait || mc.transformPortrait || '';
                 }
             }
 
-            // Online: push game over so the loser also sees the modal
-            if (onlineMode && currentRoomId) {
-                db.ref('rooms/' + currentRoomId + '/gameState').update({
-                    gameOver: true,
-                    winner: message,
-                    pushedBy: currentUser ? currentUser.uid : 'unknown'
-                });
+            // ── STATS ──
+            const bs = gameState.battleStats || {};
+            const totalDmgAll = Object.values(bs.totalDamage || {}).reduce((a,b)=>a+b,0);
+            const rounds = gameState.currentRound || 1;
+            const team1Alive = Object.values(gameState.characters).filter(c=>c&&c.team==='team1'&&!c.isDead&&c.hp>0).length;
+            const team2Alive = Object.values(gameState.characters).filter(c=>c&&c.team==='team2'&&!c.isDead&&c.hp>0).length;
+
+            // Top 3 causantes de daño
+            const dmgEntries = Object.entries(bs.totalDamage||{}).sort((a,b)=>b[1]-a[1]).slice(0,3);
+
+            // ── COLORES por equipo ──
+            const winColor  = team1Win ? '#00c4ff' : '#ff4466';
+            const winLabel  = isDraw ? '⚔️ EMPATE' : (team1Win ? '🔷 HUNTERS GANAN' : '🔶 REAPERS GANAN');
+            const glowColor = team1Win ? 'rgba(0,196,255,0.6)' : 'rgba(255,68,102,0.6)';
+
+            // ── HTML DE LA PANTALLA ──
+            const html = `
+<div id="epicResultOverlay" style="
+    position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;
+    background:rgba(0,0,0,0.92);display:flex;align-items:center;justify-content:center;
+    animation:epicFadeIn 0.6s ease;">
+  <div style="
+      max-width:860px;width:95%;background:linear-gradient(135deg,rgba(5,8,20,0.98),rgba(10,5,25,0.98));
+      border:2px solid ${winColor};border-radius:24px;padding:32px 28px;
+      box-shadow:0 0 60px ${glowColor},0 0 120px ${glowColor.replace('0.6','0.2')};
+      animation:epicSlideUp 0.55s cubic-bezier(.22,1,.36,1);">
+
+    <!-- TÍTULO -->
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-family:'Orbitron',sans-serif;font-size:clamp(1.5rem,4vw,2.6rem);font-weight:900;
+          color:${winColor};text-shadow:0 0 30px ${winColor};letter-spacing:.08em;
+          animation:epicTitlePop 0.7s 0.3s both;">
+        ${winLabel}
+      </div>
+      <div style="color:#666;font-size:.85rem;margin-top:6px;letter-spacing:.15em;">RONDAS JUGADAS: ${rounds}</div>
+    </div>
+
+    <!-- MVP + STATS ROW -->
+    <div style="display:flex;gap:20px;align-items:stretch;flex-wrap:wrap;margin-bottom:24px;">
+
+      <!-- MVP CARD -->
+      ${mvpName ? `
+      <div style="flex:0 0 auto;background:rgba(255,255,255,0.04);border:1px solid ${winColor};
+          border-radius:16px;padding:16px;text-align:center;min-width:140px;
+          animation:epicMvpGlow 2s ease-in-out infinite;position:relative;">
+        <div style="font-size:.65rem;color:${winColor};letter-spacing:.2em;margin-bottom:8px;">⭐ MVP</div>
+        <img src="${mvpPortrait}" alt="${mvpName}" style="width:80px;height:80px;border-radius:12px;
+            object-fit:cover;object-position:top;border:2px solid ${winColor};display:block;margin:0 auto 8px;"
+            onerror="this.style.display='none'">
+        <div style="font-size:.8rem;font-weight:700;color:#fff;">${mvpName}</div>
+        <div style="font-size:.7rem;color:${winColor};margin-top:4px;">⚔️ ${mvpDmg} daño</div>
+      </div>` : ''}
+
+      <!-- ESTADÍSTICAS -->
+      <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;min-width:200px;">
+        ${_epicStat('⚔️','Daño Total',totalDmgAll)}
+        ${_epicStat('💥','Golpes Críticos',bs.crits||0)}
+        ${_epicStat('🔮','Invocaciones Caídas',bs.summonsKilled||0)}
+        ${_epicStat('💫','Overs Ejecutados',bs.oversUsed||0)}
+        ${_epicStat('💚','HP Curado',bs.healsGiven||0)}
+        ${_epicStat('🏆','Sobrevivientes',team1Win?team1Alive:team2Alive)}
+      </div>
+    </div>
+
+    <!-- TOP DAÑO -->
+    ${dmgEntries.length > 0 ? `
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);
+        border-radius:12px;padding:14px;margin-bottom:20px;">
+      <div style="font-size:.7rem;color:#888;letter-spacing:.15em;margin-bottom:10px;">📊 TOP CAUSANTES DE DAÑO</div>
+      ${dmgEntries.map(function(e,i){
+          const medals=['🥇','🥈','🥉'];
+          const c = gameState.characters[e[0]];
+          const pct = totalDmgAll > 0 ? Math.round(e[1]/totalDmgAll*100) : 0;
+          const barColor = i===0 ? '#ffcc00' : i===1 ? '#aaaaaa' : '#cc7700';
+          return '<div style="margin-bottom:8px;">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">' +
+              '<span style="font-size:.8rem;color:#ddd;">' + medals[i] + ' ' + e[0] + '</span>' +
+              '<span style="font-size:.75rem;color:' + barColor + ';font-weight:700;">' + e[1] + ' dmg</span>' +
+            '</div>' +
+            '<div style="height:4px;background:rgba(255,255,255,0.08);border-radius:4px;">' +
+              '<div style="height:4px;width:' + pct + '%;background:' + barColor + ';border-radius:4px;transition:width .8s ease;"></div>' +
+            '</div></div>';
+      }).join('')}
+    </div>` : ''}
+
+    <!-- BOTONES -->
+    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+      <button onclick="_epicGoMenu()" style="
+          padding:12px 28px;font-family:'Orbitron',sans-serif;font-size:.85rem;font-weight:700;
+          background:linear-gradient(135deg,rgba(0,196,255,0.15),rgba(0,196,255,0.08));
+          color:#00c4ff;border:2px solid #00c4ff;border-radius:50px;cursor:pointer;
+          transition:all .2s;" onmouseover="this.style.boxShadow='0 0 20px #00c4ff'" onmouseout="this.style.boxShadow='none'">
+        🏠 Menú Principal
+      </button>
+      <button onclick="location.reload()" style="
+          padding:12px 28px;font-family:'Orbitron',sans-serif;font-size:.85rem;font-weight:700;
+          background:linear-gradient(135deg,rgba(255,68,102,0.15),rgba(255,68,102,0.08));
+          color:#ff4466;border:2px solid #ff4466;border-radius:50px;cursor:pointer;
+          transition:all .2s;" onmouseover="this.style.boxShadow='0 0 20px #ff4466'" onmouseout="this.style.boxShadow='none'">
+        ⚔️ Nueva Batalla
+      </button>
+      <button id="epicRevanchaBtn" onclick="_epicRevancha()" style="
+          display:none;padding:12px 28px;font-family:'Orbitron',sans-serif;font-size:.85rem;font-weight:700;
+          background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(168,85,247,0.08));
+          color:#a855f7;border:2px solid #a855f7;border-radius:50px;cursor:pointer;
+          transition:all .2s;" onmouseover="this.style.boxShadow='0 0 20px #a855f7'" onmouseout="this.style.boxShadow='none'">
+        🔄 Revancha
+      </button>
+    </div>
+  </div>
+</div>`;
+
+            // Insertar en el DOM
+            const _existing = document.getElementById('epicResultOverlay');
+            if (_existing) _existing.remove();
+            document.body.insertAdjacentHTML('beforeend', html);
+
+            // Mostrar botón revancha si aplica
+            if (typeof handleRevancha === 'function' && (onlineMode || gameState.gameMode === 'multi')) {
+                const rb = document.getElementById('epicRevanchaBtn');
+                if (rb) rb.style.display = 'inline-block';
             }
+
+            // Animar barras de daño después de un tick
+            setTimeout(function() {
+                const bars = document.querySelectorAll('#epicResultOverlay [data-bar]');
+                bars.forEach(function(b) { b.style.width = b.dataset.bar + '%'; });
+            }, 100);
+        }
+
+        function _epicStat(emoji, label, value) {
+            return '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);' +
+                'border-radius:10px;padding:10px;text-align:center;">' +
+                '<div style="font-size:1.2rem;margin-bottom:2px;">' + emoji + '</div>' +
+                '<div style="font-size:1.1rem;font-weight:700;color:#fff;">' + value + '</div>' +
+                '<div style="font-size:.65rem;color:#666;margin-top:2px;">' + label + '</div>' +
+            '</div>';
+        }
+
+        function _epicGoMenu() {
+            const ov = document.getElementById('epicResultOverlay');
+            if (ov) ov.remove();
+            goToMainMenu();
+        }
+
+        function _epicRevancha() {
+            const ov = document.getElementById('epicResultOverlay');
+            if (ov) ov.remove();
+            if (typeof handleRevancha === 'function') handleRevancha();
         }
 
         // ==================== BATTLE LOG ====================
