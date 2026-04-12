@@ -6771,6 +6771,32 @@
                 }
             }
 
+            // ── KILLS DEL MVP: enemigos del equipo perdedor derrotados ──
+            // Usamos el daño causado como proxy: el MVP es quien más daño causó,
+            // y contamos cuántos enemigos del loseTeam terminaron muertos
+            let mvpKills = 0;
+            if (mvpName && loseTeam && gameState.battleStats) {
+                const dmgMap = gameState.battleStats.totalDamage || {};
+                const killMap = gameState.battleStats.killMap || {};
+                // Si tenemos killMap exacto, usarlo; si no, estimar con kills registrados
+                mvpKills = killMap[mvpName] || 0;
+                // Fallback: contar enemigos muertos del equipo perdedor como total de kills del equipo ganador
+                if (mvpKills === 0) {
+                    const deadEnemies = Object.keys(gameState.characters).filter(function(n) {
+                        const c = gameState.characters[n];
+                        return c && c.team === loseTeam && (c.isDead || c.hp <= 0);
+                    }).length;
+                    // Asignar proporcionalmente al MVP (quien más daño hizo tiene la mayoría de kills)
+                    const totalWinnerDmg = Object.keys(dmgMap).reduce(function(sum, n) {
+                        const c = gameState.characters[n];
+                        return sum + ((c && c.team === winTeam) ? (dmgMap[n] || 0) : 0);
+                    }, 0);
+                    mvpKills = totalWinnerDmg > 0
+                        ? Math.round(deadEnemies * ((dmgMap[mvpName] || 0) / totalWinnerDmg))
+                        : 0;
+                }
+            }
+
             // ── STATS ──
             const bs = gameState.battleStats || {};
             const totalDmgAll = Object.values(bs.totalDamage || {}).reduce((a,b)=>a+b,0);
@@ -6821,14 +6847,14 @@
             object-fit:cover;object-position:top;border:2px solid ${winColor};display:block;margin:0 auto 8px;"
             onerror="this.style.display='none'">
         <div style="font-size:.8rem;font-weight:700;color:#fff;">${mvpName}</div>
-        <div style="font-size:.7rem;color:${winColor};margin-top:4px;">⚔️ ${mvpDmg} daño</div>
+        <div style="font-size:.7rem;color:${winColor};margin-top:4px;">⚔️ ${mvpDmg} daño · 💀 ${mvpKills} eliminado${mvpKills !== 1 ? 's' : ''}</div>
       </div>` : ''}
 
       <!-- ESTADÍSTICAS -->
       <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;min-width:200px;">
         ${_epicStat('⚔️','Daño Total',totalDmgAll)}
         ${_epicStat('💥','Golpes Críticos',bs.crits||0)}
-        ${_epicStat('🔮','Invocaciones Caídas',bs.summonsKilled||0)}
+        ${_epicStat('💀','Eliminados por MVP', mvpKills)}
         ${_epicStat('💫','Overs Ejecutados',bs.oversUsed||0)}
         ${_epicStat('💚','HP Curado',bs.healsGiven||0)}
         ${_epicStat('🏆','Sobrevivientes',team1Win?team1Alive:team2Alive)}
