@@ -1113,6 +1113,11 @@
             if (target.hp <= 0 && oldHp > 0) {
                 target.isDead = true;
                 if (typeof _animCard === 'function') _animCard(targetName, 'anim-defeat', 700);
+                // ── BATTLE STATS: registrar kill del atacante ──
+                if (attackerName && gameState.battleStats) {
+                    if (!gameState.battleStats.killMap) gameState.battleStats.killMap = {};
+                    gameState.battleStats.killMap[attackerName] = (gameState.battleStats.killMap[attackerName] || 0) + 1;
+                }
                 // Immediate game-over check after every kill
                 if (typeof checkGameOver === 'function') checkGameOver();
                 
