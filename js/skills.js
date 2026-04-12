@@ -87,6 +87,21 @@
         }
 
         function executeAbility(targetName) {
+            // ── OVER CINEMATIC: mostrar pantalla épica antes de ejecutar ──
+            if (gameState.selectedAbility && gameState.selectedAbility.type === 'over' &&
+                typeof _showOverCinematic === 'function') {
+                const _ocChar = gameState.selectedCharacter;
+                const _ocAb   = gameState.selectedAbility;
+                const _ocTeam = (gameState.characters[_ocChar] || {}).team || 'team1';
+                _showOverCinematic(_ocChar, _ocAb.name, _ocAb.effect, _ocTeam, function() {
+                    _executeAbilityCore(targetName);
+                });
+                return; // esperar callback
+            }
+            _executeAbilityCore(targetName);
+        }
+
+        function _executeAbilityCore(targetName) {
             audioManager.playSelect(); // SFX on every ability/action
             // SFX especial para OVER
             if (gameState.selectedAbility && gameState.selectedAbility.type === 'over') {
