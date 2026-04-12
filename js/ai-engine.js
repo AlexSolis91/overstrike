@@ -641,7 +641,7 @@
                     } else {
                         endTurn();
                     }
-                }, 400);
+                }, chosen.type === 'over' ? 200 : 400);
 
             } catch(err) {
                 console.error('Error en executeAITurn:', err);
