@@ -9,6 +9,7 @@
             let finalAmt = amount;
             if (hasStatusEffect(charName, 'Concentración')) finalAmt = amount * 2;
             c.charges = Math.min(20, (c.charges || 0) + finalAmt);
+            if (typeof _animCard === 'function') _animCard(charName, 'anim-charge', 500);
         }
         function applyAOEDamageToTeam(enemyTeam, damage, attackerName) {
             for (let n in gameState.characters) {
@@ -90,6 +91,8 @@
             // SFX especial para OVER
             if (gameState.selectedAbility && gameState.selectedAbility.type === 'over') {
                 audioManager.playOverSfx();
+                // Animación Over en el personaje atacante
+                if (typeof _animCard === 'function') _animCard(gameState.selectedCharacter, 'anim-over', 700);
             }
             try {
                 closeTargetModal();
@@ -718,7 +721,7 @@
                     _tG.hp = Math.min(_tG.maxHp, (_tG.hp||0) + 5);
                     addLog('💚 Superacion de Limites: Goku recupera 5 HP al transformarse', 'heal');
                 }
-                audioManager.playTransformSfx();
+                audioManager.playTransformSfx(); if (typeof _animCard === 'function') _animCard(gameState.selectedCharacter, 'anim-transform', 700);
                 addLog('✨ Goku se transforma en ' + _tFormName + '!', 'buff');
                 // UI: aplicar Esquiva Area + Esquivar permanentes
                 if (_tForm === 'ui') {
@@ -841,7 +844,7 @@
                 attacker.ultraInstinto = true;
                 applyDodge(gameState.selectedCharacter);
                 ability.used = true;
-                audioManager.playTransformSfx();
+                audioManager.playTransformSfx(); if (typeof _animCard === 'function') _animCard(gameState.selectedCharacter, 'anim-transform', 700);
                 addLog(`✨ ¡${gameState.selectedCharacter} activa Ultra Instinto! Buff Esquivar permanente`, 'buff');
 
             } else if (ability.effect === 'apply_weaken') {
@@ -1064,7 +1067,7 @@
                 attacker.muzanTransformed = true;
                 const _mzTP = attacker.transformPortrait || attacker.transformationPortrait;
                 if (_mzTP) { attacker.portrait = _mzTP; }
-                audioManager.playTransformSfx();
+                audioManager.playTransformSfx(); if (typeof _animCard === 'function') _animCard(gameState.selectedCharacter, 'anim-transform', 700);
                 const mzTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                 checkAndRemoveStealth(mzTeam);
                 // 1 daño AOE
@@ -1840,7 +1843,7 @@
                 // Support both field names (transformPortrait and transformationPortrait)
                 const _alexTP = attacker.transformPortrait || attacker.transformationPortrait;
                 if (_alexTP) { attacker.portrait = _alexTP; }
-                audioManager.playTransformSfx();
+                audioManager.playTransformSfx(); if (typeof _animCard === 'function') _animCard(gameState.selectedCharacter, 'anim-transform', 700);
                 addLog(`🐉 Dragón de la Vida: Burn 30% en enemigos, Regen 30% en aliados, Escudo Sagrado en ${gameState.selectedCharacter}`, 'buff');
 
             } else if (ability.effect === 'kiiroi_senko' || ability.effect === 'kiiroi_senko_v2') {
@@ -3258,7 +3261,7 @@
                 attacker.rikudoMode = true;
                 if (attacker.transformPortrait) { attacker.portrait = attacker.transformPortrait; }
                 ability.used = true;
-                audioManager.playTransformSfx();
+                audioManager.playTransformSfx(); if (typeof _animCard === 'function') _animCard(gameState.selectedCharacter, 'anim-transform', 700);
                 addLog(`✨ ${gameState.selectedCharacter} activa el ${ability.name}! Poder duplicado, costos reducidos a la mitad`, 'buff');
                 
             } else if (ability.effect === 'double_on_burn') {
@@ -4057,7 +4060,7 @@
                     _ddAnt.antaresTransformTurns = 3;
                     _ddAnt.basePortrait = _ddAnt.basePortrait || _ddAnt.portrait;
                     _ddAnt.portrait = _ddAnt.transformPortrait || _ddAnt.portrait;
-                    audioManager.playTransformSfx();
+                    audioManager.playTransformSfx(); if (typeof _animCard === 'function') _animCard(gameState.selectedCharacter, 'anim-transform', 700);
                     addLog('🐉 Antares se transforma en Dragon de la Destruccion (3 turnos)', 'buff');
                 }
                 renderCharacters();
@@ -4819,7 +4822,7 @@
                     _smGarou.garouSaitamaMode = true;
                     ability.used = true;
                     if (_smGarou.transformPortrait) _smGarou.portrait = _smGarou.transformPortrait;
-                    audioManager.playTransformSfx();
+                    audioManager.playTransformSfx(); if (typeof _animCard === 'function') _animCard(gameState.selectedCharacter, 'anim-transform', 700);
                     addLog('💪 ¡SAITAMA MODE! ' + gameState.selectedCharacter + ' activa -2 daño recibido y +2 daño en todos los ataques permanente', 'buff');
                 }
             } else if (ability.effect === 'golpe_serio_saitama') {
@@ -6377,6 +6380,7 @@
                     }
                     attacker.charges = Math.min(20, (attacker.charges || 0) + gainConc2);
                     addLog(`⚡ ${gameState.selectedCharacter} genera ${gainConc2} carga${finalChargeGain > 1 ? 's' : ''}`, 'buff');
+                    if (typeof _animCard === 'function') _animCard(gameState.selectedCharacter, 'anim-charge', 500);
                     triggerIgrisPassive(gameState.selectedCharacter);
                 } else if (finalChargeGain > 0 && hasFear) {
                     addLog(`😱 ${gameState.selectedCharacter} no puede generar cargas (Miedo)`, 'damage');
