@@ -28,6 +28,17 @@
             const source = selectedCharacters || characterData;
             gameState.characters = JSON.parse(JSON.stringify(source));
 
+            // ── BATTLE STATS: contadores para la pantalla de resultado épica ──
+            gameState.battleStats = {
+                totalDamage: {},    // { charName: N } daño total causado por cada personaje
+                crits: 0,           // golpes críticos totales
+                summonsKilled: 0,   // invocaciones destruidas
+                oversUsed: 0,       // Overs ejecutados
+                healsGiven: 0,      // HP curado total
+                team1Damage: 0,     // daño total equipo 1
+                team2Damage: 0      // daño total equipo 2
+            };
+
             // ── PROXY: interceptar statusEffects.push para activar Monarca de la Destruccion ──
             // Esto garantiza que CUALQUIER buff aplicado (con push directo) active la pasiva
             function _wrapStatusEffects(charName) {
