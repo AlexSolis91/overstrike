@@ -2188,3 +2188,68 @@
         }
 
         // ==================== END VFX FUNCTIONS ====================
+
+        // ==================== OVER CINEMATIC ====================
+        function _showOverCinematic(charName, abilityName, abilityEffect, team, callback) {
+            // Eliminar cinemática previa si existe
+            const prev = document.getElementById('overCinematic');
+            if (prev) prev.remove();
+
+            const char = gameState.characters[charName];
+            if (!char) { if (callback) callback(); return; }
+
+            // Color por equipo
+            const teamColor = team === 'team1' ? '#00c4ff' : '#ff4466';
+
+            // Portrait: usar el portrait actual (transformado si aplica)
+            let portrait = char.portrait || '';
+            if (char.rikudoMode && char.transformPortrait) portrait = char.transformPortrait;
+            if (char.vegetaForm === 'ultra_ego' && char.portraitUltraEgo) portrait = char.portraitUltraEgo;
+            if (char.vegetaForm === 'ssblue_evo' && char.portraitSSBlueEvo) portrait = char.portraitSSBlueEvo;
+            if (char.antaresTransformed && char.transformPortrait) portrait = char.transformPortrait;
+            if (char.muzanTransformed && (char.transformPortrait || char.transformationPortrait))
+                portrait = char.transformPortrait || char.transformationPortrait;
+            if (char.garouSaitamaMode && char.transformPortrait) portrait = char.transformPortrait;
+            if (char.dragonFormActive && (char.transformPortrait || char.transformationPortrait))
+                portrait = char.transformPortrait || char.transformationPortrait;
+
+            // Badge según tipo de Over
+            const eff = abilityEffect || '';
+            let badge = '💎 OVER';
+            if (eff.includes('fire') || eff.includes('fuego') || eff.includes('burn') ||
+                eff.includes('purgatorio') || eff.includes('explosi')) badge = '🔥 OVER';
+            else if (eff.includes('ice') || eff.includes('hielo') || eff.includes('frio') ||
+                     eff.includes('congelaci')) badge = '❄️ OVER';
+            else if (eff.includes('shadow') || eff.includes('dark') || eff.includes('sombra') ||
+                     eff.includes('death') || eff.includes('muerte') || eff.includes('rikudo')) badge = '🌑 OVER';
+            else if (eff.includes('heal') || eff.includes('cura') || eff.includes('vida') ||
+                     eff.includes('revive') || eff.includes('regen')) badge = '💚 OVER';
+
+            const container = document.createElement('div');
+            container.id = 'overCinematic';
+            container.style.setProperty('--oc-color', teamColor);
+            container.innerHTML = `
+                <div class="oc-rays"></div>
+                ${portrait
+                    ? `<img class="oc-portrait" src="${portrait}" alt="${charName}"
+                           style="--oc-color:${teamColor}"
+                           onerror="this.style.display='none'">`
+                    : `<div style="width:200px;height:200px;border-radius:16px;
+                           border:3px solid ${teamColor};display:flex;align-items:center;
+                           justify-content:center;font-size:4rem;
+                           animation:ocPortraitPop 3.2s cubic-bezier(.22,1,.36,1) forwards;">⚔️</div>`
+                }
+                <div class="oc-charname">${charName}</div>
+                <div class="oc-overname">${abilityName}</div>
+                <div class="oc-line"></div>
+                <div class="oc-badge">${badge}</div>`;
+
+            document.body.appendChild(container);
+
+            // Después de 3.2s remover y ejecutar callback
+            setTimeout(function() {
+                if (container.parentNode) container.parentNode.removeChild(container);
+                if (callback) callback();
+            }, 3200);
+        }
+        // ==================== END OVER CINEMATIC ====================
