@@ -1747,3 +1747,139 @@
             transform: scale(1.05);
         }
         /* ==================== END CHARACTER SELECT ==================== */
+
+        /* ==================== ANIMACIONES DE BATALLA ==================== */
+
+        /* ── SHAKE: recibir daño ── */
+        @keyframes shakeDamage {
+            0%   { transform: translateX(0); }
+            15%  { transform: translateX(-7px) rotate(-1deg); }
+            30%  { transform: translateX(7px) rotate(1deg); }
+            45%  { transform: translateX(-5px); }
+            60%  { transform: translateX(5px); }
+            75%  { transform: translateX(-2px); }
+            100% { transform: translateX(0); }
+        }
+        .anim-shake {
+            animation: shakeDamage 0.45s ease-out;
+        }
+
+        /* ── FLASH ROJO: recibir daño ── */
+        @keyframes flashDamage {
+            0%   { box-shadow: 0 0 0px rgba(255,30,30,0); background: inherit; }
+            25%  { box-shadow: 0 0 22px rgba(255,30,30,0.95); background: rgba(255,30,30,0.18); }
+            60%  { box-shadow: 0 0 12px rgba(255,30,30,0.5); background: rgba(255,30,30,0.08); }
+            100% { box-shadow: inherit; background: inherit; }
+        }
+        .anim-hit {
+            animation: flashDamage 0.45s ease-out;
+        }
+
+        /* ── FLASH ROJO INTENSO: golpe crítico ── */
+        @keyframes flashCrit {
+            0%   { box-shadow: 0 0 0px rgba(255,60,0,0); }
+            15%  { box-shadow: 0 0 35px rgba(255,100,0,1), 0 0 60px rgba(255,50,0,0.6); background: rgba(255,80,0,0.25); }
+            50%  { box-shadow: 0 0 20px rgba(255,80,0,0.6); background: rgba(255,60,0,0.1); }
+            100% { box-shadow: inherit; background: inherit; }
+        }
+        .anim-crit {
+            animation: flashCrit 0.55s ease-out;
+        }
+
+        /* ── FLASH VERDE: curación ── */
+        @keyframes flashHeal {
+            0%   { box-shadow: 0 0 0px rgba(0,255,100,0); }
+            25%  { box-shadow: 0 0 22px rgba(0,255,100,0.9); background: rgba(0,255,100,0.12); }
+            60%  { box-shadow: 0 0 12px rgba(0,255,100,0.4); }
+            100% { box-shadow: inherit; background: inherit; }
+        }
+        .anim-heal {
+            animation: flashHeal 0.5s ease-out;
+        }
+
+        /* ── FLASH DORADO: ganar cargas / buff ── */
+        @keyframes flashCharge {
+            0%   { box-shadow: 0 0 0px rgba(255,200,0,0); }
+            25%  { box-shadow: 0 0 20px rgba(255,200,0,0.85); background: rgba(255,180,0,0.10); }
+            70%  { box-shadow: 0 0 8px rgba(255,200,0,0.3); }
+            100% { box-shadow: inherit; background: inherit; }
+        }
+        .anim-charge {
+            animation: flashCharge 0.55s ease-out;
+        }
+
+        /* ── FLASH AZUL OSCURO: recibir debuff ── */
+        @keyframes flashDebuff {
+            0%   { box-shadow: 0 0 0px rgba(120,0,255,0); }
+            25%  { box-shadow: 0 0 20px rgba(150,0,255,0.8); background: rgba(100,0,200,0.12); }
+            70%  { box-shadow: 0 0 8px rgba(120,0,255,0.3); }
+            100% { box-shadow: inherit; background: inherit; }
+        }
+        .anim-debuff {
+            animation: flashDebuff 0.5s ease-out;
+        }
+
+        /* ── PULSE NARANJA: Over ejecutado por el personaje activo ── */
+        @keyframes overPulse {
+            0%   { box-shadow: 0 0 10px rgba(255,150,0,0.5); transform: scale(1); }
+            30%  { box-shadow: 0 0 40px rgba(255,120,0,1), 0 0 80px rgba(255,80,0,0.5); transform: scale(1.04); }
+            60%  { box-shadow: 0 0 25px rgba(255,150,0,0.6); transform: scale(1.02); }
+            100% { box-shadow: inherit; transform: scale(1); }
+        }
+        .anim-over {
+            animation: overPulse 0.7s ease-out;
+        }
+
+        /* ── BOUNCE ARRIBA: transformación ── */
+        @keyframes transformBounce {
+            0%   { transform: scale(1) translateY(0); }
+            20%  { transform: scale(1.08) translateY(-6px); }
+            40%  { transform: scale(0.97) translateY(2px); }
+            60%  { transform: scale(1.04) translateY(-3px); }
+            80%  { transform: scale(0.99) translateY(1px); }
+            100% { transform: scale(1) translateY(0); }
+        }
+        .anim-transform {
+            animation: transformBounce 0.65s ease-out;
+        }
+
+        /* ── FADE IN MUERTE: personaje derrotado ── */
+        @keyframes defeatFade {
+            0%   { opacity: 1; filter: grayscale(0); }
+            40%  { opacity: 0.7; filter: grayscale(0.5) brightness(0.6); transform: scale(0.97); }
+            100% { opacity: 0.3; filter: grayscale(1) brightness(0.5); transform: scale(1); }
+        }
+        .anim-defeat {
+            animation: defeatFade 0.7s ease-out forwards;
+        }
+
+        /* ── BRILLO CONTINUO: turno activo (refuerzo del existente) ── */
+        @keyframes activeTurnGlow {
+            0%, 100% { box-shadow: 0 0 10px rgba(255,200,0,0.6), 0 0 3px rgba(255,200,0,0.3) inset; }
+            50%       { box-shadow: 0 0 22px rgba(255,200,0,0.95), 0 0 6px rgba(255,200,0,0.4) inset; }
+        }
+
+        /* ── NÚMERO DE DAÑO flotante ── */
+        .damage-number {
+            position: absolute;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 1.3rem;
+            pointer-events: none;
+            z-index: 9999;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.9);
+            animation: floatNumber 1s ease-out forwards;
+        }
+        .damage-number.dmg  { color: #ff3344; }
+        .damage-number.heal { color: #00ff88; }
+        .damage-number.crit { color: #ff8800; font-size: 1.7rem; }
+        .damage-number.buff { color: #ffcc00; font-size: 1rem; }
+
+        @keyframes floatNumber {
+            0%   { opacity: 1; transform: translateY(0) scale(1); }
+            20%  { opacity: 1; transform: translateY(-12px) scale(1.15); }
+            70%  { opacity: 0.8; transform: translateY(-32px) scale(1); }
+            100% { opacity: 0; transform: translateY(-48px) scale(0.8); }
+        }
+
+        /* ==================== END ANIMACIONES ==================== */
