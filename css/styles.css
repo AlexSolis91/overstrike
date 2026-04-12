@@ -1908,3 +1908,204 @@
         }
 
         /* ==================== END PANTALLA ÉPICA ==================== */
+
+        /* ==================== VFX MEJORAS VISUALES ==================== */
+
+        /* ── 1. BARRA HP DINÁMICA ── */
+        .hp-bar {
+            background: linear-gradient(90deg, #00ff66, #00cc55);
+            box-shadow: 0 0 10px rgba(0,255,102,0.5);
+            transition: width 0.4s ease, background 0.5s ease, box-shadow 0.5s ease;
+        }
+        .hp-bar.hp-medium {
+            background: linear-gradient(90deg, #ffdd00, #ff9900) !important;
+            box-shadow: 0 0 10px rgba(255,200,0,0.6) !important;
+        }
+        .hp-bar.hp-critical {
+            background: linear-gradient(90deg, #ff2244, #ff5500) !important;
+            box-shadow: 0 0 14px rgba(255,30,0,0.8) !important;
+            animation: hpCriticalPulse 0.9s ease-in-out infinite;
+        }
+        @keyframes hpCriticalPulse {
+            0%,100% { box-shadow: 0 0 8px rgba(255,30,0,0.6); opacity:1; }
+            50%      { box-shadow: 0 0 22px rgba(255,0,0,1);   opacity:0.85; }
+        }
+
+        /* ── 2. BARRA DE CARGAS — SOBRECARGA ── */
+        .charge-bar {
+            background: linear-gradient(90deg, #ffaa00, #ff8800);
+            box-shadow: 0 0 10px rgba(255,170,0,0.5);
+            transition: width 0.35s cubic-bezier(.34,1.56,.64,1);
+        }
+        .charge-bar.charge-full {
+            background: linear-gradient(90deg, #ffe566, #ffcc00, #ffe566) !important;
+            background-size: 200% 100% !important;
+            box-shadow: 0 0 18px rgba(255,220,0,0.9) !important;
+            animation: chargeOverload 1.2s ease-in-out infinite;
+        }
+        @keyframes chargeOverload {
+            0%,100% { box-shadow: 0 0 10px rgba(255,200,0,0.6); background-position: 0% 0%; }
+            50%      { box-shadow: 0 0 28px rgba(255,220,0,1);   background-position: 100% 0%; }
+        }
+
+        /* Pop de número de cargas */
+        .charge-pop {
+            animation: chargePop 0.35s cubic-bezier(.34,1.7,.64,1);
+        }
+        @keyframes chargePop {
+            0%   { transform: scale(1) translateY(0); color: inherit; }
+            40%  { transform: scale(1.5) translateY(-4px); color: #ffdd00; }
+            100% { transform: scale(1) translateY(0); color: inherit; }
+        }
+
+        /* ── 3. TURNO ACTIVO — SPOTLIGHT + CORONA ── */
+        .character-card.active-turn {
+            border: 2px solid var(--warning) !important;
+            box-shadow: 0 0 0 3px rgba(255,200,0,0.25),
+                        0 0 20px rgba(255,170,0,0.7),
+                        0 0 50px rgba(255,170,0,0.2) !important;
+            animation: activePulse 1.5s ease-in-out infinite;
+            position: relative;
+        }
+        .character-card.active-turn::after {
+            content: '▶ TURNO';
+            position: absolute;
+            top: -22px; left: 50%; transform: translateX(-50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: .6rem; font-weight: 900; letter-spacing: .12em;
+            color: #ffdd00;
+            text-shadow: 0 0 8px #ffaa00;
+            animation: turnTagBounce 0.8s ease-in-out infinite alternate;
+            pointer-events: none; white-space: nowrap;
+            background: rgba(0,0,0,0.7); border-radius: 4px;
+            padding: 2px 6px; border: 1px solid rgba(255,200,0,0.4);
+        }
+        @keyframes turnTagBounce {
+            from { transform: translateX(-50%) translateY(0); }
+            to   { transform: translateX(-50%) translateY(-3px); }
+        }
+        /* Spotlight halo detrás del portrait */
+        .character-card.active-turn .character-portrait {
+            box-shadow: 0 0 0 3px rgba(255,200,0,0.8),
+                        0 0 20px rgba(255,170,0,0.6) !important;
+            animation: portraitGlow 1.5s ease-in-out infinite;
+        }
+        @keyframes portraitGlow {
+            0%,100% { box-shadow: 0 0 0 2px rgba(255,200,0,0.7), 0 0 14px rgba(255,170,0,0.5); }
+            50%      { box-shadow: 0 0 0 4px rgba(255,220,0,1),   0 0 28px rgba(255,200,0,0.8); }
+        }
+
+        /* ── 6. BANNER DE RONDA ── */
+        #roundBanner {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 8888; pointer-events: none;
+            background: rgba(0,0,0,0);
+            animation: roundBannerFade 1.6s ease forwards;
+        }
+        @keyframes roundBannerFade {
+            0%   { background: rgba(0,0,0,0); }
+            15%  { background: rgba(0,0,0,0.55); }
+            70%  { background: rgba(0,0,0,0.55); }
+            100% { background: rgba(0,0,0,0); }
+        }
+        #roundBanner .round-text {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 900; color: #fff; letter-spacing: .15em;
+            text-shadow: 0 0 30px rgba(0,196,255,0.9), 0 0 80px rgba(0,196,255,0.4);
+            animation: roundTextPop 1.6s cubic-bezier(.22,1,.36,1) forwards;
+        }
+        @keyframes roundTextPop {
+            0%   { opacity:0; transform: scale(0.4) translateY(20px); }
+            25%  { opacity:1; transform: scale(1.08) translateY(-4px); }
+            55%  { opacity:1; transform: scale(1) translateY(0); }
+            85%  { opacity:1; transform: scale(1) translateY(0); }
+            100% { opacity:0; transform: scale(1.1) translateY(-10px); }
+        }
+        #roundBanner .round-sub {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: clamp(.8rem, 2vw, 1.1rem);
+            color: rgba(0,196,255,0.8); letter-spacing: .3em;
+            text-align: center; margin-top: 8px;
+            animation: roundTextPop 1.6s cubic-bezier(.22,1,.36,1) forwards;
+        }
+        .round-banner-lines {
+            position: absolute; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, rgba(0,196,255,0.8), transparent);
+            animation: roundLine 1.6s ease forwards;
+        }
+        .round-banner-lines.top    { top: calc(50% - 52px); }
+        .round-banner-lines.bottom { top: calc(50% + 44px); }
+        @keyframes roundLine {
+            0%   { opacity:0; transform: scaleX(0); }
+            25%  { opacity:1; transform: scaleX(1); }
+            75%  { opacity:1; transform: scaleX(1); }
+            100% { opacity:0; transform: scaleX(0.5); }
+        }
+
+        /* ── 7. POWER UP — flash + partículas ── */
+        @keyframes powerUpFlash {
+            0%   { opacity:0; }
+            10%  { opacity:0.85; }
+            30%  { opacity:0; }
+            100% { opacity:0; }
+        }
+        #powerUpFlash {
+            position: fixed; inset:0; z-index:9800;
+            background: white; pointer-events: none;
+            animation: powerUpFlash 0.5s ease forwards;
+        }
+        .pu-particle {
+            position: absolute; border-radius: 50%;
+            pointer-events: none; z-index: 9801;
+            animation: puParticle var(--dur) ease-out forwards;
+        }
+        @keyframes puParticle {
+            0%   { transform: translate(0,0) scale(1); opacity:1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity:0; }
+        }
+
+        /* ── 10. BARRA OVER LISTA ── */
+        .ability-btn.over-ready {
+            border-color: #ffcc00 !important;
+            box-shadow: 0 0 12px rgba(255,200,0,0.6) !important;
+            animation: overReadyPulse 1s ease-in-out infinite;
+            position: relative; overflow: visible !important;
+        }
+        .ability-btn.over-ready::after {
+            content: '⚡LISTO';
+            position: absolute; top: -14px; right: 4px;
+            font-size: .55rem; font-weight: 900; letter-spacing: .1em;
+            color: #ffdd00; font-family: 'Orbitron', sans-serif;
+            background: rgba(0,0,0,0.8); border-radius: 3px;
+            padding: 1px 5px; border: 1px solid rgba(255,200,0,0.5);
+            white-space: nowrap; pointer-events: none;
+            animation: overReadyPulse 1s ease-in-out infinite;
+        }
+        @keyframes overReadyPulse {
+            0%,100% { box-shadow: 0 0 8px rgba(255,200,0,0.5); }
+            50%      { box-shadow: 0 0 22px rgba(255,220,0,1); }
+        }
+
+        /* ── 13. CLIMA AOE ── */
+        .aoe-particle {
+            position: fixed; pointer-events: none; z-index: 8500;
+            animation: aoeParticleFall var(--dur) linear forwards;
+        }
+        @keyframes aoeParticleFall {
+            0%   { transform: translateY(-20px) rotate(0deg); opacity:0.9; }
+            80%  { opacity:0.7; }
+            100% { transform: translateY(110vh) rotate(var(--rot)); opacity:0; }
+        }
+        @keyframes aoeIceFall {
+            0%   { transform: translateY(-10px) rotate(0deg) scale(1); opacity:0.9; }
+            100% { transform: translateY(110vh) rotate(360deg) scale(0.5); opacity:0; }
+        }
+        @keyframes aoeAshFall {
+            0%   { transform: translate(0,-10px) rotate(0deg); opacity:0.7; }
+            50%  { transform: translate(var(--sx), 50vh) rotate(180deg); opacity:0.5; }
+            100% { transform: translate(calc(var(--sx)*2), 110vh) rotate(360deg); opacity:0; }
+        }
+
+        /* ==================== END VFX ==================== */
