@@ -841,6 +841,310 @@
             });
         }
 
+        // ══════════════════════════════════════════════════════
+        // SISTEMA RAID DIARIO
+        // ══════════════════════════════════════════════════════
+
+        function showRaidLobby() {
+            if (!currentUser) return;
+            hasRankedTeams(function(hasTeams) {
+                if (!hasTeams) {
+                    alert('⚠️ Configura tu Equipo Ranked antes de jugar.\nHaz clic en "⚔️ EQUIPO RANKED".');
+                    return;
+                }
+                _loadOrGenerateRaidTargets(function(raidData) {
+                    _renderRaidLobby(raidData);
+                });
+            });
+        }
+
+        function _getTodayMidnightKey() {
+            var d = new Date();
+            return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        }
+
+        function _loadOrGenerateRaidTargets(callback) {
+            var uid = currentUser.uid;
+            var todayKey = _getTodayMidnightKey();
+            db.ref('ranked_stats/' + uid + '/raidToday').once('value', function(snap) {
+                var raidData = snap.val() || {};
+                // Si ya tenemos datos de hoy, devolverlos tal cual
+                if (raidData.date === todayKey && raidData.targets && raidData.targets.length > 0) {
+                    callback(raidData);
+                    return;
+                }
+                // Generar nuevos objetivos para hoy
+                _generateRaidTargets(uid, todayKey, callback);
+            });
+        }
+
+        function _generateRaidTargets(uid, todayKey, callback) {
+            db.ref('ranked_stats').once('value', function(snap) {
+                var allStats = snap.val() || {};
+                var myStats  = allStats[uid] || {};
+                var myPoints = myStats.points || 0;
+                // Filtrar candidatos: distintos al jugador, con equipo de defensa, rating cercano
+                var candidates = [];
+                Object.keys(allStats).forEach(function(oUid) {
+                    if (oUid === uid) return;
+                    var oStat = allStats[oUid];
+                    if (!oStat || !oStat.name) return;
+                    candidates.push({ uid: oUid, name: oStat.name, points: oStat.points || 0 });
+                });
+                // Verificar que tengan equipo de defensa
+                db.ref('ranked_teams').once('value', function(teamsSnap) {
+                    var allTeams = teamsSnap.val() || {};
+                    candidates = candidates.filter(function(c) {
+                        var t = allTeams[c.uid];
+                        return t && t.defense && t.defense.filter(Boolean).length >= 5;
+                    });
+                    // Ordenar por proximidad de rating
+                    candidates.sort(function(a, b) {
+                        return Math.abs(a.points - myPoints) - Math.abs(b.points - myPoints);
+                    });
+                    // Tomar hasta 5
+                    var targets = candidates.slice(0, 5).map(function(c) {
+                        return { uid: c.uid, name: c.name, points: c.points, attacked: false, result: null, pts: null };
+                    });
+                    var raidData = {
+                        date: todayKey,
+                        attacksLeft: 5,
+                        targets: targets,
+                        attackedTargets: []
+                    };
+                    // Guardar en Firebase
+                    db.ref('ranked_stats/' + uid + '/raidToday').set(raidData);
+                    callback(raidData);
+                });
+            });
+        }
+
+        function _renderRaidLobby(raidData) {
+            var existing = document.getElementById('raidLobbyModal');
+            if (existing) existing.remove();
+
+            var modal = document.createElement('div');
+            modal.id = 'raidLobbyModal';
+            modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px;';
+
+            var targets = raidData.targets || [];
+            var attacksLeft = raidData.attacksLeft !== undefined ? raidData.attacksLeft : 5;
+            var attacksDone = 5 - attacksLeft;
+
+            // Generar filas de objetivos
+            var targetRows = targets.map(function(t) {
+                var attacked = t.attacked || false;
+                var resultLabel = '';
+                var resultColor = '#888';
+                var ptsLabel = '';
+                if (attacked && t.result) {
+                    if (t.result === 'win')  { resultLabel = '✅ Victoria'; resultColor = '#00ff88'; }
+                    if (t.result === 'loss') { resultLabel = '❌ Derrota';  resultColor = '#ff4466'; }
+                    if (t.result === 'draw') { resultLabel = '🤝 Empate';   resultColor = '#ffaa00'; }
+                    var pts = t.pts || 0;
+                    ptsLabel = '<span style="color:' + (pts >= 0 ? '#00ff88' : '#ff4466') + ';font-weight:700;font-size:.85rem;">' + (pts >= 0 ? '+' : '') + pts + ' pts</span>';
+                }
+                var attackBtn = attacked
+                    ? '<span style="color:#444;font-size:.75rem;">Ya atacado</span>'
+                    : '<button onclick="raidAttackTarget(\'' + t.uid + '\',\'' + t.name.replace(/'/g,'') + '\')" style="background:linear-gradient(135deg,rgba(255,170,0,0.2),rgba(255,100,0,0.1));border:1px solid #ffaa00;color:#ffaa00;padding:7px 16px;border-radius:8px;cursor:pointer;font-family:Orbitron,sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.05em;">ATACAR</button>';
+                return '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,' + (attacked ? '0.02' : '0.05') + ');border:1px solid rgba(255,255,255,' + (attacked ? '0.05' : '0.12') + ');opacity:' + (attacked ? '0.6' : '1') + ';">' +
+                    '<div style="flex:1;">' +
+                        '<div style="font-size:.9rem;font-weight:700;color:' + (attacked ? '#666' : '#fff') + ';">' + _escapeHtmlRaid(t.name) + '</div>' +
+                        '<div style="font-size:.75rem;color:#888;margin-top:2px;">⭐ ' + (t.points || 0) + ' pts</div>' +
+                    '</div>' +
+                    (resultLabel ? '<div style="text-align:right;"><div style="font-size:.75rem;color:' + resultColor + ';">' + resultLabel + '</div><div>' + ptsLabel + '</div></div>' : '') +
+                    '<div>' + attackBtn + '</div>' +
+                '</div>';
+            }).join('');
+
+            if (targets.length === 0) {
+                targetRows = '<div style="text-align:center;color:#666;padding:24px;">No hay rivales disponibles por ahora.<br>Vuelve más tarde o usa "Buscar Rival".</div>';
+            }
+
+            // Íconos de ataques disponibles
+            var attackIcons = '';
+            for (var i = 0; i < 5; i++) {
+                attackIcons += '<span style="font-size:1.4rem;opacity:' + (i < attacksLeft ? '1' : '0.25') + ';">⚡</span>';
+            }
+
+            modal.innerHTML = [
+                '<div style="max-width:520px;width:100%;background:linear-gradient(135deg,rgba(5,8,20,0.98),rgba(10,5,25,0.98));border:2px solid rgba(255,170,0,0.5);border-radius:20px;padding:24px;max-height:90vh;overflow-y:auto;">',
+
+                // Header
+                '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">',
+                '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;font-weight:900;color:#ffaa00;letter-spacing:.08em;">⚔️ RAID DIARIO</div>',
+                '<button onclick="document.getElementById(\'raidLobbyModal\').remove()" style="background:none;border:1px solid #444;color:#888;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:.8rem;">✕ Cerrar</button>',
+                '</div>',
+
+                // Ataques disponibles
+                '<div style="background:rgba(255,170,0,0.05);border:1px solid rgba(255,170,0,0.2);border-radius:12px;padding:12px 16px;margin-bottom:18px;">',
+                '<div style="font-size:.7rem;color:#888;letter-spacing:.15em;margin-bottom:8px;">ATAQUES DISPONIBLES HOY</div>',
+                '<div style="display:flex;gap:8px;align-items:center;">' + attackIcons + '<span style="color:#888;font-size:.8rem;margin-left:4px;">(' + attacksLeft + '/5)</span></div>',
+                '</div>',
+
+                // Lista de objetivos
+                '<div style="font-size:.7rem;color:#888;letter-spacing:.15em;margin-bottom:10px;">🎯 TUS OBJETIVOS DE HOY</div>',
+                '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px;">' + targetRows + '</div>',
+
+                // Botón Buscar Rival (solo visible si atacó los 5 o no hay targets)
+                (attacksLeft === 0 || targets.length === 0)
+                    ? '<div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:16px;"><div style="font-size:.75rem;color:#888;margin-bottom:10px;text-align:center;">Ataques diarios agotados — continúa con puntos reducidos</div><button onclick="document.getElementById(\'raidLobbyModal\').remove();startRankedMatchmaking();" style="width:100%;padding:13px;background:linear-gradient(135deg,rgba(0,196,255,0.15),rgba(0,196,255,0.08));border:2px solid #00c4ff;color:#00c4ff;border-radius:12px;cursor:pointer;font-family:Orbitron,sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.08em;">🔍 BUSCAR RIVAL</button></div>'
+                    : '',
+
+                // Botón historial
+                '<div style="margin-top:12px;text-align:center;"><button onclick="showRaidHistory()" style="background:none;border:1px solid rgba(255,255,255,0.15);color:#888;border-radius:8px;padding:8px 18px;cursor:pointer;font-size:.75rem;letter-spacing:.05em;">📋 Ver historial de batallas</button></div>',
+
+                '</div>'
+            ].join('');
+
+            document.body.appendChild(modal);
+        }
+
+        function _escapeHtmlRaid(str) {
+            return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function raidAttackTarget(targetUid, targetName) {
+            if (!currentUser) return;
+            var todayKey = _getTodayMidnightKey();
+            db.ref('ranked_stats/' + currentUser.uid + '/raidToday').once('value', function(snap) {
+                var raidData = snap.val() || {};
+                if (raidData.date !== todayKey || (raidData.attacksLeft || 0) <= 0) {
+                    alert('Ya no tienes ataques disponibles hoy.');
+                    return;
+                }
+                if (raidData.attackedTargets && raidData.attackedTargets.indexOf(targetUid) >= 0) {
+                    alert('Ya atacaste a este rival hoy.');
+                    return;
+                }
+                // Cerrar lobby y lanzar batalla
+                var modal = document.getElementById('raidLobbyModal');
+                if (modal) modal.remove();
+
+                window._rankedIsRaidAttack = true;
+                window._rankedFromMatchmaking = true;
+                window._rankedMode = true;
+                window._rankedPlayerTeam = 'team1';
+                window._rankedFakeOpponent = targetName;
+                window._rankedDefenseOwnerUid = targetUid;
+
+                var myName = currentUser.displayName || 'Jugador';
+                window._teamNames = { team1: myName, team2: targetName };
+
+                db.ref('ranked_teams/' + targetUid).once('value', function(defSnap) {
+                    var defData = defSnap.val() || {};
+                    var defTeam = (defData.defense || []).filter(Boolean);
+                    if (defTeam.length < 5) {
+                        alert('El equipo defensor no está completo. Elige otro objetivo.');
+                        window._rankedIsRaidAttack = false;
+                        window._rankedFromMatchmaking = false;
+                        window._rankedMode = false;
+                        showRaidLobby();
+                        return;
+                    }
+                    getRankedTeams(function(myTeams) {
+                        _launchRankedVsIAWithTeam(myTeams ? myTeams.attack : null, defTeam, targetName);
+                    });
+                });
+            });
+        }
+
+        function showRaidHistory() {
+            if (!currentUser) return;
+            db.ref('ranked_stats/' + currentUser.uid).once('value', function(snap) {
+                var data = snap.val() || {};
+                var atkHistory = data.attackHistory  || [];
+                var defHistory = data.defenseHistory || [];
+                _renderRaidHistory(atkHistory, defHistory);
+            });
+        }
+
+        function _renderRaidHistory(atkHistory, defHistory) {
+            var existing = document.getElementById('raidHistoryModal');
+            if (existing) existing.remove();
+
+            function buildRows(history, isAtk) {
+                if (!history.length) return '<div style="text-align:center;color:#555;padding:16px;font-size:.85rem;">Sin registros aún</div>';
+                return history.map(function(e) {
+                    var date = e.ts ? new Date(e.ts).toLocaleDateString('es-MX', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+                    var resLabel, resColor;
+                    if (e.result === 'win')  { resLabel = '✅ Victoria'; resColor = '#00ff88'; }
+                    else if (e.result === 'loss') { resLabel = '❌ Derrota'; resColor = '#ff4466'; }
+                    else { resLabel = '🤝 Empate'; resColor = '#ffaa00'; }
+                    var pts = e.pts || 0;
+                    var ptsColor = pts >= 0 ? '#00ff88' : '#ff4466';
+                    var ptsStr = (pts >= 0 ? '+' : '') + pts + ' pts';
+                    var modeTag = isAtk && e.isRaid
+                        ? '<span style="font-size:.6rem;background:rgba(255,170,0,0.15);border:1px solid rgba(255,170,0,0.3);color:#ffaa00;border-radius:4px;padding:1px 5px;margin-left:4px;">RAID</span>'
+                        : (isAtk ? '<span style="font-size:.6rem;background:rgba(0,196,255,0.1);border:1px solid rgba(0,196,255,0.2);color:#00c4ff;border-radius:4px;padding:1px 5px;margin-left:4px;">RIVAL</span>' : '');
+                    var who = isAtk ? ('vs ' + _escapeHtmlRaid(e.opponent || 'CPU')) : ('por ' + _escapeHtmlRaid(e.attacker || '?'));
+                    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.05);">' +
+                        '<div style="flex:1;">' +
+                            '<div style="font-size:.85rem;color:#ccc;">' + who + modeTag + '</div>' +
+                            '<div style="font-size:.7rem;color:#555;margin-top:1px;">' + date + '</div>' +
+                        '</div>' +
+                        '<div style="text-align:right;">' +
+                            '<div style="font-size:.8rem;color:' + resColor + ';">' + resLabel + '</div>' +
+                            '<div style="font-size:.85rem;font-weight:700;color:' + ptsColor + ';">' + ptsStr + '</div>' +
+                        '</div>' +
+                    '</div>';
+                }).join('');
+            }
+
+            var modal = document.createElement('div');
+            modal.id = 'raidHistoryModal';
+            modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9100;display:flex;align-items:center;justify-content:center;padding:16px;';
+
+            // Tab activo
+            var activeTab = 'atk';
+            modal.innerHTML = [
+                '<div style="max-width:480px;width:100%;background:linear-gradient(135deg,rgba(5,8,20,0.98),rgba(10,5,25,0.98));border:2px solid rgba(255,255,255,0.1);border-radius:20px;overflow:hidden;max-height:85vh;display:flex;flex-direction:column;">',
+
+                // Header
+                '<div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.08);">',
+                '<div style="font-family:Orbitron,sans-serif;font-size:.95rem;font-weight:700;color:#fff;letter-spacing:.05em;">📋 HISTORIAL DE BATALLAS</div>',
+                '<button onclick="document.getElementById(\'raidHistoryModal\').remove()" style="background:none;border:1px solid #444;color:#888;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:.8rem;">✕</button>',
+                '</div>',
+
+                // Tabs
+                '<div style="display:flex;border-bottom:1px solid rgba(255,255,255,0.08);">',
+                '<button id="raidTabAtk" onclick="raidSwitchTab(\'atk\')" style="flex:1;padding:10px;background:rgba(255,170,0,0.1);border:none;border-bottom:2px solid #ffaa00;color:#ffaa00;font-family:Orbitron,sans-serif;font-size:.7rem;font-weight:700;cursor:pointer;letter-spacing:.05em;">⚔️ ATAQUES</button>',
+                '<button id="raidTabDef" onclick="raidSwitchTab(\'def\')" style="flex:1;padding:10px;background:none;border:none;border-bottom:2px solid transparent;color:#555;font-family:Orbitron,sans-serif;font-size:.7rem;font-weight:700;cursor:pointer;letter-spacing:.05em;">🛡️ DEFENSAS</button>',
+                '</div>',
+
+                // Content
+                '<div id="raidHistoryContent" style="overflow-y:auto;flex:1;">',
+                buildRows(atkHistory, true),
+                '</div>',
+
+                '</div>'
+            ].join('');
+
+            // Guardar historial en el modal para tab switching
+            modal._atkHistory = atkHistory;
+            modal._defHistory = defHistory;
+
+            document.body.appendChild(modal);
+
+            // Tab switch global
+            window.raidSwitchTab = function(tab) {
+                var m = document.getElementById('raidHistoryModal');
+                if (!m) return;
+                var content = document.getElementById('raidHistoryContent');
+                var tabAtk  = document.getElementById('raidTabAtk');
+                var tabDef  = document.getElementById('raidTabDef');
+                if (tab === 'atk') {
+                    content.innerHTML = buildRows(m._atkHistory, true);
+                    tabAtk.style.borderBottomColor = '#ffaa00'; tabAtk.style.color = '#ffaa00'; tabAtk.style.background = 'rgba(255,170,0,0.1)';
+                    tabDef.style.borderBottomColor = 'transparent'; tabDef.style.color = '#555'; tabDef.style.background = 'none';
+                } else {
+                    content.innerHTML = buildRows(m._defHistory, false);
+                    tabDef.style.borderBottomColor = '#00c4ff'; tabDef.style.color = '#00c4ff'; tabDef.style.background = 'rgba(0,196,255,0.1)';
+                    tabAtk.style.borderBottomColor = 'transparent'; tabAtk.style.color = '#555'; tabAtk.style.background = 'none';
+                }
+            };
+        }
+
         function startRankedMatchmaking() {
             if (!currentUser) return;
             // Check if player has configured ranked teams
@@ -1141,68 +1445,94 @@
             return 0;
         }
 
-        // ── Calcular puntos de ataque ──
+        // ══════════════════════════════════════════════════════
+        // SISTEMA RAID DIARIO — Cálculo de puntos v2
+        // ══════════════════════════════════════════════════════
+
+        // ── Puntos para los 5 Ataques Diarios (alta recompensa) ──
+        function calcRaidAttackPoints(won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, isDraw) {
+            if (isDraw) return 20;
+            if (!won) {
+                // Derrota — penalización según rendimiento
+                var deadAllies = totalAllies - survivingAllies;
+                if (enemiesEliminated >= totalEnemies - 1 && deadAllies <= 1) return -20; // casi ganó
+                if (enemiesEliminated >= 2) return -35;
+                if (enemiesEliminated >= 1) return -50;
+                return -80; // aplastado
+            }
+            // Victoria — base según bajas sufridas
+            var base = 0;
+            if (survivingAllies >= totalAllies)           base = 80; // perfecta: 0 bajas
+            else if (survivingAllies >= totalAllies - 2)  base = 60; // sólida: 1-2 bajas
+            else                                          base = 40; // ajustada: 3+ bajas
+            // Bonus por velocidad
+            var speedBonus = 0;
+            if (roundsElapsed <= 3) speedBonus = Math.round(base * 0.15);
+            // Bonus por aplaste total
+            var cleanBonus = (enemiesEliminated >= totalEnemies && survivingAllies >= totalAllies) ? Math.round(base * 0.20) : 0;
+            return base + speedBonus + cleanBonus;
+        }
+
+        // ── Puntos para Buscar Rival (post 5 ataques, baja recompensa, máx 10) ──
+        function calcBuscarRivalPoints(won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, isDraw) {
+            if (isDraw) return 5;
+            if (!won) {
+                if (enemiesEliminated >= totalEnemies - 1) return 4; // buena derrota
+                if (enemiesEliminated >= 2)               return 3;
+                if (enemiesEliminated >= 1)               return 2;
+                return 1; // aplastado
+            }
+            // Victoria
+            if (survivingAllies >= totalAllies && roundsElapsed <= 3) return 10; // perfecta
+            if (survivingAllies >= totalAllies)                        return 9;
+            if (survivingAllies >= totalAllies - 1 && roundsElapsed <= 4) return 8;
+            if (survivingAllies >= totalAllies - 1)                    return 7;
+            if (roundsElapsed <= 3)                                    return 8;
+            if (survivingAllies >= totalAllies - 2)                    return 7;
+            return 6; // victoria normal
+        }
+
+        // ── Puntos de defensa (siempre positivos) ──
+        function calcDefensePoints(defenseWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defTotalHpRemaining, defTotalHpMax) {
+            if (defenseWon) {
+                // Victoria defensiva
+                if (survivingDefenders >= totalDefenders && attackersEliminated >= totalAttackers && roundsElapsed <= 3) return 50; // perfecta
+                if (survivingDefenders >= totalDefenders - 1 && attackersEliminated >= totalAttackers) return 35; // sólida
+                return 25; // costosa
+            } else {
+                // Derrota defensiva — siempre gana puntos positivos
+                if (attackersEliminated >= 3) return 20; // resistió bien
+                if (attackersEliminated >= 1 || roundsElapsed >= 5) return 10; // reñida
+                return 3; // aplastada
+            }
+        }
+
+        // ── Multiplicador diario legacy (solo para Buscar Rival) ──
+        function getDailyMultiplier(battlesPlayedToday) {
+            return 1.0; // Buscar Rival ya tiene cap en calcBuscarRivalPoints
+        }
+
+        // ── calcAttackPoints legacy (redirige al sistema correcto) ──
         function calcAttackPoints(won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLeagueIdx, oppLeagueIdx) {
+            // Se mantiene por compatibilidad pero el nuevo sistema usa calcRaidAttackPoints/calcBuscarRivalPoints
             var base = won ? 100 : 15;
             var bonus = 0;
-
             if (won) {
-                // Personajes vivos
                 var aliveRatio = totalAllies > 0 ? survivingAllies / totalAllies : 0;
                 if (aliveRatio >= 1.0)       bonus += 40;
                 else if (aliveRatio >= 0.67) bonus += 20;
                 else if (aliveRatio > 0)     bonus += 5;
-                // Velocidad de victoria
                 if (roundsElapsed <= 3)      bonus += 25;
                 else if (roundsElapsed <= 5) bonus += 10;
-                // Eliminación total
                 if (enemiesEliminated >= totalEnemies) bonus += 15;
             } else {
-                // Derrota — bonus por daño causado
-                if (enemiesEliminated >= 2)  bonus += 20;
+                if (enemiesEliminated >= 2)      bonus += 20;
                 else if (enemiesEliminated >= 1) bonus += 10;
             }
-
             var total = base + bonus;
-
-            // Multiplicador por diferencia de liga
             var diff = oppLeagueIdx - myLeagueIdx;
             var mult = diff >= 2 ? 1.5 : diff === 1 ? 1.25 : diff === 0 ? 1.0 : diff === -1 ? 0.75 : 0.5;
-            total = Math.round(total * mult);
-
-            return Math.max(1, total);
-        }
-
-        // ── Calcular puntos de defensa ──
-        function calcDefensePoints(defenseWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defTotalHpRemaining, defTotalHpMax) {
-            var base = defenseWon ? 60 : 10;
-            var bonus = 0;
-
-            if (defenseWon) {
-                var defAliveRatio = totalDefenders > 0 ? survivingDefenders / totalDefenders : 0;
-                if (defAliveRatio >= 0.67)   bonus += 30;
-                else if (defAliveRatio > 0)  bonus += 15;
-                if (attackersEliminated >= totalAttackers)  bonus += 25;
-                else if (attackersEliminated >= 2)          bonus += 15;
-                else if (attackersEliminated >= 1)          bonus += 8;
-            } else {
-                // Derrota defensiva — bonus por resistencia
-                if (roundsElapsed >= 6)      bonus += 20;
-                else if (roundsElapsed >= 4) bonus += 10;
-                var hpRatio = defTotalHpMax > 0 ? defTotalHpRemaining / defTotalHpMax : 0;
-                if (hpRatio > 0.5)           bonus += 15;
-                if (attackersEliminated >= 2) bonus += 15;
-                else if (attackersEliminated >= 1) bonus += 8;
-            }
-
-            return Math.max(1, base + bonus);
-        }
-
-        // ── Multiplicador diario (decreciente por volumen) ──
-        function getDailyMultiplier(battlesPlayedToday) {
-            if (battlesPlayedToday < 3)  return 1.0;
-            if (battlesPlayedToday < 10) return 0.10;
-            return 0.05;
+            return Math.max(1, Math.round(total * mult));
         }
 
         // ── Obtener día actual como string YYYY-MM-DD ──
@@ -1284,31 +1614,44 @@
         }
 
         function _finalizeSaveAttacker(cur, myRef, myUid, myName, won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLgIdx, oppLgIdx, seasonKey, todayKey, playerChars, defOwnerUid, fakeOpp, atkWon, survivingDefenders, totalDefenders, roundsElapsed2, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, opponentChars, isDraw) {
-            // ── Contador diario de batallas ──
-            cur.dailyBattles = cur.dailyBattles || {};
-            if (cur.dailyBattles.day !== todayKey) {
-                cur.dailyBattles = { day: todayKey, count: 0 };
+            // ── Determinar si es Raid Diario o Buscar Rival ──
+            var isRaidAttack = window._rankedIsRaidAttack || false;
+            window._rankedIsRaidAttack = false;
+
+            // ── Calcular puntos ──
+            var atkPoints;
+            if (isRaidAttack) {
+                atkPoints = calcRaidAttackPoints(won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, isDraw);
+            } else {
+                atkPoints = calcBuscarRivalPoints(won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, isDraw);
             }
-            var battlesPlayedToday = cur.dailyBattles.count || 0;
-            var dailyMult = getDailyMultiplier(battlesPlayedToday);
-            cur.dailyBattles.count = battlesPlayedToday + 1;
 
-            // ── Puntos de ataque ──
-            var rawAtkPoints = calcAttackPoints(won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLgIdx, oppLgIdx);
-            var atkPoints    = Math.max(1, Math.round(rawAtkPoints * dailyMult));
+            // ── Aplicar puntos ──
+            var prevPoints = cur.points || 0;
+            cur.points    = Math.max(0, prevPoints + atkPoints);
+            cur.atkWins   = (cur.atkWins   || 0) + (won ? 1 : 0);
+            cur.atkLosses = (cur.atkLosses || 0) + (!won && !isDraw ? 1 : 0);
+            cur.atkDraws  = (cur.atkDraws  || 0) + (isDraw ? 1 : 0);
+            cur.defWins   = cur.defWins  || 0;
+            cur.defLosses = cur.defLosses || 0;
+            cur.atkPoints = (cur.atkPoints || 0) + Math.max(0, atkPoints);
+            cur.defPoints = cur.defPoints || 0;
+            cur.seasonKey = seasonKey;
 
-            // ── Stats ──
-            cur.points       = Math.max(0, (cur.points || 0) + atkPoints);
-            cur.atkWins      = (cur.atkWins   || 0) + (won ? 1 : 0);
-            cur.atkLosses    = (cur.atkLosses || 0) + (!won && !isDraw ? 1 : 0);
-            cur.atkDraws     = (cur.atkDraws  || 0) + (isDraw ? 1 : 0);
-            cur.defWins      = cur.defWins    || 0;
-            cur.defLosses    = cur.defLosses  || 0;
-            cur.atkPoints    = (cur.atkPoints || 0) + atkPoints;
-            cur.defPoints    = cur.defPoints  || 0;
-            cur.seasonKey    = seasonKey;
+            // ── Historial de ataques ──
+            cur.attackHistory = cur.attackHistory || [];
+            var atkEntry = {
+                ts: Date.now(),
+                opponent: fakeOpp || 'CPU',
+                opponentUid: defOwnerUid || null,
+                result: isDraw ? 'draw' : (won ? 'win' : 'loss'),
+                pts: atkPoints,
+                isRaid: isRaidAttack
+            };
+            cur.attackHistory.unshift(atkEntry);
+            if (cur.attackHistory.length > 30) cur.attackHistory = cur.attackHistory.slice(0, 30);
 
-            // ── Char usage para meta ──
+            // ── Char usage ──
             cur.charStats = cur.charStats || {};
             (playerChars || []).forEach(function(c) {
                 if (!c) return;
@@ -1317,61 +1660,72 @@
                 if (won) cur.charStats[c].wins++;
             });
 
-            // ── Equipo de ataque actual ──
+            // ── Si es Raid, marcar objetivo como atacado ──
+            if (isRaidAttack && defOwnerUid) {
+                var todayRaid = cur.raidToday || {};
+                if (todayRaid.date !== todayKey) todayRaid = { date: todayKey, attacksLeft: 5, attackedTargets: [], targets: [] };
+                if (!todayRaid.attackedTargets) todayRaid.attackedTargets = [];
+                if (todayRaid.attackedTargets.indexOf(defOwnerUid) < 0) {
+                    todayRaid.attackedTargets.push(defOwnerUid);
+                    todayRaid.attacksLeft = Math.max(0, (todayRaid.attacksLeft || 5) - 1);
+                }
+                todayRaid.targets = todayRaid.targets || [];
+                // Actualizar resultado en la lista de targets del día
+                todayRaid.targets = todayRaid.targets.map(function(t) {
+                    if (t.uid === defOwnerUid) {
+                        t.attacked = true;
+                        t.result = isDraw ? 'draw' : (won ? 'win' : 'loss');
+                        t.pts = atkPoints;
+                    }
+                    return t;
+                });
+                cur.raidToday = todayRaid;
+            }
+
             db.ref('ranked_teams/' + myUid).once('value', function(myTeamSnap) {
-                var myTeamData  = myTeamSnap.val() || {};
+                var myTeamData = myTeamSnap.val() || {};
                 cur.currentAtkTeam = (myTeamData.attack  || []).filter(Boolean).slice(0,5);
                 cur.currentDefTeam = (myTeamData.defense || []).filter(Boolean).slice(0,5);
                 myRef.set(cur);
-                addLog('🏆 Puntos Ranked: +' + atkPoints + (dailyMult < 1 ? ' (' + Math.round(dailyMult*100) + '% por límite diario)' : '') + ' | Total: ' + cur.points, 'buff');
+                var ptLabel = atkPoints >= 0 ? '+' + atkPoints : String(atkPoints);
+                var modeLabel = isRaidAttack ? '⚔️ Raid' : '🔍 Rival';
+                addLog('🏆 Puntos Ranked [' + modeLabel + ']: ' + ptLabel + ' | Total: ' + cur.points, atkPoints >= 0 ? 'buff' : 'damage');
             });
 
-            // ── Guardar stats del defensor (defOwnerUid) ──
+            // ── Guardar stats del defensor ──
             if (defOwnerUid) {
-                _saveDef(defOwnerUid, fakeOpp, !won, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, seasonKey, todayKey, opponentChars);
-                // Notificación
+                _saveDef(defOwnerUid, fakeOpp, !won, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, seasonKey, todayKey, opponentChars, myName, myUid, isDraw);
                 db.ref('ranked_notifications/' + defOwnerUid).push().set({
                     type: 'defense_attacked', attackerName: myName, attackerUid: myUid,
                     defenseWon: !won, ts: Date.now(), read: false
                 });
             }
 
-            // ── Personajes del meta global (tanto atacante como defensor) ──
             _saveGlobalCharStats(playerChars, won, seasonKey);
-            // Los personajes del defensor también se registran en meta
-            // (se registran desde _applyDefPoints cuando existe defOwnerUid;
-            //  para CPU defense, registrar aquí con opponentChars)
             if (!defOwnerUid && opponentChars && opponentChars.length) {
                 _saveGlobalCharStats(opponentChars, !won, seasonKey);
             }
         }
 
-        function _saveDef(defOwnerUid, defOwnerName, defWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, seasonKey, todayKey, opponentChars) {
+        function _saveDef(defOwnerUid, defOwnerName, defWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, seasonKey, todayKey, opponentChars, attackerName, attackerUid, isDraw) {
             var defRef = db.ref('ranked_stats/' + defOwnerUid);
             defRef.once('value', function(snap) {
                 var cur = snap.val() || {};
-
-                // Nombre
                 if (!cur.name) {
                     db.ref('ranked_teams/' + defOwnerUid).once('value', function(tSnap) {
                         var tData = tSnap.val() || {};
                         cur.name = tData.name || defOwnerName || defOwnerUid;
-                        _applyDefPoints(cur, defRef, defOwnerUid, defWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, seasonKey, todayKey, opponentChars);
+                        _applyDefPoints(cur, defRef, defOwnerUid, defWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, seasonKey, todayKey, opponentChars, attackerName, attackerUid, isDraw);
                     });
                 } else {
-                    _applyDefPoints(cur, defRef, defOwnerUid, defWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, seasonKey, todayKey, opponentChars);
+                    _applyDefPoints(cur, defRef, defOwnerUid, defWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, seasonKey, todayKey, opponentChars, attackerName, attackerUid, isDraw);
                 }
             });
         }
 
-        function _applyDefPoints(cur, defRef, defOwnerUid, defWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, seasonKey, todayKey, opponentChars) {
-            cur.dailyBattles = cur.dailyBattles || {};
-            if (cur.dailyBattles.day !== todayKey) cur.dailyBattles = { day: todayKey, count: 0 };
-            var dailyMult = getDailyMultiplier(cur.dailyBattles.count || 0);
-            // Defensa no consume cupo diario del defensor (la IA jugó por él)
-            // pero sí aplicamos el multiplicador para evitar farming extremo
+        function _applyDefPoints(cur, defRef, defOwnerUid, defWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, seasonKey, todayKey, opponentChars, attackerName, attackerUid, isDraw) {
             var rawDefPoints = calcDefensePoints(defWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax);
-            var defPoints    = Math.max(1, Math.round(rawDefPoints * dailyMult));
+            var defPoints    = Math.max(1, rawDefPoints);
 
             cur.points    = Math.max(0, (cur.points || 0) + defPoints);
             cur.defWins   = (cur.defWins   || 0) + (defWon ? 1 : 0);
@@ -1382,7 +1736,18 @@
             cur.atkPoints = cur.atkPoints || 0;
             cur.seasonKey = seasonKey;
 
-            // Char stats de defensa para meta global
+            // ── Historial de defensas ──
+            cur.defenseHistory = cur.defenseHistory || [];
+            var defEntry = {
+                ts: Date.now(),
+                attacker: attackerName || 'Desconocido',
+                attackerUid: attackerUid || null,
+                result: isDraw ? 'draw' : (defWon ? 'win' : 'loss'),
+                pts: defPoints
+            };
+            cur.defenseHistory.unshift(defEntry);
+            if (cur.defenseHistory.length > 30) cur.defenseHistory = cur.defenseHistory.slice(0, 30);
+
             db.ref('ranked_teams/' + defOwnerUid).once('value', function(tSnap) {
                 var tData = tSnap.val() || {};
                 cur.currentDefTeam = (tData.defense || []).filter(Boolean).slice(0,5);
@@ -1395,7 +1760,6 @@
                     cur.charStats[c].used++;
                     if (defWon) cur.charStats[c].wins++;
                 });
-                // Guardar stats globales de personajes DEFENSORES para el panel Meta
                 _saveGlobalCharStats(defChars, defWon, seasonKey);
                 defRef.set(cur);
             });
