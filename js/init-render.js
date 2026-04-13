@@ -48,6 +48,7 @@
                 const _origArr = ch.statusEffects;
                 const _proxied = new Proxy(_origArr, {
                     get(target, prop) {
+                        if (prop === '__isProxied') return true;
                         if (prop === 'push') {
                             return function(...items) {
                                 const result = Array.prototype.push.apply(target, items);
@@ -80,12 +81,13 @@
                         get: function() { return _arr; },
                         set: function(newVal) {
                             _arr = newVal;
-                            // Re-envolver con Proxy si es un array plano
-                            if (Array.isArray(newVal) && !(newVal instanceof Proxy)) {
+                            // Re-envolver con Proxy si es un array plano (no ya proxied)
+                            if (Array.isArray(newVal) && !newVal.__isProxied) {
                                 const _pArr = newVal;
                                 const _name = _cn;
                                 const _proxied2 = new Proxy(_pArr, {
                                     get(target2, prop2) {
+                                        if (prop2 === '__isProxied') return true;
                                         if (prop2 === 'push') {
                                             return function(...items2) {
                                                 const r = Array.prototype.push.apply(target2, items2);
