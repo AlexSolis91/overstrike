@@ -1933,6 +1933,12 @@
                     .map(function(e) {
                         var v = e[1];
                         var pts    = Math.max(0, v.points || 0);
+                        // Si hay historial, recalcular desde él (más preciso que contadores)
+                        if (v.attackHistory || v.defenseHistory) {
+                            var atkH = (v.attackHistory  || []).reduce(function(s,x){ return s+(x.pts||0); }, 0);
+                            var defH = (v.defenseHistory || []).reduce(function(s,x){ return s+(x.pts||0); }, 0);
+                            pts = Math.max(0, atkH + defH);
+                        }
                         var atkW   = v.atkWins   || 0;
                         var atkL   = v.atkLosses || 0;
                         var defW   = v.defWins   || 0;
@@ -1947,10 +1953,12 @@
                             defWins: defW, defLosses: defL,
                             totalWins: totalG, totalLosses: atkL + defL,
                             totalBattles: totalB, winRate: wr,
-                            atkPoints: v.atkPoints || 0,
-                            defPoints: v.defPoints || 0,
-                            // Siempre recalcular points como atkPoints + defPoints (corrige datos legacy)
-                            points: Math.max(0, (v.atkPoints || 0) + (v.defPoints || 0)),
+                            atkPoints: v.attackHistory
+                                ? (v.attackHistory  || []).reduce(function(s,x){ return s+(x.pts||0); }, 0)
+                                : (v.atkPoints || 0),
+                            defPoints: v.defenseHistory
+                                ? (v.defenseHistory || []).reduce(function(s,x){ return s+(x.pts||0); }, 0)
+                                : (v.defPoints || 0),
                             currentAtkTeam: v.currentAtkTeam || [],
                             currentDefTeam: v.currentDefTeam || [],
                         };
@@ -1958,14 +1966,33 @@
                 entries.sort(function(a, b) { return b.points - a.points || b.winRate - a.winRate; });
                 renderLeaderboard(entries);
 
-                // ── Corregir puntos legacy en Firebase (atkPoints + defPoints != points) ──
+                // ── Recalcular puntos DESDE EL HISTORIAL para corregir inconsistencias ──
+                // Los contadores atkPoints/defPoints pueden tener datos de antes del reset.
+                // El historial (attackHistory/defenseHistory) refleja las partidas reales actuales.
                 var legacyFixes = {};
                 Object.entries(data).forEach(function(e) {
                     var uid = e[0], v = e[1];
                     if (!v || v.isFake) return;
-                    var correctPts = Math.max(0, (v.atkPoints || 0) + (v.defPoints || 0));
-                    if (v.points !== correctPts) {
-                        legacyFixes[uid + '/points'] = correctPts;
+
+                    // Sumar puntos desde el historial de ataques
+                    var atkFromHistory = (v.attackHistory || []).reduce(function(sum, entry) {
+                        return sum + (entry.pts || 0);
+                    }, 0);
+
+                    // Sumar puntos desde el historial de defensas
+                    var defFromHistory = (v.defenseHistory || []).reduce(function(sum, entry) {
+                        return sum + (entry.pts || 0);
+                    }, 0);
+
+                    var correctAtk    = atkFromHistory;
+                    var correctDef    = defFromHistory;
+                    var correctPoints = Math.max(0, correctAtk + correctDef);
+
+                    // Solo corregir si hay diferencia con lo guardado
+                    if (v.atkPoints !== correctAtk || v.defPoints !== correctDef || v.points !== correctPoints) {
+                        legacyFixes[uid + '/atkPoints'] = correctAtk;
+                        legacyFixes[uid + '/defPoints'] = correctDef;
+                        legacyFixes[uid + '/points']    = correctPoints;
                     }
                 });
                 if (Object.keys(legacyFixes).length > 0) {
