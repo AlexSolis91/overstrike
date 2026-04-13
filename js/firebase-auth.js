@@ -852,8 +852,16 @@
                     alert('⚠️ Configura tu Equipo Ranked antes de jugar.\nHaz clic en "⚔️ EQUIPO RANKED".');
                     return;
                 }
-                _loadOrGenerateRaidTargets(function(raidData) {
-                    _renderRaidLobby(raidData);
+                // Asegurar que el jugador tenga su nombre registrado en ranked_stats
+                var uid  = currentUser.uid;
+                var name = currentUser.displayName || 'Jugador';
+                db.ref('ranked_stats/' + uid + '/name').once('value', function(nameSnap) {
+                    if (!nameSnap.val()) {
+                        db.ref('ranked_stats/' + uid + '/name').set(name);
+                    }
+                    _loadOrGenerateRaidTargets(function(raidData) {
+                        _renderRaidLobby(raidData);
+                    });
                 });
             });
         }
@@ -883,26 +891,28 @@
                 var allStats = snap.val() || {};
                 var myStats  = allStats[uid] || {};
                 var myPoints = myStats.points || 0;
-                // Filtrar candidatos: distintos al jugador, con equipo de defensa, rating cercano
                 var candidates = [];
                 Object.keys(allStats).forEach(function(oUid) {
                     if (oUid === uid) return;
                     var oStat = allStats[oUid];
-                    if (!oStat || !oStat.name) return;
-                    candidates.push({ uid: oUid, name: oStat.name, points: oStat.points || 0 });
+                    if (!oStat) return;
+                    // Aceptar aunque no tenga nombre — usamos fallback
+                    candidates.push({ uid: oUid, name: oStat.name || '', points: oStat.points || 0 });
                 });
-                // Verificar que tengan equipo de defensa
+                // Verificar que tengan equipo de defensa y completar nombre si falta
                 db.ref('ranked_teams').once('value', function(teamsSnap) {
                     var allTeams = teamsSnap.val() || {};
                     candidates = candidates.filter(function(c) {
                         var t = allTeams[c.uid];
-                        return t && t.defense && t.defense.filter(Boolean).length >= 5;
+                        if (!t || !t.defense || t.defense.filter(Boolean).length < 5) return false;
+                        // Completar nombre desde ranked_teams si falta en ranked_stats
+                        if (!c.name && t.name) c.name = t.name;
+                        if (!c.name) c.name = 'Jugador';
+                        return true;
                     });
-                    // Ordenar por proximidad de rating
                     candidates.sort(function(a, b) {
                         return Math.abs(a.points - myPoints) - Math.abs(b.points - myPoints);
                     });
-                    // Tomar hasta 5
                     var targets = candidates.slice(0, 5).map(function(c) {
                         return { uid: c.uid, name: c.name, points: c.points, attacked: false, result: null, pts: null };
                     });
@@ -912,7 +922,6 @@
                         targets: targets,
                         attackedTargets: []
                     };
-                    // Guardar en Firebase
                     db.ref('ranked_stats/' + uid + '/raidToday').set(raidData);
                     callback(raidData);
                 });
@@ -934,10 +943,13 @@
             // Generar filas de objetivos
             var targetRows = targets.map(function(t) {
                 var attacked = t.attacked || false;
+                // Si el resultado es 'pending' (batalla no completada), tratar como no atacado
+                // pero mantener el ataque consumido
+                var hasResult = attacked && t.result && t.result !== 'pending';
                 var resultLabel = '';
                 var resultColor = '#888';
                 var ptsLabel = '';
-                if (attacked && t.result) {
+                if (hasResult) {
                     if (t.result === 'win')  { resultLabel = '✅ Victoria'; resultColor = '#00ff88'; }
                     if (t.result === 'loss') { resultLabel = '❌ Derrota';  resultColor = '#ff4466'; }
                     if (t.result === 'draw') { resultLabel = '🤝 Empate';   resultColor = '#ffaa00'; }
@@ -952,7 +964,7 @@
                         '<div style="font-size:.9rem;font-weight:700;color:' + (attacked ? '#666' : '#fff') + ';">' + _escapeHtmlRaid(t.name) + '</div>' +
                         '<div style="font-size:.75rem;color:#888;margin-top:2px;">⭐ ' + (t.points || 0) + ' pts</div>' +
                     '</div>' +
-                    (resultLabel ? '<div style="text-align:right;"><div style="font-size:.75rem;color:' + resultColor + ';">' + resultLabel + '</div><div>' + ptsLabel + '</div></div>' : '') +
+                    (hasResult ? '<div style="text-align:right;"><div style="font-size:.75rem;color:' + resultColor + ';">' + resultLabel + '</div><div>' + ptsLabel + '</div></div>' : '') +
                     '<div>' + attackBtn + '</div>' +
                 '</div>';
             }).join('');
@@ -1719,26 +1731,22 @@
                 if (won) cur.charStats[c].wins++;
             });
 
-            // ── Si es Raid, marcar objetivo como atacado ──
+            // ── Si es Raid, actualizar SOLO el resultado del target (attacksLeft ya fue decrementado en raidAttackTarget) ──
             if (isRaidAttack && defOwnerUid) {
-                var todayRaid = cur.raidToday || {};
-                if (todayRaid.date !== todayKey) todayRaid = { date: todayKey, attacksLeft: 5, attackedTargets: [], targets: [] };
-                if (!todayRaid.attackedTargets) todayRaid.attackedTargets = [];
-                if (todayRaid.attackedTargets.indexOf(defOwnerUid) < 0) {
-                    todayRaid.attackedTargets.push(defOwnerUid);
-                    todayRaid.attacksLeft = Math.max(0, (todayRaid.attacksLeft || 5) - 1);
-                }
-                todayRaid.targets = todayRaid.targets || [];
-                // Actualizar resultado en la lista de targets del día
-                todayRaid.targets = todayRaid.targets.map(function(t) {
-                    if (t.uid === defOwnerUid) {
-                        t.attacked = true;
-                        t.result = isDraw ? 'draw' : (won ? 'win' : 'loss');
-                        t.pts = atkPoints;
-                    }
-                    return t;
+                // Leer raidToday fresco desde Firebase para no sobreescribir con datos viejos
+                db.ref('ranked_stats/' + myUid + '/raidToday').once('value', function(raidSnap) {
+                    var freshRaid = raidSnap.val() || {};
+                    if (!freshRaid.targets) freshRaid.targets = [];
+                    freshRaid.targets = freshRaid.targets.map(function(t) {
+                        if (t.uid === defOwnerUid) {
+                            t.attacked = true;
+                            t.result = isDraw ? 'draw' : (won ? 'win' : 'loss');
+                            t.pts = atkPoints;
+                        }
+                        return t;
+                    });
+                    db.ref('ranked_stats/' + myUid + '/raidToday').set(freshRaid);
                 });
-                cur.raidToday = todayRaid;
             }
 
             db.ref('ranked_teams/' + myUid).once('value', function(myTeamSnap) {
