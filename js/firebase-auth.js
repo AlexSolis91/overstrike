@@ -1413,8 +1413,8 @@
             { name: 'Plata',      min: 500,  max: 999,  icon: '🥈',  subs: ['III','II','I'] },
             { name: 'Oro',        min: 1000, max: 1999, icon: '🥇',  subs: ['III','II','I'] },
             { name: 'Diamante',   min: 2000, max: 3499, icon: '💎',  subs: ['III','II','I'] },
-            { name: 'Maestro',    min: 3500, max: 4999, icon: '👑',  subs: [] },
-            { name: 'Gran Maestro', min: 5000, max: Infinity, icon: '🔱', subs: [] }
+            { name: 'Campeones',  min: 3500, max: 4999, icon: '👑',  subs: [] },
+            { name: 'Leyenda', min: 5000, max: Infinity, icon: '🔱', subs: [] }
         ];
 
         function getLeague(points) {
@@ -1544,14 +1544,8 @@
         // ── Obtener semana actual como string YYYY-Www ──
         function getCurrentSeasonKey() {
             var d = new Date();
-            // ISO week: Monday-Sunday
-            var dayOfWeek = d.getDay() || 7; // 1=Mon, 7=Sun
-            var monday = new Date(d);
-            monday.setDate(d.getDate() - (dayOfWeek - 1));
-            var year = monday.getFullYear();
-            var start = new Date(year, 0, 1);
-            var week = Math.ceil(((monday - start) / 86400000 + start.getDay() + 1) / 7);
-            return year + '-W' + String(week).padStart(2,'0');
+            // Temporada mensual: YYYY-MM (del día 1 al último del mes)
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
         }
 
         function saveRankedResult(winnerTeam, playerTeam, playerChars, opponentName, opponentChars, battleStats) {
@@ -1614,6 +1608,22 @@
         }
 
         function _finalizeSaveAttacker(cur, myRef, myUid, myName, won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLgIdx, oppLgIdx, seasonKey, todayKey, playerChars, defOwnerUid, fakeOpp, atkWon, survivingDefenders, totalDefenders, roundsElapsed2, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, opponentChars, isDraw) {
+            // ── Reset mensual: si el seasonKey cambió, reiniciar puntuación a 0 ──
+            if (cur.seasonKey && cur.seasonKey !== seasonKey) {
+                addLog('🔄 Nueva temporada (' + seasonKey + '): puntuación reiniciada a 0', 'info');
+                cur.points    = 0;
+                cur.atkPoints = 0;
+                cur.defPoints = 0;
+                cur.atkWins   = 0;
+                cur.atkLosses = 0;
+                cur.atkDraws  = 0;
+                cur.defWins   = 0;
+                cur.defLosses = 0;
+                cur.attackHistory  = [];
+                cur.defenseHistory = [];
+                cur.raidToday = {};
+            }
+
             // ── Determinar si es Raid Diario o Buscar Rival ──
             var isRaidAttack = window._rankedIsRaidAttack || false;
             window._rankedIsRaidAttack = false;
@@ -1816,7 +1826,13 @@
             }
             // Actualizar label de temporada
             var slabel = modal.querySelector('#leaderboardSeasonLabel');
-            if (slabel) slabel.textContent = 'Temporada ' + getCurrentSeasonKey() + ' · Solo partidas Ranked · Lunes–Domingo';
+            if (slabel) {
+                var sk = getCurrentSeasonKey();
+                var monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+                var parts = sk.split('-');
+                var monthLabel = parts.length === 2 ? (monthNames[parseInt(parts[1],10)-1] + ' ' + parts[0]) : sk;
+                slabel.textContent = 'Temporada ' + monthLabel + ' · Solo partidas Ranked';
+            }
             modal.style.display = 'flex';
             lbShowTab('ranking');
         }
@@ -1887,7 +1903,7 @@
             }
 
             // Liga top-3 Gran Maestro
-            var top3 = entries.filter(function(e) { return e.league.name === 'Gran Maestro'; }).slice(0,3);
+            var top3 = entries.filter(function(e) { return e.league.name === 'Leyenda'; }).slice(0,3);
 
             var rows = entries.map(function(e, i) {
                 var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '<span style="font-family:Orbitron,sans-serif;font-size:.8rem;color:#666;">' + (i+1) + '</span>';
@@ -1897,8 +1913,8 @@
                     'Plata':       { bg: 'rgba(180,180,200,0.08)', border: 'rgba(192,192,192,0.35)', glow: 'rgba(192,192,192,0.10)', accent: '#c0c0c0' },
                     'Oro':         { bg: 'rgba(255,200,0,0.09)',   border: 'rgba(255,215,0,0.40)',   glow: 'rgba(255,215,0,0.14)',   accent: '#ffd700' },
                     'Diamante':    { bg: 'rgba(0,200,255,0.08)',   border: 'rgba(0,220,255,0.35)',   glow: 'rgba(0,200,255,0.12)',   accent: '#00d4ff' },
-                    'Maestro':     { bg: 'rgba(160,0,255,0.10)',   border: 'rgba(180,50,255,0.40)',  glow: 'rgba(160,0,255,0.16)',   accent: '#b432ff' },
-                    'Gran Maestro':{ bg: 'rgba(255,100,0,0.10)',   border: 'rgba(255,130,0,0.45)',   glow: 'rgba(255,100,0,0.18)',   accent: '#ff8800' },
+                    'Campeones':     { bg: 'rgba(160,0,255,0.10)',   border: 'rgba(180,50,255,0.40)',  glow: 'rgba(160,0,255,0.16)',   accent: '#b432ff' },
+                    'Leyenda':{ bg: 'rgba(255,100,0,0.10)',   border: 'rgba(255,130,0,0.45)',   glow: 'rgba(255,100,0,0.18)',   accent: '#ff8800' },
                 };
                 var lgC = lgColors[e.league.name] || lgColors['Bronce'];
                 var bgGlow  = lgC.bg;
@@ -2069,7 +2085,7 @@
                 .map(function(e) { return e[0]; });
         }
 
-        // ── Reset semanal (Lunes–Domingo) ──
+        // ── Reset semanal (Mes actual) ──
         function checkLeaderboardReset() {
             db.ref('leaderboard_meta/lastSeasonKey').once('value', function(snap) {
                 var lastSeason  = snap.val() || '';
