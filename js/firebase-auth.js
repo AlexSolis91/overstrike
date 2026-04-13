@@ -1470,12 +1470,12 @@
 
         // ── Ligas ──
         var LEAGUES = [
-            { name: 'Bronce',     min: 0,    max: 499,  icon: '⚔️',  subs: ['III','II','I'] },
-            { name: 'Plata',      min: 500,  max: 999,  icon: '🥈',  subs: ['III','II','I'] },
-            { name: 'Oro',        min: 1000, max: 1999, icon: '🥇',  subs: ['III','II','I'] },
-            { name: 'Diamante',   min: 2000, max: 3499, icon: '💎',  subs: ['III','II','I'] },
-            { name: 'Campeones',  min: 3500, max: 4999, icon: '👑',  subs: [] },
-            { name: 'Leyenda', min: 5000, max: Infinity, icon: '🔱', subs: [] }
+            { name: 'Bronce',    min: 0,     max: 1499,  icon: '⚔️',  subs: ['III','II','I'] },
+            { name: 'Plata',     min: 1500,  max: 3499,  icon: '🥈',  subs: ['III','II','I'] },
+            { name: 'Oro',       min: 3500,  max: 6999,  icon: '🥇',  subs: ['III','II','I'] },
+            { name: 'Diamante',  min: 7000,  max: 10999, icon: '💎',  subs: ['III','II','I'] },
+            { name: 'Campeones', min: 11000, max: 14999, icon: '👑',  subs: [] },
+            { name: 'Leyenda',   min: 15000, max: Infinity, icon: '🔱', subs: [] }
         ];
 
         function getLeague(points) {
