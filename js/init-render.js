@@ -67,6 +67,48 @@
                 ch.statusEffects = _proxied;
             }
             for (const _cn in gameState.characters) { _wrapStatusEffects(_cn); }
+
+            // ── PATCH: interceptar asignaciones directas a statusEffects para mantener el Proxy ──
+            // Cuando el código hace char.statusEffects = [...].filter(...), el Proxy se pierde.
+            // Usamos un setter en cada personaje para re-envolverlo automáticamente.
+            (function() {
+                for (const _cn in gameState.characters) {
+                    const _ch = gameState.characters[_cn];
+                    if (!_ch) continue;
+                    let _arr = _ch.statusEffects;
+                    Object.defineProperty(_ch, 'statusEffects', {
+                        get: function() { return _arr; },
+                        set: function(newVal) {
+                            _arr = newVal;
+                            // Re-envolver con Proxy si es un array plano
+                            if (Array.isArray(newVal) && !(newVal instanceof Proxy)) {
+                                const _pArr = newVal;
+                                const _name = _cn;
+                                const _proxied2 = new Proxy(_pArr, {
+                                    get(target2, prop2) {
+                                        if (prop2 === 'push') {
+                                            return function(...items2) {
+                                                const r = Array.prototype.push.apply(target2, items2);
+                                                items2.forEach(function(item2) {
+                                                    if (item2 && item2.type === 'buff' && !item2.passiveHidden &&
+                                                        typeof triggerMonarcaDestruccion === 'function') {
+                                                        triggerMonarcaDestruccion(_name);
+                                                    }
+                                                });
+                                                return r;
+                                            };
+                                        }
+                                        return target2[prop2];
+                                    }
+                                });
+                                _arr = _proxied2;
+                            }
+                        },
+                        configurable: true,
+                        enumerable: true
+                    });
+                }
+            })();
             
             // ── PASIVAS PERMANENTES (buffs que no expiran ni pueden limpiarse) ──
             for (const charName in gameState.characters) {
