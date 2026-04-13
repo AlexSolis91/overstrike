@@ -3948,68 +3948,114 @@
                 }
 
             } else if (ability.effect === 'rey_del_norte_jon') {
-                // JON SNOW — El Rey del Norte: todos los aliados ejecutan su Over sin costo
+                // JON SNOW — El Rey del Norte: todos los ALIADOS ejecutan su Over con cinemática secuencial
                 const _rjAtk = gameState.characters[gameState.selectedCharacter];
                 if (!_rjAtk) { endTurn(); return; }
-                const _rjAllyTeam = _rjAtk.team;
+                const _rjAllyTeam  = _rjAtk.team;
                 const _rjEnemyTeam = _rjAllyTeam === 'team1' ? 'team2' : 'team1';
                 addLog('👑 El Rey del Norte: ¡todos los aliados ejecutan su Over!', 'buff');
-                // Guardar estado actual para restaurar después
-                const _rjOrigChar = gameState.selectedCharacter;
+
+                // Recopilar aliados con Over ANTES de cambiar selectedCharacter
+                const _rjOrigChar    = gameState.selectedCharacter;
                 const _rjOrigAbility = gameState.selectedAbility;
-                const _rjOrigCost = gameState.adjustedCost;
+                const _rjOrigCost    = gameState.adjustedCost;
+
+                const _rjQueue = [];
                 for (const _aln in gameState.characters) {
                     const _alc = gameState.characters[_aln];
-                    if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== _rjAllyTeam || _aln === _rjOrigChar) continue;
+                    if (!_alc || _alc.isDead || _alc.hp <= 0) continue;
+                    if (_alc.team !== _rjAllyTeam) continue;
+                    if (_aln === _rjOrigChar) continue;
                     const _overAb = (_alc.abilities||[]).find(function(ab){ return ab && ab.type === 'over'; });
                     if (!_overAb) continue;
-                    addLog('👑 ' + _aln + ' ejecuta ' + _overAb.name, 'buff');
-                    // Setear contexto temporal para ejecutar el over
-                    gameState.selectedCharacter = _aln;
-                    gameState.selectedAbility = _overAb;
-                    gameState.adjustedCost = 0; // sin costo — no usar || en la lectura
-                    // Determinar target: para AOE null, para ST enemigo aleatorio, para self el aliado
-                    const _rjAlive = Object.keys(gameState.characters).filter(function(n){
-                        const c = gameState.characters[n]; return c && c.team === _rjEnemyTeam && !c.isDead && c.hp > 0;
-                    });
-                    let _rjTarget = null;
-                    if (_overAb.target === 'single' && _rjAlive.length > 0) {
-                        _rjTarget = _rjAlive[Math.floor(Math.random() * _rjAlive.length)];
-                    } else if (_overAb.target === 'self') {
-                        _rjTarget = _aln;
-                    } else if (_overAb.target === 'aoe') {
-                        _rjTarget = _rjAlive.length > 0 ? _rjAlive[0] : null;
-                    }
-                    try {
-                        // Parchear endTurn temporalmente para que no interrumpa el loop
-                        var _rjEndTurnOrig = endTurn;
-                        var _rjShowContOrig = typeof showContinueButton !== 'undefined' ? showContinueButton : null;
-                        endTurn = function() {}; // no-op durante el loop
-                        if (_rjShowContOrig) showContinueButton = function() {};
-                        // Ejecutar el over del aliado
-                        var _execTarget = _rjTarget || _aln;
-                        executeAbility(_execTarget);
-                        // Restaurar funciones
-                        endTurn = _rjEndTurnOrig;
-                        if (_rjShowContOrig) showContinueButton = _rjShowContOrig;
-                    } catch(e) {
-                        addLog('👑 Error ejecutando Over de ' + _aln + ': ' + e.message, 'info');
-                        // Asegurar restauración aunque haya error
-                        if (typeof _rjEndTurnOrig !== 'undefined') endTurn = _rjEndTurnOrig;
-                    }
-                    // Pequeña pausa entre ejecuciones para evitar conflictos
+                    _rjQueue.push({ name: _aln, char: _alc, over: _overAb });
                 }
-                // Restaurar estado original
-                gameState.selectedCharacter = _rjOrigChar;
-                gameState.selectedAbility = _rjOrigAbility;
-                gameState.adjustedCost = _rjOrigCost;
-                // Protección: asegurar que ningún aliado tenga cargas negativas
-                for (const _safen in gameState.characters) {
-                    const _safec = gameState.characters[_safen];
-                    if (_safec && _safec.team === _rjAllyTeam) {
-                        _safec.charges = Math.max(0, Math.min(20, _safec.charges || 0));
-                    }
+
+                if (_rjQueue.length === 0) {
+                    // Sin aliados con Over — terminar normal
+                    break;
                 }
+
+                // Parchear endTurn para que no interrumpa la secuencia
+                const _rjEndOrig  = endTurn;
+                const _rjContOrig = typeof showContinueButton !== 'undefined' ? showContinueButton : null;
+                endTurn = function() {};
+                if (_rjContOrig) showContinueButton = function() {};
+
+                // Ejecutar secuencia async: cinemática → Over → siguiente
+                (async function() {
+                    for (const _entry of _rjQueue) {
+                        const _aln   = _entry.name;
+                        const _alc   = _entry.char;
+                        const _overAb = _entry.over;
+
+                        // Verificar que el aliado siga vivo
+                        if (_alc.isDead || _alc.hp <= 0) continue;
+
+                        // Determinar target
+                        const _rjAliveEnemies = Object.keys(gameState.characters).filter(function(n) {
+                            const c = gameState.characters[n];
+                            return c && c.team === _rjEnemyTeam && !c.isDead && c.hp > 0;
+                        });
+                        let _rjTarget = null;
+                        if (_overAb.target === 'single' && _rjAliveEnemies.length > 0) {
+                            _rjTarget = _rjAliveEnemies[Math.floor(Math.random() * _rjAliveEnemies.length)];
+                        } else if (_overAb.target === 'self' || _overAb.target === 'ally_single') {
+                            _rjTarget = _aln;
+                        } else if (_overAb.target === 'aoe' || _overAb.target === 'ally_aoe') {
+                            _rjTarget = _rjAliveEnemies.length > 0 ? _rjAliveEnemies[0] : _aln;
+                        } else if (_overAb.target === 'ally_dead') {
+                            const _deadAlly = Object.keys(gameState.characters).find(function(n) {
+                                const c = gameState.characters[n];
+                                return c && c.team === _rjAllyTeam && (c.isDead || c.hp <= 0);
+                            });
+                            if (!_deadAlly) { addLog('👑 ' + _aln + ': no hay aliados caídos', 'info'); continue; }
+                            _rjTarget = _deadAlly;
+                        }
+
+                        // Setear contexto para este aliado
+                        gameState.selectedCharacter = _aln;
+                        gameState.selectedAbility   = _overAb;
+                        gameState.adjustedCost      = 0;
+
+                        // ── Mostrar cinemática y esperar que termine ──
+                        if (typeof _showOverCinematicAsync === 'function') {
+                            await _showOverCinematicAsync(_aln, _overAb.name, _overAb.effect, _rjAllyTeam);
+                        }
+
+                        // ── Ejecutar el Over del aliado (sin cinemática de nuevo) ──
+                        try {
+                            _executeAbilityCore(_rjTarget);
+                        } catch(e) {
+                            addLog('👑 Error en Over de ' + _aln + ': ' + e.message, 'info');
+                        }
+
+                        // Sanear cargas
+                        _alc.charges = Math.max(0, Math.min(20, _alc.charges || 0));
+                    }
+
+                    // Restaurar todo al terminar la secuencia
+                    gameState.selectedCharacter = _rjOrigChar;
+                    gameState.selectedAbility   = _rjOrigAbility;
+                    gameState.adjustedCost      = _rjOrigCost;
+                    endTurn = _rjEndOrig;
+                    if (_rjContOrig) showContinueButton = _rjContOrig;
+
+                    // Sanear cargas de todo el equipo
+                    for (const _safen in gameState.characters) {
+                        const _safec = gameState.characters[_safen];
+                        if (_safec && _safec.team === _rjAllyTeam) {
+                            _safec.charges = Math.max(0, Math.min(20, _safec.charges || 0));
+                        }
+                    }
+
+                    // Renderizar y terminar turno
+                    if (typeof renderCharacters === 'function') renderCharacters();
+                    _rjEndOrig();
+                })();
+
+                // Retornar inmediatamente — la secuencia async maneja el endTurn
+                return;
 
 
             // ══════════════════════════════════════════════════════
