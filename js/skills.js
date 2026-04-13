@@ -3973,7 +3973,8 @@
 
                 if (_rjQueue.length === 0) {
                     // Sin aliados con Over — terminar normal
-                    break;
+                    endTurn();
+                    return;
                 }
 
                 // Parchear endTurn para que no interrumpa la secuencia
