@@ -1017,34 +1017,83 @@
                     alert('Ya atacaste a este rival hoy.');
                     return;
                 }
-                // Cerrar lobby y lanzar batalla
-                var modal = document.getElementById('raidLobbyModal');
-                if (modal) modal.remove();
+                // ── Descontar ataque INMEDIATAMENTE en Firebase antes de lanzar la batalla ──
+                var newAttacksLeft = Math.max(0, (raidData.attacksLeft || 5) - 1);
+                var newAttackedTargets = (raidData.attackedTargets || []).concat([targetUid]);
+                var newTargets = (raidData.targets || []).map(function(t) {
+                    if (t.uid === targetUid) { t.attacked = true; t.result = 'pending'; }
+                    return t;
+                });
+                var updatedRaid = {
+                    date: raidData.date || todayKey,
+                    attacksLeft: newAttacksLeft,
+                    attackedTargets: newAttackedTargets,
+                    targets: newTargets
+                };
+                db.ref('ranked_stats/' + currentUser.uid + '/raidToday').set(updatedRaid, function() {
+                    var modal = document.getElementById('raidLobbyModal');
+                    if (modal) modal.remove();
 
-                window._rankedIsRaidAttack = true;
-                window._rankedFromMatchmaking = true;
-                window._rankedMode = true;
-                window._rankedPlayerTeam = 'team1';
-                window._rankedFakeOpponent = targetName;
-                window._rankedDefenseOwnerUid = targetUid;
+                    window._rankedIsRaidAttack = true;
+                    window._rankedFromMatchmaking = true;
+                    window._rankedMode = true;
+                    window._rankedPlayerTeam = 'team1';
+                    window._rankedFakeOpponent = targetName;
+                    window._rankedDefenseOwnerUid = targetUid;
 
-                var myName = currentUser.displayName || 'Jugador';
-                window._teamNames = { team1: myName, team2: targetName };
+                    var myName = currentUser.displayName || 'Jugador';
+                    window._teamNames = { team1: myName, team2: targetName };
 
-                db.ref('ranked_teams/' + targetUid).once('value', function(defSnap) {
-                    var defData = defSnap.val() || {};
-                    var defTeam = (defData.defense || []).filter(Boolean);
-                    if (defTeam.length < 5) {
-                        alert('El equipo defensor no está completo. Elige otro objetivo.');
-                        window._rankedIsRaidAttack = false;
-                        window._rankedFromMatchmaking = false;
-                        window._rankedMode = false;
-                        showRaidLobby();
-                        return;
-                    }
-                    getRankedTeams(function(myTeams) {
-                        _launchRankedVsIAWithTeam(myTeams ? myTeams.attack : null, defTeam, targetName);
+                    db.ref('ranked_teams/' + targetUid).once('value', function(defSnap) {
+                        var defData = defSnap.val() || {};
+                        var defTeam = (defData.defense || []).filter(Boolean);
+                        if (defTeam.length < 5) {
+                            // Devolver ataque si el equipo no es válido
+                            db.ref('ranked_stats/' + currentUser.uid + '/raidToday/attacksLeft').set(newAttacksLeft + 1);
+                            alert('El equipo defensor no está completo. Elige otro objetivo.');
+                            window._rankedIsRaidAttack = false;
+                            window._rankedFromMatchmaking = false;
+                            window._rankedMode = false;
+                            showRaidLobby();
+                            return;
+                        }
+                        getRankedTeams(function(myTeams) {
+                            _launchRankedVsIAWithTeam(myTeams ? myTeams.attack : null, defTeam, targetName);
+                        });
                     });
+                });
+            });
+        }
+
+        // ── FUNCIÓN DE ADMIN: reset manual de todos los jugadores ──
+        function adminResetAllPlayers() {
+            if (!currentUser) { alert('Debes estar logueado.'); return; }
+            var seasonKey = getCurrentSeasonKey();
+            if (!confirm('\u26A0\uFE0F \u00BFReiniciar puntuaci\u00F3n de TODOS los jugadores a 0?\nTemporada: ' + seasonKey)) return;
+            db.ref('ranked_stats').once('value', function(snap) {
+                var all = snap.val() || {};
+                var updates = {};
+                var count = 0;
+                Object.keys(all).forEach(function(uid) {
+                    updates[uid + '/points']        = 0;
+                    updates[uid + '/atkPoints']     = 0;
+                    updates[uid + '/defPoints']     = 0;
+                    updates[uid + '/atkWins']       = 0;
+                    updates[uid + '/atkLosses']     = 0;
+                    updates[uid + '/atkDraws']      = 0;
+                    updates[uid + '/defWins']       = 0;
+                    updates[uid + '/defLosses']     = 0;
+                    updates[uid + '/seasonKey']     = seasonKey;
+                    updates[uid + '/attackHistory'] = null;
+                    updates[uid + '/defenseHistory']= null;
+                    updates[uid + '/raidToday']     = null;
+                    count++;
+                });
+                db.ref('ranked_stats').update(updates, function(err) {
+                    if (err) { alert('\u274C Error: ' + err.message); return; }
+                    alert('\u2705 Reset completo. ' + count + ' jugadores reiniciados a 0 pts (Temporada ' + seasonKey + ').');
+                    var lb = document.getElementById('leaderboardModal');
+                    if (lb && lb.style.display !== 'none') showLeaderboard();
                 });
             });
         }
@@ -1810,6 +1859,9 @@
                     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid rgba(255,170,0,0.15);padding-bottom:16px;flex-wrap:wrap;gap:10px;">',
                         '<div>',
                             '<div style="font-family:Orbitron,sans-serif;font-size:1.4rem;font-weight:900;color:#ffaa00;text-shadow:0 0 20px rgba(255,170,0,0.6);letter-spacing:.08em;">🏆 RANKED LEADERBOARD</div>',
+                            (currentUser && (currentUser.email === 'alexsolis.dev@gmail.com' || currentUser.uid === 'ADMIN_UID')
+                                ? '<button onclick="adminResetAllPlayers()" style="background:rgba(255,30,30,0.15);border:1px solid #ff3366;color:#ff3366;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:.7rem;font-family:Orbitron,sans-serif;letter-spacing:.05em;margin-top:4px;">🔄 RESET TEMPORADA</button>'
+                                : ''),
                             '<div id="leaderboardSeasonLabel" style="font-size:.72rem;color:#555;margin-top:3px;letter-spacing:.05em;">Temporada actual</div>',
                         '</div>',
                         '<div style="display:flex;gap:8px;align-items:center;">',
