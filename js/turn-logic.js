@@ -1,4 +1,23 @@
 // ==================== LÓGICA DE TURNOS ====================
+        // ── Fallbacks de seguridad: si skills.js no cargó aún, estas funciones no crashean ──
+        if (typeof addLog === 'undefined') {
+            window.addLog = function(msg, type) { console.log('[LOG]', msg); };
+        }
+        if (typeof renderCharacters === 'undefined') {
+            window.renderCharacters = function() {};
+        }
+        if (typeof renderSummons === 'undefined') {
+            window.renderSummons = function() {};
+        }
+        if (typeof checkGameOver === 'undefined') {
+            window.checkGameOver = function() { return false; };
+        }
+        if (typeof endTurn === 'undefined') {
+            window.endTurn = function() {};
+        }
+        if (typeof showContinueButton === 'undefined') {
+            window.showContinueButton = function() {};
+        }
         function startTurn() {
             // Cola de turnos adicionales: procesar pendientes
             if (gameState._sasukeRevengeQueue && gameState._sasukeRevengeQueue.length > 0) {
@@ -161,12 +180,14 @@
                 checkGameOver();
             } catch (error) {
                 console.error('Error en startTurn:', error);
-                // Intentar continuar
-                try {
-                    gameState.currentTurnIndex = (gameState.currentTurnIndex + 1) % gameState.turnOrder.length;
-                    setTimeout(() => startTurn(), 1000);
-                } catch (e) {
-                    console.error('Error crítico en startTurn:', e);
+                // Solo reintentar si el juego sigue activo y no es un error de función indefinida
+                if (!gameState.gameOver && error && !String(error.message).includes('is not defined')) {
+                    try {
+                        gameState.currentTurnIndex = (gameState.currentTurnIndex + 1) % gameState.turnOrder.length;
+                        setTimeout(() => startTurn(), 1000);
+                    } catch (e) {
+                        console.error('Error crítico en startTurn:', e);
+                    }
                 }
             }
         }
