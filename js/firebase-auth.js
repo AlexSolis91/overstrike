@@ -1859,7 +1859,7 @@
                     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid rgba(255,170,0,0.15);padding-bottom:16px;flex-wrap:wrap;gap:10px;">',
                         '<div>',
                             '<div style="font-family:Orbitron,sans-serif;font-size:1.4rem;font-weight:900;color:#ffaa00;text-shadow:0 0 20px rgba(255,170,0,0.6);letter-spacing:.08em;">🏆 RANKED LEADERBOARD</div>',
-                            (currentUser && (currentUser.email === 'alexsolis.dev@gmail.com' || currentUser.uid === 'ADMIN_UID')
+                            (currentUser && (currentUser.email === 'solisalex8291@gmail.com')
                                 ? '<button onclick="adminResetAllPlayers()" style="background:rgba(255,30,30,0.15);border:1px solid #ff3366;color:#ff3366;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:.7rem;font-family:Orbitron,sans-serif;letter-spacing:.05em;margin-top:4px;">🔄 RESET TEMPORADA</button>'
                                 : ''),
                             '<div id="leaderboardSeasonLabel" style="font-size:.72rem;color:#555;margin-top:3px;letter-spacing:.05em;">Temporada actual</div>',
