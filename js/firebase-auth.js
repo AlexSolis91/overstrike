@@ -1698,15 +1698,18 @@
             }
 
             // ── Aplicar puntos ──
-            var prevPoints = cur.points || 0;
-            cur.points    = Math.max(0, prevPoints + atkPoints);
+            // atkPoints puede ser negativo (derrota). Lo reflejamos en atkPoints acumulado.
+            var prevAtkPoints = cur.atkPoints || 0;
+            var prevDefPoints = cur.defPoints || 0;
+            cur.atkPoints = prevAtkPoints + atkPoints; // puede ser negativo
+            cur.defPoints = prevDefPoints;             // sin cambio aquí
+            // points total = suma de atk + def (siempre coherente)
+            cur.points    = Math.max(0, cur.atkPoints + cur.defPoints);
             cur.atkWins   = (cur.atkWins   || 0) + (won ? 1 : 0);
             cur.atkLosses = (cur.atkLosses || 0) + (!won && !isDraw ? 1 : 0);
             cur.atkDraws  = (cur.atkDraws  || 0) + (isDraw ? 1 : 0);
             cur.defWins   = cur.defWins  || 0;
             cur.defLosses = cur.defLosses || 0;
-            cur.atkPoints = (cur.atkPoints || 0) + Math.max(0, atkPoints);
-            cur.defPoints = cur.defPoints || 0;
             cur.seasonKey = seasonKey;
 
             // ── Historial de ataques ──
@@ -1794,13 +1797,14 @@
             var rawDefPoints = calcDefensePoints(defWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax);
             var defPoints    = Math.max(1, rawDefPoints);
 
-            cur.points    = Math.max(0, (cur.points || 0) + defPoints);
+            cur.defPoints = (cur.defPoints || 0) + defPoints;
+            cur.atkPoints = cur.atkPoints || 0;
+            // points total = suma de atk + def (siempre coherente)
+            cur.points    = Math.max(0, cur.atkPoints + cur.defPoints);
             cur.defWins   = (cur.defWins   || 0) + (defWon ? 1 : 0);
             cur.defLosses = (cur.defLosses || 0) + (defWon ? 0 : 1);
             cur.atkWins   = cur.atkWins   || 0;
             cur.atkLosses = cur.atkLosses || 0;
-            cur.defPoints = (cur.defPoints || 0) + defPoints;
-            cur.atkPoints = cur.atkPoints || 0;
             cur.seasonKey = seasonKey;
 
             // ── Historial de defensas ──
@@ -1945,12 +1949,28 @@
                             totalBattles: totalB, winRate: wr,
                             atkPoints: v.atkPoints || 0,
                             defPoints: v.defPoints || 0,
+                            // Siempre recalcular points como atkPoints + defPoints (corrige datos legacy)
+                            points: Math.max(0, (v.atkPoints || 0) + (v.defPoints || 0)),
                             currentAtkTeam: v.currentAtkTeam || [],
                             currentDefTeam: v.currentDefTeam || [],
                         };
                     });
                 entries.sort(function(a, b) { return b.points - a.points || b.winRate - a.winRate; });
                 renderLeaderboard(entries);
+
+                // ── Corregir puntos legacy en Firebase (atkPoints + defPoints != points) ──
+                var legacyFixes = {};
+                Object.entries(data).forEach(function(e) {
+                    var uid = e[0], v = e[1];
+                    if (!v || v.isFake) return;
+                    var correctPts = Math.max(0, (v.atkPoints || 0) + (v.defPoints || 0));
+                    if (v.points !== correctPts) {
+                        legacyFixes[uid + '/points'] = correctPts;
+                    }
+                });
+                if (Object.keys(legacyFixes).length > 0) {
+                    db.ref('ranked_stats').update(legacyFixes);
+                }
             });
         }
 
@@ -2010,7 +2030,7 @@
                         '<div style="background:rgba(255,170,0,0.1);border:1px solid rgba(255,170,0,0.3);border-radius:8px;padding:7px 12px;text-align:center;min-width:90px;">',
                             '<div style="font-size:.6rem;color:#ffaa00;letter-spacing:.05em;margin-bottom:3px;">⭐ PUNTOS</div>',
                             '<div style="font-family:Orbitron,sans-serif;font-size:1rem;color:#ffaa00;font-weight:900;">' + e.points.toLocaleString() + '</div>',
-                            '<div style="font-size:.6rem;color:#888;margin-top:2px;">' + e.atkPoints + ' atk · ' + e.defPoints + ' def</div>',
+                            '<div style="font-size:.6rem;color:#888;margin-top:2px;"><span style="color:' + (e.atkPoints >= 0 ? '#4fc3f7' : '#ff4466') + ';">' + (e.atkPoints >= 0 ? '' : '') + e.atkPoints + ' atk</span> · <span style="color:#c864ff;">' + e.defPoints + ' def</span></div>',
                         '</div>',
                         // V/D GLOBAL eliminado por solicitud del usuario
                     '</div>',
