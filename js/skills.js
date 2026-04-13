@@ -3982,9 +3982,16 @@
                 endTurn = function() {};
                 if (_rjContOrig) showContinueButton = function() {};
 
+                // Marcar que estamos en el loop de Jon Snow
+                gameState._jonSnowLoopActive = true;
+                gameState._jonSnowPendingWinner = null;
+
                 // Ejecutar secuencia async: cinemática → Over → siguiente
                 (async function() {
                     for (const _entry of _rjQueue) {
+                        // Detener si el juego terminó durante el loop
+                        if (gameState.gameOver) break;
+
                         const _aln   = _entry.name;
                         const _alc   = _entry.char;
                         const _overAb = _entry.over;
@@ -4034,6 +4041,9 @@
                         _alc.charges = Math.max(0, Math.min(20, _alc.charges || 0));
                     }
 
+                    // Limpiar flag del loop
+                    gameState._jonSnowLoopActive = false;
+
                     // Restaurar todo al terminar la secuencia
                     gameState.selectedCharacter = _rjOrigChar;
                     gameState.selectedAbility   = _rjOrigAbility;
@@ -4049,9 +4059,16 @@
                         }
                     }
 
-                    // Renderizar y terminar turno
+                    // Renderizar
                     if (typeof renderCharacters === 'function') renderCharacters();
-                    _rjEndOrig();
+
+                    // Si el juego terminó durante el loop, mostrar ahora el resultado
+                    if (gameState._jonSnowPendingWinner) {
+                        showGameOver(gameState._jonSnowPendingWinner);
+                        gameState._jonSnowPendingWinner = null;
+                    } else {
+                        _rjEndOrig();
+                    }
                 })();
 
                 // Retornar inmediatamente — la secuencia async maneja el endTurn
@@ -6600,16 +6617,12 @@
             const toRemove = [];
             for (let summonId in gameState.summons) {
                 const summon = gameState.summons[summonId];
-                if (!summon) continue; // Saltar si summon no existe
-                
+                if (!summon) continue;
                 const summoner = gameState.characters[summon.summoner];
-                
                 if (summoner && summoner.isDead) {
                     toRemove.push(summonId);
                 }
             }
-            
-            // Remover las invocaciones marcadas
             toRemove.forEach(summonId => {
                 const summon = gameState.summons[summonId];
                 if (summon) {
@@ -6617,8 +6630,6 @@
                     delete gameState.summons[summonId];
                 }
             });
-            
-            // NO renderSummons aquí - ya se hace en executeAbility
             
             for (let name in gameState.characters) {
                 const char = gameState.characters[name];
@@ -6629,9 +6640,20 @@
             }
             
             if (team1Alive === 0) {
+                // Si estamos en medio del loop async de Jon Snow, solo marcar y dejar que el loop lo detecte
+                if (gameState._jonSnowLoopActive) {
+                    gameState.gameOver = true;
+                    gameState._jonSnowPendingWinner = '🔶 REAPERS GANAN!';
+                    return true;
+                }
                 showGameOver('🔶 REAPERS GANAN!');
                 return true;
             } else if (team2Alive === 0) {
+                if (gameState._jonSnowLoopActive) {
+                    gameState.gameOver = true;
+                    gameState._jonSnowPendingWinner = '🔷 HUNTERS GANAN!';
+                    return true;
+                }
                 showGameOver('🔷 HUNTERS GANAN!');
                 return true;
             }
