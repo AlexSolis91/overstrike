@@ -4210,9 +4210,11 @@
                         if (!_c || _c.team !== _rkETeam || _c.isDead || _c.hp <= 0) continue;
                         // Pasiva Vegeta: elimina buffs (incluyendo EA temporal de Jon Snow) ANTES del daño
                         triggerVegetaPasiva(_n, gameState.selectedCharacter);
-                        // Solo respetar EA si es PASIVA PERMANENTE (esquivaAreaPassive), no buff temporal
-                        if (_c.esquivaAreaPassive) {
-                            addLog('💨 ' + _n + ' es inmune al AOE (Esquiva Área permanente)', 'buff');
+                        // Respetar EA permanente (pasiva) O buff Esquiva Area activo
+                        const _hasEAPassive = _c.esquivaAreaPassive;
+                        const _hasEABuff    = (_c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'esquiva area'; });
+                        if (_hasEAPassive || _hasEABuff) {
+                            addLog('💨 ' + _n + ' es inmune al AOE (Esquiva Área)', 'buff');
                             continue;
                         }
                         let _rkDmg = finalDamage;
