@@ -2252,4 +2252,11 @@
                 if (callback) callback();
             }, 3200);
         }
+        // Versión Promise de _showOverCinematic para usarla con async/await
+        function _showOverCinematicAsync(charName, abilityName, abilityEffect, team) {
+            return new Promise(function(resolve) {
+                _showOverCinematic(charName, abilityName, abilityEffect, team, resolve);
+            });
+        }
+
         // ==================== END OVER CINEMATIC ====================
