@@ -876,9 +876,31 @@
             var todayKey = _getTodayMidnightKey();
             db.ref('ranked_stats/' + uid + '/raidToday').once('value', function(snap) {
                 var raidData = snap.val() || {};
-                // Si ya tenemos datos de hoy, devolverlos tal cual
-                if (raidData.date === todayKey && raidData.targets && raidData.targets.length > 0) {
+                // Si ya tenemos datos de hoy con targets suficientes, devolverlos tal cual
+                if (raidData.date === todayKey && raidData.targets && raidData.targets.length >= 5) {
                     callback(raidData);
+                    return;
+                }
+                // Si tenemos datos de hoy pero menos de 5 targets: intentar completar
+                // (puede haber nuevos jugadores con equipo desde que se generó la lista)
+                if (raidData.date === todayKey && raidData.targets && raidData.targets.length > 0) {
+                    // Regenerar pero preservar los ataques ya realizados
+                    var attacksLeft      = raidData.attacksLeft !== undefined ? raidData.attacksLeft : 5;
+                    var attackedTargets  = raidData.attackedTargets || [];
+                    var attackedUids     = new Set(attackedTargets);
+                    _generateRaidTargets(uid, todayKey, function(newRaid) {
+                        // Restaurar estado de los targets ya atacados en la nueva lista
+                        var oldTargetMap = {};
+                        (raidData.targets || []).forEach(function(t) { oldTargetMap[t.uid] = t; });
+                        newRaid.targets = newRaid.targets.map(function(t) {
+                            if (oldTargetMap[t.uid]) return oldTargetMap[t.uid]; // preservar resultado
+                            return t;
+                        });
+                        newRaid.attacksLeft     = attacksLeft;
+                        newRaid.attackedTargets = attackedTargets;
+                        db.ref('ranked_stats/' + uid + '/raidToday').set(newRaid);
+                        callback(newRaid);
+                    });
                     return;
                 }
                 // Generar nuevos objetivos para hoy
@@ -887,35 +909,57 @@
         }
 
         function _generateRaidTargets(uid, todayKey, callback) {
-            db.ref('ranked_stats').once('value', function(snap) {
-                var allStats = snap.val() || {};
-                var myStats  = allStats[uid] || {};
-                var myPoints = myStats.points || 0;
-                var candidates = [];
-                Object.keys(allStats).forEach(function(oUid) {
-                    if (oUid === uid) return;
-                    var oStat = allStats[oUid];
-                    if (!oStat) return;
-                    // Aceptar aunque no tenga nombre — usamos fallback
-                    candidates.push({ uid: oUid, name: oStat.name || '', points: oStat.points || 0 });
+            // Buscar desde ranked_teams (todos los que tienen equipo) como fuente primaria
+            // así no se pierden jugadores que no tienen entrada en ranked_stats aún
+            db.ref('ranked_teams').once('value', function(teamsSnap) {
+                var allTeams = teamsSnap.val() || {};
+                // Filtrar: tienen equipo de defensa completo y no son el jugador actual
+                var eligibleUids = Object.keys(allTeams).filter(function(oUid) {
+                    if (oUid === uid) return false;
+                    var t = allTeams[oUid];
+                    return t && t.defense && t.defense.filter(Boolean).length >= 5;
                 });
-                // Verificar que tengan equipo de defensa y completar nombre si falta
-                db.ref('ranked_teams').once('value', function(teamsSnap) {
-                    var allTeams = teamsSnap.val() || {};
-                    candidates = candidates.filter(function(c) {
-                        var t = allTeams[c.uid];
-                        if (!t || !t.defense || t.defense.filter(Boolean).length < 5) return false;
-                        // Completar nombre desde ranked_teams si falta en ranked_stats
-                        if (!c.name && t.name) c.name = t.name;
-                        if (!c.name) c.name = 'Jugador';
-                        return true;
+
+                if (eligibleUids.length === 0) {
+                    // Sin rivales disponibles
+                    var emptyRaid = { date: todayKey, attacksLeft: 5, targets: [], attackedTargets: [] };
+                    db.ref('ranked_stats/' + uid + '/raidToday').set(emptyRaid);
+                    callback(emptyRaid);
+                    return;
+                }
+
+                // Cruzar con ranked_stats para obtener puntos y nombre
+                db.ref('ranked_stats').once('value', function(statsSnap) {
+                    var allStats = statsSnap.val() || {};
+                    var myPoints = (allStats[uid] && allStats[uid].points) || 0;
+
+                    var candidates = eligibleUids.map(function(oUid) {
+                        var t    = allTeams[oUid];
+                        var stat = allStats[oUid] || {};
+                        // Calcular puntos desde historial si están disponibles
+                        var pts = 0;
+                        if (stat.attackHistory || stat.defenseHistory) {
+                            var atkH = (stat.attackHistory  || []).reduce(function(s,x){ return s+(x.pts||0); }, 0);
+                            var defH = (stat.defenseHistory || []).reduce(function(s,x){ return s+(x.pts||0); }, 0);
+                            pts = Math.max(0, atkH + defH);
+                        } else {
+                            pts = stat.points || 0;
+                        }
+                        // Nombre: preferir ranked_stats, fallback a ranked_teams
+                        var name = stat.name || t.name || 'Jugador';
+                        return { uid: oUid, name: name, points: pts };
                     });
+
+                    // Ordenar por proximidad de rating
                     candidates.sort(function(a, b) {
                         return Math.abs(a.points - myPoints) - Math.abs(b.points - myPoints);
                     });
+
+                    // Tomar hasta 5
                     var targets = candidates.slice(0, 5).map(function(c) {
                         return { uid: c.uid, name: c.name, points: c.points, attacked: false, result: null, pts: null };
                     });
+
                     var raidData = {
                         date: todayKey,
                         attacksLeft: 5,
