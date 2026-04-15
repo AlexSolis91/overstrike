@@ -876,6 +876,11 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 if (attacker.rikudoMode && (gameState.selectedCharacter === 'Madara Uchiha' || gameState.selectedCharacter === 'Madara Uchiha v2')) {
                     finalDamage *= 2;
                 }
+                // ORDEN DE LOS CUIDATUMBA (Marik): +7 de daño a invocaciones
+                if (ability.effect === 'orden_cuidatumba_marik') {
+                    finalDamage += 7;
+                    addLog('💀 Orden de los Cuidatumba: +7 daño bonus a invocación', 'damage');
+                }
                 
                 // Consumir cargas
                 attacker.charges -= adjustedCost;
