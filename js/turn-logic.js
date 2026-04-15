@@ -515,6 +515,11 @@
                     _epc.statusEffects = (_epc.statusEffects || []);
                     _epc.statusEffects.push({ name: 'Aura oscura', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🌑' });
                 }
+                // Darkseid: MegaProvocación permanente
+                if (_epc.passive.name === 'Efecto Omega' && !hasStatusEffect(_epn, 'MegaProvocacion')) {
+                    _epc.statusEffects = (_epc.statusEffects || []);
+                    _epc.statusEffects.push({ name: 'MegaProvocacion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '👁️' });
+                }
                 // Giyu Tomioka: Armadura permanente
                 if (_epc.passive.name === 'Pilar del Agua' && !hasStatusEffect(_epn, 'Armadura')) {
                     _epc.statusEffects = (_epc.statusEffects || []);
@@ -1616,6 +1621,13 @@
                         if (!hasStatusEffect(_pn, 'Aura oscura')) {
                             _pc.statusEffects = (_pc.statusEffects || []);
                             _pc.statusEffects.push({ name: 'Aura oscura', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🌑' });
+                        }
+                    }
+                    // Darkseid: MegaProvocación permanente
+                    if (_pname === 'Efecto Omega') {
+                        if (!hasStatusEffect(_pn, 'MegaProvocacion')) {
+                            _pc.statusEffects = (_pc.statusEffects || []);
+                            _pc.statusEffects.push({ name: 'MegaProvocacion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '👁️' });
                         }
                     }
                     // Goku Black: Cuerpo Divino — el efecto de Aura Oscura se aplica
