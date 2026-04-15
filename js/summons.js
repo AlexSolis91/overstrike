@@ -92,6 +92,7 @@
             if (summon.name === 'Slime Token' && reason === 'derrotado' && !passiveExecuting) {
                 addLog('💀 Maquina de Tokens: ¡Slime Token revive!', 'buff');
                 summon.hp = summon.maxHp;
+                if (typeof renderSummons === 'function') renderSummons();
                 return; // no eliminar, simplemente revive
             }
 
@@ -679,6 +680,16 @@
             const target = gameState.characters[targetName];
             if (!target) return 0;
 
+            // ── MUNDO TRANSPARENTE (Yorichi): limpiar flag si el objetivo ya no tiene QS ──
+            if (target._passiveBlockedByYorichi) {
+                const _hasQSNow = (target.statusEffects||[]).some(function(e){
+                    return e && (e.name === 'Quemadura Solar' || normAccent(e.name||'') === 'quemadura solar');
+                });
+                if (!_hasQSNow) {
+                    target._passiveBlockedByYorichi = false;
+                }
+            }
+
             // ── THE ONE (Escanor): en forma The One absorbe daño dirigido a aliados ──
             if (!passiveExecuting && damage > 0 && attackerName && attackerName !== targetName) {
                 const _targetChar = target;
@@ -978,8 +989,17 @@
                 }
             }
 
+            // ── THE ONE (Escanor): -50% daño recibido mientras esté en forma The One ──
+            if (!passiveExecuting && damage > 0 && target.escanorTheOneActive) {
+                damage = Math.ceil(damage / 2);
+                addLog('🌟 The One: Escanor reduce 50% el daño recibido (' + damage + ' HP)', 'buff');
+            }
+
+            // ── MUNDO TRANSPARENTE: si la pasiva del objetivo está bloqueada por Yorichi, saltar pasivas reactivas ──
+            const _yorichiPassiveBlocked = !!(target && target._passiveBlockedByYorichi);
+
             // EFECTO OMEGA (Darkseid): AOE recibido reducido 50%
-            if (!passiveExecuting && damage > 0 && target.passive && target.passive.name === 'Efecto Omega') {
+            if (!passiveExecuting && !_yorichiPassiveBlocked && damage > 0 && target.passive && target.passive.name === 'Efecto Omega') {
                 const _atkAbOmega = gameState.selectedAbility;
                 if (_atkAbOmega && _atkAbOmega.target === 'aoe') {
                     damage = Math.ceil(damage / 2);
@@ -987,7 +1007,23 @@
                 }
             }
 
-            // PRESENCIA OSCURA (Darth Vader): 20% de esquivar ataques especiales/over
+            // SEÑOR DE LOS NAZGUL: -50% daño de ataques AOE de enemigos con Veneno activo
+            if (!passiveExecuting && !_yorichiPassiveBlocked && damage > 0 && attackerName &&
+                target.passive && target.passive.name === 'Señor de los Nazgul') {
+                const _atkAbNaz = gameState.selectedAbility;
+                if (_atkAbNaz && _atkAbNaz.target === 'aoe') {
+                    const _atkHasPoison = (gameState.characters[attackerName]
+                        ? (gameState.characters[attackerName].statusEffects||[])
+                            .some(e => e && normAccent(e.name||'').includes('veneno'))
+                        : false);
+                    if (_atkHasPoison) {
+                        damage = Math.ceil(damage / 2);
+                        addLog('💀 Señor de los Nazgul: -50% daño AOE de ' + attackerName + ' (tiene Veneno)', 'buff');
+                    }
+                }
+            }
+
+            // PRESENCIA OSCURA (Darth Vader): 20% de esquivar — respeta bloqueo Yorichi
             if (attackerName !== null && !passiveExecuting && (targetName === 'Darth Vader' || targetName === 'Darth Vader v2')) {
                 const atkAbility = gameState.selectedAbility;
                 if (atkAbility && (atkAbility.type === 'special' || atkAbility.type === 'over')) {
@@ -1112,9 +1148,10 @@
             const oldHp = target.hp;
             target.hp = Math.max(0, target.hp - remainingDamage);
 
-            // ── EFECTO OMEGA (Darkseid): roba 1 HP del atacante al recibir daño (siempre) ──
-            if (remainingDamage > 0 && attackerName &&
-                target.passive && target.passive.name === 'Efecto Omega') {
+            // ── EFECTO OMEGA (Darkseid): roba 1 HP del atacante SOLO SI SOBREVIVE al daño ──
+            if (remainingDamage > 0 && attackerName && !_yorichiPassiveBlocked &&
+                target.passive && target.passive.name === 'Efecto Omega' &&
+                target.hp > 0 && !target.isDead) {  // solo si sobrevivió
                 const _atkOmega = gameState.characters[attackerName];
                 if (_atkOmega && !_atkOmega.isDead && _atkOmega.hp > 0) {
                     _atkOmega.hp = Math.max(0, (_atkOmega.hp||0) - 1);
@@ -1124,8 +1161,47 @@
                 }
             }
 
-            // ── ESCANOR THE ONE: absorbe daño dirigido a aliados ──
-            // (Se maneja en applyDamageWithShield redirigiendo a Escanor)
+            // ── SEÑOR DE LOS NAZGUL (Rey Brujo): Infectar — veneno 2T al atacante al recibir daño ──
+            if (remainingDamage > 0 && attackerName && !passiveExecuting && !_yorichiPassiveBlocked &&
+                target.passive && target.passive.name === 'Señor de los Nazgul' &&
+                target.hp > 0 && !target.isDead) {
+                passiveExecuting = true;
+                if (typeof applyPoison === 'function') applyPoison(attackerName, 2);
+                addLog('🦠 Infectar: ' + attackerName + ' recibe Veneno 2T al atacar al Rey Brujo', 'debuff');
+                passiveExecuting = false;
+            }
+
+            // ── MUNDO TRANSPARENTE (Yorichi): aliados que golpean enemigo con QS ──
+            if (remainingDamage > 0 && attackerName && !passiveExecuting && !target.isDead) {
+                const _wtAtk = gameState.characters[attackerName];
+                if (_wtAtk && !_wtAtk.isDead) {
+                    const _wtHasQS = (target.statusEffects||[]).some(function(e){
+                        return e && normAccent(e.name||'') === 'quemadura solar';
+                    });
+                    if (_wtHasQS) {
+                        const _wtTeam = _wtAtk.team;
+                        const _wtYorichi = Object.values(gameState.characters).some(function(ch){
+                            return ch && !ch.isDead && ch.hp > 0 && ch.team === _wtTeam &&
+                                   ch.passive && ch.passive.name === 'Mundo Transparente';
+                        });
+                        if (_wtYorichi) {
+                            const _wtRoll = Math.random();
+                            if (_wtRoll < 0.25) {
+                                addLog('🌅 Mundo Transparente: crit bonus ' + attackerName + ' (QS)', 'buff');
+                            } else if (_wtRoll < 0.50) {
+                                _wtAtk.charges = Math.min(20, (_wtAtk.charges||0) + 2);
+                                addLog('🌅 Mundo Transparente: +2 cargas a ' + attackerName, 'buff');
+                            } else if (_wtRoll < 0.75) {
+                                target.charges = Math.max(0, (target.charges||0) - 2);
+                                addLog('🌅 Mundo Transparente: -2 cargas a ' + targetName, 'debuff');
+                            } else {
+                                _wtAtk.hp = Math.min(_wtAtk.maxHp, (_wtAtk.hp||0) + 2);
+                                addLog('🌅 Mundo Transparente: +2 HP a ' + attackerName, 'heal');
+                            }
+                        }
+                    }
+                }
+            }
 
             // ── ANIMACIÓN: shake + flash rojo + número flotante al recibir daño ──
             if (remainingDamage > 0 && typeof _animCard === 'function') {
