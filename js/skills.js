@@ -659,6 +659,8 @@
                 if (ability.target === 'aoe' || targetName === null) {
                     // AOE: dañar a todos los enemigos (p.ej. Gate of Babylon de Gilgamesh)
                     const critAoeTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                    // EL REY PROMETIDO: Jon Snow activa su pasiva cuando el enemigo usa AOE
+                    if (typeof triggerElReyPrometido === 'function') triggerElReyPrometido(gameState.selectedCharacter);
                     checkAndRemoveStealth(critAoeTeam);
                     let critAoeLog = [];
                     for (let n in gameState.characters) {
@@ -5042,7 +5044,7 @@
                 const _cantETeam = _cantAtk ? (_cantAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
                 const _cantId = 'huevo_sol_' + Date.now();
                 gameState.summons[_cantId] = Object.assign({}, summonData['Huevo del Sol'] || {
-                    name: 'Huevo del Sol', hp: 40, maxHp: 40, statusEffects: [],
+                    name: 'Huevo del Sol', hp: 20, maxHp: 20, statusEffects: [],
                     img: 'https://i.ibb.co/9mv8MDbJ/Whats-App-Image-2026-04-14-at-2-56-01-PM.jpg'
                 });
                 gameState.summons[_cantId].team = _cantETeam;
@@ -5323,7 +5325,6 @@
                 // JOKER — Naipes Impregnados: 1 dmg + Veneno 2T
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 applyPoison(targetName, 2);
-                applyAOEToSummons(_gjTeam, finalDamage, gameState.selectedCharacter);
                 addLog('🃏 Naipes Impregnados: ' + finalDamage + ' daño + Veneno 2T a ' + targetName, 'damage');
 
             } else if (ability.effect === 'granada_joker') {
