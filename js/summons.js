@@ -1112,8 +1112,8 @@
             const oldHp = target.hp;
             target.hp = Math.max(0, target.hp - remainingDamage);
 
-            // ── EFECTO OMEGA (Darkseid): roba 1 HP del atacante al recibir daño ──
-            if (remainingDamage > 0 && attackerName && !passiveExecuting &&
+            // ── EFECTO OMEGA (Darkseid): roba 1 HP del atacante al recibir daño (siempre) ──
+            if (remainingDamage > 0 && attackerName &&
                 target.passive && target.passive.name === 'Efecto Omega') {
                 const _atkOmega = gameState.characters[attackerName];
                 if (_atkOmega && !_atkOmega.isDead && _atkOmega.hp > 0) {
