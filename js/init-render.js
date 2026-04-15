@@ -286,7 +286,8 @@
                                       ((name === 'Muzan Kibutsuji' || name === 'Muzan Kibutsuji v2') && char.muzanTransformed) ||
                                       (name === 'Garou' && char.garouSaitamaMode) ||
                                       ((name === 'Superman' || name === 'Superman v2') && char.supermanPrimeMode) ||
-                                      ((name === 'Varian Wrynn' || name === 'Varian Wrynn v2') && char.varianTransformed);
+                                      ((name === 'Varian Wrynn' || name === 'Varian Wrynn v2') && char.varianTransformed) ||
+                                      ((name === 'Escanor' || name === 'Escanor v2') && char.escanorTheOneActive);
 
                 // Portrait dinámico por forma (Goku y Naruto)
                 let _dynPortrait = char.portrait || char.transformPortrait || char.transformationPortrait || '';
@@ -299,6 +300,10 @@
                     if (char.narutoForm === 'sabio' && char.portraitSabio) _dynPortrait = char.portraitSabio;
                     else if (char.narutoForm === 'kyubi' && char.portraitKyubi) _dynPortrait = char.portraitKyubi;
                     else if (char.narutoForm === 'baryon' && char.portraitBaryon) _dynPortrait = char.portraitBaryon;
+                }
+                // Portrait Escanor The One
+                if ((name === 'Escanor' || name === 'Escanor v2') && char.escanorTheOneActive && char.transformPortrait) {
+                    _dynPortrait = char.transformPortrait;
                 }
                 // Portrait Antares transformado
                 if ((name === 'Antares' || name === 'Antares v2') && char.antaresTransformed && char.transformPortrait) {
