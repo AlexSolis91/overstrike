@@ -921,6 +921,11 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 
                 // Ganar cargas
                 let finalChargeGain = ability.chargeGain || 0;
+                // ESPÍRITU DEL HÉROE (Saitama): bonus acumulado en básicos también al atacar invocaciones
+                if (ability.type === 'basic' && attacker.passive && attacker.passive.name === 'Espíritu del Héroe') {
+                    finalChargeGain = (ability.chargeGain || 1) + (attacker.saitamaBasicChargeBonus || 0);
+                    attacker.saitamaBasicChargeBonus = (attacker.saitamaBasicChargeBonus || 0) + 2;
+                }
                 if (attacker.rikudoMode && (gameState.selectedCharacter === 'Madara Uchiha' || gameState.selectedCharacter === 'Madara Uchiha v2')) {
                     finalChargeGain *= 2;
                 }
