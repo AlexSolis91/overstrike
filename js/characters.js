@@ -398,7 +398,7 @@
             'Doomsday': {
                 hp: 30, maxHp: 30, speed: 84, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/hjJDWnn6/Captura_de_pantalla_2026_03_06_003242.png',
+                portrait: 'https://i.ibb.co/m55KhhZd/descarga-2.jpg',
                 passive: { name: 'Adaptación Reactiva', description: 'Cada vez que recibe un golpe, recupera 2 HP. Cada vez que Doomsday recupera HP, elimina 1 carga de un enemigo aleatorio.' },
                 abilities: [
                     { name: 'Rugido del Devastador', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'rugido_devastador', description: 'Se aplica Buff Provocación. Se aplica Buff Cuerpo Perfecto.' },
@@ -747,6 +747,61 @@
                     { name: 'Tormenta Invernal', type: 'special', cost: 3, chargeGain: 0, damage: 2, target: 'aoe', effect: 'tormenta_invernal_rdn', description: 'Causa 2 AOE. Aplica Congelacion. 50% de aplicar Posesion.' },
                     { name: 'Toque de la Muerte', type: 'special', cost: 10, chargeGain: 0, damage: 8, target: 'single', effect: 'toque_muerte_rdn', description: 'Causa 8 daño. Aplica Megacongelacion. Si el enemigo muere, revive como aliado con 50% HP y 0 cargas.' },
                     { name: 'Frío Eterno', type: 'over', cost: 16, chargeGain: 0, damage: 5, target: 'aoe', effect: 'frio_eterno_rdn', description: 'Causa 5 AOE. Critico sobre objetivos con Congelacion. Triple daño sobre objetivos con Megacongelacion. Si el enemigo muere, revive como aliado con 50% HP y 0 cargas.' }
+                ]
+            },
+
+            'Darkseid': {
+                hp: 30, maxHp: 30, speed: 92, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/spKV3tyN/Captura-de-pantalla-2026-04-14-165843.png',
+                passive: { name: 'Efecto Omega', description: 'Mega Provocación permanente. Daño AOE recibido reducido 50%. Cada vez que Darkseid recibe daño por ataque enemigo, roba 1 HP del atacante.' },
+                abilities: [
+                    { name: 'Toque de la Antivida', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'toque_antivida_darkseid', description: 'Roba 0-4 HP del objetivo. Genera 0-4 cargas adicionales.' },
+                    { name: 'Rayo de la Desintegración', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'single', effect: 'rayo_desintegracion_darkseid', description: 'Causa 3 daño. 50% golpe crítico. Si es crítico genera 2 cargas por cada enemigo (personaje e invocación).' },
+                    { name: 'Sanción Omega', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'self', effect: 'sancion_omega_darkseid', description: 'Elimina hasta 3 invocaciones enemigas. Causa 3 daño directo por cada invocación eliminada sobre 1 enemigo aleatorio.' },
+                    { name: 'Ecuación de la Antivida', type: 'over', cost: 14, chargeGain: 0, damage: 0, target: 'single', effect: 'ecuacion_antivida_darkseid', description: 'Reduce 50%-90% el HP del objetivo. Darkseid recupera el mismo HP que el objetivo perdió.' }
+                ]
+            },
+
+            'Escanor': {
+                hp: 30, maxHp: 30, speed: 82, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                escanorTheOneActive: false,
+                escanorTheOneRoundsLeft: 0,
+                portrait: 'https://i.ibb.co/rTzCsFQ/Captura-de-pantalla-2026-04-14-173602.png',
+                transformPortrait: 'https://i.ibb.co/h1Y44qfp/Captura-de-pantalla-2026-04-14-173813.png',
+                passive: { name: 'Orgullo del León', description: 'Enemigos con Quemadura Solar solo pueden atacar ST a Escanor. Fin de ronda: +1 HP máximo por enemigo con QS activa. Inicio de turno: +1 HP por enemigo con QS activa. 50% de ganar 1 carga al aplicar QS a un enemigo.' },
+                abilities: [
+                    { name: 'Cruel Sun', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'cruel_sun_escanor', description: 'Causa 2 daño. Aplica Quemadura Solar 2T. Si el objetivo ya tenía QS, aplica QS 2T a otros 2 enemigos aleatorios.' },
+                    { name: 'Pride Flare', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'single', effect: 'pride_flare_escanor', description: 'Causa 3 daño. +1 daño directo a 3 enemigos aleatorios por cada QS activa. +3 cargas por cada QS activa.' },
+                    { name: 'The One', type: 'special', cost: 10, chargeGain: 15, damage: 0, target: 'self', effect: 'the_one_escanor', description: 'Transformación 2 rondas. Recupera 50% HP máximo. Mientras dure: -50% daño recibido y absorbe daño dirigido a aliados.' },
+                    { name: 'Final Prominence', type: 'over', cost: 15, chargeGain: 0, damage: 5, target: 'single', effect: 'final_prominence_escanor', description: 'Escanor recupera 5 HP. Causa 5 + HP actual de Escanor de daño. 50% del daño total sobre 2 enemigos aleatorios.' }
+                ]
+            },
+
+            'Yorichi': {
+                hp: 25, maxHp: 25, speed: 90, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/szT2tjJ/Captura-de-pantalla-2026-04-14-174630.png',
+                passive: { name: 'Mundo Transparente', description: 'Al golpear enemigo con QS: bloquea su pasiva mientras QS esté activa. Aliados que golpeen enemigos con QS tienen 25% de crítico, 25% de ganar 2 cargas, 25% de quitar 2 cargas, 25% de curar 2 HP.' },
+                abilities: [
+                    { name: 'Corte Solar', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'corte_solar_yorichi', description: 'Causa 2 daño. 50% de aplicar QS. Si el objetivo ya tenía QS, genera 1 carga al equipo aliado.' },
+                    { name: 'Respiración Solar Pura', type: 'special', cost: 3, chargeGain: 0, damage: 2, target: 'aoe', effect: 'respiracion_solar_yorichi', description: 'Causa 2 AOE. Disipa todos los buffs de los objetivos. Aplica Quemadura 2 HP.' },
+                    { name: 'Diosa del Sol', type: 'special', cost: 12, chargeGain: 0, damage: 0, target: 'self', effect: 'diosa_sol_yorichi', description: 'Realiza 6 ataques básicos sobre enemigos aleatorios.' },
+                    { name: 'Las Trece Formas del Sol', type: 'over', cost: 13, chargeGain: 0, damage: 13, target: 'single', effect: 'trece_formas_sol_yorichi', description: 'Causa 13 daño. Si el objetivo tenía QS activa: Yorichi gana 12 cargas y un turno adicional.' }
+                ]
+            },
+
+            'Marik Ishtar': {
+                hp: 20, maxHp: 20, speed: 80, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/Lbm8MJ1/Captura-de-pantalla-2026-04-14-174220.png',
+                passive: { name: 'Reino de las Sombras', description: 'Inicio de ronda: 50% de aplicar Aura Oscura a cada aliado. Inicio de turno: invoca un Slime Token. Cada vez que una invocación es eliminada, genera 3 cargas.' },
+                abilities: [
+                    { name: 'Orden de los Cuidatumba', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'orden_cuidatumba_marik', description: 'Causa 1 daño (+7 adicional a invocaciones).' },
+                    { name: 'Canto del Sol', type: 'special', cost: 0, chargeGain: 0, damage: 0, target: 'self', effect: 'canto_sol_marik', description: 'Invoca el Huevo del Sol en el equipo enemigo.' },
+                    { name: 'Dios de Dioses', type: 'special', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'dios_dioses_marik', description: 'Requiere 3 Slime Tokens o 3 invocaciones aliadas. Elimina 3 invocaciones aliadas e invoca al Dragón Alado de Ra.' },
+                    { name: 'Inmortal Fénix', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'self', effect: 'inmortal_fenix_marik', description: 'Requiere Dragón Alado de Ra activo. Elimina al Dragón Alado de Ra e invoca al Dragón Alado de Ra Modo Fénix.' }
                 ]
             },
         };
