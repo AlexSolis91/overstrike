@@ -87,6 +87,33 @@
                 delete gameState.summons[summonId];
                 return;
             }
+
+            // ── SLIME TOKEN (Marik): 100% de revivir al morir ──
+            if (summon.name === 'Slime Token' && reason === 'derrotado' && !passiveExecuting) {
+                addLog('💀 Maquina de Tokens: ¡Slime Token revive!', 'buff');
+                summon.hp = summon.maxHp;
+                return; // no eliminar, simplemente revive
+            }
+
+            // ── HUEVO DEL SOL (Marik): al morir invoca Dragon Alado de Ra en el mismo equipo ──
+            if (summon.name === 'Huevo del Sol' && reason === 'derrotado' && !passiveExecuting) {
+                delete gameState.summons[summonId];
+                const _draId = 'dragon_ra_' + Date.now();
+                gameState.summons[_draId] = Object.assign({}, summonData['Dragon Alado de Ra'] || {
+                    name: 'Dragon Alado de Ra', hp: 20, maxHp: 20, statusEffects: [],
+                    img: 'https://i.ibb.co/wrxj370t/Captura-de-pantalla-2026-04-14-174235.png'
+                });
+                gameState.summons[_draId].team = summon.summoner
+                    ? (gameState.characters[summon.summoner] ? gameState.characters[summon.summoner].team : summon.team)
+                    : summon.team;
+                gameState.summons[_draId].summoner = summon.summoner;
+                gameState.summons[_draId].id = _draId;
+                addLog('🌞 Nacimiento Solar: ¡Huevo del Sol eclosiona en Dragon Alado de Ra!', 'buff');
+                if (typeof renderSummons === 'function') renderSummons();
+                // Notificar a Marik de la invocación (genera 3 cargas)
+                _triggerMarikSummonKill(summon.summoner);
+                return;
+            }
             
             // Activar pasiva de Sun Jin Woo si es su sombra - SOLO si no estamos en otra pasiva
             if ((summon.summoner === 'Sun Jin Woo' || summon.summoner === 'Sun Jin Woo v2') && reason !== 'summoner_dead' && !passiveExecuting) {
@@ -136,6 +163,10 @@
             }
 
             delete gameState.summons[summonId];
+            // ── REINO DE LAS SOMBRAS (Marik): genera 3 cargas por invocación eliminada ──
+            if (reason !== 'summoner_dead' && typeof _triggerMarikSummonKill === 'function') {
+                _triggerMarikSummonKill(summon.summoner);
+            }
             // NO llamar renderSummons aquí - se llama al final del turno
         }
 
@@ -626,6 +657,18 @@
         }
         // ==================== END ANIMACIONES ====================
 
+        // ── MARIK ISHTAR: genera 3 cargas cuando una invocación es eliminada ──
+        function _triggerMarikSummonKill(summonerName) {
+            for (const _mn in gameState.characters) {
+                const _mc = gameState.characters[_mn];
+                if (!_mc || _mc.isDead || _mc.hp <= 0) continue;
+                if (!_mc.passive || _mc.passive.name !== 'Reino de las Sombras') continue;
+                _mc.charges = Math.min(20, (_mc.charges||0) + 3);
+                addLog('💀 Reino de las Sombras: ' + _mn + ' gana 3 cargas (invocación eliminada)', 'buff');
+                break;
+            }
+        }
+
         function applyDamageWithShield(targetName, damage, attackerName = null) {
             // Si el targetName es un summon especial (__summon__:id), redirigir a applySummonDamage
             if (typeof targetName === 'string' && targetName.startsWith('__summon__:')) {
@@ -635,6 +678,27 @@
 
             const target = gameState.characters[targetName];
             if (!target) return 0;
+
+            // ── THE ONE (Escanor): en forma The One absorbe daño dirigido a aliados ──
+            if (!passiveExecuting && damage > 0 && attackerName && attackerName !== targetName) {
+                const _targetChar = target;
+                if (_targetChar && !_targetChar.isDead && _targetChar.hp > 0) {
+                    // Buscar Escanor activo en The One en el mismo equipo que el objetivo
+                    for (const _esN in gameState.characters) {
+                        const _esC = gameState.characters[_esN];
+                        if (!_esC || _esC.isDead || _esC.hp <= 0 || _esN === targetName) continue;
+                        if (_esC.team !== _targetChar.team) continue;
+                        if (!_esC.escanorTheOneActive) continue;
+                        // Redirigir el daño a Escanor con -50%
+                        const _esAbsorbed = Math.ceil(damage / 2);
+                        addLog('🌟 The One: Escanor absorbe el daño de ' + targetName + ' (' + _esAbsorbed + ' HP)', 'buff');
+                        passiveExecuting = true;
+                        applyDamageWithShield(_esN, _esAbsorbed, attackerName);
+                        passiveExecuting = false;
+                        return 0; // objetivo original no recibe daño
+                    }
+                }
+            }
 
             // ── PASIVA IZANAMI (Itachi Uchiha): esquiva primer golpe de 3+ daño por ronda ──
             if (!passiveExecuting && damage >= 3 && attackerName && attackerName !== targetName) {
@@ -914,6 +978,15 @@
                 }
             }
 
+            // EFECTO OMEGA (Darkseid): AOE recibido reducido 50%
+            if (!passiveExecuting && damage > 0 && target.passive && target.passive.name === 'Efecto Omega') {
+                const _atkAbOmega = gameState.selectedAbility;
+                if (_atkAbOmega && _atkAbOmega.target === 'aoe') {
+                    damage = Math.ceil(damage / 2);
+                    addLog('⚡ Efecto Omega: Darkseid reduce 50% el daño AOE (' + damage + ' HP)', 'buff');
+                }
+            }
+
             // PRESENCIA OSCURA (Darth Vader): 20% de esquivar ataques especiales/over
             if (attackerName !== null && !passiveExecuting && (targetName === 'Darth Vader' || targetName === 'Darth Vader v2')) {
                 const atkAbility = gameState.selectedAbility;
@@ -1038,6 +1111,21 @@
             if (isNaN(remainingDamage)) remainingDamage = 0;
             const oldHp = target.hp;
             target.hp = Math.max(0, target.hp - remainingDamage);
+
+            // ── EFECTO OMEGA (Darkseid): roba 1 HP del atacante al recibir daño ──
+            if (remainingDamage > 0 && attackerName && !passiveExecuting &&
+                target.passive && target.passive.name === 'Efecto Omega') {
+                const _atkOmega = gameState.characters[attackerName];
+                if (_atkOmega && !_atkOmega.isDead && _atkOmega.hp > 0) {
+                    _atkOmega.hp = Math.max(0, (_atkOmega.hp||0) - 1);
+                    if (_atkOmega.hp <= 0) _atkOmega.isDead = true;
+                    target.hp = Math.min(target.maxHp, (target.hp||0) + 1);
+                    addLog('⚡ Efecto Omega: Darkseid roba 1 HP de ' + attackerName, 'heal');
+                }
+            }
+
+            // ── ESCANOR THE ONE: absorbe daño dirigido a aliados ──
+            // (Se maneja en applyDamageWithShield redirigiendo a Escanor)
 
             // ── ANIMACIÓN: shake + flash rojo + número flotante al recibir daño ──
             if (remainingDamage > 0 && typeof _animCard === 'function') {
