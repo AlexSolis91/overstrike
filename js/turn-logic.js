@@ -94,7 +94,7 @@
                                 const s = gameState.summons[sid];
                                 return s && s.name === 'Slime Token' && s.team === currentChar.team && s.hp > 0;
                             }).length;
-                            if (_mkSlimeCount < 5) { // máximo 5 slimes
+                            if (_mkSlimeCount < 3) { // máximo 3 slimes
                                 const _mkSlimeId = 'slime_' + Date.now() + '_' + Math.random();
                                 gameState.summons[_mkSlimeId] = Object.assign({}, summonData && summonData['Slime Token'] ? summonData['Slime Token'] : {
                                     name: 'Slime Token', hp: 5, maxHp: 5, statusEffects: [],
@@ -510,6 +510,12 @@
             for (const _epn in gameState.characters) {
                 const _epc = gameState.characters[_epn];
                 if (!_epc || _epc.isDead || !_epc.passive) continue;
+                // Mundo Transparente: si pasiva bloqueada por Yorichi, limpiar buffs permanentes
+                if (_epc._passiveBlockedByYorichi) {
+                    const _hasQS = (_epc.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'quemadura solar');
+                    if (!_hasQS) _epc._passiveBlockedByYorichi = false;
+                    else continue; // pasiva bloqueada, no aplicar buffs permanentes
+                }
                 // Darth Vader: Aura Oscura permanente
                 if (_epc.passive.name === 'Presencia Oscura' && !hasStatusEffect(_epn, 'Aura oscura')) {
                     _epc.statusEffects = (_epc.statusEffects || []);
@@ -1190,6 +1196,45 @@
                         blockedByTransform = true;
                     }
                 }
+                // THE ONE (Escanor): bloqueado mientras escanorTheOneActive = true
+                if (ability.effect === 'the_one_escanor') {
+                    const _esChar = gameState.characters[gameState.selectedCharacter];
+                    if (_esChar && _esChar.escanorTheOneActive) blockedByTransform = true;
+                }
+                // DIOS DE DIOSES (Marik): bloqueado si Dragon Alado de Ra ya está en campo aliado
+                let blockedByDragon = false;
+                if (ability.effect === 'dios_dioses_marik') {
+                    const _mkChar = gameState.characters[gameState.selectedCharacter];
+                    const _mkTeam = _mkChar ? _mkChar.team : null;
+                    if (_mkTeam && Object.values(gameState.summons).some(function(s){
+                        return s && s.team === _mkTeam && s.hp > 0 && s.name === 'Dragon Alado de Ra';
+                    })) blockedByDragon = true;
+                }
+                // INMORTAL FÉNIX (Marik): bloqueado si NO hay Dragon Alado de Ra en campo aliado
+                let blockedByNoRa = false;
+                if (ability.effect === 'inmortal_fenix_marik') {
+                    const _mkChar2 = gameState.characters[gameState.selectedCharacter];
+                    const _mkTeam2 = _mkChar2 ? _mkChar2.team : null;
+                    if (!_mkTeam2 || !Object.values(gameState.summons).some(function(s){
+                        return s && s.team === _mkTeam2 && s.hp > 0 && s.name === 'Dragon Alado de Ra';
+                    })) blockedByNoRa = true;
+                }
+                // LÍMITE 5 INVOCACIONES POR EQUIPO: bloquear si ya hay 5 y la habilidad invoca
+                const _SUMMON_EFFECTS = ['canto_sol_marik','dios_dioses_marik','inmortal_fenix_marik',
+                    'arise_summon','summon_shadows','summon_kamish','enkidu','summon_sphinx',
+                    'summon_ramesseum','summon_ghost','summon_señuelo','summon_douma_hielo',
+                    'summon_gigante_hielo','el_rey_caido','summon_kamish'];
+                let blockedBySummonCap = false;
+                if (_SUMMON_EFFECTS.includes(ability.effect)) {
+                    const _char5 = gameState.characters[gameState.selectedCharacter];
+                    const _team5 = _char5 ? _char5.team : null;
+                    if (_team5) {
+                        const _count5 = Object.values(gameState.summons).filter(function(s){
+                            return s && s.team === _team5 && s.hp > 0;
+                        }).length;
+                        if (_count5 >= 5) blockedBySummonCap = true;
+                    }
+                }
                 // Bloquear habilidades con cooldown activo (ej: Singularidad Escarlata)
                 let blockedByCooldown = false;
                 let cooldownLabel = '';
@@ -1200,7 +1245,7 @@
                         cooldownLabel = '⏳ Cooldown: ' + _cdChar._singularidadCooldown + 'T';
                     }
                 }
-                const disabled = !canUse || !canRevive || !canSacrifice || !canSummon || !canSummonKamish || blockedByFreeze || blockedBySigilo || blockedByTransform || blockedByCooldown;
+                const disabled = !canUse || !canRevive || !canSacrifice || !canSummon || !canSummonKamish || blockedByFreeze || blockedBySigilo || blockedByTransform || blockedByCooldown || blockedByDragon || blockedByNoRa || blockedBySummonCap;
                 
                 // Bloquear invocación única si ya está activa en campo
                 const SINGLE_SUMMON_BLOCK = {
@@ -1569,6 +1614,7 @@
                         if (c && !c.isDead && c.hp > 0) c.hpAtRoundStart = c.hp;
                     }
                     // ── RECALCULAR ORDEN DE TURNOS por velocidad actual (incluye revividos) ──
+                    const _lastActed = gameState.turnOrder[gameState.currentTurnIndex]; // quién actuó último
                     const _aliveNamesNew = Object.keys(gameState.characters).filter(function(n) {
                         const c = gameState.characters[n]; return c && !c.isDead && c.hp > 0;
                     });
@@ -1576,9 +1622,15 @@
                         return (gameState.characters[b].speed || 0) - (gameState.characters[a].speed || 0);
                     });
                     gameState.turnOrder = _aliveNamesNew;
-                    gameState.currentTurnIndex = -1; // el +1 posterior lo llevará a 0 (primer personaje)
                     gameState.aliveCountAtRoundStart = _aliveNamesNew.length;
                     gameState.turnsInRound = 0;
+                    // Iniciar desde -1; el +1 posterior lo lleva a 0 (primer personaje)
+                    gameState.currentTurnIndex = -1;
+                    // Si el más rápido es el mismo que acaba de actuar, empezar desde el índice 1
+                    // para que no repita turno de inmediato
+                    if (_aliveNamesNew[0] === _lastActed && _aliveNamesNew.length > 1) {
+                        gameState.currentTurnIndex = 0; // el +1 posterior lo llevará a índice 1
+                    }
                 }
                 
                 gameState.currentTurnIndex = (gameState.currentTurnIndex + 1) % gameState.turnOrder.length;
@@ -1837,6 +1889,39 @@
                     break;
                 }
 
+                // ── DRAGON ALADO DE RA: fin de ronda → -2 cargas al equipo ENEMIGO ──
+                for (const _draRondaId in gameState.summons) {
+                    const _draRonda = gameState.summons[_draRondaId];
+                    if (!_draRonda || _draRonda.name !== 'Dragon Alado de Ra' || _draRonda.hp <= 0) continue;
+                    const _draETeam = _draRonda.team === 'team1' ? 'team2' : 'team1';
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _draETeam || _c.isDead || _c.hp <= 0) continue;
+                        _c.charges = Math.max(0, (_c.charges||0) - 2);
+                    }
+                    addLog('🐉 Fuego de Egipto: -2 cargas al equipo enemigo (inicio de ronda)', 'debuff');
+                    break;
+                }
+
+                // ── HUEVO DEL SOL: fin de ronda → aplica QS a 2 aliados aleatorios del equipo donde está ──
+                for (const _hueId in gameState.summons) {
+                    const _hue = gameState.summons[_hueId];
+                    if (!_hue || _hue.name !== 'Huevo del Sol' || _hue.hp <= 0) continue;
+                    // El huevo está en el equipo enemigo (de su invocador), aplica QS a ese equipo
+                    const _hueTeam = _hue.team;
+                    const _hueTargets = Object.keys(gameState.characters).filter(function(n){
+                        const c = gameState.characters[n];
+                        return c && c.team === _hueTeam && !c.isDead && c.hp > 0;
+                    });
+                    // Seleccionar 2 aleatorios
+                    const _hueShuffled = _hueTargets.sort(function(){ return Math.random()-0.5; }).slice(0, 2);
+                    _hueShuffled.forEach(function(n){
+                        if (typeof applySolarBurn === 'function') applySolarBurn(n, 2, 2);
+                        addLog('🌞 Nacimiento Solar: ' + n + ' recibe QS 2T (fin de ronda)', 'debuff');
+                    });
+                    break;
+                }
+
                 // ── DRAGON ALADO DE RA MODO FÉNIX: fin de ronda → 3 daño directo a enemigos con QS + -5 cargas ──
                 for (const _dFenixId in gameState.summons) {
                     const _dFenix = gameState.summons[_dFenixId];
@@ -1950,7 +2035,8 @@
                     }
                 })();
 
-                // PASIVA SEÑOR DE LOS NAZGUL (Rey Brujo): Megaprovoción permanente + Infectar permanente
+                // PASIVA SEÑOR DE LOS NAZGUL (Rey Brujo): MegaProvocación permanente
+                // Infectar = veneno al atacante al recibir daño (implementado en summons.js applyDamageWithShield)
                 (function() {
                     for (const _rbn in gameState.characters) {
                         const _rb = gameState.characters[_rbn];
@@ -1959,16 +2045,8 @@
                         // MegaProvocación permanente
                         if (!(_rb.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'megaprovocacion')) {
                             _rb.statusEffects = (_rb.statusEffects||[]);
-                            _rb.statusEffects.push({ name: 'Megaprovocacion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '⚡' });
+                            _rb.statusEffects.push({ name: 'MegaProvocacion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '⚡' });
                         }
-                        // Infectar permanente: al inicio de ronda aplica Veneno 1T a todos los enemigos
-                        const _rbEnemyTeam = _rb.team === 'team1' ? 'team2' : 'team1';
-                        for (const _en in gameState.characters) {
-                            const _ec = gameState.characters[_en];
-                            if (!_ec || _ec.isDead || _ec.hp <= 0 || _ec.team !== _rbEnemyTeam) continue;
-                            applyPoison(_en, 1);
-                        }
-                        addLog('💀 Infectar (Rey Brujo): Veneno 1T aplicado a todos los enemigos', 'debuff');
                     }
                 })();
 
