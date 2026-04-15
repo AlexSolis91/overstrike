@@ -276,4 +276,28 @@
                 img: 'https://i.ibb.co/wF1XvPYT/Whats-App-Image-2026-04-07-at-2-48-51-PM.jpg',
                 passive: 'Flores de Hielo: Mega Provocacion. Al inicio de ronda: 50% de Congelacion a enemigos y 50% de Megacongelacion. Al final de ronda: 5 daño a enemigos con Congelacion, 10 daño a enemigos con Megacongelacion.'
             },
+            'Slime Token': {
+                name: 'Slime Token',
+                hp: 5, maxHp: 5, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.ibb.co/RGqr9m6z/Captura-de-pantalla-2026-04-14-174400.png',
+                passive: 'Maquina de Tokens: Al morir tiene 100% de probabilidad de revivir.'
+            },
+            'Huevo del Sol': {
+                name: 'Huevo del Sol',
+                hp: 40, maxHp: 40, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.ibb.co/9mv8MDbJ/Whats-App-Image-2026-04-14-at-2-56-01-PM.jpg',
+                passive: 'Nacimiento Solar: Se invoca en el equipo enemigo. Cada vez que se aplica Quemadura Solar, el Huevo del Sol recibe 1 daño. Al morir invoca al Dragon Alado de Ra.'
+            },
+            'Dragon Alado de Ra': {
+                name: 'Dragon Alado de Ra',
+                hp: 20, maxHp: 20, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.ibb.co/wrxj370t/Captura-de-pantalla-2026-04-14-174235.png',
+                passive: 'Fuego de Egipto: Elimina 2 cargas del equipo aliado. Cada vez que se aplica QS a un enemigo, inflige 2 daño directo a todos los enemigos.'
+            },
+            'Dragon Alado de Ra Modo Fenix': {
+                name: 'Dragon Alado de Ra Modo Fenix',
+                hp: 40, maxHp: 40, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.ibb.co/xSxps7gW/Captura-de-pantalla-2026-04-14-174255.png',
+                passive: 'Luz Divina del Sol: Inicio de ronda: reduce 10% HP total del equipo enemigo. Fin de ronda: 3 daño directo a enemigos con QS activa + elimina 5 cargas a enemigos con QS activa.'
+            },
         };
