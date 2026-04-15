@@ -284,15 +284,15 @@
             },
             'Huevo del Sol': {
                 name: 'Huevo del Sol',
-                hp: 40, maxHp: 40, summoner: null, team: null, statusEffects: [],
+                hp: 20, maxHp: 20, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.ibb.co/9mv8MDbJ/Whats-App-Image-2026-04-14-at-2-56-01-PM.jpg',
-                passive: 'Nacimiento Solar: Se invoca en el equipo enemigo. Cada vez que se aplica Quemadura Solar, el Huevo del Sol recibe 1 daño. Al morir invoca al Dragon Alado de Ra.'
+                passive: 'Nacimiento Solar: Se invoca en el equipo enemigo. Al final de cada ronda aplica Quemadura Solar a 2 aliados aleatorios del equipo enemigo. Cada vez que se aplica QS recibe 2 daño. Al morir invoca al Dragon Alado de Ra.'
             },
             'Dragon Alado de Ra': {
                 name: 'Dragon Alado de Ra',
                 hp: 20, maxHp: 20, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.ibb.co/wrxj370t/Captura-de-pantalla-2026-04-14-174235.png',
-                passive: 'Fuego de Egipto: Elimina 2 cargas del equipo aliado. Cada vez que se aplica QS a un enemigo, inflige 2 daño directo a todos los enemigos.'
+                passive: 'Fuego de Egipto: Elimina 2 cargas del equipo enemigo al inicio de cada ronda. Cada vez que se aplica QS a un enemigo, inflige 2 daño directo a todos los enemigos.'
             },
             'Dragon Alado de Ra Modo Fenix': {
                 name: 'Dragon Alado de Ra Modo Fenix',
