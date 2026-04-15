@@ -4741,7 +4741,369 @@
                 }
                 addLog('🧊 Frío Eterno: 5 AOE completado', 'damage');
 
-            } else if (ability.effect === 'vals_tanjiro') {
+            // ══════════════════════════════════════════════
+            // DARKSEID — handlers
+            // ══════════════════════════════════════════════
+
+            } else if (ability.effect === 'toque_antivida_darkseid') {
+                // DARKSEID — Toque de la Antivida: roba 0-4 HP y genera 0-4 cargas
+                const _taAtk = gameState.characters[gameState.selectedCharacter];
+                const _taTgt = gameState.characters[targetName];
+                if (_taTgt && !_taTgt.isDead && _taTgt.hp > 0) {
+                    const _taSteal = Math.floor(Math.random() * 5); // 0-4
+                    const _taCharges = Math.floor(Math.random() * 5); // 0-4
+                    if (_taSteal > 0) {
+                        const _taActual = Math.min(_taSteal, _taTgt.hp);
+                        _taTgt.hp = Math.max(0, _taTgt.hp - _taActual);
+                        if (_taTgt.hp <= 0) _taTgt.isDead = true;
+                        if (_taAtk) _taAtk.hp = Math.min(_taAtk.maxHp, (_taAtk.hp||0) + _taActual);
+                        addLog('🔥 Toque de la Antivida: Darkseid roba ' + _taActual + ' HP de ' + targetName, 'heal');
+                    }
+                    if (_taCharges > 0 && _taAtk) {
+                        _taAtk.charges = Math.min(20, (_taAtk.charges||0) + _taCharges);
+                        addLog('🔥 Toque de la Antivida: +' + _taCharges + ' cargas adicionales', 'buff');
+                    }
+                    if (_taSteal === 0 && _taCharges === 0) addLog('🔥 Toque de la Antivida: sin efecto esta vez', 'info');
+                }
+
+            } else if (ability.effect === 'rayo_desintegracion_darkseid') {
+                // DARKSEID — Rayo de la Desintegración: 3 daño + 50% crit → 2 cargas por cada enemigo
+                const _rdAtk = gameState.characters[gameState.selectedCharacter];
+                const _rdETeam = _rdAtk ? (_rdAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _isCrit = Math.random() < 0.50;
+                let _rdDmg = finalDamage;
+                if (_isCrit) {
+                    _rdDmg *= 2;
+                    addLog('💥 ¡Crítico! Rayo de la Desintegración en ' + targetName, 'damage');
+                    // 2 cargas por cada enemigo (personajes + invocaciones)
+                    const _enemyCount = Object.keys(gameState.characters).filter(function(n){
+                        const c = gameState.characters[n]; return c && c.team === _rdETeam && !c.isDead && c.hp > 0;
+                    }).length;
+                    const _summonCount = Object.keys(gameState.summons).filter(function(sid){
+                        const s = gameState.summons[sid]; return s && s.team === _rdETeam && s.hp > 0;
+                    }).length;
+                    const _rdCharges = (_enemyCount + _summonCount) * 2;
+                    if (_rdAtk && _rdCharges > 0) {
+                        _rdAtk.charges = Math.min(20, (_rdAtk.charges||0) + _rdCharges);
+                        addLog('⚡ Rayo Desintegración: +' + _rdCharges + ' cargas (' + (_enemyCount + _summonCount) + ' enemigos)', 'buff');
+                    }
+                }
+                applyDamageWithShield(targetName, _rdDmg, gameState.selectedCharacter);
+
+            } else if (ability.effect === 'sancion_omega_darkseid') {
+                // DARKSEID — Sanción Omega: elimina hasta 3 invocaciones + 3 daño directo por invocación a enemigo aleatorio
+                const _soAtk = gameState.characters[gameState.selectedCharacter];
+                const _soETeam = _soAtk ? (_soAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _soSummonIds = Object.keys(gameState.summons).filter(function(sid){
+                    const s = gameState.summons[sid]; return s && s.team === _soETeam && s.hp > 0;
+                }).slice(0, 3);
+                let _soTotalDmg = 0;
+                _soSummonIds.forEach(function(sid) {
+                    const _s = gameState.summons[sid];
+                    addLog('⚡ Sanción Omega: elimina invocación ' + _s.name, 'damage');
+                    _s._skipDeathPassive = true;
+                    delete gameState.summons[sid];
+                    _soTotalDmg += 3;
+                });
+                if (_soTotalDmg > 0) {
+                    const _soAliveEnemies = Object.keys(gameState.characters).filter(function(n){
+                        const c = gameState.characters[n]; return c && c.team === _soETeam && !c.isDead && c.hp > 0;
+                    });
+                    if (_soAliveEnemies.length > 0) {
+                        const _soRandTarget = _soAliveEnemies[Math.floor(Math.random() * _soAliveEnemies.length)];
+                        const _soTgt = gameState.characters[_soRandTarget];
+                        _soTgt.hp = Math.max(0, (_soTgt.hp||0) - _soTotalDmg);
+                        if (_soTgt.hp <= 0) _soTgt.isDead = true;
+                        addLog('⚡ Sanción Omega: ' + _soTotalDmg + ' daño directo a ' + _soRandTarget + ' (' + _soSummonIds.length + ' invocaciones)', 'damage');
+                    }
+                } else {
+                    addLog('⚡ Sanción Omega: no hay invocaciones enemigas', 'info');
+                }
+
+            } else if (ability.effect === 'ecuacion_antivida_darkseid') {
+                // DARKSEID — Ecuación de la Antivida: reduce 50%-90% HP + lifesteal
+                const _eaAtk = gameState.characters[gameState.selectedCharacter];
+                const _eaTgt = gameState.characters[targetName];
+                if (_eaTgt && !_eaTgt.isDead && _eaTgt.hp > 0 && _eaAtk) {
+                    const _eaPct = 0.50 + Math.random() * 0.40; // 50-90%
+                    const _eaLost = Math.ceil(_eaTgt.hp * _eaPct);
+                    _eaTgt.hp = Math.max(0, _eaTgt.hp - _eaLost);
+                    if (_eaTgt.hp <= 0) _eaTgt.isDead = true;
+                    _eaAtk.hp = Math.min(_eaAtk.maxHp, (_eaAtk.hp||0) + _eaLost);
+                    addLog('🔥 Ecuación de la Antivida: ' + targetName + ' pierde ' + _eaLost + ' HP (' + Math.round(_eaPct*100) + '%), Darkseid recupera ' + _eaLost + ' HP', 'heal');
+                }
+
+            // ══════════════════════════════════════════════
+            // ESCANOR — handlers
+            // ══════════════════════════════════════════════
+
+            } else if (ability.effect === 'cruel_sun_escanor') {
+                // ESCANOR — Cruel Sun: 2 daño + QS 2T. Si ya tenía QS, aplica QS a 2 enemigos aleatorios más
+                const _csAtk = gameState.characters[gameState.selectedCharacter];
+                const _csETeam = _csAtk ? (_csAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _csTgt = gameState.characters[targetName];
+                const _hadQS = _csTgt && hasStatusEffect(targetName, 'Quemadura Solar');
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                applySolarBurn(targetName, 2, 2);
+                if (_hadQS) {
+                    // Aplicar QS a 2 enemigos aleatorios adicionales
+                    const _otherEnemies = Object.keys(gameState.characters).filter(function(n){
+                        const c = gameState.characters[n];
+                        return c && c.team === _csETeam && !c.isDead && c.hp > 0 && n !== targetName;
+                    });
+                    for (let _i = 0; _i < Math.min(2, _otherEnemies.length); _i++) {
+                        const _idx = Math.floor(Math.random() * _otherEnemies.length);
+                        const _extra = _otherEnemies.splice(_idx, 1)[0];
+                        applySolarBurn(_extra, 2, 2);
+                        addLog('☀️ Cruel Sun: QS extendida a ' + _extra + ' (objetivo ya tenía QS)', 'debuff');
+                    }
+                }
+                // Pasiva Orgullo del León: 50% ganar 1 carga al aplicar QS
+                if (_csAtk && Math.random() < 0.50) {
+                    _csAtk.charges = Math.min(20, (_csAtk.charges||0) + 1);
+                    addLog('🦁 Orgullo del León: Escanor gana 1 carga (QS aplicada)', 'buff');
+                }
+
+            } else if (ability.effect === 'pride_flare_escanor') {
+                // ESCANOR — Pride Flare: 3 daño + daño directo x QS activas a 3 aleatorios + cargas x QS
+                const _pfAtk = gameState.characters[gameState.selectedCharacter];
+                const _pfETeam = _pfAtk ? (_pfAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                // Contar QS activas en equipo enemigo
+                const _qsCount = Object.keys(gameState.characters).filter(function(n){
+                    const c = gameState.characters[n];
+                    return c && c.team === _pfETeam && !c.isDead && c.hp > 0 && hasStatusEffect(n, 'Quemadura Solar');
+                }).length;
+                if (_qsCount > 0) {
+                    // +1 daño directo a 3 enemigos aleatorios por cada QS
+                    const _pfEnemies = Object.keys(gameState.characters).filter(function(n){
+                        const c = gameState.characters[n]; return c && c.team === _pfETeam && !c.isDead && c.hp > 0;
+                    });
+                    const _pfTargets = _pfEnemies.sort(function(){ return Math.random()-0.5; }).slice(0, 3);
+                    _pfTargets.forEach(function(n){
+                        const _pfc = gameState.characters[n];
+                        _pfc.hp = Math.max(0, (_pfc.hp||0) - _qsCount);
+                        if (_pfc.hp <= 0) _pfc.isDead = true;
+                        addLog('☀️ Pride Flare: ' + _qsCount + ' daño directo a ' + n, 'damage');
+                    });
+                    // +3 cargas por cada QS
+                    if (_pfAtk) {
+                        _pfAtk.charges = Math.min(20, (_pfAtk.charges||0) + (_qsCount * 3));
+                        addLog('☀️ Pride Flare: +' + (_qsCount*3) + ' cargas (' + _qsCount + ' QS activas)', 'buff');
+                    }
+                }
+
+            } else if (ability.effect === 'the_one_escanor') {
+                // ESCANOR — The One: transforma 2 rondas, +50% HP, -50% daño recibido, absorbe daño de aliados
+                const _toAtk = gameState.characters[gameState.selectedCharacter];
+                if (_toAtk) {
+                    _toAtk.escanorTheOneActive = true;
+                    _toAtk.escanorTheOneRoundsLeft = 2;
+                    if (_toAtk.transformPortrait) _toAtk.portrait = _toAtk.transformPortrait;
+                    const _toHeal = Math.ceil(_toAtk.maxHp * 0.50);
+                    _toAtk.hp = Math.min(_toAtk.maxHp, (_toAtk.hp||0) + _toHeal);
+                    addLog('🌟 The One: Escanor se transforma por 2 rondas. Recupera ' + _toHeal + ' HP. -50% daño recibido. Absorbe daño de aliados.', 'buff');
+                    audioManager.playTransformSfx();
+                    if (typeof _animCard === 'function') _animCard(gameState.selectedCharacter, 'anim-transform', 700);
+                    if (typeof _triggerPowerUp === 'function') { const _pu = gameState.characters[gameState.selectedCharacter]; _triggerPowerUp(gameState.selectedCharacter, _pu ? _pu.team : 'team1'); }
+                }
+
+            } else if (ability.effect === 'final_prominence_escanor') {
+                // ESCANOR — Final Prominence: +5 HP luego causa 5 + HP actual de Escanor. 50% del daño a 2 aleatorios
+                const _fpAtk = gameState.characters[gameState.selectedCharacter];
+                const _fpETeam = _fpAtk ? (_fpAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                if (_fpAtk) {
+                    _fpAtk.hp = Math.min(_fpAtk.maxHp, (_fpAtk.hp||0) + 5);
+                    addLog('🌟 Final Prominence: Escanor recupera 5 HP (' + _fpAtk.hp + '/' + _fpAtk.maxHp + ')', 'heal');
+                    const _fpDmg = finalDamage + (_fpAtk.hp||0);
+                    applyDamageWithShield(targetName, _fpDmg, gameState.selectedCharacter);
+                    addLog('🌟 Final Prominence: ' + _fpDmg + ' daño a ' + targetName + ' (5 + ' + _fpAtk.hp + ' HP de Escanor)', 'damage');
+                    // 50% del daño sobre 2 enemigos aleatorios
+                    const _fpSplash = Math.ceil(_fpDmg * 0.50);
+                    const _fpOthers = Object.keys(gameState.characters).filter(function(n){
+                        const c = gameState.characters[n];
+                        return c && c.team === _fpETeam && !c.isDead && c.hp > 0 && n !== targetName;
+                    }).sort(function(){ return Math.random()-0.5; }).slice(0,2);
+                    _fpOthers.forEach(function(n){
+                        applyDamageWithShield(n, _fpSplash, gameState.selectedCharacter);
+                        addLog('🌟 Final Prominence: ' + _fpSplash + ' daño adicional a ' + n + ' (50%)', 'damage');
+                    });
+                }
+
+            // ══════════════════════════════════════════════
+            // YORICHI — handlers
+            // ══════════════════════════════════════════════
+
+            } else if (ability.effect === 'corte_solar_yorichi') {
+                // YORICHI — Corte Solar: 2 daño + 50% QS. Si ya tenía QS, +1 carga al equipo aliado
+                const _cyAtk = gameState.characters[gameState.selectedCharacter];
+                const _cyTgt = gameState.characters[targetName];
+                const _cyHadQS = _cyTgt && hasStatusEffect(targetName, 'Quemadura Solar');
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                // Pasiva Mundo Transparente: bloquear pasiva del objetivo con QS
+                if (_cyHadQS && _cyTgt && _cyTgt.passive) {
+                    _cyTgt._passiveBlockedByYorichi = true;
+                    addLog('🌅 Mundo Transparente: pasiva de ' + targetName + ' bloqueada (tiene QS)', 'debuff');
+                }
+                if (Math.random() < 0.50) {
+                    applySolarBurn(targetName, 2, 2);
+                }
+                if (_cyHadQS && _cyAtk) {
+                    const _cyAllyTeam = _cyAtk.team;
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.isDead || _c.hp <= 0 || _c.team !== _cyAllyTeam) continue;
+                        _c.charges = Math.min(20, (_c.charges||0) + 1);
+                    }
+                    addLog('🌅 Corte Solar: +1 carga al equipo aliado (objetivo tenía QS)', 'buff');
+                }
+
+            } else if (ability.effect === 'respiracion_solar_yorichi') {
+                // YORICHI — Respiración Solar Pura: 2 AOE + disipar buffs + Quemadura 2HP
+                const _rsAtk = gameState.characters[gameState.selectedCharacter];
+                const _rsETeam = _rsAtk ? (_rsAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                if (checkAndRedirectAOEMegaProv(_rsETeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('🌅 Respiración Solar redirigida', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _rsETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('💨 ' + _n + ' esquiva (EA)', 'buff'); continue; }
+                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        // Disipar todos los buffs
+                        const _buffs = (_c.statusEffects||[]).filter(function(e){ return e && e.type === 'buff' && !e.permanent && !e.passiveHidden; });
+                        if (_buffs.length > 0) {
+                            _c.statusEffects = (_c.statusEffects||[]).filter(function(e){ return !e || e.type !== 'buff' || e.permanent || e.passiveHidden; });
+                            addLog('🌅 Respiración Solar: ' + _buffs.length + ' buff(s) disipados de ' + _n, 'debuff');
+                        }
+                        applyFlatBurn(_n, 2, 1);
+                    }
+                }
+                addLog('🌅 Respiración Solar Pura: 2 AOE completado', 'damage');
+
+            } else if (ability.effect === 'diosa_sol_yorichi') {
+                // YORICHI — Diosa del Sol: 6 ataques básicos aleatorios
+                const _dsAtk = gameState.characters[gameState.selectedCharacter];
+                const _dsETeam = _dsAtk ? (_dsAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _dsBasic = (_dsAtk.abilities||[]).find(function(ab){ return ab && ab.type === 'basic'; });
+                const _dsDmg = _dsBasic ? (_dsBasic.damage || 2) : 2;
+                for (let _di = 0; _di < 6; _di++) {
+                    const _dsEnemies = Object.keys(gameState.characters).filter(function(n){
+                        const c = gameState.characters[n]; return c && c.team === _dsETeam && !c.isDead && c.hp > 0;
+                    });
+                    if (_dsEnemies.length === 0) break;
+                    const _dsRand = _dsEnemies[Math.floor(Math.random() * _dsEnemies.length)];
+                    const _dsTgt = gameState.characters[_dsRand];
+                    const _hadQSDs = hasStatusEffect(_dsRand, 'Quemadura Solar');
+                    // Pasiva Mundo Transparente: 25% crit, 25% +2 cargas, 25% -2 cargas, 25% +2 HP
+                    let _dsHitDmg = _dsDmg;
+                    if (_hadQSDs) {
+                        const _roll = Math.random();
+                        if (_roll < 0.25) { _dsHitDmg *= 2; addLog('💥 Mundo Transparente: crítico en ' + _dsRand, 'damage'); }
+                        else if (_roll < 0.50) { _dsAtk.charges = Math.min(20, (_dsAtk.charges||0)+2); addLog('⚡ Mundo Transparente: +2 cargas', 'buff'); }
+                        else if (_roll < 0.75) { _dsTgt.charges = Math.max(0, (_dsTgt.charges||0)-2); addLog('💨 Mundo Transparente: -2 cargas a ' + _dsRand, 'debuff'); }
+                        else { _dsAtk.hp = Math.min(_dsAtk.maxHp, (_dsAtk.hp||0)+2); addLog('💚 Mundo Transparente: +2 HP curados', 'heal'); }
+                    }
+                    applyDamageWithShield(_dsRand, _dsHitDmg, gameState.selectedCharacter);
+                }
+                addLog('🌅 Diosa del Sol: 6 ataques básicos completados', 'damage');
+
+            } else if (ability.effect === 'trece_formas_sol_yorichi') {
+                // YORICHI — Las Trece Formas del Sol: 13 daño. Si tenía QS: +12 cargas + turno adicional
+                const _tfAtk = gameState.characters[gameState.selectedCharacter];
+                const _tfTgt = gameState.characters[targetName];
+                const _tfHadQS = _tfTgt && hasStatusEffect(targetName, 'Quemadura Solar');
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('☀️ Las Trece Formas del Sol: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (_tfHadQS && _tfAtk) {
+                    _tfAtk.charges = Math.min(20, (_tfAtk.charges||0) + 12);
+                    addLog('☀️ Las Trece Formas: ¡QS activa! +12 cargas + turno adicional', 'buff');
+                    triggerAnticipacion(gameState.selectedCharacter, _tfAtk.team);
+                    renderCharacters(); renderSummons();
+                    showContinueButton();
+                    return;
+                }
+
+            // ══════════════════════════════════════════════
+            // MARIK ISHTAR — handlers
+            // ══════════════════════════════════════════════
+
+            } else if (ability.effect === 'orden_cuidatumba_marik') {
+                // MARIK — Orden de los Cuidatumba: 1 daño (+7 a invocaciones)
+                const _ocTgt = gameState.characters[targetName];
+                if (_ocTgt) {
+                    applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                }
+                addLog('💀 Orden de los Cuidatumba: ' + finalDamage + ' daño a ' + targetName, 'damage');
+
+            } else if (ability.effect === 'canto_sol_marik') {
+                // MARIK — Canto del Sol: invoca Huevo del Sol en el equipo enemigo
+                const _cantAtk = gameState.characters[gameState.selectedCharacter];
+                const _cantETeam = _cantAtk ? (_cantAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _cantId = 'huevo_sol_' + Date.now();
+                gameState.summons[_cantId] = Object.assign({}, summonData['Huevo del Sol'] || {
+                    name: 'Huevo del Sol', hp: 40, maxHp: 40, statusEffects: [],
+                    img: 'https://i.ibb.co/9mv8MDbJ/Whats-App-Image-2026-04-14-at-2-56-01-PM.jpg'
+                });
+                gameState.summons[_cantId].team = _cantETeam;
+                gameState.summons[_cantId].summoner = gameState.selectedCharacter;
+                gameState.summons[_cantId].id = _cantId;
+                addLog('🌞 Canto del Sol: ¡Huevo del Sol invocado en el equipo enemigo!', 'buff');
+                if (typeof renderSummons === 'function') renderSummons();
+
+            } else if (ability.effect === 'dios_dioses_marik') {
+                // MARIK — Dios de Dioses: requiere 3 slimes/invocaciones aliadas, las elimina e invoca Dragon de Ra
+                const _dgAtk = gameState.characters[gameState.selectedCharacter];
+                const _dgMyTeam = _dgAtk ? _dgAtk.team : 'team1';
+                const _dgAllySummons = Object.keys(gameState.summons).filter(function(sid){
+                    const s = gameState.summons[sid]; return s && s.team === _dgMyTeam && s.hp > 0;
+                });
+                if (_dgAllySummons.length < 3) {
+                    addLog('💀 Dios de Dioses: se necesitan 3 invocaciones aliadas (tienes ' + _dgAllySummons.length + ')', 'info');
+                    renderCharacters(); endTurn(); return;
+                }
+                // Eliminar 3 invocaciones aliadas
+                _dgAllySummons.slice(0, 3).forEach(function(sid) {
+                    addLog('💀 Dios de Dioses: sacrifica ' + gameState.summons[sid].name, 'damage');
+                    delete gameState.summons[sid];
+                });
+                // Invocar Dragon Alado de Ra
+                const _draId = 'dragon_ra_' + Date.now();
+                gameState.summons[_draId] = Object.assign({}, summonData['Dragon Alado de Ra'] || {
+                    name: 'Dragon Alado de Ra', hp: 20, maxHp: 20, statusEffects: [],
+                    img: 'https://i.ibb.co/wrxj370t/Captura-de-pantalla-2026-04-14-174235.png'
+                });
+                gameState.summons[_draId].team = _dgMyTeam;
+                gameState.summons[_draId].summoner = gameState.selectedCharacter;
+                gameState.summons[_draId].id = _draId;
+                addLog('🐉 ¡Dios de Dioses! Dragon Alado de Ra invocado', 'buff');
+                if (typeof renderSummons === 'function') renderSummons();
+
+            } else if (ability.effect === 'inmortal_fenix_marik') {
+                // MARIK — Inmortal Fénix: requiere Dragon de Ra, lo elimina e invoca Dragon Modo Fénix
+                const _ifAtk = gameState.characters[gameState.selectedCharacter];
+                const _ifMyTeam = _ifAtk ? _ifAtk.team : 'team1';
+                const _ifDragonId = Object.keys(gameState.summons).find(function(sid){
+                    const s = gameState.summons[sid];
+                    return s && s.team === _ifMyTeam && s.hp > 0 && s.name === 'Dragon Alado de Ra';
+                });
+                if (!_ifDragonId) {
+                    addLog('🐉 Inmortal Fénix: se necesita al Dragon Alado de Ra en campo', 'info');
+                    renderCharacters(); endTurn(); return;
+                }
+                delete gameState.summons[_ifDragonId];
+                const _fenixId = 'dragon_fenix_' + Date.now();
+                gameState.summons[_fenixId] = Object.assign({}, summonData['Dragon Alado de Ra Modo Fenix'] || {
+                    name: 'Dragon Alado de Ra Modo Fenix', hp: 40, maxHp: 40, statusEffects: [],
+                    img: 'https://i.ibb.co/xSxps7gW/Captura-de-pantalla-2026-04-14-174255.png'
+                });
+                gameState.summons[_fenixId].team = _ifMyTeam;
+                gameState.summons[_fenixId].summoner = gameState.selectedCharacter;
+                gameState.summons[_fenixId].id = _fenixId;
+                addLog('🔥 ¡Inmortal Fénix! Dragon Alado de Ra Modo Fénix invocado', 'buff');
+                if (typeof renderSummons === 'function') renderSummons();
+
+                        } else if (ability.effect === 'vals_tanjiro') {
                 // TANJIRO — Básico: daño + 50% de generar 1 carga al equipo aliado (Olor de la Brecha)
                 const _tjAtk = gameState.characters[gameState.selectedCharacter];
                 let _tjDmg = finalDamage;
