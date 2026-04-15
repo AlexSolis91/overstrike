@@ -74,6 +74,40 @@
                             }
                         }
 
+                        // ── ORGULLO DEL LEÓN (Escanor): inicio de turno → +1 HP por enemigo con QS ──
+                        if (currentChar.passive && currentChar.passive.name === 'Orgullo del León') {
+                            const _esETeamT = currentChar.team === 'team1' ? 'team2' : 'team1';
+                            const _esQsCount = Object.keys(gameState.characters).filter(function(n){
+                                const c = gameState.characters[n];
+                                return c && c.team === _esETeamT && !c.isDead && c.hp > 0 &&
+                                       (c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'quemadura solar'; });
+                            }).length;
+                            if (_esQsCount > 0) {
+                                currentChar.hp = Math.min(currentChar.maxHp, (currentChar.hp||0) + _esQsCount);
+                                addLog('🦁 Orgullo del León: ' + currentCharName + ' recupera ' + _esQsCount + ' HP (' + _esQsCount + ' enemigos con QS)', 'heal');
+                            }
+                        }
+
+                        // ── REINO DE LAS SOMBRAS (Marik): inicio de turno → invoca Slime Token ──
+                        if (currentChar.passive && currentChar.passive.name === 'Reino de las Sombras') {
+                            const _mkSlimeCount = Object.keys(gameState.summons).filter(function(sid){
+                                const s = gameState.summons[sid];
+                                return s && s.name === 'Slime Token' && s.team === currentChar.team && s.hp > 0;
+                            }).length;
+                            if (_mkSlimeCount < 5) { // máximo 5 slimes
+                                const _mkSlimeId = 'slime_' + Date.now() + '_' + Math.random();
+                                gameState.summons[_mkSlimeId] = Object.assign({}, summonData && summonData['Slime Token'] ? summonData['Slime Token'] : {
+                                    name: 'Slime Token', hp: 5, maxHp: 5, statusEffects: [],
+                                    img: 'https://i.ibb.co/RGqr9m6z/Captura-de-pantalla-2026-04-14-174400.png'
+                                });
+                                gameState.summons[_mkSlimeId].team = currentChar.team;
+                                gameState.summons[_mkSlimeId].summoner = currentCharName;
+                                gameState.summons[_mkSlimeId].id = _mkSlimeId;
+                                addLog('💀 Reino de las Sombras: ' + currentCharName + ' invoca un Slime Token', 'buff');
+                                if (typeof renderSummons === 'function') renderSummons();
+                            }
+                        }
+
                         // ONLINE MODE: Solo procesar efectos del turno si el personaje es de MI equipo
                         // (evita procesamiento doble — cada cliente procesa solo sus propios personajes)
                         const _isMyCharOnline = !onlineMode || (isRoomHost ? currentChar.team === 'team1' : currentChar.team === 'team2');
@@ -1421,6 +1455,41 @@
                         break; // Solo 1 Gaara puede estar en el campo
                     }
 
+                    // ── REINO DE LAS SOMBRAS (Marik Ishtar): inicio de ronda → 50% Aura Oscura a cada aliado ──
+                    for (const _mkN in gameState.characters) {
+                        const _mkC = gameState.characters[_mkN];
+                        if (!_mkC || _mkC.isDead || _mkC.hp <= 0) continue;
+                        if (!_mkC.passive || _mkC.passive.name !== 'Reino de las Sombras') continue;
+                        const _mkAllyTeam = _mkC.team;
+                        for (const _an in gameState.characters) {
+                            const _ac = gameState.characters[_an];
+                            if (!_ac || _ac.isDead || _ac.hp <= 0 || _ac.team !== _mkAllyTeam) continue;
+                            if (Math.random() < 0.50) {
+                                if (typeof applyBuff === 'function') {
+                                    applyBuff(_an, { name: 'Aura Oscura', type: 'buff', duration: 2, emoji: '🌑' });
+                                    addLog('🌑 Reino de las Sombras: ' + _an + ' recibe Aura Oscura 2T (50%)', 'buff');
+                                }
+                            }
+                        }
+                        break;
+                    }
+
+                    // ── DRAGON ALADO DE RA MODO FÉNIX: inicio de ronda → -10% HP total del equipo enemigo ──
+                    for (const _dfId in gameState.summons) {
+                        const _dfS = gameState.summons[_dfId];
+                        if (!_dfS || _dfS.name !== 'Dragon Alado de Ra Modo Fenix' || _dfS.hp <= 0) continue;
+                        const _dfETeam = _dfS.team === 'team1' ? 'team2' : 'team1';
+                        for (const _n in gameState.characters) {
+                            const _c = gameState.characters[_n];
+                            if (!_c || _c.team !== _dfETeam || _c.isDead || _c.hp <= 0) continue;
+                            const _dfLoss = Math.max(1, Math.ceil(_c.hp * 0.10));
+                            _c.hp = Math.max(0, _c.hp - _dfLoss);
+                            if (_c.hp <= 0) _c.isDead = true;
+                            addLog('🔥 Luz Divina del Sol: ' + _n + ' pierde ' + _dfLoss + ' HP (10%)', 'damage');
+                        }
+                        break;
+                    }
+
                     // ── GIGANTE DE HIELO: 50% Congelacion + 50% Megacongelacion al inicio de ronda ──
                     const _gH = Object.values(gameState.summons).find(function(s){ return s && s.name === 'Gigante de Hielo' && s.hp > 0; });
                     if (_gH) {
@@ -1726,6 +1795,57 @@
                     c.statusEffects = (c.statusEffects || []).filter(e => !e || e.type !== 'debuff' || e.permanent);
                     addLog('💠 Cuerpo Perfecto: ' + n + ' elimina sus debuffs (' + debuffsBefore.length + ')', 'buff');
                 });
+
+                // ── ORGULLO DEL LEÓN (Escanor): fin de ronda → +1 HP máximo por enemigo con QS ──
+                for (const _esN in gameState.characters) {
+                    const _esC = gameState.characters[_esN];
+                    if (!_esC || _esC.isDead || _esC.hp <= 0) continue;
+                    if (!_esC.passive || _esC.passive.name !== 'Orgullo del León') continue;
+                    const _esETeam = _esC.team === 'team1' ? 'team2' : 'team1';
+                    const _qsCount = Object.keys(gameState.characters).filter(function(n){
+                        const c = gameState.characters[n];
+                        return c && c.team === _esETeam && !c.isDead && c.hp > 0 &&
+                               (c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'quemadura solar'; });
+                    }).length;
+                    if (_qsCount > 0) {
+                        _esC.maxHp = (_esC.maxHp||30) + _qsCount;
+                        addLog('🦁 Orgullo del León: ' + _esN + ' +' + _qsCount + ' HP máximo (' + _qsCount + ' enemigos con QS)', 'buff');
+                    }
+                    // The One countdown
+                    if (_esC.escanorTheOneActive) {
+                        _esC.escanorTheOneRoundsLeft = (_esC.escanorTheOneRoundsLeft || 0) - 1;
+                        if (_esC.escanorTheOneRoundsLeft <= 0) {
+                            _esC.escanorTheOneActive = false;
+                            // Restaurar portrait base
+                            const _esBase = typeof characterData !== 'undefined' && characterData[_esN.replace(' v2','')];
+                            if (_esBase && _esBase.portrait) _esC.portrait = _esBase.portrait;
+                            addLog('🌟 The One: Escanor vuelve a su forma normal', 'info');
+                        }
+                    }
+                    break;
+                }
+
+                // ── DRAGON ALADO DE RA MODO FÉNIX: fin de ronda → 3 daño directo a enemigos con QS + -5 cargas ──
+                for (const _dFenixId in gameState.summons) {
+                    const _dFenix = gameState.summons[_dFenixId];
+                    if (!_dFenix || _dFenix.name !== 'Dragon Alado de Ra Modo Fenix' || _dFenix.hp <= 0) continue;
+                    const _dfETeam = _dFenix.team === 'team1' ? 'team2' : 'team1';
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _dfETeam || _c.isDead || _c.hp <= 0) continue;
+                        const _hasQSDf = (_c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'quemadura solar'; });
+                        if (_hasQSDf) {
+                            _c.hp = Math.max(0, (_c.hp||0) - 3);
+                            if (_c.hp <= 0) _c.isDead = true;
+                            _c.charges = Math.max(0, (_c.charges||0) - 5);
+                            addLog('🔥 Luz Divina del Sol: 3 daño directo -5 cargas a ' + _n + ' (tiene QS)', 'damage');
+                        }
+                    }
+                    break;
+                }
+
+                // ── DRAGON ALADO DE RA MODO FÉNIX: inicio de ronda → -10% HP total del equipo enemigo ──
+                // (Se aplica en el inicio de ronda más abajo)
 
                 // ── DEFENSA ABSOLUTA (Gaara): fin de ronda → genera 5 cargas ──
                 for (const _gfN in gameState.characters) {
