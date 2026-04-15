@@ -605,13 +605,13 @@ function applyDebuff(targetName, effectObj) {
                     addLog('🐉 Fuego de Egipto: 2 daño directo a todos los enemigos (QS aplicada)', 'damage');
                     break;
                 }
-                // HUEVO DEL SOL: recibe 1 daño cada vez que se aplica QS
+                // HUEVO DEL SOL: recibe 2 daño cada vez que se aplica QS
                 for (const _hsid in gameState.summons) {
                     const _hs = gameState.summons[_hsid];
                     if (!_hs || _hs.name !== 'Huevo del Sol' || _hs.hp <= 0) continue;
                     if (_hs.team !== target.team) continue; // El huevo está en el equipo del objetivo
-                    _hs.hp = Math.max(0, (_hs.hp||0) - 1);
-                    addLog('🌞 Nacimiento Solar: Huevo del Sol recibe 1 daño (QS aplicada) [' + _hs.hp + ' HP]', 'damage');
+                    _hs.hp = Math.max(0, (_hs.hp||0) - 2);
+                    addLog('🌞 Nacimiento Solar: Huevo del Sol recibe 2 daño (QS aplicada) [' + _hs.hp + ' HP]', 'damage');
                     if (_hs.hp <= 0 && typeof removeSummon === 'function') {
                         removeSummon(_hsid, 'derrotado');
                     }
