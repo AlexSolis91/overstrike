@@ -1269,7 +1269,7 @@
                     reasonTag = '<div style="font-size:.65rem;color:#ff8844;margin-top:4px;font-weight:700;">' + cooldownLabel + '</div>';
                 }
                 
-                const SMAP_ACTION = { 'summon_shadows': ['Igris','Tusk','Beru'], 'summon_kamish': ['Kamish'], 'el_rey_caido': ['Sindragosa','Kel Thuzad','Darion Morgraine','Bolvar Fordragon','Tirion Fordring'], 'summon_sphinx': ['Abu el-Hol Sphinx'], 'summon_ramesseum': ['Ramesseum Tentyris'], 'enkidu': ['Enkidu'] };
+                const SMAP_ACTION = { 'summon_shadows': ['Igris','Tusk','Beru'], 'summon_kamish': ['Kamish'], 'el_rey_caido': ['Sindragosa','Banshee','Valkyr','Necrofago','Caballero de la Muerte'], 'summon_sphinx': ['Abu el-Hol Sphinx'], 'summon_ramesseum': ['Ramesseum Tentyris'], 'enkidu': ['Enkidu'] };
                 const sSummonList = SMAP_ACTION[ability.effect];
                 const sSummonBtns = sSummonList ? sSummonList.map(n => '<button onclick="showSummonInfo(\'' + n.replace(/'/g,"\'") + '\',event)" style="background:rgba(168,85,247,0.2);border:1px solid #a855f7;color:#a855f7;border-radius:6px;cursor:pointer;padding:2px 7px;font-size:.65rem;margin:2px 2px 0 0;display:inline-block;" title="Info invocación">🔮 ' + n + '</button>').join('') : '';
                 button.innerHTML = `
@@ -1527,7 +1527,7 @@
                     // ── DRAGON ALADO DE RA MODO FÉNIX: inicio de ronda → -10% HP total del equipo enemigo ──
                     for (const _dfId in gameState.summons) {
                         const _dfS = gameState.summons[_dfId];
-                        if (!_dfS || _dfS.name !== 'Dragon Alado de Ra Modo Fenix' || _dfS.hp <= 0) continue;
+                        if (!_dfS || _dfS.name !== 'Ra Modo Fenix' || _dfS.hp <= 0) continue;
                         const _dfETeam = _dfS.team === 'team1' ? 'team2' : 'team1';
                         for (const _n in gameState.characters) {
                             const _c = gameState.characters[_n];
@@ -1538,6 +1538,28 @@
                             addLog('🔥 Luz Divina del Sol: ' + _n + ' pierde ' + _dfLoss + ' HP (10%)', 'damage');
                         }
                         break;
+                    }
+
+                    // ── VALKYR (Sirviente de la Muerte): inicio de ronda → +10 velocidad al equipo aliado ──
+                    const _valkyr = Object.values(gameState.summons).find(function(s){ return s && s.name === 'Valkyr' && s.hp > 0; });
+                    if (_valkyr) {
+                        for (const _vn in gameState.characters) {
+                            const _vc = gameState.characters[_vn];
+                            if (!_vc || _vc.isDead || _vc.hp <= 0 || _vc.team !== _valkyr.team) continue;
+                            _vc.speed = (_vc.speed||80) + 10;
+                        }
+                        addLog('⚔️ Valkyr (Sirviente de la Muerte): +10 velocidad al equipo aliado', 'buff');
+                    }
+
+                    // ── CABALLERO DE LA MUERTE (Espada de Ébano): inicio de ronda → +4 cargas al equipo aliado ──
+                    const _caballero = Object.values(gameState.summons).find(function(s){ return s && s.name === 'Caballero de la Muerte' && s.hp > 0; });
+                    if (_caballero) {
+                        for (const _cn in gameState.characters) {
+                            const _cc = gameState.characters[_cn];
+                            if (!_cc || _cc.isDead || _cc.hp <= 0 || _cc.team !== _caballero.team) continue;
+                            _cc.charges = Math.min(20, (_cc.charges||0) + 4);
+                        }
+                        addLog('⚔️ Caballero de la Muerte (Espada de Ébano): +4 cargas al equipo aliado', 'buff');
                     }
 
                     // ── GIGANTE DE HIELO: 50% Congelacion + 50% Megacongelacion al inicio de ronda ──
@@ -1925,7 +1947,7 @@
                 // ── DRAGON ALADO DE RA MODO FÉNIX: fin de ronda → 3 daño directo a enemigos con QS + -5 cargas ──
                 for (const _dFenixId in gameState.summons) {
                     const _dFenix = gameState.summons[_dFenixId];
-                    if (!_dFenix || _dFenix.name !== 'Dragon Alado de Ra Modo Fenix' || _dFenix.hp <= 0) continue;
+                    if (!_dFenix || _dFenix.name !== 'Ra Modo Fenix' || _dFenix.hp <= 0) continue;
                     const _dfETeam = _dFenix.team === 'team1' ? 'team2' : 'team1';
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
@@ -2142,60 +2164,40 @@
                     }
                 }
 
-                // LICH KING INVOCACIONES PASIVAS por ronda
-                // Kel Thuzad (Aliado de la Muerte): cura 2 HP flat al equipo aliado al final de ronda
-                const kelThuzad = Object.values(gameState.summons).find(s => s && s.name === 'Kel Thuzad');
-                if (kelThuzad) {
+                // ── BANSHEE (Aliado de la Muerte): fin de ronda — cura 3 HP al equipo aliado ──
+                const _banshee = Object.values(gameState.summons).find(s => s && s.name === 'Banshee' && s.hp > 0);
+                if (_banshee) {
                     for (let n in gameState.characters) {
                         const c = gameState.characters[n];
-                        if (c && c.team === kelThuzad.team && !c.isDead && c.hp > 0) {
-                            c.hp = Math.min(c.maxHp, c.hp + 2);
-                            addLog('❄️ Kel Thuzad (Aliado de la Muerte): ' + n + ' recupera 2 HP', 'heal');
+                        if (c && c.team === _banshee.team && !c.isDead && c.hp > 0) {
+                            if (typeof applyHeal === 'function') {
+                                applyHeal(n, 3, 'Banshee Aliado de la Muerte');
+                            } else if (typeof canHeal === 'function' ? canHeal(n) : true) {
+                                c.hp = Math.min(c.maxHp, c.hp + 3);
+                                addLog('👻 Banshee (Aliado de la Muerte): ' + n + ' recupera 3 HP', 'heal');
+                            }
                         }
                     }
                 }
-                // Darion Morgraine: Sirviente de la Muerte — +10 velocidad al equipo aliado
-                const darion = Object.values(gameState.summons).find(function(s) { return s && s.name === 'Darion Morgraine' && s.hp > 0; });
-                if (darion) {
-                    for (let n in gameState.characters) {
+                // ── NECROFAGO (Castigo de la Muerte): fin de ronda — 3 daño a 1 enemigo aleatorio + 50% Aturdimiento ──
+                const _necrofago = Object.values(gameState.summons).find(function(s) { return s && s.name === 'Necrofago' && s.hp > 0; });
+                if (_necrofago) {
+                    const _necETeam = _necrofago.team === 'team1' ? 'team2' : 'team1';
+                    const _necTargets = Object.keys(gameState.characters).filter(function(n){
                         const c = gameState.characters[n];
-                        if (c && c.team === darion.team && !c.isDead && c.hp > 0) {
-                            c.speed = (c.speed || 80) + 10;
-                            addLog('⚔️ Darion Morgraine (Sirviente de la Muerte): ' + n + ' gana +10 velocidad', 'buff');
+                        return c && c.team === _necETeam && !c.isDead && c.hp > 0;
+                    });
+                    if (_necTargets.length > 0) {
+                        const _necTarget = _necTargets[Math.floor(Math.random() * _necTargets.length)];
+                        applyDamageWithShield(_necTarget, 3, null);
+                        addLog('💀 Necrofago (Castigo de la Muerte): 3 daño a ' + _necTarget, 'damage');
+                        if (Math.random() < 0.50) {
+                            if (typeof applyStun === 'function') applyStun(_necTarget, 1);
+                            addLog('💀 Necrofago: Aturdimiento 1T a ' + _necTarget + ' (50%)', 'debuff');
                         }
                     }
                 }
-                // Bolvar Fordragon: Castigo de la Muerte — 3 daño al equipo enemigo
-                const bolvar = Object.values(gameState.summons).find(function(s) { return s && s.name === 'Bolvar Fordragon' && s.hp > 0; });
-                if (bolvar) {
-                    const bolvarETeam = bolvar.team === 'team1' ? 'team2' : 'team1';
-                    for (let n in gameState.characters) {
-                        const c = gameState.characters[n];
-                        if (c && c.team === bolvarETeam && !c.isDead && c.hp > 0) {
-                            applyDamageWithShield(n, 3, null);
-                            addLog('🔥 Bolvar Fordragon (Castigo de la Muerte): ' + n + ' recibe 3 daño', 'damage');
-                        }
-                    }
-                    // Daño a invocaciones enemigas también
-                    for (let sid in gameState.summons) {
-                        const s = gameState.summons[sid];
-                        if (s && s.team === bolvarETeam && s.hp > 0 && s.name !== 'Bolvar Fordragon') {
-                            applySummonDamage(sid, 3, null);
-                        }
-                    }
-                }
-                // Tirion Fordring: cura 5 HP y 5 cargas al equipo
-                const tirion = Object.values(gameState.summons).find(s => s && s.name === 'Tirion Fordring');
-                if (tirion) {
-                    for (let n in gameState.characters) {
-                        const c = gameState.characters[n];
-                        if (c && c.team === tirion.team && !c.isDead && c.hp > 0) {
-                            c.hp = Math.min(c.maxHp, c.hp + 5);
-                            c.charges += 5;
-                            addLog(`⚔️ Tirion Fordring: ${n} recupera 5 HP y 5 cargas`, 'heal');
-                        }
-                    }
-                }
+                // ── CABALLERO DE LA MUERTE (Espada de Ébano): fin de ronda — 4 cargas al equipo aliado (en inicio de ronda abajo) ──
                 // GIGANTE DE HIELO (Douma): al inicio de ronda congelaciones + al final daño
                 // Al inicio de ronda se maneja abajo — aquí el daño al final de ronda
                 const _gigante = Object.values(gameState.summons).find(function(s){ return s && s.name === 'Gigante de Hielo' && s.hp > 0; });
