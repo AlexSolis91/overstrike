@@ -804,4 +804,31 @@
                     { name: 'Inmortal Fénix', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'self', effect: 'inmortal_fenix_marik', description: 'Requiere Dragón Alado de Ra activo. Elimina al Dragón Alado de Ra e invoca al Dragón Alado de Ra Modo Fénix.' }
                 ]
             },
+
+            'Manigoldo': {
+                hp: 20, maxHp: 20, speed: 86, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/1Y1x4HC6/descarga-4.jpg',
+                passive: { name: 'Réquiem de los Caídos', description: 'Manigoldo no puede recibir daño directo (por efectos y/o debuffs), solo puede recibir daño por golpes. Al final de cada ronda genera 3 cargas por cada aliado y/o enemigo eliminado en la partida.' },
+                abilities: [
+                    { name: 'Fuego Fatuo', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'fuego_fatuo_manigoldo', description: 'Causa 2 daño. 25% de robar 2 HP. 25% de robar 2 cargas. Si Manigoldo tiene 50% HP o menos, ambos efectos ocurren con 100% de probabilidad.' },
+                    { name: 'Explosión de Almas', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'self', effect: 'explosion_almas_manigoldo', description: 'Causa 1 daño directo a todos los enemigos por cada Buff activo en ambos equipos. Genera 1 carga por cada debuff activo en ambos equipos.' },
+                    { name: 'Prisión del Yomotsu', type: 'special', cost: 7, chargeGain: 4, damage: 5, target: 'single', effect: 'prision_yomotsu_manigoldo', description: 'Causa 5 daño. 50% de aplicar entre 1 y 3 debuffs aleatorios al objetivo.' },
+                    { name: 'Ondas Infernales', type: 'over', cost: 12, chargeGain: 0, damage: 10, target: 'single', effect: 'ondas_infernales_manigoldo', description: 'Causa 10 daño. Si el objetivo sobrevive, aplica Mega Aturdimiento y roba todas sus cargas.' }
+                ]
+            },
+
+            'Tirion Fordring': {
+                hp: 30, maxHp: 30, speed: 83, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                tirionLowHpTriggered: false,
+                portrait: 'https://i.ibb.co/mrcVTbh7/Whats-App-Image-2026-04-16-at-3-22-08-PM.jpg',
+                passive: { name: 'Paladín de la Mano de Plata', description: 'Si llega a 10 HP, recibe Protección Sagrada + Escudo Sagrado y genera 20 cargas (solo una vez por combate). Cada vez que un enemigo usa Over, cura 5 HP y genera 5 cargas al equipo aliado.' },
+                abilities: [
+                    { name: 'Luz del Alba', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'aoe', effect: 'luz_del_alba_tirion', description: 'Causa 1 AOE. Cura 1 HP al equipo aliado. Aplica Aura de Luz al equipo aliado. 50% de curar +2 HP adicional a cada aliado.' },
+                    { name: 'Protección de la Luz', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'proteccion_luz_tirion', description: 'Cura 3 HP al objetivo aliado. Disipa sus debuffs. Por cada debuff disipado, el objetivo genera 2 cargas.' },
+                    { name: 'Portador de Cenizas', type: 'special', cost: 10, chargeGain: 0, damage: 2, target: 'aoe', effect: 'portador_cenizas_tirion', description: 'Causa 2 AOE. Cura al equipo aliado el 50% del HP actual de Tirion. Toma control de todos los personajes revividos por pasiva o habilidad.' },
+                    { name: 'Una Luz en la Oscuridad', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'self', effect: 'luz_oscuridad_tirion', description: 'Solo usable si Tirion es el único aliado vivo. Revive a todos los aliados con 20 HP y 10 cargas.' }
+                ]
+            },
         };
