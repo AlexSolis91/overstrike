@@ -320,13 +320,13 @@
             'Lich King': {
                 hp: 30, maxHp: 30, speed: 82, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/W3Rxw8ff/Captura_de_pantalla_2026_02_28_015847.png',
-                passive: { name: 'Aura de Hielo', description: 'Efecto pasivo de Aura Gelida. Lich King es inmune a debuffs de Miedo, Posesion y Congelacion.' },
+                portrait: 'https://i.postimg.cc/63JHLp7S/Whats-App-Image-2026-04-16-at-9-36-07-AM.jpg',
+                passive: { name: 'Aura de Hielo', description: 'Efecto pasivo de Aura Gélida. Lich King es inmune a debuffs de Miedo, Posesión y Congelación.' },
                 abilities: [
-                    { name: 'Agonía de Escarcha', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'agonia_escarcha', description: 'Causa 1 daño. Roba 1 HP del objetivo. Se aplica Buff Provocación 2 turnos.' },
-                    { name: 'Cadenas de Hielo', type: 'special', cost: 2, chargeGain: 0, damage: 0, target: 'self', effect: 'cadenas_hielo', description: 'Aplica Debuff Congelación a 2 enemigos aleatorios.' },
-                    { name: 'Segador de Almas', type: 'special', cost: 8, chargeGain: 0, damage: 5, target: 'single', effect: 'segador_almas', description: 'Causa 5 de daño. Si el enemigo muere con este ataque, es revivido como aliado con un 50% de vida y 0 puntos de carga.' },
-                    { name: 'El Rey Caído', type: 'over', cost: 9, chargeGain: 0, damage: 0, target: 'self', effect: 'el_rey_caido', description: 'INVOCACIÓN: Esta habilidad realiza 3 invocaciones aleatorias.' }
+                    { name: 'Agonía de Escarcha', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'agonia_escarcha', description: 'Causa 1 daño. Roba 1 HP del objetivo. Aplica Buff Provocación en Lich King.' },
+                    { name: 'Cadenas de Hielo', type: 'special', cost: 2, chargeGain: 0, damage: 1, target: 'aoe', effect: 'cadenas_hielo', description: 'Causa 1 AOE. 50% de probabilidad de aplicar debuff Congelación a cada enemigo golpeado.' },
+                    { name: 'El Rey Caído', type: 'special', cost: 5, chargeGain: 5, damage: 0, target: 'self', effect: 'el_rey_caido', description: 'INVOCACIÓN: Realiza 1 invocación aleatoria.' },
+                    { name: 'Segador de Almas', type: 'over', cost: 8, chargeGain: 0, damage: 10, target: 'single', effect: 'segador_almas', description: 'Causa 10 daño. Si el enemigo muere con este ataque, es revivido como aliado con 50% de vida y 0 cargas.' }
                 ]
             },
 
@@ -673,9 +673,9 @@
                 antaresTransformed: false, antaresTransformTurns: 0,
                 portrait: 'https://i.ibb.co/Fprz6Sh/Captura-de-pantalla-2026-04-06-101230.png',
                 transformPortrait: 'https://i.ibb.co/t1CXkkY/Captura-de-pantalla-2026-04-06-101549.png',
-                passive: { name: 'Monarca de la Destruccion', description: 'Por cada Buff aplicado sobre un enemigo, aplica 3 daño directo sobre ese enemigo (y Antares genera 2 cargas por ese daño). Inmune a Quemaduras y Quemadura Solar. Cada vez que un enemigo recibe daño directo (quemaduras, veneno, efectos), Antares genera 2 cargas. El daño por golpe no cuenta.' },
+                passive: { name: 'Monarca de la Destruccion', description: 'Por cada Buff aplicado sobre un enemigo, aplica 3 daño directo sobre ese enemigo (Antares genera 1 carga por ese daño). Inmune a Quemaduras y Quemadura Solar. Cada vez que un enemigo recibe daño directo (quemaduras, veneno, efectos), Antares genera 1 carga. El daño por golpe no cuenta.' },
                 abilities: [
-                    { name: "Dragon's Fear", type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'aoe', effect: 'dragons_fear_antares', description: "Causa 2 AOE. 50% de aplicar Miedo 2T a los objetivos. 30% de daño triple sobre enemigos con Miedo o Quemaduras." },
+                    { name: "Dragon's Fear", type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'aoe', effect: 'dragons_fear_antares', description: "Causa 1 AOE. 50% de aplicar Miedo 2T a los objetivos. 30% de daño triple sobre enemigos con Miedo o Quemaduras." },
                     { name: 'Tormenta de Fuego', type: 'special', cost: 5, chargeGain: 0, damage: 3, target: 'single', effect: 'tormenta_fuego_antares', description: 'Causa 3 daño al objetivo. Aplica Quemadura 2HP a todos los enemigos. Si el enemigo tiene Buff activo, la Quemadura es de 5HP en lugar de 2HP.' },
                     { name: 'Dragon de la Destruccion', type: 'special', cost: 8, chargeGain: 0, damage: 4, target: 'self', effect: 'dragon_destruccion_antares', description: 'Causa 4 AOE y se transforma 3 turnos. Transformado: recupera 5 HP por turno. El daño directo (por efectos, quemaduras, veneno, etc.) que reciben los enemigos se duplica.' },
                     { name: 'Aliento de la Destruccion', type: 'over', cost: 12, chargeGain: 0, damage: 5, target: 'aoe', effect: 'aliento_destruccion_antares', description: 'Causa 5 AOE. Ignora Esquiva Área (buff y pasiva). Transformado en Dragon de la Destruccion: aplica Quemadura 5HP a los objetivos.' }
@@ -783,7 +783,7 @@
                 hp: 25, maxHp: 25, speed: 90, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/szT2tjJ/Captura-de-pantalla-2026-04-14-174630.png',
-                passive: { name: 'Mundo Transparente', description: 'Al golpear enemigo con QS: bloquea su pasiva mientras QS esté activa. Aliados que golpeen enemigos con QS tienen 25% de crítico, 25% de ganar 2 cargas, 25% de quitar 2 cargas, 25% de curar 2 HP.' },
+                passive: { name: 'Mundo Transparente', description: 'Si Yorichi golpea un objetivo con QS activa, aplica debuff Silenciar. Yorichi tiene 100% de probabilidad de golpe crítico en objetivos con QS activa. Cuando un enemigo con QS recibe daño, Yorichi genera 2 cargas y cura 2 HP a un aliado aleatorio.' },
                 abilities: [
                     { name: 'Corte Solar', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'corte_solar_yorichi', description: 'Causa 2 daño. 50% de aplicar QS. Si el objetivo ya tenía QS, genera 1 carga al equipo aliado.' },
                     { name: 'Respiración Solar Pura', type: 'special', cost: 3, chargeGain: 0, damage: 2, target: 'aoe', effect: 'respiracion_solar_yorichi', description: 'Causa 2 AOE. Disipa todos los buffs de los objetivos. Aplica Quemadura 2 HP.' },
