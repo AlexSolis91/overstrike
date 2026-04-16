@@ -186,33 +186,33 @@
             },
             'Sindragosa': {
                 name: 'Sindragosa',
-                hp: 10, maxHp: 10, summoner: null, team: null, statusEffects: [],
-                img: 'https://i.postimg.cc/T1G26Gxf/Captura_de_pantalla_2026_03_15_003004.png',
-                passive: 'Muerte de la Magia: Mega provocacion. Genera un punto para todo el equipo aliado cada vez que recibe daño.'
-            },
-            'Kel Thuzad': {
-                name: 'Kel Thuzad',
-                hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],
-                img: 'https://i.postimg.cc/J0m7Lm8W/Captura_de_pantalla_2026_03_15_003028.png',
-                passive: 'Aliado de la Muerte: Cura 2 hp del equipo aliado al final de la ronda'
-            },
-            'Darion Morgraine': {
-                name: 'Darion Morgraine',
-                hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],
-                img: 'https://i.postimg.cc/26njMysy/Captura_de_pantalla_2026_03_15_003106.png',
-                passive: 'Sirviente de la Muerte: Al final de cada ronda, aumenta la velocidad del equipo aliado en 10 puntos.'
-            },
-            'Bolvar Fordragon': {
-                name: 'Bolvar Fordragon',
-                hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],
-                img: 'https://i.postimg.cc/mkRZsR4R/Captura_de_pantalla_2026_03_15_003129.png',
-                passive: 'Castigo de la Muerte: Al final de cada ronda, inflige 3 daño a todos los enemigos (personajes e invocaciones).'
-            },
-            'Tirion Fordring': {
-                name: 'Tirion Fordring',
                 hp: 30, maxHp: 30, summoner: null, team: null, statusEffects: [],
-                img: 'https://i.postimg.cc/qq0BT0rT/Captura_de_pantalla_2026_03_15_003309.png',
-                passive: 'Una luz en la Oscuridad: Mega provocacion. Cura 5 HP por turno al equipo aliado, genera 5 puntos de Carga por turno al equipo aliado.'
+                img: 'https://i.postimg.cc/T1G26Gxf/Captura_de_pantalla_2026_03_15_003004.png',
+                passive: 'Dragon de la Muerte: Cuando un enemigo golpea a Lich King, inflige 5 daño sobre el atacante. Si el atacante muere, es revivido como aliado con 50% de vida y 0 cargas.'
+            },
+            'Banshee': {
+                name: 'Banshee',
+                hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.ibb.co/HL2bmzbW/Whats-App-Image-2026-04-16-at-12-08-13-PM.jpg',
+                passive: 'Aliado de la Muerte: Cura 3 HP al equipo aliado al final de la ronda.'
+            },
+            'Valkyr': {
+                name: 'Valkyr',
+                hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.ibb.co/MkRdczcs/Whats-App-Image-2026-04-16-at-12-08-44-PM.jpg',
+                passive: 'Sirviente de la Muerte: Al inicio de cada ronda, aumenta la velocidad del equipo aliado en 10 puntos.'
+            },
+            'Necrofago': {
+                name: 'Necrofago',
+                hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.ibb.co/Z6RVycY6/Whats-App-Image-2026-04-16-at-12-09-37-PM.jpg',
+                passive: 'Castigo de la Muerte: Inflige 3 HP a un enemigo aleatorio. 50% de probabilidad de aplicar debuff Aturdimiento.'
+            },
+            'Caballero de la Muerte': {
+                name: 'Caballero de la Muerte', megaProvocation: true,
+                hp: 20, maxHp: 20, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.ibb.co/1fJqBYgz/Whats-App-Image-2026-04-16-at-12-10-35-PM.jpg',
+                passive: 'Espada de Ébano: Mega Provocación. Al inicio de cada ronda genera 4 cargas al equipo aliado.'
             },
             'Señuelo': {
                 name: 'Señuelo',
@@ -294,10 +294,10 @@
                 img: 'https://i.ibb.co/wrxj370t/Captura-de-pantalla-2026-04-14-174235.png',
                 passive: 'Fuego de Egipto: Elimina 2 cargas del equipo enemigo al inicio de cada ronda. Cada vez que se aplica QS a un enemigo, inflige 2 daño directo a todos los enemigos.'
             },
-            'Dragon Alado de Ra Modo Fenix': {
-                name: 'Dragon Alado de Ra Modo Fenix',
+            'Ra Modo Fenix': {
+                name: 'Ra Modo Fenix',
                 hp: 40, maxHp: 40, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.ibb.co/xSxps7gW/Captura-de-pantalla-2026-04-14-174255.png',
-                passive: 'Luz Divina del Sol: Inicio de ronda: reduce 10% HP total del equipo enemigo. Fin de ronda: 3 daño directo a enemigos con QS activa + elimina 5 cargas a enemigos con QS activa.'
+                passive: 'Luz Divina del Sol: Al inicio de cada ronda reduce 10% los HP del equipo enemigo. Al final de cada ronda inflige 3 daño directo a enemigos con QS activa y elimina 5 cargas a enemigos con QS activa.'
             },
         };
