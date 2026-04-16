@@ -1196,6 +1196,20 @@
                         blockedByTransform = true;
                     }
                 }
+                // UNA LUZ EN LA OSCURIDAD (Tirion): solo si es el único aliado vivo
+                let blockedByTirionCondition = false;
+                if (ability.effect === 'luz_oscuridad_tirion') {
+                    const _tirChar = gameState.characters[gameState.selectedCharacter];
+                    const _tirTeam = _tirChar ? _tirChar.team : null;
+                    if (_tirTeam) {
+                        const _tirAliveAllies = Object.keys(gameState.characters).filter(function(n){
+                            const _c = gameState.characters[n];
+                            return _c && _c.team === _tirTeam && !_c.isDead && _c.hp > 0 && n !== gameState.selectedCharacter;
+                        });
+                        if (_tirAliveAllies.length > 0) blockedByTirionCondition = true;
+                    }
+                }
+
                 // THE ONE (Escanor): bloqueado mientras escanorTheOneActive = true
                 if (ability.effect === 'the_one_escanor') {
                     const _esChar = gameState.characters[gameState.selectedCharacter];
@@ -1245,7 +1259,7 @@
                         cooldownLabel = '⏳ Cooldown: ' + _cdChar._singularidadCooldown + 'T';
                     }
                 }
-                const disabled = !canUse || !canRevive || !canSacrifice || !canSummon || !canSummonKamish || blockedByFreeze || blockedBySigilo || blockedByTransform || blockedByCooldown || blockedByDragon || blockedByNoRa || blockedBySummonCap;
+                const disabled = !canUse || !canRevive || !canSacrifice || !canSummon || !canSummonKamish || blockedByFreeze || blockedBySigilo || blockedByTransform || blockedByCooldown || blockedByDragon || blockedByNoRa || blockedBySummonCap || blockedByTirionCondition;
                 
                 // Bloquear invocación única si ya está activa en campo
                 const SINGLE_SUMMON_BLOCK = {
@@ -1965,6 +1979,22 @@
 
                 // ── DRAGON ALADO DE RA MODO FÉNIX: inicio de ronda → -10% HP total del equipo enemigo ──
                 // (Se aplica en el inicio de ronda más abajo)
+
+                // ── RÉQUIEM DE LOS CAÍDOS (Manigoldo): fin de ronda → 3 cargas por cada personaje eliminado ──
+                (function() {
+                    for (const _mgN in gameState.characters) {
+                        const _mgC = gameState.characters[_mgN];
+                        if (!_mgC || _mgC.isDead || !_mgC.passive) continue;
+                        if (_mgC.passive.name !== 'Réquiem de los Caídos') continue;
+                        const _deadCount = Object.values(gameState.characters).filter(function(c){ return c && c.isDead; }).length;
+                        if (_deadCount > 0) {
+                            const _mgGain = _deadCount * 3;
+                            _mgC.charges = Math.min(20, (_mgC.charges||0) + _mgGain);
+                            addLog('☠️ Réquiem de los Caídos: Manigoldo gana ' + _mgGain + ' cargas (' + _deadCount + ' eliminados)', 'buff');
+                        }
+                        break;
+                    }
+                })();
 
                 // ── DEFENSA ABSOLUTA (Gaara): fin de ronda → genera 5 cargas ──
                 for (const _gfN in gameState.characters) {
