@@ -4952,13 +4952,15 @@
                 if (_cyHadQS) {
                     _cyDmg *= 2;
                     addLog('🌅 Mundo Transparente: ¡Crítico 100%! Yorichi golpea objetivo con QS', 'buff');
-                    // Bloquear pasiva del objetivo
-                    if (_cyTgt && _cyTgt.passive) {
-                        _cyTgt._passiveBlockedByYorichi = true;
-                        addLog('🌅 Mundo Transparente: pasiva de ' + targetName + ' Silenciada (tiene QS)', 'debuff');
-                    }
                 }
                 applyDamageWithShield(targetName, _cyDmg, gameState.selectedCharacter);
+                // MUNDO TRANSPARENTE: aplicar debuff Silenciar si objetivo tiene QS
+                if (_cyHadQS && _cyTgt && !_cyTgt.isDead && _cyTgt.hp > 0) {
+                    if (typeof applySilenciar === 'function') {
+                        applySilenciar(targetName, 2);
+                        addLog('🌅 Mundo Transparente: ' + targetName + ' recibe Silenciar 2T (tenía QS)', 'debuff');
+                    }
+                }
                 // 50% de aplicar QS si no tenía
                 if (Math.random() < 0.50) {
                     applySolarBurn(targetName, 2, 2);
@@ -5010,11 +5012,11 @@
                 addLog('🌅 Respiración Solar Pura: 2 AOE completado', 'damage');
 
             } else if (ability.effect === 'diosa_sol_yorichi') {
-                // YORICHI — Diosa del Sol: 6 ataques básicos aleatorios
+                // YORICHI — Diosa del Sol: 6 ataques básicos con todos sus efectos (QS, Silenciar, cargas, crit)
                 const _dsAtk = gameState.characters[gameState.selectedCharacter];
                 const _dsETeam = _dsAtk ? (_dsAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
                 const _dsBasic = (_dsAtk.abilities||[]).find(function(ab){ return ab && ab.type === 'basic'; });
-                const _dsDmg = _dsBasic ? (_dsBasic.damage || 2) : 2;
+                const _dsDmgBase = _dsBasic ? (_dsBasic.damage || 2) : 2;
                 for (let _di = 0; _di < 6; _di++) {
                     const _dsEnemies = Object.keys(gameState.characters).filter(function(n){
                         const c = gameState.characters[n]; return c && c.team === _dsETeam && !c.isDead && c.hp > 0;
@@ -5023,16 +5025,25 @@
                     const _dsRand = _dsEnemies[Math.floor(Math.random() * _dsEnemies.length)];
                     const _dsTgt = gameState.characters[_dsRand];
                     const _hadQSDs = hasStatusEffect(_dsRand, 'Quemadura Solar');
-                    // Pasiva Mundo Transparente: 25% crit, 25% +2 cargas, 25% -2 cargas, 25% +2 HP
-                    let _dsHitDmg = _dsDmg;
+                    // Crit 100% si objetivo tiene QS (Mundo Transparente)
+                    let _dsHitDmg = _dsDmgBase;
                     if (_hadQSDs) {
-                        const _roll = Math.random();
-                        if (_roll < 0.25) { _dsHitDmg *= 2; addLog('💥 Mundo Transparente: crítico en ' + _dsRand, 'damage'); }
-                        else if (_roll < 0.50) { _dsAtk.charges = Math.min(20, (_dsAtk.charges||0)+2); addLog('⚡ Mundo Transparente: +2 cargas', 'buff'); }
-                        else if (_roll < 0.75) { _dsTgt.charges = Math.max(0, (_dsTgt.charges||0)-2); addLog('💨 Mundo Transparente: -2 cargas a ' + _dsRand, 'debuff'); }
-                        else { _dsAtk.hp = Math.min(_dsAtk.maxHp, (_dsAtk.hp||0)+2); addLog('💚 Mundo Transparente: +2 HP curados', 'heal'); }
+                        _dsHitDmg *= 2;
+                        addLog('🌅 Mundo Transparente: ¡Crítico! golpe ' + (_di+1) + ' en ' + _dsRand + ' (QS)', 'buff');
                     }
                     applyDamageWithShield(_dsRand, _dsHitDmg, gameState.selectedCharacter);
+                    // 50% de aplicar QS
+                    if (Math.random() < 0.50) {
+                        applySolarBurn(_dsRand, 2, 2);
+                    }
+                    // Si tenía QS: aplicar Silenciar
+                    if (_hadQSDs && _dsTgt && !_dsTgt.isDead && _dsTgt.hp > 0) {
+                        if (typeof applySilenciar === 'function') applySilenciar(_dsRand, 2);
+                    }
+                    // Generar cargas del básico
+                    if (_dsBasic && (_dsBasic.chargeGain||0) > 0) {
+                        _dsAtk.charges = Math.min(20, (_dsAtk.charges||0) + (_dsBasic.chargeGain||1));
+                    }
                 }
                 addLog('🌅 Diosa del Sol: 6 ataques básicos completados', 'damage');
 
@@ -5044,8 +5055,8 @@
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 addLog('☀️ Las Trece Formas del Sol: ' + finalDamage + ' daño a ' + targetName, 'damage');
                 if (_tfHadQS && _tfAtk) {
-                    _tfAtk.charges = Math.min(20, (_tfAtk.charges||0) + 12);
-                    addLog('☀️ Las Trece Formas: ¡QS activa! +12 cargas + turno adicional', 'buff');
+                    _tfAtk.charges = Math.min(20, (_tfAtk.charges||0) + 6);
+                    addLog('☀️ Las Trece Formas: ¡QS activa! +6 cargas + turno adicional', 'buff');
                     triggerAnticipacion(gameState.selectedCharacter, _tfAtk.team);
                     renderCharacters(); renderSummons();
                     showContinueButton();
