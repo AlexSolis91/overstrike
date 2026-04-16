@@ -1444,19 +1444,23 @@
             width: 100%;
             max-width: 1400px;
             overflow-y: auto;
+            max-height: calc(100vh - 310px);
+            padding-right: 4px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0,196,255,0.4) transparent;
         }
 
         .cs-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(15, 1fr);
+            gap: 6px;
             padding-bottom: 10px;
         }
 
         .cs-char-card {
             background: rgba(255,255,255,0.04);
-            border: 2px solid rgba(255,255,255,0.12);
-            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 7px;
             overflow: hidden;
             cursor: pointer;
             transition: all 0.2s ease;
@@ -1494,7 +1498,7 @@
 
         .cs-char-img {
             width: 100%;
-            height: 110px;
+            height: 72px;
             object-fit: contain;
             object-position: center;
             background: rgba(0,0,0,0.4);
@@ -1503,22 +1507,22 @@
 
         .cs-char-img-placeholder {
             width: 100%;
-            height: 110px;
+            height: 72px;
             background: rgba(0,0,0,0.4);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2.5em;
+            font-size: 1.8em;
         }
 
         .cs-char-info {
-            padding: 6px 8px;
+            padding: 3px 4px;
             text-align: center;
         }
 
         .cs-char-name {
             font-family: 'Orbitron', sans-serif;
-            font-size: 0.62em;
+            font-size: 0.52em;
             font-weight: 700;
             color: var(--primary-glow);
             line-height: 1.2;
@@ -1526,18 +1530,18 @@
         }
 
         .cs-char-speed {
-            font-size: 0.72em;
+            font-size: 0.58em;
             color: var(--warning);
             font-weight: 600;
         }
 
         .cs-team-badge {
-            font-size: 0.6em;
-            padding: 2px 6px;
+            font-size: 0.50em;
+            padding: 1px 4px;
             border-radius: 8px;
             font-weight: 700;
             display: inline-block;
-            margin-top: 3px;
+            margin-top: 2px;
         }
 
         .cs-team-badge.team1 { background: rgba(0,196,255,0.25); color: var(--team1); }
