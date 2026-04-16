@@ -199,18 +199,8 @@
             const oldHp = summon.hp;
             summon.hp = Math.max(0, summon.hp - damage);
             
-            // SINDRAGOSA: genera 1 carga a todo el equipo aliado cuando recibe daño
-            if (summon.name === 'Sindragosa' && damage > 0 && !passiveExecuting) {
-                passiveExecuting = true;
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (c && c.team === summon.team && !c.isDead && c.hp > 0) {
-                        c.charges += 1;
-                    }
-                }
-                addLog(`❄️ Sindragosa: Todo el equipo aliado genera 1 carga al recibir daño`, 'buff');
-                passiveExecuting = false;
-            }
+            // SINDRAGOSA Dragon de la Muerte: pasiva se activa cuando el ATACANTE golpea a Lich King (en applyDamageWithShield)
+            // (la lógica está en applyDamageWithShield para Lich King)
 
             // Si es Kamish y fue golpeado, aplicar quemaduras al atacante
             if (summon.name === 'Kamish' && attackerName) {
@@ -579,7 +569,7 @@
                 for (let summonId in gameState.summons) {
                     const s = gameState.summons[summonId];
                     if (s && s.team === targetTeam && s.hp > 0 &&
-                        (s.megaProvocation || s.name === 'Kamish' || s.name === 'Tirion Fordring' ||
+                        (s.megaProvocation || s.name === 'Kamish' || s.name === 'Caballero de la Muerte' ||
                          s.name === 'Sindragosa' || s.name === 'Drogon')) {
                         return { id: summonId, holder: s, isCharacter: false, kamish: s };
                     }
@@ -1148,6 +1138,35 @@
             const oldHp = target.hp;
             target.hp = Math.max(0, target.hp - remainingDamage);
 
+            // ── SINDRAGOSA Dragon de la Muerte: cuando Lich King recibe daño → 5 dmg al atacante ──
+            if (remainingDamage > 0 && attackerName && !passiveExecuting &&
+                (targetName === 'Lich King' || targetName === 'Lich King v2') &&
+                target.hp > 0 && !target.isDead) {
+                const _sindExists = Object.values(gameState.summons).some(function(s){
+                    return s && s.name === 'Sindragosa' && s.team === target.team && s.hp > 0;
+                });
+                if (_sindExists) {
+                    const _sindAtk = gameState.characters[attackerName];
+                    if (_sindAtk && !_sindAtk.isDead && _sindAtk.hp > 0) {
+                        passiveExecuting = true;
+                        const _sindWasAlive = _sindAtk.hp > 0;
+                        _sindAtk.hp = Math.max(0, (_sindAtk.hp||0) - 5);
+                        addLog('🐉 Dragon de la Muerte: Sindragosa inflige 5 daño a ' + attackerName, 'damage');
+                        if (_sindWasAlive && _sindAtk.hp <= 0) {
+                            _sindAtk.isDead = true;
+                            // Revivir como aliado de Lich King
+                            _sindAtk.isDead = false;
+                            _sindAtk.hp = Math.ceil(_sindAtk.maxHp * 0.50);
+                            _sindAtk.charges = 0;
+                            _sindAtk.statusEffects = [];
+                            _sindAtk.team = target.team;
+                            addLog('💀➡️👻 Dragon de la Muerte: ¡' + attackerName + ' revive como aliado de Lich King con ' + _sindAtk.hp + ' HP!', 'buff');
+                        }
+                        passiveExecuting = false;
+                    }
+                }
+            }
+
             // ── EFECTO OMEGA (Darkseid): roba 1 HP del atacante SOLO SI SOBREVIVE al daño ──
             if (remainingDamage > 0 && attackerName && !_yorichiPassiveBlocked &&
                 target.passive && target.passive.name === 'Efecto Omega' &&
@@ -1172,32 +1191,43 @@
             }
 
             // ── MUNDO TRANSPARENTE (Yorichi): aliados que golpean enemigo con QS ──
-            if (remainingDamage > 0 && attackerName && !passiveExecuting && !target.isDead) {
-                const _wtAtk = gameState.characters[attackerName];
-                if (_wtAtk && !_wtAtk.isDead) {
-                    const _wtHasQS = (target.statusEffects||[]).some(function(e){
-                        return e && normAccent(e.name||'') === 'quemadura solar';
-                    });
-                    if (_wtHasQS) {
+            // Cuando enemigo con QS recibe daño → Yorichi gana 2 cargas + cura 2 HP a aliado aleatorio
+            if (remainingDamage > 0 && attackerName && !passiveExecuting) {
+                const _wtTgtHasQS = (target.statusEffects||[]).some(function(e){
+                    return e && normAccent(e.name||'') === 'quemadura solar';
+                });
+                if (_wtTgtHasQS) {
+                    const _wtAtk = gameState.characters[attackerName];
+                    if (_wtAtk && !_wtAtk.isDead) {
                         const _wtTeam = _wtAtk.team;
-                        const _wtYorichi = Object.values(gameState.characters).some(function(ch){
-                            return ch && !ch.isDead && ch.hp > 0 && ch.team === _wtTeam &&
-                                   ch.passive && ch.passive.name === 'Mundo Transparente';
-                        });
-                        if (_wtYorichi) {
-                            const _wtRoll = Math.random();
-                            if (_wtRoll < 0.25) {
-                                addLog('🌅 Mundo Transparente: crit bonus ' + attackerName + ' (QS)', 'buff');
-                            } else if (_wtRoll < 0.50) {
-                                _wtAtk.charges = Math.min(20, (_wtAtk.charges||0) + 2);
-                                addLog('🌅 Mundo Transparente: +2 cargas a ' + attackerName, 'buff');
-                            } else if (_wtRoll < 0.75) {
-                                target.charges = Math.max(0, (target.charges||0) - 2);
-                                addLog('🌅 Mundo Transparente: -2 cargas a ' + targetName, 'debuff');
-                            } else {
-                                _wtAtk.hp = Math.min(_wtAtk.maxHp, (_wtAtk.hp||0) + 2);
-                                addLog('🌅 Mundo Transparente: +2 HP a ' + attackerName, 'heal');
+                        // Buscar Yorichi en el equipo atacante
+                        for (const _yrN in gameState.characters) {
+                            const _yrC = gameState.characters[_yrN];
+                            if (!_yrC || _yrC.isDead || _yrC.team !== _wtTeam) continue;
+                            if (!_yrC.passive || _yrC.passive.name !== 'Mundo Transparente') continue;
+                            passiveExecuting = true;
+                            // +2 cargas a Yorichi
+                            _yrC.charges = Math.min(20, (_yrC.charges||0) + 2);
+                            addLog('🌅 Mundo Transparente: Yorichi gana 2 cargas (enemigo con QS recibió daño)', 'buff');
+                            // Curar 2 HP a aliado aleatorio
+                            const _wtAllies = Object.keys(gameState.characters).filter(function(n){
+                                const _c = gameState.characters[n];
+                                return _c && _c.team === _wtTeam && !_c.isDead && _c.hp > 0;
+                            });
+                            if (_wtAllies.length > 0) {
+                                const _wtHealT = _wtAllies[Math.floor(Math.random() * _wtAllies.length)];
+                                if (typeof applyHeal === 'function') {
+                                    applyHeal(_wtHealT, 2, 'Mundo Transparente');
+                                } else if (typeof canHeal === 'function' ? canHeal(_wtHealT) : true) {
+                                    gameState.characters[_wtHealT].hp = Math.min(
+                                        gameState.characters[_wtHealT].maxHp,
+                                        (gameState.characters[_wtHealT].hp||0) + 2
+                                    );
+                                    addLog('🌅 Mundo Transparente: ' + _wtHealT + ' cura 2 HP', 'heal');
+                                }
                             }
+                            passiveExecuting = false;
+                            break;
                         }
                     }
                 }
@@ -1266,8 +1296,8 @@
                         const _mc2 = gameState.characters[_mn2];
                         if (!_mc2 || _mc2.isDead || _mc2.hp <= 0 || _mc2.team !== _mdAntTeam2) continue;
                         if (!_mc2.passive || _mc2.passive.name !== 'Monarca de la Destruccion') continue;
-                        _mc2.charges = Math.min(20, (_mc2.charges||0) + 2);
-                        addLog('🔥 Monarca de la Destruccion: ' + _mn2 + ' gana 2 cargas (daño directo a ' + targetName + ')', 'buff');
+                        _mc2.charges = Math.min(20, (_mc2.charges||0) + 1);
+                        addLog('🔥 Monarca de la Destruccion: ' + _mn2 + ' gana 1 carga (daño directo a ' + targetName + ')', 'buff');
                         break;
                     }
                 }
@@ -1638,10 +1668,10 @@
                 _btC.hp = Math.max(0, (_btC.hp||0) - 3);
                 if (_btC.hp <= 0) _btC.isDead = true;
                 addLog('🔥 Monarca de la Destruccion: 3 daño directo a ' + buffTargetName + ' (Buff aplicado sobre enemigo)', 'damage');
-                // Generar 2 cargas por el daño directo causado
+                // Generar 1 carga por el daño directo causado
                 if (_btOldHp > _btC.hp) {
-                    _ac.charges = Math.min(20, (_ac.charges||0) + 2);
-                    addLog('🔥 Monarca de la Destruccion: ' + _an + ' gana 2 cargas (daño directo)', 'buff');
+                    _ac.charges = Math.min(20, (_ac.charges||0) + 1);
+                    addLog('🔥 Monarca de la Destruccion: ' + _an + ' gana 1 carga (daño directo)', 'buff');
                 }
                 passiveExecuting = false;
                 break;
