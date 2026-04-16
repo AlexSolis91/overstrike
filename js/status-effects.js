@@ -21,12 +21,16 @@
                     } else {
                         healAmount = 2;
                     }
+                    // AURA DE LUZ: duplica la curación
+                    const _regenAura = (typeof hasStatusEffect === 'function') &&
+                        (hasStatusEffect(charName, 'Aura de Luz') || hasStatusEffect(charName, 'Aura de luz'));
+                    if (_regenAura) healAmount *= 2;
                     const oldHp = char.hp;
                     char.hp = Math.min(char.maxHp, char.hp + healAmount);
                     const actualHeal = char.hp - oldHp;
                     
                     if (actualHeal > 0) {
-                        addLog(`💖 ${charName} recuperó ${actualHeal} HP por Regeneración`, 'heal');
+                        addLog(`💖 ${charName} recuperó ${actualHeal} HP por Regeneración${_regenAura ? ' (x2 Aura de Luz)' : ''}`, 'heal');
                         // Activar pasiva de Min Byung si está en el equipo
                         triggerBendicionSagrada(char.team, actualHeal);
                         // PRESENCIA OSCURA (Darth Vader): +1 carga cuando enemigo recupera HP
@@ -405,8 +409,30 @@ function processBurnEffects(charName) {
         function canHeal(charName) {
             const char = gameState.characters[charName];
             if (!char || !char.statusEffects) return true;
+            // Quemadura Solar bloquea toda recuperación de HP
             if (char.statusEffects.some(e => e && normAccent(e.name||'') === 'quemadura solar')) {
                 return false;
             }
             return true;
+        }
+
+        // Función centralizada de curación — respeta QS y aplica Aura de Luz automáticamente
+        function applyHeal(charName, amount, logSource) {
+            if (!canHeal(charName)) {
+                if (logSource) addLog('☀️ QS bloquea la curación de ' + charName, 'debuff');
+                return 0;
+            }
+            const _ch = gameState.characters[charName];
+            if (!_ch || _ch.isDead || _ch.hp <= 0) return 0;
+            // AURA DE LUZ: duplica la curación
+            const _hasAuraLuz = (typeof hasStatusEffect === 'function') &&
+                (hasStatusEffect(charName, 'Aura de Luz') || hasStatusEffect(charName, 'Aura de luz'));
+            const _healAmt = _hasAuraLuz ? amount * 2 : amount;
+            const _oldHp = _ch.hp;
+            _ch.hp = Math.min(_ch.maxHp, _ch.hp + _healAmt);
+            const _actual = _ch.hp - _oldHp;
+            if (_actual > 0 && logSource) {
+                addLog('💚 ' + charName + ' recupera ' + _actual + ' HP' + (_hasAuraLuz ? ' (x2 Aura de Luz)' : '') + (logSource ? ' (' + logSource + ')' : ''), 'heal');
+            }
+            return _actual;
         }
