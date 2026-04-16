@@ -988,6 +988,13 @@
             // ── MUNDO TRANSPARENTE: si la pasiva del objetivo está bloqueada por Yorichi, saltar pasivas reactivas ──
             const _yorichiPassiveBlocked = !!(target && target._passiveBlockedByYorichi);
 
+            // ── RÉQUIEM DE LOS CAÍDOS (Manigoldo): inmune a daño directo (attackerName === null) ──
+            if (damage > 0 && attackerName === null &&
+                target.passive && target.passive.name === 'Réquiem de los Caídos') {
+                addLog('☠️ Réquiem de los Caídos: Manigoldo es inmune al daño directo', 'buff');
+                return 0;
+            }
+
             // EFECTO OMEGA (Darkseid): AOE recibido reducido 50%
             if (!passiveExecuting && !_yorichiPassiveBlocked && damage > 0 && target.passive && target.passive.name === 'Efecto Omega') {
                 const _atkAbOmega = gameState.selectedAbility;
@@ -1209,6 +1216,12 @@
                             // +2 cargas a Yorichi
                             _yrC.charges = Math.min(20, (_yrC.charges||0) + 2);
                             addLog('🌅 Mundo Transparente: Yorichi gana 2 cargas (enemigo con QS recibió daño)', 'buff');
+                            // Aplicar Silenciar al objetivo si no lo tiene ya
+                            if (!target.isDead && target.hp > 0 && typeof applySilenciar === 'function') {
+                                passiveExecuting = false;
+                                applySilenciar(targetName, 2);
+                                passiveExecuting = true;
+                            }
                             // Curar 2 HP a aliado aleatorio
                             const _wtAllies = Object.keys(gameState.characters).filter(function(n){
                                 const _c = gameState.characters[n];
@@ -1231,6 +1244,26 @@
                         }
                     }
                 }
+            }
+
+            // ── PALADÍN DE LA MANO DE PLATA (Tirion): al llegar a 10 HP → Protección Sagrada + Escudo Sagrado + 20 cargas ──
+            if (remainingDamage > 0 && !passiveExecuting &&
+                target.passive && target.passive.name === 'Paladín de la Mano de Plata' &&
+                !target.tirionLowHpTriggered && target.hp > 0 && !target.isDead &&
+                target.hp <= 10) {
+                target.tirionLowHpTriggered = true;
+                passiveExecuting = true;
+                // Protección Sagrada
+                if (typeof hasStatusEffect === 'function' && !hasStatusEffect(targetName, 'Proteccion Sagrada')) {
+                    target.statusEffects.push({ name: 'Proteccion Sagrada', type: 'buff', duration: 999, permanent: true, emoji: '🛡️' });
+                }
+                // Escudo Sagrado
+                target.statusEffects = (target.statusEffects||[]).filter(function(e){ return !e || normAccent(e.name||'') !== 'escudo sagrado'; });
+                target.statusEffects.push({ name: 'Escudo Sagrado', type: 'buff', duration: 2, emoji: '✝️' });
+                // 20 cargas
+                target.charges = Math.min(20, (target.charges||0) + 20);
+                addLog('🌟 Paladín de la Mano de Plata: ¡Tirion activa Protección Sagrada + Escudo Sagrado + 20 cargas al llegar a ' + target.hp + ' HP!', 'buff');
+                passiveExecuting = false;
             }
 
             // ── ANIMACIÓN: shake + flash rojo + número flotante al recibir daño ──
