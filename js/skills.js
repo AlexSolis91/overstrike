@@ -205,7 +205,7 @@
                 addLog(`😱 Miedo: ${charName} ataca con -50% de daño`, 'damage');
             }
             // BOLVAR FORDRAGON: +100% daño habilidades
-            const bolvar = Object.values(gameState.summons).find(s => s && s.name === 'Bolvar Fordragon' && s.team === attacker.team);
+            const bolvar = Object.values(gameState.summons).find(s => s && s.name === 'Necrofago' && s.team === attacker.team);
             if (bolvar && finalDamage > 0 && (ability.type === 'special' || ability.type === 'over')) {
                 finalDamage *= 2;
                 addLog(`🔱 Bolvar Fordragon: daño de habilidad duplicado`, 'buff');
@@ -639,7 +639,7 @@
             } else if (ability.effect === 'crit_chance_basic') {
                 // Ataque con probabilidad de crítico (Goku Kamehameha, Golpe Serio Saitama, etc.)
                 let baseDmgCrit = finalDamage;
-                const darionBuff = Object.values(gameState.summons).find(s => s && s.name === 'Darion Morgraine' && s.team === attacker.team);
+                const darionBuff = Object.values(gameState.summons).find(s => s && s.name === 'Valkyr' && s.team === attacker.team);
                 const critBonusFromDarion = darionBuff ? 0.50 : 0;
                 const gilgameshBonus = ((gameState.selectedCharacter === 'Gilgamesh' || gameState.selectedCharacter === 'Gilgamesh v2')) ? 0.25 : 0;
                 const muzanCritB = ((gameState.selectedCharacter === 'Muzan Kibutsuji' || gameState.selectedCharacter === 'Muzan Kibutsuji v2')) ? (attacker.muzanCritBonus || 0) : 0;
@@ -669,7 +669,7 @@
                             // ESQUIVA ÁREA: Aspros, Min Byung, Minato, y cualquier personaje con buff/pasiva
                             if (checkAsprosAOEImmunity(n, true) || checkMinatoAOEImmunity(n)) { addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff'); continue; }
                             // Each enemy gets its own crit roll
-                            const darionB2 = Object.values(gameState.summons).find(s => s && s.name === 'Darion Morgraine' && s.team === attacker.team);
+                            const darionB2 = Object.values(gameState.summons).find(s => s && s.name === 'Valkyr' && s.team === attacker.team);
                             const criB2 = darionB2 ? 0.50 : 0;
                             const gilB2 = ((gameState.selectedCharacter === 'Gilgamesh' || gameState.selectedCharacter === 'Gilgamesh v2')) ? 0.10 : 0;
                             const mzB2 = ((gameState.selectedCharacter === 'Muzan Kibutsuji' || gameState.selectedCharacter === 'Muzan Kibutsuji v2')) ? (attacker.muzanCritBonus || 0) : 0;
@@ -842,7 +842,7 @@
                 // GOKU - Genkidama: AOE, críticos reducen cargas a 0
                 const gkTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                 checkAndRemoveStealth(gkTeam);
-                const darionGk = Object.values(gameState.summons).find(s => s && s.name === 'Darion Morgraine' && s.team === attacker.team);
+                const darionGk = Object.values(gameState.summons).find(s => s && s.name === 'Valkyr' && s.team === attacker.team);
                 const critBonusGk = darionGk ? 0.50 : 0;
                                 // MEGA PROVOCACIÓN: redirect all AOE damage
                 if (checkAndRedirectAOEMegaProv(gkTeam, finalDamage, gameState.selectedCharacter)) {
@@ -1194,8 +1194,10 @@
                     if (tgtAE.hp <= 0) { tgtAE.isDead = true; addLog('💀 ' + targetName + ' fue derrotado', 'damage'); }
                     else {
                         addLog('❄️ Agonía de Escarcha: roba 1 HP de ' + targetName, 'damage');
-                        // Curar 1 HP a Lich King
-                        if (typeof canHeal === 'function' ? canHeal(charName) : true) {
+                        // Curar 1 HP a Lich King (respeta QS y Aura de Luz)
+                        if (typeof applyHeal === 'function') {
+                            applyHeal(charName, 1, 'Agonía de Escarcha');
+                        } else if (typeof canHeal === 'function' ? canHeal(charName) : true) {
                             attacker.hp = Math.min(attacker.maxHp, (attacker.hp||0) + 1);
                             addLog('❄️ Lich King recupera 1 HP (robo de vida)', 'heal');
                         }
@@ -1208,25 +1210,30 @@
                 addLog('❄️ Agonía de Escarcha: ' + finalDamage + ' daño a ' + targetName, 'damage');
 
             } else if (ability.effect === 'cadenas_hielo') {
-                // LICH KING - Cadenas de Hielo: Congelación a 2 enemigos aleatorios
+                // LICH KING - Cadenas de Hielo: 1 AOE + 50% Congelación por objetivo
                 const _chETeam = attacker.team === 'team1' ? 'team2' : 'team1';
-                const _chEnemies = Object.keys(gameState.characters).filter(function(n) {
-                    const c = gameState.characters[n];
-                    return c && c.team === _chETeam && !c.isDead && c.hp > 0;
-                }).sort(function() { return Math.random() - 0.5; });
-                const _chTargets = _chEnemies.slice(0, 2);
-                if (_chTargets.length === 0) {
-                    addLog('❄️ Cadenas de Hielo: no hay objetivos válidos', 'info');
+                if (checkAndRedirectAOEMegaProv(_chETeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('❄️ Cadenas de Hielo redirigido por Mega Provocación', 'damage');
                 } else {
-                    _chTargets.forEach(function(t) {
-                        applyFreeze(t, 1);
-                        addLog('❄️ Cadenas de Hielo: ' + t + ' congelado 1T', 'debuff');
-                    });
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _chETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('💨 ' + _n + ' esquiva (EA)', 'buff'); continue; }
+                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        if (Math.random() < 0.50) {
+                            applyFreeze(_n, 1);
+                            addLog('❄️ Cadenas de Hielo: Congelación 1T a ' + _n, 'debuff');
+                        }
+                    }
+                    for (const _sid in gameState.summons) {
+                        const _s = gameState.summons[_sid];
+                        if (_s && _s.team === _chETeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, gameState.selectedCharacter);
+                    }
+                    addLog('❄️ Cadenas de Hielo: 1 AOE completado', 'damage');
                 }
-                addLog('❄️ Cadenas de Hielo: Congelación aplicada a ' + _chTargets.length + ' enemigo(s)', 'debuff');
 
             } else if (ability.effect === 'segador_almas') {
-                // LICH KING - Segador de Almas: 5 daño, si mata revive como aliado
+                // LICH KING - Segador de Almas OVER: 10 daño, si mata revive como aliado
                 const tgtSegador = gameState.characters[targetName];
                 const aliveBeforeSeg = tgtSegador && !tgtSegador.isDead && tgtSegador.hp > 0;
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
@@ -1242,8 +1249,8 @@
 
             } else if (ability.effect === 'el_rey_caido') {
                 // LICH KING - El Rey Caído: 3 invocaciones aleatorias
-                const lichPool = ['Sindragosa', 'Kel Thuzad', 'Darion Morgraine', 'Bolvar Fordragon', 'Tirion Fordring'];
-                const lichWeights = { 'Sindragosa': 24, 'Kel Thuzad': 24, 'Darion Morgraine': 24, 'Bolvar Fordragon': 24, 'Tirion Fordring': 4 };
+                const lichPool = ['Sindragosa', 'Banshee', 'Valkyr', 'Necrofago', 'Caballero de la Muerte'];
+                const lichWeights = { 'Sindragosa': 24, 'Banshee': 24, 'Valkyr': 24, 'Necrofago': 24, 'Caballero de la Muerte': 4 };
                 const myLichSummons = getSummonsBySummoner(gameState.selectedCharacter);
                 const existingLich = new Set(myLichSummons.map(s => s.name));
                 const availableLich = lichPool.filter(n => !existingLich.has(n));
@@ -1256,11 +1263,10 @@
                         for (const n of pool) { rand -= weights[n]; if (rand <= 0) return n; }
                         return pool[pool.length - 1];
                     }
-                    // Fill up to 3 per cast, but never exceed 5 total summons
+                    // El Rey Caído: 1 invocación aleatoria
                     const _totalSummons = Object.values(gameState.summons).filter(s => s && s.team === attacker.team).length;
                     const _slotsLeft = Math.max(0, 5 - _totalSummons);
-                    const _lichWant = Math.min(3, availableLich.length); // always try to summon 3
-                    const toSummonLich = Math.min(_lichWant, _slotsLeft);
+                    const toSummonLich = Math.min(1, _slotsLeft); // solo 1 invocación
                     const remainingLich = [...availableLich];
                     const selectedLich = [];
                     for (let i = 0; i < toSummonLich; i++) {
@@ -1270,12 +1276,12 @@
                         remainingLich.splice(remainingLich.indexOf(chosen), 1);
                         summonShadow(chosen, gameState.selectedCharacter);
                         // Invocaciones especiales con Mega Provocación permanente
-                        if (chosen === 'Sindragosa' || chosen === 'Tirion Fordring') {
+                        if (chosen === 'Sindragosa' || chosen === 'Caballero de la Muerte') {
                             const newSummon = Object.values(gameState.summons).find(s => s && s.name === chosen && s.summoner === gameState.selectedCharacter);
                             if (newSummon) newSummon.megaProvocation = true;
                         }
                     }
-                    addLog(`👑 El Rey Caído: Lich King invoca ${selectedLich.join(', ')}`, 'buff');
+                    addLog(`👑 El Rey Caído: Lich King invoca ${selectedLich.join(', ')} (1 invocación aleatoria)`, 'buff');
                 }
 
             } else if (ability.effect === 'animacion') {
@@ -1317,7 +1323,7 @@
                 // GILGAMESH - Espada Merodach: AOE daño + elimina 3 cargas
                 const emTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                 checkAndRemoveStealth(emTeam);
-                const darionEM = Object.values(gameState.summons).find(s => s && s.name === 'Darion Morgraine' && s.team === attacker.team);
+                const darionEM = Object.values(gameState.summons).find(s => s && s.name === 'Valkyr' && s.team === attacker.team);
                 const muzanEM = ((gameState.selectedCharacter === 'Muzan Kibutsuji' || gameState.selectedCharacter === 'Muzan Kibutsuji v2')) ? (attacker.muzanCritBonus || 0) : 0;
                 const critBonusEM = (darionEM ? 0.50 : 0) + 0.10 + muzanEM;
 
@@ -1545,7 +1551,7 @@
                 // Bonos de crit acumulados
                 const gilBonus = ((gameState.selectedCharacter === 'Gilgamesh' || gameState.selectedCharacter === 'Gilgamesh v2')) ? 0.10 : 0;
                 const muzanBonus = ((gameState.selectedCharacter === 'Muzan Kibutsuji' || gameState.selectedCharacter === 'Muzan Kibutsuji v2')) ? (attacker.muzanCritBonus || 0) : 0;
-                const darionBonus = Object.values(gameState.summons).find(s => s && s.name === 'Darion Morgraine' && s.team === attacker.team) ? 0.50 : 0;
+                const darionBonus = Object.values(gameState.summons).find(s => s && s.name === 'Valkyr' && s.team === attacker.team) ? 0.50 : 0;
                 const totalCritBonus = gilBonus + muzanBonus + darionBonus;
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
@@ -4937,27 +4943,47 @@
             // ══════════════════════════════════════════════
 
             } else if (ability.effect === 'corte_solar_yorichi') {
-                // YORICHI — Corte Solar: 2 daño + 50% QS. Si ya tenía QS, +1 carga al equipo aliado
+                // YORICHI — Corte Solar: 2 daño + 50% QS. Si ya tenía QS, crit 100%
                 const _cyAtk = gameState.characters[gameState.selectedCharacter];
                 const _cyTgt = gameState.characters[targetName];
                 const _cyHadQS = _cyTgt && hasStatusEffect(targetName, 'Quemadura Solar');
-                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                // Pasiva Mundo Transparente: bloquear pasiva del objetivo con QS
-                if (_cyHadQS && _cyTgt && _cyTgt.passive) {
-                    _cyTgt._passiveBlockedByYorichi = true;
-                    addLog('🌅 Mundo Transparente: pasiva de ' + targetName + ' bloqueada (tiene QS)', 'debuff');
+                // MUNDO TRANSPARENTE: crit 100% si objetivo tiene QS
+                let _cyDmg = finalDamage;
+                if (_cyHadQS) {
+                    _cyDmg *= 2;
+                    addLog('🌅 Mundo Transparente: ¡Crítico 100%! Yorichi golpea objetivo con QS', 'buff');
+                    // Bloquear pasiva del objetivo
+                    if (_cyTgt && _cyTgt.passive) {
+                        _cyTgt._passiveBlockedByYorichi = true;
+                        addLog('🌅 Mundo Transparente: pasiva de ' + targetName + ' Silenciada (tiene QS)', 'debuff');
+                    }
                 }
+                applyDamageWithShield(targetName, _cyDmg, gameState.selectedCharacter);
+                // 50% de aplicar QS si no tenía
                 if (Math.random() < 0.50) {
                     applySolarBurn(targetName, 2, 2);
                 }
+                // Si objetivo tenía QS: Yorichi gana 2 cargas y cura 2 HP a aliado aleatorio
                 if (_cyHadQS && _cyAtk) {
+                    _cyAtk.charges = Math.min(20, (_cyAtk.charges||0) + 2);
+                    addLog('🌅 Mundo Transparente: Yorichi gana 2 cargas (objetivo tenía QS)', 'buff');
                     const _cyAllyTeam = _cyAtk.team;
-                    for (const _n in gameState.characters) {
-                        const _c = gameState.characters[_n];
-                        if (!_c || _c.isDead || _c.hp <= 0 || _c.team !== _cyAllyTeam) continue;
-                        _c.charges = Math.min(20, (_c.charges||0) + 1);
+                    const _cyAllies = Object.keys(gameState.characters).filter(function(n){
+                        const _c = gameState.characters[n];
+                        return _c && _c.team === _cyAllyTeam && !_c.isDead && _c.hp > 0;
+                    });
+                    if (_cyAllies.length > 0) {
+                        const _cyHealTarget = _cyAllies[Math.floor(Math.random() * _cyAllies.length)];
+                        if (typeof applyHeal === 'function') {
+                            applyHeal(_cyHealTarget, 2, 'Mundo Transparente');
+                        } else if (typeof canHeal === 'function' ? canHeal(_cyHealTarget) : true) {
+                            gameState.characters[_cyHealTarget].hp = Math.min(
+                                gameState.characters[_cyHealTarget].maxHp,
+                                gameState.characters[_cyHealTarget].hp + 2
+                            );
+                            addLog('🌅 Mundo Transparente: ' + _cyHealTarget + ' cura 2 HP', 'heal');
+                        }
                     }
-                    addLog('🌅 Corte Solar: +1 carga al equipo aliado (objetivo tenía QS)', 'buff');
                 }
 
             } else if (ability.effect === 'respiracion_solar_yorichi') {
@@ -5095,8 +5121,8 @@
                 }
                 delete gameState.summons[_ifDragonId];
                 const _fenixId = 'dragon_fenix_' + Date.now();
-                gameState.summons[_fenixId] = Object.assign({}, summonData['Dragon Alado de Ra Modo Fenix'] || {
-                    name: 'Dragon Alado de Ra Modo Fenix', hp: 40, maxHp: 40, statusEffects: [],
+                gameState.summons[_fenixId] = Object.assign({}, summonData['Ra Modo Fenix'] || {
+                    name: 'Ra Modo Fenix', hp: 40, maxHp: 40, statusEffects: [],
                     img: 'https://i.ibb.co/xSxps7gW/Captura-de-pantalla-2026-04-14-174255.png'
                 });
                 gameState.summons[_fenixId].team = _ifMyTeam;
