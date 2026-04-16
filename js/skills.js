@@ -1244,7 +1244,6 @@
                     tgtSegador.hp = Math.ceil(tgtSegador.maxHp * 0.50);
                     tgtSegador.team = attacker.team; // Cambia de equipo
                     tgtSegador.statusEffects = [];
-                    tgtSegador._wasRevived = true; // flag para Portador de Cenizas (Tirion)
                     addLog(`💀➡️👻 ¡${targetName} revive como aliado de Lich King con ${tgtSegador.hp} HP!`, 'buff');
                 }
 
@@ -6926,6 +6925,48 @@
                         addLog(`⚡ Hiraishin no Jutsu: Minato genera +${bonusChargesM} cargas (enemigos más lentos)`, 'buff');
                     }
                 }
+            } else if (ability.effect === 'fuego_fatuo_manigoldo') {
+                const _ffA=gameState.characters[gameState.selectedCharacter],_ffT=gameState.characters[targetName];
+                applyDamageWithShield(targetName,finalDamage,gameState.selectedCharacter);
+                if(_ffA&&_ffT&&!_ffT.isDead&&_ffT.hp>0){const _ffL=_ffA.hp<=Math.floor(_ffA.maxHp*0.50);if(_ffL||Math.random()<0.25){const _s=Math.min(2,_ffT.hp);_ffT.hp=Math.max(0,_ffT.hp-_s);if(_ffT.hp<=0)_ffT.isDead=true;if(typeof applyHeal==='function')applyHeal(gameState.selectedCharacter,_s,'Fuego Fatuo');else _ffA.hp=Math.min(_ffA.maxHp,(_ffA.hp||0)+_s);addLog('☠️ Fuego Fatuo: roba '+_s+' HP','heal');}if(_ffL||Math.random()<0.25){const _sc=Math.min(2,_ffT.charges||0);if(_sc>0){_ffT.charges-=_sc;_ffA.charges=Math.min(20,(_ffA.charges||0)+_sc);addLog('☠️ Fuego Fatuo: roba '+_sc+' cargas','buff');}}}
+            } else if (ability.effect === 'explosion_almas_manigoldo') {
+                const _eaA=gameState.characters[gameState.selectedCharacter],_eaE=_eaA?(_eaA.team==='team1'?'team2':'team1'):'team2';
+                let _eaB=0,_eaD=0;
+                for(const _n in gameState.characters){const _c=gameState.characters[_n];if(!_c||_c.isDead)continue;(_c.statusEffects||[]).forEach(function(e){if(!e)return;if(e.type==='buff'&&!e.passiveHidden)_eaB++;if(e.type==='debuff')_eaD++;});}
+                if(_eaB>0)for(const _n in gameState.characters){const _c=gameState.characters[_n];if(!_c||_c.team!==_eaE||_c.isDead||_c.hp<=0)continue;_c.hp=Math.max(0,(_c.hp||0)-_eaB);if(_c.hp<=0)_c.isDead=true;addLog('☠️ Explosión de Almas: '+_eaB+' daño a '+_n,'damage');}
+                if(_eaD>0&&_eaA){_eaA.charges=Math.min(20,(_eaA.charges||0)+_eaD);addLog('☠️ Explosión de Almas: +'+_eaD+' cargas','buff');}
+            } else if (ability.effect === 'prision_yomotsu_manigoldo') {
+                applyDamageWithShield(targetName,finalDamage,gameState.selectedCharacter);
+                addLog('☠️ Prisión del Yomotsu: '+finalDamage+' daño','damage');
+                if(Math.random()<0.50){const _pp=['congelacion','megacongelacion','aturdimiento','mega_aturdimiento','posesion','mega_posesion','miedo','silenciar'].sort(()=>Math.random()-0.5);const _pn=1+Math.floor(Math.random()*3);for(let _pi=0;_pi<_pn;_pi++){const _pt=gameState.characters[targetName];if(!_pt||_pt.isDead||_pt.hp<=0)break;const _d=_pp[_pi];if(_d==='congelacion')applyFreeze(targetName,2);else if(_d==='megacongelacion')applyFreeze(targetName,2,true);else if(_d==='aturdimiento')applyStun(targetName,1);else if(_d==='mega_aturdimiento')applyStun(targetName,2);else if(_d==='posesion'||_d==='mega_posesion')applyStun(targetName,_d==='mega_posesion'?2:1);else if(_d==='miedo')applyFear(targetName,2);else if(_d==='silenciar')applySilenciar(targetName,2);}addLog('☠️ Prisión del Yomotsu: '+_pn+' debuffs','debuff');}
+            } else if (ability.effect === 'ondas_infernales_manigoldo') {
+                const _oi=gameState.characters[targetName],_oiA=_oi&&!_oi.isDead&&_oi.hp>0;
+                applyDamageWithShield(targetName,finalDamage,gameState.selectedCharacter);
+                addLog('☠️ Ondas Infernales: '+finalDamage+' daño','damage');
+                if(_oiA&&_oi&&!_oi.isDead&&_oi.hp>0){applyStun(targetName,2);const _oiC=_oi.charges||0;if(_oiC>0){attacker.charges=Math.min(20,(attacker.charges||0)+_oiC);_oi.charges=0;addLog('☠️ Ondas Infernales: roba '+_oiC+' cargas + Mega Aturdimiento','buff');}}
+            } else if (ability.effect === 'luz_del_alba_tirion') {
+                const _ld=gameState.characters[gameState.selectedCharacter],_ldE=_ld?(_ld.team==='team1'?'team2':'team1'):'team2',_ldA=_ld?_ld.team:'team1';
+                if(checkAndRedirectAOEMegaProv(_ldE,finalDamage,gameState.selectedCharacter)){addLog('🌟 Luz del Alba redirigida','damage');}else{for(const _n in gameState.characters){const _c=gameState.characters[_n];if(!_c||_c.team!==_ldE||_c.isDead||_c.hp<=0)continue;if(checkAsprosAOEImmunity(_n,true)||checkMinatoAOEImmunity(_n))continue;applyDamageWithShield(_n,finalDamage,gameState.selectedCharacter);}}
+                for(const _n in gameState.characters){const _c=gameState.characters[_n];if(!_c||_c.team!==_ldA||_c.isDead||_c.hp<=0)continue;const _h=Math.random()<0.50?3:1;if(typeof applyHeal==='function')applyHeal(_n,_h,'Luz del Alba');else if(typeof canHeal==='function'?canHeal(_n):true)_c.hp=Math.min(_c.maxHp,(_c.hp||0)+_h);if(!hasStatusEffect(_n,'Aura de Luz')&&!hasStatusEffect(_n,'Aura de luz')){if(typeof applyBuff==='function')applyBuff(_n,{name:'Aura de Luz',type:'buff',duration:2,emoji:'✨'});}}
+                addLog('🌟 Luz del Alba: AOE + cura + Aura de Luz','buff');
+            } else if (ability.effect === 'proteccion_luz_tirion') {
+                const _pl=gameState.characters[targetName];
+                if(_pl){if(typeof applyHeal==='function')applyHeal(targetName,3,'Protección de la Luz');else if(typeof canHeal==='function'?canHeal(targetName):true)_pl.hp=Math.min(_pl.maxHp,(_pl.hp||0)+3);const _pld=(_pl.statusEffects||[]).filter(function(e){return e&&e.type==='debuff'&&!e.permanent;});_pl.statusEffects=(_pl.statusEffects||[]).filter(function(e){return !e||e.type!=='debuff'||e.permanent;});if(_pld.length>0){_pl.charges=Math.min(20,(_pl.charges||0)+_pld.length*2);addLog('🌟 Protección: '+_pld.length+' debuffs → +'+((_pld.length*2))+' cargas a '+targetName,'buff');}}
+            } else if (ability.effect === 'portador_cenizas_tirion') {
+                const _pc=gameState.characters[gameState.selectedCharacter],_pcE=_pc?(_pc.team==='team1'?'team2':'team1'):'team2',_pcA=_pc?_pc.team:'team1';
+                if(checkAndRedirectAOEMegaProv(_pcE,finalDamage,gameState.selectedCharacter)){addLog('🌟 Portador redirigido','damage');}else{for(const _n in gameState.characters){const _c=gameState.characters[_n];if(!_c||_c.team!==_pcE||_c.isDead||_c.hp<=0)continue;if(checkAsprosAOEImmunity(_n,true)||checkMinatoAOEImmunity(_n))continue;applyDamageWithShield(_n,finalDamage,gameState.selectedCharacter);}}
+                const _pcH=Math.ceil((_pc?_pc.hp:1)*0.50);
+                for(const _n in gameState.characters){const _c=gameState.characters[_n];if(!_c||_c.team!==_pcA||_c.isDead||_c.hp<=0)continue;if(typeof applyHeal==='function')applyHeal(_n,_pcH,'Portador');else if(typeof canHeal==='function'?canHeal(_n):true)_c.hp=Math.min(_c.maxHp,(_c.hp||0)+_pcH);}
+                addLog('🌟 Portador de Cenizas: cura '+_pcH+' HP','heal');
+                for(const _n in gameState.characters){const _c=gameState.characters[_n];if(!_c||_c.team!==_pcE||_c.isDead||_c.hp<=0||!_c._wasRevived)continue;_c.team=_pcA;delete _c._wasRevived;addLog('🌟 '+_n+' cambia de bando','buff');}
+            } else if (ability.effect === 'luz_oscuridad_tirion') {
+                const _lu=gameState.characters[gameState.selectedCharacter],_luA=_lu?_lu.team:'team1';
+                const _luL=Object.keys(gameState.characters).filter(function(n){const _c=gameState.characters[n];return _c&&_c.team===_luA&&!_c.isDead&&_c.hp>0&&n!==gameState.selectedCharacter;});
+                if(_luL.length>0){addLog('🌟 Una Luz en la Oscuridad: Tirion no está solo','info');if(_lu)_lu.charges=Math.min(20,(_lu.charges||0)+15);endTurn();return;}
+                let _luR=0;
+                for(const _n in gameState.characters){const _c=gameState.characters[_n];if(!_c||_c.team!==_luA||_n===gameState.selectedCharacter)continue;if(_c.isDead||_c.hp<=0){_c.isDead=false;_c.hp=20;_c.charges=10;_c.statusEffects=[];_luR++;addLog('🌟 Una Luz en la Oscuridad: '+_n+' revive!','buff');}}
+                if(_luR===0)addLog('🌟 Una Luz: no hay aliados caídos','info');
+                if(typeof renderCharacters==='function')renderCharacters();
             }
             
             // ASISTIR (Anakin): when ally uses Special/Over ST, execute basic on same target
@@ -6955,32 +6996,6 @@
                             addLog('El Elegido: Anakin gana Frenesi + Furia 2T', 'buff');
                             passiveExecuting = false;
                         }
-                        break;
-                    }
-                }
-            }
-
-            // PALADÍN DE LA MANO DE PLATA (Tirion Fordring): cuando enemigo usa Over → cura 5 HP + 5 cargas al equipo aliado
-            if (ability && ability.type === 'over' && !passiveExecuting) {
-                const _tirAtk = gameState.characters[gameState.selectedCharacter];
-                if (_tirAtk) {
-                    const _tirDefTeam = _tirAtk.team === 'team1' ? 'team2' : 'team1';
-                    for (const _tn in gameState.characters) {
-                        const _tc = gameState.characters[_tn];
-                        if (!_tc || _tc.isDead || _tc.hp <= 0 || _tc.team !== _tirDefTeam) continue;
-                        if (!_tc.passive || _tc.passive.name !== 'Paladín de la Mano de Plata') continue;
-                        passiveExecuting = true;
-                        for (const _an in gameState.characters) {
-                            const _ac = gameState.characters[_an];
-                            if (!_ac || _ac.isDead || _ac.hp <= 0 || _ac.team !== _tirDefTeam) continue;
-                            if (typeof applyHeal === 'function') applyHeal(_an, 5, 'Paladín de la Mano de Plata');
-                            else if (typeof canHeal === 'function' ? canHeal(_an) : true) {
-                                _ac.hp = Math.min(_ac.maxHp, (_ac.hp||0) + 5);
-                            }
-                            _ac.charges = Math.min(20, (_ac.charges||0) + 5);
-                        }
-                        addLog('🌟 Paladín de la Mano de Plata: equipo aliado recibe 5 HP y 5 cargas (enemigo usó Over)', 'buff');
-                        passiveExecuting = false;
                         break;
                     }
                 }
@@ -7036,234 +7051,6 @@
         }
         }
 
-            // ══════════════════════════════════════════════════════
-            // MANIGOLDO — handlers
-            // ══════════════════════════════════════════════════════
-
-            } else if (ability.effect === 'fuego_fatuo_manigoldo') {
-                // MANIGOLDO — Fuego Fatuo: 2 daño + robo condicional
-                const _ffAtk = gameState.characters[gameState.selectedCharacter];
-                const _ffTgt = gameState.characters[targetName];
-                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                if (_ffAtk && _ffTgt && !_ffTgt.isDead && _ffTgt.hp > 0) {
-                    const _ffLowHp = _ffAtk.hp <= Math.floor(_ffAtk.maxHp * 0.50);
-                    // Robo HP
-                    const _ffHpRoll = _ffLowHp || Math.random() < 0.25;
-                    if (_ffHpRoll) {
-                        const _ffSteal = Math.min(2, _ffTgt.hp);
-                        _ffTgt.hp = Math.max(0, _ffTgt.hp - _ffSteal);
-                        if (_ffTgt.hp <= 0) _ffTgt.isDead = true;
-                        if (typeof applyHeal === 'function') applyHeal(gameState.selectedCharacter, _ffSteal, 'Fuego Fatuo');
-                        else _ffAtk.hp = Math.min(_ffAtk.maxHp, (_ffAtk.hp||0) + _ffSteal);
-                        addLog('☠️ Fuego Fatuo: roba ' + _ffSteal + ' HP de ' + targetName, 'heal');
-                    }
-                    // Robo cargas
-                    const _ffChargeRoll = _ffLowHp || Math.random() < 0.25;
-                    if (_ffChargeRoll && _ffTgt.charges > 0) {
-                        const _ffCharges = Math.min(2, _ffTgt.charges);
-                        _ffTgt.charges = Math.max(0, _ffTgt.charges - _ffCharges);
-                        _ffAtk.charges = Math.min(20, (_ffAtk.charges||0) + _ffCharges);
-                        addLog('☠️ Fuego Fatuo: roba ' + _ffCharges + ' cargas de ' + targetName, 'buff');
-                    }
-                    if (_ffLowHp) addLog('☠️ Fuego Fatuo: ¡HP bajo 50%! efectos garantizados', 'buff');
-                }
-
-            } else if (ability.effect === 'explosion_almas_manigoldo') {
-                // MANIGOLDO — Explosión de Almas: daño por buffs + cargas por debuffs en ambos equipos
-                const _eaAtk = gameState.characters[gameState.selectedCharacter];
-                const _eaETeam = _eaAtk ? (_eaAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
-                // Contar buffs activos en ambos equipos
-                let _eaTotalBuffs = 0;
-                let _eaTotalDebuffs = 0;
-                for (const _n in gameState.characters) {
-                    const _c = gameState.characters[_n];
-                    if (!_c || _c.isDead || _c.hp <= 0) continue;
-                    (_c.statusEffects||[]).forEach(function(e) {
-                        if (!e) return;
-                        if (e.type === 'buff' && !e.passiveHidden) _eaTotalBuffs++;
-                        if (e.type === 'debuff') _eaTotalDebuffs++;
-                    });
-                }
-                addLog('☠️ Explosión de Almas: ' + _eaTotalBuffs + ' buffs (→daño) y ' + _eaTotalDebuffs + ' debuffs (→cargas)', 'info');
-                // 1 daño directo por buff a todos los enemigos
-                if (_eaTotalBuffs > 0) {
-                    for (const _n in gameState.characters) {
-                        const _c = gameState.characters[_n];
-                        if (!_c || _c.team !== _eaETeam || _c.isDead || _c.hp <= 0) continue;
-                        _c.hp = Math.max(0, (_c.hp||0) - _eaTotalBuffs);
-                        if (_c.hp <= 0) _c.isDead = true;
-                        addLog('☠️ Explosión de Almas: ' + _eaTotalBuffs + ' daño directo a ' + _n, 'damage');
-                    }
-                }
-                // 1 carga por debuff a Manigoldo
-                if (_eaTotalDebuffs > 0 && _eaAtk) {
-                    _eaAtk.charges = Math.min(20, (_eaAtk.charges||0) + _eaTotalDebuffs);
-                    addLog('☠️ Explosión de Almas: Manigoldo gana ' + _eaTotalDebuffs + ' cargas (por debuffs)', 'buff');
-                }
-
-            } else if (ability.effect === 'prision_yomotsu_manigoldo') {
-                // MANIGOLDO — Prisión del Yomotsu: 5 daño + 50% de 1-3 debuffs aleatorios
-                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                addLog('☠️ Prisión del Yomotsu: ' + finalDamage + ' daño a ' + targetName, 'damage');
-                if (Math.random() < 0.50) {
-                    const _pyDebuffs = ['congelacion','megacongelacion','aturdimiento','mega_aturdimiento','posesion','mega_posesion','miedo','silenciar'];
-                    const _pyShuffled = _pyDebuffs.sort(function(){ return Math.random()-0.5; });
-                    const _pyCount = 1 + Math.floor(Math.random() * 3); // 1-3
-                    for (let _pi = 0; _pi < _pyCount; _pi++) {
-                        const _pyD = _pyShuffled[_pi];
-                        const _pyTgt = gameState.characters[targetName];
-                        if (!_pyTgt || _pyTgt.isDead || _pyTgt.hp <= 0) break;
-                        if (_pyD === 'congelacion') applyFreeze(targetName, 2);
-                        else if (_pyD === 'megacongelacion') applyFreeze(targetName, 2, true);
-                        else if (_pyD === 'aturdimiento') applyStun(targetName, 1);
-                        else if (_pyD === 'mega_aturdimiento') applyStun(targetName, 2);
-                        else if (_pyD === 'posesion') { if (typeof applyPossession === 'function') applyPossession(targetName, 1); else applyStun(targetName, 1); }
-                        else if (_pyD === 'mega_posesion') { if (typeof applyPossession === 'function') applyPossession(targetName, 2); else applyStun(targetName, 2); }
-                        else if (_pyD === 'miedo') applyFear(targetName, 2);
-                        else if (_pyD === 'silenciar') applySilenciar(targetName, 2);
-                    }
-                    addLog('☠️ Prisión del Yomotsu: ' + _pyCount + ' debuff(s) aplicados a ' + targetName, 'debuff');
-                }
-
-            } else if (ability.effect === 'ondas_infernales_manigoldo') {
-                // MANIGOLDO — Ondas Infernales: 10 daño. Si sobrevive: Mega Aturdimiento + roba cargas
-                const _oiTgt = gameState.characters[targetName];
-                const _oiWasAlive = _oiTgt && !_oiTgt.isDead && _oiTgt.hp > 0;
-                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                addLog('☠️ Ondas Infernales: ' + finalDamage + ' daño a ' + targetName, 'damage');
-                if (_oiWasAlive && _oiTgt && !_oiTgt.isDead && _oiTgt.hp > 0) {
-                    // Sobrevivió: Mega Aturdimiento + robar todas sus cargas
-                    applyStun(targetName, 2);
-                    const _oiCharges = _oiTgt.charges || 0;
-                    if (_oiCharges > 0 && attacker) {
-                        attacker.charges = Math.min(20, (attacker.charges||0) + _oiCharges);
-                        _oiTgt.charges = 0;
-                        addLog('☠️ Ondas Infernales: roba ' + _oiCharges + ' cargas de ' + targetName + ' (sobrevivió)', 'buff');
-                    }
-                    addLog('☠️ Ondas Infernales: Mega Aturdimiento aplicado a ' + targetName, 'debuff');
-                }
-
-            // ══════════════════════════════════════════════════════
-            // TIRION FORDRING — handlers
-            // ══════════════════════════════════════════════════════
-
-            } else if (ability.effect === 'luz_del_alba_tirion') {
-                // TIRION — Luz del Alba: 1 AOE + cura 1 HP equipo + Aura de Luz + 50% +2 HP
-                const _ldAtk = gameState.characters[gameState.selectedCharacter];
-                const _ldETeam = _ldAtk ? (_ldAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
-                const _ldAllyTeam = _ldAtk ? _ldAtk.team : 'team1';
-                // AOE daño
-                if (checkAndRedirectAOEMegaProv(_ldETeam, finalDamage, gameState.selectedCharacter)) {
-                    addLog('🌟 Luz del Alba redirigida', 'damage');
-                } else {
-                    for (const _n in gameState.characters) {
-                        const _c = gameState.characters[_n];
-                        if (!_c || _c.team !== _ldETeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) continue;
-                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
-                    }
-                }
-                // Curar equipo aliado
-                for (const _n in gameState.characters) {
-                    const _c = gameState.characters[_n];
-                    if (!_c || _c.team !== _ldAllyTeam || _c.isDead || _c.hp <= 0) continue;
-                    if (typeof applyHeal === 'function') {
-                        let _healAmt = 1;
-                        if (Math.random() < 0.50) _healAmt += 2;
-                        applyHeal(_n, _healAmt, 'Luz del Alba');
-                    }
-                    // Aura de Luz
-                    if (!hasStatusEffect(_n, 'Aura de Luz') && !hasStatusEffect(_n, 'Aura de luz')) {
-                        if (typeof applyBuff === 'function') applyBuff(_n, { name: 'Aura de Luz', type: 'buff', duration: 2, emoji: '✨' });
-                    }
-                }
-                addLog('🌟 Luz del Alba: AOE + cura + Aura de Luz al equipo', 'buff');
-
-            } else if (ability.effect === 'proteccion_luz_tirion') {
-                // TIRION — Protección de la Luz: cura 3 HP + disipa debuffs + 2 cargas por debuff
-                const _plTgt = gameState.characters[targetName];
-                if (_plTgt) {
-                    if (typeof applyHeal === 'function') applyHeal(targetName, 3, 'Protección de la Luz');
-                    else if (typeof canHeal === 'function' ? canHeal(targetName) : true) {
-                        _plTgt.hp = Math.min(_plTgt.maxHp, (_plTgt.hp||0) + 3);
-                        addLog('🌟 Protección de la Luz: ' + targetName + ' recupera 3 HP', 'heal');
-                    }
-                    const _plDebuffs = (_plTgt.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff' && !e.permanent; });
-                    _plTgt.statusEffects = (_plTgt.statusEffects||[]).filter(function(e){ return !e || e.type !== 'debuff' || e.permanent; });
-                    if (_plDebuffs.length > 0) {
-                        const _plCharges = _plDebuffs.length * 2;
-                        _plTgt.charges = Math.min(20, (_plTgt.charges||0) + _plCharges);
-                        addLog('🌟 Protección de la Luz: ' + _plDebuffs.length + ' debuff(s) disipados → +' + _plCharges + ' cargas a ' + targetName, 'buff');
-                    }
-                }
-
-            } else if (ability.effect === 'portador_cenizas_tirion') {
-                // TIRION — Portador de Cenizas: 2 AOE + cura 50% HP Tirion a equipo + controla revividos
-                const _pcAtk = gameState.characters[gameState.selectedCharacter];
-                const _pcETeam = _pcAtk ? (_pcAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
-                const _pcAllyTeam = _pcAtk ? _pcAtk.team : 'team1';
-                if (checkAndRedirectAOEMegaProv(_pcETeam, finalDamage, gameState.selectedCharacter)) {
-                    addLog('🌟 Portador de Cenizas AOE redirigido', 'damage');
-                } else {
-                    for (const _n in gameState.characters) {
-                        const _c = gameState.characters[_n];
-                        if (!_c || _c.team !== _pcETeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) continue;
-                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
-                    }
-                }
-                const _pcHealAmt = Math.ceil((_pcAtk ? _pcAtk.hp : 1) * 0.50);
-                for (const _n in gameState.characters) {
-                    const _c = gameState.characters[_n];
-                    if (!_c || _c.team !== _pcAllyTeam || _c.isDead || _c.hp <= 0) continue;
-                    if (typeof applyHeal === 'function') applyHeal(_n, _pcHealAmt, 'Portador de Cenizas');
-                    else if (typeof canHeal === 'function' ? canHeal(_n) : true) {
-                        _c.hp = Math.min(_c.maxHp, (_c.hp||0) + _pcHealAmt);
-                    }
-                }
-                addLog('🌟 Portador de Cenizas: cura ' + _pcHealAmt + ' HP al equipo aliado (50% HP Tirion)', 'heal');
-                // Tomar control de personajes revividos
-                for (const _n in gameState.characters) {
-                    const _c = gameState.characters[_n];
-                    if (!_c || _c.team !== _pcETeam || _c.isDead || _c.hp <= 0) continue;
-                    if (_c._wasRevived) {
-                        _c.team = _pcAllyTeam;
-                        delete _c._wasRevived;
-                        addLog('🌟 Portador de Cenizas: ¡' + _n + ' cambia de bando hacia los aliados de Tirion!', 'buff');
-                    }
-                }
-
-            } else if (ability.effect === 'luz_oscuridad_tirion') {
-                // TIRION — Una Luz en la Oscuridad: solo si es el único aliado vivo, revive a todos
-                const _luAtk = gameState.characters[gameState.selectedCharacter];
-                const _luAllyTeam = _luAtk ? _luAtk.team : 'team1';
-                // Verificar que Tirion sea el único aliado vivo
-                const _luAliveAllies = Object.keys(gameState.characters).filter(function(n){
-                    const _c = gameState.characters[n];
-                    return _c && _c.team === _luAllyTeam && !_c.isDead && _c.hp > 0 && n !== gameState.selectedCharacter;
-                });
-                if (_luAliveAllies.length > 0) {
-                    addLog('🌟 Una Luz en la Oscuridad: Tirion no está solo — habilidad bloqueada', 'info');
-                    // Devolver cargas
-                    if (_luAtk) _luAtk.charges = Math.min(20, (_luAtk.charges||0) + 15);
-                    endTurn(); return;
-                }
-                // Revivir a todos los aliados caídos
-                let _luRevived = 0;
-                for (const _n in gameState.characters) {
-                    const _c = gameState.characters[_n];
-                    if (!_c || _c.team !== _luAllyTeam || _n === gameState.selectedCharacter) continue;
-                    if (_c.isDead || _c.hp <= 0) {
-                        _c.isDead = false;
-                        _c.hp = 20;
-                        _c.charges = 10;
-                        _c.statusEffects = [];
-                        _luRevived++;
-                        addLog('🌟 Una Luz en la Oscuridad: ¡' + _n + ' revive con 20 HP y 10 cargas!', 'buff');
-                    }
-                }
-                if (_luRevived === 0) addLog('🌟 Una Luz en la Oscuridad: no hay aliados caídos que revivir', 'info');
-                if (typeof renderCharacters === 'function') renderCharacters();
         // ==================== VERIFICACIÓN FIN DEL JUEGO ====================
         function checkGameOver() {
             let team1Alive = 0;
