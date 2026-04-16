@@ -787,8 +787,8 @@
                 abilities: [
                     { name: 'Corte Solar', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'corte_solar_yorichi', description: 'Causa 2 daño. 50% de aplicar QS. Si el objetivo ya tenía QS, genera 1 carga al equipo aliado.' },
                     { name: 'Respiración Solar Pura', type: 'special', cost: 3, chargeGain: 0, damage: 2, target: 'aoe', effect: 'respiracion_solar_yorichi', description: 'Causa 2 AOE. Disipa todos los buffs de los objetivos. Aplica Quemadura 2 HP.' },
-                    { name: 'Diosa del Sol', type: 'special', cost: 12, chargeGain: 0, damage: 0, target: 'self', effect: 'diosa_sol_yorichi', description: 'Realiza 6 ataques básicos sobre enemigos aleatorios.' },
-                    { name: 'Las Trece Formas del Sol', type: 'over', cost: 13, chargeGain: 0, damage: 13, target: 'single', effect: 'trece_formas_sol_yorichi', description: 'Causa 13 daño. Si el objetivo tenía QS activa: Yorichi gana 12 cargas y un turno adicional.' }
+                    { name: 'Diosa del Sol', type: 'special', cost: 12, chargeGain: 0, damage: 0, target: 'self', effect: 'diosa_sol_yorichi', description: 'Realiza 6 ataques básicos sobre enemigos de manera aleatoria, generando y aplicando los efectos correspondientes de cada golpe.' },
+                    { name: 'Las Trece Formas del Sol', type: 'over', cost: 13, chargeGain: 0, damage: 13, target: 'single', effect: 'trece_formas_sol_yorichi', description: 'Causa 13 daño. Si el objetivo tenía QS activa antes de ejecutar este ataque: Yorichi gana 6 cargas y un turno adicional.' }
                 ]
             },
 
