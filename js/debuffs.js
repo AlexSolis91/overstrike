@@ -114,6 +114,7 @@ function triggerMaboroshi(targetTeam, debuffName) {
             const cat = cats[Math.floor(Math.random() * cats.length)];
             applyDebuff(targetName, { name: 'Silenciar', type: 'debuff', duration, silencedCategory: cat, emoji: '🔇' });
             addLog(`🔇 ${targetName} es Silenciado — categoría ${cat} bloqueada por ${duration} turno${duration>1?'s':''}`, 'damage');
+            if (typeof registerCC === 'function' && gameState.selectedCharacter) registerCC(gameState.selectedCharacter);
         }
 
         function triggerAntipacion(extraTurnCharName) {
@@ -163,6 +164,14 @@ function triggerMaboroshi(targetTeam, debuffName) {
             // Animación buff en el portador
             if (typeof _animCard === 'function' && !effectObj.passiveHidden) {
                 _animCard(targetName, 'anim-charge', 550);
+            }
+            // MVP: registrar buff aplicado (solo buffs visibles en aliados, no pasivos ocultos)
+            if (!effectObj.passiveHidden && !passiveExecuting && gameState.selectedCharacter) {
+                const _caster = gameState.characters[gameState.selectedCharacter];
+                const _tgt = gameState.characters[targetName];
+                if (_caster && _tgt && _caster.team === _tgt.team && typeof registerBuff === 'function') {
+                    registerBuff(gameState.selectedCharacter);
+                }
             }
             // MONARCA DE LA DESTRUCCION: 3 daño si se aplica Buff a un personaje que es enemigo de Antares
             // (funciona sin importar quién sea selectedCharacter)
@@ -300,6 +309,14 @@ function applyDebuff(targetName, effectObj) {
                 }
             }
             target.statusEffects.push(effectObj);
+            // MVP: registrar debuff aplicado sobre enemigo
+            if (!passiveExecuting && gameState.selectedCharacter) {
+                const _caster = gameState.characters[gameState.selectedCharacter];
+                const _tgt = gameState.characters[targetName];
+                if (_caster && _tgt && _caster.team !== _tgt.team && typeof registerDebuff === 'function') {
+                    registerDebuff(gameState.selectedCharacter);
+                }
+            }
             // Animación debuff en el portador
             if (typeof _animCard === 'function') {
                 _animCard(targetName, 'anim-debuff', 500);
@@ -410,6 +427,7 @@ function applyDebuff(targetName, effectObj) {
             const emoji = duration >= 2 ? '💫' : '⭐';
             applyDebuff(targetName, { name, type: 'debuff', duration, emoji });
             addLog(`${emoji} ${targetName} queda aturdido por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
+            if (typeof registerCC === 'function' && gameState.selectedCharacter) registerCC(gameState.selectedCharacter);
         }
 
         function applyBleed(targetName, duration) {
@@ -500,6 +518,11 @@ function applyDebuff(targetName, effectObj) {
         function applyPoison(targetName, duration) {
             const target = gameState.characters[targetName];
             if (!target) return;
+            // MVP: registrar quién aplica veneno
+            if (gameState.battleStats && gameState.selectedCharacter) {
+                if (!gameState.battleStats.poisonAppliers) gameState.battleStats.poisonAppliers = new Set();
+                gameState.battleStats.poisonAppliers.add(gameState.selectedCharacter);
+            }
             // DONCELLA ESCUDERA (Lagertha): 50% de esquivar Veneno
             if (target.passive && target.passive.name === 'Doncella Escudera') {
                 if (Math.random() < 0.50) {
