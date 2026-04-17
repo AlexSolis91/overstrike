@@ -72,6 +72,11 @@
             }
         }
         function applyFlatBurn(targetName, flatHp, duration) {
+            // MVP: registrar quién aplica quemadura
+            if (gameState.battleStats && gameState.selectedCharacter) {
+                gameState.battleStats.burnAppliers = gameState.battleStats.burnAppliers || new Set();
+                gameState.battleStats.burnAppliers.add(gameState.selectedCharacter);
+            }
             if (targetName === 'Antares' || targetName === 'Antares v2') {
                 addLog('🐉 Monarca de la Destruccion: Antares es inmune a Quemadura', 'buff');
                 return;
@@ -151,6 +156,8 @@ function processBurnEffects(charName) {
             if (damage > 0) {
                 applyDamageWithShield(charName, damage, null);
                 addLog('🔥 ' + charName + ' recibe ' + damage + ' de daño por Quemadura', 'damage');
+                // MVP: registrar daño por quemadura
+                if (typeof registerBurnDamage === 'function') registerBurnDamage(damage);
                 // RENGOKU PASIVA: genera 1 carga por tick de quemadura en enemigo
                 const rengoku = gameState.characters['Rengoku'];
                 if (rengoku && !rengoku.isDead && rengoku.hp > 0 && rengoku.team !== char.team) {
@@ -205,6 +212,8 @@ function processBurnEffects(charName) {
                     }
                 }
                 addLog('☠️ ' + charName + ' recibe ' + totalVenenoDmg + ' de daño por Veneno (tick ' + poisonEffect.poisonTick + ')', 'damage');
+                // MVP: registrar daño por veneno
+                if (typeof registerPoisonDamage === 'function') registerPoisonDamage(totalVenenoDmg);
 
                 // PILAR DEL INSECTO (Shinobu): genera 1 carga al equipo aliado cuando Shinobu recibe daño de Veneno
                 if (!passiveExecuting) {
