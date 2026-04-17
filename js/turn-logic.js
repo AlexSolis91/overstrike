@@ -65,6 +65,9 @@
                         processRegenerationEffects(currentCharName);
                         // NOTA: updateStatusEffectDurations se llama dentro de continueTurn
                         // para que el decremento ocurra DESPUÉS de verificar stun/freeze/etc.
+                        // Registrar el personaje activo como atacante del turno (para kills por efecto)
+                        gameState._currentTurnAttacker = currentCharName;
+
                         // SUN JIN WOO PASIVA: Sigilo al inicio de su turno, dura hasta fin de ronda (no es permanente)
                         if ((currentCharName === 'Sun Jin Woo' || currentCharName.startsWith('Sun Jin Woo')) || currentCharName === 'Sun Jin Woo v2') {
                             const sjw = gameState.characters['Sun Jin Woo'];
