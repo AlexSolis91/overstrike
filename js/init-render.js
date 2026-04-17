@@ -30,6 +30,7 @@
 
             // ── BATTLE STATS: contadores para la pantalla de resultado épica ──
             gameState.battleStats = {
+                // Existentes
                 totalDamage: {},
                 crits: 0,
                 summonsKilled: 0,
@@ -37,7 +38,23 @@
                 healsGiven: 0,
                 team1Damage: 0,
                 team2Damage: 0,
-                killMap: {}
+                killMap: {},
+                // MVP tracking — nuevos contadores
+                critsByChar: {},       // crits por personaje × 2pts
+                chargesGenSelf: {},    // cargas generadas para sí mismo × 0.5pts
+                chargesGenAllies: {},  // cargas generadas para aliados × 1.5pts
+                damageReceived: {},    // daño recibido por personaje × 1-2pts
+                debuffsApplied: {},    // debuffs aplicados × 2pts
+                buffsApplied: {},      // buffs aplicados × 2pts
+                summonsDone: {},       // invocaciones realizadas × 3pts
+                summonKills: {},       // kills causadas por invocación (+5pts al invocador)
+                healingDone: {},       // HP curado a aliados × 1pt
+                ccApplied: {},         // CC aplicado × 1.5pts
+                poisonDamage: {},      // daño por veneno (para Dotters)
+                burnDamage: {},        // daño por quemadura (para Dotters)
+                // Quién puede aplicar veneno/quemadura (para dividir Dotters equitativamente)
+                poisonAppliers: new Set(),
+                burnAppliers: new Set(),
             };
 
             // ── PROXY: interceptar statusEffects.push para activar Monarca de la Destruccion ──
