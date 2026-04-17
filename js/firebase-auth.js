@@ -1815,7 +1815,16 @@
                 });
             }
 
-            _saveGlobalCharStats(playerChars, won, seasonKey);
+            // Calcular MVP de la partida antes de guardar
+            var _mvpChar = null;
+            if (typeof _calculateMvpScore === 'function') {
+                var _mvpBest = -1;
+                for (var _mn in gameState.characters) {
+                    var _ms = _calculateMvpScore(_mn);
+                    if (_ms > _mvpBest) { _mvpBest = _ms; _mvpChar = _mn; }
+                }
+            }
+            _saveGlobalCharStats(playerChars, won, seasonKey, _mvpChar);
             if (!defOwnerUid && opponentChars && opponentChars.length) {
                 _saveGlobalCharStats(opponentChars, !won, seasonKey);
             }
@@ -1881,7 +1890,7 @@
         }
 
         // ── Guardar stats globales de personajes (para panel de Meta) ──
-        function _saveGlobalCharStats(chars, won, seasonKey) {
+        function _saveGlobalCharStats(chars, won, seasonKey, mvpCharName) {
             if (!chars || !chars.length) return;
             var metaRef = db.ref('ranked_meta/' + seasonKey);
             metaRef.once('value', function(snap) {
@@ -1890,9 +1899,10 @@
                 meta.chars = meta.chars || {};
                 chars.forEach(function(c) {
                     if (!c) return;
-                    meta.chars[c] = meta.chars[c] || { used: 0, wins: 0 };
+                    meta.chars[c] = meta.chars[c] || { used: 0, wins: 0, mvps: 0 };
                     meta.chars[c].used++;
                     if (won) meta.chars[c].wins++;
+                    if (c === mvpCharName) meta.chars[c].mvps = (meta.chars[c].mvps || 0) + 1;
                 });
                 metaRef.set(meta);
             });
@@ -2098,17 +2108,22 @@
                         }
                         normalizedChars[baseName].used += (e[1].used || 0);
                         normalizedChars[baseName].wins += (e[1].wins || 0);
+                        normalizedChars[baseName].mvps = (normalizedChars[baseName].mvps || 0) + (e[1].mvps || 0);
                     });
 
                     var entries = Object.entries(normalizedChars).map(function(e) {
                         var c = e[1];
                         var used = c.used || 0;
                         var wins = c.wins || 0;
+                        var mvps = c.mvps || 0;
                         var wr   = used > 0 ? Math.round((wins / used) * 100) : 0;
                         var pr   = totalBattles > 0 ? Math.round((used / (totalBattles * 2)) * 100) : 0;
-                        // Índice de Dominio: WR% × log10(partidas + 1) × 10
-                        var id   = Math.round((wr / 100) * Math.log10(used + 1) * 100) / 10;
-                        return { name: e[0], used: used, wins: wins, wr: wr, pr: Math.min(100, pr), id: id };
+                        var mvpRate = used > 0 ? Math.round((mvps / used) * 100) : 0;
+                        // ⭐ Puntuación: WR×0.45 + PR×0.30 + MVPRate×0.25
+                        var wrNorm  = Math.min(100, wr);
+                        var prNorm  = Math.min(100, pr);
+                        var id = Math.round(((wrNorm * 0.45) + (prNorm * 0.30) + (mvpRate * 0.25)) * 10) / 10;
+                        return { name: e[0], used: used, wins: wins, mvps: mvps, wr: wr, pr: Math.min(100, pr), mvpRate: mvpRate, id: id };
                     });
 
                     // Ordenar por Índice de Dominio por defecto
@@ -2128,7 +2143,8 @@
                         if (sortBy === 'pr')      sorted.sort(function(a,b){ return b.pr - a.pr || b.used - a.used; });
                         else if (sortBy === 'games') sorted.sort(function(a,b){ return b.used - a.used || b.wr - a.wr; });
                         else if (sortBy === 'wr') sorted.sort(function(a,b){ return b.wr - a.wr || b.used - a.used; });
-                        else                     sorted.sort(function(a,b){ return b.id - a.id || b.used - a.used; }); // default: Índice de Dominio
+                        else if (sortBy === 'mvp') sorted.sort(function(a,b){ return (b.mvps||0) - (a.mvps||0) || b.used - a.used; });
+                        else                     sorted.sort(function(a,b){ return b.id - a.id || b.used - a.used; }); // default: Puntuación
                         var rowsH = sorted.map(function(e, i) {
                             var wrColor  = e.wr >= 60 ? '#00ff88' : e.wr >= 50 ? '#ffaa00' : e.wr >= 40 ? '#ff8844' : '#ff4466';
                             var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1);
@@ -2141,6 +2157,7 @@
                                     '<div style="width:70px;text-align:center;font-size:.78rem;color:#88ccff;">' + e.pr + '%</div>',
                                     '<div style="width:70px;text-align:center;font-family:Orbitron,sans-serif;font-size:.82rem;font-weight:700;color:' + wrColor + ';">' + e.wr + '%</div>',
                                     '<div style="width:55px;text-align:center;font-size:.75rem;color:#666;">' + e.used + '</div>',
+                                    '<div style="width:55px;text-align:center;font-size:.78rem;color:#ffd700;font-weight:700;">' + (e.mvps || 0) + '</div>',
                                     '<div style="width:70px;text-align:center;font-family:Orbitron,sans-serif;font-size:.85rem;font-weight:900;color:#ffd700;">' + e.id.toFixed(1) + '</div>',
                                 '</div>'
                             ].join('');
@@ -2148,7 +2165,7 @@
                         var rowsDiv = document.getElementById('metaRowsDiv');
                         if (rowsDiv) rowsDiv.innerHTML = rowsH;
                         // Actualizar estilos de botones activos
-                        ['id','wr','pr','games'].forEach(function(s) {
+                        ['id','wr','pr','games','mvp'].forEach(function(s) {
                             var btn = document.getElementById('metaSort_' + s);
                             if (btn) btn.style.background = (s === sortBy || (!sortBy && s === 'id')) ? 'rgba(100,200,100,0.35)' : 'rgba(100,200,100,0.08)';
                         });
@@ -2164,6 +2181,7 @@
                                 '<button id="metaSort_wr" onclick="window.renderMetaRows(\'wr\')" style="background:rgba(100,200,100,0.08);border:1px solid #4a4;color:#8f8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.7rem;">🏆 Winrate</button>',
                                 '<button id="metaSort_pr" onclick="window.renderMetaRows(\'pr\')" style="background:rgba(100,200,100,0.08);border:1px solid #4a4;color:#8f8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.7rem;">📊 Pick Rate</button>',
                                 '<button id="metaSort_games" onclick="window.renderMetaRows(\'games\')" style="background:rgba(100,200,100,0.08);border:1px solid #4a4;color:#8f8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.7rem;">🎮 Partidas</button>',
+                                '<button id="metaSort_mvp" onclick="window.renderMetaRows(\'mvp\')" style="background:rgba(100,200,100,0.08);border:1px solid #4a4;color:#8f8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.7rem;">🥇 MVPs</button>',
                             '</div>',
                         '</div>',
                         '<div style="display:flex;gap:8px;margin-bottom:8px;font-size:.65rem;color:#555;padding:0 8px;">',
@@ -2173,6 +2191,7 @@
                             '<div style="width:70px;text-align:center;">Pick Rate</div>',
                             '<div style="width:70px;text-align:center;">Winrate</div>',
                             '<div style="width:55px;text-align:center;">Partidas</div>',
+                            '<div style="width:55px;text-align:center;">🥇 MVPs</div>',
                             '<div style="width:70px;text-align:center;">⭐ Punt.</div>',
                         '</div>',
                         '<div id="metaRowsDiv"></div>',
