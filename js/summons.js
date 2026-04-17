@@ -1274,7 +1274,7 @@
                 _spawnDmgNumber(targetName, (_isCrit ? '💥 ' : '-') + remainingDamage, _isCrit ? 'crit' : 'dmg');
             }
 
-            // ── BATTLE STATS: acumular daño y crits ──
+            // ── BATTLE STATS: acumular daño, crits y daño recibido ──
             if (remainingDamage > 0 && gameState.battleStats) {
                 // Daño por atacante
                 if (attackerName) {
@@ -1284,9 +1284,18 @@
                         if (_atkChar.team === 'team1') gameState.battleStats.team1Damage += remainingDamage;
                         else gameState.battleStats.team2Damage += remainingDamage;
                     }
+                    // Crítico: daño >= doble del daño base de la habilidad activa
+                    const _abDmg = gameState.selectedAbility ? (gameState.selectedAbility.damage || 0) : 0;
+                    if (_abDmg > 0 && remainingDamage >= _abDmg * 2) {
+                        registerCrit(attackerName);
+                    } else if (remainingDamage >= 6 && !_abDmg) {
+                        // fallback para daños sin habilidad definida
+                        registerCrit(attackerName);
+                        gameState.battleStats.crits++;
+                    }
                 }
-                // Crítico visual
-                if (remainingDamage >= 6 && attackerName) gameState.battleStats.crits++;
+                // Daño recibido por el objetivo
+                registerDamageReceived(targetName, remainingDamage);
             }
             // DOOMSDAY Adaptación Reactiva: recover 2HP after taking damage (if still alive)
             if (target._doomsdayHealPending) {
@@ -1340,11 +1349,9 @@
             if (target.hp <= 0 && oldHp > 0) {
                 target.isDead = true;
                 if (typeof _animCard === 'function') _animCard(targetName, 'anim-defeat', 700);
-                // ── BATTLE STATS: registrar kill del atacante ──
-                if (attackerName && gameState.battleStats) {
-                    if (!gameState.battleStats.killMap) gameState.battleStats.killMap = {};
-                    gameState.battleStats.killMap[attackerName] = (gameState.battleStats.killMap[attackerName] || 0) + 1;
-                }
+                // ── BATTLE STATS: registrar kill usando función centralizada ──
+                const _killer = attackerName || gameState._currentTurnAttacker || null;
+                if (_killer) registerKill(_killer, targetName, false);
                 // Immediate game-over check after every kill
                 if (typeof checkGameOver === 'function') checkGameOver();
                 
@@ -1685,6 +1692,94 @@
         }
 
         // MONARCA DE LA DESTRUCCION: 3 daño directo por cada Buff aplicado a un enemigo de Antares
+        // ══════════════════════════════════════════════════════
+        // MVP TRACKING — funciones centralizadas
+        // ══════════════════════════════════════════════════════
+
+        // Suma 1 al contador indicado para el personaje
+        function _mvp(stat, charName, amount) {
+            if (!charName || !gameState.battleStats) return;
+            amount = amount || 1;
+            gameState.battleStats[stat] = gameState.battleStats[stat] || {};
+            gameState.battleStats[stat][charName] = (gameState.battleStats[stat][charName] || 0) + amount;
+        }
+
+        // Registrar kill para un personaje (por golpe, por efecto, por invocación)
+        function registerKill(killerName, victimName, byInvocation) {
+            if (!killerName || !gameState.battleStats) return;
+            _mvp('killMap', killerName);
+            if (byInvocation) {
+                // +5 puntos extra por kill via invocación
+                _mvp('summonKills', killerName);
+            }
+        }
+
+        // Registrar daño recibido (para puntuación de tanques y todos los personajes)
+        function registerDamageReceived(targetName, amount) {
+            if (!targetName || !amount || !gameState.battleStats) return;
+            _mvp('damageReceived', targetName, amount);
+        }
+
+        // Registrar CC aplicado
+        function registerCC(attackerName) {
+            if (!attackerName || !gameState.battleStats) return;
+            _mvp('ccApplied', attackerName);
+        }
+
+        // Registrar carga generada
+        function registerChargeGen(charName, amount, forSelf) {
+            if (!charName || !amount || !gameState.battleStats) return;
+            if (forSelf) {
+                _mvp('chargesGenSelf', charName, amount);
+            } else {
+                _mvp('chargesGenAllies', charName, amount);
+            }
+        }
+
+        // Registrar healing dado a aliados
+        function registerHealing(healerName, amount) {
+            if (!healerName || !amount || !gameState.battleStats) return;
+            _mvp('healingDone', healerName, amount);
+        }
+
+        // Registrar buff aplicado sobre aliado
+        function registerBuff(casterName) {
+            if (!casterName || !gameState.battleStats) return;
+            _mvp('buffsApplied', casterName);
+        }
+
+        // Registrar debuff aplicado sobre enemigo
+        function registerDebuff(casterName) {
+            if (!casterName || !gameState.battleStats) return;
+            _mvp('debuffsApplied', casterName);
+        }
+
+        // Registrar invocación realizada
+        function registerSummon(summoner) {
+            if (!summoner || !gameState.battleStats) return;
+            _mvp('summonsDone', summoner);
+        }
+
+        // Registrar daño por veneno
+        function registerPoisonDamage(amount) {
+            if (!amount || !gameState.battleStats) return;
+            gameState.battleStats.poisonDamage = gameState.battleStats.poisonDamage || {};
+            gameState.battleStats._totalPoisonDmg = (gameState.battleStats._totalPoisonDmg || 0) + amount;
+        }
+
+        // Registrar daño por quemadura
+        function registerBurnDamage(amount) {
+            if (!amount || !gameState.battleStats) return;
+            gameState.battleStats._totalBurnDmg = (gameState.battleStats._totalBurnDmg || 0) + amount;
+        }
+
+        // Registrar crítico por personaje
+        function registerCrit(charName) {
+            if (!charName || !gameState.battleStats) return;
+            _mvp('critsByChar', charName);
+            gameState.battleStats.crits = (gameState.battleStats.crits || 0) + 1;
+        }
+
         function triggerMonarcaDestruccion(buffTargetName) {
             if (passiveExecuting) return; // evitar recursión
             const _btC = gameState.characters[buffTargetName];
