@@ -2116,14 +2116,14 @@
                         var used = c.used || 0;
                         var wins = c.wins || 0;
                         var mvps = c.mvps || 0;
-                        var wr   = used > 0 ? Math.round((wins / used) * 100) : 0;
+                        var wr   = used > 0 ? (wins / used) * 100 : 0;
                         var pr   = totalBattles > 0 ? Math.round((used / (totalBattles * 2)) * 100) : 0;
                         var mvpRate = used > 0 ? Math.round((mvps / used) * 100) : 0;
-                        // ⭐ Puntuación: WR×0.45 + PR×0.30 + MVPRate×0.25
-                        var wrNorm  = Math.min(100, wr);
-                        var prNorm  = Math.min(100, pr);
-                        var id = Math.round(((wrNorm * 0.45) + (prNorm * 0.30) + (mvpRate * 0.25)) * 10) / 10;
-                        return { name: e[0], used: used, wins: wins, mvps: mvps, wr: wr, pr: Math.min(100, pr), mvpRate: mvpRate, id: id };
+                        // ⭐ Puntuación: (partidas × winrate%) × ((MVPs/10) + 1)
+                        var base = used * (wr / 100);
+                        var mult = (mvps / 10) + 1;
+                        var id   = Math.round(base * mult * 10) / 10;
+                        return { name: e[0], used: used, wins: wins, mvps: mvps, wr: Math.round(wr), pr: Math.min(100, pr), mvpRate: mvpRate, id: id };
                     });
 
                     // Ordenar por Índice de Dominio por defecto
