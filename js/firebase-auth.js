@@ -1815,18 +1815,25 @@
                 });
             }
 
-            // Calcular MVP de la partida antes de guardar
+            // Calcular MVP — solo del equipo GANADOR
             var _mvpChar = null;
-            if (typeof _calculateMvpScore === 'function') {
+            var _calcFn = window._calculateMvpScore || (typeof _calculateMvpScore === 'function' ? _calculateMvpScore : null);
+            if (_calcFn) {
                 var _mvpBest = -1;
+                var _winTeam = won ? playerTeam : (playerTeam === 'team1' ? 'team2' : 'team1');
                 for (var _mn in gameState.characters) {
-                    var _ms = _calculateMvpScore(_mn);
+                    var _mc = gameState.characters[_mn];
+                    if (!_mc || _mc.team !== _winTeam) continue;
+                    var _ms = _calcFn(_mn);
                     if (_ms > _mvpBest) { _mvpBest = _ms; _mvpChar = _mn; }
                 }
             }
-            _saveGlobalCharStats(playerChars, won, seasonKey, _mvpChar);
-            if (!defOwnerUid && opponentChars && opponentChars.length) {
-                _saveGlobalCharStats(opponentChars, !won, seasonKey);
+            // Una sola escritura atómica para ambos equipos (evita race condition y totalBattles×2)
+            var _wChars = won ? playerChars : (opponentChars || []);
+            var _lChars = won ? (opponentChars || []) : playerChars;
+            // Solo guardar Meta en partidas Rival vs Rival (no RAID) para evitar duplicados
+            if (!defOwnerUid) {
+                _saveGlobalCharStats(_wChars, _lChars, seasonKey, _mvpChar);
             }
         }
 
@@ -1884,25 +1891,36 @@
                     cur.charStats[c].used++;
                     if (defWon) cur.charStats[c].wins++;
                 });
-                _saveGlobalCharStats(defChars, defWon, seasonKey);
+                _saveGlobalCharStats(defWon ? defChars : [], defWon ? [] : defChars, seasonKey, null);
                 defRef.set(cur);
             });
         }
 
         // ── Guardar stats globales de personajes (para panel de Meta) ──
-        function _saveGlobalCharStats(chars, won, seasonKey, mvpCharName) {
-            if (!chars || !chars.length) return;
+        // Guarda stats de UNA PARTIDA para ambos equipos en una sola escritura atómica
+        // Evita race conditions y totalBattles duplicado
+        function _saveGlobalCharStats(winnerChars, loserChars, seasonKey, mvpCharName) {
+            if ((!winnerChars || !winnerChars.length) && (!loserChars || !loserChars.length)) return;
             var metaRef = db.ref('ranked_meta/' + seasonKey);
             metaRef.once('value', function(snap) {
                 var meta = snap.val() || {};
-                meta.totalBattles = (meta.totalBattles || 0) + 1;
+                meta.totalBattles = (meta.totalBattles || 0) + 1; // solo +1 por partida
                 meta.chars = meta.chars || {};
-                chars.forEach(function(c) {
-                    if (!c) return;
-                    meta.chars[c] = meta.chars[c] || { used: 0, wins: 0, mvps: 0 };
-                    meta.chars[c].used++;
-                    if (won) meta.chars[c].wins++;
-                    if (c === mvpCharName) meta.chars[c].mvps = (meta.chars[c].mvps || 0) + 1;
+                // Equipo ganador
+                (winnerChars || []).forEach(function(ch) {
+                    if (!ch) return;
+                    meta.chars[ch] = meta.chars[ch] || { used: 0, wins: 0, mvps: 0 };
+                    meta.chars[ch].used++;
+                    meta.chars[ch].wins++;
+                    if (ch === mvpCharName) meta.chars[ch].mvps = (meta.chars[ch].mvps || 0) + 1;
+                });
+                // Equipo perdedor
+                (loserChars || []).forEach(function(ch) {
+                    if (!ch) return;
+                    meta.chars[ch] = meta.chars[ch] || { used: 0, wins: 0, mvps: 0 };
+                    meta.chars[ch].used++;
+                    // sin wins++
+                    if (ch === mvpCharName) meta.chars[ch].mvps = (meta.chars[ch].mvps || 0) + 1;
                 });
                 metaRef.set(meta);
             });
