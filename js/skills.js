@@ -7264,7 +7264,8 @@
             _showEpicResultScreen(message);
         }
 
-        function _calculateMvpScore(charName) {
+        // Exponer globalmente para que firebase-auth.js pueda accederla
+        window._calculateMvpScore = function _calculateMvpScore(charName) {
             // Determinar si el personaje es tanque
             const _ch = gameState.characters[charName];
             if (!_ch) return 0;
