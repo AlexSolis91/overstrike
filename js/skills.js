@@ -7317,13 +7317,15 @@
             const winTeam  = isDraw ? null : (team1Win ? 'team1' : 'team2');
             const loseTeam = isDraw ? null : (team1Win ? 'team2' : 'team1');
 
-            // ── MVP: personaje de cualquier equipo con mayor puntuación MVP ──
+            // ── MVP: personaje del equipo GANADOR con mayor puntuación MVP ──
             let mvpName = null, mvpPortrait = '', mvpScore = -1;
-            for (const n in gameState.characters) {
-                const _ch = gameState.characters[n];
-                if (!_ch) continue;
-                const _score = _calculateMvpScore(n);
-                if (_score > mvpScore) { mvpScore = _score; mvpName = n; }
+            if (winTeam) {
+                for (const n in gameState.characters) {
+                    const _ch = gameState.characters[n];
+                    if (!_ch || _ch.team !== winTeam) continue; // solo equipo ganador
+                    const _score = _calculateMvpScore(n);
+                    if (_score > mvpScore) { mvpScore = _score; mvpName = n; }
+                }
             }
             if (mvpName) {
                 const mc = gameState.characters[mvpName];
