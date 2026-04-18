@@ -369,6 +369,23 @@
                     return obj;
                 }
 
+                // Calcular MVP para incluirlo en el snapshot (el guest no tiene battleStats)
+                var _snapshotMvp = null;
+                if (gameState.gameOver && typeof window._calculateMvpScore === 'function') {
+                    var _mvpBestSnap = -1;
+                    var _winnerMsg = gameState.winner || '';
+                    var _winTeamSnap = _winnerMsg.includes('HUNTERS') ? 'team1' : (_winnerMsg.includes('REAPERS') ? 'team2' : null);
+                    if (_winTeamSnap) {
+                        for (var _smn in gameState.characters) {
+                            var _smc = gameState.characters[_smn];
+                            if (!_smc || _smc.team !== _winTeamSnap) continue;
+                            var _sms = window._calculateMvpScore(_smn);
+                            if (_sms > _mvpBestSnap) { _mvpBestSnap = _sms; _snapshotMvp = _smn; }
+                        }
+                        if (_snapshotMvp) _snapshotMvp = _snapshotMvp.replace(/\s+v\d+$/i, '').trim();
+                    }
+                }
+
                 const snapshot = {
                     characters: cleanForFirebase(gameState.characters),
                     summons: cleanForFirebase(gameState.summons || {}),
@@ -381,6 +398,7 @@
                     activeTeam: activeTeam,
                     gameOver: gameState.gameOver,
                     winner: gameState.winner || null,
+                    mvpChar: _snapshotMvp,
                     battleLog: gameState.battleLog ? cleanForFirebase(gameState.battleLog.slice(-30)) : [],
                     _attackedThisTurn: false,
                     pushedBy: currentUser ? currentUser.uid : 'unknown',
@@ -421,6 +439,7 @@
                     gameState.turnOrder = data.turnOrder;
                     gameState.selectedCharacter = data.selectedCharacter;
                     gameState.gameOver = data.gameOver;
+                    gameState._mvpCharFromRoom = data.mvpChar || null; // MVP calculado por el host
                     gameState._attackedThisTurn = data._attackedThisTurn || false;
                     // Restore summons from sync
                     if (data.summons) {
