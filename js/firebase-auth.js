@@ -1815,41 +1815,32 @@
                 });
             }
 
-            // Calcular MVP — usar el del room si viene del host (guest no tiene battleStats)
-            console.log('[MVP-DEBUG] saveRankedResult called. won='+won+' playerTeam='+playerTeam);
-            console.log('[MVP-DEBUG] _mvpCharFromRoom='+gameState._mvpCharFromRoom);
-            console.log('[MVP-DEBUG] window._calculateMvpScore type='+typeof window._calculateMvpScore);
-            console.log('[MVP-DEBUG] battleStats='+JSON.stringify(gameState.battleStats && {
-                kills: gameState.battleStats.killMap,
-                crits: gameState.battleStats.critsByChar,
-                charges: gameState.battleStats.chargesGenSelf
-            }));
+            // Calcular MVP — solo del equipo ganador
+            // NOTA: playerTeam NO existe en este scope. Usamos won + los arrays de chars directamente.
+            // Si won=true → playerChars ganó. Si won=false → opponentChars ganó.
             var _mvpChar = null;
             if (gameState._mvpCharFromRoom) {
                 // Viene del host via Firebase room — ya normalizado
                 _mvpChar = gameState._mvpCharFromRoom;
                 gameState._mvpCharFromRoom = null;
             } else {
-                // Calcularlo localmente (host o modo offline ranked)
-                var _calcFn = window._calculateMvpScore || (typeof _calculateMvpScore === 'function' ? _calculateMvpScore : null);
-                if (_calcFn) {
+                var _calcFn = window._calculateMvpScore || null;
+                if (_calcFn && gameState.battleStats) {
                     var _mvpBest = -1;
-                    var _winTeam = won ? playerTeam : (playerTeam === 'team1' ? 'team2' : 'team1');
-                    for (var _mn in gameState.characters) {
-                        var _mc = gameState.characters[_mn];
-                        if (!_mc || _mc.team !== _winTeam) continue;
+                    // El equipo ganador son los chars del jugador si ganó, sino los del oponente
+                    var _winCharsForMvp = won ? (playerChars || []) : (opponentChars || []);
+                    for (var _mi = 0; _mi < _winCharsForMvp.length; _mi++) {
+                        var _mn = _winCharsForMvp[_mi];
+                        if (!_mn) continue;
                         var _ms = _calcFn(_mn);
                         if (_ms > _mvpBest) { _mvpBest = _ms; _mvpChar = _mn; }
                     }
                     if (_mvpChar) _mvpChar = _mvpChar.replace(/\s+v\d+$/i, '').trim();
                 }
             }
-            // Guardar Meta — la normalización v2 se hace dentro de _saveGlobalCharStats
-            var _wChars = won ? playerChars : (opponentChars || []);
-            var _lChars = won ? (opponentChars || []) : playerChars;
-            // Guardar siempre (Rival vs Rival y RAID atacante)
-            // En RAID también guardamos el atacante; el defensor se guarda en _saveDef
-            console.log('[MVP-DEBUG] About to save. wChars='+JSON.stringify(_wChars)+' lChars='+JSON.stringify(_lChars)+' mvpChar='+_mvpChar);
+            // wChars = equipo ganador, lChars = equipo perdedor
+            var _wChars = won ? (playerChars || []) : (opponentChars || []);
+            var _lChars = won ? (opponentChars || []) : (playerChars || []);
             _saveGlobalCharStats(_wChars, _lChars, seasonKey, _mvpChar);
         }
 
@@ -1930,7 +1921,6 @@
             var metaRef = db.ref('ranked_meta/' + seasonKey);
 
             // Usar Firebase transaction para evitar race conditions entre jugadores concurrentes
-            console.log('[MVP-DEBUG] Starting transaction. mvpNorm='+mvpNorm+' wChars='+JSON.stringify(wChars));
             metaRef.transaction(function(meta) {
                 if (meta === null) meta = {};
                 meta.totalBattles = (meta.totalBattles || 0) + 1;
@@ -1955,14 +1945,8 @@
                 });
 
                 return meta;
-            }, function(error, committed, snapshot) {
-                if (error) {
-                    console.error('[MVP-DEBUG] Transaction FAILED:', error);
-                } else if (!committed) {
-                    console.warn('[MVP-DEBUG] Transaction NOT committed (aborted)');
-                } else {
-                    console.log('[MVP-DEBUG] Transaction SUCCESS. Data saved:', snapshot && snapshot.val() && snapshot.val().chars && Object.keys(snapshot.val().chars).length + ' chars');
-                }
+            }, function(error, committed) {
+                if (error) console.error('[META] Transaction failed:', error);
             });
         }
 
