@@ -1815,20 +1815,26 @@
                 });
             }
 
-            // Calcular MVP — solo del equipo GANADOR, nombre normalizado (sin sufijo v2/v3)
+            // Calcular MVP — usar el del room si viene del host (guest no tiene battleStats)
             var _mvpChar = null;
-            var _calcFn = window._calculateMvpScore || (typeof _calculateMvpScore === 'function' ? _calculateMvpScore : null);
-            if (_calcFn) {
-                var _mvpBest = -1;
-                var _winTeam = won ? playerTeam : (playerTeam === 'team1' ? 'team2' : 'team1');
-                for (var _mn in gameState.characters) {
-                    var _mc = gameState.characters[_mn];
-                    if (!_mc || _mc.team !== _winTeam) continue;
-                    var _ms = _calcFn(_mn);
-                    if (_ms > _mvpBest) { _mvpBest = _ms; _mvpChar = _mn; }
+            if (gameState._mvpCharFromRoom) {
+                // Viene del host via Firebase room — ya normalizado
+                _mvpChar = gameState._mvpCharFromRoom;
+                gameState._mvpCharFromRoom = null;
+            } else {
+                // Calcularlo localmente (host o modo offline ranked)
+                var _calcFn = window._calculateMvpScore || (typeof _calculateMvpScore === 'function' ? _calculateMvpScore : null);
+                if (_calcFn) {
+                    var _mvpBest = -1;
+                    var _winTeam = won ? playerTeam : (playerTeam === 'team1' ? 'team2' : 'team1');
+                    for (var _mn in gameState.characters) {
+                        var _mc = gameState.characters[_mn];
+                        if (!_mc || _mc.team !== _winTeam) continue;
+                        var _ms = _calcFn(_mn);
+                        if (_ms > _mvpBest) { _mvpBest = _ms; _mvpChar = _mn; }
+                    }
+                    if (_mvpChar) _mvpChar = _mvpChar.replace(/\s+v\d+$/i, '').trim();
                 }
-                // Normalizar nombre MVP: quitar sufijo v2, v3... igual que se hace en Meta
-                if (_mvpChar) _mvpChar = _mvpChar.replace(/\s+v\d+$/i, '').trim();
             }
             // Guardar Meta — la normalización v2 se hace dentro de _saveGlobalCharStats
             var _wChars = won ? playerChars : (opponentChars || []);
