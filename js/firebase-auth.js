@@ -1815,7 +1815,7 @@
                 });
             }
 
-            // Calcular MVP — solo del equipo GANADOR
+            // Calcular MVP — solo del equipo GANADOR, nombre normalizado (sin sufijo v2/v3)
             var _mvpChar = null;
             var _calcFn = window._calculateMvpScore || (typeof _calculateMvpScore === 'function' ? _calculateMvpScore : null);
             if (_calcFn) {
@@ -1827,14 +1827,15 @@
                     var _ms = _calcFn(_mn);
                     if (_ms > _mvpBest) { _mvpBest = _ms; _mvpChar = _mn; }
                 }
+                // Normalizar nombre MVP: quitar sufijo v2, v3... igual que se hace en Meta
+                if (_mvpChar) _mvpChar = _mvpChar.replace(/\s+v\d+$/i, '').trim();
             }
-            // Una sola escritura atómica para ambos equipos (evita race condition y totalBattles×2)
+            // Guardar Meta — la normalización v2 se hace dentro de _saveGlobalCharStats
             var _wChars = won ? playerChars : (opponentChars || []);
             var _lChars = won ? (opponentChars || []) : playerChars;
-            // Solo guardar Meta en partidas Rival vs Rival (no RAID) para evitar duplicados
-            if (!defOwnerUid) {
-                _saveGlobalCharStats(_wChars, _lChars, seasonKey, _mvpChar);
-            }
+            // Guardar siempre (Rival vs Rival y RAID atacante)
+            // En RAID también guardamos el atacante; el defensor se guarda en _saveDef
+            _saveGlobalCharStats(_wChars, _lChars, seasonKey, _mvpChar);
         }
 
         function _saveDef(defOwnerUid, defOwnerName, defWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, seasonKey, todayKey, opponentChars, attackerName, attackerUid, isDraw) {
@@ -1899,30 +1900,51 @@
         // ── Guardar stats globales de personajes (para panel de Meta) ──
         // Guarda stats de UNA PARTIDA para ambos equipos en una sola escritura atómica
         // Evita race conditions y totalBattles duplicado
+        // Normalizar nombre de personaje (quitar sufijo v2, v3...)
+        function _normCharName(name) {
+            return (name || '').replace(/\s+v\d+$/i, '').trim();
+        }
+
         function _saveGlobalCharStats(winnerChars, loserChars, seasonKey, mvpCharName) {
             if ((!winnerChars || !winnerChars.length) && (!loserChars || !loserChars.length)) return;
+            // Normalizar todos los nombres
+            var wChars = (winnerChars || []).map(_normCharName).filter(Boolean);
+            var lChars = (loserChars  || []).map(_normCharName).filter(Boolean);
+            var mvpNorm = mvpCharName ? _normCharName(mvpCharName) : null;
+
             var metaRef = db.ref('ranked_meta/' + seasonKey);
-            metaRef.once('value', function(snap) {
-                var meta = snap.val() || {};
-                meta.totalBattles = (meta.totalBattles || 0) + 1; // solo +1 por partida
+
+            // Usar Firebase transaction para evitar race conditions entre jugadores concurrentes
+            metaRef.transaction(function(meta) {
+                if (meta === null) meta = {};
+                meta.totalBattles = (meta.totalBattles || 0) + 1;
                 meta.chars = meta.chars || {};
-                // Equipo ganador
-                (winnerChars || []).forEach(function(ch) {
-                    if (!ch) return;
+
+                // Equipo ganador: used++ wins++ y MVP si aplica
+                wChars.forEach(function(ch) {
                     meta.chars[ch] = meta.chars[ch] || { used: 0, wins: 0, mvps: 0 };
-                    meta.chars[ch].used++;
-                    meta.chars[ch].wins++;
-                    if (ch === mvpCharName) meta.chars[ch].mvps = (meta.chars[ch].mvps || 0) + 1;
+                    meta.chars[ch].used  = (meta.chars[ch].used  || 0) + 1;
+                    meta.chars[ch].wins  = (meta.chars[ch].wins  || 0) + 1;
+                    meta.chars[ch].mvps  = meta.chars[ch].mvps  || 0;
+                    if (ch === mvpNorm) meta.chars[ch].mvps += 1;
                 });
-                // Equipo perdedor
-                (loserChars || []).forEach(function(ch) {
-                    if (!ch) return;
+
+                // Equipo perdedor: used++ y MVP si aplica
+                lChars.forEach(function(ch) {
                     meta.chars[ch] = meta.chars[ch] || { used: 0, wins: 0, mvps: 0 };
-                    meta.chars[ch].used++;
-                    // sin wins++
-                    if (ch === mvpCharName) meta.chars[ch].mvps = (meta.chars[ch].mvps || 0) + 1;
+                    meta.chars[ch].used  = (meta.chars[ch].used  || 0) + 1;
+                    meta.chars[ch].wins  = meta.chars[ch].wins  || 0;
+                    meta.chars[ch].mvps  = meta.chars[ch].mvps  || 0;
+                    if (ch === mvpNorm) meta.chars[ch].mvps += 1;
                 });
-                metaRef.set(meta);
+
+                return meta;
+            }, function(error, committed) {
+                if (error) {
+                    console.error('[META] Transaction failed:', error);
+                } else if (!committed) {
+                    console.warn('[META] Transaction not committed');
+                }
             });
         }
 
