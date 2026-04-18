@@ -7255,9 +7255,28 @@
                 } catch(e) { console.error('[RANKED] Error saving ranked result:', e); }
             }
 
-            // Online: push game over
+            // Online: push game over — incluir mvpChar para que el guest pueda usarlo
             if (onlineMode && currentRoomId) {
-                db.ref('rooms/' + currentRoomId + '/gameState').update({ gameOver: true, winner: message, pushedBy: currentUser ? currentUser.uid : 'unknown' });
+                var _goMvp = null;
+                if (typeof window._calculateMvpScore === 'function') {
+                    var _goMvpBest = -1;
+                    var _goWinTeam = message.includes('HUNTERS') ? 'team1' : (message.includes('REAPERS') ? 'team2' : null);
+                    if (_goWinTeam) {
+                        for (var _goN in gameState.characters) {
+                            var _goC = gameState.characters[_goN];
+                            if (!_goC || _goC.team !== _goWinTeam) continue;
+                            var _goS = window._calculateMvpScore(_goN);
+                            if (_goS > _goMvpBest) { _goMvpBest = _goS; _goMvp = _goN; }
+                        }
+                        if (_goMvp) _goMvp = _goMvp.replace(/\s+v\d+$/i, '').trim();
+                    }
+                }
+                db.ref('rooms/' + currentRoomId + '/gameState').update({
+                    gameOver: true,
+                    winner: message,
+                    mvpChar: _goMvp || null,
+                    pushedBy: currentUser ? currentUser.uid : 'unknown'
+                });
             }
 
             // ══ PANTALLA ÉPICA DE RESULTADO ══
