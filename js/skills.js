@@ -7641,14 +7641,82 @@
                 } catch(e) { console.error('[RANKED] Error saving ranked result:', e); }
             }
 
-            // Online: push game over
+            // Online: push game over — incluir mvpChar para que el guest pueda usarlo
             if (onlineMode && currentRoomId) {
-                db.ref('rooms/' + currentRoomId + '/gameState').update({ gameOver: true, winner: message, pushedBy: currentUser ? currentUser.uid : 'unknown' });
+                var _goMvp = null;
+                if (typeof window._calculateMvpScore === 'function') {
+                    var _goMvpBest = -1;
+                    var _goWinTeam = message.includes('HUNTERS') ? 'team1' : (message.includes('REAPERS') ? 'team2' : null);
+                    if (_goWinTeam) {
+                        for (var _goN in gameState.characters) {
+                            var _goC = gameState.characters[_goN];
+                            if (!_goC || _goC.team !== _goWinTeam) continue;
+                            var _goS = window._calculateMvpScore(_goN);
+                            if (_goS > _goMvpBest) { _goMvpBest = _goS; _goMvp = _goN; }
+                        }
+                        if (_goMvp) _goMvp = _goMvp.replace(/\s+v\d+$/i, '').trim();
+                    }
+                }
+                db.ref('rooms/' + currentRoomId + '/gameState').update({
+                    gameOver: true,
+                    winner: message,
+                    mvpChar: _goMvp || null,
+                    pushedBy: currentUser ? currentUser.uid : 'unknown'
+                });
             }
 
             // ══ PANTALLA ÉPICA DE RESULTADO ══
             _showEpicResultScreen(message);
         }
+
+        // Exponer globalmente para firebase-auth.js
+        window._calculateMvpScore = function _calculateMvpScore(charName) {
+            // Determinar si el personaje es tanque
+            const _ch = gameState.characters[charName];
+            if (!_ch) return 0;
+            const _isTank = (_ch.maxHp >= 30) ||
+                (_ch.passive && (_ch.passive.name === 'Hombre de Acero' || _ch.passive.name === 'Mega Provocacion' ||
+                    _ch.passive.name === 'Efecto Omega' || _ch.passive.name === 'Señor de los Nazgul' ||
+                    _ch.passive.name === 'Aura de Hielo')) ||
+                (_ch.abilities||[]).some(function(ab){
+                    return ab && (ab.effect === 'rugido_devastador' || (ab.description||'').toLowerCase().includes('provocac'));
+                });
+            const bs = gameState.battleStats || {};
+            let score = 0;
+            // 1. Kills × 10
+            score += (bs.killMap && bs.killMap[charName] || 0) * 10;
+            // 2. Cargas propias × 0.5
+            score += (bs.chargesGenSelf && bs.chargesGenSelf[charName] || 0) * 0.5;
+            // 3. Cargas a aliados × 1.5
+            score += (bs.chargesGenAllies && bs.chargesGenAllies[charName] || 0) * 1.5;
+            // 4. Daño recibido × 1 (tanque × 2)
+            score += (bs.damageReceived && bs.damageReceived[charName] || 0) * (_isTank ? 2 : 1);
+            // 5. Debuffs aplicados × 2
+            score += (bs.debuffsApplied && bs.debuffsApplied[charName] || 0) * 2;
+            // 6. Buffs aplicados × 2
+            score += (bs.buffsApplied && bs.buffsApplied[charName] || 0) * 2;
+            // 7. Invocaciones × 3
+            score += (bs.summonsDone && bs.summonsDone[charName] || 0) * 3;
+            // 8. Kills por invocación +5
+            score += (bs.summonKills && bs.summonKills[charName] || 0) * 5;
+            // 9. HP curado a aliados × 1
+            score += (bs.healingDone && bs.healingDone[charName] || 0) * 1;
+            // 10. CC aplicado × 1.5
+            score += (bs.ccApplied && bs.ccApplied[charName] || 0) * 1.5;
+            // 11. Dotters: veneno y quemadura dividido entre aplicadores
+            const _poisonAppliers = Array.from(bs.poisonAppliers || []);
+            const _burnAppliers = Array.from(bs.burnAppliers || []);
+            if (_poisonAppliers.includes(charName) && _poisonAppliers.length > 0) {
+                score += (bs._totalPoisonDmg || 0) / _poisonAppliers.length;
+            }
+            if (_burnAppliers.includes(charName) && _burnAppliers.length > 0) {
+                score += (bs._totalBurnDmg || 0) / _burnAppliers.length;
+            }
+            // 12. Crits × 2
+            score += (bs.critsByChar && bs.critsByChar[charName] || 0) * 2;
+            return Math.round(score * 10) / 10;
+        }
+
 
         function _showEpicResultScreen(message) {
             const isDraw   = message.includes('EMPATE');
@@ -7656,46 +7724,24 @@
             const winTeam  = isDraw ? null : (team1Win ? 'team1' : 'team2');
             const loseTeam = isDraw ? null : (team1Win ? 'team2' : 'team1');
 
-            // ── MVP: personaje vivo del equipo ganador con más daño causado ──
-            let mvpName = null, mvpPortrait = '', mvpDmg = 0;
+            // ── MVP: personaje del equipo GANADOR con mayor puntuación MVP ──
+            let mvpName = null, mvpPortrait = '', mvpScore = -1;
             if (winTeam) {
-                const dmgMap = (gameState.battleStats && gameState.battleStats.totalDamage) || {};
                 for (const n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (!c || c.team !== winTeam) continue;
-                    const d = dmgMap[n] || 0;
-                    if (d > mvpDmg || (!mvpName && !c.isDead && c.hp > 0)) { mvpDmg = d; mvpName = n; }
-                }
-                if (mvpName) {
-                    const mc = gameState.characters[mvpName];
-                    mvpPortrait = mc.portrait || mc.transformPortrait || '';
+                    const _ch = gameState.characters[n];
+                    if (!_ch || _ch.team !== winTeam) continue;
+                    const _score = _calculateMvpScore(n);
+                    if (_score > mvpScore) { mvpScore = _score; mvpName = n; }
                 }
             }
-
-            // ── KILLS DEL MVP: enemigos del equipo perdedor derrotados ──
-            // Usamos el daño causado como proxy: el MVP es quien más daño causó,
-            // y contamos cuántos enemigos del loseTeam terminaron muertos
+            if (mvpName) {
+                const mc = gameState.characters[mvpName];
+                mvpPortrait = mc.portrait || mc.transformPortrait || '';
+            }
+            // Kills del MVP
             let mvpKills = 0;
-            if (mvpName && loseTeam && gameState.battleStats) {
-                const dmgMap = gameState.battleStats.totalDamage || {};
-                const killMap = gameState.battleStats.killMap || {};
-                // Si tenemos killMap exacto, usarlo; si no, estimar con kills registrados
-                mvpKills = killMap[mvpName] || 0;
-                // Fallback: contar enemigos muertos del equipo perdedor como total de kills del equipo ganador
-                if (mvpKills === 0) {
-                    const deadEnemies = Object.keys(gameState.characters).filter(function(n) {
-                        const c = gameState.characters[n];
-                        return c && c.team === loseTeam && (c.isDead || c.hp <= 0);
-                    }).length;
-                    // Asignar proporcionalmente al MVP (quien más daño hizo tiene la mayoría de kills)
-                    const totalWinnerDmg = Object.keys(dmgMap).reduce(function(sum, n) {
-                        const c = gameState.characters[n];
-                        return sum + ((c && c.team === winTeam) ? (dmgMap[n] || 0) : 0);
-                    }, 0);
-                    mvpKills = totalWinnerDmg > 0
-                        ? Math.round(deadEnemies * ((dmgMap[mvpName] || 0) / totalWinnerDmg))
-                        : 0;
-                }
+            if (mvpName && gameState.battleStats) {
+                mvpKills = (gameState.battleStats.killMap && gameState.battleStats.killMap[mvpName]) || 0;
             }
 
             // ── STATS ──
@@ -7748,7 +7794,8 @@
             object-fit:cover;object-position:top;border:2px solid ${winColor};display:block;margin:0 auto 8px;"
             onerror="this.style.display='none'">
         <div style="font-size:.8rem;font-weight:700;color:#fff;">${mvpName}</div>
-        <div style="font-size:.7rem;color:${winColor};margin-top:4px;">⚔️ ${mvpDmg} daño · 💀 ${mvpKills} eliminado${mvpKills !== 1 ? 's' : ''}</div>
+        <div style="font-size:.7rem;color:${winColor};margin-top:4px;">💀 ${mvpKills} kill${mvpKills !== 1 ? 's' : ''}</div>
+        <div style="font-size:.65rem;color:#ffd700;margin-top:3px;">🏅 ${mvpScore.toFixed ? mvpScore.toFixed(1) : mvpScore} pts MVP</div>
       </div>` : ''}
 
       <!-- ESTADÍSTICAS -->
