@@ -1750,12 +1750,17 @@
                 if (extraCharges > 0) { attacker.charges += extraCharges; addLog(`⚡ Phoenix Genma Ken: +${extraCharges} cargas por objetivos con Quemadura`, 'buff'); }
 
             } else if (ability.effect === 'fenix_armor') {
-                // Armadura Divina del Fénix: transformación
+                // Armadura Divina del Fénix: transformación — mismo patrón que Antares
                 attacker.fenixArmorActive = true;
+                attacker.basePortrait = attacker.basePortrait || attacker.portrait;
                 if (attacker.transformPortrait) { attacker.portrait = attacker.transformPortrait; }
                 attacker.statusEffects.push({ name: 'Regeneracion', type: 'buff', duration: 99, emoji: '💖', amount: Math.ceil(attacker.maxHp * 0.20) });
+                audioManager.playTransformSfx();
+                if (typeof _animCard === 'function') _animCard(gameState.selectedCharacter, 'anim-transform', 700);
+                if (typeof _triggerPowerUp === 'function') { _triggerPowerUp(gameState.selectedCharacter, attacker.team); }
                 addLog(`🦅 ${gameState.selectedCharacter} equipa la Armadura Divina del Fénix`, 'buff');
                 ability.used = true;
+                renderCharacters();
 
             } else if (ability.effect === 'heal_ally') {
                 // Curación de aliado (Alexstrasza Fuego Vital / Min Byung)
