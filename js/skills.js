@@ -12,6 +12,7 @@
             if (typeof _animCard === 'function') _animCard(charName, 'anim-charge', 500);
         }
         function applyAOEDamageToTeam(enemyTeam, damage, attackerName) {
+            let _kyoAOEHits = 0;
             for (let n in gameState.characters) {
                 const c = gameState.characters[n];
                 if (c && c.team === enemyTeam && !c.isDead && c.hp > 0) {
@@ -20,7 +21,12 @@
                         continue;
                     }
                     applyDamageWithShield(n, damage, attackerName);
+                    _kyoAOEHits++;
                 }
+            }
+            // Pasiva Llamarada Kusanagi: quemaduras al atacante por cada aliado golpeado
+            if (_kyoAOEHits > 0 && attackerName && typeof triggerKyoAOEPassive === 'function') {
+                triggerKyoAOEPassive(attackerName, _kyoAOEHits);
             }
             for (let sid in gameState.summons) {
                 const s = gameState.summons[sid];
@@ -7222,6 +7228,12 @@
                     hasStatusEffect(targetName, 'Provocación') || hasStatusEffect(targetName, 'MegaProvocación') ||
                     (_hdTgt.passive && (_hdTgt.passive.name === 'Efecto Omega' || _hdTgt.passive.name === 'Hombre de Acero'))
                 );
+                // Activar Jinete de Dragones ANTES del golpe para que el daño triple aplique
+                if (_hdHasProv && _hdAtk) {
+                    _hdAtk.daemonJineteTurns = 2;
+                    addLog('🐉 Principe Rebelde: ¡Jinete de Dragones activado! Daño triple por 2T', 'buff');
+                    renderCharacters(); // actualizar portrait inmediatamente
+                }
                 let _hdDmg = finalDamage;
                 if (_hdHasProv) {
                     _hdDmg *= 2;
@@ -7232,14 +7244,6 @@
                 if (_hdTgt && !_hdTgt.isDead && _hdTgt.hp > 0) {
                     if (typeof applyDebuff === 'function') applyDebuff(targetName, { name: 'Debilitar', type: 'debuff', duration: 2, emoji: '⬇️' });
                     addLog('🗡️ Hermana Oscura: Debilitar aplicado a ' + targetName, 'debuff');
-                }
-                // Pasiva Principe Rebelde: si objetivo tiene Provocacion, aplicar Jinete de Dragones
-                if (_hdHasProv && _hdAtk) {
-                    _hdAtk.daemonJineteTurns = (_hdAtk.daemonJineteTurns || 0) < 2 ? 2 : _hdAtk.daemonJineteTurns;
-                    addLog('🐉 Principe Rebelde: ¡Jinete de Dragones activado! Daño triple por 2T', 'buff');
-                    if (_hdAtk.transformPortrait) {
-                        _hdAtk._activePortrait = _hdAtk.transformPortrait;
-                    }
                 }
 
             } else if (ability.effect === 'furia_caraxes_daemon') {
@@ -7252,6 +7256,12 @@
                     hasStatusEffect(targetName, 'Provocación') || hasStatusEffect(targetName, 'MegaProvocación') ||
                     (_fcTgt.passive && (_fcTgt.passive.name === 'Efecto Omega' || _fcTgt.passive.name === 'Hombre de Acero'))
                 );
+                // Activar Jinete de Dragones ANTES del golpe
+                if (_fcHasProv && _fcAtk) {
+                    _fcAtk.daemonJineteTurns = 2;
+                    addLog('🐉 Principe Rebelde: ¡Jinete de Dragones activado! Daño triple por 2T', 'buff');
+                    renderCharacters();
+                }
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 addLog('🐉 Furia de Caraxes: ' + finalDamage + ' daño a ' + targetName, 'damage');
                 if (_fcHasProv) {
@@ -7262,12 +7272,7 @@
                     }
                     addLog('🐉 Furia de Caraxes: Quemaduras 3HP a todo el equipo enemigo (objetivo tenía Provocacion)', 'debuff');
                 }
-                // Activar Jinete de Dragones si objetivo tenía Provocacion
-                if (_fcHasProv && _fcAtk) {
-                    _fcAtk.daemonJineteTurns = (_fcAtk.daemonJineteTurns || 0) < 2 ? 2 : _fcAtk.daemonJineteTurns;
-                    addLog('🐉 Principe Rebelde: ¡Jinete de Dragones activado! Daño triple por 2T', 'buff');
-                    if (_fcAtk.transformPortrait) _fcAtk._activePortrait = _fcAtk.transformPortrait;
-                }
+
 
             } else if (ability.effect === 'provocacion_principe_daemon') {
                 // DAEMON — Provocacion del Principe: disipa buffs del equipo enemigo + 2 daño al objetivo
@@ -7303,14 +7308,15 @@
                     _odDmg *= 2;
                     addLog('🐉 Ojo de Dioses: ¡Crítico 100%! objetivo tiene Provocacion', 'buff');
                 }
+                // Activar Jinete de Dragones ANTES del golpe
+                if (_odHasProv && _odAtk) {
+                    _odAtk.daemonJineteTurns = 2;
+                    addLog('🐉 Principe Rebelde: ¡Jinete de Dragones activado! Daño triple por 2T', 'buff');
+                    renderCharacters();
+                }
                 applyDamageWithShield(targetName, _odDmg, gameState.selectedCharacter);
                 addLog('🐉 Ojo de Dioses: ' + _odDmg + ' daño a ' + targetName, 'damage');
-                // Activar Jinete de Dragones si objetivo tenía Provocacion
-                if (_odHasProv && _odAtk) {
-                    _odAtk.daemonJineteTurns = (_odAtk.daemonJineteTurns || 0) < 2 ? 2 : _odAtk.daemonJineteTurns;
-                    addLog('🐉 Principe Rebelde: ¡Jinete de Dragones activado! Daño triple por 2T', 'buff');
-                    if (_odAtk.transformPortrait) _odAtk._activePortrait = _odAtk.transformPortrait;
-                }
+
             }
             
             // ASISTIR (Anakin): when ally uses Special/Over ST, execute basic on same target
@@ -7391,7 +7397,16 @@
             }
 
 
-
+            // ── LLAMARADA KUSANAGI (Kyo): disparar pasiva al finalizar cualquier AOE ──
+            if (ability && (ability.target === 'aoe' || ability.target === 'enemy_team') && !passiveExecuting) {
+                if (gameState._kyoAOEHitsByAttacker && gameState.selectedCharacter) {
+                    const _kyoHits = gameState._kyoAOEHitsByAttacker[gameState.selectedCharacter] || 0;
+                    if (_kyoHits > 0 && typeof triggerKyoAOEPassive === 'function') {
+                        triggerKyoAOEPassive(gameState.selectedCharacter, _kyoHits);
+                    }
+                    delete gameState._kyoAOEHitsByAttacker;
+                }
+            }
 
             // Actualizar UI
             renderCharacters();
