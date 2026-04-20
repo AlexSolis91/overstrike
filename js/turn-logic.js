@@ -2056,8 +2056,11 @@
                         if (_djN === currentCharName) {
                             _djC.daemonJineteTurns = Math.max(0, (_djC.daemonJineteTurns||0) - 1);
                             if (_djC.daemonJineteTurns === 0) {
+                                // Restaurar portrait original
+                                if (_djC.basePortrait) { _djC.portrait = _djC.basePortrait; delete _djC.basePortrait; }
                                 delete _djC._activePortrait;
                                 addLog('🐉 Jinete de Dragones: transformación de Daemon Targaryen expira', 'info');
+                                if (typeof renderCharacters === 'function') renderCharacters();
                             }
                         }
                     }
