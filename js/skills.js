@@ -6881,8 +6881,6 @@
                     }
                     attacker.charges = Math.min(20, (attacker.charges || 0) + gainConc2);
                     addLog(`⚡ ${gameState.selectedCharacter} genera ${gainConc2} carga${finalChargeGain > 1 ? 's' : ''}`, 'buff');
-                    // MVP: registrar cargas generadas para sí mismo
-                    if (typeof registerChargeGen === 'function') registerChargeGen(gameState.selectedCharacter, gainConc2, true);
                     if (typeof _animCard === 'function') _animCard(gameState.selectedCharacter, 'anim-charge', 500);
                     if (typeof _triggerChargePop === 'function') _triggerChargePop(gameState.selectedCharacter);
                     triggerIgrisPassive(gameState.selectedCharacter);
@@ -6927,7 +6925,7 @@
                         addLog(`⚡ Hiraishin no Jutsu: Minato genera +${bonusChargesM} cargas (enemigos más lentos)`, 'buff');
                     }
                 }
-            } else if (ability.effect === 'fuego_fatuo_manigoldo') {
+} else if (ability.effect === 'fuego_fatuo_manigoldo') {
                 const _ffA=gameState.characters[gameState.selectedCharacter],_ffT=gameState.characters[targetName];
                 applyDamageWithShield(targetName,finalDamage,gameState.selectedCharacter);
                 if(_ffA&&_ffT&&!_ffT.isDead&&_ffT.hp>0){const _ffL=_ffA.hp<=Math.floor(_ffA.maxHp*0.50);if(_ffL||Math.random()<0.25){const _s=Math.min(2,_ffT.hp);_ffT.hp=Math.max(0,_ffT.hp-_s);if(_ffT.hp<=0)_ffT.isDead=true;if(typeof applyHeal==='function')applyHeal(gameState.selectedCharacter,_s,'Fuego Fatuo');else _ffA.hp=Math.min(_ffA.maxHp,(_ffA.hp||0)+_s);addLog('☠️ Fuego Fatuo: roba '+_s+' HP','heal');}if(_ffL||Math.random()<0.25){const _sc=Math.min(2,_ffT.charges||0);if(_sc>0){_ffT.charges-=_sc;_ffA.charges=Math.min(20,(_ffA.charges||0)+_sc);addLog('☠️ Fuego Fatuo: roba '+_sc+' cargas','buff');}}}
@@ -6962,13 +6960,251 @@
                 addLog('🌟 Portador de Cenizas: cura '+_pcH+' HP','heal');
                 for(const _n in gameState.characters){const _c=gameState.characters[_n];if(!_c||_c.team!==_pcE||_c.isDead||_c.hp<=0||!_c._wasRevived)continue;_c.team=_pcA;delete _c._wasRevived;addLog('🌟 '+_n+' cambia de bando','buff');}
             } else if (ability.effect === 'luz_oscuridad_tirion') {
-                const _lu=gameState.characters[gameState.selectedCharacter],_luA=_lu?_lu.team:'team1';
-                const _luL=Object.keys(gameState.characters).filter(function(n){const _c=gameState.characters[n];return _c&&_c.team===_luA&&!_c.isDead&&_c.hp>0&&n!==gameState.selectedCharacter;});
-                if(_luL.length>0){addLog('🌟 Una Luz en la Oscuridad: Tirion no está solo','info');if(_lu)_lu.charges=Math.min(20,(_lu.charges||0)+15);endTurn();return;}
-                let _luR=0;
-                for(const _n in gameState.characters){const _c=gameState.characters[_n];if(!_c||_c.team!==_luA||_n===gameState.selectedCharacter)continue;if(_c.isDead||_c.hp<=0){_c.isDead=false;_c.hp=20;_c.charges=10;_c.statusEffects=[];_luR++;addLog('🌟 Una Luz en la Oscuridad: '+_n+' revive!','buff');}}
-                if(_luR===0)addLog('🌟 Una Luz: no hay aliados caídos','info');
-                if(typeof renderCharacters==='function')renderCharacters();
+                // Solo usable si Tirion es el UNICO aliado vivo
+                const _lu = gameState.characters[gameState.selectedCharacter];
+                const _luA = _lu ? _lu.team : 'team1';
+                const _luAliveAllies = Object.keys(gameState.characters).filter(function(n) {
+                    const _c = gameState.characters[n];
+                    return _c && _c.team === _luA && !_c.isDead && _c.hp > 0 && n !== gameState.selectedCharacter;
+                });
+                if (_luAliveAllies.length > 0) {
+                    addLog('🌟 Una Luz en la Oscuridad: Tirion no esta solo - habilidad bloqueada', 'info');
+                    if (_lu) _lu.charges = Math.min(20, (_lu.charges || 0) + (ability.cost || 15));
+                } else {
+                    let _luR = 0;
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _luA || _n === gameState.selectedCharacter) continue;
+                        _c.isDead = false; _c.hp = 20; _c.charges = 10; _c.statusEffects = []; _c._wasRevived = true;
+                        _luR++;
+                        addLog('🌟 Una Luz en la Oscuridad: ' + _n + ' revive con 20 HP y 10 cargas!', 'buff');
+                    }
+                    if (_luR === 0) addLog('🌟 Una Luz en la Oscuridad: no hay aliados caidos', 'info');
+                    renderCharacters(); renderSummons();
+                }
+
+            // ══════════════════════════════════════════════════════
+            // KYO KUSANAGI — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'yami_barai_kyo') {
+                // KYO — Yami Barai: 1 daño + bloquea AOE del objetivo 1T
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('🔥 Yami Barai: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                const _ybTgt = gameState.characters[targetName];
+                if (_ybTgt && !_ybTgt.isDead && _ybTgt.hp > 0) {
+                    _ybTgt.statusEffects = _ybTgt.statusEffects || [];
+                    // Bloquear categoría AOE durante 1 turno (usando mismo mecanismo que Silenciar)
+                    if (!(_ybTgt.statusEffects||[]).some(function(e){ return e && e.name === 'Silenciar' && e.silencedCategory === 'aoe'; })) {
+                        if (typeof applyDebuff === 'function') {
+                            applyDebuff(targetName, { name: 'Silenciar', type: 'debuff', duration: 1, silencedCategory: 'aoe', emoji: '🔥', description: 'Movimientos AOE bloqueados (Yami Barai)' });
+                        }
+                        addLog('🔥 Yami Barai: movimientos AOE de ' + targetName + ' bloqueados 1T', 'debuff');
+                    }
+                }
+
+            } else if (ability.effect === 'oniyaki_kyo') {
+                // KYO — Oniyaki: 1 daño + roba 2 HP y 2 cargas de todos los enemigos con Quemaduras
+                const _okAtk = gameState.characters[gameState.selectedCharacter];
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('🔥 Oniyaki: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                const _okETeam = _okAtk ? (_okAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _okETeam || _c.isDead || _c.hp <= 0) continue;
+                    const _hasBurn = (_c.statusEffects||[]).some(function(e){ return e && (e.name === 'Quemadura' || e.name === 'Quemadura Solar'); });
+                    if (!_hasBurn) continue;
+                    // Robar 2 HP
+                    const _hpSteal = Math.min(2, _c.hp);
+                    _c.hp = Math.max(0, _c.hp - _hpSteal);
+                    if (_c.hp <= 0) _c.isDead = true;
+                    if (_okAtk && typeof applyHeal === 'function') applyHeal(gameState.selectedCharacter, _hpSteal, 'Oniyaki');
+                    else if (_okAtk) _okAtk.hp = Math.min(_okAtk.maxHp, (_okAtk.hp||0) + _hpSteal);
+                    // Robar 2 cargas
+                    const _chSteal = Math.min(2, _c.charges || 0);
+                    _c.charges = Math.max(0, (_c.charges||0) - _chSteal);
+                    if (_okAtk) _okAtk.charges = Math.min(20, (_okAtk.charges||0) + _chSteal);
+                    addLog('🔥 Oniyaki: roba ' + _hpSteal + ' HP y ' + _chSteal + ' cargas de ' + _n + ' (tiene Quemaduras)', 'buff');
+                }
+
+            } else if (ability.effect === 'aragami_kyo') {
+                // KYO — Aragami: 4 daño a todos los objetivos con Quemaduras activo
+                const _arAtk = gameState.characters[gameState.selectedCharacter];
+                const _arETeam = _arAtk ? (_arAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                let _arHit = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _arETeam || _c.isDead || _c.hp <= 0) continue;
+                    const _hasBurn = (_c.statusEffects||[]).some(function(e){ return e && (e.name === 'Quemadura' || e.name === 'Quemadura Solar'); });
+                    if (!_hasBurn) continue;
+                    applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                    addLog('🔥 Aragami: ' + finalDamage + ' daño a ' + _n + ' (tiene Quemaduras)', 'damage');
+                    _arHit++;
+                }
+                if (_arHit === 0) addLog('🔥 Aragami: ningun enemigo tiene Quemaduras activo', 'info');
+
+            } else if (ability.effect === 'dokugami_kyo') {
+                // KYO — Dokugami: 3 daño a todos con Quemaduras + 3 daño directo por cada Quemadura en equipo enemigo
+                const _dkAtk = gameState.characters[gameState.selectedCharacter];
+                const _dkETeam = _dkAtk ? (_dkAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                // Contar Quemaduras activas en equipo enemigo
+                let _dkBurnCount = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _dkETeam || _c.isDead || _c.hp <= 0) continue;
+                    _dkBurnCount += (_c.statusEffects||[]).filter(function(e){ return e && (e.name === 'Quemadura' || e.name === 'Quemadura Solar'); }).length;
+                }
+                addLog('🔥 Dokugami: ' + _dkBurnCount + ' Quemaduras activas en equipo enemigo (+' + (_dkBurnCount * 3) + ' daño directo)', 'info');
+                let _dkHit = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _dkETeam || _c.isDead || _c.hp <= 0) continue;
+                    const _hasBurn = (_c.statusEffects||[]).some(function(e){ return e && (e.name === 'Quemadura' || e.name === 'Quemadura Solar'); });
+                    if (!_hasBurn) continue;
+                    // Daño por golpe
+                    applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                    // Daño directo adicional por Quemaduras activas
+                    if (_dkBurnCount > 0) {
+                        const _dkBonus = _dkBurnCount * 3;
+                        _c.hp = Math.max(0, (_c.hp||0) - _dkBonus);
+                        if (_c.hp <= 0) _c.isDead = true;
+                        addLog('🔥 Dokugami: +' + _dkBonus + ' daño directo a ' + _n + ' (' + _dkBurnCount + ' Quemaduras x3)', 'damage');
+                    }
+                    _dkHit++;
+                }
+                if (_dkHit === 0) addLog('🔥 Dokugami: ningun enemigo tiene Quemaduras activo', 'info');
+
+            // ══════════════════════════════════════════════════════
+            // IORI YAGAMI — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'llamas_purpuras_iori') {
+                // IORI — Llamas Purpuras: 1 daño + 50% cada aliado roba 1 carga del objetivo
+                const _lpAtk = gameState.characters[gameState.selectedCharacter];
+                const _lpAllyTeam = _lpAtk ? _lpAtk.team : 'team1';
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('💜 Llamas Purpuras: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                const _lpTgt = gameState.characters[targetName];
+                if (_lpTgt && !_lpTgt.isDead && _lpTgt.hp > 0) {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _lpAllyTeam || _c.isDead || _c.hp <= 0) continue;
+                        if (Math.random() < 0.50) {
+                            const _stolen = Math.min(1, _lpTgt.charges || 0);
+                            if (_stolen > 0) {
+                                _lpTgt.charges = Math.max(0, (_lpTgt.charges||0) - _stolen);
+                                _c.charges = Math.min(20, (_c.charges||0) + _stolen);
+                                addLog('💜 Llamas Purpuras: ' + _n + ' roba 1 carga de ' + targetName, 'buff');
+                            }
+                        }
+                    }
+                }
+
+            } else if (ability.effect === 'yuri_ori_iori') {
+                // IORI — Yuri Ori: 5 daño (x2 si objetivo tiene Provocacion/MegaProvocacion) + 3 cargas al equipo aliado
+                const _yoAtk = gameState.characters[gameState.selectedCharacter];
+                const _yoTgt = gameState.characters[targetName];
+                const _yoAllyTeam = _yoAtk ? _yoAtk.team : 'team1';
+                // Verificar Provocacion / MegaProvocacion en objetivo
+                const _yoHasProv = _yoTgt && (
+                    hasStatusEffect(targetName, 'Provocacion') || hasStatusEffect(targetName, 'MegaProvocacion') ||
+                    hasStatusEffect(targetName, 'Provocación') || hasStatusEffect(targetName, 'MegaProvocación') ||
+                    (_yoTgt.passive && (_yoTgt.passive.name === 'Provocacion' || _yoTgt.passive.name === 'MegaProvocacion'))
+                );
+                let _yoDmg = finalDamage;
+                if (_yoHasProv) {
+                    _yoDmg *= 2;
+                    addLog('💜 Yuri Ori: daño doble! ' + targetName + ' tiene Provocacion', 'buff');
+                }
+                applyDamageWithShield(targetName, _yoDmg, gameState.selectedCharacter);
+                addLog('💜 Yuri Ori: ' + _yoDmg + ' daño a ' + targetName, 'damage');
+                // +3 cargas al equipo aliado
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _yoAllyTeam || _c.isDead || _c.hp <= 0) continue;
+                    _c.charges = Math.min(20, (_c.charges||0) + 3);
+                }
+                addLog('💜 Yuri Ori: +3 cargas al equipo aliado', 'buff');
+                // PASIVA Sangre Maldita: si HP <= 30% ganar turno adicional (especial)
+                if (_yoAtk && _yoAtk.hp <= Math.floor(_yoAtk.maxHp * 0.30) &&
+                    _yoAtk.passive && _yoAtk.passive.name === 'Sangre Maldita') {
+                    addLog('💜 Sangre Maldita: HP critico! Iori gana turno adicional', 'buff');
+                    triggerAnticipacion(gameState.selectedCharacter, _yoAllyTeam);
+                    renderCharacters(); renderSummons(); showContinueButton(); return;
+                }
+
+            } else if (ability.effect === 'aoi_hana_iori') {
+                // IORI — Aoi Hana: 5 daño + elimina 1 carga del equipo enemigo por cada buff/debuff en objetivo + 3 cargas al equipo aliado
+                const _ahAtk = gameState.characters[gameState.selectedCharacter];
+                const _ahTgt = gameState.characters[targetName];
+                const _ahAllyTeam = _ahAtk ? _ahAtk.team : 'team1';
+                const _ahETeam = _ahAllyTeam === 'team1' ? 'team2' : 'team1';
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('💜 Aoi Hana: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                // Contar buffs + debuffs activos en el objetivo
+                const _ahEffects = (_ahTgt ? _ahTgt.statusEffects || [] : []).filter(function(e){ return e && !e.passiveHidden; }).length;
+                if (_ahEffects > 0) {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _ahETeam || _c.isDead || _c.hp <= 0) continue;
+                        _c.charges = Math.max(0, (_c.charges||0) - _ahEffects);
+                    }
+                    addLog('💜 Aoi Hana: equipo enemigo pierde ' + _ahEffects + ' cargas (' + _ahEffects + ' efectos en ' + targetName + ')', 'debuff');
+                }
+                // +3 cargas al equipo aliado
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _ahAllyTeam || _c.isDead || _c.hp <= 0) continue;
+                    _c.charges = Math.min(20, (_c.charges||0) + 3);
+                }
+                addLog('💜 Aoi Hana: +3 cargas al equipo aliado', 'buff');
+                // PASIVA Sangre Maldita: si HP <= 30% ganar turno adicional (especial)
+                if (_ahAtk && _ahAtk.hp <= Math.floor(_ahAtk.maxHp * 0.30) &&
+                    _ahAtk.passive && _ahAtk.passive.name === 'Sangre Maldita') {
+                    addLog('💜 Sangre Maldita: HP critico! Iori gana turno adicional', 'buff');
+                    triggerAnticipacion(gameState.selectedCharacter, _ahAllyTeam);
+                    renderCharacters(); renderSummons(); showContinueButton(); return;
+                }
+
+            } else if (ability.effect === 'ya_otome_iori') {
+                // IORI — Ya Otome: 5 daño + ejecuta Yuri Ori + Aoi Hana con cinematica Over
+                const _yomAtk = gameState.characters[gameState.selectedCharacter];
+                const _yomTgt = gameState.characters[targetName];
+                const _yomAlly = _yomAtk ? _yomAtk.team : 'team1';
+                const _yomETeam = _yomAlly === 'team1' ? 'team2' : 'team1';
+                // 1. Daño inicial del Over
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('💜 Ya Otome: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                // 2. Ejecutar Yuri Ori
+                const _yomHasProv = _yomTgt && (
+                    hasStatusEffect(targetName, 'Provocacion') || hasStatusEffect(targetName, 'MegaProvocacion') ||
+                    hasStatusEffect(targetName, 'Provocación') || hasStatusEffect(targetName, 'MegaProvocación')
+                );
+                let _yomYuriDmg = 5;
+                if (_yomHasProv) { _yomYuriDmg *= 2; addLog('💜 Ya Otome → Yuri Ori: daño doble! ' + targetName + ' tiene Provocacion', 'buff'); }
+                const _yomTgtNow = gameState.characters[targetName];
+                if (_yomTgtNow && !_yomTgtNow.isDead && _yomTgtNow.hp > 0) {
+                    applyDamageWithShield(targetName, _yomYuriDmg, gameState.selectedCharacter);
+                    addLog('💜 Ya Otome → Yuri Ori: ' + _yomYuriDmg + ' daño a ' + targetName, 'damage');
+                }
+                // Yuri Ori cargas
+                for (const _n in gameState.characters) { const _c=gameState.characters[_n]; if(!_c||_c.team!==_yomAlly||_c.isDead||_c.hp<=0)continue; _c.charges=Math.min(20,(_c.charges||0)+3); }
+                addLog('💜 Ya Otome → Yuri Ori: +3 cargas al equipo aliado', 'buff');
+                // 3. Ejecutar Aoi Hana
+                const _yomTgtNow2 = gameState.characters[targetName];
+                if (_yomTgtNow2 && !_yomTgtNow2.isDead && _yomTgtNow2.hp > 0) {
+                    applyDamageWithShield(targetName, 5, gameState.selectedCharacter);
+                    addLog('💜 Ya Otome → Aoi Hana: 5 daño a ' + targetName, 'damage');
+                    const _yomEffects = (_yomTgtNow2.statusEffects||[]).filter(function(e){return e&&!e.passiveHidden;}).length;
+                    if (_yomEffects > 0) {
+                        for (const _n in gameState.characters) { const _c=gameState.characters[_n]; if(!_c||_c.team!==_yomETeam||_c.isDead||_c.hp<=0)continue; _c.charges=Math.max(0,(_c.charges||0)-_yomEffects); }
+                        addLog('💜 Ya Otome → Aoi Hana: equipo enemigo pierde ' + _yomEffects + ' cargas', 'debuff');
+                    }
+                }
+                // Aoi Hana cargas
+                for (const _n in gameState.characters) { const _c=gameState.characters[_n]; if(!_c||_c.team!==_yomAlly||_c.isDead||_c.hp<=0)continue; _c.charges=Math.min(20,(_c.charges||0)+3); }
+                addLog('💜 Ya Otome → Aoi Hana: +3 cargas al equipo aliado', 'buff');
+                renderCharacters(); renderSummons();
             }
             
             // ASISTIR (Anakin): when ally uses Special/Over ST, execute basic on same target
@@ -7255,80 +7491,13 @@
                 } catch(e) { console.error('[RANKED] Error saving ranked result:', e); }
             }
 
-            // Online: push game over — incluir mvpChar para que el guest pueda usarlo
+            // Online: push game over
             if (onlineMode && currentRoomId) {
-                var _goMvp = null;
-                if (typeof window._calculateMvpScore === 'function') {
-                    var _goMvpBest = -1;
-                    var _goWinTeam = message.includes('HUNTERS') ? 'team1' : (message.includes('REAPERS') ? 'team2' : null);
-                    if (_goWinTeam) {
-                        for (var _goN in gameState.characters) {
-                            var _goC = gameState.characters[_goN];
-                            if (!_goC || _goC.team !== _goWinTeam) continue;
-                            var _goS = window._calculateMvpScore(_goN);
-                            if (_goS > _goMvpBest) { _goMvpBest = _goS; _goMvp = _goN; }
-                        }
-                        if (_goMvp) _goMvp = _goMvp.replace(/\s+v\d+$/i, '').trim();
-                    }
-                }
-                db.ref('rooms/' + currentRoomId + '/gameState').update({
-                    gameOver: true,
-                    winner: message,
-                    mvpChar: _goMvp || null,
-                    pushedBy: currentUser ? currentUser.uid : 'unknown'
-                });
+                db.ref('rooms/' + currentRoomId + '/gameState').update({ gameOver: true, winner: message, pushedBy: currentUser ? currentUser.uid : 'unknown' });
             }
 
             // ══ PANTALLA ÉPICA DE RESULTADO ══
             _showEpicResultScreen(message);
-        }
-
-        // Exponer globalmente para que firebase-auth.js pueda accederla
-        window._calculateMvpScore = function _calculateMvpScore(charName) {
-            // Determinar si el personaje es tanque
-            const _ch = gameState.characters[charName];
-            if (!_ch) return 0;
-            const _isTank = (_ch.maxHp >= 30) ||
-                (_ch.passive && (_ch.passive.name === 'Hombre de Acero' || _ch.passive.name === 'Mega Provocacion' ||
-                    _ch.passive.name === 'Efecto Omega' || _ch.passive.name === 'Señor de los Nazgul' ||
-                    _ch.passive.name === 'Aura de Hielo')) ||
-                (_ch.abilities||[]).some(function(ab){
-                    return ab && (ab.effect === 'rugido_devastador' || (ab.description||'').toLowerCase().includes('provocac'));
-                });
-            const bs = gameState.battleStats || {};
-            let score = 0;
-            // 1. Kills × 10
-            score += (bs.killMap && bs.killMap[charName] || 0) * 10;
-            // 2. Cargas propias × 0.5
-            score += (bs.chargesGenSelf && bs.chargesGenSelf[charName] || 0) * 0.5;
-            // 3. Cargas a aliados × 1.5
-            score += (bs.chargesGenAllies && bs.chargesGenAllies[charName] || 0) * 1.5;
-            // 4. Daño recibido × 1 (tanque × 2)
-            score += (bs.damageReceived && bs.damageReceived[charName] || 0) * (_isTank ? 2 : 1);
-            // 5. Debuffs aplicados × 2
-            score += (bs.debuffsApplied && bs.debuffsApplied[charName] || 0) * 2;
-            // 6. Buffs aplicados × 2
-            score += (bs.buffsApplied && bs.buffsApplied[charName] || 0) * 2;
-            // 7. Invocaciones × 3
-            score += (bs.summonsDone && bs.summonsDone[charName] || 0) * 3;
-            // 8. Kills por invocación +5
-            score += (bs.summonKills && bs.summonKills[charName] || 0) * 5;
-            // 9. HP curado a aliados × 1
-            score += (bs.healingDone && bs.healingDone[charName] || 0) * 1;
-            // 10. CC aplicado × 1.5
-            score += (bs.ccApplied && bs.ccApplied[charName] || 0) * 1.5;
-            // 11. Dotters: veneno y quemadura dividido entre aplicadores
-            const _poisonAppliers = Array.from(bs.poisonAppliers || []);
-            const _burnAppliers = Array.from(bs.burnAppliers || []);
-            if (_poisonAppliers.includes(charName) && _poisonAppliers.length > 0) {
-                score += (bs._totalPoisonDmg || 0) / _poisonAppliers.length;
-            }
-            if (_burnAppliers.includes(charName) && _burnAppliers.length > 0) {
-                score += (bs._totalBurnDmg || 0) / _burnAppliers.length;
-            }
-            // 12. Crits × 2
-            score += (bs.critsByChar && bs.critsByChar[charName] || 0) * 2;
-            return Math.round(score * 10) / 10;
         }
 
         function _showEpicResultScreen(message) {
@@ -7337,24 +7506,46 @@
             const winTeam  = isDraw ? null : (team1Win ? 'team1' : 'team2');
             const loseTeam = isDraw ? null : (team1Win ? 'team2' : 'team1');
 
-            // ── MVP: personaje del equipo GANADOR con mayor puntuación MVP ──
-            let mvpName = null, mvpPortrait = '', mvpScore = -1;
+            // ── MVP: personaje vivo del equipo ganador con más daño causado ──
+            let mvpName = null, mvpPortrait = '', mvpDmg = 0;
             if (winTeam) {
+                const dmgMap = (gameState.battleStats && gameState.battleStats.totalDamage) || {};
                 for (const n in gameState.characters) {
-                    const _ch = gameState.characters[n];
-                    if (!_ch || _ch.team !== winTeam) continue; // solo equipo ganador
-                    const _score = _calculateMvpScore(n);
-                    if (_score > mvpScore) { mvpScore = _score; mvpName = n; }
+                    const c = gameState.characters[n];
+                    if (!c || c.team !== winTeam) continue;
+                    const d = dmgMap[n] || 0;
+                    if (d > mvpDmg || (!mvpName && !c.isDead && c.hp > 0)) { mvpDmg = d; mvpName = n; }
+                }
+                if (mvpName) {
+                    const mc = gameState.characters[mvpName];
+                    mvpPortrait = mc.portrait || mc.transformPortrait || '';
                 }
             }
-            if (mvpName) {
-                const mc = gameState.characters[mvpName];
-                mvpPortrait = mc.portrait || mc.transformPortrait || '';
-            }
-            // Kills del MVP (con killMap correcto)
+
+            // ── KILLS DEL MVP: enemigos del equipo perdedor derrotados ──
+            // Usamos el daño causado como proxy: el MVP es quien más daño causó,
+            // y contamos cuántos enemigos del loseTeam terminaron muertos
             let mvpKills = 0;
-            if (mvpName && gameState.battleStats) {
-                mvpKills = (gameState.battleStats.killMap && gameState.battleStats.killMap[mvpName]) || 0;
+            if (mvpName && loseTeam && gameState.battleStats) {
+                const dmgMap = gameState.battleStats.totalDamage || {};
+                const killMap = gameState.battleStats.killMap || {};
+                // Si tenemos killMap exacto, usarlo; si no, estimar con kills registrados
+                mvpKills = killMap[mvpName] || 0;
+                // Fallback: contar enemigos muertos del equipo perdedor como total de kills del equipo ganador
+                if (mvpKills === 0) {
+                    const deadEnemies = Object.keys(gameState.characters).filter(function(n) {
+                        const c = gameState.characters[n];
+                        return c && c.team === loseTeam && (c.isDead || c.hp <= 0);
+                    }).length;
+                    // Asignar proporcionalmente al MVP (quien más daño hizo tiene la mayoría de kills)
+                    const totalWinnerDmg = Object.keys(dmgMap).reduce(function(sum, n) {
+                        const c = gameState.characters[n];
+                        return sum + ((c && c.team === winTeam) ? (dmgMap[n] || 0) : 0);
+                    }, 0);
+                    mvpKills = totalWinnerDmg > 0
+                        ? Math.round(deadEnemies * ((dmgMap[mvpName] || 0) / totalWinnerDmg))
+                        : 0;
+                }
             }
 
             // ── STATS ──
@@ -7407,15 +7598,14 @@
             object-fit:cover;object-position:top;border:2px solid ${winColor};display:block;margin:0 auto 8px;"
             onerror="this.style.display='none'">
         <div style="font-size:.8rem;font-weight:700;color:#fff;">${mvpName}</div>
-        <div style="font-size:.7rem;color:${winColor};margin-top:4px;">💀 ${mvpKills} kill${mvpKills !== 1 ? 's' : ''}</div>
-        <div style="font-size:.65rem;color:#ffd700;margin-top:3px;">🏅 ${mvpScore.toFixed(1)} pts MVP</div>
+        <div style="font-size:.7rem;color:${winColor};margin-top:4px;">⚔️ ${mvpDmg} daño · 💀 ${mvpKills} eliminado${mvpKills !== 1 ? 's' : ''}</div>
       </div>` : ''}
 
       <!-- ESTADÍSTICAS -->
       <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;min-width:200px;">
         ${_epicStat('⚔️','Daño Total',totalDmgAll)}
         ${_epicStat('💥','Golpes Críticos',bs.crits||0)}
-        ${_epicStat('💀','Kills del MVP', mvpKills)}
+        ${_epicStat('💀','Eliminados por MVP', mvpKills)}
         ${_epicStat('💫','Overs Ejecutados',bs.oversUsed||0)}
         ${_epicStat('💚','HP Curado',bs.healsGiven||0)}
         ${_epicStat('🏆','Sobrevivientes',team1Win?team1Alive:team2Alive)}
