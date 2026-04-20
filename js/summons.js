@@ -988,6 +988,9 @@
             // ── MUNDO TRANSPARENTE: si la pasiva del objetivo está bloqueada por Yorichi, saltar pasivas reactivas ──
             const _yorichiPassiveBlocked = !!(target && target._passiveBlockedByYorichi);
 
+            // ── LLAMARADA KUSANAGI (Kyo): AOE enemigo → Quemaduras al atacante por cada aliado golpeado ──
+            // Se rastrea en triggerKyoAOEPassive() llamado después de cada AOE completo
+
             // ── RÉQUIEM DE LOS CAÍDOS (Manigoldo): inmune a daño directo (attackerName === null) ──
             if (damage > 0 && attackerName === null &&
                 target.passive && target.passive.name === 'Réquiem de los Caídos') {
@@ -1244,6 +1247,16 @@
                         }
                     }
                 }
+            }
+
+            // ── SANGRE MALDITA (Iori Yagami): si HP <= 50%, genera cargas = daño recibido ──
+            if (remainingDamage > 0 && !passiveExecuting &&
+                target.passive && target.passive.name === 'Sangre Maldita' &&
+                target.hp > 0 && !target.isDead &&
+                target.hp <= Math.floor(target.maxHp * 0.50)) {
+                const _smCharges = remainingDamage;
+                target.charges = Math.min(20, (target.charges||0) + _smCharges);
+                addLog('💜 Sangre Maldita: Iori genera ' + _smCharges + ' cargas (recibio daño con HP critico)', 'buff');
             }
 
             // ── PALADÍN DE LA MANO DE PLATA (Tirion): al llegar a 10 HP → Protección Sagrada + Escudo Sagrado + 20 cargas ──
@@ -1778,6 +1791,29 @@
             if (!charName || !gameState.battleStats) return;
             _mvp('critsByChar', charName);
             gameState.battleStats.crits = (gameState.battleStats.crits || 0) + 1;
+        }
+
+        // Llamar después de cada AOE para aplicar pasiva de Kyo
+        function triggerKyoAOEPassive(attackerName, alliesHit) {
+            if (!attackerName || !alliesHit || alliesHit <= 0) return;
+            const _attacker = gameState.characters[attackerName];
+            if (!_attacker) return;
+            const _defTeam = _attacker.team === 'team1' ? 'team2' : 'team1';
+            // Buscar Kyo Kusanagi en el equipo defensor
+            for (const _n in gameState.characters) {
+                const _c = gameState.characters[_n];
+                if (!_c || _c.isDead || _c.hp <= 0 || _c.team !== _defTeam) continue;
+                if (!_c.passive || _c.passive.name !== 'Llamarada Kusanagi') continue;
+                // Aplicar quemaduras al atacante: 2 HP por cada aliado golpeado
+                const _burnDmg = alliesHit * 2;
+                if (typeof applyFlatBurn === 'function') {
+                    for (let _bi = 0; _bi < alliesHit; _bi++) {
+                        applyFlatBurn(attackerName, 2, 2);
+                    }
+                }
+                addLog('🔥 Llamarada Kusanagi: ' + attackerName + ' recibe ' + alliesHit + ' Quemadura(s) de 2HP (AOE golpeo ' + alliesHit + ' aliados)', 'debuff');
+                break;
+            }
         }
 
         function triggerMonarcaDestruccion(buffTargetName) {
