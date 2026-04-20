@@ -796,12 +796,26 @@
                 hp: 20, maxHp: 20, speed: 80, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/Lbm8MJ1/Captura-de-pantalla-2026-04-14-174220.png',
-                passive: { name: 'Reino de las Sombras', description: 'Inicio de ronda: 50% de aplicar Aura Oscura a cada aliado. Inicio de turno: invoca un Slime Token. Cada vez que una invocación es eliminada, genera 3 cargas.' },
+                passive: { name: 'Reino de las Sombras', description: 'Inicio de ronda: 50% de aplicar Aura Oscura a cada aliado. Cada vez que una invocación de ambos equipos es eliminada, Marik genera 3 cargas. Mientras el Dragón Alado de Ra o Ra Modo Fénix estén activos, Marik no puede recibir daño por golpes.' },
                 abilities: [
-                    { name: 'Orden de los Cuidatumba', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'orden_cuidatumba_marik', description: 'Causa 1 daño (+7 adicional a invocaciones).' },
+                    { name: 'Orden de los Cuidatumba', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'single', effect: 'orden_cuidatumba_marik', description: 'Causa 1 daño. Inflige +7 de daño adicional a invocaciones.' },
                     { name: 'Canto del Sol', type: 'special', cost: 0, chargeGain: 0, damage: 0, target: 'self', effect: 'canto_sol_marik', description: 'Invoca el Huevo del Sol en el equipo enemigo.' },
-                    { name: 'Dios de Dioses', type: 'special', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'dios_dioses_marik', description: 'Requiere 3 Slime Tokens o 3 invocaciones aliadas. Elimina 3 invocaciones aliadas e invoca al Dragón Alado de Ra.' },
-                    { name: 'Inmortal Fénix', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'self', effect: 'inmortal_fenix_marik', description: 'Requiere Dragón Alado de Ra activo. Elimina al Dragón Alado de Ra e invoca al Dragón Alado de Ra Modo Fénix.' }
+                    { name: 'Profecia del Faraon', type: 'special', cost: 10, chargeGain: 0, damage: 4, target: 'aoe', effect: 'profecia_faraon_marik', description: 'Causa 4 AOE. Aplica debuff Quemadura Solar a todos los enemigos. Causa +1 daño adicional por cada invocación activa en ambos equipos.' },
+                    { name: 'Inmortal Fénix', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'self', effect: 'inmortal_fenix_marik', description: 'Solo usable si hay un Dragón Alado de Ra en campo. Elimina al Dragón Alado de Ra e invoca al Dragón Alado de Ra Modo Fénix.' }
+                ]
+            },
+
+            'Daemon Targaryen': {
+                hp: 20, maxHp: 20, speed: 82, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/nqrW6Wr7/Daemon-Targaryen.jpg',
+                transformPortrait: 'https://i.ibb.co/wrpFp6y8/Whats-App-Image-2026-04-20-at-12-03-43-PM.jpg',
+                passive: { name: 'Principe Rebelde', description: 'Al llegar a 0 HP, elimina un enemigo aleatorio. Si golpea a un enemigo con Provocacion o Mega Provocacion activa, aplica transformación Jinete de Dragones 2T (daño triple, ignora Provocacion/MegaProvocacion).' },
+                abilities: [
+                    { name: 'Hermana Oscura', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'hermana_oscura_daemon', description: 'Causa 2 daño. Aplica debuff Debilitar al objetivo. Si el objetivo tiene Provocacion o Mega Provocacion activa antes de atacar, este ataque tiene 100% de probabilidad de crítico.' },
+                    { name: 'Furia de Caraxes', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'single', effect: 'furia_caraxes_daemon', description: 'Causa 4 daño. Si el objetivo tiene Provocacion o Mega Provocacion activa antes de atacar, aplica Quemaduras de 3 HP a todo el equipo enemigo.' },
+                    { name: 'Provocacion del Principe', type: 'special', cost: 7, chargeGain: 0, damage: 2, target: 'single', effect: 'provocacion_principe_daemon', description: 'Disipa todos los buffs del equipo enemigo. Causa 2 daño al objetivo.' },
+                    { name: 'Ojo de Dioses', type: 'over', cost: 12, chargeGain: 0, damage: 5, target: 'single', effect: 'ojo_dioses_daemon', description: 'Causa 5 daño. Si el objetivo tiene Provocacion o Mega Provocacion activa, este ataque tiene 100% de probabilidad de crítico.' }
                 ]
             },
 
