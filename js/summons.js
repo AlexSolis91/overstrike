@@ -80,7 +80,16 @@
             
             addLog(`💨 ${summon.name} ha ${reason === 'sacrificed' ? 'sido sacrificado' : 'sido derrotado'}`, 'damage');
             // ── BATTLE STATS: contar invocación destruida ──
-            if (reason === 'derrotado' && gameState.battleStats) gameState.battleStats.summonsKilled++;
+            if (reason === 'derrotado' && gameState.battleStats) {
+                gameState.battleStats.summonsKilled++;
+                // REINO DE LAS SOMBRAS (Marik): +3 cargas por invocación eliminada
+                for (const _mkN in gameState.characters) {
+                    const _mkC = gameState.characters[_mkN];
+                    if (!_mkC || _mkC.isDead || !_mkC.passive || _mkC.passive.name !== 'Reino de las Sombras') continue;
+                    _mkC.charges = Math.min(20, (_mkC.charges||0) + 3);
+                    addLog('🌑 Reino de las Sombras: Marik genera 3 cargas (invocación eliminada)', 'buff');
+                }
+            }
 
             // GRANIZO DE ARENA IMPERIAL (Gaara): si la invocación tiene el flag, no activar pasiva
             if (summon._skipDeathPassive) {
@@ -991,6 +1000,29 @@
             // ── LLAMARADA KUSANAGI (Kyo): AOE enemigo → Quemaduras al atacante por cada aliado golpeado ──
             // Se rastrea en triggerKyoAOEPassive() llamado después de cada AOE completo
 
+            // ── JINETE DE DRAGONES (Daemon): daño triple mientras esté transformado ──
+            if (damage > 0 && attackerName) {
+                const _djAtk = gameState.characters[attackerName];
+                if (_djAtk && _djAtk.passive && _djAtk.passive.name === 'Principe Rebelde' &&
+                    (_djAtk.daemonJineteTurns||0) > 0) {
+                    damage *= 3;
+                    addLog('🐉 Jinete de Dragones: ¡Daño triple! (' + (damage/3) + ' → ' + damage + ')', 'buff');
+                }
+            }
+
+            // ── REINO DE LAS SOMBRAS (Marik): inmune a daño por golpe mientras Ra/Fénix activo ──
+            if (damage > 0 && attackerName && attackerName !== targetName &&
+                target.passive && target.passive.name === 'Reino de las Sombras') {
+                const _mkRaActive = Object.values(gameState.summons||{}).some(function(s){
+                    return s && s.hp > 0 && s.team === target.team &&
+                           (s.name === 'Dragon Alado de Ra' || s.name === 'Ra Modo Fenix');
+                });
+                if (_mkRaActive) {
+                    addLog('🌞 Reino de las Sombras: Marik es inmune a golpes mientras Ra/Fénix está activo', 'buff');
+                    return 0;
+                }
+            }
+
             // ── RÉQUIEM DE LOS CAÍDOS (Manigoldo): inmune a daño directo (attackerName === null) ──
             if (damage > 0 && attackerName === null &&
                 target.passive && target.passive.name === 'Réquiem de los Caídos') {
@@ -1259,6 +1291,31 @@
                 addLog('💜 Sangre Maldita: Iori genera ' + _smCharges + ' cargas (recibio daño con HP critico)', 'buff');
             }
 
+            // ── PRINCIPE REBELDE (Daemon): al llegar a 0 HP, elimina un enemigo aleatorio ──
+            if (remainingDamage > 0 && !passiveExecuting &&
+                target.passive && target.passive.name === 'Principe Rebelde' &&
+                target.hp <= 0 && !target.isDead) {
+                passiveExecuting = true;
+                // Eliminar un enemigo aleatorio (no el atacante para evitar loops)
+                const _daemonTeam = target.team;
+                const _daemonETeam = _daemonTeam === 'team1' ? 'team2' : 'team1';
+                const _daemonEnemies = Object.keys(gameState.characters).filter(function(n){
+                    const _c = gameState.characters[n];
+                    return _c && _c.team === _daemonETeam && !_c.isDead && _c.hp > 0;
+                });
+                if (_daemonEnemies.length > 0) {
+                    const _daemonVictim = _daemonEnemies[Math.floor(Math.random() * _daemonEnemies.length)];
+                    const _daemonVc = gameState.characters[_daemonVictim];
+                    if (_daemonVc) {
+                        _daemonVc.isDead = true;
+                        _daemonVc.hp = 0;
+                        addLog('🐉 Principe Rebelde: ¡Daemon cae pero elimina a ' + _daemonVictim + ' antes de morir!', 'buff');
+                        if (typeof registerKill === 'function') registerKill(targetName, _daemonVictim, false);
+                    }
+                }
+                passiveExecuting = false;
+            }
+
             // ── PALADÍN DE LA MANO DE PLATA (Tirion): al llegar a 10 HP → Protección Sagrada + Escudo Sagrado + 20 cargas ──
             if (remainingDamage > 0 && !passiveExecuting &&
                 target.passive && target.passive.name === 'Paladín de la Mano de Plata' &&
@@ -1365,7 +1422,10 @@
                 // ── BATTLE STATS: registrar kill usando función centralizada ──
                 const _killer = attackerName || gameState._currentTurnAttacker || null;
                 if (_killer) registerKill(_killer, targetName, false);
-                // Immediate game-over check after every kill
+                // ── REINO DE LAS SOMBRAS (Marik): 3 cargas cuando una invocación es eliminada ──
+            // (se maneja en triggerSummonDeath que se llama desde applySummonDamage)
+
+            // Immediate game-over check after every kill
                 if (typeof checkGameOver === 'function') checkGameOver();
                 
                 if (attackerName) {
