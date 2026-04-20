@@ -1344,6 +1344,17 @@
                 _spawnDmgNumber(targetName, (_isCrit ? '💥 ' : '-') + remainingDamage, _isCrit ? 'crit' : 'dmg');
             }
 
+            // ── LLAMARADA KUSANAGI (Kyo): detectar AOE enemigo y acumular contador de aliados golpeados ──
+            if (remainingDamage > 0 && attackerName && attackerName !== targetName) {
+                const _kyoSel = gameState.selectedAbility;
+                const _kyoIsAOE = _kyoSel && (_kyoSel.target === 'aoe' || _kyoSel.target === 'enemy_team');
+                if (_kyoIsAOE) {
+                    // Acumular contador de hits AOE para disparar la pasiva de Kyo al final
+                    gameState._kyoAOEHitsByAttacker = gameState._kyoAOEHitsByAttacker || {};
+                    gameState._kyoAOEHitsByAttacker[attackerName] = (gameState._kyoAOEHitsByAttacker[attackerName] || 0) + 1;
+                }
+            }
+
             // ── BATTLE STATS: acumular daño, crits y daño recibido ──
             if (remainingDamage > 0 && gameState.battleStats) {
                 // Daño por atacante
