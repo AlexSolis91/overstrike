@@ -91,25 +91,7 @@
                             }
                         }
 
-                        // ── REINO DE LAS SOMBRAS (Marik): inicio de turno → invoca Slime Token ──
-                        if (currentChar.passive && currentChar.passive.name === 'Reino de las Sombras') {
-                            const _mkSlimeCount = Object.keys(gameState.summons).filter(function(sid){
-                                const s = gameState.summons[sid];
-                                return s && s.name === 'Slime Token' && s.team === currentChar.team && s.hp > 0;
-                            }).length;
-                            if (_mkSlimeCount < 3) { // máximo 3 slimes
-                                const _mkSlimeId = 'slime_' + Date.now() + '_' + Math.random();
-                                gameState.summons[_mkSlimeId] = Object.assign({}, summonData && summonData['Slime Token'] ? summonData['Slime Token'] : {
-                                    name: 'Slime Token', hp: 5, maxHp: 5, statusEffects: [],
-                                    img: 'https://i.ibb.co/RGqr9m6z/Captura-de-pantalla-2026-04-14-174400.png'
-                                });
-                                gameState.summons[_mkSlimeId].team = currentChar.team;
-                                gameState.summons[_mkSlimeId].summoner = currentCharName;
-                                gameState.summons[_mkSlimeId].id = _mkSlimeId;
-                                addLog('💀 Reino de las Sombras: ' + currentCharName + ' invoca un Slime Token', 'buff');
-                                if (typeof renderSummons === 'function') renderSummons();
-                            }
-                        }
+                        // Reino de las Sombras ya NO invoca Slime Token (pasiva actualizada)
 
                         // ONLINE MODE: Solo procesar efectos del turno si el personaje es de MI equipo
                         // (evita procesamiento doble — cada cliente procesa solo sus propios personajes)
@@ -900,6 +882,7 @@
                                    (char.fenixArmorActive && (name === 'Ikki de Fenix' || name === 'Ikki de Fenix v2')) ||
                                    (char.kuramaMode && (name === 'Minato Namikaze' || name === 'Minato Namikaze v2')) ||
                                    ((name === 'Alexstrasza' || name === 'Alexstrasza v2') && char.dragonFormActive) ||
+                                   ((name === 'Daemon Targaryen') && (char.daemonJineteTurns||0) > 0) ||
                                    ((name === 'Goku' || name.startsWith('Goku')) && char.ultraInstinto) ||
                                   ((name === 'Anakin Skywalker' || name === 'Anakin Skywalker v2') && char.darkSideAwakened) ||
                                   ((name === 'Muzan Kibutsuji' || name === 'Muzan Kibutsuji v2') && char.muzanTransformed);
@@ -1065,6 +1048,7 @@
                                        (char.fenixArmorActive && (charName === 'Ikki de Fenix' || charName === 'Ikki de Fenix v2')) ||
                                        (char.kuramaMode && (charName === 'Minato Namikaze' || charName === 'Minato Namikaze v2')) ||
                                        (char.dragonFormActive && (charName === 'Alexstrasza' || charName === 'Alexstrasza v2')) ||
+                                       ((charName === 'Daemon Targaryen') && (char.daemonJineteTurns||0) > 0) ||
                                        (char.ultraInstinto && (charName === 'Goku' || charName.startsWith('Goku'))) ||
                                        (char.darkSideAwakened && (charName === 'Anakin Skywalker' || charName === 'Anakin Skywalker v2')) ||
                                        (char.muzanTransformed && (charName === 'Muzan Kibutsuji' || charName === 'Muzan Kibutsuji v2'));
@@ -2558,6 +2542,8 @@
             if (char.garouSaitamaMode && char.transformPortrait) portrait = char.transformPortrait;
             if (char.dragonFormActive && (char.transformPortrait || char.transformationPortrait))
                 portrait = char.transformPortrait || char.transformationPortrait;
+            if ((char.daemonJineteTurns||0) > 0 && char.transformPortrait)
+                portrait = char.transformPortrait;
 
             // Badge según tipo de Over
             const eff = abilityEffect || '';
