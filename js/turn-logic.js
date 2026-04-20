@@ -2002,6 +2002,27 @@
                 // ── DRAGON ALADO DE RA MODO FÉNIX: inicio de ronda → -10% HP total del equipo enemigo ──
                 // (Se aplica en el inicio de ronda más abajo)
 
+                // ── REINO DE LAS SOMBRAS (Marik): inicio de ronda → 50% Aura Oscura a cada aliado ──
+                (function() {
+                    for (const _mkN in gameState.characters) {
+                        const _mkC = gameState.characters[_mkN];
+                        if (!_mkC || _mkC.isDead || !_mkC.passive) continue;
+                        if (_mkC.passive.name !== 'Reino de las Sombras') continue;
+                        const _mkTeam = _mkC.team;
+                        for (const _n in gameState.characters) {
+                            const _c = gameState.characters[_n];
+                            if (!_c || _c.team !== _mkTeam || _c.isDead || _c.hp <= 0) continue;
+                            if (Math.random() < 0.50) {
+                                if (!hasStatusEffect(_n, 'Aura oscura') && !hasStatusEffect(_n, 'Aura Oscura')) {
+                                    if (typeof applyBuff === 'function') applyBuff(_n, { name: 'Aura oscura', type: 'buff', duration: 2, emoji: '🌑' });
+                                    addLog('🌑 Reino de las Sombras: ' + _n + ' recibe Aura Oscura', 'buff');
+                                }
+                            }
+                        }
+                        break;
+                    }
+                })();
+
                 // ── LLAMARADA KUSANAGI (Kyo): inicio de ronda → Aura de Fuego a 2 aliados aleatorios ──
                 (function() {
                     for (const _kyoN in gameState.characters) {
@@ -2040,6 +2061,21 @@
                             addLog('☠️ Réquiem de los Caídos: Manigoldo gana ' + _mgGain + ' cargas (' + _deadCount + ' eliminados)', 'buff');
                         }
                         break;
+                    }
+                })();
+
+                // ── JINETE DE DRAGONES (Daemon): decrementar contador de transformación ──
+                (function() {
+                    for (const _djN in gameState.characters) {
+                        const _djC = gameState.characters[_djN];
+                        if (!_djC || _djC.isDead || !_djC.daemonJineteTurns) continue;
+                        if (_djN === currentCharName) {
+                            _djC.daemonJineteTurns = Math.max(0, (_djC.daemonJineteTurns||0) - 1);
+                            if (_djC.daemonJineteTurns === 0) {
+                                delete _djC._activePortrait;
+                                addLog('🐉 Jinete de Dragones: transformación de Daemon Targaryen expira', 'info');
+                            }
+                        }
                     }
                 })();
 
