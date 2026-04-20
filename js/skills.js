@@ -70,6 +70,11 @@
         }
 
         function checkAndRedirectAOEMegaProv(targetTeam, dmgPerTarget, attackerName) {
+            // JINETE DE DRAGONES (Daemon): ignora Provocacion y MegaProvocacion
+            if (attackerName) {
+                const _djIgn = gameState.characters[attackerName];
+                if (_djIgn && _djIgn.passive && _djIgn.passive.name === 'Principe Rebelde' && (_djIgn.daemonJineteTurns||0) > 0) return false;
+            }
             // EL REY PROMETIDO: activar pasiva de Jon Snow cuando el enemigo usa AOE
             if (typeof triggerElReyPrometido === 'function') triggerElReyPrometido(attackerName);
             const mpData = checkKamishMegaProvocation(targetTeam);
@@ -5072,12 +5077,9 @@
             // ══════════════════════════════════════════════
 
             } else if (ability.effect === 'orden_cuidatumba_marik') {
-                // MARIK — Orden de los Cuidatumba: 1 daño (+7 a invocaciones)
-                const _ocTgt = gameState.characters[targetName];
-                if (_ocTgt) {
-                    applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                }
-                addLog('💀 Orden de los Cuidatumba: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                // MARIK — Orden de los Cuidatumba: 1 daño (+7 a invocaciones, ya aplicado en finalDamage)
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('💀 Orden de los Cuidatumba: ' + finalDamage + ' daño a ' + targetName + (finalDamage > 1 ? ' (incluye +7 vs invocación)' : ''), 'damage');
 
             } else if (ability.effect === 'canto_sol_marik') {
                 // MARIK — Canto del Sol: invoca Huevo del Sol en el equipo enemigo
@@ -5094,33 +5096,30 @@
                 addLog('🌞 Canto del Sol: ¡Huevo del Sol invocado en el equipo enemigo!', 'buff');
                 if (typeof renderSummons === 'function') renderSummons();
 
-            } else if (ability.effect === 'dios_dioses_marik') {
-                // MARIK — Dios de Dioses: requiere 3 slimes/invocaciones aliadas, las elimina e invoca Dragon de Ra
-                const _dgAtk = gameState.characters[gameState.selectedCharacter];
-                const _dgMyTeam = _dgAtk ? _dgAtk.team : 'team1';
-                const _dgAllySummons = Object.keys(gameState.summons).filter(function(sid){
-                    const s = gameState.summons[sid]; return s && s.team === _dgMyTeam && s.hp > 0;
-                });
-                if (_dgAllySummons.length < 3) {
-                    addLog('💀 Dios de Dioses: se necesitan 3 invocaciones aliadas (tienes ' + _dgAllySummons.length + ')', 'info');
-                    renderCharacters(); endTurn(); return;
+            } else if (ability.effect === 'profecia_faraon_marik') {
+                // MARIK — Profecia del Faraon: 4 AOE + QS + bonus por invocaciones activas
+                const _pfAtk = gameState.characters[gameState.selectedCharacter];
+                const _pfETeam = _pfAtk ? (_pfAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                // Contar invocaciones activas en ambos equipos
+                const _pfSummons = Object.values(gameState.summons||{}).filter(function(s){ return s && s.hp > 0; }).length;
+                const _pfDmg = finalDamage + _pfSummons;
+                addLog('🌞 Profecia del Faraon: ' + _pfDmg + ' daño (' + finalDamage + ' base +' + _pfSummons + ' por invocaciones)', 'info');
+                if (checkAndRedirectAOEMegaProv(_pfETeam, _pfDmg, gameState.selectedCharacter)) {
+                    addLog('🌞 Profecia del Faraon redirigida por MegaProvocacion', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _pfETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) continue;
+                        applyDamageWithShield(_n, _pfDmg, gameState.selectedCharacter);
+                        applySolarBurn(_n, 2, 2);
+                    }
                 }
-                // Eliminar 3 invocaciones aliadas
-                _dgAllySummons.slice(0, 3).forEach(function(sid) {
-                    addLog('💀 Dios de Dioses: sacrifica ' + gameState.summons[sid].name, 'damage');
-                    delete gameState.summons[sid];
-                });
-                // Invocar Dragon Alado de Ra
-                const _draId = 'dragon_ra_' + Date.now();
-                gameState.summons[_draId] = Object.assign({}, summonData['Dragon Alado de Ra'] || {
-                    name: 'Dragon Alado de Ra', hp: 20, maxHp: 20, statusEffects: [],
-                    img: 'https://i.ibb.co/wrxj370t/Captura-de-pantalla-2026-04-14-174235.png'
-                });
-                gameState.summons[_draId].team = _dgMyTeam;
-                gameState.summons[_draId].summoner = gameState.selectedCharacter;
-                gameState.summons[_draId].id = _draId;
-                addLog('🐉 ¡Dios de Dioses! Dragon Alado de Ra invocado', 'buff');
-                if (typeof renderSummons === 'function') renderSummons();
+                addLog('🌞 Profecia del Faraon: AOE + Quemadura Solar completado', 'damage');
+
+            // Backward compat: dios_dioses_marik no se usa pero mantener por si hay saves
+            } else if (ability.effect === 'dios_dioses_marik') {
+                addLog('💀 Dios de Dioses ya no está disponible — usa Profecia del Faraon', 'info');
 
             } else if (ability.effect === 'inmortal_fenix_marik') {
                 // MARIK — Inmortal Fénix: requiere Dragon de Ra, lo elimina e invoca Dragon Modo Fénix
@@ -7209,6 +7208,109 @@
                 for (const _n in gameState.characters) { const _c=gameState.characters[_n]; if(!_c||_c.team!==_yomAlly||_c.isDead||_c.hp<=0)continue; _c.charges=Math.min(20,(_c.charges||0)+3); }
                 addLog('💜 Ya Otome → Aoi Hana: +3 cargas al equipo aliado', 'buff');
                 renderCharacters(); renderSummons();
+
+            // ══════════════════════════════════════════════════════
+            // DAEMON TARGARYEN — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'hermana_oscura_daemon') {
+                // DAEMON — Hermana Oscura: 2 daño + Debilitar. Crit 100% si objetivo tiene Provocacion
+                const _hdAtk = gameState.characters[gameState.selectedCharacter];
+                const _hdTgt = gameState.characters[targetName];
+                const _hdHasProv = _hdTgt && (
+                    hasStatusEffect(targetName, 'Provocacion') || hasStatusEffect(targetName, 'MegaProvocacion') ||
+                    hasStatusEffect(targetName, 'Provocación') || hasStatusEffect(targetName, 'MegaProvocación') ||
+                    (_hdTgt.passive && (_hdTgt.passive.name === 'Efecto Omega' || _hdTgt.passive.name === 'Hombre de Acero'))
+                );
+                let _hdDmg = finalDamage;
+                if (_hdHasProv) {
+                    _hdDmg *= 2;
+                    addLog('🗡️ Hermana Oscura: ¡Crítico 100%! objetivo tiene Provocacion', 'buff');
+                }
+                applyDamageWithShield(targetName, _hdDmg, gameState.selectedCharacter);
+                addLog('🗡️ Hermana Oscura: ' + _hdDmg + ' daño a ' + targetName, 'damage');
+                if (_hdTgt && !_hdTgt.isDead && _hdTgt.hp > 0) {
+                    if (typeof applyDebuff === 'function') applyDebuff(targetName, { name: 'Debilitar', type: 'debuff', duration: 2, emoji: '⬇️' });
+                    addLog('🗡️ Hermana Oscura: Debilitar aplicado a ' + targetName, 'debuff');
+                }
+                // Pasiva Principe Rebelde: si objetivo tiene Provocacion, aplicar Jinete de Dragones
+                if (_hdHasProv && _hdAtk) {
+                    _hdAtk.daemonJineteTurns = (_hdAtk.daemonJineteTurns || 0) < 2 ? 2 : _hdAtk.daemonJineteTurns;
+                    addLog('🐉 Principe Rebelde: ¡Jinete de Dragones activado! Daño triple por 2T', 'buff');
+                    if (_hdAtk.transformPortrait) {
+                        _hdAtk._activePortrait = _hdAtk.transformPortrait;
+                    }
+                }
+
+            } else if (ability.effect === 'furia_caraxes_daemon') {
+                // DAEMON — Furia de Caraxes: 4 daño. Si objetivo tiene Provocacion → Quemaduras 3HP a todos los enemigos
+                const _fcAtk = gameState.characters[gameState.selectedCharacter];
+                const _fcTgt = gameState.characters[targetName];
+                const _fcETeam = _fcAtk ? (_fcAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _fcHasProv = _fcTgt && (
+                    hasStatusEffect(targetName, 'Provocacion') || hasStatusEffect(targetName, 'MegaProvocacion') ||
+                    hasStatusEffect(targetName, 'Provocación') || hasStatusEffect(targetName, 'MegaProvocación') ||
+                    (_fcTgt.passive && (_fcTgt.passive.name === 'Efecto Omega' || _fcTgt.passive.name === 'Hombre de Acero'))
+                );
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('🐉 Furia de Caraxes: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (_fcHasProv) {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _fcETeam || _c.isDead || _c.hp <= 0) continue;
+                        applyFlatBurn(_n, 3, 2);
+                    }
+                    addLog('🐉 Furia de Caraxes: Quemaduras 3HP a todo el equipo enemigo (objetivo tenía Provocacion)', 'debuff');
+                }
+                // Activar Jinete de Dragones si objetivo tenía Provocacion
+                if (_fcHasProv && _fcAtk) {
+                    _fcAtk.daemonJineteTurns = (_fcAtk.daemonJineteTurns || 0) < 2 ? 2 : _fcAtk.daemonJineteTurns;
+                    addLog('🐉 Principe Rebelde: ¡Jinete de Dragones activado! Daño triple por 2T', 'buff');
+                    if (_fcAtk.transformPortrait) _fcAtk._activePortrait = _fcAtk.transformPortrait;
+                }
+
+            } else if (ability.effect === 'provocacion_principe_daemon') {
+                // DAEMON — Provocacion del Principe: disipa buffs del equipo enemigo + 2 daño al objetivo
+                const _ppAtk = gameState.characters[gameState.selectedCharacter];
+                const _ppETeam = _ppAtk ? (_ppAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                // Disipar buffs primero
+                let _ppTotalBufDis = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _ppETeam || _c.isDead || _c.hp <= 0) continue;
+                    const _bufs = (_c.statusEffects||[]).filter(function(e){ return e && e.type === 'buff' && !e.permanent && !e.passiveHidden; });
+                    if (_bufs.length > 0) {
+                        _c.statusEffects = (_c.statusEffects||[]).filter(function(e){ return !e || e.type !== 'buff' || e.permanent || e.passiveHidden; });
+                        _ppTotalBufDis += _bufs.length;
+                    }
+                }
+                addLog('🗡️ Provocacion del Principe: ' + _ppTotalBufDis + ' buff(s) disipados del equipo enemigo', 'debuff');
+                // Luego 2 daño al objetivo
+                applyDamageWithShield(targetName, 2, gameState.selectedCharacter);
+                addLog('🗡️ Provocacion del Principe: 2 daño a ' + targetName, 'damage');
+
+            } else if (ability.effect === 'ojo_dioses_daemon') {
+                // DAEMON — Ojo de Dioses: 5 daño. Crit 100% si objetivo tiene Provocacion/MegaProvocacion
+                const _odTgt = gameState.characters[targetName];
+                const _odAtk = gameState.characters[gameState.selectedCharacter];
+                const _odHasProv = _odTgt && (
+                    hasStatusEffect(targetName, 'Provocacion') || hasStatusEffect(targetName, 'MegaProvocacion') ||
+                    hasStatusEffect(targetName, 'Provocación') || hasStatusEffect(targetName, 'MegaProvocación') ||
+                    (_odTgt.passive && (_odTgt.passive.name === 'Efecto Omega' || _odTgt.passive.name === 'Hombre de Acero'))
+                );
+                let _odDmg = finalDamage;
+                if (_odHasProv) {
+                    _odDmg *= 2;
+                    addLog('🐉 Ojo de Dioses: ¡Crítico 100%! objetivo tiene Provocacion', 'buff');
+                }
+                applyDamageWithShield(targetName, _odDmg, gameState.selectedCharacter);
+                addLog('🐉 Ojo de Dioses: ' + _odDmg + ' daño a ' + targetName, 'damage');
+                // Activar Jinete de Dragones si objetivo tenía Provocacion
+                if (_odHasProv && _odAtk) {
+                    _odAtk.daemonJineteTurns = (_odAtk.daemonJineteTurns || 0) < 2 ? 2 : _odAtk.daemonJineteTurns;
+                    addLog('🐉 Principe Rebelde: ¡Jinete de Dragones activado! Daño triple por 2T', 'buff');
+                    if (_odAtk.transformPortrait) _odAtk._activePortrait = _odAtk.transformPortrait;
+                }
             }
             
             // ASISTIR (Anakin): when ally uses Special/Over ST, execute basic on same target
