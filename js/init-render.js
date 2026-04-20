@@ -304,7 +304,9 @@
                                       (name === 'Garou' && char.garouSaitamaMode) ||
                                       ((name === 'Superman' || name === 'Superman v2') && char.supermanPrimeMode) ||
                                       ((name === 'Varian Wrynn' || name === 'Varian Wrynn v2') && char.varianTransformed) ||
-                                      ((name === 'Escanor' || name === 'Escanor v2') && char.escanorTheOneActive);
+                                      ((name === 'Escanor' || name === 'Escanor v2') && char.escanorTheOneActive) ||
+                                      (name === 'Daemon Targaryen' && (char.daemonJineteTurns||0) > 0) ||
+                                      ((name === 'Ikki de Fenix' || name === 'Ikki de Fenix v2') && char.fenixArmorActive);
 
                 // Portrait dinámico por forma (Goku y Naruto)
                 let _dynPortrait = char.portrait || char.transformPortrait || char.transformationPortrait || '';
@@ -320,6 +322,14 @@
                 }
                 // Portrait Escanor The One
                 if ((name === 'Escanor' || name === 'Escanor v2') && char.escanorTheOneActive && char.transformPortrait) {
+                    _dynPortrait = char.transformPortrait;
+                }
+                // Portrait Daemon Targaryen — Jinete de Dragones
+                if (name === 'Daemon Targaryen' && (char.daemonJineteTurns||0) > 0 && char.transformPortrait) {
+                    _dynPortrait = char.transformPortrait;
+                }
+                // Portrait Ikki de Fenix — Armadura Divina
+                if ((name === 'Ikki de Fenix' || name === 'Ikki de Fenix v2') && char.fenixArmorActive && char.transformPortrait) {
                     _dynPortrait = char.transformPortrait;
                 }
                 // Portrait Antares transformado
