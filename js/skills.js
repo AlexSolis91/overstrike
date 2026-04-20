@@ -2032,11 +2032,10 @@
 
             // ── SOL ASCENDENTE (Rengoku básico) ──
             } else if (ability.effect === 'sol_ascendente') {
+                const _saETeam = attacker ? (attacker.team === 'team1' ? 'team2' : 'team1') : 'team2';
                 applyDamageWithShield(targetName, finalDamage, charName);
-                // burnAmount: 1HP flat. Using 10% as standard Quemadura (≈1-2HP on avg chars)
-                const burnPct = (ability.burnAmount || 1) <= 1 ? 5 : 10;
                 applyFlatBurn(targetName, ability.burnAmount || 1, 1);
-                applyAOEToSummons(enemyTeamTF, finalDamage, gameState.selectedCharacter);
+                if (typeof applyAOEToSummons === 'function') applyAOEToSummons(_saETeam, finalDamage, gameState.selectedCharacter);
                 addLog('☀️ Sol Ascendente: ' + targetName + ' recibe Quemadura ' + (ability.burnAmount||1) + 'HP', 'damage');
 
             // ── TIGRE DE FUEGO V2 (Rengoku updated) ──
@@ -4989,9 +4988,20 @@
                 }
 
             } else if (ability.effect === 'respiracion_solar_yorichi') {
-                // YORICHI — Respiración Solar Pura: 2 AOE + disipar buffs + Quemadura 2HP
+                // YORICHI — Respiración Solar Pura: ANTES de golpear disipar buffs, luego 2 AOE + Quemadura 2HP
                 const _rsAtk = gameState.characters[gameState.selectedCharacter];
                 const _rsETeam = _rsAtk ? (_rsAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                // PASO 1: Disipar todos los buffs ANTES de golpear
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _rsETeam || _c.isDead || _c.hp <= 0) continue;
+                    const _buffs = (_c.statusEffects||[]).filter(function(e){ return e && e.type === 'buff' && !e.permanent && !e.passiveHidden; });
+                    if (_buffs.length > 0) {
+                        _c.statusEffects = (_c.statusEffects||[]).filter(function(e){ return !e || e.type !== 'buff' || e.permanent || e.passiveHidden; });
+                        addLog('🌅 Respiración Solar: ' + _buffs.length + ' buff(s) disipados de ' + _n + ' (antes de golpear)', 'debuff');
+                    }
+                }
+                // PASO 2: AOE + Quemadura
                 if (checkAndRedirectAOEMegaProv(_rsETeam, finalDamage, gameState.selectedCharacter)) {
                     addLog('🌅 Respiración Solar redirigida', 'damage');
                 } else {
@@ -5000,16 +5010,10 @@
                         if (!_c || _c.team !== _rsETeam || _c.isDead || _c.hp <= 0) continue;
                         if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('💨 ' + _n + ' esquiva (EA)', 'buff'); continue; }
                         applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
-                        // Disipar todos los buffs
-                        const _buffs = (_c.statusEffects||[]).filter(function(e){ return e && e.type === 'buff' && !e.permanent && !e.passiveHidden; });
-                        if (_buffs.length > 0) {
-                            _c.statusEffects = (_c.statusEffects||[]).filter(function(e){ return !e || e.type !== 'buff' || e.permanent || e.passiveHidden; });
-                            addLog('🌅 Respiración Solar: ' + _buffs.length + ' buff(s) disipados de ' + _n, 'debuff');
-                        }
-                        applyFlatBurn(_n, 2, 1);
+                        applyFlatBurn(_n, 2, 2);
                     }
                 }
-                addLog('🌅 Respiración Solar Pura: 2 AOE completado', 'damage');
+                addLog('🌅 Respiración Solar Pura: buffs disipados + 2 AOE + Quemadura 2HP completado', 'damage');
 
             } else if (ability.effect === 'diosa_sol_yorichi') {
                 // YORICHI — Diosa del Sol: 6 ataques básicos con todos sus efectos (QS, Silenciar, cargas, crit)
@@ -7234,6 +7238,30 @@
                             addLog('El Elegido: Anakin gana Frenesi + Furia 2T', 'buff');
                             passiveExecuting = false;
                         }
+                        break;
+                    }
+                }
+            }
+
+            // PALADÍN DE LA MANO DE PLATA (Tirion): cuando enemigo usa Over → +5 HP y +5 cargas al equipo aliado
+            if (ability && ability.type === 'over' && !passiveExecuting) {
+                const _tirOvAtk = gameState.characters[gameState.selectedCharacter];
+                if (_tirOvAtk) {
+                    const _tirOvDefTeam = _tirOvAtk.team === 'team1' ? 'team2' : 'team1';
+                    for (const _tn in gameState.characters) {
+                        const _tc = gameState.characters[_tn];
+                        if (!_tc || _tc.isDead || _tc.hp <= 0 || _tc.team !== _tirOvDefTeam) continue;
+                        if (!_tc.passive || _tc.passive.name !== 'Paladín de la Mano de Plata') continue;
+                        passiveExecuting = true;
+                        for (const _an in gameState.characters) {
+                            const _ac = gameState.characters[_an];
+                            if (!_ac || _ac.isDead || _ac.hp <= 0 || _ac.team !== _tirOvDefTeam) continue;
+                            if (typeof applyHeal === 'function') applyHeal(_an, 5, 'Paladín de la Mano de Plata');
+                            else if (typeof canHeal === 'function' ? canHeal(_an) : true) _ac.hp = Math.min(_ac.maxHp, (_ac.hp||0) + 5);
+                            _ac.charges = Math.min(20, (_ac.charges||0) + 5);
+                        }
+                        addLog('🌟 Paladín de la Mano de Plata: equipo aliado +5 HP y +5 cargas (enemigo usó Over)', 'buff');
+                        passiveExecuting = false;
                         break;
                     }
                 }
