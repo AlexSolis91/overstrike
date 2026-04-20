@@ -2002,6 +2002,31 @@
                 // ── DRAGON ALADO DE RA MODO FÉNIX: inicio de ronda → -10% HP total del equipo enemigo ──
                 // (Se aplica en el inicio de ronda más abajo)
 
+                // ── LLAMARADA KUSANAGI (Kyo): inicio de ronda → Aura de Fuego a 2 aliados aleatorios ──
+                (function() {
+                    for (const _kyoN in gameState.characters) {
+                        const _kyoC = gameState.characters[_kyoN];
+                        if (!_kyoC || _kyoC.isDead || !_kyoC.passive) continue;
+                        if (_kyoC.passive.name !== 'Llamarada Kusanagi') continue;
+                        const _kyoTeam = _kyoC.team;
+                        const _kyoAllies = Object.keys(gameState.characters).filter(function(n){
+                            const _c = gameState.characters[n];
+                            return _c && _c.team === _kyoTeam && !_c.isDead && _c.hp > 0;
+                        });
+                        // Mezclar aleatoriamente y tomar 2
+                        const _shuffled = _kyoAllies.sort(function(){ return Math.random() - 0.5; }).slice(0, 2);
+                        _shuffled.forEach(function(n) {
+                            const _c = gameState.characters[n];
+                            if (!_c) return;
+                            if (!hasStatusEffect(n, 'Aura de Fuego') && !hasStatusEffect(n, 'Aura de fuego')) {
+                                if (typeof applyBuff === 'function') applyBuff(n, { name: 'Aura de Fuego', type: 'buff', duration: 2, emoji: '🔥' });
+                                addLog('🔥 Llamarada Kusanagi: ' + n + ' recibe Aura de Fuego', 'buff');
+                            }
+                        });
+                        break;
+                    }
+                })();
+
                 // ── RÉQUIEM DE LOS CAÍDOS (Manigoldo): fin de ronda → 3 cargas por cada personaje eliminado ──
                 (function() {
                     for (const _mgN in gameState.characters) {
