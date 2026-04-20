@@ -818,6 +818,32 @@
                 ]
             },
 
+            'Kyo Kusanagi': {
+                hp: 20, maxHp: 20, speed: 82, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/rfqFGmRg/The-King-of-Fighters-Team-Sacred-Treasures-Ai-Image-Leader-Kagura-Chizru-Member-kusanagi.jpg',
+                passive: { name: 'Llamarada Kusanagi', description: 'Cuando un enemigo ejecuta un ataque AOE, aplica Quemaduras de 2 HP por cada aliado golpeado sobre el atacante. Aliados con Aura de Fuego reciben 50% menos daño por golpe de ataques enemigos. Al inicio de cada ronda aplica Aura de Fuego a 2 aliados aleatorios.' },
+                abilities: [
+                    { name: 'Yami Barai', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'single', effect: 'yami_barai_kyo', description: 'Causa 1 daño. Bloquea los movimientos de categoria AOE del objetivo durante 1 turno.' },
+                    { name: 'Oniyaki', type: 'special', cost: 3, chargeGain: 0, damage: 1, target: 'single', effect: 'oniyaki_kyo', description: 'Causa 1 daño al objetivo. Roba 2 HP y 2 cargas de todos los enemigos con debuff Quemaduras activo.' },
+                    { name: 'Aragami', type: 'special', cost: 7, chargeGain: 0, damage: 4, target: 'self', effect: 'aragami_kyo', description: 'Causa 4 daño a todos los objetivos con debuff Quemaduras activo.' },
+                    { name: 'Dokugami', type: 'over', cost: 10, chargeGain: 0, damage: 3, target: 'self', effect: 'dokugami_kyo', description: 'Causa 3 daño a todos los objetivos con Quemaduras activo. Causa +3 daño directo adicional a cada enemigo golpeado por cada debuff Quemaduras activo en el equipo enemigo.' }
+                ]
+            },
+
+            'Iori Yagami': {
+                hp: 20, maxHp: 20, speed: 83, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/v6TPGkVH/descarga-7.jpg',
+                passive: { name: 'Sangre Maldita', description: 'Si el HP es <= 30%, sus habilidades Especiales otorgan 1 turno adicional. Si el HP es <= 50%, por cada punto de daño recibido (golpe, directo, efecto o debuff) genera la misma cantidad de cargas.' },
+                abilities: [
+                    { name: 'Llamas Purpuras', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'llamas_purpuras_iori', description: 'Causa 1 daño. Cada aliado tiene 50% de probabilidad de robar 1 carga del objetivo.' },
+                    { name: 'Yuri Ori', type: 'special', cost: 5, chargeGain: 0, damage: 5, target: 'single', effect: 'yuri_ori_iori', description: 'Causa 5 daño. Daño doble si el objetivo tiene Provocacion o Mega Provocacion. El equipo aliado genera 3 cargas.' },
+                    { name: 'Aoi Hana', type: 'special', cost: 5, chargeGain: 0, damage: 5, target: 'single', effect: 'aoi_hana_iori', description: 'Causa 5 daño. Elimina 1 carga del equipo enemigo por cada buff o debuff activo sobre el objetivo. El equipo aliado genera 3 cargas.' },
+                    { name: 'Ya Otome', type: 'over', cost: 10, chargeGain: 0, damage: 5, target: 'single', effect: 'ya_otome_iori', description: 'Causa 5 daño. Ejecuta Yuri Ori sobre el objetivo y luego ejecuta Aoi Hana sobre el objetivo con cinematica de Over.' }
+                ]
+            },
+
             'Tirion Fordring': {
                 hp: 30, maxHp: 30, speed: 83, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
