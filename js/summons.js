@@ -1365,18 +1365,24 @@
                         if (_atkChar.team === 'team1') gameState.battleStats.team1Damage += remainingDamage;
                         else gameState.battleStats.team2Damage += remainingDamage;
                     }
-                    // Crítico: daño >= doble del daño base de la habilidad activa
-                    const _abDmg = gameState.selectedAbility ? (gameState.selectedAbility.damage || 0) : 0;
-                    if (_abDmg > 0 && remainingDamage >= _abDmg * 2) {
+                    // Crítico: marcar via flag explícito o daño >= 2× base
+                    // El flag _isCritHit se setea en los skills que garantizan crit
+                    if (gameState._isCritHit) {
                         registerCrit(attackerName);
-                    } else if (remainingDamage >= 6 && !_abDmg) {
-                        // fallback para daños sin habilidad definida
-                        registerCrit(attackerName);
-                        gameState.battleStats.crits++;
+                        gameState._isCritHit = false;
+                    } else {
+                        const _abDmg = gameState.selectedAbility ? (gameState.selectedAbility.damage || 0) : 0;
+                        if (_abDmg > 0 && remainingDamage >= Math.floor(_abDmg * 1.8)) {
+                            registerCrit(attackerName);
+                        }
                     }
                 }
                 // Daño recibido por el objetivo
                 registerDamageReceived(targetName, remainingDamage);
+                // Daño CAUSADO por el atacante (nueva métrica ×0.15)
+                if (attackerName && typeof _mvp === 'function') {
+                    _mvp('damageDone', attackerName, remainingDamage);
+                }
             }
             // DOOMSDAY Adaptación Reactiva: recover 2HP after taking damage (if still alive)
             if (target._doomsdayHealPending) {
