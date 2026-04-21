@@ -4966,6 +4966,7 @@
                 let _cyDmg = finalDamage;
                 if (_cyHadQS) {
                     _cyDmg *= 2;
+                    gameState._isCritHit = true;
                     addLog('🌅 Mundo Transparente: ¡Crítico 100%! Yorichi golpea objetivo con QS', 'buff');
                 }
                 applyDamageWithShield(targetName, _cyDmg, gameState.selectedCharacter);
@@ -5103,8 +5104,10 @@
                 });
                 gameState.summons[_cantId].team = _cantETeam;
                 gameState.summons[_cantId].summoner = gameState.selectedCharacter;
+                if (typeof registerSummon === 'function') registerSummon(gameState.selectedCharacter);
                 gameState.summons[_cantId].id = _cantId;
                 addLog('🌞 Canto del Sol: ¡Huevo del Sol invocado en el equipo enemigo!', 'buff');
+                if (typeof registerSummon === 'function') registerSummon(gameState.selectedCharacter);
                 if (typeof renderSummons === 'function') renderSummons();
 
             } else if (ability.effect === 'profecia_faraon_marik') {
@@ -5152,8 +5155,10 @@
                 });
                 gameState.summons[_fenixId].team = _ifMyTeam;
                 gameState.summons[_fenixId].summoner = gameState.selectedCharacter;
+                if (typeof registerSummon === 'function') registerSummon(gameState.selectedCharacter);
                 gameState.summons[_fenixId].id = _fenixId;
                 addLog('🔥 ¡Inmortal Fénix! Dragon Alado de Ra Modo Fénix invocado', 'buff');
+                if (typeof registerSummon === 'function') registerSummon(gameState.selectedCharacter);
                 if (typeof renderSummons === 'function') renderSummons();
 
                         } else if (ability.effect === 'vals_tanjiro') {
@@ -6895,6 +6900,8 @@
                     }
                     attacker.charges = Math.min(20, (attacker.charges || 0) + gainConc2);
                     addLog(`⚡ ${gameState.selectedCharacter} genera ${gainConc2} carga${finalChargeGain > 1 ? 's' : ''}`, 'buff');
+                    // MVP: registrar cargas generadas para sí mismo
+                    if (typeof registerChargeGen === 'function') registerChargeGen(gameState.selectedCharacter, gainConc2, true);
                     if (typeof _animCard === 'function') _animCard(gameState.selectedCharacter, 'anim-charge', 500);
                     if (typeof _triggerChargePop === 'function') _triggerChargePop(gameState.selectedCharacter);
                     triggerIgrisPassive(gameState.selectedCharacter);
@@ -6947,7 +6954,15 @@
                 const _eaA=gameState.characters[gameState.selectedCharacter],_eaE=_eaA?(_eaA.team==='team1'?'team2':'team1'):'team2';
                 let _eaB=0,_eaD=0;
                 for(const _n in gameState.characters){const _c=gameState.characters[_n];if(!_c||_c.isDead)continue;(_c.statusEffects||[]).forEach(function(e){if(!e)return;if(e.type==='buff'&&!e.passiveHidden)_eaB++;if(e.type==='debuff')_eaD++;});}
-                if(_eaB>0)for(const _n in gameState.characters){const _c=gameState.characters[_n];if(!_c||_c.team!==_eaE||_c.isDead||_c.hp<=0)continue;_c.hp=Math.max(0,(_c.hp||0)-_eaB);if(_c.hp<=0)_c.isDead=true;addLog('☠️ Explosión de Almas: '+_eaB+' daño a '+_n,'damage');}
+                // Usar applyDamageWithShield para registrar kills, daño y daño recibido correctamente
+                if(_eaB>0) {
+                    for(const _n in gameState.characters){
+                        const _c=gameState.characters[_n];
+                        if(!_c||_c.team!==_eaE||_c.isDead||_c.hp<=0)continue;
+                        applyDamageWithShield(_n, _eaB, gameState.selectedCharacter);
+                        addLog('☠️ Explosión de Almas: '+_eaB+' daño a '+_n,'damage');
+                    }
+                }
                 if(_eaD>0&&_eaA){_eaA.charges=Math.min(20,(_eaA.charges||0)+_eaD);addLog('☠️ Explosión de Almas: +'+_eaD+' cargas','buff');}
             } else if (ability.effect === 'prision_yomotsu_manigoldo') {
                 applyDamageWithShield(targetName,finalDamage,gameState.selectedCharacter);
@@ -7242,6 +7257,7 @@
                 let _hdDmg = finalDamage;
                 if (_hdHasProv) {
                     _hdDmg *= 2;
+                    gameState._isCritHit = true;
                     addLog('🗡️ Hermana Oscura: ¡Crítico 100%! objetivo tiene Provocacion', 'buff');
                 }
                 applyDamageWithShield(targetName, _hdDmg, gameState.selectedCharacter);
@@ -7311,6 +7327,7 @@
                 let _odDmg = finalDamage;
                 if (_odHasProv) {
                     _odDmg *= 2;
+                    gameState._isCritHit = true;
                     addLog('🐉 Ojo de Dioses: ¡Crítico 100%! objetivo tiene Provocacion', 'buff');
                 }
                 // Activar Jinete de Dragones ANTES del golpe
@@ -7689,21 +7706,23 @@
             score += (bs.chargesGenSelf && bs.chargesGenSelf[charName] || 0) * 0.5;
             // 3. Cargas a aliados × 1.5
             score += (bs.chargesGenAllies && bs.chargesGenAllies[charName] || 0) * 1.5;
-            // 4. Daño recibido × 1 (tanque × 2)
-            score += (bs.damageReceived && bs.damageReceived[charName] || 0) * (_isTank ? 2 : 1);
-            // 5. Debuffs aplicados × 2
+            // 4. Daño causado (cualquier tipo) × 0.15
+            score += (bs.damageDone && bs.damageDone[charName] || 0) * 0.15;
+            // 5. Daño recibido × 1 (tanque × 1.5)
+            score += (bs.damageReceived && bs.damageReceived[charName] || 0) * (_isTank ? 1.5 : 1);
+            // 6. Debuffs aplicados × 2
             score += (bs.debuffsApplied && bs.debuffsApplied[charName] || 0) * 2;
-            // 6. Buffs aplicados × 2
+            // 7. Buffs aplicados × 2
             score += (bs.buffsApplied && bs.buffsApplied[charName] || 0) * 2;
-            // 7. Invocaciones × 3
+            // 8. Invocaciones × 3
             score += (bs.summonsDone && bs.summonsDone[charName] || 0) * 3;
-            // 8. Kills por invocación +5
+            // 9. Kills por invocación +5
             score += (bs.summonKills && bs.summonKills[charName] || 0) * 5;
-            // 9. HP curado a aliados × 1
+            // 10. HP curado a aliados × 1
             score += (bs.healingDone && bs.healingDone[charName] || 0) * 1;
-            // 10. CC aplicado × 1.5
+            // 11. CC aplicado × 1.5
             score += (bs.ccApplied && bs.ccApplied[charName] || 0) * 1.5;
-            // 11. Dotters: veneno y quemadura dividido entre aplicadores
+            // 12. Dotters: veneno y quemadura dividido entre aplicadores
             const _poisonAppliers = Array.from(bs.poisonAppliers || []);
             const _burnAppliers = Array.from(bs.burnAppliers || []);
             if (_poisonAppliers.includes(charName) && _poisonAppliers.length > 0) {
@@ -7712,7 +7731,7 @@
             if (_burnAppliers.includes(charName) && _burnAppliers.length > 0) {
                 score += (bs._totalBurnDmg || 0) / _burnAppliers.length;
             }
-            // 12. Crits × 2
+            // 13. Crits × 2
             score += (bs.critsByChar && bs.critsByChar[charName] || 0) * 2;
             return Math.round(score * 10) / 10;
         }
@@ -7749,9 +7768,10 @@
                 const colors = ['#ffd700','#c0c0c0','#cd7f32'];
                 const col = colors[pos] || '#888';
                 const portrait = _ch ? (_ch.portrait || _ch.transformPortrait || '') : '';
-                const kills  = (bs.killMap && bs.killMap[charName]) || 0;
-                const dmg    = (bs.totalDamage && bs.totalDamage[charName]) || 0;
-                const dmgRec = (bs.damageReceived && bs.damageReceived[charName]) || 0;
+                const kills   = (bs.killMap && bs.killMap[charName]) || 0;
+                const dmgDone = (bs.damageDone && bs.damageDone[charName]) || 0;
+                const dmg     = (bs.totalDamage && bs.totalDamage[charName]) || 0;
+                const dmgRec  = (bs.damageReceived && bs.damageReceived[charName]) || 0;
                 const crgSelf= (bs.chargesGenSelf && bs.chargesGenSelf[charName]) || 0;
                 const crgAlly= (bs.chargesGenAllies && bs.chargesGenAllies[charName]) || 0;
                 const debuffs= (bs.debuffsApplied && bs.debuffsApplied[charName]) || 0;
@@ -7779,9 +7799,10 @@
 
                 const rows = [
                     kills   > 0 ? _row('💀','Kills',          kills,   kills * 10)          : '',
+                    dmgDone > 0 ? _row('⚔️','Daño causado',   Math.round(dmgDone), Math.round(dmgDone * 0.15 * 10)/10) : '',
                     crgSelf > 0 ? _row('⚡','Cargas propias',  crgSelf, crgSelf * 0.5)       : '',
                     crgAlly > 0 ? _row('⚡','Cargas a aliados',crgAlly, crgAlly * 1.5)       : '',
-                    dmgRec  > 0 ? _row('🛡️','Daño recibido' + (_isTank?' (×2)':''), dmgRec, dmgRec * (_isTank?2:1)) : '',
+                    dmgRec  > 0 ? _row('🛡️','Daño recibido' + (_isTank?' (×1.5)':''), dmgRec, Math.round(dmgRec * (_isTank?1.5:1) * 10)/10) : '',
                     debuffs > 0 ? _row('💀','Debuffs aplicados',debuffs, debuffs * 2)        : '',
                     buffs   > 0 ? _row('✨','Buffs aplicados',  buffs,   buffs * 2)          : '',
                     summons > 0 ? _row('🐉','Invocaciones',     summons, summons * 3)        : '',
