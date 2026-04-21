@@ -156,8 +156,16 @@ function processBurnEffects(charName) {
             if (damage > 0) {
                 applyDamageWithShield(charName, damage, null);
                 addLog('🔥 ' + charName + ' recibe ' + damage + ' de daño por Quemadura', 'damage');
-                // MVP: registrar daño por quemadura
+                // MVP: registrar daño por quemadura + daño causado al aplicador
                 if (typeof registerBurnDamage === 'function') registerBurnDamage(damage);
+                // Atribuir daño causado a los aplicadores de quemadura
+                if (gameState.battleStats && gameState.battleStats.burnAppliers) {
+                    const _bApp = Array.from(gameState.battleStats.burnAppliers);
+                    if (_bApp.length > 0 && typeof _mvp === 'function') {
+                        const _share = damage / _bApp.length;
+                        _bApp.forEach(function(n){ _mvp('damageDone', n, _share); });
+                    }
+                }
                 // RENGOKU PASIVA: genera 1 carga por tick de quemadura en enemigo
                 const rengoku = gameState.characters['Rengoku'];
                 if (rengoku && !rengoku.isDead && rengoku.hp > 0 && rengoku.team !== char.team) {
@@ -212,8 +220,15 @@ function processBurnEffects(charName) {
                     }
                 }
                 addLog('☠️ ' + charName + ' recibe ' + totalVenenoDmg + ' de daño por Veneno (tick ' + poisonEffect.poisonTick + ')', 'damage');
-                // MVP: registrar daño por veneno
+                // MVP: registrar daño por veneno + daño causado al aplicador
                 if (typeof registerPoisonDamage === 'function') registerPoisonDamage(totalVenenoDmg);
+                if (gameState.battleStats && gameState.battleStats.poisonAppliers) {
+                    const _pApp = Array.from(gameState.battleStats.poisonAppliers);
+                    if (_pApp.length > 0 && typeof _mvp === 'function') {
+                        const _share = totalVenenoDmg / _pApp.length;
+                        _pApp.forEach(function(n){ _mvp('damageDone', n, _share); });
+                    }
+                }
 
                 // PILAR DEL INSECTO (Shinobu): genera 1 carga al equipo aliado cuando Shinobu recibe daño de Veneno
                 if (!passiveExecuting) {
@@ -440,8 +455,18 @@ function processBurnEffects(charName) {
             const _oldHp = _ch.hp;
             _ch.hp = Math.min(_ch.maxHp, _ch.hp + _healAmt);
             const _actual = _ch.hp - _oldHp;
-            if (_actual > 0 && logSource) {
-                addLog('💚 ' + charName + ' recupera ' + _actual + ' HP' + (_hasAuraLuz ? ' (x2 Aura de Luz)' : '') + (logSource ? ' (' + logSource + ')' : ''), 'heal');
+            if (_actual > 0) {
+                if (logSource) addLog('💚 ' + charName + ' recupera ' + _actual + ' HP' + (_hasAuraLuz ? ' (x2 Aura de Luz)' : '') + ' (' + logSource + ')', 'heal');
+                // MVP: registrar healing dado por el personaje activo
+                if (!passiveExecuting && gameState.selectedCharacter && typeof registerHealing === 'function') {
+                    const _healCaster = gameState.selectedCharacter;
+                    const _healCasterC = gameState.characters[_healCaster];
+                    const _healTarget = gameState.characters[charName];
+                    // Solo cuenta si el sanador y el objetivo son aliados (no se cura a enemigos)
+                    if (_healCasterC && _healTarget && _healCasterC.team === _healTarget.team && _healCaster !== charName) {
+                        registerHealing(_healCaster, _actual);
+                    }
+                }
             }
             return _actual;
         }
