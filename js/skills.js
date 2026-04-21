@@ -7724,24 +7724,89 @@
             const winTeam  = isDraw ? null : (team1Win ? 'team1' : 'team2');
             const loseTeam = isDraw ? null : (team1Win ? 'team2' : 'team1');
 
-            // ── MVP: personaje del equipo GANADOR con mayor puntuación MVP ──
-            let mvpName = null, mvpPortrait = '', mvpScore = -1;
+            // ── TOP 3 del equipo GANADOR por puntuación MVP ──
+            const _top3 = [];
             if (winTeam) {
+                const _allScored = [];
                 for (const n in gameState.characters) {
                     const _ch = gameState.characters[n];
                     if (!_ch || _ch.team !== winTeam) continue;
-                    const _score = _calculateMvpScore(n);
-                    if (_score > mvpScore) { mvpScore = _score; mvpName = n; }
+                    _allScored.push({ name: n, score: _calculateMvpScore(n), char: _ch });
                 }
+                _allScored.sort(function(a,b){ return b.score - a.score; });
+                _top3.push(..._allScored.slice(0,3));
             }
-            if (mvpName) {
-                const mc = gameState.characters[mvpName];
-                mvpPortrait = mc.portrait || mc.transformPortrait || '';
-            }
-            // Kills del MVP
-            let mvpKills = 0;
-            if (mvpName && gameState.battleStats) {
-                mvpKills = (gameState.battleStats.killMap && gameState.battleStats.killMap[mvpName]) || 0;
+            const mvpName    = _top3.length > 0 ? _top3[0].name  : null;
+            const mvpScore   = _top3.length > 0 ? _top3[0].score : 0;
+            const mvpPortrait = mvpName ? (_top3[0].char.portrait || _top3[0].char.transformPortrait || '') : '';
+            const mvpKills   = mvpName ? ((gameState.battleStats && gameState.battleStats.killMap && gameState.battleStats.killMap[mvpName]) || 0) : 0;
+
+            // Función que genera el desglose de métricas de un personaje
+            function _mvpBreakdown(charName, score, pos) {
+                const _ch = gameState.characters[charName];
+                const bs = gameState.battleStats || {};
+                const medals = ['🥇','🥈','🥉'];
+                const colors = ['#ffd700','#c0c0c0','#cd7f32'];
+                const col = colors[pos] || '#888';
+                const portrait = _ch ? (_ch.portrait || _ch.transformPortrait || '') : '';
+                const kills  = (bs.killMap && bs.killMap[charName]) || 0;
+                const dmg    = (bs.totalDamage && bs.totalDamage[charName]) || 0;
+                const dmgRec = (bs.damageReceived && bs.damageReceived[charName]) || 0;
+                const crgSelf= (bs.chargesGenSelf && bs.chargesGenSelf[charName]) || 0;
+                const crgAlly= (bs.chargesGenAllies && bs.chargesGenAllies[charName]) || 0;
+                const debuffs= (bs.debuffsApplied && bs.debuffsApplied[charName]) || 0;
+                const buffs  = (bs.buffsApplied && bs.buffsApplied[charName]) || 0;
+                const summons= (bs.summonsDone && bs.summonsDone[charName]) || 0;
+                const sumKills=(bs.summonKills && bs.summonKills[charName]) || 0;
+                const heals  = (bs.healingDone && bs.healingDone[charName]) || 0;
+                const cc     = (bs.ccApplied && bs.ccApplied[charName]) || 0;
+                const crits  = (bs.critsByChar && bs.critsByChar[charName]) || 0;
+                // Dotters
+                const pAppliers = Array.from(bs.poisonAppliers||[]);
+                const bAppliers = Array.from(bs.burnAppliers||[]);
+                const poisonPts = pAppliers.includes(charName) && pAppliers.length > 0 ? Math.round((bs._totalPoisonDmg||0)/pAppliers.length * 10)/10 : 0;
+                const burnPts   = bAppliers.includes(charName) && bAppliers.length > 0 ? Math.round((bs._totalBurnDmg||0)/bAppliers.length * 10)/10 : 0;
+                // IsTank
+                const _isTank = _ch && ((_ch.maxHp||0) >= 30 || (_ch.passive && ['Hombre de Acero','Mega Provocacion','Efecto Omega','Señor de los Nazgul','Aura de Hielo'].includes(_ch.passive.name)));
+
+                function _row(icon, label, raw, pts) {
+                    if (!raw && raw !== 0) return '';
+                    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.05);">' +
+                        '<span style="font-size:.68rem;color:#aaa;">' + icon + ' ' + label + ' <span style="color:#555;">(' + raw + ')</span></span>' +
+                        '<span style="font-size:.68rem;color:' + col + ';font-weight:700;">+' + pts.toFixed(1) + '</span>' +
+                    '</div>';
+                }
+
+                const rows = [
+                    kills   > 0 ? _row('💀','Kills',          kills,   kills * 10)          : '',
+                    crgSelf > 0 ? _row('⚡','Cargas propias',  crgSelf, crgSelf * 0.5)       : '',
+                    crgAlly > 0 ? _row('⚡','Cargas a aliados',crgAlly, crgAlly * 1.5)       : '',
+                    dmgRec  > 0 ? _row('🛡️','Daño recibido' + (_isTank?' (×2)':''), dmgRec, dmgRec * (_isTank?2:1)) : '',
+                    debuffs > 0 ? _row('💀','Debuffs aplicados',debuffs, debuffs * 2)        : '',
+                    buffs   > 0 ? _row('✨','Buffs aplicados',  buffs,   buffs * 2)          : '',
+                    summons > 0 ? _row('🐉','Invocaciones',     summons, summons * 3)        : '',
+                    sumKills> 0 ? _row('🐉','Kills por invoc.', sumKills,sumKills * 5)       : '',
+                    heals   > 0 ? _row('💚','HP curado',        heals,   heals * 1)          : '',
+                    cc      > 0 ? _row('🔒','CC aplicado',      cc,      cc * 1.5)           : '',
+                    poisonPts>0 ? _row('☠️','Veneno (dotter)',  Math.round(bs._totalPoisonDmg||0), poisonPts) : '',
+                    burnPts >0  ? _row('🔥','Quemadura (dotter)',Math.round(bs._totalBurnDmg||0), burnPts)   : '',
+                    crits   > 0 ? _row('💥','Crits',            crits,   crits * 2)          : '',
+                ].filter(Boolean).join('');
+
+                return '<div style="background:rgba(255,255,255,0.03);border:1px solid ' + col + '44;border-radius:14px;padding:14px;flex:1;min-width:220px;">' +
+                    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">' +
+                        (portrait ? '<img src="' + portrait + '" style="width:48px;height:48px;border-radius:8px;object-fit:cover;border:2px solid ' + col + ';" onerror="this.style.display=\'none\'">' : '') +
+                        '<div>' +
+                            '<div style="font-size:.65rem;color:' + col + ';letter-spacing:.15em;">' + medals[pos] + ' ' + (pos===0?'MVP':'TOP '+(pos+1)) + '</div>' +
+                            '<div style="font-size:.85rem;font-weight:700;color:#fff;">' + charName + '</div>' +
+                        '</div>' +
+                        '<div style="margin-left:auto;text-align:right;">' +
+                            '<div style="font-family:Orbitron,sans-serif;font-size:1rem;font-weight:900;color:' + col + ';">' + score.toFixed(1) + '</div>' +
+                            '<div style="font-size:.6rem;color:#555;">pts MVP</div>' +
+                        '</div>' +
+                    '</div>' +
+                    (rows ? '<div style="max-height:160px;overflow-y:auto;scrollbar-width:thin;">' + rows + '</div>' : '<div style="font-size:.7rem;color:#555;text-align:center;">Sin métricas registradas</div>') +
+                '</div>';
             }
 
             // ── STATS ──
@@ -7781,33 +7846,24 @@
       <div style="color:#666;font-size:.85rem;margin-top:6px;letter-spacing:.15em;">RONDAS JUGADAS: ${rounds}</div>
     </div>
 
-    <!-- MVP + STATS ROW -->
-    <div style="display:flex;gap:20px;align-items:stretch;flex-wrap:wrap;margin-bottom:24px;">
-
-      <!-- MVP CARD -->
-      ${mvpName ? `
-      <div style="flex:0 0 auto;background:rgba(255,255,255,0.04);border:1px solid ${winColor};
-          border-radius:16px;padding:16px;text-align:center;min-width:140px;
-          animation:epicMvpGlow 2s ease-in-out infinite;position:relative;">
-        <div style="font-size:.65rem;color:${winColor};letter-spacing:.2em;margin-bottom:8px;">⭐ MVP</div>
-        <img src="${mvpPortrait}" alt="${mvpName}" style="width:80px;height:80px;border-radius:12px;
-            object-fit:cover;object-position:top;border:2px solid ${winColor};display:block;margin:0 auto 8px;"
-            onerror="this.style.display='none'">
-        <div style="font-size:.8rem;font-weight:700;color:#fff;">${mvpName}</div>
-        <div style="font-size:.7rem;color:${winColor};margin-top:4px;">💀 ${mvpKills} kill${mvpKills !== 1 ? 's' : ''}</div>
-        <div style="font-size:.65rem;color:#ffd700;margin-top:3px;">🏅 ${mvpScore.toFixed ? mvpScore.toFixed(1) : mvpScore} pts MVP</div>
-      </div>` : ''}
-
-      <!-- ESTADÍSTICAS -->
-      <div style="flex:1;display:grid;grid-template-columns:1fr 1fr;gap:10px;min-width:200px;">
-        ${_epicStat('⚔️','Daño Total',totalDmgAll)}
-        ${_epicStat('💥','Golpes Críticos',bs.crits||0)}
-        ${_epicStat('💀','Eliminados por MVP', mvpKills)}
-        ${_epicStat('💫','Overs Ejecutados',bs.oversUsed||0)}
-        ${_epicStat('💚','HP Curado',bs.healsGiven||0)}
-        ${_epicStat('🏆','Sobrevivientes',team1Win?team1Alive:team2Alive)}
-      </div>
+    <!-- STATS ROW (compacto, arriba) -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;">
+      ${_epicStat('⚔️','Daño Total',totalDmgAll)}
+      ${_epicStat('💥','Crits',bs.crits||0)}
+      ${_epicStat('💫','Overs',bs.oversUsed||0)}
+      ${_epicStat('💚','HP Curado',bs.healsGiven||0)}
+      ${_epicStat('🏆','Sobrevivientes',team1Win?team1Alive:team2Alive)}
+      ${_epicStat('🔄','Rondas',rounds)}
     </div>
+
+    <!-- TOP 3 MVP -->
+    ${_top3.length > 0 ? `
+    <div style="margin-bottom:20px;">
+      <div style="font-size:.7rem;color:#888;letter-spacing:.15em;margin-bottom:12px;text-align:center;">⭐ TOP 3 — EQUIPO GANADOR</div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;">
+        ${_top3.map(function(entry,i){ return _mvpBreakdown(entry.name, entry.score, i); }).join('')}
+      </div>
+    </div>` : ''}
 
     <!-- TOP DAÑO -->
     ${dmgEntries.length > 0 ? `
