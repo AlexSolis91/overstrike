@@ -165,11 +165,13 @@ function triggerMaboroshi(targetTeam, debuffName) {
             if (typeof _animCard === 'function' && !effectObj.passiveHidden) {
                 _animCard(targetName, 'anim-charge', 550);
             }
-            // MVP: registrar buff aplicado (solo buffs visibles en aliados, no pasivos ocultos)
-            if (!effectObj.passiveHidden && !passiveExecuting && gameState.selectedCharacter) {
+            // MVP: registrar buff aplicado (buffs visibles en aliados aplicados activamente)
+            if (!effectObj.passiveHidden && gameState.selectedCharacter) {
                 const _caster = gameState.characters[gameState.selectedCharacter];
                 const _tgt = gameState.characters[targetName];
-                if (_caster && _tgt && _caster.team === _tgt.team && typeof registerBuff === 'function') {
+                // Solo registrar si el caster y el target son aliados Y hay una habilidad activa seleccionada
+                if (_caster && _tgt && _caster.team === _tgt.team &&
+                    gameState.selectedAbility && typeof registerBuff === 'function') {
                     registerBuff(gameState.selectedCharacter);
                 }
             }
@@ -309,8 +311,8 @@ function applyDebuff(targetName, effectObj) {
                 }
             }
             target.statusEffects.push(effectObj);
-            // MVP: registrar debuff aplicado sobre enemigo
-            if (!passiveExecuting && gameState.selectedCharacter) {
+            // MVP: registrar debuff aplicado sobre enemigo (solo con habilidad activa)
+            if (gameState.selectedCharacter && gameState.selectedAbility) {
                 const _caster = gameState.characters[gameState.selectedCharacter];
                 const _tgt = gameState.characters[targetName];
                 if (_caster && _tgt && _caster.team !== _tgt.team && typeof registerDebuff === 'function') {
