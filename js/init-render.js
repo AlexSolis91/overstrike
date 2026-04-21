@@ -41,6 +41,7 @@
                 killMap: {},
                 // MVP tracking — nuevos contadores
                 critsByChar: {},       // crits por personaje × 2pts
+                damageDone: {},        // daño causado × 0.15pts (nueva métrica)
                 chargesGenSelf: {},    // cargas generadas para sí mismo × 0.5pts
                 chargesGenAllies: {},  // cargas generadas para aliados × 1.5pts
                 damageReceived: {},    // daño recibido por personaje × 1-2pts
