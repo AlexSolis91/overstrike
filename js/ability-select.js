@@ -275,9 +275,17 @@
                     for (let n in gameState.characters) {
                         const c = gameState.characters[n];
                         if (!c || c.team !== targetTeam || c.isDead || c.hp <= 0) continue;
+                        // Buff activo de Provocación
                         if (c.statusEffects && c.statusEffects.some(e => e && normAccent(e.name||'') === 'provocacion')) {
                             tauntTarget = n;
                             break;
+                        }
+                        // Pasiva Provocación (Señor de los Nazgul, Efecto Omega, etc.)
+                        if (c.passive && (c.passive.name === 'Señor de los Nazgul' ||
+                                          c.passive.name === 'Efecto Omega' ||
+                                          c.passive.name === 'Hombre de Acero')) {
+                            tauntTarget = n;
+                            // No break — seguir buscando por si hay buff activo que tenga prioridad
                         }
                     }
                 }
