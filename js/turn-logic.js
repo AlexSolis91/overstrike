@@ -1835,9 +1835,9 @@
                         // Marcar la ronda de muerte (solo una vez)
                         if (!ikki.deathRound) ikki.deathRound = gameState.currentRound;
                     }
-                    // Revivir en la ronda SIGUIENTE a la de su muerte
+                    // Revivir DOS rondas después: si murió en ronda 4, revive al inicio de ronda 6
                     if ((ikki.isDead || ikki.hp <= 0) && ikki.deathRound &&
-                        gameState.currentRound > ikki.deathRound && !ikki.fenixRevived) {
+                        gameState.currentRound >= ikki.deathRound + 2 && !ikki.fenixRevived) {
                         ikki.fenixRevived = true;
                         ikki.hp = ikki.maxHp; // 100% HP
                         ikki.charges = 10;    // 10 cargas
