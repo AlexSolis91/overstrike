@@ -6519,15 +6519,24 @@
                 applyWeaken(targetName, 2);
                 addLog('Susanoo, Espada de Totsuka: ' + finalDamage + ' dano + Mega Aturdimiento + Debilitar', 'damage');
 
-            } else if (ability.effect === 'genjutsu_itachi') {
-                const _gjAtk = gameState.characters[gameState.selectedCharacter];
-                let _gjGain = 0;
-                if (Math.random() < 0.50) { applyAgotamiento(targetName, 2); addLog('Genjutsu: Agotamiento a ' + targetName, 'debuff'); _gjGain++; }
-                if (Math.random() < 0.50) { applyPossession(targetName, 1); addLog('Genjutsu: Posesion a ' + targetName, 'debuff'); _gjGain++; }
-                if (_gjAtk && _gjGain > 0) {
-                    _gjAtk.charges = Math.min(20, (_gjAtk.charges || 0) + _gjGain);
-                    addLog('Genjutsu: +' + _gjGain + ' carga(s) ganadas', 'buff');
-                } else { addLog('Genjutsu: ningun debuff aplicado esta vez', 'info'); }
+                     } else if (ability.effect === 'genjutsu_itachi') {
+                // Nuevo: 1 daño + Posesión al objetivo + 1 carga por cada Buff activo del objetivo
+                const _gjTgt = gameState.characters[targetName];
+                // Contar buffs ANTES del golpe
+                const _gjBuffs = _gjTgt ? (_gjTgt.statusEffects||[]).filter(function(e){
+                    return e && e.type === 'buff' && !e.passiveHidden;
+                }).length : 0;
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('👁️ Genjutsu: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                const _gjTgtNow = gameState.characters[targetName];
+                if (_gjTgtNow && !_gjTgtNow.isDead && _gjTgtNow.hp > 0) {
+                    applyPossession(targetName, 1);
+                    addLog('👁️ Genjutsu: Posesión aplicada a ' + targetName, 'debuff');
+                }
+                if (_gjBuffs > 0 && attacker) {
+                    attacker.charges = Math.min(20, (attacker.charges||0) + _gjBuffs);
+                    addLog('👁️ Genjutsu: +' + _gjBuffs + ' cargas (objetivo tenía ' + _gjBuffs + ' buff(s) activos)', 'buff');
+                }
 
             } else if (ability.effect === 'tsukuyomi_itachi') {
                 let _tsCount = 0;
