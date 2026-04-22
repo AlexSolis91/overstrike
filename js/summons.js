@@ -1544,8 +1544,8 @@
                                 });
                                 if (_ddEnms.length > 0) {
                                     const _ddR = _ddEnms[Math.floor(Math.random() * _ddEnms.length)];
-                                    gameState.characters[_ddR].charges = Math.max(0, (gameState.characters[_ddR].charges||0) - 1);
-                                    addLog('Adaptacion Reactiva: ' + _ddR + ' pierde 1 carga', 'debuff');
+                                    gameState.characters[_ddR].charges = Math.max(0, (gameState.characters[_ddR].charges||0) - 2);
+                                    addLog('Adaptacion Reactiva: ' + _ddR + ' pierde 2 cargas', 'debuff');
                                 }
                             }
                         }
