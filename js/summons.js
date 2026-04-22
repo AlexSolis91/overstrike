@@ -1281,15 +1281,7 @@
                 }
             }
 
-            // ── SANGRE MALDITA (Iori Yagami): si HP <= 50%, genera cargas = daño recibido ──
-            if (remainingDamage > 0 && !passiveExecuting &&
-                target.passive && target.passive.name === 'Sangre Maldita' &&
-                target.hp > 0 && !target.isDead &&
-                target.hp <= Math.floor(target.maxHp * 0.50)) {
-                const _smCharges = remainingDamage;
-                target.charges = Math.min(20, (target.charges||0) + _smCharges);
-                addLog('💜 Sangre Maldita: Iori genera ' + _smCharges + ' cargas (recibio daño con HP critico)', 'buff');
-            }
+            // Sangre Maldita v2: inicio de ronda en turn-logic.js
 
             // ── PRINCIPE REBELDE (Daemon): al llegar a 0 HP, elimina un enemigo aleatorio ──
             if (remainingDamage > 0 && !passiveExecuting &&
@@ -1819,6 +1811,10 @@
         // Registrar carga generada
         function registerChargeGen(charName, amount, forSelf) {
             if (!charName || !amount || !gameState.battleStats) return;
+            // Pulso dorado: cargas otorgadas a aliados por efecto de habilidad
+            if (!forSelf && amount > 0 && typeof _animCard === 'function') {
+                _animCard(charName, 'anim-pulse-gold', 550);
+            }
             if (forSelf) {
                 _mvp('chargesGenSelf', charName, amount);
             } else {
