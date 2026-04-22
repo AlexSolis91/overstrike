@@ -409,6 +409,53 @@
                 // PERSONAJES ESPECIALES — lógica personalizada de IA
                 // ═══════════════════════════════════════════════════════════════════
 
+                // ── TIRION FORDRING: si es el único aliado vivo y tiene cargas, usar luz_oscuridad ──
+                if (charName === 'Tirion Fordring' || charName === 'Tirion Fordring v2') {
+                    const _tirAlives = Object.keys(gameState.characters).filter(function(n){
+                        const _c = gameState.characters[n];
+                        return _c && _c.team === myTeam && !_c.isDead && _c.hp > 0;
+                    });
+                    if (_tirAlives.length === 1 && _tirAlives[0] === charName) {
+                        const _luzOsc = usable.find(function(ab){ return ab.effect === 'luz_oscuridad_tirion'; });
+                        if (_luzOsc) { chosen = _luzOsc; }
+                    }
+                }
+
+                // ── MANIGOLDO: evaluar qué habilidad elimina más enemigos y priorizarla ──
+                if (charName === 'Manigoldo' || charName === 'Manigoldo v2') {
+                    // Contar buffs y debuffs activos (para Explosión de Almas)
+                    let _maniBuffs = 0, _maniDebuffs = 0;
+                    for (const _n in gameState.characters) {
+                        const _cc = gameState.characters[_n];
+                        if (!_cc || _cc.isDead) continue;
+                        (_cc.statusEffects||[]).forEach(function(e){
+                            if (!e) return;
+                            if (e.type === 'buff' && !e.passiveHidden) _maniBuffs++;
+                            if (e.type === 'debuff') _maniDebuffs++;
+                        });
+                    }
+                    const _aliveEnemies2 = getAliveEnemies();
+                    let _bestKills = 0, _bestAb = null;
+                    usable.forEach(function(ab) {
+                        if (ab.type === 'basic') return;
+                        let _projDmg = 0;
+                        if (ab.effect === 'explosion_almas_manigoldo') _projDmg = _maniBuffs;
+                        else if (ab.effect === 'ondas_infernales_manigoldo') _projDmg = ab.damage || 0;
+                        else if (ab.effect === 'prision_yomotsu_manigoldo') _projDmg = ab.damage || 0;
+                        if (_projDmg > 0) {
+                            let _kills = 0;
+                            _aliveEnemies2.forEach(function(n){
+                                const _ec = gameState.characters[n];
+                                if (_ec && _ec.hp <= _projDmg) _kills++;
+                            });
+                            if (_kills > _bestKills || (_kills === _bestKills && _projDmg > (_bestAb ? (_bestAb.damage||0) : 0))) {
+                                _bestKills = _kills; _bestAb = ab;
+                            }
+                        }
+                    });
+                    if (_bestAb && _bestKills >= 1) { chosen = _bestAb; }
+                }
+
                 // ── PADME AMIDALA: priorizar Over > Especial2 > Especial1 > Básico ──
                 if (charName === 'Padme Amidala' || charName === 'Padme Amidala v2') {
                     const _padmeOver = usable.find(ab => ab.type === 'over');
