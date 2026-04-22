@@ -5949,6 +5949,7 @@
                 }
 
             } else if (ability.effect === 'skill_drain') {
+                // Skill Drain: 3 AOE + roba 1-5 HP por enemigo golpeado (siempre)
                 const _sdETeam2 = attacker.team === 'team1' ? 'team2' : 'team1';
                 if (checkAndRedirectAOEMegaProv(_sdETeam2, finalDamage, charName)) {
                     addLog('💥 Skill Drain: AOE redirigido por Mega Provocación', 'damage');
@@ -5958,24 +5959,55 @@
                         if (!_c || _c.team !== _sdETeam2 || _c.isDead || _c.hp <= 0) continue;
                         if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) continue;
                         applyDamageWithShield(_n, finalDamage, charName);
-                        if (Math.random() < 0.50) {
-                            const _steal = Math.floor(Math.random() * 3) + 1;
-                            const _stolen = Math.min(_steal, _c.hp);
-                            _c.hp = Math.max(0, _c.hp - _stolen);
+                        // Robo garantizado: 1-5 HP
+                        const _steal = Math.floor(Math.random() * 5) + 1;
+                        const _cNow = gameState.characters[_n];
+                        if (_cNow && !_cNow.isDead && _cNow.hp > 0) {
+                            const _stolen = Math.min(_steal, _cNow.hp);
+                            _cNow.hp = Math.max(0, _cNow.hp - _stolen);
                             attacker.hp = Math.min(attacker.maxHp, (attacker.hp||0) + _stolen);
                             addLog('💥 Skill Drain: roba ' + _stolen + ' HP de ' + _n, 'heal');
                         }
                     }
                     for (let _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _sdETeam2 && _s.hp > 0) applySummonDamage(_sid, finalDamage, charName); }
                 }
-                addLog('💥 Skill Drain: ' + finalDamage + ' AOE completado', 'damage');
+                addLog('💥 Skill Drain: ' + finalDamage + ' AOE + robo de HP completado', 'damage');
 
             } else if (ability.effect === 'devastator_punish') {
+                // Nuevo: 5 daño. 10% de eliminar al objetivo. Si lo elimina: disipar buffs enemigos + mega aturdimiento a todos
                 const _dpTgt = gameState.characters[targetName];
-                const _dpDiff = _dpTgt ? Math.max(0, (attacker.hp||0) - (_dpTgt.hp||0)) : 0;
-                const _dpDmg = finalDamage + _dpDiff;
+                const _dpWasAlive = _dpTgt && !_dpTgt.isDead && _dpTgt.hp > 0;
+                const _dpET = attacker.team === 'team1' ? 'team2' : 'team1';
+                // 10% de probabilidad de ejecutar al objetivo
+                const _dpExecute = Math.random() < 0.10;
+                let _dpDmg = finalDamage;
+                if (_dpExecute && _dpTgt && _dpTgt.hp > 0) {
+                    _dpDmg = _dpTgt.hp; // daño suficiente para eliminar
+                    addLog('💥 Devastator Punish: ¡EJECUCIÓN! 10% activado', 'buff');
+                }
                 applyDamageWithShield(targetName, _dpDmg, charName);
-                addLog('💥 Devastator Punish: ' + _dpDmg + ' daño (' + finalDamage + ' base + ' + _dpDiff + ' por diferencia de HP)', 'damage');
+                addLog('💥 Devastator Punish: ' + _dpDmg + ' daño a ' + targetName, 'damage');
+                // Si el objetivo fue eliminado
+                const _dpTgtNow = gameState.characters[targetName];
+                if (_dpWasAlive && _dpTgtNow && (_dpTgtNow.isDead || _dpTgtNow.hp <= 0)) {
+                    // Disipar buffs de todo el equipo enemigo
+                    let _dpTotalBufs = 0;
+                    for (const _n in gameState.characters) {
+                        const _cc = gameState.characters[_n];
+                        if (!_cc || _cc.team !== _dpET || _cc.isDead) continue;
+                        const _bufs = (_cc.statusEffects||[]).filter(e => e && e.type === 'buff' && !e.permanent && !e.passiveHidden);
+                        _cc.statusEffects = (_cc.statusEffects||[]).filter(e => !e || e.type !== 'buff' || e.permanent || e.passiveHidden);
+                        _dpTotalBufs += _bufs.length;
+                    }
+                    addLog('💥 Devastator Punish: ' + _dpTotalBufs + ' buffs disipados del equipo enemigo', 'debuff');
+                    // Mega Aturdimiento a todos los enemigos vivos
+                    for (const _n in gameState.characters) {
+                        const _cc = gameState.characters[_n];
+                        if (!_cc || _cc.team !== _dpET || _cc.isDead || _cc.hp <= 0 || _n === targetName) continue;
+                        applyStun(_n, 2);
+                    }
+                    addLog('💥 Devastator Punish: Mega Aturdimiento a todo el equipo enemigo', 'debuff');
+                }
 
             // ══════════════════════════════════════════════════════
             // ITACHI UCHIHA — handlers actualizados
@@ -6830,7 +6862,13 @@
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 addLog(`⚔️ ${gameState.selectedCharacter} usa ${ability.name} en ${targetName} causando ${finalDamage} de daño`, 'damage');
                 
-            } else if (ability.target === 'aoe') {
+            } else if (ability.target === 'aoe' && ability.effect !== 'luz_del_alba_tirion' &&
+                       ability.effect !== 'portador_cenizas_tirion' &&
+                       ability.effect !== 'respiracion_solar_yorichi' &&
+                       ability.effect !== 'sol_ascendente' &&
+                       ability.effect !== 'profecia_faraon_marik' &&
+                       ability.effect !== 'hou_yoku_tenshou_ikki' &&
+                       ability.effect !== 'skill_drain') {
                 // ── GENÉRICO AOE: con Mega Provocación y Esquiva Área ──
                 const attackerTeam = attacker.team;
                 const targetTeam = attackerTeam === 'team1' ? 'team2' : 'team1';
@@ -6985,8 +7023,8 @@
             } else if (ability.effect === 'luz_del_alba_tirion') {
                 const _ld=gameState.characters[gameState.selectedCharacter],_ldE=_ld?(_ld.team==='team1'?'team2':'team1'):'team2',_ldA=_ld?_ld.team:'team1';
                 if(checkAndRedirectAOEMegaProv(_ldE,finalDamage,gameState.selectedCharacter)){addLog('🌟 Luz del Alba redirigida','damage');}else{for(const _n in gameState.characters){const _c=gameState.characters[_n];if(!_c||_c.team!==_ldE||_c.isDead||_c.hp<=0)continue;if(checkAsprosAOEImmunity(_n,true)||checkMinatoAOEImmunity(_n))continue;applyDamageWithShield(_n,finalDamage,gameState.selectedCharacter);}}
-                for(const _n in gameState.characters){const _c=gameState.characters[_n];if(!_c||_c.team!==_ldA||_c.isDead||_c.hp<=0)continue;const _h=Math.random()<0.50?3:1;if(typeof applyHeal==='function')applyHeal(_n,_h,'Luz del Alba');else if(typeof canHeal==='function'?canHeal(_n):true)_c.hp=Math.min(_c.maxHp,(_c.hp||0)+_h);if(!hasStatusEffect(_n,'Aura de Luz')&&!hasStatusEffect(_n,'Aura de luz')){if(typeof applyBuff==='function')applyBuff(_n,{name:'Aura de Luz',type:'buff',duration:2,emoji:'✨'});}}
-                addLog('🌟 Luz del Alba: AOE + cura + Aura de Luz','buff');
+                for(const _n in gameState.characters){const _c=gameState.characters[_n];if(!_c||_c.team!==_ldA||_c.isDead||_c.hp<=0)continue;if(typeof applyHeal==='function')applyHeal(_n,1,'Luz del Alba');else if(typeof canHeal==='function'?canHeal(_n):true)_c.hp=Math.min(_c.maxHp,(_c.hp||0)+1);if(!hasStatusEffect(_n,'Aura de Luz')&&!hasStatusEffect(_n,'Aura de luz')){if(typeof applyBuff==='function')applyBuff(_n,{name:'Aura de Luz',type:'buff',duration:2,emoji:'✨'});}}
+                addLog('🌟 Luz del Alba: 1 AOE + 1 HP cura + Aura de Luz al equipo aliado','buff');
             } else if (ability.effect === 'proteccion_luz_tirion') {
                 const _pl=gameState.characters[targetName];
                 if(_pl){if(typeof applyHeal==='function')applyHeal(targetName,3,'Protección de la Luz');else if(typeof canHeal==='function'?canHeal(targetName):true)_pl.hp=Math.min(_pl.maxHp,(_pl.hp||0)+3);const _pld=(_pl.statusEffects||[]).filter(function(e){return e&&e.type==='debuff'&&!e.permanent;});_pl.statusEffects=(_pl.statusEffects||[]).filter(function(e){return !e||e.type!=='debuff'||e.permanent;});if(_pld.length>0){_pl.charges=Math.min(20,(_pl.charges||0)+_pld.length*2);addLog('🌟 Protección: '+_pld.length+' debuffs → +'+((_pld.length*2))+' cargas a '+targetName,'buff');}}
