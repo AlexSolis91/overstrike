@@ -156,6 +156,7 @@ function processBurnEffects(charName) {
             if (damage > 0) {
                 applyDamageWithShield(charName, damage, null);
                 addLog('🔥 ' + charName + ' recibe ' + damage + ' de daño por Quemadura', 'damage');
+                if (typeof _animCard === 'function') _animCard(charName, 'anim-pulse-red', 600);
                 // MVP: registrar daño por quemadura + daño causado al aplicador
                 if (typeof registerBurnDamage === 'function') registerBurnDamage(damage);
                 // Atribuir daño causado a los aplicadores de quemadura
@@ -220,6 +221,7 @@ function processBurnEffects(charName) {
                     }
                 }
                 addLog('☠️ ' + charName + ' recibe ' + totalVenenoDmg + ' de daño por Veneno (tick ' + poisonEffect.poisonTick + ')', 'damage');
+                if (typeof _animCard === 'function') _animCard(charName, 'anim-pulse-green', 600);
                 // MVP: registrar daño por veneno + daño causado al aplicador
                 if (typeof registerPoisonDamage === 'function') registerPoisonDamage(totalVenenoDmg);
                 if (gameState.battleStats && gameState.battleStats.poisonAppliers) {
