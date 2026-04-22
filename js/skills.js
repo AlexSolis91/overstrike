@@ -7691,7 +7691,20 @@
                     else team2Alive++;
                 }
             }
-            
+
+            // Contar invocaciones vivas — Kamish y otras con MegaProvocación
+            // mantienen al equipo vivo mientras tengan HP
+            for (let sid in gameState.summons) {
+                const s = gameState.summons[sid];
+                if (!s || s.hp <= 0) continue;
+                // Solo invocaciones que tienen MegaProvocación mantienen vivo al equipo
+                if (s.megaProvocation || s.name === 'Kamish' || s.name === 'Drogon' ||
+                    s.name === 'Sindragosa' || s.name === 'Caballero de la Muerte') {
+                    if (s.team === 'team1') team1Alive++;
+                    else team2Alive++;
+                }
+            }
+
             if (team1Alive === 0) {
                 // Si estamos en medio del loop async de Jon Snow, solo marcar y dejar que el loop lo detecte
                 if (gameState._jonSnowLoopActive) {
