@@ -1827,20 +1827,33 @@
                     }
                 }
 
-                // PASIVA CENIZAS DEL FÉNIX (Ikki): rastrear rondas post-muerte
-                const ikki = gameState.characters['Ikki de Fenix'];
-                if (ikki && ikki.isDead) {
-                    if (!ikki.deathRound) ikki.deathRound = gameState.currentRound;
-                    const roundsSinceDeath = gameState.currentRound - ikki.deathRound;
-                    if (roundsSinceDeath >= 2 && !ikki.fenixRevived) {
+                // PASIVA CENIZAS DEL FÉNIX (Ikki): revive la PRÓXIMA ronda con 100% HP y 10 cargas
+                for (const _ikkiN of ['Ikki de Fenix', 'Ikki de Fenix v2']) {
+                    const ikki = gameState.characters[_ikkiN];
+                    if (!ikki) continue;
+                    if (ikki.isDead || ikki.hp <= 0) {
+                        // Marcar la ronda de muerte (solo una vez)
+                        if (!ikki.deathRound) ikki.deathRound = gameState.currentRound;
+                    }
+                    // Revivir en la ronda SIGUIENTE a la de su muerte
+                    if ((ikki.isDead || ikki.hp <= 0) && ikki.deathRound &&
+                        gameState.currentRound > ikki.deathRound && !ikki.fenixRevived) {
                         ikki.fenixRevived = true;
-                        ikki.hp = Math.ceil(ikki.maxHp * 0.5);
-                        ikki.charges = 5;
+                        ikki.hp = ikki.maxHp; // 100% HP
+                        ikki.charges = 10;    // 10 cargas
                         ikki.isDead = false;
                         ikki.statusEffects = [];
-                        if (!gameState.turnOrder.includes('Ikki de Fenix')) gameState.turnOrder.push('Ikki de Fenix');
-                        gameState.aliveCountAtRoundStart = Math.max(gameState.aliveCountAtRoundStart, Object.values(gameState.characters).filter(c => c && !c.isDead && c.hp > 0).length);
-                        addLog(`🦅 ¡Cenizas del Fénix! Ikki de Fénix revive con ${ikki.hp} HP y 5 cargas`, 'heal');
+                        ikki.deathRound = null;
+                        if (!gameState.turnOrder.includes(_ikkiN)) gameState.turnOrder.push(_ikkiN);
+                        addLog('🦅 ¡Cenizas del Fénix! ' + _ikkiN + ' revive con ' + ikki.hp + ' HP y 10 cargas', 'heal');
+                        if (typeof _animCard === 'function') _animCard(_ikkiN, 'anim-transform', 700);
+                        // +5 cargas al equipo aliado
+                        for (const _an in gameState.characters) {
+                            const _ac = gameState.characters[_an];
+                            if (!_ac || _ac.isDead || _ac.hp <= 0 || _ac.team !== ikki.team || _an === _ikkiN) continue;
+                            _ac.charges = Math.min(20, (_ac.charges||0) + 5);
+                        }
+                        addLog('🦅 Cenizas del Fénix: +5 cargas al equipo aliado', 'buff');
                     }
                 }
                 
