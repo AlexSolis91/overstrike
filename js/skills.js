@@ -7154,13 +7154,6 @@
                     _c.charges = Math.min(20, (_c.charges||0) + 3);
                 }
                 addLog('💜 Yuri Ori: +3 cargas al equipo aliado', 'buff');
-                // PASIVA Sangre Maldita: si HP <= 30% ganar turno adicional (especial)
-                if (_yoAtk && _yoAtk.hp <= Math.floor(_yoAtk.maxHp * 0.30) &&
-                    _yoAtk.passive && _yoAtk.passive.name === 'Sangre Maldita') {
-                    addLog('💜 Sangre Maldita: HP critico! Iori gana turno adicional', 'buff');
-                    triggerAnticipacion(gameState.selectedCharacter, _yoAllyTeam);
-                    renderCharacters(); renderSummons(); showContinueButton(); return;
-                }
 
             } else if (ability.effect === 'aoi_hana_iori') {
                 // IORI — Aoi Hana: 5 daño + elimina 1 carga del equipo enemigo por cada buff/debuff en objetivo + 3 cargas al equipo aliado
@@ -7187,13 +7180,6 @@
                     _c.charges = Math.min(20, (_c.charges||0) + 3);
                 }
                 addLog('💜 Aoi Hana: +3 cargas al equipo aliado', 'buff');
-                // PASIVA Sangre Maldita: si HP <= 30% ganar turno adicional (especial)
-                if (_ahAtk && _ahAtk.hp <= Math.floor(_ahAtk.maxHp * 0.30) &&
-                    _ahAtk.passive && _ahAtk.passive.name === 'Sangre Maldita') {
-                    addLog('💜 Sangre Maldita: HP critico! Iori gana turno adicional', 'buff');
-                    triggerAnticipacion(gameState.selectedCharacter, _ahAllyTeam);
-                    renderCharacters(); renderSummons(); showContinueButton(); return;
-                }
 
             } else if (ability.effect === 'ya_otome_iori') {
                 // IORI — Ya Otome: 5 daño + ejecuta Yuri Ori + Aoi Hana con cinematica Over
@@ -7339,6 +7325,178 @@
                 applyDamageWithShield(targetName, _odDmg, gameState.selectedCharacter);
                 addLog('🐉 Ojo de Dioses: ' + _odDmg + ' daño a ' + targetName, 'damage');
 
+
+            // ══════════════════════════════════════════════════════
+            // REY BRUJO DE ANGMAR — skills
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'espada_morgul_rey') {
+                const _emAtk = gameState.characters[gameState.selectedCharacter];
+                const _emTgt = gameState.characters[targetName];
+                const _emHadPoison = _emTgt && hasStatusEffect(targetName, 'Veneno');
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('⚔️ Espada Morgul: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (_emTgt && !_emTgt.isDead && _emTgt.hp > 0) applyPoison(targetName, 1);
+                if (_emHadPoison && _emAtk) {
+                    const _emET = _emAtk.team === 'team1' ? 'team2' : 'team1';
+                    for (const _n in gameState.characters) {
+                        const _cc = gameState.characters[_n];
+                        if (!_cc||_cc.team!==_emET||_cc.isDead||_cc.hp<=0||_n===targetName) continue;
+                        applyPoison(_n, 1);
+                    }
+                    addLog('⚔️ Espada Morgul: Veneno propagado a todo el equipo enemigo', 'debuff');
+                }
+
+            } else if (ability.effect === 'grito_mordor_rey') {
+                const _gmAtk = gameState.characters[gameState.selectedCharacter];
+                const _gmET = _gmAtk ? (_gmAtk.team==='team1'?'team2':'team1') : 'team2';
+                for (const _n in gameState.characters) {
+                    const _cc = gameState.characters[_n];
+                    if (!_cc||_cc.team!==_gmET||_cc.isDead||_cc.hp<=0) continue;
+                    _cc.charges = Math.max(0, (_cc.charges||0) - 3);
+                    if (hasStatusEffect(_n,'Veneno') && Math.random() < 0.50) applyStun(_n, 1);
+                }
+                addLog('💀 Grito de Mordor: -3 cargas a todos + 50% Aturdimiento con Veneno', 'debuff');
+
+            } else if (ability.effect === 'corona_hierro_rey') {
+                const _chAtk = gameState.characters[gameState.selectedCharacter];
+                const _chAlly = _chAtk ? _chAtk.team : 'team1';
+                const _chET = _chAlly === 'team1' ? 'team2' : 'team1';
+                const _buffPool = ['Aura oscura','Furia','Frenesi','Celeridad','Armadura'];
+                let _chHits = 0;
+                for (let _ci = 0; _ci < 5; _ci++) {
+                    const _enems = Object.keys(gameState.characters).filter(function(n){
+                        const _c=gameState.characters[n]; return _c&&_c.team===_chET&&!_c.isDead&&_c.hp>0;
+                    });
+                    if (!_enems.length) break;
+                    const _tgt2 = _enems[Math.floor(Math.random()*_enems.length)];
+                    applyDamageWithShield(_tgt2, 2, gameState.selectedCharacter);
+                    applyPoison(_tgt2, 1);
+                    _chHits++;
+                    for (const _an in gameState.characters) {
+                        const _ac = gameState.characters[_an];
+                        if (!_ac||_ac.team!==_chAlly||_ac.isDead||_ac.hp<=0) continue;
+                        const _bf = _buffPool[Math.floor(Math.random()*_buffPool.length)];
+                        if (typeof applyBuff==='function') applyBuff(_an, {name:_bf,type:'buff',duration:2,emoji:'✨'});
+                    }
+                }
+                addLog('👑 Corona de Hierro: ' + _chHits + ' ataques + buffs aleatorios al equipo', 'buff');
+
+            } else if (ability.effect === 'mano_sauron_rey') {
+                const _msAtk = gameState.characters[gameState.selectedCharacter];
+                const _msET = _msAtk ? (_msAtk.team==='team1'?'team2':'team1') : 'team2';
+                let _msTotalDmg = 0;
+                for (const _n in gameState.characters) {
+                    const _cc = gameState.characters[_n];
+                    if (!_cc||_cc.team!==_msET||_cc.isDead) continue;
+                    const _venenos = (_cc.statusEffects||[]).filter(function(e){
+                        return e && (e.name==='Veneno'||e.name==='veneno');
+                    });
+                    if (_venenos.length > 0) {
+                        let _vDmg = 0;
+                        _venenos.forEach(function(v){ _vDmg += (v.duration||1); });
+                        _cc.statusEffects = (_cc.statusEffects||[]).filter(function(e){
+                            return !e||(e.name!=='Veneno'&&e.name!=='veneno');
+                        });
+                        applyDamageWithShield(_n, _vDmg, gameState.selectedCharacter);
+                        _msTotalDmg += _vDmg;
+                        addLog('🖐️ Mano de Sauron: ' + _vDmg + ' daño a ' + _n + ' ('+_venenos.length+' veneno/s disipado/s)', 'damage');
+                    }
+                }
+                if (_msTotalDmg === 0) addLog('🖐️ Mano de Sauron: ningún enemigo tenía Veneno', 'info');
+
+            // ══════════════════════════════════════════════════════
+            // IKKI DE FENIX — skills nuevos
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'phoenix_genma_ken_ikki') {
+                const _pgAtk = gameState.characters[gameState.selectedCharacter];
+                const _pgTgt = gameState.characters[targetName];
+                const _pgHadBurn = _pgTgt && hasStatusEffect(targetName, 'Quemadura');
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('🔥 Phoenix Genma Ken: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (_pgTgt && !_pgTgt.isDead && _pgTgt.hp > 0) applyFlatBurn(targetName, 2, 2);
+                if (_pgHadBurn && Math.random() < 0.50 && _pgTgt && _pgAtk) {
+                    const _stolen = _pgTgt.charges||0;
+                    if (_stolen > 0) {
+                        _pgAtk.charges = Math.min(20, (_pgAtk.charges||0) + _stolen);
+                        _pgTgt.charges = 0;
+                        addLog('🔥 Phoenix Genma Ken: roba ' + _stolen + ' cargas a ' + targetName, 'buff');
+                    }
+                }
+
+            } else if (ability.effect === 'hou_yoku_tenshou_ikki') {
+                const _hyAtk = gameState.characters[gameState.selectedCharacter];
+                const _hyET = _hyAtk ? (_hyAtk.team==='team1'?'team2':'team1') : 'team2';
+                const _hyHit = new Set();
+                if (checkAndRedirectAOEMegaProv(_hyET, finalDamage, gameState.selectedCharacter)) {
+                    addLog('🔥 Hou Yoku Tenshou redirigido por MegaProvocacion', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _cc = gameState.characters[_n];
+                        if (!_cc||_cc.team!==_hyET||_cc.isDead||_cc.hp<=0) continue;
+                        if (checkAsprosAOEImmunity(_n,true)||checkMinatoAOEImmunity(_n)) continue;
+                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        _hyHit.add(_n);
+                        if (hasStatusEffect(_n,'Quemadura')) {
+                            gameState.characters[_n].charges = Math.max(0, (gameState.characters[_n].charges||0) - 3);
+                            addLog('🔥 Hou Yoku Tenshou: -3 cargas a ' + _n + ' (tiene Quemadura)', 'debuff');
+                        }
+                    }
+                }
+                // Quemadura 5HP a los NO golpeados
+                for (const _n in gameState.characters) {
+                    const _cc = gameState.characters[_n];
+                    if (!_cc||_cc.team!==_hyET||_cc.isDead||_cc.hp<=0||_hyHit.has(_n)) continue;
+                    applyFlatBurn(_n, 5, 2);
+                }
+                addLog('🔥 Hou Yoku Tenshou: AOE + Quemadura 5HP a no golpeados', 'damage');
+
+            } else if (ability.effect === 'ilusion_diabolica_ikki') {
+                const _idAtk = gameState.characters[gameState.selectedCharacter];
+                const _idAlly = _idAtk ? _idAtk.team : 'team1';
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('🔥 Ilusión Diabólica: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                const _idTgt2 = gameState.characters[targetName];
+                if (_idTgt2) {
+                    const _idBufs = (_idTgt2.statusEffects||[]).filter(function(e){return e&&e.type==='buff'&&!e.permanent&&!e.passiveHidden;});
+                    _idTgt2.statusEffects = (_idTgt2.statusEffects||[]).filter(function(e){return !e||e.type!=='buff'||e.permanent||e.passiveHidden;});
+                    if (_idBufs.length > 0) {
+                        const _cg = _idBufs.length * 3;
+                        for (const _an in gameState.characters) {
+                            const _ac = gameState.characters[_an];
+                            if (!_ac||_ac.team!==_idAlly||_ac.isDead||_ac.hp<=0) continue;
+                            _ac.charges = Math.min(20, (_ac.charges||0) + _cg);
+                        }
+                        addLog('🔥 Ilusión Diabólica: ' + _idBufs.length + ' buffs disipados → +' + _cg + ' cargas al equipo', 'buff');
+                    }
+                }
+
+            } else if (ability.effect === 'despertar_fenix_ikki') {
+                const _dfAtk = gameState.characters[gameState.selectedCharacter];
+                const _dfET = _dfAtk ? (_dfAtk.team==='team1'?'team2':'team1') : 'team2';
+                if (!_dfAtk || _dfAtk.hp <= 1) {
+                    addLog('🔥 El Despertar del Fénix: HP insuficiente para sacrificar', 'info');
+                    endTurn(); return;
+                }
+                const _dfPct = 0.50 + Math.random() * 0.40;
+                const _dfSac = Math.floor(_dfAtk.hp * _dfPct);
+                _dfAtk.hp = Math.max(1, _dfAtk.hp - _dfSac);
+                addLog('🔥 El Despertar del Fénix: Ikki sacrifica ' + _dfSac + ' HP (' + Math.round(_dfPct*100) + '%)', 'damage');
+                const _dfDmg = _dfSac * 2;
+                const _dfWasAlive = gameState.characters[targetName] && !gameState.characters[targetName].isDead;
+                applyDamageWithShield(targetName, _dfDmg, gameState.selectedCharacter);
+                addLog('🔥 El Despertar del Fénix: ' + _dfDmg + ' daño a ' + targetName, 'damage');
+                const _dfTgtDied = _dfWasAlive && gameState.characters[targetName] && (gameState.characters[targetName].isDead || gameState.characters[targetName].hp <= 0);
+                if (_dfTgtDied) {
+                    const _dfAOE = Math.floor(_dfDmg * 0.50);
+                    for (const _n in gameState.characters) {
+                        const _cc = gameState.characters[_n];
+                        if (!_cc||_cc.team!==_dfET||_cc.isDead||_cc.hp<=0||_n===targetName) continue;
+                        applyDamageWithShield(_n, _dfAOE, gameState.selectedCharacter);
+                        addLog('🔥 El Despertar del Fénix: ' + _dfAOE + ' AOE a ' + _n + ' (objetivo eliminado)', 'damage');
+                    }
+                }
             }
             
             // ASISTIR (Anakin): when ally uses Special/Over ST, execute basic on same target
@@ -7386,11 +7544,11 @@
                         for (const _an in gameState.characters) {
                             const _ac = gameState.characters[_an];
                             if (!_ac || _ac.isDead || _ac.hp <= 0 || _ac.team !== _tirOvDefTeam) continue;
-                            if (typeof applyHeal === 'function') applyHeal(_an, 5, 'Paladín de la Mano de Plata');
-                            else if (typeof canHeal === 'function' ? canHeal(_an) : true) _ac.hp = Math.min(_ac.maxHp, (_ac.hp||0) + 5);
+                            if (typeof applyHeal === 'function') applyHeal(_an, 3, 'Paladín de la Mano de Plata');
+                            else if (typeof canHeal === 'function' ? canHeal(_an) : true) _ac.hp = Math.min(_ac.maxHp, (_ac.hp||0) + 3);
                             _ac.charges = Math.min(20, (_ac.charges||0) + 5);
                         }
-                        addLog('🌟 Paladín de la Mano de Plata: equipo aliado +5 HP y +5 cargas (enemigo usó Over)', 'buff');
+                        addLog('🌟 Paladín de la Mano de Plata: equipo aliado +3 HP y +5 cargas (enemigo usó Over)', 'buff');
                         passiveExecuting = false;
                         break;
                     }
