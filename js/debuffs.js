@@ -202,6 +202,8 @@ function triggerMaboroshi(targetTeam, debuffName) {
             if ((targetName === 'Daenerys Targaryen' || targetName === 'Daenerys Targaryen v2')) return true;
             if ((targetName === 'Saitama' || targetName === 'Saitama v2')) return true;
             if (hasStatusEffect(targetName, 'Proteccion Sagrada') || hasStatusEffect(targetName, 'Protección Sagrada')) return true;
+            { const _aC = gameState.characters[targetName];
+              if (_aC && _aC.passive && _aC.passive.name === 'Monarca de la Destruccion') return true; }
             return false;
         }
 function applyDebuff(targetName, effectObj) {
@@ -586,6 +588,10 @@ function applyDebuff(targetName, effectObj) {
                 addLog('🦸 Saitama es inmune a Quemadura Solar', 'buff');
                 return;
             }
+            // Antares: Monarca de la Destruccion — inmune a Quemadura Solar
+            { const _antC = gameState.characters[targetName];
+              if (_antC && _antC.passive && _antC.passive.name === 'Monarca de la Destruccion') {
+                addLog('🐉 Monarca de la Destruccion: Antares es inmune a Quemadura Solar', 'buff'); return; } }
             // QS: debuff por TURNOS. Solo bloquea curación, no hace daño por %
             // Si ya tiene QS activa, reemplazar
             target.statusEffects = (target.statusEffects || []).filter(e => !e || e.name !== 'Quemadura Solar');
