@@ -399,12 +399,12 @@
                 hp: 30, maxHp: 30, speed: 84, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/m55KhhZd/descarga-2.jpg',
-                passive: { name: 'Adaptación Reactiva', description: 'Cada vez que recibe un golpe, recupera 2 HP. Cada vez que Doomsday recupera HP, elimina 1 carga de un enemigo aleatorio.' },
+                passive: { name: 'Adaptación Reactiva', description: 'Cada vez que recibe un golpe, recupera 2 HP. Cada vez que Doomsday recupera HP, elimina 2 cargas de un enemigo aleatorio.' },
                 abilities: [
                     { name: 'Rugido del Devastador', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'rugido_devastador', description: 'Se aplica Buff Provocación. Se aplica Buff Cuerpo Perfecto.' },
                     { name: 'Smashing Strike', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'multi', effect: 'smashing_strike', description: 'Ataca 2 veces a enemigos aleatorios. Cada golpe tiene 50% de Aturdimiento.' },
-                    { name: 'Skill Drain', type: 'special', cost: 7, chargeGain: 0, damage: 3, target: 'aoe', effect: 'skill_drain', description: 'Causa 3 AOE. 50% de robar 1-3 HP por enemigo golpeado.' },
-                    { name: 'Devastator Punish', type: 'over', cost: 10, chargeGain: 0, damage: 5, target: 'single', effect: 'devastator_punish', description: 'Causa 5 daño + 1 adicional por cada punto de HP de diferencia positiva sobre el objetivo.' }
+                    { name: 'Skill Drain', type: 'special', cost: 7, chargeGain: 0, damage: 3, target: 'aoe', effect: 'skill_drain', description: 'Causa 3 AOE. Roba de 1 a 5 HP del enemigo golpeado por este ataque.' },
+                    { name: 'Devastator Punish', type: 'over', cost: 8, chargeGain: 0, damage: 5, target: 'single', effect: 'devastator_punish', description: 'Causa 5 daño. 10% de probabilidad de eliminar al objetivo. Si lo elimina: disipa todos los Buffs del equipo enemigo y aplica Mega Aturdimiento a todos los enemigos.' }
                 ]
             },
             'Ikki de Fenix': {
@@ -864,7 +864,7 @@
                 portrait: 'https://i.ibb.co/mrcVTbh7/Whats-App-Image-2026-04-16-at-3-22-08-PM.jpg',
                 passive: { name: 'Paladín de la Mano de Plata', description: 'Si llega a 10 HP: Protección Sagrada + Escudo Sagrado + 20 cargas (solo una vez). Cada vez que un enemigo usa Over: +3 HP y +5 cargas al equipo aliado.' },
                 abilities: [
-                    { name: 'Luz del Alba', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'aoe', effect: 'luz_del_alba_tirion', description: 'Causa 1 AOE. Cura 1 HP al equipo aliado. Aplica Aura de Luz al equipo aliado. 50% de curar +2 HP adicional a cada aliado.' },
+                    { name: 'Luz del Alba', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'aoe', effect: 'luz_del_alba_tirion', description: 'Causa 1 AOE. Cura 1 HP al equipo aliado. Aplica Aura de Luz al equipo aliado.' },
                     { name: 'Protección de la Luz', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'proteccion_luz_tirion', description: 'Cura 3 HP al objetivo aliado. Disipa sus debuffs. Por cada debuff disipado, el objetivo genera 2 cargas.' },
                     { name: 'Portador de Cenizas', type: 'special', cost: 10, chargeGain: 0, damage: 2, target: 'aoe', effect: 'portador_cenizas_tirion', description: 'Causa 2 AOE. Cura al equipo aliado el 50% del HP actual de Tirion. Toma control de todos los personajes revividos por pasiva o habilidad.' },
                     { name: 'Una Luz en la Oscuridad', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'self', effect: 'luz_oscuridad_tirion', description: 'Solo usable si Tirion es el único aliado vivo. Revive a todos los aliados con 20 HP y 10 cargas.' }
