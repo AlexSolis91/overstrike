@@ -408,17 +408,16 @@
                 ]
             },
             'Ikki de Fenix': {
-                hp: 20, maxHp: 20, speed: 85, charges: 0, team: 'team2',
+                hp: 15, maxHp: 15, speed: 83, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                ikki_armor: false, ikki_revival_round: null,
-                portrait: 'https://i.postimg.cc/LsX6jbnD/Captura_de_pantalla_2026_02_24_103509.png',
-                transformationPortrait: 'https://i.postimg.cc/5tMS08yN/Captura_de_pantalla_2026_02_24_104108.png',
-                passive: { name: 'Cenizas del Fénix', description: 'Al final de la segunda ronda después de morir, revive con 50% de HP y 5 cargas.' },
+                portrait: 'https://i.ibb.co/pvhstP12/Captura-de-pantalla-2026-04-22-111740.png',
+                transformPortrait: 'https://i.ibb.co/pvhstP12/Captura-de-pantalla-2026-04-22-111740.png',
+                passive: { name: 'Cenizas del Fenix', description: 'Revive la ronda siguiente con 100% HP y 10 cargas (genera +5 cargas al equipo aliado al revivir). Enemigos con Quemaduras activas solo pueden atacar a Ikki.' },
                 abilities: [
-                    { name: 'Garras del Fénix', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'garras_fenix', burnAmount: 2, description: 'Causa 1 de daño. Aplica debuff Quemadura de 2 HP.' },
-                    { name: 'Phoenix Genma Ken', type: 'basic', cost: 0, chargeGain: 0, damage: 1, target: 'aoe', effect: 'phoenix_genma_ken', description: 'Causa 1 AOE. Si el enemigo golpeado tiene debuff Quemaduras, genera 2 cargas.' },
-                    { name: 'Hō Yoku Ten Shō', type: 'special', cost: 5, chargeGain: 0, damage: 4, target: 'aoe', effect: 'ho_yoku_ten_sho', burnAmount: 2, description: 'Causa 4 AOE. Aplica debuff Quemadura de 2 HP.' },
-                    { name: 'Armadura Divina del Fénix', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'armadura_fenix', description: 'TRANSFORMACIÓN: Ikki de Fénix es equipado con su Armadura Divina del Fénix. Mientras esté equipado, aplica Buff Regeneración 20% y causa daño triple en enemigos con debuff Quemaduras.' }
+                    { name: 'Phoenix Genma Ken', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'phoenix_genma_ken_ikki', description: 'Causa 1 daño. Aplica Quemadura 2HP. 50%: si el objetivo ya tenía Quemadura, roba todas sus cargas.' },
+                    { name: 'Hou Yoku Tenshou', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'aoe', effect: 'hou_yoku_tenshou_ikki', description: 'Causa 2 AOE. Aplica Quemadura 5HP a los enemigos NO golpeados. Elimina 3 cargas a los enemigos CON Quemadura golpeados.' },
+                    { name: 'Ilusión Diabólica del Fénix', type: 'special', cost: 8, chargeGain: 0, damage: 5, target: 'single', effect: 'ilusion_diabolica_ikki', description: 'Causa 5 daño. Disipa todos los Buffs del objetivo. Por cada Buff disipado, genera 3 cargas al equipo aliado.' },
+                    { name: 'El Despertar del Fénix Inmortal', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'single', effect: 'despertar_fenix_ikki', description: 'Sacrifica 50-90% del HP actual. Causa 2 daño por cada HP sacrificado. Si el objetivo muere, el 50% del daño total golpea a todos los enemigos.' }
                 ]
             },
             'Linterna Verde': {
@@ -614,12 +613,12 @@
                 hp: 30, maxHp: 30, speed: 75, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/VctBXdtg/Whats-App-Image-2026-03-23-at-1-45-05-PM.jpg',
-                passive: { name: 'Señor de los Nazgul', description: 'Inmune a debuffs Miedo y Confusión. Buff Megaprovoción permanente. Efecto pasivo Infectar.' },
+                passive: { name: 'Señor de los Nazgul', description: 'Inmune a Miedo y Confusión. Provocación pasiva. Infectar pasivo. Cada vez que se aplica Veneno en un enemigo, se cura 2 HP.' },
                 abilities: [
-                    { name: 'Espada Morgul', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'espada_morgul_rba', description: 'Causa 2 daño. Aplica Veneno 1 turno. Si el objetivo ya tenía Veneno, el Rey Brujo gana Buff Esquiva Área 2 turnos.' },
-                    { name: 'Grito de Mordor', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'aoe', effect: 'grito_mordor_rba', description: 'Aplica Silenciar al equipo enemigo. 50% de eliminar 2 cargas a cada enemigo con Veneno activo.' },
-                    { name: 'Corona de Hierro', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'self', effect: 'corona_hierro_rba', description: 'Cura al Rey Brujo y a un aliado aleatorio 2 HP por cada Veneno activo en ambos equipos.' },
-                    { name: 'Mano de Sauron', type: 'over', cost: 17, chargeGain: 0, damage: 0, target: 'aoe', effect: 'mano_sauron_rba', description: 'Limpia todos los debuffs Veneno del equipo enemigo y causa daño equivalente a los turnos restantes de cada Veneno eliminado.' }
+                    { name: 'Espada Morgul', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'espada_morgul_rey', description: 'Causa 2 daño. Aplica Veneno 1T. Si el objetivo ya tenía Veneno, propaga Veneno a todo el equipo enemigo.' },
+                    { name: 'Grito de Mordor', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'aoe', effect: 'grito_mordor_rey', description: 'Elimina 3 cargas a todos los enemigos. 50% de Aturdimiento en enemigos con Veneno activo.' },
+                    { name: 'Corona de Hierro', type: 'special', cost: 9, chargeGain: 0, damage: 0, target: 'self', effect: 'corona_hierro_rey', description: '5 ataques básicos en enemigos aleatorios con todos sus efectos. Aplica 1 buff aleatorio a cada aliado por golpe.' },
+                    { name: 'Mano de Sauron', type: 'over', cost: 17, chargeGain: 0, damage: 0, target: 'aoe', effect: 'mano_sauron_rey', description: 'Limpia todos los Venenos del equipo enemigo y causa daño equivalente a los turnos restantes de cada Veneno.' }
                 ]
             },
 
@@ -849,7 +848,7 @@
                 hp: 20, maxHp: 20, speed: 83, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/v6TPGkVH/descarga-7.jpg',
-                passive: { name: 'Sangre Maldita', description: 'Si el HP es <= 30%, sus habilidades Especiales otorgan 1 turno adicional. Si el HP es <= 50%, por cada punto de daño recibido (golpe, directo, efecto o debuff) genera la misma cantidad de cargas.' },
+                passive: { name: 'Sangre Maldita', description: 'Al inicio de cada ronda, 25% de probabilidad de aumentar VEL 20% y generar 10 cargas (solo dura esa ronda).' },
                 abilities: [
                     { name: 'Llamas Purpuras', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'llamas_purpuras_iori', description: 'Causa 1 daño. Cada aliado tiene 50% de probabilidad de robar 1 carga del objetivo.' },
                     { name: 'Yuri Ori', type: 'special', cost: 5, chargeGain: 0, damage: 5, target: 'single', effect: 'yuri_ori_iori', description: 'Causa 5 daño. Daño doble si el objetivo tiene Provocacion o Mega Provocacion. El equipo aliado genera 3 cargas.' },
@@ -863,7 +862,7 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 tirionLowHpTriggered: false,
                 portrait: 'https://i.ibb.co/mrcVTbh7/Whats-App-Image-2026-04-16-at-3-22-08-PM.jpg',
-                passive: { name: 'Paladín de la Mano de Plata', description: 'Si llega a 10 HP, recibe Protección Sagrada + Escudo Sagrado y genera 20 cargas (solo una vez por combate). Cada vez que un enemigo usa Over, cura 5 HP y genera 5 cargas al equipo aliado.' },
+                passive: { name: 'Paladín de la Mano de Plata', description: 'Si llega a 10 HP: Protección Sagrada + Escudo Sagrado + 20 cargas (solo una vez). Cada vez que un enemigo usa Over: +3 HP y +5 cargas al equipo aliado.' },
                 abilities: [
                     { name: 'Luz del Alba', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'aoe', effect: 'luz_del_alba_tirion', description: 'Causa 1 AOE. Cura 1 HP al equipo aliado. Aplica Aura de Luz al equipo aliado. 50% de curar +2 HP adicional a cada aliado.' },
                     { name: 'Protección de la Luz', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'proteccion_luz_tirion', description: 'Cura 3 HP al objetivo aliado. Disipa sus debuffs. Por cada debuff disipado, el objetivo genera 2 cargas.' },
