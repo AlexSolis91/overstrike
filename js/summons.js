@@ -562,15 +562,20 @@
             // Returns { id, kamish/char obj, isCharacter, characterName } if MegaProv active
             // Priority: character buff > summon megaProvocation flag > Kamish by name
             try {
-                // 1. CHARACTER with MegaProvocacion buff active
+                // 1. CHARACTER with MegaProvocacion buff active OR pasiva Provocación
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== targetTeam || c.isDead || c.hp <= 0) continue;
+                    // Buff activo de MegaProvocacion
                     if (c.statusEffects && c.statusEffects.some(e => {
                         if (!e) return false;
                         const _nn = normAccent(e.name || '');
                         return _nn === 'megaprovocacion' || _nn === 'mega provocacion';
                     })) {
+                        return { id: null, holder: c, isCharacter: true, characterName: n, kamish: c };
+                    }
+                    // Pasiva "Señor de los Nazgul" = Provocación pasiva (redirige ataques ST)
+                    if (c.passive && c.passive.name === 'Señor de los Nazgul') {
                         return { id: null, holder: c, isCharacter: true, characterName: n, kamish: c };
                     }
                 }
