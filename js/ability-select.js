@@ -568,14 +568,13 @@ function triggerMaboroshi(targetTeam, debuffName) {
 
         // ── PASIVA REGLA DE ORO (Gilgamesh): +2 cargas en crítico ──
         function triggerGilgameshCrit(attackerName) {
-            if ((attackerName !== 'Gilgamesh' && attackerName !== 'Gilgamesh v2')) return;
-            const gil = gameState.characters['Gilgamesh'];
+            const _gilN = (attackerName === 'Gilgamesh' || attackerName === 'Gilgamesh v2') ? attackerName : null;
+            if (!_gilN) return;
+            const gil = gameState.characters[_gilN];
             if (!gil || gil.isDead || gil.hp <= 0) return;
-            // 50% de probabilidad de generar 1 carga por crítico
-            if (Math.random() < 0.50) {
-                gil.charges = Math.min(20, (gil.charges || 0) + 1);
-                addLog('👑 Regla de Oro: Gilgamesh gana 1 carga por golpe crítico (50%)', 'buff');
-            }
+            // 100% de probabilidad de generar 1 carga por crítico (actualizado)
+            gil.charges = Math.min(20, (gil.charges || 0) + 1);
+            addLog('👑 Regla de Oro: Gilgamesh gana 1 carga por golpe crítico', 'buff');
         }
 
         // ── PASIVA ENTRENAMIENTO DE LOS DIOSES (Goku): +1 vel y +1 daño en crítico ──
