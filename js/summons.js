@@ -574,10 +574,8 @@
                     })) {
                         return { id: null, holder: c, isCharacter: true, characterName: n, kamish: c };
                     }
-                    // Pasiva "Señor de los Nazgul" = Provocación pasiva (redirige ataques ST)
-                    if (c.passive && c.passive.name === 'Señor de los Nazgul') {
-                        return { id: null, holder: c, isCharacter: true, characterName: n, kamish: c };
-                    }
+                    // NOTA: 'Señor de los Nazgul' es Provocación regular (no MegaProvocación)
+                    // Se maneja en el bloque de tauntTarget en ability-select.js
                 }
                 // 2. SUMMON with megaProvocation flag (Drogon, Sindragosa, Tirion, Kamish)
                 for (let summonId in gameState.summons) {
