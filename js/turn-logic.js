@@ -602,6 +602,7 @@
             );
             if (stunEffect) {
                 addLog(`${stunEffect.emoji || '⭐'} ${charName} está aturdido y pierde su turno`, 'damage');
+                if (typeof _animCard === 'function') _animCard(charName, 'anim-shake', 600);
                 renderCharacters();
                 endTurn();
                 return;
@@ -611,6 +612,7 @@
             if (hasStatusEffect(charName, 'Congelacion')) {
                 if (Math.random() < 0.5) {
                     addLog(`❄️ ${charName} está Congelado y pierde su turno (50% de prob.)`, 'damage');
+                    if (typeof _animCard === 'function') _animCard(charName, 'anim-pulse-blue', 750);
                     renderCharacters();
                     endTurn();
                     return;
@@ -622,6 +624,7 @@
             // ── MEGA CONGELACIÓN: pierde turno siempre ─────────────────────
             if (hasStatusEffect(charName, 'Mega Congelacion')) {
                 addLog(`🧊 ${charName} está Mega Congelado y pierde su turno`, 'damage');
+                if (typeof _animCard === 'function') _animCard(charName, 'anim-pulse-blue', 750);
                 renderCharacters();
                 endTurn();
                 return;
@@ -631,6 +634,7 @@
             if (hasStatusEffect(charName, 'Miedo')) {
                 if (Math.random() < 0.25) {
                     addLog(`😱 ${charName} está paralizado por el Miedo y pierde su turno`, 'damage');
+                    if (typeof _animCard === 'function') _animCard(charName, 'anim-shake', 600);
                     renderCharacters();
                     endTurn();
                     return;
@@ -657,6 +661,8 @@
             // ── CONFUSIÓN: ataca a un enemigo aleatorio automáticamente ──────
             if (hasStatusEffect(charName, 'Confusion')) {
                 addLog(`😵 ${charName} está Confundido — atacará a un enemigo aleatorio automáticamente`, 'damage');
+                if (typeof _spawnDmgNumber === 'function') _spawnDmgNumber(charName, '😵❓', 'heal');
+                if (typeof _animCard === 'function') _animCard(charName, 'anim-debuff', 600);
                 executeConfusionAttack(charName);
                 return;
             }
@@ -675,6 +681,9 @@
             // ── POSESIÓN / MEGA POSESIÓN: ejecuta ataque aleatorio contra aliado ──────────
             if (hasStatusEffect(charName, 'Posesion') || hasStatusEffect(charName, 'Mega Posesion')) {
                 addLog(`👁️ ${charName} está Poseído — atacará a un aliado automáticamente`, 'damage');
+                // Emoji flotante de confusión en la tarjeta del personaje poseído
+                if (typeof _spawnDmgNumber === 'function') _spawnDmgNumber(charName, '👁️😵', 'heal');
+                if (typeof _animCard === 'function') _animCard(charName, 'anim-debuff', 600);
                 executePossessionAttack(charName);
                 return;
             }
@@ -2007,6 +2016,22 @@
                     }
                 })();
 
+                // ── SANGRE MALDITA (Iori Yagami): inicio de ronda → 25% de +20% VEL y 10 cargas ──
+                (function() {
+                    for (const _iyN in gameState.characters) {
+                        const _iyC = gameState.characters[_iyN];
+                        if (!_iyC || _iyC.isDead || !_iyC.passive) continue;
+                        if (_iyC.passive.name !== 'Sangre Maldita') continue;
+                        if (Math.random() < 0.25) {
+                            _iyC._smBonus = Math.floor((_iyC.speed||80) * 0.20);
+                            _iyC.speed = (_iyC.speed||80) + _iyC._smBonus;
+                            _iyC.charges = Math.min(20, (_iyC.charges||0) + 10);
+                            addLog('💜 Sangre Maldita: Iori siente la sangre arder — +' + _iyC._smBonus + ' VEL y +10 cargas esta ronda', 'buff');
+                        }
+                        break;
+                    }
+                })();
+
                 // ── LLAMARADA KUSANAGI (Kyo): inicio de ronda → Aura de Fuego a 2 aliados aleatorios ──
                 (function() {
                     for (const _kyoN in gameState.characters) {
@@ -2065,6 +2090,12 @@
                         }
                     }
                 })();
+
+                // ── SANGRE MALDITA (Iori): restaurar velocidad al fin de ronda ──
+                for (const _iyR in gameState.characters) {
+                    const _iyRC = gameState.characters[_iyR];
+                    if (_iyRC && _iyRC._smBonus) { _iyRC.speed = Math.max(1, (_iyRC.speed||80) - _iyRC._smBonus); delete _iyRC._smBonus; }
+                }
 
                 // ── DEFENSA ABSOLUTA (Gaara): fin de ronda → genera 5 cargas ──
                 for (const _gfN in gameState.characters) {
