@@ -2029,6 +2029,40 @@
                     }
                 })();
 
+                // ── IRON (Sun Jin Woo): inicio de ronda → 3 cargas al equipo aliado ──
+                (function() {
+                    for (const _irSid in gameState.summons) {
+                        const _irS = gameState.summons[_irSid];
+                        if (!_irS || _irS.hp <= 0 || _irS.name !== 'Iron') continue;
+                        for (const _an in gameState.characters) {
+                            const _ac = gameState.characters[_an];
+                            if (!_ac || _ac.isDead || _ac.hp <= 0 || _ac.team !== _irS.team) continue;
+                            _ac.charges = Math.min(20, (_ac.charges||0) + 3);
+                        }
+                        addLog('🛡️ Voluntad de Acero (Iron): +3 cargas al equipo aliado', 'buff');
+                        break;
+                    }
+                })();
+
+                // ── TUSK (Sun Jin Woo): inicio de ronda → Quemadura 2HP a 2 enemigos aleatorios ──
+                (function() {
+                    for (const _tkSid in gameState.summons) {
+                        const _tkS = gameState.summons[_tkSid];
+                        if (!_tkS || _tkS.hp <= 0 || _tkS.name !== 'Tusk') continue;
+                        // Equipo enemigo de Tusk
+                        const _tkETeam = _tkS.team === 'team1' ? 'team2' : 'team1';
+                        const _tkEnemies = Object.keys(gameState.characters).filter(function(n){
+                            const _c = gameState.characters[n];
+                            return _c && _c.team === _tkETeam && !_c.isDead && _c.hp > 0;
+                        }).sort(function(){ return Math.random()-0.5; }).slice(0,2);
+                        _tkEnemies.forEach(function(n){
+                            if (typeof applyFlatBurn === 'function') applyFlatBurn(n, 2, 1);
+                            addLog('🔥 Hipno de Fuego (Tusk): Quemadura 2HP a ' + n, 'debuff');
+                        });
+                        break;
+                    }
+                })();
+
                 // ── SANGRE MALDITA (Iori Yagami): inicio de ronda → 25% de +20% VEL y 10 cargas ──
                 (function() {
                     for (const _iyN in gameState.characters) {
