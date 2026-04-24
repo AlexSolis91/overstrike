@@ -467,11 +467,17 @@
                         const randomEnemy = enemies[Math.floor(Math.random() * enemies.length)];
                         
                         if (randomEnemy.type === 'character') {
-                            applyDamageWithShield(randomEnemy.name, 5, 'Beru');
-                            addLog(`⚔️ Beru (Pasiva - Fin de Ronda) ataca a ${randomEnemy.name} causando 5 de daño`, 'damage');
+                            const _beruTgtC = gameState.characters[randomEnemy.name];
+                            const _beruBonus = _beruTgtC ? (_beruTgtC.charges||0) : 0;
+                            const _beruDmg = 5 + _beruBonus;
+                            applyDamageWithShield(randomEnemy.name, _beruDmg, 'Beru');
+                            addLog(`⚔️ Beru (Garras del Abismo): ${_beruDmg} daño a ${randomEnemy.name} (5 base + ${_beruBonus} por sus cargas)`, 'damage');
                         } else {
-                            applySummonDamage(randomEnemy.id, 5, 'Beru');
-                            addLog(`⚔️ Beru (Pasiva - Fin de Ronda) ataca a ${randomEnemy.name} causando 5 de daño`, 'damage');
+                            const _beruTgtS = gameState.summons[randomEnemy.id];
+                            const _beruBonus = _beruTgtS ? (_beruTgtS.charges||0) : 0;
+                            const _beruDmg = 5 + _beruBonus;
+                            applySummonDamage(randomEnemy.id, _beruDmg, 'Beru');
+                            addLog(`⚔️ Beru (Garras del Abismo): ${_beruDmg} daño a ${randomEnemy.name} (5 base + ${_beruBonus} por sus cargas)`, 'damage');
                         }
                     }
                 }
@@ -1246,6 +1252,19 @@
                 }
             }
 
+            // ── TERROR DE LAS SOMBRAS (Kamish): aliados ganan cargas = daño recibido ──
+            if (remainingDamage > 0 && attackerName && attackerName !== targetName) {
+                // Verificar si Kamish está activo en el equipo del objetivo
+                const _kamTeam = target.team;
+                const _kamActive = _kamTeam && Object.values(gameState.summons).some(function(s){
+                    return s && s.hp > 0 && s.name === 'Kamish' && s.team === _kamTeam;
+                });
+                if (_kamActive) {
+                    target.charges = Math.min(20, (target.charges||0) + remainingDamage);
+                    addLog('👁️ Terror de las Sombras: ' + targetName + ' genera ' + remainingDamage + ' cargas (Kamish activo)', 'buff');
+                }
+            }
+
             // ── SEÑOR DE LOS NAZGUL (Rey Brujo): Infectar — veneno 2T al atacante al recibir daño ──
             if (remainingDamage > 0 && attackerName && !passiveExecuting && !_yorichiPassiveBlocked &&
                 target.passive && target.passive.name === 'Señor de los Nazgul' &&
@@ -1854,6 +1873,27 @@
                 gameState.characters[_r].charges = Math.max(0, (gameState.characters[_r].charges||0) - 2);
                 addLog('💪 Adaptacion Reactiva: ' + _r + ' pierde 2 cargas (Doomsday recuperó HP)', 'debuff');
             }
+        }
+
+        function triggerKamishEndOfRound() {
+            // Kamish: al final de cada ronda, 4 daño a todos los enemigos
+            Object.keys(gameState.summons).forEach(function(sid) {
+                const kamish = gameState.summons[sid];
+                if (!kamish || kamish.name !== 'Kamish' || kamish.hp <= 0) return;
+                const enemyTeam = kamish.team === 'team1' ? 'team2' : 'team1';
+                addLog('👁️ Kamish (Terror de las Sombras): 4 daño a todos los enemigos', 'damage');
+                for (const n in gameState.characters) {
+                    const ch = gameState.characters[n];
+                    if (!ch || ch.team !== enemyTeam || ch.isDead || ch.hp <= 0) continue;
+                    applyDamageWithShield(n, 4, 'Kamish');
+                }
+                // También a invocaciones enemigas
+                for (const sid2 in gameState.summons) {
+                    const s = gameState.summons[sid2];
+                    if (!s || s.team !== enemyTeam || s.hp <= 0) continue;
+                    applySummonDamage(sid2, 4, 'Kamish');
+                }
+            });
         }
 
         function registerKill(killerName, victimName, byInvocation) {
