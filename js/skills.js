@@ -509,6 +509,7 @@
                     tgtBE.shield = 0;
                     tgtBE.shieldEffect = null;
                     tgtBE.isDead = true;
+                    registerKill(gameState.selectedCharacter, targetName, false);
                     addLog(`🦅 Águila de Sangre: ¡${targetName} ejecutado! (quedó con <50% HP)`, 'damage');
                 }
                 // Si murió, aplica Miedo a 2 enemigos aleatorios
@@ -829,6 +830,7 @@
                         // UI: 50% eliminar
                         if (_gdForm === 'ui' && Math.random() < 0.50) {
                             _c.hp = 0; _c.isDead = true;
+                    if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, _n, false);
                             addLog('✨ Ultra Instinto Genkidama: ¡' + _n + ' eliminado!', 'damage');
                             if (typeof checkGameOver === 'function') checkGameOver();
                         }
@@ -927,8 +929,16 @@
                 const tgtGrave = gameState.characters[targetName];
                 if (tgtGrave && !tgtGrave.isDead && tgtGrave.hp > 0) {
                     // Forzar eliminación ignorando escudo e invulnerabilidad
+                    const _graveOldHp = tgtGrave.hp;
                     tgtGrave.hp = 0;
                     tgtGrave.isDead = true;
+                    // Registrar kill y daño causado para MVP
+                    if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, targetName, false);
+                    if (typeof registerDamageReceived === 'function') registerDamageReceived(targetName, _graveOldHp);
+                    if (gameState.battleStats) {
+                        if (!gameState.battleStats.damageDone) gameState.battleStats.damageDone = {};
+                        gameState.battleStats.damageDone[gameState.selectedCharacter] = (gameState.battleStats.damageDone[gameState.selectedCharacter]||0) + _graveOldHp;
+                    }
                     addLog('💀 ¡GOLPE GRAVE! ' + gameState.selectedCharacter + ' elimina a ' + targetName + ' de un solo golpe', 'damage');
                     if (typeof checkGameOver === 'function') checkGameOver();
                     // Turno adicional
@@ -990,8 +1000,8 @@
                     allyCV.statusEffects = allyCV.statusEffects.filter(e => e && e.type !== 'buff').concat(enemyBuffs);
                     enemyCV.statusEffects = enemyCV.statusEffects.filter(e => e && e.type !== 'buff').concat(allyBuffs);
                     addLog(`🎵 Cambio de Vida: HP y buffs intercambiados entre ${allyNameCV} y ${enemyNameCV}`, 'buff');
-                    if (allyCV.hp <= 0) { allyCV.isDead = true; }
-                    if (enemyCV.hp <= 0) { enemyCV.isDead = true; }
+                    if (allyCV.hp <= 0) { allyCV.isDead = true; registerKill(gameState.selectedCharacter, allyNameCV, false); }
+                    if (enemyCV.hp <= 0) { enemyCV.isDead = true; registerKill(gameState.selectedCharacter, enemyNameCV, false); }
                 }
 
             // ── CAMBIO DE SANGRE (Nakime updated) ──
@@ -1016,7 +1026,7 @@
                     const _tempHp = _allyChar.hp;
                     _allyChar.hp = Math.min(_enemyChar.hp, _allyChar.maxHp);
                     _enemyChar.hp = Math.min(_tempHp, _enemyChar.maxHp);
-                    if (_enemyChar.hp <= 0) { _enemyChar.isDead = true; }
+                    if (_enemyChar.hp <= 0) { _enemyChar.isDead = true; if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, _enemyCharName, false); }
                     addLog('🔄 Cambio de Sangre: HP de ' + _lowestAlly + ' y ' + targetName + ' intercambiados (IA)', 'damage');
                     gameState.nakimePendingSwap = null;
                     renderCharacters();
@@ -1071,8 +1081,8 @@
                     allyCo.charges = enemyCo.charges;
                     enemyCo.charges = tempChargesCo;
                     addLog(`🎵 Colapso: HP y cargas intercambiadas entre ${allyNameCo} y ${enemyNameCo}`, 'buff');
-                    if (allyCo.hp <= 0) { allyCo.isDead = true; }
-                    if (enemyCo.hp <= 0) { enemyCo.isDead = true; }
+                    if (allyCo.hp <= 0) { allyCo.isDead = true; registerKill(gameState.selectedCharacter, allyNameCo, false); }
+                    if (enemyCo.hp <= 0) { enemyCo.isDead = true; registerKill(gameState.selectedCharacter, enemyNameCo, false); }
                 }
 
             } else if (ability.effect === 'apply_poison_2') {
@@ -1208,7 +1218,7 @@
                 const tgtAE = gameState.characters[targetName];
                 if (tgtAE && !tgtAE.isDead && tgtAE.hp > 0) {
                     tgtAE.hp = Math.max(0, tgtAE.hp - 1);
-                    if (tgtAE.hp <= 0) { tgtAE.isDead = true; addLog('💀 ' + targetName + ' fue derrotado', 'damage'); }
+                    if (tgtAE.hp <= 0) { tgtAE.isDead = true; registerKill(gameState.selectedCharacter, targetName, false); addLog('💀 ' + targetName + ' fue derrotado', 'damage'); }
                     else {
                         addLog('❄️ Agonía de Escarcha: roba 1 HP de ' + targetName, 'damage');
                         // Curar 1 HP a Lich King (respeta QS y Aura de Luz)
@@ -2615,7 +2625,7 @@
                         const _vegPrinceTriple = attacker.passive && attacker.passive.name === 'Príncipe de los Sayajins' && Math.random() < 0.20;
                         if (_vegPrinceTriple) { _rkDmg *= 3; addLog('💥 Príncipe de los Sayajins: ¡Daño Triple!', 'damage'); }
                         _c.hp = Math.max(0, _c.hp - _rkDmg);
-                        if (_c.hp <= 0) { _c.isDead = true; }
+                        if (_c.hp <= 0) { _c.isDead = true; if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, _rn, false); }
                         addLog('💥 Ráfagas de Ki: ' + _n + ' recibe ' + _rkDmg + ' daño directo', 'damage');
                     }
                 }
@@ -3245,7 +3255,7 @@
                     let _mmDmg = 2;
                     if (_mmAtk && _mmAtk.rikudoMode) _mmDmg *= 2;
                     _mmTgt.hp = Math.max(0, (_mmTgt.hp||0) - _mmDmg);
-                    if (_mmTgt.hp <= 0) _mmTgt.isDead = true;
+                    if (_mmTgt.hp <= 0) { _mmTgt.isDead = true; registerKill(gameState.selectedCharacter, targetName, false); }
                     addLog('👁️ Mangekyō Sharingan: ' + _mmDmg + ' daño directo a ' + targetName, 'damage');
                 }
                 applySilenciar(targetName, 2);
@@ -4392,6 +4402,7 @@
                 if (_efV) {
                     _efV.hp = 0;
                     _efV.isDead = true;
+                    if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, _efVn, false);
                     _efV._vegetaRevivePending = 3;
                     addLog('💥 Explosión Final: Vegeta (' + Math.round(_efPct*100) + '% HP) → ' + _efDmg + ' daño AOE (5 base + ' + _efBonus + ' bonus)!', 'damage');
                 }
@@ -4657,6 +4668,7 @@
                     addLog('🏜️ Sabaku Taisō: Gaara aplasta a ' + targetName + ' — ¡eliminado!', 'damage');
                     _stTgt.hp = 0;
                     _stTgt.isDead = true;
+                    if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, targetName, false);
                     _stTgt._sabakuRevivePending = 2;
                     _stTgt._sabakuReviveHp = Math.ceil(_stTgt.maxHp * 0.50);
                     addLog('⏳ Sabaku Taisō: ' + targetName + ' revivirá con ' + _stTgt._sabakuReviveHp + ' HP y 0 cargas en 2 rondas', 'info');
@@ -4798,7 +4810,7 @@
                     if (_taSteal > 0) {
                         const _taActual = Math.min(_taSteal, _taTgt.hp);
                         _taTgt.hp = Math.max(0, _taTgt.hp - _taActual);
-                        if (_taTgt.hp <= 0) _taTgt.isDead = true;
+                        if (_taTgt.hp <= 0) { _taTgt.isDead = true; registerKill(gameState.selectedCharacter, targetName, false); }
                         if (_taAtk) _taAtk.hp = Math.min(_taAtk.maxHp, (_taAtk.hp||0) + _taActual);
                         addLog('🔥 Toque de la Antivida: Darkseid roba ' + _taActual + ' HP de ' + targetName, 'heal');
                     }
@@ -4856,7 +4868,7 @@
                         const _soRandTarget = _soAliveEnemies[Math.floor(Math.random() * _soAliveEnemies.length)];
                         const _soTgt = gameState.characters[_soRandTarget];
                         _soTgt.hp = Math.max(0, (_soTgt.hp||0) - _soTotalDmg);
-                        if (_soTgt.hp <= 0) _soTgt.isDead = true;
+                        if (_soTgt.hp <= 0) { _soTgt.isDead = true; registerKill(gameState.selectedCharacter, _soRandTarget, false); }
                         addLog('⚡ Sanción Omega: ' + _soTotalDmg + ' daño directo a ' + _soRandTarget + ' (' + _soSummonIds.length + ' invocaciones)', 'damage');
                     }
                 } else {
@@ -4871,7 +4883,7 @@
                     const _eaPct = 0.50 + Math.random() * 0.40; // 50-90%
                     const _eaLost = Math.ceil(_eaTgt.hp * _eaPct);
                     _eaTgt.hp = Math.max(0, _eaTgt.hp - _eaLost);
-                    if (_eaTgt.hp <= 0) _eaTgt.isDead = true;
+                    if (_eaTgt.hp <= 0) { _eaTgt.isDead = true; registerKill(gameState.selectedCharacter, targetName, false); }
                     _eaAtk.hp = Math.min(_eaAtk.maxHp, (_eaAtk.hp||0) + _eaLost);
                     addLog('🔥 Ecuación de la Antivida: ' + targetName + ' pierde ' + _eaLost + ' HP (' + Math.round(_eaPct*100) + '%), Darkseid recupera ' + _eaLost + ' HP', 'heal');
                 }
@@ -5458,7 +5470,7 @@
                     if (_hasVeneno) {
                         const _pqLoss = Math.floor(_pqTgt.hp * 0.60);
                         _pqTgt.hp = Math.max(0, _pqTgt.hp - _pqLoss);
-                        if (_pqTgt.hp <= 0) { _pqTgt.isDead = true; if (typeof checkGameOver === 'function') checkGameOver(); }
+                        if (_pqTgt.hp <= 0) { _pqTgt.isDead = true; registerKill(gameState.selectedCharacter, targetName, false); if (typeof checkGameOver === 'function') checkGameOver(); }
                         addLog('🃏 ¿Por qué tan serio? -60% HP: ' + targetName + ' pierde ' + _pqLoss + ' HP', 'damage');
                     }
                 }
@@ -5704,6 +5716,7 @@
                         const _cNow = gameState.characters[_n];
                         if (_cNow && !_cNow.isDead && _cNow.hp > 0 && Math.random() < 0.10) {
                             _cNow.hp = 0; _cNow.isDead = true;
+                if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, _cNowName||targetName, false);
                             addLog('💀 Ira de Kratos: ¡' + _n + ' eliminado (10%)!', 'damage');
                             if (typeof checkGameOver === 'function') checkGameOver();
                         }
@@ -7134,7 +7147,7 @@
                     // Robar 2 HP
                     const _hpSteal = Math.min(2, _c.hp);
                     _c.hp = Math.max(0, _c.hp - _hpSteal);
-                    if (_c.hp <= 0) _c.isDead = true;
+                    if (_c.hp <= 0) { _c.isDead = true; registerKill(gameState.selectedCharacter, _n, false); }
                     if (_okAtk && typeof applyHeal === 'function') applyHeal(gameState.selectedCharacter, _hpSteal, 'Oniyaki');
                     else if (_okAtk) _okAtk.hp = Math.min(_okAtk.maxHp, (_okAtk.hp||0) + _hpSteal);
                     // Robar 2 cargas
@@ -7184,7 +7197,7 @@
                     if (_dkBurnCount > 0) {
                         const _dkBonus = _dkBurnCount * 3;
                         _c.hp = Math.max(0, (_c.hp||0) - _dkBonus);
-                        if (_c.hp <= 0) _c.isDead = true;
+                        if (_c.hp <= 0) { _c.isDead = true; registerKill(gameState.selectedCharacter, _n, false); }
                         addLog('🔥 Dokugami: +' + _dkBonus + ' daño directo a ' + _n + ' (' + _dkBurnCount + ' Quemaduras x3)', 'damage');
                     }
                     _dkHit++;
