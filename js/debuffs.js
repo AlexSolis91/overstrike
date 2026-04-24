@@ -509,7 +509,7 @@ function applyDebuff(targetName, effectObj) {
                         if (_rdnC.passive && _rdnC.passive.name === 'Invierno Eterno') {
                             passiveExecuting = true;
                             _tgtRDN.hp = Math.max(0, (_tgtRDN.hp||0) - 2);
-                            if (_tgtRDN.hp <= 0) _tgtRDN.isDead = true;
+                            if (_tgtRDN.hp <= 0) { _tgtRDN.isDead = true; if (typeof registerKill === 'function') registerKill('Rey de la Noche', targetName, false); }
                             addLog('☠️ Invierno Eterno: ' + _rdnN + ' inflige 2 daño directo a ' + targetName + ' (congelación aplicada)', 'damage');
                             passiveExecuting = false;
                             break;
@@ -647,7 +647,7 @@ function applyDebuff(targetName, effectObj) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== target.team || _c.isDead || _c.hp <= 0) continue;
                         _c.hp = Math.max(0, (_c.hp||0) - 2);
-                        if (_c.hp <= 0) _c.isDead = true;
+                        if (_c.hp <= 0) { _c.isDead = true; if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter||'Escanor', _n, false); }
                     }
                     passiveExecuting = false;
                     addLog('🐉 Fuego de Egipto: 2 daño directo a todos los enemigos (QS aplicada)', 'damage');
