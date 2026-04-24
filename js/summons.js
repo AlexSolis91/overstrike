@@ -1534,6 +1534,7 @@
                         const _ddHealed = _ddChar.hp - _ddOld;
                         if (_ddHealed > 0) {
                             addLog('Adaptacion Reactiva: Doomsday recupera ' + _ddHealed + ' HP', 'heal');
+                            triggerAdaptacionReactivaHeal(targetName);
                             const _ddAtkObj = gameState.characters[attackerName];
                             if (_ddAtkObj) {
                                 const _ddEnms = Object.keys(gameState.characters).filter(n => {
@@ -1817,6 +1818,23 @@
         }
 
         // Registrar kill para un personaje (por golpe, por efecto, por invocación)
+        // ── ADAPTACION REACTIVA: disparar cuando Doomsday recupera HP por cualquier medio ──
+        function triggerAdaptacionReactivaHeal(doomsdayName) {
+            const _ddC = gameState.characters[doomsdayName];
+            if (!_ddC || _ddC.isDead || !_ddC.passive || _ddC.passive.name !== 'Adaptacion Reactiva') return;
+            // Eliminar 2 cargas de un enemigo aleatorio
+            const _ddET = _ddC.team === 'team1' ? 'team2' : 'team1';
+            const _ddEnms = Object.keys(gameState.characters).filter(function(n){
+                const _ec = gameState.characters[n];
+                return _ec && _ec.team === _ddET && !_ec.isDead && _ec.hp > 0 && (_ec.charges||0) > 0;
+            });
+            if (_ddEnms.length > 0) {
+                const _r = _ddEnms[Math.floor(Math.random() * _ddEnms.length)];
+                gameState.characters[_r].charges = Math.max(0, (gameState.characters[_r].charges||0) - 2);
+                addLog('💪 Adaptacion Reactiva: ' + _r + ' pierde 2 cargas (Doomsday recuperó HP)', 'debuff');
+            }
+        }
+
         function registerKill(killerName, victimName, byInvocation) {
             if (!killerName || !gameState.battleStats) return;
             _mvp('killMap', killerName);
