@@ -330,8 +330,9 @@
                         if (summon && summon.team === targetTeam && summon.hp > 0) {
                             // Iron: no puede ser seleccionado por ataques ST del enemigo
                             const _sumBaseD = typeof summonData !== 'undefined' ? summonData[summon.name] : null;
-                            const _ironNoST = summon.ironNoST || (_sumBaseD && _sumBaseD.ironNoST);
-                            if (_ironNoST && ability && (ability.target === 'single' || ability.type === 'basic')) continue;
+                            const _ironNoST  = summon.ironNoST  || (_sumBaseD && _sumBaseD.ironNoST);
+                            const _kamishNoST = summon.kamishNoST || (_sumBaseD && _sumBaseD.kamishNoST);
+                            if ((_ironNoST || _kamishNoST) && ability && (ability.target === 'single' || ability.type === 'basic')) continue;
                             hasTargets = true;
                             // Obtener imagen de la invocación desde summonData
                             const _sumData = typeof summonData !== 'undefined' ? summonData[summon.name] : null;
