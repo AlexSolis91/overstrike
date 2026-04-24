@@ -152,13 +152,15 @@
                 name: 'Iron',
                 hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/7hZFpH5G/Captura_de_pantalla_2026_03_11_145721.png',
-                passive: 'Voluntad de Acero: absorbe todo el daño por golpe que fuera a recibir su invocador'
+                ironShield: true, ironNoST: true,
+                passive: 'Voluntad de Acero: absorbe todo el daño por golpe que fuera a recibir su invocador. Iron no puede ser seleccionado por ataques ST del enemigo. Al inicio de cada ronda el equipo aliado genera 3 cargas.'
             },
             'Tusk': {
                 name: 'Tusk',
                 hp: 6, maxHp: 6, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/Wz1BQNdz/Captura_de_pantalla_2026_03_11_145950.png',
-                passive: 'Hipno de Fuego: Duplica el daño causado por debuff quemaduras sobre los enemigos'
+                tuskFireHypno: true,
+                passive: 'Hipno de Fuego: Duplica el daño causado por Quemaduras sobre los enemigos. Al inicio de cada ronda aplica Quemadura 2HP de 1 turno a 2 enemigos aleatorios.'
             },
             'Beru': {
                 name: 'Beru',
