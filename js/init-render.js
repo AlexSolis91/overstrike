@@ -147,6 +147,12 @@
                     ch.statusEffects = ch.statusEffects || [];
                     ch.statusEffects.push({ name: 'Provocacion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🛡️' });
                 }
+                // Rey Brujo de Angmar: Provocación + Infectar permanentes (Señor de los Nazgul)
+                if (baseName === 'Rey Brujo de Angmar') {
+                    ch.statusEffects = ch.statusEffects || [];
+                    ch.statusEffects.push({ name: 'Provocacion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🛡️' });
+                    ch.statusEffects.push({ name: 'Infectar', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🦠' });
+                }
                 // Anakin Skywalker: Contraataque permanente
                 if (baseName === 'Anakin Skywalker') {
                     ch.anakinAsistir = true; // Asistir: fires basic when ally uses Special/Over ST
