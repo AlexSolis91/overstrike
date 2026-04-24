@@ -7870,8 +7870,12 @@
                 const s = gameState.summons[sid];
                 if (!s || s.hp <= 0) continue;
                 // Solo invocaciones que tienen MegaProvocación mantienen vivo al equipo
-                if (s.megaProvocation || s.name === 'Kamish' || s.name === 'Drogon' ||
-                    s.name === 'Sindragosa' || s.name === 'Caballero de la Muerte') {
+                // Kamish mantiene vivo al equipo si su summoner sigue vivo
+                const _kamSumAlive = s.summoner && gameState.characters[s.summoner] &&
+                    !gameState.characters[s.summoner].isDead && gameState.characters[s.summoner].hp > 0;
+                if (s.megaProvocation || s.name === 'Drogon' ||
+                    s.name === 'Sindragosa' || s.name === 'Caballero de la Muerte' ||
+                    (s.name === 'Kamish' && _kamSumAlive)) {
                     if (s.team === 'team1') team1Alive++;
                     else team2Alive++;
                 }
