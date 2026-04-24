@@ -1225,6 +1225,27 @@
                 }
             }
 
+            // ── EL OJO QUE TODO LO VE (Sauron): reducción 50% con MegaProv/ProtSagrada + Aturdimiento al atacante ──
+            if (damage > 0 && attackerName && attackerName !== targetName &&
+                target.passive && target.passive.name === 'El Ojo que Todo lo Ve') {
+                // Reducir 50% si Sauron tiene MegaProvocacion o Proteccion Sagrada
+                const _saHasMegaProv = hasStatusEffect(targetName, 'Mega Provocacion') ||
+                                       hasStatusEffect(targetName, 'MegaProvocacion');
+                const _saHasProt    = hasStatusEffect(targetName, 'Proteccion Sagrada') ||
+                                      hasStatusEffect(targetName, 'Protección Sagrada');
+                if (_saHasMegaProv || _saHasProt) {
+                    damage = Math.ceil(damage * 0.5);
+                    addLog('🌑 El Ojo que Todo lo Ve: ' + targetName + ' reduce 50% el daño recibido (' + damage + ' HP)', 'buff');
+                }
+                // Aturdimiento al atacante si Sauron tiene MegaProvocacion activa
+                if (_saHasMegaProv && !passiveExecuting) {
+                    passiveExecuting = true;
+                    if (typeof applyStun === 'function') applyStun(attackerName, 1);
+                    addLog('🌑 El Ojo que Todo lo Ve: ' + attackerName + ' queda Aturdido (atacó a Sauron con MegaProvocación)', 'debuff');
+                    passiveExecuting = false;
+                }
+            }
+
             // ── SEÑOR DE LOS NAZGUL (Rey Brujo): Infectar — veneno 2T al atacante al recibir daño ──
             if (remainingDamage > 0 && attackerName && !passiveExecuting && !_yorichiPassiveBlocked &&
                 target.passive && target.passive.name === 'Señor de los Nazgul' &&
