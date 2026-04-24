@@ -545,6 +545,23 @@ function applyDebuff(targetName, effectObj) {
                 addLog(`☠️ ${targetName} es envenenado por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
             }
             if (typeof triggerIzanamiPartB === 'function') triggerIzanamiPartB(targetName);
+            // SEÑOR DE LOS NAZGUL (Rey Brujo): cura 2 HP al aplicar Veneno en un enemigo
+            if (!passiveExecuting) {
+                for (const _rbN in gameState.characters) {
+                    const _rbC = gameState.characters[_rbN];
+                    if (!_rbC || _rbC.isDead || !_rbC.passive) continue;
+                    if (_rbC.passive.name !== 'Señor de los Nazgul') continue;
+                    // Verificar que el objetivo es enemigo del Rey Brujo
+                    const _rbTarget = gameState.characters[targetName];
+                    if (!_rbTarget || _rbTarget.team === _rbC.team) continue;
+                    passiveExecuting = true;
+                    if (typeof applyHeal === 'function') applyHeal(_rbN, 2, 'Señor de los Nazgul');
+                    else _rbC.hp = Math.min(_rbC.maxHp, (_rbC.hp||0) + 2);
+                    addLog('💀 Señor de los Nazgul: Rey Brujo se cura 2 HP (Veneno aplicado a enemigo)', 'heal');
+                    passiveExecuting = false;
+                    break;
+                }
+            }
         }
 
 
