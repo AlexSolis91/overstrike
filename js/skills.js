@@ -139,7 +139,13 @@
                 const attacker = gameState.characters[gameState.selectedCharacter];
                 const charName = gameState.selectedCharacter;
                 const ability = gameState.selectedAbility;
-                const adjustedCost = (gameState.adjustedCost !== undefined && gameState.adjustedCost !== null) ? gameState.adjustedCost : ability.cost;
+                let adjustedCost = (gameState.adjustedCost !== undefined && gameState.adjustedCost !== null) ? gameState.adjustedCost : ability.cost;
+                // MODO RIKUDŌ (Madara): costo a la mitad
+                if (attacker && attacker.rikudoMode && adjustedCost > 0 &&
+                    (gameState.selectedCharacter === 'Madara Uchiha' || gameState.selectedCharacter === 'Madara Uchiha v2') &&
+                    ability.effect !== 'rikudo_mode_madara') {
+                    adjustedCost = Math.ceil(adjustedCost / 2);
+                }
                 
                 // ── SILENCIAR: bloquea la categoría silenciada ──────────────
                 if (ability && attacker) {
@@ -1530,13 +1536,6 @@
                     if (actualHeal > 0) triggerBendicionSagrada(attacker.team, actualHeal);
                 }
                 addLog(`💚 ${gameState.selectedCharacter} recupera ${totalDmg} HP (Skill Drain)`, 'heal');
-
-            } else if (ability.effect === 'devastator_punish') {
-                const isCrit = Math.random() < (ability.critChance || 0.3);
-                const dmg = isCrit ? finalDamage * 2 : finalDamage;
-                applyDamageWithShield(targetName, dmg, gameState.selectedCharacter);
-                if (isCrit) addLog(`💥 ¡CRÍTICO! Devastator Punish: ${dmg} daño`, 'damage');
-
             } else if (ability.effect === 'speed_up_self') {
                 // Shingun Ken: daño + +1 velocidad propia + 50% Posesión al objetivo
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
@@ -6857,8 +6856,23 @@
                 }
                 applyDamageWithShield(targetName, agDmg, charName);
 
-                        } else if (ability.target === 'single') {
-                // Daño a un solo objetivo (genérico)
+                        } else if (ability.target === 'single' &&
+                           ability.effect !== 'rinbo_hengoku_madara' &&
+                           ability.effect !== 'susanoo_madara' &&
+                           ability.effect !== 'rikudo_mode_madara' &&
+                           ability.effect !== 'chibaku_tensei_madara' &&
+                           ability.effect !== 'voluntad_mordor_sauron' &&
+                           ability.effect !== 'mano_negra_sauron' &&
+                           ability.effect !== 'senor_oscuro_sauron' &&
+                           ability.effect !== 'poder_anillo_sauron' &&
+                           ability.effect !== 'devastator_punish' &&
+                           ability.effect !== 'senor_oscuro' &&
+                           ability.effect !== 'hermana_oscura_daemon' &&
+                           ability.effect !== 'furia_caraxes_daemon' &&
+                           ability.effect !== 'ojo_dioses_daemon' &&
+                           ability.effect !== 'ilusion_diabolica_ikki' &&
+                           ability.effect !== 'despertar_fenix_ikki') {
+                // Daño a un solo objetivo (genérico — solo para ataques SIN handler propio)
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 addLog(`⚔️ ${gameState.selectedCharacter} usa ${ability.name} en ${targetName} causando ${finalDamage} de daño`, 'damage');
                 
@@ -7657,8 +7671,12 @@
                 if (_suCrit) { _suDmg *= 2; gameState._isCritHit = true; addLog('🌀 Susanoo: ¡Crítico!', 'buff'); }
                 applyDamageWithShield(targetName, _suDmg, gameState.selectedCharacter);
                 addLog('🌀 Susanoo: ' + _suDmg + ' daño a ' + targetName, 'damage');
-                const _suTgt = gameState.characters[targetName];
-                if (_suTgt && !_suTgt.isDead) { _suTgt.shield = (_suTgt.shield||0) + _suDmg; addLog('🌀 Susanoo: Escudo ' + _suDmg + ' HP a ' + targetName, 'buff'); }
+                // Escudo al propio Madara (el atacante), no al objetivo
+                const _suSelf = gameState.characters[gameState.selectedCharacter];
+                if (_suSelf) {
+                    _suSelf.shield = (_suSelf.shield||0) + _suDmg;
+                    addLog('🌀 Susanoo: Escudo de ' + _suDmg + ' HP aplicado a ' + gameState.selectedCharacter, 'buff');
+                }
                 if (_suCrit && _suAtk) {
                     if (_suAtk.rikudoMode) _suAtk.charges = Math.min(20, (_suAtk.charges||0) + 3);
                     addLog('🌀 Gakido: turno adicional por crítico', 'buff');
@@ -7668,6 +7686,11 @@
 
             } else if (ability.effect === 'rikudo_mode_madara') {
                 const _rmAtk = gameState.characters[gameState.selectedCharacter];
+                // Bloquear si ya está en Modo Rikudō
+                if (_rmAtk && _rmAtk.rikudoMode) {
+                    addLog('🌀 Modo Rikudō: Madara ya está transformado', 'info');
+                    endTurn(); return;
+                }
                 if (_rmAtk) {
                     _rmAtk.rikudoMode = true;
                     _rmAtk.basePortrait = _rmAtk.basePortrait || _rmAtk.portrait;
@@ -7774,9 +7797,13 @@
                     _paAtk.maxHp = (_paAtk.maxHp||25) + 10;
                     _paAtk.hp = Math.min(_paAtk.maxHp, (_paAtk.hp||0) + _paH);
                     applyBuff(gameState.selectedCharacter, {name:'Proteccion Sagrada',type:'buff',duration:3,emoji:'🛡️'});
-                    applyBuff(gameState.selectedCharacter, {name:'Mega Provocacion',type:'buff',duration:3,emoji:'🌑'});
+                    // Agregar MegaProvocación directamente a statusEffects para garantizar que funcione
+                    const _paMegaExists = (_paAtk.statusEffects||[]).some(function(e){ return e && (e.name==='Mega Provocacion'||e.name==='MegaProvocacion'); });
+                    if (!_paMegaExists) {
+                        (_paAtk.statusEffects = _paAtk.statusEffects||[]).push({name:'Mega Provocacion',type:'buff',duration:3,emoji:'🌑'});
+                    }
                     _paAtk.sauronTransformed = true;
-                    addLog('🌑 Poder del Anillo: +' + _paH + ' HP, HP máx +10, Prot Sagrada + MegaProv 3T', 'buff');
+                    addLog('🌑 Poder del Anillo: +' + _paH + ' HP, HP máx +10, Prot Sagrada + MegaProvocación 3T activa', 'buff');
                     renderCharacters(); renderSummons(); endTurn(); return;
                 }            }
 
