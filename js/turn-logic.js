@@ -1960,6 +1960,9 @@
                 
                 // Activar pasiva de Beru
                 triggerBeruPassive();
+
+                // Activar pasiva de Kamish (fin de ronda: 4 daño a todos los enemigos)
+                if (typeof triggerKamishEndOfRound === 'function') triggerKamishEndOfRound();
                 
                 // Activar pasiva de Kaisel
                 triggerKaiselPassive();
