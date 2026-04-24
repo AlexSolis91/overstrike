@@ -991,7 +991,7 @@
                     _sasukeC.sasukeEvasionUsedThisRound = true;
                     passiveExecuting = true;
                     _sasukeAtk.hp = Math.max(0, (_sasukeAtk.hp||0) - 5);
-                    if (_sasukeAtk.hp <= 0) _sasukeAtk.isDead = true;
+                    if (_sasukeAtk.hp <= 0) { _sasukeAtk.isDead = true; if (typeof registerKill === 'function') registerKill('Goku', attackerName, false); }
                     passiveExecuting = false;
                     addLog('⚡ Venganza Eterna: ' + targetName + ' esquiva el ' + gameState.selectedAbility.type + ' de ' + attackerName + ' y responde con 5 daño', 'buff');
                     return 0;
@@ -1226,7 +1226,7 @@
                 const _atkOmega = gameState.characters[attackerName];
                 if (_atkOmega && !_atkOmega.isDead && _atkOmega.hp > 0) {
                     _atkOmega.hp = Math.max(0, (_atkOmega.hp||0) - 1);
-                    if (_atkOmega.hp <= 0) _atkOmega.isDead = true;
+                    if (_atkOmega.hp <= 0) { _atkOmega.isDead = true; if (typeof registerKill === 'function') registerKill(targetName, attackerName, false); }
                     target.hp = Math.min(target.maxHp, (target.hp||0) + 1);
                     addLog('⚡ Efecto Omega: Darkseid roba 1 HP de ' + attackerName, 'heal');
                 }
@@ -1778,7 +1778,7 @@
                     const attackerChar = gameState.characters[attackerName];
                     if (attackerChar && !attackerChar.isDead && attackerChar.hp > 0) {
                         attackerChar.hp = Math.max(0, attackerChar.hp - espinasDmg);
-                        if (attackerChar.hp <= 0) attackerChar.isDead = true;
+                        if (attackerChar.hp <= 0) { attackerChar.isDead = true; if (typeof registerKill === 'function') registerKill(targetName, attackerName, false); }
                         // SANGRE DE YMIR pasiva: 30% Megacongelación, 50% Sangrado al atacante
                         triggerSangreDeYmir(attackerName, targetName);
                     }
@@ -2016,10 +2016,22 @@
                 passiveExecuting = true;
                 const _btOldHp = _btC.hp;
                 _btC.hp = Math.max(0, (_btC.hp||0) - 2);
-                if (_btC.hp <= 0) _btC.isDead = true;
+                const _btDmgDone = _btOldHp - _btC.hp;
+                // Registrar daño causado en battleStats
+                if (_btDmgDone > 0 && gameState.battleStats) {
+                    if (!gameState.battleStats.damageDone) gameState.battleStats.damageDone = {};
+                    gameState.battleStats.damageDone[_an] = (gameState.battleStats.damageDone[_an]||0) + _btDmgDone;
+                    registerDamageReceived(buffTargetName, _btDmgDone);
+                }
+                // Registrar kill si eliminó al objetivo
+                if (_btC.hp <= 0) {
+                    _btC.isDead = true;
+                    if (typeof registerKill === 'function') registerKill(_an, buffTargetName, false);
+                    if (typeof _animCard === 'function') _animCard(buffTargetName, 'anim-defeat', 700);
+                }
                 addLog('🔥 Monarca de la Destruccion: 2 daño directo a ' + buffTargetName + ' (Buff aplicado sobre enemigo)', 'damage');
                 // Generar 1 carga por el daño directo causado
-                if (_btOldHp > _btC.hp) {
+                if (_btDmgDone > 0) {
                     _ac.charges = Math.min(20, (_ac.charges||0) + 1);
                     addLog('🔥 Monarca de la Destruccion: ' + _an + ' gana 1 carga (daño directo)', 'buff');
                 }
