@@ -2040,6 +2040,13 @@
                             _iyC.speed = (_iyC.speed||80) + _iyC._smBonus;
                             _iyC.charges = Math.min(20, (_iyC.charges||0) + 10);
                             addLog('💜 Sangre Maldita: Iori siente la sangre arder — +' + _iyC._smBonus + ' VEL y +10 cargas esta ronda', 'buff');
+                            // Re-ordenar turnOrder con la nueva velocidad
+                            if (gameState.turnOrder) {
+                                gameState.turnOrder.sort(function(a, b) {
+                                    return (gameState.characters[b] ? gameState.characters[b].speed||0 : 0) -
+                                           (gameState.characters[a] ? gameState.characters[a].speed||0 : 0);
+                                });
+                            }
                         }
                         break;
                     }
