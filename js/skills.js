@@ -3441,37 +3441,58 @@
                 generateChargesInline(charName, ability.chargeGain);
 
             } else if (ability.effect === 'heal_all_allies') {
-                // Min Byung Sanación Heroica: cura 4 HP a todos los aliados
+                // Min Byung Sanación Heroica: sacrifica 50% HP propio, cura esa cantidad al equipo + Regeneracion 25% 2T a Min Byung
                 const haTeam = attacker.team;
+                const _haMinHP = Math.floor((attacker.hp||1) * 0.50);
+                attacker.hp = Math.max(1, (attacker.hp||1) - _haMinHP);
+                addLog('💚 Sanación Heroica: Min Byung sacrifica ' + _haMinHP + ' HP', 'damage');
+                // Curar la cantidad sacrificada a todos los aliados (excepto Min Byung)
                 for (let haName in gameState.characters) {
                     const haC = gameState.characters[haName];
                     if (!haC || haC.team !== haTeam || haC.isDead || haC.hp <= 0) continue;
-                    // AURA DE LUZ: doubles healing
-                    const _haHealAmt = hasStatusEffect(haName, 'Aura de Luz') || hasStatusEffect(haName, 'Aura de luz')
-                        ? (ability.heal || 4) * 2 : (ability.heal || 4);
+                    if (haName === gameState.selectedCharacter) continue; // excluir a Min Byung
                     const haOld = haC.hp;
-                    haC.hp = Math.min(haC.maxHp, haC.hp + _haHealAmt);
+                    if (typeof applyHeal === 'function') applyHeal(haName, _haMinHP, 'Sanación Heroica');
+                    else haC.hp = Math.min(haC.maxHp, haC.hp + _haMinHP);
                     const _haActual = haC.hp - haOld;
                     if (_haActual > 0) {
                         addLog('💚 ' + haName + ' recupera ' + _haActual + ' HP (Sanación Heroica)', 'heal');
-                        // BENDICIÓN SAGRADA: fires per character that recovers HP
-                        triggerBendicionSagrada(haTeam, _haActual);
+                        if (typeof triggerBendicionSagrada === 'function') triggerBendicionSagrada(haTeam, _haActual);
                     }
                 }
+                // Buff Regeneracion 25% por 2T a Min Byung
+                const _haRegen = Math.ceil((attacker.maxHp||20) * 0.25);
+                if (typeof applyBuff === 'function') applyBuff(gameState.selectedCharacter, { name: 'Regeneracion', type: 'buff', duration: 2, emoji: '💖', amount: _haRegen });
+                addLog('💖 Sanación Heroica: Min Byung obtiene Regeneración 25% por 2T', 'buff');
 
             } else if (ability.effect === 'dispel_ally_charges') {
-                // Min Byung Protección Celestial: disipar debuffs aliado + 1 carga por debuff
-                const daC = gameState.characters[targetName];
-                if (daC && daC.statusEffects) {
-                    const daDList = daC.statusEffects.filter(e => e && e.type === 'debuff' && !e.permanent);
-                    const daCnt = daDList.length;
-                    daC.statusEffects = daC.statusEffects.filter(e => !e || e.type !== 'debuff' || e.permanent);
-                    if (daCnt > 0) {
-                        daC.charges = Math.min(20, (daC.charges || 0) + daCnt);
-                        addLog('✨ Protección Celestial: ' + targetName + ' pierde ' + daCnt + ' debuffs y gana ' + daCnt + ' cargas', 'buff');
-                    } else {
-                        addLog('✨ Protección Celestial: ' + targetName + ' no tenía debuffs activos', 'info');
+                // Min Byung Protección Celestial: limpia 1 debuff de cada aliado
+                // Por cada debuff limpiado: +1 HP y +1 carga a todo el equipo aliado
+                const _pcAtk = gameState.characters[gameState.selectedCharacter];
+                const _pcTeam = _pcAtk ? _pcAtk.team : 'team1';
+                let _pcTotalDis = 0;
+                for (const _pn in gameState.characters) {
+                    const _pc = gameState.characters[_pn];
+                    if (!_pc || _pc.team !== _pcTeam || _pc.isDead || _pc.hp <= 0) continue;
+                    const _pcDebuffs = (_pc.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff' && !e.permanent; });
+                    if (_pcDebuffs.length > 0) {
+                        const _pcIdx = _pc.statusEffects.indexOf(_pcDebuffs[0]);
+                        if (_pcIdx !== -1) { _pc.statusEffects.splice(_pcIdx, 1); _pcTotalDis++; }
+                        addLog('✨ Protección Celestial: 1 debuff limpiado de ' + _pn, 'buff');
                     }
+                }
+                if (_pcTotalDis > 0) {
+                    // +1 HP y +1 carga al equipo aliado por cada debuff limpiado
+                    for (const _an in gameState.characters) {
+                        const _ac = gameState.characters[_an];
+                        if (!_ac || _ac.team !== _pcTeam || _ac.isDead || _ac.hp <= 0) continue;
+                        if (typeof applyHeal === 'function') applyHeal(_an, _pcTotalDis, 'Protección Celestial');
+                        else _ac.hp = Math.min(_ac.maxHp, (_ac.hp||0) + _pcTotalDis);
+                        _ac.charges = Math.min(20, (_ac.charges||0) + _pcTotalDis);
+                    }
+                    addLog('✨ Protección Celestial: ' + _pcTotalDis + ' debuff(s) limpiados → +' + _pcTotalDis + ' HP y +' + _pcTotalDis + ' cargas al equipo aliado', 'buff');
+                } else {
+                    addLog('✨ Protección Celestial: ningún aliado tenía debuffs activos', 'info');
                 }
 
             } else if (ability.effect === 'gilgamesh_enuma') {
@@ -4903,10 +4924,8 @@
                     });
                     const _pfTargets = _pfEnemies.sort(function(){ return Math.random()-0.5; }).slice(0, 3);
                     _pfTargets.forEach(function(n){
-                        const _pfc = gameState.characters[n];
-                        _pfc.hp = Math.max(0, (_pfc.hp||0) - _qsCount);
-                        if (_pfc.hp <= 0) _pfc.isDead = true;
-                        addLog('☀️ Pride Flare: ' + _qsCount + ' daño directo a ' + n, 'damage');
+                        applyDamageWithShield(n, _qsCount, gameState.selectedCharacter);
+                        addLog('☀️ Pride Flare: ' + _qsCount + ' daño directo a ' + n + ' (' + _qsCount + ' QS activas)', 'damage');
                     });
                     // +3 cargas por cada QS
                     if (_pfAtk) {
@@ -5096,6 +5115,14 @@
                 // MARIK — Canto del Sol: invoca Huevo del Sol en el equipo enemigo
                 const _cantAtk = gameState.characters[gameState.selectedCharacter];
                 const _cantETeam = _cantAtk ? (_cantAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                // Bloquear si el Huevo del Sol ya está activo en el equipo enemigo
+                const _huesoActivo = Object.values(gameState.summons||{}).some(function(s){
+                    return s && s.hp > 0 && (s.name === 'Huevo del Sol' || s.name === 'Huevo del Ra') && s.team === _cantETeam;
+                });
+                if (_huesoActivo) {
+                    addLog('🌞 Canto del Sol: el Huevo del Sol ya está activo en el campo enemigo', 'info');
+                    endTurn(); return;
+                }
                 const _cantId = 'huevo_sol_' + Date.now();
                 gameState.summons[_cantId] = Object.assign({}, summonData['Huevo del Sol'] || {
                     name: 'Huevo del Sol', hp: 20, maxHp: 20, statusEffects: [],
@@ -7607,9 +7634,9 @@
                             if (!_ac || _ac.isDead || _ac.hp <= 0 || _ac.team !== _tirOvDefTeam) continue;
                             if (typeof applyHeal === 'function') applyHeal(_an, 3, 'Paladín de la Mano de Plata');
                             else if (typeof canHeal === 'function' ? canHeal(_an) : true) _ac.hp = Math.min(_ac.maxHp, (_ac.hp||0) + 3);
-                            _ac.charges = Math.min(20, (_ac.charges||0) + 5);
+                            _ac.charges = Math.min(20, (_ac.charges||0) + 3);
                         }
-                        addLog('🌟 Paladín de la Mano de Plata: equipo aliado +3 HP y +5 cargas (enemigo usó Over)', 'buff');
+                        addLog('🌟 Paladín de la Mano de Plata: equipo aliado +3 HP y +3 cargas (enemigo usó Over)', 'buff');
                         passiveExecuting = false;
                         break;
                     }
@@ -7748,25 +7775,46 @@
                 const _mnET = _mnAtk ? (_mnAtk.team==='team1'?'team2':'team1') : 'team2';
                 const _mnAlly = _mnAtk ? _mnAtk.team : 'team1';
                 let _mnBufHits = 0, _mnEvades = 0;
+                addLog('🖤 Mano Negra: ejecutando AOE ' + finalDamage + ' daño', 'damage');
                 if (checkAndRedirectAOEMegaProv(_mnET, finalDamage, gameState.selectedCharacter)) {
-                    addLog('🖤 Mano Negra: redirigido', 'damage');
+                    addLog('🖤 Mano Negra: AOE redirigido por MegaProvocación', 'damage');
                 } else {
                     for (const _n in gameState.characters) {
                         const _cc = gameState.characters[_n];
                         if (!_cc||_cc.team!==_mnET||_cc.isDead||_cc.hp<=0) continue;
-                        if (checkAsprosAOEImmunity(_n,true)) { _mnEvades++; continue; }
-                        if (checkMinatoAOEImmunity(_n)) { _mnEvades++; continue; }
-                        const _hb = (_cc.statusEffects||[]).some(e => e && e.type==='buff' && !e.passiveHidden);
+                        // Verificar buff ANTES del daño
+                        const _hb = (_cc.statusEffects||[]).some(function(e){ return e && e.type==='buff' && !e.passiveHidden; });
+                        // Verificar esquiva
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) {
+                            _mnEvades++;
+                            addLog('🖤 Mano Negra: ' + _n + ' esquiva', 'buff');
+                            continue;
+                        }
                         applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
-                        if (_hb) _mnBufHits++;
+                        if (_hb) {
+                            _mnBufHits++;
+                            addLog('🖤 Mano Negra: ' + _n + ' tenía Buff (+2 cargas a Sauron)', 'buff');
+                        }
+                    }
+                    // Daño a invocaciones enemigas también
+                    for (const _sid in gameState.summons) {
+                        const _ss = gameState.summons[_sid];
+                        if (!_ss || _ss.team !== _mnET || _ss.hp <= 0) continue;
+                        applySummonDamage(_sid, finalDamage, gameState.selectedCharacter);
                     }
                 }
-                if (_mnBufHits > 0 && _mnAtk) { _mnAtk.charges = Math.min(20, (_mnAtk.charges||0) + _mnBufHits*2); addLog('🖤 Mano Negra: +' + (_mnBufHits*2) + ' cargas (buffs)', 'buff'); }
-                if (_mnEvades > 0) {
-                    for (const _an in gameState.characters) { const _ac=gameState.characters[_an]; if(!_ac||_ac.isDead||_ac.hp<=0||_ac.team!==_mnAlly) continue; _ac.charges=Math.min(20,(_ac.charges||0)+_mnEvades*3); }
-                    addLog('🖤 Mano Negra: +' + (_mnEvades*3) + ' cargas equipo (esquivas)', 'buff');
+                if (_mnBufHits > 0 && _mnAtk) {
+                    _mnAtk.charges = Math.min(20, (_mnAtk.charges||0) + _mnBufHits * 2);
+                    addLog('🖤 Mano Negra: Sauron gana +' + (_mnBufHits*2) + ' cargas (' + _mnBufHits + ' enemigos con Buff golpeados)', 'buff');
                 }
-                addLog('🖤 Mano Negra: ' + finalDamage + ' AOE', 'damage');
+                if (_mnEvades > 0) {
+                    for (const _an in gameState.characters) {
+                        const _ac = gameState.characters[_an];
+                        if (!_ac||_ac.isDead||_ac.hp<=0||_ac.team!==_mnAlly) continue;
+                        _ac.charges = Math.min(20, (_ac.charges||0) + _mnEvades * 3);
+                    }
+                    addLog('🖤 Mano Negra: equipo aliado +' + (_mnEvades*3) + ' cargas (' + _mnEvades + ' enemigos esquivaron)', 'buff');
+                }
 
             } else if (ability.effect === 'senor_oscuro_sauron') {
                 const _soAtk = gameState.characters[gameState.selectedCharacter];
