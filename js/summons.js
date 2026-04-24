@@ -583,11 +583,12 @@
                     // NOTA: 'Señor de los Nazgul' es Provocación regular (no MegaProvocación)
                     // Se maneja en el bloque de tauntTarget en ability-select.js
                 }
-                // 2. SUMMON with megaProvocation flag (Drogon, Sindragosa, Tirion, Kamish)
+                // 2. SUMMON with megaProvocation flag (Drogon, Sindragosa, Caballero de la Muerte)
+                // NOTA: Kamish ya NO tiene MegaProvocación (nueva pasiva Terror de las Sombras)
                 for (let summonId in gameState.summons) {
                     const s = gameState.summons[summonId];
                     if (s && s.team === targetTeam && s.hp > 0 &&
-                        (s.megaProvocation || s.name === 'Kamish' || s.name === 'Caballero de la Muerte' ||
+                        (s.megaProvocation || s.name === 'Caballero de la Muerte' ||
                          s.name === 'Sindragosa' || s.name === 'Drogon')) {
                         return { id: summonId, holder: s, isCharacter: false, kamish: s };
                     }
