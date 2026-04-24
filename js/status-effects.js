@@ -470,5 +470,9 @@ function processBurnEffects(charName) {
                     }
                 }
             }
+            // ADAPTACION REACTIVA: disparar cuando Doomsday recupera HP por curación
+            if (_actual > 0 && typeof triggerAdaptacionReactivaHeal === 'function') {
+                triggerAdaptacionReactivaHeal(charName);
+            }
             return _actual;
         }
