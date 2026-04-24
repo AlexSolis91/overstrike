@@ -6,15 +6,14 @@
             'Madara Uchiha': {
                 hp: 20, maxHp: 20, speed: 90, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                rikudoMode: false,
                 portrait: 'https://i.ibb.co/spKxL75H/descarga.jpg',
                 transformPortrait: 'https://i.ibb.co/nMJG3RBJ/descarga-1.jpg',
-                passive: { name: 'Células de Hashirama', description: 'Al final de cada ronda: +1 HP y +1 carga por cada Buff activo en el equipo enemigo. 50% de limpiar 1 debuff aplicado sobre Madara (100% en Modo Rikudō). En Modo Rikudō: -50% daño recibido y daño doble en todos sus ataques.' },
+                passive: { name: 'Gakido', description: 'Absorbe daño directo de aliados (gana cargas en lugar de HP). Inmune a debuffs con Escudo activo. Cada golpe crítico otorga 1 turno adicional.' },
                 abilities: [
-                    { name: 'Mangekyō Sharingan', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'single', effect: 'mangekyou_madara_new', description: 'Causa 2 daño directo al objetivo. Aplica Debuff Silenciar 2 turnos.' },
-                    { name: 'Susanoo', type: 'special', cost: 6, chargeGain: 0, damage: 4, target: 'single', effect: 'susanoo_madara_new', description: 'Causa 4 daño. Aplica Buff Escudo equivalente al daño causado. Cada vez que el escudo pierde HP, Madara contraataca con un ataque básico.' },
-                    { name: 'Modo Rikudō', type: 'special', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'rikudo_transformation', description: 'Transformación permanente. Todos los ataques cuestan la mitad de cargas. En Modo Rikudō: daño doble y -50% daño recibido.' },
-                    { name: 'Tengai Shinsei', type: 'over', cost: 20, chargeGain: 0, damage: 10, target: 'aoe', effect: 'tengai_shinsei_madara', description: 'Causa 10 AOE. Causa 25% del daño adicional a enemigos con Buff Esquiva Área o pasiva Esquiva Área.' }
+                    { name: 'Rinbo: Hengoku', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'rinbo_hengoku_madara', description: 'Causa 2 daño. 50% de probabilidad de golpe crítico.' },
+                    { name: 'Susanoo', type: 'special', cost: 6, chargeGain: 0, damage: 4, target: 'single', effect: 'susanoo_madara', description: 'Causa 4 daño. Aplica Escudo equivalente al daño causado. 50% de crítico.' },
+                    { name: 'Modo Rikudō', type: 'special', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'rikudo_mode_madara', description: 'Transformación: todos sus ataques cuestan la mitad y causan daño doble. Cada turno adicional genera 3 cargas.' },
+                    { name: 'Chibaku Tensei', type: 'over', cost: 12, chargeGain: 0, damage: 6, target: 'aoe', effect: 'chibaku_tensei_madara', description: 'Causa 6 AOE. Roba todas las cargas del equipo enemigo. 50% de crítico.' }
                 ]
             },
 
@@ -291,15 +290,15 @@
             },
 
             'Sauron': {
-                hp: 25, maxHp: 25, speed: 78, charges: 0, team: 'team2',
+                hp: 25, maxHp: 25, speed: 78, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/858xm4n0/Captura_de_pantalla_2026_02_28_020119.png',
-                passive: { name: 'El Ojo que Todo lo Ve', description: 'Sauron puede atacar ignorando buff provocacion, megaprovocacion y Sigilo. Cada vez que Sauron recibe un golpe del enemigo tiene 50% de probabilidad de aplicar debuff Silencio sobre el enemigo atacante.' },
+                portrait: 'https://i.postimg.cc/858xm4n0/Captura-de-pantalla-2026-02-28-020119.png',
+                passive: { name: 'El Ojo que Todo lo Ve', description: 'Ignora Provocación, MegaProvocación y Sigilo. Si es atacado con MegaProvocación activa, aplica Aturdimiento al atacante. Con MegaProvocación o Protección Sagrada activa, reduce 50% el daño recibido.' },
                 abilities: [
-                    { name: 'Voluntad de Mordor', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'sauron_basic', description: 'Causa 2 de daño. Si Sauron ataca a un enemigo que ya tenía debuff Silencio genera +2 cargas adicionales.' },
-                    { name: 'Mano Negra', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'aoe', effect: 'mano_negra', description: 'Causa 2 AOE. Si los objetivos golpeados tienen Buff Provocación, Megaprovocación o Sigilo, este ataque es golpe crítico.' },
-                    { name: 'Señor Oscuro', type: 'special', cost: 7, chargeGain: 0, damage: 5, target: 'single', effect: 'senyor_oscuro', description: 'Causa 5 de daño. Si el objetivo tiene activo Buff Provocación o Megaprovocación, Limpiar el Buff y este ataque es golpe crítico.' },
-                    { name: 'Poder del Anillo', type: 'over', cost: 12, chargeGain: 0, damage: 0, target: 'self', effect: 'apply_megaprovocation_buff', duration: 4, regenDuration: 4, regenPercent: 20, description: 'Se aplica Buff Megaprovocación por 4 turnos. Se aplica Buff Regeneración de 20% por 4 turnos.' }
+                    { name: 'Voluntad de Mordor', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'voluntad_mordor_sauron', description: 'Causa 2 daño. Si el objetivo tenía un Buff activo antes del ataque: limpia 1 buff, aplica Silencio y genera 2 cargas adicionales.' },
+                    { name: 'Mano Negra', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'aoe', effect: 'mano_negra_sauron', description: 'Causa 3 AOE. Por cada enemigo con Buff golpeado: Sauron genera 2 cargas. Por cada enemigo que esquiva: el equipo aliado genera 3 cargas.' },
+                    { name: 'Señor Oscuro', type: 'special', cost: 6, chargeGain: 0, damage: 6, target: 'single', effect: 'senor_oscuro_sauron', description: 'Causa 6 daño. Si el objetivo tiene Provocación o MegaProvocación: causa 50% del HP actual de Sauron a 2 enemigos aleatorios. Recupera 50% de su HP máximo por enemigo eliminado.' },
+                    { name: 'Poder del Anillo', type: 'over', cost: 12, chargeGain: 0, damage: 0, target: 'self', effect: 'poder_anillo_sauron', description: 'Recupera 50% del HP actual. Aumenta HP máximo en 10. Aplica Protección Sagrada 3T y MegaProvocación 3T.' }
                 ]
             },
 
@@ -417,7 +416,7 @@
                     { name: 'Phoenix Genma Ken', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'phoenix_genma_ken_ikki', description: 'Causa 1 daño. Aplica Quemadura 2HP. 50%: si el objetivo ya tenía Quemadura, roba todas sus cargas.' },
                     { name: 'Hou Yoku Tenshou', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'aoe', effect: 'hou_yoku_tenshou_ikki', description: 'Causa 2 AOE. Aplica Quemadura 5HP a los enemigos NO golpeados. Elimina 3 cargas a los enemigos CON Quemadura golpeados.' },
                     { name: 'Ilusión Diabólica del Fénix', type: 'special', cost: 8, chargeGain: 0, damage: 5, target: 'single', effect: 'ilusion_diabolica_ikki', description: 'Causa 5 daño. Disipa todos los Buffs del objetivo. Por cada Buff disipado, genera 3 cargas al equipo aliado.' },
-                    { name: 'El Despertar del Fénix Inmortal', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'single', effect: 'despertar_fenix_ikki', description: 'Sacrifica 50-90% del HP actual. Causa 2 daño por cada HP sacrificado. Si el objetivo muere, el 50% del daño total golpea a todos los enemigos.' }
+                    { name: 'El Despertar del Fénix Inmortal', type: 'over', cost: 10, chargeGain: 0, damage: 10, target: 'single', effect: 'despertar_fenix_ikki', description: 'Causa 10 daño. Ignora Provocacion y Mega Provocacion. Si elimina al objetivo, el equipo aliado genera 10 cargas.' }
                 ]
             },
             'Linterna Verde': {
@@ -866,7 +865,7 @@
                 abilities: [
                     { name: 'Luz del Alba', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'aoe', effect: 'luz_del_alba_tirion', description: 'Causa 1 AOE. Cura 1 HP al equipo aliado. Aplica Aura de Luz al equipo aliado.' },
                     { name: 'Protección de la Luz', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'proteccion_luz_tirion', description: 'Cura 3 HP al objetivo aliado. Disipa sus debuffs. Por cada debuff disipado, el objetivo genera 2 cargas.' },
-                    { name: 'Portador de Cenizas', type: 'special', cost: 10, chargeGain: 0, damage: 2, target: 'aoe', effect: 'portador_cenizas_tirion', description: 'Causa 2 AOE. Cura al equipo aliado el 50% del HP actual de Tirion. Toma control de todos los personajes revividos por pasiva o habilidad.' },
+                    { name: 'Portador de Cenizas', type: 'special', cost: 10, chargeGain: 0, damage: 1, target: 'aoe', effect: 'portador_cenizas_tirion', description: 'Causa 2 AOE. Cura al equipo aliado el 50% del HP actual de Tirion. Toma control de todos los personajes revividos por pasiva o habilidad.' },
                     { name: 'Una Luz en la Oscuridad', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'self', effect: 'luz_oscuridad_tirion', description: 'Solo usable si Tirion es el único aliado vivo. Revive a todos los aliados con 20 HP y 10 cargas.' }
                 ]
             },
