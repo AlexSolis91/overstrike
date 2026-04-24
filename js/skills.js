@@ -7633,7 +7633,152 @@
                     }
                     delete gameState._kyoAOEHitsByAttacker;
                 }
-            }
+
+            // ══ MADARA UCHIHA — handlers ══
+
+            } else if (ability.effect === 'rinbo_hengoku_madara') {
+                const _rhAtk = gameState.characters[gameState.selectedCharacter];
+                let _rhDmg = finalDamage;
+                const _rhCrit = Math.random() < 0.50;
+                if (_rhCrit) { _rhDmg *= 2; gameState._isCritHit = true; addLog('🌀 Rinbo Hengoku: ¡Crítico!', 'buff'); }
+                applyDamageWithShield(targetName, _rhDmg, gameState.selectedCharacter);
+                addLog('🌀 Rinbo: Hengoku: ' + _rhDmg + ' daño a ' + targetName, 'damage');
+                if (_rhCrit && _rhAtk) {
+                    if (_rhAtk.rikudoMode) _rhAtk.charges = Math.min(20, (_rhAtk.charges||0) + 3);
+                    addLog('🌀 Gakido: turno adicional por crítico', 'buff');
+                    if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, _rhAtk.team);
+                    renderCharacters(); renderSummons(); showContinueButton(); return;
+                }
+
+            } else if (ability.effect === 'susanoo_madara') {
+                const _suAtk = gameState.characters[gameState.selectedCharacter];
+                let _suDmg = finalDamage;
+                const _suCrit = Math.random() < 0.50;
+                if (_suCrit) { _suDmg *= 2; gameState._isCritHit = true; addLog('🌀 Susanoo: ¡Crítico!', 'buff'); }
+                applyDamageWithShield(targetName, _suDmg, gameState.selectedCharacter);
+                addLog('🌀 Susanoo: ' + _suDmg + ' daño a ' + targetName, 'damage');
+                const _suTgt = gameState.characters[targetName];
+                if (_suTgt && !_suTgt.isDead) { _suTgt.shield = (_suTgt.shield||0) + _suDmg; addLog('🌀 Susanoo: Escudo ' + _suDmg + ' HP a ' + targetName, 'buff'); }
+                if (_suCrit && _suAtk) {
+                    if (_suAtk.rikudoMode) _suAtk.charges = Math.min(20, (_suAtk.charges||0) + 3);
+                    addLog('🌀 Gakido: turno adicional por crítico', 'buff');
+                    if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, _suAtk.team);
+                    renderCharacters(); renderSummons(); showContinueButton(); return;
+                }
+
+            } else if (ability.effect === 'rikudo_mode_madara') {
+                const _rmAtk = gameState.characters[gameState.selectedCharacter];
+                if (_rmAtk) {
+                    _rmAtk.rikudoMode = true;
+                    _rmAtk.basePortrait = _rmAtk.basePortrait || _rmAtk.portrait;
+                    if (_rmAtk.transformPortrait) _rmAtk.portrait = _rmAtk.transformPortrait;
+                    audioManager.playTransformSfx();
+                    if (typeof _animCard === 'function') _animCard(gameState.selectedCharacter, 'anim-transform', 700);
+                    if (typeof _triggerPowerUp === 'function') _triggerPowerUp(gameState.selectedCharacter, _rmAtk.team);
+                    addLog('🌀 Modo Rikudō: costos /2, daño x2, +3 cargas por turno adicional', 'buff');
+                    renderCharacters(); renderSummons(); endTurn(); return;
+                }
+
+            } else if (ability.effect === 'chibaku_tensei_madara') {
+                const _ctAtk = gameState.characters[gameState.selectedCharacter];
+                const _ctET = _ctAtk ? (_ctAtk.team==='team1'?'team2':'team1') : 'team2';
+                const _ctCrit = Math.random() < 0.50;
+                const _ctDmg = _ctCrit ? finalDamage * 2 : finalDamage;
+                if (_ctCrit) { gameState._isCritHit = true; addLog('🌑 Chibaku Tensei: ¡Crítico!', 'buff'); }
+                if (checkAndRedirectAOEMegaProv(_ctET, _ctDmg, gameState.selectedCharacter)) {
+                    addLog('🌑 Chibaku Tensei: AOE redirigido', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _cc = gameState.characters[_n];
+                        if (!_cc||_cc.team!==_ctET||_cc.isDead||_cc.hp<=0) continue;
+                        if (checkAsprosAOEImmunity(_n,true)||checkMinatoAOEImmunity(_n)) continue;
+                        const _stl = _cc.charges||0; _cc.charges = 0;
+                        if (_ctAtk) _ctAtk.charges = Math.min(20, (_ctAtk.charges||0) + _stl);
+                        applyDamageWithShield(_n, _ctDmg, gameState.selectedCharacter);
+                        addLog('🌑 Chibaku Tensei: ' + _ctDmg + ' daño a ' + _n + ' (-' + _stl + ' cargas)', 'damage');
+                    }
+                }
+                if (_ctCrit && _ctAtk) {
+                    if (_ctAtk.rikudoMode) _ctAtk.charges = Math.min(20, (_ctAtk.charges||0) + 3);
+                    addLog('🌀 Gakido: turno adicional por crítico', 'buff');
+                    if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, _ctAtk.team);
+                    renderCharacters(); renderSummons(); showContinueButton(); return;
+                }
+
+            // ══ SAURON — handlers ══
+
+            } else if (ability.effect === 'voluntad_mordor_sauron') {
+                const _vmTgt = gameState.characters[targetName];
+                const _vmHadBuff = _vmTgt && (_vmTgt.statusEffects||[]).some(e => e && e.type==='buff' && !e.passiveHidden);
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('🌑 Voluntad de Mordor: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (_vmHadBuff && _vmTgt && !_vmTgt.isDead && _vmTgt.hp > 0) {
+                    const _vmBufs = (_vmTgt.statusEffects||[]).filter(e => e && e.type==='buff' && !e.passiveHidden);
+                    if (_vmBufs.length > 0) { const _vmi = _vmTgt.statusEffects.indexOf(_vmBufs[0]); if (_vmi !== -1) _vmTgt.statusEffects.splice(_vmi, 1); }
+                    applyDebuff(targetName, { name: 'Silencio', type: 'debuff', duration: 2, emoji: '🔇' });
+                    attacker.charges = Math.min(20, (attacker.charges||0) + 2);
+                    addLog('🌑 Voluntad de Mordor: buff limpiado + Silencio + 2 cargas', 'buff');
+                }
+
+            } else if (ability.effect === 'mano_negra_sauron') {
+                const _mnAtk = gameState.characters[gameState.selectedCharacter];
+                const _mnET = _mnAtk ? (_mnAtk.team==='team1'?'team2':'team1') : 'team2';
+                const _mnAlly = _mnAtk ? _mnAtk.team : 'team1';
+                let _mnBufHits = 0, _mnEvades = 0;
+                if (checkAndRedirectAOEMegaProv(_mnET, finalDamage, gameState.selectedCharacter)) {
+                    addLog('🖤 Mano Negra: redirigido', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _cc = gameState.characters[_n];
+                        if (!_cc||_cc.team!==_mnET||_cc.isDead||_cc.hp<=0) continue;
+                        if (checkAsprosAOEImmunity(_n,true)) { _mnEvades++; continue; }
+                        if (checkMinatoAOEImmunity(_n)) { _mnEvades++; continue; }
+                        const _hb = (_cc.statusEffects||[]).some(e => e && e.type==='buff' && !e.passiveHidden);
+                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        if (_hb) _mnBufHits++;
+                    }
+                }
+                if (_mnBufHits > 0 && _mnAtk) { _mnAtk.charges = Math.min(20, (_mnAtk.charges||0) + _mnBufHits*2); addLog('🖤 Mano Negra: +' + (_mnBufHits*2) + ' cargas (buffs)', 'buff'); }
+                if (_mnEvades > 0) {
+                    for (const _an in gameState.characters) { const _ac=gameState.characters[_an]; if(!_ac||_ac.isDead||_ac.hp<=0||_ac.team!==_mnAlly) continue; _ac.charges=Math.min(20,(_ac.charges||0)+_mnEvades*3); }
+                    addLog('🖤 Mano Negra: +' + (_mnEvades*3) + ' cargas equipo (esquivas)', 'buff');
+                }
+                addLog('🖤 Mano Negra: ' + finalDamage + ' AOE', 'damage');
+
+            } else if (ability.effect === 'senor_oscuro_sauron') {
+                const _soAtk = gameState.characters[gameState.selectedCharacter];
+                const _soET = _soAtk ? (_soAtk.team==='team1'?'team2':'team1') : 'team2';
+                const _soTgt = gameState.characters[targetName];
+                const _soHasProv = _soTgt && (hasStatusEffect(targetName,'Provocacion')||hasStatusEffect(targetName,'MegaProvocacion')||
+                    (_soTgt.passive&&['Efecto Omega','Hombre de Acero','Señor de los Nazgul'].includes(_soTgt.passive.name)));
+                const _soWas = _soTgt && !_soTgt.isDead;
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('👑 Señor Oscuro: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                const _soNow = gameState.characters[targetName];
+                const _soDied = _soWas && _soNow && (_soNow.isDead||_soNow.hp<=0);
+                if (_soHasProv && _soAtk) {
+                    const _splash = Math.floor((_soAtk.hp||0)*0.50);
+                    Object.keys(gameState.characters).filter(n=>{const _c=gameState.characters[n];return _c&&_c.team===_soET&&!_c.isDead&&_c.hp>0&&n!==targetName;}).sort(()=>Math.random()-0.5).slice(0,2).forEach(n=>{applyDamageWithShield(n,_splash,gameState.selectedCharacter);addLog('👑 Señor Oscuro: '+_splash+' daño a '+n,'damage');});
+                }
+                if (_soDied && _soAtk) {
+                    const _soH = Math.floor((_soAtk.maxHp||25)*0.50);
+                    if (typeof applyHeal==='function') applyHeal(gameState.selectedCharacter,_soH,'Señor Oscuro');
+                    else _soAtk.hp = Math.min(_soAtk.maxHp,(_soAtk.hp||0)+_soH);
+                    addLog('👑 Señor Oscuro: Sauron +' + _soH + ' HP',  'heal');
+                }
+
+            } else if (ability.effect === 'poder_anillo_sauron') {
+                const _paAtk = gameState.characters[gameState.selectedCharacter];
+                if (_paAtk) {
+                    const _paH = Math.floor((_paAtk.hp||0)*0.50);
+                    _paAtk.maxHp = (_paAtk.maxHp||25) + 10;
+                    _paAtk.hp = Math.min(_paAtk.maxHp, (_paAtk.hp||0) + _paH);
+                    applyBuff(gameState.selectedCharacter, {name:'Proteccion Sagrada',type:'buff',duration:3,emoji:'🛡️'});
+                    applyBuff(gameState.selectedCharacter, {name:'Mega Provocacion',type:'buff',duration:3,emoji:'🌑'});
+                    _paAtk.sauronTransformed = true;
+                    addLog('🌑 Poder del Anillo: +' + _paH + ' HP, HP máx +10, Prot Sagrada + MegaProv 3T', 'buff');
+                    renderCharacters(); renderSummons(); endTurn(); return;
+                }            }
 
             // Actualizar UI
             renderCharacters();
