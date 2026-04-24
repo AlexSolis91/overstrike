@@ -166,7 +166,7 @@
                 name: 'Beru',
                 hp: 6, maxHp: 6, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/zvGs9zyZ/Captura_de_pantalla_2026_03_11_150049.png',
-                passive: 'Garras del Abismo: Al final de cada ronda causa 5 de daño en un enemigo aleatorio'
+                passive: 'Garras del Abismo: Al final de cada ronda causa 5 de daño en un enemigo aleatorio + 1 daño adicional por cada carga que tenga ese enemigo.'
             },
             'Bellion': {
                 name: 'Bellion',
@@ -183,8 +183,9 @@
             'Kamish': {
                 name: 'Kamish',
                 hp: 30, maxHp: 30, summoner: null, team: null, statusEffects: [],
-                img: 'https://i.postimg.cc/RhZkjSNk/Captura_de_pantalla_2026_03_11_152341.png',
-                passive: 'Terror de las Sombras: Mega provocacion. Cada vez que es golpeado por un enemigo, causa quemaduras de 4 puntos sobre el enemigo atacante, durante 1 turno.'
+                img: 'https://i.ibb.co/wFPCX3jV/Captura-de-pantalla-2026-04-24-141535.png',
+                kamishNoST: true,
+                passive: 'Terror de las Sombras: No puede ser seleccionado por ataques ST. Mientras esté en batalla, cualquier daño recibido por un aliado genera la misma cantidad de cargas en ese aliado. Al final de cada ronda todos los enemigos reciben 4 de daño.'
             },
             'Sindragosa': {
                 name: 'Sindragosa',
