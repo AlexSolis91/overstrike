@@ -175,9 +175,9 @@ function triggerMaboroshi(targetTeam, debuffName) {
                     registerBuff(gameState.selectedCharacter);
                 }
             }
-            // MONARCA DE LA DESTRUCCION: 3 daño si se aplica Buff a un personaje que es enemigo de Antares
-            // (funciona sin importar quién sea selectedCharacter)
-            if (typeof triggerMonarcaDestruccion === 'function') {
+            // MONARCA DE LA DESTRUCCION: 2 daño si se aplica Buff a un personaje que es enemigo de Antares
+            // Solo disparar si NO estamos en ejecución pasiva (evita doble trigger)
+            if (!passiveExecuting && typeof triggerMonarcaDestruccion === 'function') {
                 triggerMonarcaDestruccion(targetName);
             }
         }
