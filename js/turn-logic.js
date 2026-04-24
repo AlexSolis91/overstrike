@@ -160,6 +160,7 @@
                         // Verificar si murió por quemadura
                         if (currentChar.hp <= 0) {
                             currentChar.isDead = true;
+                if (typeof registerKill === 'function') registerKill('Madara Uchiha', currentCharName, false);
                             addLog(`💀 ${currentCharName} ha sido derrotado por las quemaduras`, 'damage');
                             renderCharacters();
                             
@@ -1375,6 +1376,7 @@
                     const _burnVictim = gameState.characters[gameState.selectedCharacter];
                     if (_burnVictim && _burnVictim.hp <= 0 && !_burnVictim.isDead) {
                         _burnVictim.isDead = true;
+                    if (typeof registerKill === 'function') registerKill(gameState._currentTurnAttacker || 'unknown', _burnVictimName, false);
                         addLog('💀 ' + gameState.selectedCharacter + ' ha sido derrotado por quemaduras', 'damage');
                         renderCharacters();
                     }
@@ -1563,7 +1565,7 @@
                             if (!_c || _c.team !== _dfETeam || _c.isDead || _c.hp <= 0) continue;
                             const _dfLoss = Math.max(1, Math.ceil(_c.hp * 0.10));
                             _c.hp = Math.max(0, _c.hp - _dfLoss);
-                            if (_c.hp <= 0) _c.isDead = true;
+                            if (_c.hp <= 0) { _c.isDead = true; if (typeof registerKill === 'function') registerKill('Dragon Alado de Ra Modo Fenix', _n, false); }
                             addLog('🔥 Luz Divina del Sol: ' + _n + ' pierde ' + _dfLoss + ' HP (10%)', 'damage');
                         }
                         break;
@@ -2082,7 +2084,7 @@
                         const _hasQSDf = (_c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'quemadura solar'; });
                         if (_hasQSDf) {
                             _c.hp = Math.max(0, (_c.hp||0) - 3);
-                            if (_c.hp <= 0) _c.isDead = true;
+                            if (_c.hp <= 0) { _c.isDead = true; if (typeof registerKill === 'function') registerKill('Dragon Alado de Ra Modo Fenix', _n, false); }
                             _c.charges = Math.max(0, (_c.charges||0) - 5);
                             addLog('🔥 Luz Divina del Sol: 3 daño directo -5 cargas a ' + _n + ' (tiene QS)', 'damage');
                         }
