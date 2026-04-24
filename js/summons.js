@@ -2000,7 +2000,9 @@
         }
 
         function triggerMonarcaDestruccion(buffTargetName) {
-            if (passiveExecuting) return; // evitar recursión
+            // Flag dedicado para Antares para evitar recursión sin interferir con otras pasivas
+            if (gameState._antaresExecuting) return;
+            if (passiveExecuting) return;
             const _btC = gameState.characters[buffTargetName];
             if (!_btC || _btC.isDead || _btC.hp <= 0) return;
             // Buscar Antares en el equipo CONTRARIO al objetivo del buff
@@ -2010,6 +2012,7 @@
                 if (!_ac || _ac.isDead || _ac.hp <= 0 || _ac.team !== _antTeam) continue;
                 if (!_ac.passive || _ac.passive.name !== 'Monarca de la Destruccion') continue;
                 // 2 daño directo al objetivo
+                gameState._antaresExecuting = true;
                 passiveExecuting = true;
                 const _btOldHp = _btC.hp;
                 _btC.hp = Math.max(0, (_btC.hp||0) - 2);
@@ -2021,6 +2024,7 @@
                     addLog('🔥 Monarca de la Destruccion: ' + _an + ' gana 1 carga (daño directo)', 'buff');
                 }
                 passiveExecuting = false;
+                gameState._antaresExecuting = false;
                 break;
             }
         }
