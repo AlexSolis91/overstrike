@@ -1653,9 +1653,36 @@
                 // BUFF REFLEJAR: cuando el portador recibe un ataque, refleja el daño al atacante y NO recibe daño
                 if (!passiveExecuting && hasStatusEffect(targetName, 'Reflejar') && attackerName && attackerName !== targetName && damage > 0) {
                     passiveExecuting = true;
+                    // Nuevo Reflejar: el portador NO recibe daño ni efectos.
+                    // Refleja el daño y efectos del movimiento sobre el atacante.
+                    // 50% de disiparse después de reflejar.
                     const reflectDmg = damage;
                     applyDamageWithShield(attackerName, reflectDmg, targetName);
-                    addLog('🪞 Reflejar: ' + attackerName + ' recibe ' + reflectDmg + ' daño reflejado — ' + targetName + ' no recibe daño', 'buff');
+                    addLog('🪞 Reflejar: ' + targetName + ' refleja ' + reflectDmg + ' daño a ' + attackerName + ' (sin daño al portador)', 'buff');
+                    // También aplicar efectos del movimiento al atacante (debuffs que el movimiento iba a causar)
+                    if (gameState.selectedAbility) {
+                        const _refAb = gameState.selectedAbility;
+                        if (_refAb.effect && typeof applyDebuff === 'function') {
+                            // Aplicar veneno si el movimiento lo causaría
+                            if (_refAb.description && (_refAb.description.toLowerCase().includes('veneno') || _refAb.description.toLowerCase().includes('poison'))) {
+                                applyPoison(attackerName, 1);
+                                addLog('🪞 Reflejar: Veneno reflejado a ' + attackerName, 'debuff');
+                            }
+                            // Aplicar quemadura si el movimiento lo causaría
+                            if (_refAb.description && _refAb.description.toLowerCase().includes('quemadura')) {
+                                applyFlatBurn(attackerName, 2, 1);
+                                addLog('🪞 Reflejar: Quemadura reflejada a ' + attackerName, 'debuff');
+                            }
+                        }
+                    }
+                    // 50% de disiparse el Reflejar
+                    if (Math.random() < 0.50) {
+                        const _refTgtC = gameState.characters[targetName];
+                        if (_refTgtC) {
+                            _refTgtC.statusEffects = (_refTgtC.statusEffects||[]).filter(e => !e || e.name !== 'Reflejar');
+                            addLog('🪞 Reflejar: el buff se disipó (50%)', 'info');
+                        }
+                    }
                     passiveExecuting = false;
                     return 0; // El portador NO recibe el daño
                 }
@@ -1902,12 +1929,12 @@
                 const _ac = gameState.characters[_an];
                 if (!_ac || _ac.isDead || _ac.hp <= 0 || _ac.team !== _antTeam) continue;
                 if (!_ac.passive || _ac.passive.name !== 'Monarca de la Destruccion') continue;
-                // 3 daño directo al objetivo (attackerName=null = daño directo)
+                // 2 daño directo al objetivo
                 passiveExecuting = true;
                 const _btOldHp = _btC.hp;
-                _btC.hp = Math.max(0, (_btC.hp||0) - 3);
+                _btC.hp = Math.max(0, (_btC.hp||0) - 2);
                 if (_btC.hp <= 0) _btC.isDead = true;
-                addLog('🔥 Monarca de la Destruccion: 3 daño directo a ' + buffTargetName + ' (Buff aplicado sobre enemigo)', 'damage');
+                addLog('🔥 Monarca de la Destruccion: 2 daño directo a ' + buffTargetName + ' (Buff aplicado sobre enemigo)', 'damage');
                 // Generar 1 carga por el daño directo causado
                 if (_btOldHp > _btC.hp) {
                     _ac.charges = Math.min(20, (_ac.charges||0) + 1);
