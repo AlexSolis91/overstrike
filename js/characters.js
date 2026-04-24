@@ -61,8 +61,8 @@
                 passive: { name: 'Bendicion Sagrada', description: 'Efecto pasivo Esquiva Area. Cada vez que un aliado recupera HP, genera 2 cargas en un aliado aleatorio.' },
                 abilities: [
                     { name: 'Curación Mágica', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'ally_single', effect: 'heal_ally', heal: 3, description: 'Recupera 3 HP a un aliado de tu elección.' },
-                    { name: 'Protección Celestial', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'dispel_ally_charges', description: 'Disipar los debuffs del aliado objetivo y por cada debuff Disipado genera +1 carga sobre el aliado objetivo.' },
-                    { name: 'Sanación Heroica', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_team', effect: 'heal_all_allies', heal: 4, description: 'Recupera 4 HP a todos tus aliados.' },
+                    { name: 'Protección Celestial', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'dispel_ally_charges', description: 'Limpia 1 debuff activo de cada aliado. Por cada debuff limpiado: +1 HP y +1 carga a todo el equipo aliado.' },
+                    { name: 'Sanación Heroica', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_team', effect: 'heal_all_allies', heal: 4, description: 'Sacrifica el 50% de su HP actual. Cura esa cantidad de HP a todos los aliados del equipo (excepto Min Byung). Min Byung recibe Regeneración 25% por 2 turnos.' },
                     { name: 'Milagro de la vida', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'ally_dead', effect: 'revive_ally', description: 'Revive a un aliado caído con 100% de su HP y 10 cargas.' }
                 ]
             },
@@ -797,7 +797,7 @@
                 passive: { name: 'Reino de las Sombras', description: 'Inicio de ronda: 50% de aplicar Aura Oscura a cada aliado. Cada vez que una invocación de ambos equipos es eliminada, Marik genera 3 cargas. Mientras el Dragón Alado de Ra o Ra Modo Fénix estén activos, Marik no puede recibir daño por golpes.' },
                 abilities: [
                     { name: 'Orden de los Cuidatumba', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'single', effect: 'orden_cuidatumba_marik', description: 'Causa 1 daño. Inflige +7 de daño adicional a invocaciones.' },
-                    { name: 'Canto del Sol', type: 'special', cost: 0, chargeGain: 0, damage: 0, target: 'self', effect: 'canto_sol_marik', description: 'Invoca el Huevo del Sol en el equipo enemigo.' },
+                    { name: 'Canto del Sol', type: 'special', cost: 0, chargeGain: 0, damage: 0, target: 'self', effect: 'canto_sol_marik', description: 'Invoca el Huevo del Sol en el equipo enemigo. Se bloquea si el Huevo del Sol ya está activo en el campo.' },
                     { name: 'Profecia del Faraon', type: 'special', cost: 10, chargeGain: 0, damage: 4, target: 'aoe', effect: 'profecia_faraon_marik', description: 'Causa 4 AOE. Aplica debuff Quemadura Solar a todos los enemigos. Causa +1 daño adicional por cada invocación activa en ambos equipos.' },
                     { name: 'Inmortal Fénix', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'self', effect: 'inmortal_fenix_marik', description: 'Solo usable si hay un Dragón Alado de Ra en campo. Elimina al Dragón Alado de Ra e invoca al Dragón Alado de Ra Modo Fénix.' }
                 ]
@@ -857,11 +857,11 @@
             },
 
             'Tirion Fordring': {
-                hp: 30, maxHp: 30, speed: 83, charges: 0, team: 'team1',
+                hp: 25, maxHp: 25, speed: 83, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 tirionLowHpTriggered: false,
                 portrait: 'https://i.ibb.co/mrcVTbh7/Whats-App-Image-2026-04-16-at-3-22-08-PM.jpg',
-                passive: { name: 'Paladín de la Mano de Plata', description: 'Si llega a 10 HP: Protección Sagrada + Escudo Sagrado + 20 cargas (solo una vez). Cada vez que un enemigo usa Over: +3 HP y +5 cargas al equipo aliado.' },
+                passive: { name: 'Paladín de la Mano de Plata', description: 'Si llega a 10 HP: Protección Sagrada + Escudo Sagrado + 20 cargas (solo una vez). Cada vez que un enemigo usa Over: +3 HP y +3 cargas al equipo aliado.' },
                 abilities: [
                     { name: 'Luz del Alba', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'aoe', effect: 'luz_del_alba_tirion', description: 'Causa 1 AOE. Cura 1 HP al equipo aliado. Aplica Aura de Luz al equipo aliado.' },
                     { name: 'Protección de la Luz', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'proteccion_luz_tirion', description: 'Cura 3 HP al objetivo aliado. Disipa sus debuffs. Por cada debuff disipado, el objetivo genera 2 cargas.' },
