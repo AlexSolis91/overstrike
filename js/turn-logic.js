@@ -1742,6 +1742,26 @@
                         }
                     })();
 
+                    // ── PRESENCIA OSCURA (Darth Vader): inicio de ronda → 50% Miedo a cada enemigo ──
+                    (function() {
+                        for (const _dvN in gameState.characters) {
+                            const _dvC = gameState.characters[_dvN];
+                            if (!_dvC || _dvC.isDead || !_dvC.passive) continue;
+                            if (_dvC.passive.name !== 'Presencia Oscura') continue;
+                            const _dvET = _dvC.team === 'team1' ? 'team2' : 'team1';
+                            for (const _n in gameState.characters) {
+                                const _ec = gameState.characters[_n];
+                                if (!_ec || _ec.team !== _dvET || _ec.isDead || _ec.hp <= 0) continue;
+                                if (Math.random() < 0.50) {
+                                    if (typeof applyFear === 'function') applyFear(_n, 1);
+                                    else if (typeof applyDebuff === 'function') applyDebuff(_n, { name: 'Miedo', type: 'debuff', duration: 1, emoji: '😱' });
+                                    addLog('🌑 Presencia Oscura: Miedo aplicado a ' + _n, 'debuff');
+                                }
+                            }
+                            break;
+                        }
+                    })();
+
                     // ── LLAMARADA KUSANAGI (Kyo): inicio de ronda → Aura de Fuego a 2 aliados aleatorios ──
                     (function() {
                         for (const _kyoN in gameState.characters) {
