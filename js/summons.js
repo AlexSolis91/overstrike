@@ -1188,6 +1188,35 @@
             if (isNaN(target.hp)) target.hp = 0;
             if (isNaN(remainingDamage)) remainingDamage = 0;
             const oldHp = target.hp;
+            // ── BUFF REFLEJAR: interceptar ANTES de aplicar el daño (portador no recibe daño)
+            {
+                const _refIsSTAttack = gameState.selectedAbility &&
+                    (gameState.selectedAbility.target === 'single' ||
+                     gameState.selectedAbility.type === 'basic');
+                if (!passiveExecuting && _refIsSTAttack && remainingDamage > 0 &&
+                    hasStatusEffect(targetName, 'Reflejar') &&
+                    attackerName && attackerName !== targetName) {
+                    passiveExecuting = true;
+                    // Reflejar daño al atacante — portador NO recibe nada
+                    applyDamageWithShield(attackerName, remainingDamage, targetName);
+                    addLog('🪞 Reflejar: ' + targetName + ' refleja ' + remainingDamage + ' daño a ' + attackerName + ' (portador protegido)', 'buff');
+                    // Reflejar debuffs del movimiento al atacante
+                    if (gameState.selectedAbility) {
+                        const _desc = ((gameState.selectedAbility.description)||'').toLowerCase();
+                        if (_desc.includes('veneno') || _desc.includes('poison')) { applyPoison(attackerName, 1); addLog('🪞 Reflejar: Veneno reflejado a ' + attackerName, 'debuff'); }
+                        if (_desc.includes('quemadura')) { applyFlatBurn(attackerName, 2, 1); addLog('🪞 Reflejar: Quemadura reflejada a ' + attackerName, 'debuff'); }
+                        if (_desc.includes('aturdimiento') || _desc.includes('stun')) { if (typeof applyStun === 'function') applyStun(attackerName, 1); addLog('🪞 Reflejar: Aturdimiento reflejado a ' + attackerName, 'debuff'); }
+                    }
+                    // 50% de disiparse
+                    if (Math.random() < 0.50) {
+                        target.statusEffects = (target.statusEffects||[]).filter(function(e){ return !e || e.name !== 'Reflejar'; });
+                        addLog('🪞 Reflejar: el buff se disipó (50%)', 'info');
+                    }
+                    passiveExecuting = false;
+                    return 0; // Portador NO recibe daño
+                }
+            }
+
             target.hp = Math.max(0, target.hp - remainingDamage);
 
             // ── SINDRAGOSA Dragon de la Muerte: cuando Lich King recibe daño → 5 dmg al atacante ──
@@ -1693,46 +1722,7 @@
                 triggerOzyPassive(targetName, attackerName);
                 // CONTRAATAQUE (Darth Vader, Goku UI, cualquier personaje con buff)
                 if (!passiveExecuting) triggerCounterattack(targetName, attackerName);
-                // BUFF REFLEJAR: cuando el portador recibe un ataque, refleja el daño al atacante y NO recibe daño
-                // REFLEJAR: solo aplica en ataques ST (basic, special, over con target single)
-                    const _refIsSTAttack = gameState.selectedAbility &&
-                        (gameState.selectedAbility.target === 'single' ||
-                         gameState.selectedAbility.type === 'basic');
-                    if (!passiveExecuting && _refIsSTAttack && hasStatusEffect(targetName, 'Reflejar') &&
-                        attackerName && attackerName !== targetName && damage > 0) {
-                    passiveExecuting = true;
-                    // El portador NO recibe daño ni efectos — refleja todo al atacante
-                    const reflectDmg = damage;
-                    applyDamageWithShield(attackerName, reflectDmg, targetName);
-                    addLog('🪞 Reflejar: ' + targetName + ' refleja ' + reflectDmg + ' daño a ' + attackerName + ' (portador no recibe daño)', 'buff');
-                    // Reflejar debuffs del movimiento al atacante
-                    if (gameState.selectedAbility) {
-                        const _refAb = gameState.selectedAbility;
-                        const _desc = (_refAb.description||'').toLowerCase();
-                        if (_desc.includes('veneno') || _desc.includes('poison')) {
-                            applyPoison(attackerName, 1);
-                            addLog('🪞 Reflejar: Veneno reflejado a ' + attackerName, 'debuff');
-                        }
-                        if (_desc.includes('quemadura')) {
-                            applyFlatBurn(attackerName, 2, 1);
-                            addLog('🪞 Reflejar: Quemadura reflejada a ' + attackerName, 'debuff');
-                        }
-                        if (_desc.includes('aturdimiento') || _desc.includes('stun')) {
-                            if (typeof applyStun === 'function') applyStun(attackerName, 1);
-                            addLog('🪞 Reflejar: Aturdimiento reflejado a ' + attackerName, 'debuff');
-                        }
-                    }
-                    // 50% de disiparse el Reflejar
-                    if (Math.random() < 0.50) {
-                        const _refTgtC = gameState.characters[targetName];
-                        if (_refTgtC) {
-                            _refTgtC.statusEffects = (_refTgtC.statusEffects||[]).filter(function(e){ return !e || e.name !== 'Reflejar'; });
-                            addLog('🪞 Reflejar: el buff se disipó (50%)', 'info');
-                        }
-                    }
-                    passiveExecuting = false;
-                    return 0; // El portador NO recibe el daño
-                }
+                // BUFF REFLEJAR: interceptado antes del daño (ver arriba en applyDamageWithShield)
                 // AURA DE FUEGO: atacante recibe Quemadura 2HP por 2 turnos
                 if (attackerName && (hasStatusEffect(targetName, 'Aura de fuego') || hasStatusEffect(targetName, 'Aura de Fuego'))) {
                     const _prevPE = passiveExecuting;
