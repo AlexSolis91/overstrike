@@ -5385,19 +5385,24 @@
                     addLog('💪 ¡SAITAMA MODE! ' + gameState.selectedCharacter + ' activa -2 daño recibido y +2 daño en todos los ataques permanente', 'buff');
                 }
             } else if (ability.effect === 'golpe_serio_saitama') {
-                // SAITAMA — Golpe Serio: 6 dmg, triple if target has Prov or MegaProv
+                // SAITAMA — Golpe Serio: 6 daño. Daño triple si objetivo tiene Provocación o MegaProvocación (buff O pasiva)
                 const _gsTgt = gameState.characters[targetName];
-                let _gsDmg = finalDamage;
-                const _gsHasProv = _gsTgt && (_gsTgt.statusEffects||[]).some(function(e){
+                // Check buff activo de Provocación/MegaProvocación
+                const _gsProvBuff = _gsTgt && (_gsTgt.statusEffects||[]).some(function(e){
                     return e && (normAccent(e.name||'') === 'provocacion' || normAccent(e.name||'') === 'megaprovocacion');
                 });
-                const _gsHasMegaProv = typeof checkKamishMegaProvocation === 'function' &&
-                    checkKamishMegaProvocation(_gsTgt ? _gsTgt.team : 'team2');
-                if (_gsHasProv || _gsHasMegaProv) {
-                    _gsDmg *= 3;
-                    addLog('💥 Golpe Serio: ¡DAÑO TRIPLE por Provocación!', 'damage');
-                } else if (Math.random() < 0.50) {
-                    // crit_50_serious still has 50% crit
+                // Check pasiva de Provocación (Señor de los Nazgul, Hombre de Acero, Efecto Omega, Mega Provocacion)
+                const _gsProvPassive = _gsTgt && _gsTgt.passive && (
+                    _gsTgt.passive.name === 'Señor de los Nazgul' ||
+                    _gsTgt.passive.name === 'Hombre de Acero' ||
+                    _gsTgt.passive.name === 'Efecto Omega' ||
+                    _gsTgt.passive.name === 'Mega Provocacion'
+                );
+                const _gsHasProv = _gsProvBuff || _gsProvPassive;
+                let _gsDmg = _gsHasProv ? finalDamage * 3 : finalDamage;
+                if (_gsHasProv) {
+                    gameState._isCritHit = true;
+                    addLog('💥 Golpe Serio: ¡DAÑO TRIPLE! ' + targetName + ' tiene Provocación' + (_gsProvPassive ? ' (pasiva)' : ' (buff activo)'), 'buff');
                 }
                 applyDamageWithShield(targetName, _gsDmg, gameState.selectedCharacter);
                 addLog('💥 Golpe Serio: ' + _gsDmg + ' daño a ' + targetName, 'damage');
@@ -7905,21 +7910,35 @@
                 const _mfET = _mfAtk ? (_mfAtk.team==='team1'?'team2':'team1') : 'team2';
                 for (const _n in gameState.characters) {
                     const _cc = gameState.characters[_n];
-                    if (!_cc||_cc.team!==_mfET||_cc.isDead||_cc.hp<=0) continue;
-                    // Ignora Esquiva Área: no usar checkAspros/checkMinato
-                    const _mfHadBurn = (_cc.statusEffects||[]).some(function(e){ return e && (e.name==='Quemadura'||e.name==='quemadura'); });
+                    if (!_cc || _cc.team !== _mfET || _cc.isDead || _cc.hp <= 0) continue;
+                    // IGNORA Esquiva Área — no llamar checkAsprosAOEImmunity ni checkMinatoAOEImmunity
+                    // Verificar si tenía Quemadura ANTES de disipar buffs
+                    const _mfHadBurn = (_cc.statusEffects||[]).some(function(e){ return e && (e.name === 'Quemadura' || e.name === 'quemadura'); });
                     // Disipar buffs ANTES del golpe
-                    const _mfBufs = (_cc.statusEffects||[]).filter(function(e){ return e&&e.type==='buff'&&!e.permanent&&!e.passiveHidden; });
+                    const _mfBufs = (_cc.statusEffects||[]).filter(function(e){ return e && e.type === 'buff' && !e.permanent && !e.passiveHidden; });
                     if (_mfBufs.length > 0) {
-                        _cc.statusEffects = (_cc.statusEffects||[]).filter(function(e){ return !e||e.type!=='buff'||e.permanent||e.passiveHidden; });
+                        _cc.statusEffects = (_cc.statusEffects||[]).filter(function(e){ return !e || e.type !== 'buff' || e.permanent || e.passiveHidden; });
                         addLog('🔥 Mar de Fuego: ' + _mfBufs.length + ' buff(s) disipados de ' + _n, 'debuff');
                     }
+                    // Calcular daño — si tenía Quemadura: crítico (daño doble)
                     let _mfDmg = finalDamage;
-                    if (_mfHadBurn) { _mfDmg *= 2; gameState._isCritHit = true; addLog('🔥 Mar de Fuego: ¡Crítico! ' + _n + ' tenía Quemadura', 'buff'); }
+                    if (_mfHadBurn) {
+                        _mfDmg = finalDamage * 2;
+                        gameState._isCritHit = true;
+                        addLog('🔥 Mar de Fuego: ¡Crítico 100%! ' + _n + ' tenía Quemadura activa', 'buff');
+                    }
                     applyDamageWithShield(_n, _mfDmg, gameState.selectedCharacter);
+                    // Aplicar Quemadura 1HP después del daño
                     applyFlatBurn(_n, 1, 2);
+                    addLog('🔥 Mar de Fuego: ' + _mfDmg + ' daño + Quemadura a ' + _n, 'damage');
                 }
-                addLog('🔥 Mar de Fuego: 4 AOE completado (ignora Esquiva Área)', 'damage');
+                // Daño también a invocaciones enemigas
+                for (const _sid in gameState.summons) {
+                    const _ss = gameState.summons[_sid];
+                    if (!_ss || _ss.team !== _mfET || _ss.hp <= 0) continue;
+                    applySummonDamage(_sid, finalDamage, gameState.selectedCharacter);
+                }
+                addLog('🔥 Mar de Fuego: AOE completado (ignora Esquiva Área)', 'damage');
 
             } else if (ability.effect === 'tigre_fuego_rengoku') {
                 // Tigre de Fuego: 3 AOE + Quemadura 1HP. Si ya tenían Quemadura: +1 carga al equipo aliado por cada Quemadura activa en equipo enemigo
