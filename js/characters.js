@@ -62,7 +62,7 @@
                 abilities: [
                     { name: 'Curación Mágica', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'ally_single', effect: 'heal_ally', heal: 3, description: 'Recupera 3 HP a un aliado de tu elección.' },
                     { name: 'Protección Celestial', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'dispel_ally_charges', description: 'Limpia 1 debuff activo de cada aliado. Por cada debuff limpiado: +1 HP y +1 carga a todo el equipo aliado.' },
-                    { name: 'Sanación Heroica', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_team', effect: 'heal_all_allies', heal: 4, description: 'Sacrifica el 50% de su HP actual. Cura esa cantidad de HP a todos los aliados del equipo (excepto Min Byung). Min Byung recibe Regeneración 25% por 2 turnos.' },
+                    { name: 'Sanación Heroica', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'ally_team', effect: 'heal_all_allies', heal: 4, description: 'Sacrifica el 50% de su HP actual. Cura esa cantidad de HP a todos los aliados del equipo (excepto Min Byung). Min Byung recibe Regeneración 25% por 3 turnos.' },
                     { name: 'Milagro de la vida', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'ally_dead', effect: 'revive_ally', description: 'Revive a un aliado caído con 100% de su HP y 10 cargas.' }
                 ]
             },
@@ -671,7 +671,7 @@
                 antaresTransformed: false, antaresTransformTurns: 0,
                 portrait: 'https://i.ibb.co/Fprz6Sh/Captura-de-pantalla-2026-04-06-101230.png',
                 transformPortrait: 'https://i.ibb.co/t1CXkkY/Captura-de-pantalla-2026-04-06-101549.png',
-                passive: { name: 'Monarca de la Destruccion', description: 'Por cada Buff aplicado sobre un enemigo, aplica 3 daño directo sobre ese enemigo (Antares genera 1 carga por ese daño). Inmune a Quemaduras y Quemadura Solar. Cada vez que un enemigo recibe daño directo (quemaduras, veneno, efectos), Antares genera 1 carga. El daño por golpe no cuenta.' },
+                passive: { name: 'Monarca de la Destruccion', description: 'Por cada Buff aplicado sobre un enemigo, aplica 2 daño directo sobre ese enemigo (Antares genera 1 carga por ese daño). Inmune a Quemaduras y Quemadura Solar. Cada vez que un enemigo recibe daño directo (quemaduras, veneno, efectos), Antares genera 1 carga. El daño por golpe no cuenta.' },
                 abilities: [
                     { name: "Dragon's Fear", type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'aoe', effect: 'dragons_fear_antares', description: "Causa 1 AOE. 50% de aplicar Miedo 2T a los objetivos. 30% de daño triple sobre enemigos con Miedo o Quemaduras." },
                     { name: 'Tormenta de Fuego', type: 'special', cost: 5, chargeGain: 0, damage: 3, target: 'single', effect: 'tormenta_fuego_antares', description: 'Causa 3 daño al objetivo. Aplica Quemadura 2HP a todos los enemigos. Si el enemigo tiene Buff activo, la Quemadura es de 5HP en lugar de 2HP.' },
