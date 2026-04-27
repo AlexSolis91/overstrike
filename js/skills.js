@@ -6911,7 +6911,11 @@
                            ability.effect !== 'furia_caraxes_daemon' &&
                            ability.effect !== 'ojo_dioses_daemon' &&
                            ability.effect !== 'ilusion_diabolica_ikki' &&
-                           ability.effect !== 'despertar_fenix_ikki') {
+                           ability.effect !== 'despertar_fenix_ikki' &&
+                           ability.effect !== 'sol_ascendente_rengoku' &&
+                           ability.effect !== 'purgatorio_rengoku' &&
+                           ability.effect !== 'corte_oscuro_vader' &&
+                           ability.effect !== 'intimidacion_sith') {
                 // Daño a un solo objetivo (genérico — solo para ataques SIN handler propio)
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 addLog(`⚔️ ${gameState.selectedCharacter} usa ${ability.name} en ${targetName} causando ${finalDamage} de daño`, 'damage');
@@ -6922,7 +6926,9 @@
                        ability.effect !== 'sol_ascendente' &&
                        ability.effect !== 'profecia_faraon_marik' &&
                        ability.effect !== 'hou_yoku_tenshou_ikki' &&
-                       ability.effect !== 'skill_drain') {
+                       ability.effect !== 'skill_drain' &&
+                       ability.effect !== 'mar_fuego_rengoku' &&
+                       ability.effect !== 'tigre_fuego_rengoku') {
                 // ── GENÉRICO AOE: con Mega Provocación y Esquiva Área ──
                 const attackerTeam = attacker.team;
                 const targetTeam = attackerTeam === 'team1' ? 'team2' : 'team1';
@@ -7868,6 +7874,138 @@
                     _paAtk.sauronTransformed = true;
                     addLog('🌑 Poder del Anillo: +' + _paH + ' HP, HP máx +10, Prot Sagrada + MegaProvocación 3T activa', 'buff');
                     renderCharacters(); renderSummons(); endTurn(); return;
+                }
+            // ══ RENGOKU — handlers nuevos ══
+
+            } else if (ability.effect === 'sol_ascendente_rengoku') {
+                // Sol Ascendente: 2 daño + Quemadura 1HP. Si objetivo tenía Quemadura: +1 dmg por cada Quemadura activa en equipo enemigo
+                const _saRAtk = gameState.characters[gameState.selectedCharacter];
+                const _saRETeam = _saRAtk ? (_saRAtk.team==='team1'?'team2':'team1') : 'team2';
+                const _saRTgt = gameState.characters[targetName];
+                const _saRHadBurn = _saRTgt && (_saRTgt.statusEffects||[]).some(function(e){ return e && (e.name==='Quemadura'||e.name==='quemadura'); });
+                let _saRDmg = finalDamage;
+                if (_saRHadBurn) {
+                    // Contar quemaduras activas en equipo enemigo
+                    let _qCount = 0;
+                    for (const _n in gameState.characters) {
+                        const _cc = gameState.characters[_n];
+                        if (!_cc||_cc.team!==_saRETeam||_cc.isDead) continue;
+                        _qCount += (_cc.statusEffects||[]).filter(function(e){ return e && (e.name==='Quemadura'||e.name==='quemadura'); }).length;
+                    }
+                    _saRDmg += _qCount;
+                    addLog('🔥 Sol Ascendente: +' + _qCount + ' daño (Quemaduras activas en el equipo enemigo)', 'buff');
+                }
+                applyDamageWithShield(targetName, _saRDmg, gameState.selectedCharacter);
+                addLog('🔥 Sol Ascendente: ' + _saRDmg + ' daño a ' + targetName, 'damage');
+                applyFlatBurn(targetName, 1, 2);
+
+            } else if (ability.effect === 'mar_fuego_rengoku') {
+                // Mar de Fuego: 4 AOE. Ignora Esquiva Área. Disipa buffs. Quemadura 1HP. Si ya tenían Quemadura: 100% crítico
+                const _mfAtk = gameState.characters[gameState.selectedCharacter];
+                const _mfET = _mfAtk ? (_mfAtk.team==='team1'?'team2':'team1') : 'team2';
+                for (const _n in gameState.characters) {
+                    const _cc = gameState.characters[_n];
+                    if (!_cc||_cc.team!==_mfET||_cc.isDead||_cc.hp<=0) continue;
+                    // Ignora Esquiva Área: no usar checkAspros/checkMinato
+                    const _mfHadBurn = (_cc.statusEffects||[]).some(function(e){ return e && (e.name==='Quemadura'||e.name==='quemadura'); });
+                    // Disipar buffs ANTES del golpe
+                    const _mfBufs = (_cc.statusEffects||[]).filter(function(e){ return e&&e.type==='buff'&&!e.permanent&&!e.passiveHidden; });
+                    if (_mfBufs.length > 0) {
+                        _cc.statusEffects = (_cc.statusEffects||[]).filter(function(e){ return !e||e.type!=='buff'||e.permanent||e.passiveHidden; });
+                        addLog('🔥 Mar de Fuego: ' + _mfBufs.length + ' buff(s) disipados de ' + _n, 'debuff');
+                    }
+                    let _mfDmg = finalDamage;
+                    if (_mfHadBurn) { _mfDmg *= 2; gameState._isCritHit = true; addLog('🔥 Mar de Fuego: ¡Crítico! ' + _n + ' tenía Quemadura', 'buff'); }
+                    applyDamageWithShield(_n, _mfDmg, gameState.selectedCharacter);
+                    applyFlatBurn(_n, 1, 2);
+                }
+                addLog('🔥 Mar de Fuego: 4 AOE completado (ignora Esquiva Área)', 'damage');
+
+            } else if (ability.effect === 'tigre_fuego_rengoku') {
+                // Tigre de Fuego: 3 AOE + Quemadura 1HP. Si ya tenían Quemadura: +1 carga al equipo aliado por cada Quemadura activa en equipo enemigo
+                const _tfAtk = gameState.characters[gameState.selectedCharacter];
+                const _tfET = _tfAtk ? (_tfAtk.team==='team1'?'team2':'team1') : 'team2';
+                const _tfAlly = _tfAtk ? _tfAtk.team : 'team1';
+                let _tfAnyHadBurn = false;
+                if (checkAndRedirectAOEMegaProv(_tfET, finalDamage, gameState.selectedCharacter)) {
+                    addLog('🔥 Tigre de Fuego: AOE redirigido', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _cc = gameState.characters[_n];
+                        if (!_cc||_cc.team!==_tfET||_cc.isDead||_cc.hp<=0) continue;
+                        if (checkAsprosAOEImmunity(_n,true)||checkMinatoAOEImmunity(_n)) continue;
+                        const _hadB = (_cc.statusEffects||[]).some(function(e){ return e&&(e.name==='Quemadura'||e.name==='quemadura'); });
+                        if (_hadB) _tfAnyHadBurn = true;
+                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        applyFlatBurn(_n, 1, 2);
+                    }
+                }
+                if (_tfAnyHadBurn) {
+                    // Contar quemaduras activas en equipo enemigo
+                    let _qcTotal = 0;
+                    for (const _n in gameState.characters) {
+                        const _cc = gameState.characters[_n];
+                        if (!_cc||_cc.team!==_tfET||_cc.isDead) continue;
+                        _qcTotal += (_cc.statusEffects||[]).filter(function(e){ return e&&(e.name==='Quemadura'||e.name==='quemadura'); }).length;
+                    }
+                    for (const _an in gameState.characters) {
+                        const _ac = gameState.characters[_an];
+                        if (!_ac||_ac.team!==_tfAlly||_ac.isDead||_ac.hp<=0) continue;
+                        _ac.charges = Math.min(20, (_ac.charges||0) + _qcTotal);
+                    }
+                    addLog('🔥 Tigre de Fuego: +' + _qcTotal + ' cargas al equipo aliado (' + _qcTotal + ' Quemaduras activas en equipo enemigo)', 'buff');
+                }
+                addLog('🔥 Tigre de Fuego: 3 AOE + Quemadura 1HP', 'damage');
+
+            } else if (ability.effect === 'purgatorio_rengoku') {
+                // Purgatorio: 7 daño + Mega Aturdimiento. Si objetivo tenía Quemadura: +2 daño directo por cada Quemadura activa en ambos equipos
+                const _pgAtk = gameState.characters[gameState.selectedCharacter];
+                const _pgTgt = gameState.characters[targetName];
+                const _pgHadBurn = _pgTgt && (_pgTgt.statusEffects||[]).some(function(e){ return e&&(e.name==='Quemadura'||e.name==='quemadura'); });
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('🔥 Novena Postura: Purgatorio — ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (_pgTgt && !_pgTgt.isDead && _pgTgt.hp > 0) applyStun(targetName, 2);
+                if (_pgHadBurn) {
+                    // Contar quemaduras en AMBOS equipos
+                    let _pgQTotal = 0;
+                    for (const _n in gameState.characters) {
+                        const _cc = gameState.characters[_n];
+                        if (!_cc||_cc.isDead) continue;
+                        _pgQTotal += (_cc.statusEffects||[]).filter(function(e){ return e&&(e.name==='Quemadura'||e.name==='quemadura'); }).length;
+                    }
+                    const _pgBonusDmg = _pgQTotal * 2;
+                    if (_pgBonusDmg > 0 && _pgTgt && !_pgTgt.isDead && _pgTgt.hp > 0) {
+                        _pgTgt.hp = Math.max(0, (_pgTgt.hp||0) - _pgBonusDmg);
+                        if (_pgTgt.hp <= 0) { _pgTgt.isDead = true; registerKill(gameState.selectedCharacter, targetName, false); }
+                        addLog('🔥 Purgatorio: +' + _pgBonusDmg + ' daño directo (' + _pgQTotal + ' Quemaduras activas × 2)', 'damage');
+                    }
+                }
+
+            // ══ DARTH VADER — handlers nuevos ══
+
+            } else if (ability.effect === 'corte_oscuro_vader') {
+                // Corte Oscuro: 2 daño. Si objetivo tenía Miedo activo antes: Darth Vader se aplica Reflejar
+                const _cdTgt = gameState.characters[targetName];
+                const _cdHadFear = _cdTgt && hasStatusEffect(targetName, 'Miedo');
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('⚫ Corte Oscuro: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (_cdHadFear) {
+                    if (typeof applyBuff === 'function') applyBuff(gameState.selectedCharacter, { name: 'Reflejar', type: 'buff', duration: 3, emoji: '🪞' });
+                    addLog('⚫ Corte Oscuro: Darth Vader se aplica Reflejar (objetivo tenía Miedo)', 'buff');
+                }
+
+            } else if (ability.effect === 'intimidacion_sith') {
+                // Intimidación Sith: 6 daño + 3 daño directo por cada buff activo en el objetivo
+                const _isTgt = gameState.characters[targetName];
+                const _isAtk = gameState.characters[gameState.selectedCharacter];
+                const _isBufs = _isTgt ? (_isTgt.statusEffects||[]).filter(function(e){ return e&&e.type==='buff'&&!e.passiveHidden; }).length : 0;
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('⚫ Intimidación Sith: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (_isBufs > 0 && _isTgt && !_isTgt.isDead && _isTgt.hp > 0) {
+                    const _isBonusDmg = _isBufs * 3;
+                    _isTgt.hp = Math.max(0, (_isTgt.hp||0) - _isBonusDmg);
+                    if (_isTgt.hp <= 0) { _isTgt.isDead = true; registerKill(gameState.selectedCharacter, targetName, false); }
+                    addLog('⚫ Intimidación Sith: +' + _isBonusDmg + ' daño directo (' + _isBufs + ' buffs × 3)', 'damage');
                 }            }
 
             // Actualizar UI
