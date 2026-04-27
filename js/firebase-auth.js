@@ -602,6 +602,78 @@
         // ════════════════════════════════════════════════
         let rtPickingTeam = 'attack'; // 'attack' | 'defense'
         let rtPickingSlot = -1;
+        let rtFilterRole = 'all';
+        let rtFilterSpec = 'all';
+        let rtPendingConfirmName = null; // personaje pendiente de confirmar en ranked
+
+        // ── Tabla de roles y especialidades ──
+        const RT_CHAR_ROLES = {
+            'Madara Uchiha':        { roles: ['DPS'], specs: ['Golpe Critico','Turnos adicionales','Transformacion'] },
+            'Sun Jin Woo':          { roles: ['Invoker','Crowd Control'], specs: ['Sigilo','Generacion de Cargas','Eliminacion de Cargas','Quemaduras'] },
+            'Aldebaran':            { roles: ['Tanque','DPS'], specs: ['Provocacion','Escudo'] },
+            'Leonidas':             { roles: ['Support'], specs: ['Limpiador de Debuffs','Generacion de Cargas','Regeneracion HP','Aturdimiento'] },
+            'Min Byung':            { roles: ['Healer','Support'], specs: ['Curacion HP','Limpiador de Debuffs','Generacion de Cargas','Revividor','Esquiva Area'] },
+            'Rengoku':              { roles: ['DPS','Dotter'], specs: ['Quemaduras','Aturdimiento','Generacion de Cargas'] },
+            'Aspros de Gemini':     { roles: ['Crowd Control'], specs: ['Limpiador de Buffs','Roba Cargas','Generacion de Cargas','Esquiva Area','Confusion'] },
+            'Ymir':                 { roles: ['Tanque','Crowd Control','Support'], specs: ['Provocacion','Sangrado','Congelacion','Megacongelacion','Espinas','Golpe Critico','Limpiador de Debuffs'] },
+            'Thestalos':            { roles: ['Tanque','Dotter'], specs: ['Contraataque','Provocacion','Quemaduras','Curacion HP','Escudo Sagrado','Golpe Critico','Daño triple'] },
+            'Alexstrasza':          { roles: ['Healer','Dotter'], specs: ['Curacion HP','Escudo','Aura de Fuego','Transformacion','Regeneracion HP','Aura de Luz'] },
+            'Anakin Skywalker':     { roles: ['DPS'], specs: ['Asistir','Golpe Critico','Eliminacion de Cargas','Aturdimiento','Miedo','Transformacion','Reflejar'] },
+            'Goku':                 { roles: ['DPS'], specs: ['Contraataque','Furia','Transformacion','Eliminacion de Cargas'] },
+            'Ragnar Lothbrok':      { roles: ['DPS'], specs: ['Sangrado','Miedo'] },
+            'Saitama':              { roles: ['DPS'], specs: ['Inmunidades','Furia','Daño triple','Insta Kill'] },
+            'Ozymandias':           { roles: ['Invoker','Crowd Control'], specs: ['Quemadura Solar','Curacion HP','Eliminacion de Cargas'] },
+            'Gilgamesh':            { roles: ['DPS','Crowd Control'], specs: ['Golpe Critico','Eliminacion de Cargas','Anti Invoker','Roba Cargas'] },
+            'Goku Black':           { roles: ['DPS','Crowd Control','Invoker'], specs: ['Aura Oscura','Roba Cargas','Golpe Critico','Aturdimiento','Eliminacion de Cargas'] },
+            'Saga de Geminis':      { roles: ['DPS','Crowd Control'], specs: ['Aumento de Velocidad','Posesion','Mega Posesion'] },
+            'Minato Namikaze':      { roles: ['Crowd Control','Support'], specs: ['Esquiva Area','Celeridad','Aturdimiento','Congelacion','Posesion','Quemadura Solar','Sangrado','Miedo','Confusion','Debilitar','Silenciar','Roba Cargas','Generacion de Cargas'] },
+            'Muzan Kibutsuji':      { roles: ['DPS','Dotter'], specs: ['Curacion HP','Veneno','Transformacion'] },
+            'Nakime':               { roles: ['Crowd Control','Support'], specs: ['Confusion','Roba Cargas','Roba HP','Inmunidades'] },
+            'Sauron':               { roles: ['Tanque','DPS'], specs: ['Aturdimiento','Mega provocacion','Curacion HP','Silenciar'] },
+            'Darth Vader':          { roles: ['DPS','Crowd Control'], specs: ['Aura Oscura','Miedo','Aturdimiento','Reflejar'] },
+            'Lich King':            { roles: ['Tanque','Invoker','Crowd Control'], specs: ['Revividor','Congelacion','Aura Gelida','Roba HP','Inmunidades'] },
+            'Padme Amidala':        { roles: ['Support'], specs: ['Generacion de Cargas','Escudo','Limpiador de Debuffs'] },
+            'Daenerys Targaryen':   { roles: ['Invoker','Dotter','Healer'], specs: ['Quemaduras','Escudo Sagrado','Curacion HP','Inmunidades'] },
+            'Tamayo':               { roles: ['Support','Healer'], specs: ['Limpiador de Debuffs','Curacion HP','Regeneracion HP','Confusion'] },
+            'Emperador Palpatine':  { roles: ['Crowd Control'], specs: ['Aturdimiento','Posesion','Curacion HP','Mega Aturdimiento'] },
+            'Gandalf':              { roles: ['Healer','Support'], specs: ['Curacion HP','Provocacion','Regeneracion HP','Aura de Luz','Armadura','Inmunidades','Escudo'] },
+            'Doomsday':             { roles: ['Tanque','Crowd Control'], specs: ['Aturdimiento','Mega Aturdimiento','Curacion HP','Eliminacion de Cargas'] },
+            'Ikki de Fenix':        { roles: ['DPS','Dotter'], specs: ['Revive','Quemaduras','Eliminacion de Cargas'] },
+            'Linterna Verde':       { roles: ['Tanque','Support'], specs: ['Provocacion','Esquivar','Limpiador de Debuffs','Mega Aturdimiento','Curacion HP','Generacion de Cargas'] },
+            'Vegeta':               { roles: ['DPS'], specs: ['Transformacion','Limpiador de Buffs','Daño triple','Debilitar','Sangrado','Revive'] },
+            'Giyu Tomioka':         { roles: ['Tanque'], specs: ['Escudo','Mega Provocacion','Armadura'] },
+            'Itachi Uchiha':        { roles: ['Support','Dotter','Crowd Control'], specs: ['Posesion','Limpiador de debuffs','Quemaduras','Anti Invoker','Roba Cargas','Mega Aturdimiento','Debilitar'] },
+            'Garou':                { roles: ['DPS'], specs: ['Transformacion','Armadura','Veneno','Infectar'] },
+            'Tanjiro Kamado':       { roles: ['Support'], specs: ['Generacion de Cargas','Roba Cargas','Eliminacion de Cargas'] },
+            'The Joker':            { roles: ['Dotter','Crowd Control'], specs: ['Veneno','Aturdimiento'] },
+            'Batman':               { roles: ['Crowd Control','Support'], specs: ['Inmunidades','Aturdimiento','Roba Cargas','Esquiva Area','Silenciar','Eliminacion de Cargas'] },
+            'Superman':             { roles: ['Tanque'], specs: ['Curacion HP','Reduccion de Daño','Provocacion','Limpiador de Buffs','Quemadura Solar','Congelacion','Debilitar','Anti Invoker','Transformacion','Inmunidades'] },
+            'Kratos':               { roles: ['DPS'], specs: ['Sangrado','Mega Aturdimiento','Daño triple','Insta Kill'] },
+            'Shaka de Virgo':       { roles: ['Tanque','Healer','Support','Crowd Control'], specs: ['Provocacion','Curacion HP','Regeneracion HP','Generacion de Cargas','Mega posesion','Agotamiento'] },
+            'Varian Wrynn':         { roles: ['DPS'], specs: ['Golpe Critico','Regeneracion HP','Miedo','Aumento de Velocidad','Daño doble'] },
+            'Ivar the Boneless':    { roles: ['DPS','Support'], specs: ['Esquiva Area','Inmunidades','Reduccion de Velocidad','Aumento de Velocidad','Generacion de Cargas','Mega posesion'] },
+            'Lagertha':             { roles: ['Tanque','Support'], specs: ['Provocacion','Reflejar','Escudo','Proteccion Sagrada','Asistir'] },
+            'Shinobu Kocho':        { roles: ['Healer','Dotter','Support'], specs: ['Veneno','Curacion HP','Concentracion','Generacion de Cargas'] },
+            'Rey Brujo de Angmar':  { roles: ['Tanque','Dotter'], specs: ['Inmunidades','Provocacion','Infectar','Curacion HP','Eliminacion de Cargas'] },
+            'Flash':                { roles: ['DPS'], specs: ['Turnos adicionales','Esquiva Area','Esquivar','Roba Cargas','Golpe Critico'] },
+            'Naruto':               { roles: ['DPS'], specs: ['Transformacion','Mega Aturdimiento','Debilitar','Sangrado','Turnos Adicionales','Quemaduras'] },
+            'Jon Snow':             { roles: ['Support','Invoker'], specs: ['Esquiva Area','Revive','Mega Aturdimiento','Veneno'] },
+            'Antares':              { roles: ['DPS','Dotter'], specs: ['Quemaduras','Inmunidades','Miedo','Daño triple','Transformacion'] },
+            'Sasuke Uchiha':        { roles: ['DPS'], specs: ['Turnos adicionales','Roba Cargas','Agotamiento','Golpe Critico'] },
+            'Douma':                { roles: ['Support','Crowd Control','Invoker'], specs: ['Curacion HP','Congelacion','Megacongelacion','Generacion de Cargas'] },
+            'Jaina Proudmoore':     { roles: ['DPS','Crowd Control'], specs: ['Congelacion','Daño triple','Megacongelacion','Limpiador de Debuffs','Proteccion Sagrada','Eliminacion de Cargas','Reduccion de Velocidad'] },
+            'Gaara':                { roles: ['Support','Crowd Control'], specs: ['Aturdimiento','Reduccion de Velocidad','Anti Invoker','Daño triple','Roba Cargas','Escudo Sagrado','Insta Kill'] },
+            'Rey de la Noche':      { roles: ['Crowd Control'], specs: ['Inmunidades','Anti Invoker','Congelacion','Posesion','Megacongelacion','Revividor','Daño triple'] },
+            'Darkseid':             { roles: ['Tanque'], specs: ['Mega Provocacion','Roba HP','Golpe Critico','Anti Invoker'] },
+            'Escanor':              { roles: ['DPS','Tanque'], specs: ['Quemadura Solar','Transformacion'] },
+            'Yorichi':              { roles: ['DPS','Crowd Control'], specs: ['Quemadura Solar','Golpe Critico','Quemaduras'] },
+            'Marik Ishtar':         { roles: ['Invoker','Crowd Control'], specs: ['Quemadura Solar','Aura Oscura','Anti Invoker','Eliminacion de Cargas'] },
+            'Daemon Targaryen':     { roles: ['DPS','Dotter'], specs: ['Daño triple','Golpe Critico','Quemaduras','Limpiador de Buffs'] },
+            'Manigoldo':            { roles: ['DPS'], specs: ['Roba HP','Roba Cargas','Mega Aturdimiento'] },
+            'Kyo Kusanagi':         { roles: ['Support','Dotter'], specs: ['Aura de Fuego','Quemaduras','Silenciar','Roba HP','Roba Cargas'] },
+            'Iori Yagami':          { roles: ['DPS','Support'], specs: ['Generacion de Cargas','Aumento de Velocidad','Roba Cargas','Daño doble','Eliminacion de Cargas'] },
+            'Tirion Fordring':      { roles: ['Healer','Support'], specs: ['Proteccion Sagrada','Escudo Sagrado','Curacion HP','Generacion de Cargas','Aura de Luz','Limpiador de Debuffs','Revividor'] },
+        };
         let rtAttackTeam = [];   // up to 5 char names
         let rtDefenseTeam = [];  // up to 5 char names
 
@@ -678,6 +750,11 @@
 
         function hideRankedTeamScreen() {
             document.getElementById('rankedTeamScreen').style.display = 'none';
+            // Limpiar filtros y estado al cerrar
+            rtFilterRole = 'all'; rtFilterSpec = 'all';
+            const filtersRow = document.getElementById('rtFiltersRow');
+            if (filtersRow) filtersRow.remove();
+            rtCloseConfirm();
         }
 
         function rtRender() {
@@ -715,38 +792,143 @@
             }
         }
 
+        // ── Colectar todas las especialidades únicas para el filtro ──
+        function rtGetAllSpecs() {
+            const specs = new Set();
+            Object.values(RT_CHAR_ROLES).forEach(function(d){ (d.specs||[]).forEach(function(s){ specs.add(s); }); });
+            return Array.from(specs).sort();
+        }
+
+        // ── Render de filtros encima del grid ──
+        function rtRenderFilters(containerEl) {
+            if (document.getElementById('rtFiltersRow')) return; // ya existe
+            const allRoles = ['all','DPS','Tanque','Healer','Support','Crowd Control','Invoker','Dotter'];
+            const allSpecs = ['all', ...rtGetAllSpecs()];
+
+            const wrap = document.createElement('div');
+            wrap.id = 'rtFiltersRow';
+            wrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;align-items:center;';
+
+            // Rol
+            const rolLabel = document.createElement('span');
+            rolLabel.textContent = 'Rol:';
+            rolLabel.style.cssText = 'font-size:.75rem;color:#aaa;font-family:Orbitron,sans-serif;white-space:nowrap;';
+            wrap.appendChild(rolLabel);
+
+            const rolSel = document.createElement('select');
+            rolSel.id = 'rtFilterRolSel';
+            rolSel.style.cssText = 'background:#0a1628;border:1px solid #4fc3f7;color:#4fc3f7;border-radius:8px;padding:5px 10px;font-size:.75rem;cursor:pointer;font-family:Orbitron,sans-serif;';
+            allRoles.forEach(function(r){
+                const o = document.createElement('option');
+                o.value = r; o.textContent = r === 'all' ? '🎮 Todos' : r;
+                rolSel.appendChild(o);
+            });
+            rolSel.value = rtFilterRole;
+            rolSel.onchange = function(){ rtFilterRole = this.value; rtRenderGrid(); };
+            wrap.appendChild(rolSel);
+
+            // Separador
+            const sep = document.createElement('span');
+            sep.style.cssText = 'width:1px;height:20px;background:rgba(255,255,255,0.1);';
+            wrap.appendChild(sep);
+
+            // Especialidad
+            const specLabel = document.createElement('span');
+            specLabel.textContent = 'Especialidad:';
+            specLabel.style.cssText = 'font-size:.75rem;color:#aaa;font-family:Orbitron,sans-serif;white-space:nowrap;';
+            wrap.appendChild(specLabel);
+
+            const specSel = document.createElement('select');
+            specSel.id = 'rtFilterSpecSel';
+            specSel.style.cssText = 'background:#0a1628;border:1px solid #c864ff;color:#c864ff;border-radius:8px;padding:5px 10px;font-size:.75rem;cursor:pointer;font-family:Orbitron,sans-serif;max-width:220px;';
+            allSpecs.forEach(function(s){
+                const o = document.createElement('option');
+                o.value = s; o.textContent = s === 'all' ? '⭐ Todas' : s;
+                specSel.appendChild(o);
+            });
+            specSel.value = rtFilterSpec;
+            specSel.onchange = function(){ rtFilterSpec = this.value; rtRenderGrid(); };
+            wrap.appendChild(specSel);
+
+            // Contador
+            const counter = document.createElement('span');
+            counter.id = 'rtFilterCounter';
+            counter.style.cssText = 'font-size:.7rem;color:#555;margin-left:auto;white-space:nowrap;';
+            wrap.appendChild(counter);
+
+            containerEl.parentElement.insertBefore(wrap, containerEl);
+        }
+
         function rtRenderGrid() {
             const grid = document.getElementById('rtCharGrid');
             if (!grid || typeof characterData === 'undefined') return;
+
+            // Inyectar filtros si no existen
+            rtRenderFilters(grid);
+            // Sincronizar selects con estado actual
+            const rs = document.getElementById('rtFilterRolSel');
+            const ss = document.getElementById('rtFilterSpecSel');
+            if (rs) rs.value = rtFilterRole;
+            if (ss) ss.value = rtFilterSpec;
+
             grid.innerHTML = '';
             const usedAttack  = new Set(rtAttackTeam.filter(Boolean));
             const usedDefense = new Set(rtDefenseTeam.filter(Boolean));
             const allUsed = new Set([...usedAttack, ...usedDefense]);
 
+            let shown = 0;
+            const normF = function(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); };
+
             Object.keys(characterData).forEach(function(name) {
                 const cd = characterData[name];
                 if (!cd || !cd.abilities) return;
+
+                // Aplicar filtro
+                const roleData = RT_CHAR_ROLES[name];
+                if (rtFilterRole !== 'all') {
+                    if (!roleData || !roleData.roles.some(function(r){ return normF(r) === normF(rtFilterRole); })) return;
+                }
+                if (rtFilterSpec !== 'all') {
+                    if (!roleData || !roleData.specs.some(function(s){ return normF(s) === normF(rtFilterSpec); })) return;
+                }
+
+                shown++;
                 const inAttack  = usedAttack.has(name);
                 const inDefense = usedDefense.has(name);
                 const blocked   = allUsed.has(name);
                 const portrait  = getCharPortrait(name);
+
                 const card = document.createElement('div');
+                card.title = name;
                 card.style.cssText = 'position:relative;border-radius:10px;overflow:hidden;cursor:' + (blocked ? 'not-allowed' : 'pointer') +
                     ';opacity:' + (blocked ? '0.35' : '1') + ';transition:all .15s;border:2px solid ' +
                     (inAttack ? '#4fc3f7' : inDefense ? '#c864ff' : 'rgba(255,255,255,0.1)') + ';';
+
+                // Mostrar rol como badge si hay filtro
+                const roleBadge = (roleData && roleData.roles[0] && rtFilterRole === 'all')
+                    ? '<div style="position:absolute;top:3px;left:3px;background:rgba(0,0,0,0.75);color:#aaa;border-radius:3px;padding:1px 3px;font-size:.48rem;line-height:1.2;max-width:90%;white-space:nowrap;overflow:hidden;">' + roleData.roles[0] + '</div>'
+                    : '';
+
                 card.innerHTML = [
                     '<img src="' + portrait + '" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;" referrerpolicy="no-referrer">',
-                    '<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.75);padding:3px 4px;font-size:.6rem;color:#ccc;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(name.split(' ')[0]) + '</div>',
+                    '<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.8);padding:3px 4px;font-size:.6rem;color:#ccc;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(name.split(' ')[0]) + '</div>',
                     inAttack  ? '<div style="position:absolute;top:3px;right:3px;background:#4fc3f7;color:#000;border-radius:4px;padding:1px 4px;font-size:.55rem;font-weight:700;">ATK</div>' : '',
-                    inDefense ? '<div style="position:absolute;top:3px;left:3px;background:#c864ff;color:#000;border-radius:4px;padding:1px 4px;font-size:.55rem;font-weight:700;">DEF</div>' : '',
+                    inDefense ? '<div style="position:absolute;top:3px;' + (inAttack?'left':'right') + ':3px;background:#c864ff;color:#000;border-radius:4px;padding:1px 4px;font-size:.55rem;font-weight:700;">DEF</div>' : '',
+                    roleBadge
                 ].join('');
+
                 if (!blocked) {
-                    card.onmouseover = function() { this.style.transform = 'scale(1.06)'; };
-                    card.onmouseout  = function() { this.style.transform = 'scale(1)'; };
-                    card.onclick = function() { rtPickChar(name); };
+                    card.onmouseover = function() { this.style.transform = 'scale(1.06)'; this.style.boxShadow = '0 0 12px rgba(79,195,247,0.4)'; };
+                    card.onmouseout  = function() { this.style.transform = 'scale(1)'; this.style.boxShadow = 'none'; };
+                    card.onclick = (function(n){ return function(){ rtShowConfirm(n); }; })(name);
                 }
                 grid.appendChild(card);
             });
+
+            // Actualizar contador
+            const counter = document.getElementById('rtFilterCounter');
+            if (counter) counter.textContent = shown + ' personajes';
+
             // Update picking label
             const lbl = document.getElementById('rtPickingFor');
             if (lbl) {
@@ -754,10 +936,90 @@
                     lbl.textContent = (rtPickingTeam === 'attack' ? '🗡️ Equipo de Ataque' : '🛡️ Equipo de Defensa') + ' — Slot ' + (rtPickingSlot + 1);
                     lbl.style.color = rtPickingTeam === 'attack' ? '#4fc3f7' : '#c864ff';
                 } else {
-                    lbl.textContent = 'Haz clic en un slot vacío o ocupado para reemplazarlo';
+                    lbl.textContent = 'Haz clic en un slot vacío o en el grid para seleccionar';
                     lbl.style.color = '#666';
                 }
             }
+        }
+
+        // ── Modal de confirmación estilo csShowDetail ──
+        function rtShowConfirm(name) {
+            if (typeof characterData === 'undefined') return;
+            const char = characterData[name];
+            if (!char) return;
+            rtPendingConfirmName = name;
+
+            const teamColor = rtPickingTeam === 'attack' ? '#4fc3f7' : '#c864ff';
+            const teamLabel = rtPickingTeam === 'attack' ? '🗡️ Equipo de Ataque' : '🛡️ Equipo de Defensa';
+
+            // Crear overlay
+            let overlay = document.getElementById('rtConfirmOverlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'rtConfirmOverlay';
+                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:6000;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;';
+                overlay.onclick = function(e){ if(e.target===overlay) rtCloseConfirm(); };
+                document.body.appendChild(overlay);
+            }
+
+            const portrait = getCharPortrait(name);
+            const passiveName = char.passive ? char.passive.name : '';
+            const passiveDesc = char.passive ? char.passive.description : '';
+            const roleData = RT_CHAR_ROLES[name];
+            const roles = roleData ? roleData.roles.join(' · ') : '';
+
+            const abilitiesHtml = (char.abilities || []).map(function(ab){
+                const typeColor = ab.type === 'over' ? '#ffd700' : ab.type === 'special' ? '#c864ff' : '#4fc3f7';
+                return '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 12px;">' +
+                    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
+                    '<span style="font-weight:700;font-size:.8rem;color:#fff;">' + escapeHtml(ab.name||'') + '</span>' +
+                    '<span style="font-size:.65rem;color:' + typeColor + ';text-transform:uppercase;font-family:Orbitron,sans-serif;">' + (ab.type||'') + '</span>' +
+                    '</div>' +
+                    '<p style="font-size:.72rem;color:#bbb;margin:0 0 6px;line-height:1.4;">' + escapeHtml(ab.description||'') + '</p>' +
+                    '<div style="display:flex;align-items:center;gap:6px;">' +
+                    '<span style="background:rgba(255,170,0,0.15);border:1px solid rgba(255,170,0,0.4);color:#ffaa00;border-radius:6px;padding:2px 8px;font-size:.7rem;">💎 ' + (ab.cost||0) + '</span>' +
+                    '</div>' +
+                    '</div>';
+            }).join('');
+
+            overlay.innerHTML = '<div style="background:linear-gradient(135deg,#0a0f1e,#0d1425);border:2px solid ' + teamColor + ';border-radius:16px;padding:24px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 0 40px rgba(0,0,0,0.8);">' +
+                // Hero row
+                '<div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:16px;">' +
+                '<img src="' + portrait + '" style="width:90px;height:90px;border-radius:12px;object-fit:cover;border:2px solid ' + teamColor + ';flex-shrink:0;" referrerpolicy="no-referrer">' +
+                '<div style="flex:1;min-width:0;">' +
+                '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;font-weight:900;color:' + teamColor + ';margin-bottom:4px;">' + escapeHtml(name) + '</div>' +
+                '<div style="font-size:.72rem;color:#888;margin-bottom:6px;">⚡ VEL: ' + (char.speed||'—') + '  &nbsp; ❤️ HP: ' + (char.maxHp||char.hp||'—') + '</div>' +
+                (roles ? '<div style="font-size:.68rem;color:#aaa;background:rgba(255,255,255,0.06);border-radius:6px;padding:3px 8px;display:inline-block;">' + roles + '</div>' : '') +
+                '</div>' +
+                '</div>' +
+                // Pasiva
+                (passiveName ? '<div style="background:rgba(255,170,0,0.07);border:1px solid rgba(255,170,0,0.2);border-radius:10px;padding:10px 12px;margin-bottom:14px;">' +
+                    '<div style="font-size:.72rem;color:#ffaa00;font-weight:700;margin-bottom:4px;">✨ PASIVA: ' + escapeHtml(passiveName) + '</div>' +
+                    '<div style="font-size:.72rem;color:#ccc;line-height:1.4;">' + escapeHtml(passiveDesc) + '</div>' +
+                    '</div>' : '') +
+                // Habilidades
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">' + abilitiesHtml + '</div>' +
+                // Pregunta
+                '<div style="text-align:center;font-size:.85rem;color:#ddd;margin-bottom:14px;">¿Añadir <strong style="color:' + teamColor + ';">' + escapeHtml(name) + '</strong> a <strong style="color:' + teamColor + ';">' + teamLabel + '</strong>?</div>' +
+                // Botones
+                '<div style="display:flex;gap:10px;">' +
+                '<button onclick="rtConfirmChar(true)" style="flex:1;padding:12px;background:linear-gradient(135deg,#003a1a,#00aa55);border:2px solid #00ff88;color:#00ff88;border-radius:12px;font-family:Orbitron,sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;letter-spacing:.05em;">✅ Sí, seleccionar</button>' +
+                '<button onclick="rtConfirmChar(false)" style="flex:1;padding:12px;background:rgba(255,51,102,0.1);border:2px solid #ff3366;color:#ff3366;border-radius:12px;font-family:Orbitron,sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;letter-spacing:.05em;">❌ No, cancelar</button>' +
+                '</div>' +
+                '</div>';
+        }
+
+        function rtCloseConfirm() {
+            const ov = document.getElementById('rtConfirmOverlay');
+            if (ov) ov.remove();
+            rtPendingConfirmName = null;
+        }
+
+        function rtConfirmChar(yes) {
+            const name = rtPendingConfirmName;
+            rtCloseConfirm();
+            if (!yes || !name) return;
+            rtPickChar(name);
         }
 
         function rtSelectSlot(teamType, slotIdx) {
