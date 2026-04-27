@@ -1401,14 +1401,15 @@
                         if (_atkChar.team === 'team1') gameState.battleStats.team1Damage += remainingDamage;
                         else gameState.battleStats.team2Damage += remainingDamage;
                     }
-                    // Crítico: marcar via flag explícito o daño >= 2× base
-                    // El flag _isCritHit se setea en los skills que garantizan crit
+                    // Crítico: SOLO si el flag _isCritHit está activo (daño real = 2× base garantizado)
+                    // O si remainingDamage es exactamente el doble del damage base de la habilidad
                     if (gameState._isCritHit) {
                         registerCrit(attackerName);
                         gameState._isCritHit = false;
                     } else {
                         const _abDmg = gameState.selectedAbility ? (gameState.selectedAbility.damage || 0) : 0;
-                        if (_abDmg > 0 && remainingDamage >= Math.floor(_abDmg * 1.8)) {
+                        // Solo crit si el daño es exactamente 2× el base (no buffs de 1.8× u otros)
+                        if (_abDmg > 0 && remainingDamage >= _abDmg * 2) {
                             registerCrit(attackerName);
                         }
                     }
