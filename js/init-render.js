@@ -147,6 +147,13 @@
                     ch.statusEffects = ch.statusEffects || [];
                     ch.statusEffects.push({ name: 'Provocacion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🛡️' });
                 }
+                // Darth Vader: Aura Oscura permanente (Presencia Oscura)
+                if (baseName === 'Darth Vader') {
+                    ch.statusEffects = ch.statusEffects || [];
+                    if (!ch.statusEffects.some(function(e){ return e && e.name === 'Aura oscura'; })) {
+                        ch.statusEffects.push({ name: 'Aura oscura', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🌑' });
+                    }
+                }
                 // Rey Brujo de Angmar: Provocación + Infectar permanentes (Señor de los Nazgul)
                 if (baseName === 'Rey Brujo de Angmar') {
                     ch.statusEffects = ch.statusEffects || [];
