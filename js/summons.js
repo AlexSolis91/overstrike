@@ -1694,35 +1694,39 @@
                 // CONTRAATAQUE (Darth Vader, Goku UI, cualquier personaje con buff)
                 if (!passiveExecuting) triggerCounterattack(targetName, attackerName);
                 // BUFF REFLEJAR: cuando el portador recibe un ataque, refleja el daño al atacante y NO recibe daño
-                if (!passiveExecuting && hasStatusEffect(targetName, 'Reflejar') && attackerName && attackerName !== targetName && damage > 0) {
+                // REFLEJAR: solo aplica en ataques ST (basic, special, over con target single)
+                    const _refIsSTAttack = gameState.selectedAbility &&
+                        (gameState.selectedAbility.target === 'single' ||
+                         gameState.selectedAbility.type === 'basic');
+                    if (!passiveExecuting && _refIsSTAttack && hasStatusEffect(targetName, 'Reflejar') &&
+                        attackerName && attackerName !== targetName && damage > 0) {
                     passiveExecuting = true;
-                    // Nuevo Reflejar: el portador NO recibe daño ni efectos.
-                    // Refleja el daño y efectos del movimiento sobre el atacante.
-                    // 50% de disiparse después de reflejar.
+                    // El portador NO recibe daño ni efectos — refleja todo al atacante
                     const reflectDmg = damage;
                     applyDamageWithShield(attackerName, reflectDmg, targetName);
-                    addLog('🪞 Reflejar: ' + targetName + ' refleja ' + reflectDmg + ' daño a ' + attackerName + ' (sin daño al portador)', 'buff');
-                    // También aplicar efectos del movimiento al atacante (debuffs que el movimiento iba a causar)
+                    addLog('🪞 Reflejar: ' + targetName + ' refleja ' + reflectDmg + ' daño a ' + attackerName + ' (portador no recibe daño)', 'buff');
+                    // Reflejar debuffs del movimiento al atacante
                     if (gameState.selectedAbility) {
                         const _refAb = gameState.selectedAbility;
-                        if (_refAb.effect && typeof applyDebuff === 'function') {
-                            // Aplicar veneno si el movimiento lo causaría
-                            if (_refAb.description && (_refAb.description.toLowerCase().includes('veneno') || _refAb.description.toLowerCase().includes('poison'))) {
-                                applyPoison(attackerName, 1);
-                                addLog('🪞 Reflejar: Veneno reflejado a ' + attackerName, 'debuff');
-                            }
-                            // Aplicar quemadura si el movimiento lo causaría
-                            if (_refAb.description && _refAb.description.toLowerCase().includes('quemadura')) {
-                                applyFlatBurn(attackerName, 2, 1);
-                                addLog('🪞 Reflejar: Quemadura reflejada a ' + attackerName, 'debuff');
-                            }
+                        const _desc = (_refAb.description||'').toLowerCase();
+                        if (_desc.includes('veneno') || _desc.includes('poison')) {
+                            applyPoison(attackerName, 1);
+                            addLog('🪞 Reflejar: Veneno reflejado a ' + attackerName, 'debuff');
+                        }
+                        if (_desc.includes('quemadura')) {
+                            applyFlatBurn(attackerName, 2, 1);
+                            addLog('🪞 Reflejar: Quemadura reflejada a ' + attackerName, 'debuff');
+                        }
+                        if (_desc.includes('aturdimiento') || _desc.includes('stun')) {
+                            if (typeof applyStun === 'function') applyStun(attackerName, 1);
+                            addLog('🪞 Reflejar: Aturdimiento reflejado a ' + attackerName, 'debuff');
                         }
                     }
                     // 50% de disiparse el Reflejar
                     if (Math.random() < 0.50) {
                         const _refTgtC = gameState.characters[targetName];
                         if (_refTgtC) {
-                            _refTgtC.statusEffects = (_refTgtC.statusEffects||[]).filter(e => !e || e.name !== 'Reflejar');
+                            _refTgtC.statusEffects = (_refTgtC.statusEffects||[]).filter(function(e){ return !e || e.name !== 'Reflejar'; });
                             addLog('🪞 Reflejar: el buff se disipó (50%)', 'info');
                         }
                     }
