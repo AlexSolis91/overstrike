@@ -3472,7 +3472,7 @@
                 }
                 // Buff Regeneracion 25% por 2T a Min Byung
                 const _haRegen = Math.ceil((attacker.maxHp||20) * 0.25);
-                if (typeof applyBuff === 'function') applyBuff(gameState.selectedCharacter, { name: 'Regeneracion', type: 'buff', duration: 2, emoji: '💖', amount: _haRegen });
+                if (typeof applyBuff === 'function') applyBuff(gameState.selectedCharacter, { name: 'Regeneracion', type: 'buff', duration: 3, emoji: '💖', amount: _haRegen });
                 addLog('💖 Sanación Heroica: Min Byung obtiene Regeneración 25% por 2T', 'buff');
 
             } else if (ability.effect === 'dispel_ally_charges') {
@@ -7144,12 +7144,14 @@
                     if (!_c || _c.team !== _okETeam || _c.isDead || _c.hp <= 0) continue;
                     const _hasBurn = (_c.statusEffects||[]).some(function(e){ return e && (e.name === 'Quemadura' || e.name === 'Quemadura Solar'); });
                     if (!_hasBurn) continue;
-                    // Robar 2 HP
-                    const _hpSteal = Math.min(2, _c.hp);
-                    _c.hp = Math.max(0, _c.hp - _hpSteal);
-                    if (_c.hp <= 0) { _c.isDead = true; registerKill(gameState.selectedCharacter, _n, false); }
-                    if (_okAtk && typeof applyHeal === 'function') applyHeal(gameState.selectedCharacter, _hpSteal, 'Oniyaki');
-                    else if (_okAtk) _okAtk.hp = Math.min(_okAtk.maxHp, (_okAtk.hp||0) + _hpSteal);
+                    // Robar 2 HP via applyDamageWithShield (registra kills y daño correctamente)
+                    const _hpBefore = _c.hp;
+                    applyDamageWithShield(_n, 2, gameState.selectedCharacter);
+                    const _hpSteal = Math.min(2, _hpBefore - Math.max(0, _c.hp));
+                    if (_hpSteal > 0) {
+                        if (_okAtk && typeof applyHeal === 'function') applyHeal(gameState.selectedCharacter, _hpSteal, 'Oniyaki');
+                        else if (_okAtk) _okAtk.hp = Math.min(_okAtk.maxHp, (_okAtk.hp||0) + _hpSteal);
+                    }
                     // Robar 2 cargas
                     const _chSteal = Math.min(2, _c.charges || 0);
                     _c.charges = Math.max(0, (_c.charges||0) - _chSteal);
@@ -8156,7 +8158,7 @@
             const bs = gameState.battleStats || {};
             let score = 0;
             // 1. Kills × 10
-            score += (bs.killMap && bs.killMap[charName] || 0) * 10;
+            score += (bs.killMap && bs.killMap[charName] || 0) * 15;
             // 2. Cargas propias × 0.5
             score += (bs.chargesGenSelf && bs.chargesGenSelf[charName] || 0) * 0.5;
             // 3. Cargas a aliados × 1.5
@@ -8253,7 +8255,7 @@
                 }
 
                 const rows = [
-                    kills   > 0 ? _row('💀','Kills',          kills,   kills * 10)          : '',
+                    kills   > 0 ? _row('💀','Kills',          kills,   kills * 15)          : '',
                     dmgDone > 0 ? _row('⚔️','Daño causado',   Math.round(dmgDone), Math.round(dmgDone * 0.15 * 10)/10) : '',
                     crgSelf > 0 ? _row('⚡','Cargas propias',  crgSelf, crgSelf * 0.5)       : '',
                     crgAlly > 0 ? _row('⚡','Cargas a aliados',crgAlly, crgAlly * 1.5)       : '',
