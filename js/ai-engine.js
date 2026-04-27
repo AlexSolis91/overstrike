@@ -578,20 +578,20 @@
                     if (ab.target === 'single') {
                         // Taunt/MegaProv rules — always respected
                         const sauronBypass = sauronIgnoresRestrictions();
+                        // Detección dinámica de Provocación — buff activo O pasiva
                         let aiTauntTarget = null;
-                        for (const _n of ['Aldebaran', 'Thestalos']) {
-                            const _c = gameState.characters[_n] || gameState.characters[_n + ' v2'];
-                            const _name = gameState.characters[_n] ? _n : (_c ? _n + ' v2' : null);
-                            if (_name && gameState.characters[_name] && gameState.characters[_name].team === enemyTeam &&
-                                !gameState.characters[_name].isDead && gameState.characters[_name].hp > 0) {
-                                aiTauntTarget = _name; break;
+                        for (let _n in gameState.characters) {
+                            const _c = gameState.characters[_n];
+                            if (!_c || _c.team !== enemyTeam || _c.isDead || _c.hp <= 0) continue;
+                            // Buff activo de Provocación (tiene prioridad — break inmediato)
+                            if (_c.statusEffects && _c.statusEffects.some(e => e && normAccent(e.name||'') === 'provocacion')) {
+                                aiTauntTarget = _n; break;
                             }
-                        }
-                        if (!aiTauntTarget) {
-                            for (let _n in gameState.characters) {
-                                const _c = gameState.characters[_n];
-                                if (!_c || _c.team !== enemyTeam || _c.isDead || _c.hp <= 0) continue;
-                                if (_c.statusEffects && _c.statusEffects.some(e => e && normAccent(e.name||'') === 'provocacion')) { aiTauntTarget = _n; break; }
+                            // Pasiva de Provocación (Señor de los Nazgul, Hombre de Acero, Efecto Omega)
+                            if (_c.passive && (_c.passive.name === 'Señor de los Nazgul' ||
+                                               _c.passive.name === 'Hombre de Acero' ||
+                                               _c.passive.name === 'Efecto Omega')) {
+                                aiTauntTarget = _n; // no break — un buff activo puede tomar prioridad
                             }
                         }
                         const kamishData = checkKamishMegaProvocation(enemyTeam);
