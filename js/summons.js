@@ -1131,6 +1131,12 @@
                     target.shield -= damage;
                     addLog(`🛡️ El escudo de ${targetName} absorbe ${damage} de daño (Escudo restante: ${target.shield})`, 'buff');
 
+                    // FORTALEZA DE TAURO (Aldebaran): escudo absorbe un golpe → 2 cargas
+                    if (target.passive && target.passive.name === 'Fortaleza de Tauro') {
+                        target.charges = Math.min(20, (target.charges||0) + 2);
+                        addLog('🐂 Fortaleza de Tauro: Aldebaran genera 2 cargas (escudo absorbió golpe)', 'buff');
+                    }
+
                     // SUSANOO (Madara): contraataca con básico cada vez que el escudo pierde HP
                     if (target.shieldEffect === 'susanoo_counter_madara' && !passiveExecuting && attackerName && damage > 0) {
                         passiveExecuting = true;
@@ -1170,17 +1176,21 @@
 
                     target.shield = 0;
                     target.shieldEffect = null;
-                    // GANDALF PASSIVE: Istari - ally shield breaks → +3 charges to that ally
-                    const gandalfChar = gameState.characters['Gandalf'];
-                    if (gandalfChar && !gandalfChar.isDead && gandalfChar.hp > 0 && gandalfChar.team === target.team) {
-                        target.charges = Math.min(20, (target.charges||0) + 3);
-                        addLog(`✨ Istari (Gandalf): ${targetName} gana 3 cargas por escudo roto`, 'buff');
-                    }
-                    // FORTALEZA DE TAURO (Aldebaran): escudo roto → genera 2 cargas
-                    if (target.passive && target.passive.name === 'Fortaleza de Tauro') {
-                        target.charges = Math.min(20, (target.charges || 0) + 2);
-                        addLog('🐂 Fortaleza de Tauro: ' + targetName + ' genera 2 cargas (escudo roto)', 'buff');
-                    }
+                    // GANDALF PASSIVE: Istari - ally shield breaks → +3 charges + +3 HP to that ally
+                    (function() {
+                        for (const _gfN in gameState.characters) {
+                            const _gfC = gameState.characters[_gfN];
+                            if (!_gfC || _gfC.isDead || !_gfC.passive) continue;
+                            if (_gfC.passive.name !== 'Istari') continue;
+                            if (_gfC.team !== target.team) continue;
+                            target.charges = Math.min(20, (target.charges||0) + 3);
+                            if (typeof applyHeal === 'function') applyHeal(targetName, 3, 'Istari');
+                            else target.hp = Math.min(target.maxHp, (target.hp||0) + 3);
+                            addLog('✨ Istari (Gandalf): ' + targetName + ' +3 cargas y +3 HP (escudo roto)', 'buff');
+                            break;
+                        }
+                    })();
+                    // FORTALEZA DE TAURO (Aldebaran): escudo roto - el trigger de cargas ya está en el bloque de absorbe
                 }
             }
             
