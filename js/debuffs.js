@@ -180,6 +180,32 @@ function triggerMaboroshi(targetTeam, debuffName) {
             if (!passiveExecuting && typeof triggerMonarcaDestruccion === 'function') {
                 triggerMonarcaDestruccion(targetName);
             }
+
+            // EMPERADOR DE LA GALAXIA (Palpatine): buff aplicado a enemigo → aliado aleatorio +2 cargas
+            if (!passiveExecuting) {
+                const _epTgt = gameState.characters[targetName];
+                const _epTgtTeam = _epTgt ? _epTgt.team : null;
+                if (_epTgtTeam) {
+                    const _epAlly = _epTgtTeam === 'team1' ? 'team2' : 'team1';
+                    for (const _pN in gameState.characters) {
+                        const _pC = gameState.characters[_pN];
+                        if (!_pC || _pC.isDead || !_pC.passive) continue;
+                        if (_pC.passive.name !== 'Emperador de la Galaxia') continue;
+                        if (_pC.team !== _epAlly) continue;
+                        // Elegir un aliado aleatorio de Palpatine
+                        const _pallies = Object.keys(gameState.characters).filter(function(n){
+                            const _cc = gameState.characters[n];
+                            return _cc && _cc.team === _epAlly && !_cc.isDead && _cc.hp > 0;
+                        });
+                        if (_pallies.length > 0) {
+                            const _rAlly = _pallies[Math.floor(Math.random() * _pallies.length)];
+                            gameState.characters[_rAlly].charges = Math.min(20, (gameState.characters[_rAlly].charges||0) + 2);
+                            addLog('⚡ Emperador de la Galaxia: ' + _rAlly + ' +2 cargas (enemigo recibió buff)', 'buff');
+                        }
+                        break;
+                    }
+                }
+            }
         }
 
 
