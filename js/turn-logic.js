@@ -1369,7 +1369,19 @@
                 // Decrementar duraciones al FINAL del turno activo
                 // (buffs/debuffs expiran al finalizar el turno del personaje que los tiene)
                 if (gameState.selectedCharacter) {
-                    // QUEMADURA: aplica daño al FINAL del turno del personaje con el debuff
+                    // ── FORTALEZA DE TAURO (Aldebaran): al final de su turno con Escudo → +2 HP ──
+                    (function() {
+                        const _alC = gameState.characters[gameState.selectedCharacter];
+                        if (!_alC || _alC.isDead || !_alC.passive) return;
+                        if (_alC.passive.name !== 'Fortaleza de Tauro') return;
+                        if ((_alC.shield||0) > 0) {
+                            if (typeof applyHeal === 'function') applyHeal(gameState.selectedCharacter, 2, 'Fortaleza de Tauro');
+                            else _alC.hp = Math.min(_alC.maxHp, (_alC.hp||0) + 2);
+                            addLog('🐂 Fortaleza de Tauro: Aldebaran recupera 2 HP (Escudo activo al final del turno)', 'heal');
+                        }
+                    })();
+
+                // QUEMADURA: aplica daño al FINAL del turno del personaje con el debuff
                     processBurnEffects(gameState.selectedCharacter);
                     processSolarBurnEffects(gameState.selectedCharacter);
                     // Check if burn killed the character
