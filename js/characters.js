@@ -33,7 +33,7 @@
                 hp: 30, maxHp: 30, speed: 83, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/PJr0LB6N/Captura_de_pantalla_2026_02_21_230603.png',
-                passive: { name: 'Fortaleza de Tauro', description: 'Efecto pasivo Provocacion. Cada vez que un buff escudo es destruido por un golpe del enemigo, genera 1 carga.' },
+                passive: { name: 'Fortaleza de Tauro', description: 'Efecto pasivo Provocación. Cada vez que un Buff Escudo en Aldebaran absorbe un golpe, genera 2 cargas. Al final de su turno con Escudo activo, recupera 2 HP.' },
                 abilities: [
                     { name: 'Great Horn', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'great_horn', heal: 3, shieldAmount: 2, description: 'Causa 1 de daño. Recupera 3 HP. Se aplica Buff Escudo 2 HP.' },
                     { name: 'Golden Shield', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'self', effect: 'golden_shield', shieldAmount: 3, description: 'Limpia los debuffs activos en Aldebaran. Se aplica un Buff Escudo de 3 HP.' },
@@ -369,28 +369,28 @@
             },
 
             'Emperador Palpatine': {
-                hp: 20, maxHp: 20, speed: 88, charges: 0, team: 'team2',
+                hp: 20, maxHp: 20, speed: 90, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/DfMRtYcj/Whats_App_Image_2026_03_05_at_9_50_54_AM.jpg',
-                passive: { name: 'Emperador de la Galaxia', description: '50% de aplicar Aturdimiento cada vez que un Debuff del equipo enemigo se limpia o termina su efecto.' },
+                portrait: 'https://i.postimg.cc/DfMRtYcj/Whats-App-Image-2026-03-05-at-9-50-54-AM.jpg',
+                passive: { name: 'Emperador de la Galaxia', description: 'Cada vez que un debuff enemigo se disipa o termina, 50% de aplicar Aturdimiento a ese enemigo. Cada vez que un enemigo se aplica un buff, un aliado aleatorio genera 2 cargas.' },
                 abilities: [
-                    { name: 'Relámpago Sith', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'single', effect: 'cleanse_enemy_debuff', description: 'Causa 1 de daño. Limpia un debuff del objetivo enemigo.' },
-                    { name: 'Corrupción', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'single', effect: 'apply_possession', possessionDuration: 1, description: 'Aplica debuff Posesión por 1 turno.' },
-                    { name: 'Orden Sith', type: 'special', cost: 7, chargeGain: 0, damage: 1, target: 'aoe', effect: 'orden_sith', description: 'Causa 1 AOE. Limpia 3 Debuffs del equipo enemigo y cura a Palpatine y a un aliado 3 HP.' },
-                    { name: 'Poder Ilimitado', type: 'over', cost: 12, chargeGain: 0, damage: 4, target: 'aoe', effect: 'poder_ilimitado', description: 'Causa 4 AOE. 50% de probabilidad de aplicar Mega Aturdimiento.' }
+                    { name: 'Relámpago Sith', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'relampago_sith_palpatine', description: 'Causa 2 daño. Aplica 1 debuff aleatorio al objetivo.' },
+                    { name: 'Corrupción', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'aoe', effect: 'corrupcion_palpatine', description: 'Disipa todos los debuffs del equipo enemigo y elimina 1 carga por cada debuff disipado. (Activa pasiva: 50% Aturdimiento por cada debuff disipado).' },
+                    { name: 'Orden Sith', type: 'special', cost: 8, chargeGain: 0, damage: 0, target: 'aoe', effect: 'orden_sith_palpatine', description: 'Disipa todos los buffs del equipo enemigo. Por cada buff disipado, el equipo aliado genera 1 carga.' },
+                    { name: 'Poder Ilimitado', type: 'over', cost: 9, chargeGain: 0, damage: 5, target: 'aoe', effect: 'poder_ilimitado_palpatine', description: 'Causa 5 AOE. 50% de aplicar Mega Aturdimiento a cada objetivo. Si un objetivo no recibe Mega Aturdimiento, causa daño triple sobre ese objetivo.' }
                 ]
             },
 
             'Gandalf': {
-                hp: 20, maxHp: 20, speed: 74, charges: 0, team: 'team2',
+                hp: 20, maxHp: 20, speed: 74, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/1RjbLYHx/Whats_App_Image_2026_03_05_at_9_53_24_AM.jpg',
-                passive: { name: 'Istari', description: 'Inmune a Posesión, Confusión y Miedo. Cada vez que un Escudo en un aliado se rompe, genera 3 cargas al portador.' },
+                portrait: 'https://i.postimg.cc/1RjbLYHx/Whats-App-Image-2026-03-05-at-9-53-24-AM.jpg',
+                passive: { name: 'Istari', description: 'Inmune a Posesión, Confusión y Miedo. Cada vez que un Buff Escudo en un aliado se rompe, el portador genera 3 cargas y cura 3 HP.' },
                 abilities: [
-                    { name: 'Resplandor', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'ally_team', effect: 'team_regen', description: 'Aplica Buff Regeneración del 10% por 1 turno a todo el equipo aliado.' },
-                    { name: 'Rayo de Luz', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'heal_shield_prov', heal: 5, shieldAmount: 5, description: 'El objetivo aliado recupera 5 HP. Aplica Buff Escudo de 5 HP. Aplica Buff Provocación al objetivo aliado.' },
-                    { name: 'El Mago Blanco', type: 'special', cost: 7, chargeGain: 0, damage: 0, target: 'ally_team', effect: 'heal_aura_luz', heal: 3, description: 'Cura 3 HP a todo el equipo aliado. Aplica Buff Aura de Luz a todos los aliados.' },
-                    { name: 'No Puedes Pasar', type: 'over', cost: 12, chargeGain: 0, damage: 0, target: 'ally_team', effect: 'no_puedes_pasar', description: 'Aplica Buff Armadura al equipo aliado. Aplica Buff Regeneración del 20% por 2 turnos.' }
+                    { name: 'Resplandor', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'ally_team', effect: 'resplandor_gandalf', description: 'Aplica Buff Escudo de 2 HP a todo el equipo aliado.' },
+                    { name: 'Rayo de Luz', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'rayo_luz_gandalf', description: 'El aliado objetivo recupera 5 HP. Aplica Buff Escudo de 5 HP y Buff Provocación sobre el objetivo aliado.' },
+                    { name: 'El Mago Blanco', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'ally_team', effect: 'mago_blanco_gandalf', description: 'Aplica Buff Aura de Luz a todos los aliados. Cura 2 HP al equipo aliado. Si un aliado está por debajo del 50% de HP, cura 5 HP en lugar de 2 HP.' },
+                    { name: 'No Puedes Pasar', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'ally_team', effect: 'no_puedes_pasar_gandalf', description: 'Aplica Buff Escudo de 8 HP y Buff Regeneración 30% por 3 turnos a todo el equipo aliado.' }
                 ]
             },
 
