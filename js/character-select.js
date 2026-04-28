@@ -34,11 +34,11 @@
                 hp: 30, maxHp: 30, speed: 83, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/PJr0LB6N/Captura_de_pantalla_2026_02_21_230603.png',
-                passive: { name: 'Fortaleza de Tauro', description: 'Efecto pasivo Provocacion. Cada vez que un buff escudo es destruido por un golpe del enemigo, genera 1 carga.' },
+                passive: { name: 'Fortaleza de Tauro', description: 'Efecto pasivo Provocación. Cada vez que un Buff Escudo en Aldebaran absorbe un golpe, genera 2 cargas. Al final de su turno con Escudo activo, recupera 2 HP.' },
                 abilities: [
                     { name: 'Great Horn', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'great_horn', heal: 3, shieldAmount: 2, description: 'Causa 1 de daño. Recupera 3 HP. Se aplica Buff Escudo 2 HP.' },
                     { name: 'Golden Shield', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'self', effect: 'golden_shield', shieldAmount: 3, description: 'Limpia los debuffs activos en Aldebaran. Se aplica un Buff Escudo de 3 HP.' },
-                    { name: 'Double Great Horn', type: 'special', cost: 7, chargeGain: 0, damage: 3, target: 'multi', effect: 'double_great_horn', description: 'Ataca 2 objetivos causando 3 de daño. 60% de probabilidad de causar daño doble. 40% de probabilidad de causar daño triple. Se aplica Buff Escudo con HP equivalente a la suma del daño total causado en los enemigos.' },
+                    { name: 'Double Great Horn', type: 'special', cost: 7, chargeGain: 0, damage: 3, target: 'multi', effect: 'double_great_horn', description: 'Ataca 2 objetivos causando 3 de daño. 60% de probabilidad de causar daño doble. 40% de probabilidad de causar daño triple. Se aplica Buff Escudo con HP equivalente a la suma del daño total causado.' },
                     { name: 'Great Supernova', type: 'over', cost: 10, chargeGain: 0, damage: 10, target: 'single', effect: 'great_supernova', description: 'Causa 10 de daño. Causa daño doble si Aldebaran tiene 20% o menos de HP.' }
                 ]
             },
@@ -75,8 +75,8 @@
                 passive: { name: 'Corazon Ardiente', description: 'Cuando Rengoku muere, aplica aturdimiento a todos los enemigos. Rengoku genera 1 punto de carga cada vez que un debuff quemadura inflige daño.' },
                 abilities: [
                     { name: 'Sol Ascendente', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'sol_ascendente', burnAmount: 1, description: 'Causa 2 de daño. Se aplica Debuff Quemadura 1 HP.' },
-                    { name: 'Mar de Fuego', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'aoe', effect: 'corazon_llamas', description: 'Causa 4 AOE. Ignora Esquiva Área. Disipa buffs activos. Aplica Quemadura 1HP. Si ya tenían Quemadura: 100% de crítico.' },
-                    { name: 'Tigre de Fuego', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'aoe', effect: 'tigre_fuego_v2', burnAmount: 1, description: 'Causa 3 AOE. Aplica Quemadura 1HP. Si ya tenían Quemadura: +1 carga al equipo aliado por cada Quemadura activa en el equipo enemigo.' },
+                    { name: 'Mar de Fuego', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'aoe', effect: 'corazon_llamas', description: 'Causa 3 AOE. 100% de golpe crítico a los enemigos con debuff Quemadura activo.' },
+                    { name: 'Tigre de Fuego', type: 'special', cost: 5, chargeGain: 0, damage: 3, target: 'aoe', effect: 'tigre_fuego_v2', burnAmount: 1, description: 'Causa 3 AOE. Aplica Debuff Quemadura de 1 HP. Si el enemigo ya tenía Debuff Quemadura activo antes de ejecutar este ataque, Genera 1 punto de carga a todo el equipo aliado.' },
                     { name: 'Purgatorio', type: 'over', cost: 12, chargeGain: 0, damage: 7, target: 'single', effect: 'purgatorio_v2', description: 'Causa 7 de daño. Aplica debuff Mega Aturdimiento. 100% de golpe crítico si el objetivo tiene activo debuff Quemadura.' }
                 ]
             },
@@ -373,8 +373,8 @@
                 abilities: [
                     { name: 'Relámpago Sith', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'single', effect: 'cleanse_enemy_debuff', description: 'Causa 1 de daño. Limpia un debuff del objetivo enemigo.' },
                     { name: 'Corrupción', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'single', effect: 'apply_possession', possessionDuration: 1, description: 'Aplica debuff Posesión por 1 turno.' },
-                    { name: 'Orden Sith', type: 'special', cost: 8, chargeGain: 0, damage: 0, target: 'aoe', effect: 'orden_sith', description: 'Disipa todos los buffs del equipo enemigo. Por cada buff disipado, el equipo aliado genera 1 carga.' },
-                    { name: 'Poder Ilimitado', type: 'over', cost: 9, chargeGain: 0, damage: 5, target: 'aoe', effect: 'poder_ilimitado', description: 'Causa 5 AOE. 50% de Mega Aturdimiento. Si un objetivo no recibe Mega Aturdimiento: daño triple.' }
+                    { name: 'Orden Sith', type: 'special', cost: 7, chargeGain: 0, damage: 1, target: 'aoe', effect: 'orden_sith', description: 'Causa 1 AOE. Limpia 3 Debuffs del equipo enemigo y cura a Palpatine y a un aliado 3 HP.' },
+                    { name: 'Poder Ilimitado', type: 'over', cost: 12, chargeGain: 0, damage: 4, target: 'aoe', effect: 'poder_ilimitado', description: 'Causa 4 AOE. 50% de probabilidad de aplicar Mega Aturdimiento.' }
                 ]
             },
 
@@ -382,11 +382,11 @@
                 hp: 20, maxHp: 20, speed: 74, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/1RjbLYHx/Whats_App_Image_2026_03_05_at_9_53_24_AM.jpg',
-                passive: { name: 'Istari', description: 'Inmune a Posesión, Confusión y Miedo. Cada vez que un Escudo en un aliado se rompe, genera 3 cargas al portador.' },
+                passive: { name: 'Istari', description: 'Inmune a Posesión, Confusión y Miedo. Cada vez que un Buff Escudo en un aliado se rompe, el portador genera 3 cargas y cura 3 HP.' },
                 abilities: [
-                    { name: 'Resplandor', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'ally_team', effect: 'team_regen', description: 'Aplica Buff Regeneración del 10% por 1 turno a todo el equipo aliado.' },
-                    { name: 'Rayo de Luz', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'heal_shield_prov', heal: 5, shieldAmount: 5, description: 'El objetivo aliado recupera 5 HP. Aplica Buff Escudo de 5 HP. Aplica Buff Provocación al objetivo aliado.' },
-                    { name: 'El Mago Blanco', type: 'special', cost: 7, chargeGain: 0, damage: 0, target: 'ally_team', effect: 'heal_aura_luz', heal: 3, description: 'Cura 3 HP a todo el equipo aliado. Aplica Buff Aura de Luz a todos los aliados.' },
+                    { name: 'Resplandor', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'ally_team', effect: 'resplandor', description: 'Aplica Buff Escudo de 2 HP a todo el equipo aliado.' },
+                    { name: 'Rayo de Luz', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'rayo_de_luz', heal: 5, shieldAmount: 5, description: 'El objetivo aliado recupera 5 HP. Aplica Buff Escudo de 5 HP y Buff Provocación.' },
+                    { name: 'El Mago Blanco', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'ally_team', effect: 'el_mago_blanco', description: 'Aplica Buff Aura de Luz. Cura 2 HP al equipo aliado (5 HP si está por debajo del 50% de HP).' },
                     { name: 'No Puedes Pasar', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'ally_team', effect: 'no_puedes_pasar', description: 'Aplica Buff Escudo de 8 HP y Regeneración 30% por 3 turnos a todo el equipo aliado.' }
                 ]
             },
