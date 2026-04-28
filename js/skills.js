@@ -6933,7 +6933,13 @@
                        ability.effect !== 'hou_yoku_tenshou_ikki' &&
                        ability.effect !== 'skill_drain' &&
                        ability.effect !== 'mar_fuego_rengoku' &&
-                       ability.effect !== 'tigre_fuego_rengoku') {
+                       ability.effect !== 'tigre_fuego_rengoku' &&
+                       ability.effect !== 'resplandor_gandalf' &&
+                       ability.effect !== 'mago_blanco_gandalf' &&
+                       ability.effect !== 'no_puedes_pasar_gandalf' &&
+                       ability.effect !== 'corrupcion_palpatine' &&
+                       ability.effect !== 'orden_sith_palpatine' &&
+                       ability.effect !== 'poder_ilimitado_palpatine') {
                 // ── GENÉRICO AOE: con Mega Provocación y Esquiva Área ──
                 const attackerTeam = attacker.team;
                 const targetTeam = attackerTeam === 'team1' ? 'team2' : 'team1';
@@ -8098,30 +8104,40 @@
                 }
 
             } else if (ability.effect === 'corrupcion_palpatine') {
-                // Corrupción: disipa debuffs enemigos + elimina 1 carga por debuff + activa pasiva (50% stun)
+                // Corrupción: disipa TODOS los debuffs del equipo enemigo + elimina 1 carga por debuff
+                // Pasiva: 50% Aturdimiento por cada debuff disipado. No afecta a enemigos con Esquiva Área.
                 const _cpAtk = gameState.characters[gameState.selectedCharacter];
                 const _cpET = _cpAtk ? (_cpAtk.team==='team1'?'team2':'team1') : 'team2';
                 let _cpTotal = 0;
                 for (const _n in gameState.characters) {
                     const _cc = gameState.characters[_n];
                     if (!_cc || _cc.team !== _cpET || _cc.isDead || _cc.hp <= 0) continue;
+                    // No afecta a enemigos con Esquiva Área
+                    if (checkAsprosAOEImmunity(_n, false) || checkMinatoAOEImmunity(_n)) {
+                        addLog('⚡ Corrupción: ' + _n + ' evade por Esquiva Área', 'info');
+                        continue;
+                    }
                     const _debuffs = (_cc.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff' && !e.permanent; });
                     if (_debuffs.length > 0) {
                         _cc.statusEffects = (_cc.statusEffects||[]).filter(function(e){ return !e || e.type !== 'debuff' || e.permanent; });
                         _cpTotal += _debuffs.length;
-                        // Eliminar 1 carga por debuff disipado
+                        // Eliminar 1 carga del equipo enemigo por cada debuff disipado
                         _cc.charges = Math.max(0, (_cc.charges||0) - _debuffs.length);
-                        // Pasiva: 50% aturdimiento por cada debuff disipado
+                        // Pasiva Palpatine: 50% Aturdimiento por cada debuff disipado
                         _debuffs.forEach(function(){
-                            if (Math.random() < 0.50 && typeof applyStun === 'function') applyStun(_n, 1);
+                            if (Math.random() < 0.50 && !passiveExecuting) {
+                                if (typeof applyStun === 'function') applyStun(_n, 1);
+                                addLog('⚡ Emperador de la Galaxia: Aturdimiento (pasiva) a ' + _n, 'debuff');
+                            }
                         });
                         addLog('⚡ Corrupción: ' + _debuffs.length + ' debuff(s) de ' + _n + ' disipados (-' + _debuffs.length + ' cargas)', 'debuff');
                     }
                 }
-                addLog('⚡ Corrupción: ' + _cpTotal + ' debuffs disipados en total', 'info');
+                addLog('⚡ Corrupción: ' + _cpTotal + ' debuffs disipados en total', _cpTotal > 0 ? 'buff' : 'info');
 
             } else if (ability.effect === 'orden_sith_palpatine') {
-                // Orden Sith: disipa TODOS los buffs enemigos + 1 carga al equipo aliado por cada buff disipado
+                // Orden Sith: disipa TODOS los buffs del equipo enemigo + 1 carga aliada por buff disipado
+                // No afecta a enemigos con Esquiva Área
                 const _osAtk = gameState.characters[gameState.selectedCharacter];
                 const _osET = _osAtk ? (_osAtk.team==='team1'?'team2':'team1') : 'team2';
                 const _osAlly = _osAtk ? _osAtk.team : 'team1';
@@ -8129,6 +8145,11 @@
                 for (const _n in gameState.characters) {
                     const _cc = gameState.characters[_n];
                     if (!_cc || _cc.team !== _osET || _cc.isDead || _cc.hp <= 0) continue;
+                    // No afecta a enemigos con Esquiva Área
+                    if (checkAsprosAOEImmunity(_n, false) || checkMinatoAOEImmunity(_n)) {
+                        addLog('⚡ Orden Sith: ' + _n + ' evade por Esquiva Área', 'info');
+                        continue;
+                    }
                     const _bufs = (_cc.statusEffects||[]).filter(function(e){ return e && e.type === 'buff' && !e.permanent && !e.passiveHidden; });
                     if (_bufs.length > 0) {
                         _cc.statusEffects = (_cc.statusEffects||[]).filter(function(e){ return !e || e.type !== 'buff' || e.permanent || e.passiveHidden; });
@@ -8143,6 +8164,8 @@
                         _ac.charges = Math.min(20, (_ac.charges||0) + _osTotal);
                     }
                     addLog('⚡ Orden Sith: +' + _osTotal + ' cargas al equipo aliado (' + _osTotal + ' buffs disipados)', 'buff');
+                } else {
+                    addLog('⚡ Orden Sith: ningún buff activo en el equipo enemigo', 'info');
                 }
 
             } else if (ability.effect === 'poder_ilimitado_palpatine') {
