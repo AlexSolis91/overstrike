@@ -2906,19 +2906,57 @@
             const myTeam  = asHost ? 'team1' : 'team2';
             const oppTeam = asHost ? 'team2' : 'team1';
 
-            // Poll for both sides ready
+            // Poll for both sides ready — también revisar room-level hostAttack/guestAttack
+            // (para el flujo de matchmaking donde los picks se guardan en la sala, no en selections)
+            function _checkRankedStart(data, roomData) {
+                const t1Ready = data['team1_ready'];
+                const t2Ready = data['team2_ready'];
+                const t1Picks = data['team1_picks'] || (roomData && roomData.hostAttack) || [];
+                const t2Picks = data['team2_picks'] || (roomData && roomData.guestAttack) || [];
+                // Considerar listo si tiene picks aunque no tenga _ready flag
+                const t1OK = t1Ready || (t1Picks && t1Picks.length > 0);
+                const t2OK = t2Ready || (t2Picks && t2Picks.length > 0);
+                return t1OK && t2OK ? { t1Picks, t2Picks } : null;
+            }
+
+            // Cargar sala una vez para tener hostAttack/guestAttack como fallback
+            let _roomDataCache = null;
+            db.ref('rooms/' + roomId).once('value', function(roomSnap) {
+                _roomDataCache = roomSnap.val() || {};
+            });
+
             db.ref('rooms/' + roomId + '/selections').on('value', function handler(snap) {
                 const data = snap.val() || {};
                 const myReady  = data[myTeam  + '_ready'];
                 const oppReady = data[oppTeam + '_ready'];
-                if (!myReady || !oppReady) return;
+
+                // Verificar también via room-level fallback (matchmaking flow)
+                const result = _checkRankedStart(data, _roomDataCache);
+                if (!result && (!myReady || !oppReady)) {
+                    // Si tengo mis picks pero el oponente aún no → también revisar sala directamente
+                    db.ref('rooms/' + roomId).once('value', function(rs) {
+                        _roomDataCache = rs.val() || {};
+                        const r2 = _checkRankedStart(data, _roomDataCache);
+                        if (r2) {
+                            db.ref('rooms/' + roomId + '/selections').off('value', handler);
+                            _launchRankedGame(r2.t1Picks, r2.t2Picks);
+                        }
+                    });
+                    return;
+                }
+                if (!result) return;
 
                 // Both ready — get picks from Firebase
-                const t1Picks = data['team1_picks'] || [];
-                const t2Picks = data['team2_picks'] || [];
+                const t1Picks = result.t1Picks;
+                const t2Picks = result.t2Picks;
 
                 // Stop listening
                 db.ref('rooms/' + roomId + '/selections').off('value', handler);
+
+                _launchRankedGame(t1Picks, t2Picks);
+            });
+
+            function _launchRankedGame(t1Picks, t2Picks) {
                 overlay.style.display = 'none';
 
                 // Build character map
@@ -2966,7 +3004,7 @@
                     if (isRoomHost) { pushGameState(); }
                     listenGameState();
                 }, 500);
-            });
+            }
         }
         function listenForOnlineReady(roomId, myTeam) {
             const opponentTeam = myTeam === 'team1' ? 'team2' : 'team1';
