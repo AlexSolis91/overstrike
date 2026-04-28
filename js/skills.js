@@ -8025,6 +8025,152 @@
                     _isTgt.hp = Math.max(0, (_isTgt.hp||0) - _isBonusDmg);
                     if (_isTgt.hp <= 0) { _isTgt.isDead = true; registerKill(gameState.selectedCharacter, targetName, false); }
                     addLog('⚫ Intimidación Sith: +' + _isBonusDmg + ' daño directo (' + _isBufs + ' buffs × 3)', 'damage');
+                }
+            // ══ GANDALF — handlers ══
+
+            } else if (ability.effect === 'resplandor_gandalf') {
+                // Resplandor: Buff Escudo 2 HP a todo el equipo aliado
+                const _rgAtk = gameState.characters[gameState.selectedCharacter];
+                const _rgTeam = _rgAtk ? _rgAtk.team : 'team1';
+                for (const _an in gameState.characters) {
+                    const _ac = gameState.characters[_an];
+                    if (!_ac || _ac.team !== _rgTeam || _ac.isDead || _ac.hp <= 0) continue;
+                    _ac.shield = (_ac.shield||0) + 2;
+                    addLog('✨ Resplandor: Escudo +2 HP a ' + _an, 'buff');
+                }
+
+            } else if (ability.effect === 'rayo_luz_gandalf') {
+                // Rayo de Luz: +5 HP + Escudo 5 HP + Provocación al objetivo aliado
+                const _rlTgt = gameState.characters[targetName];
+                if (_rlTgt) {
+                    if (typeof applyHeal === 'function') applyHeal(targetName, 5, 'Rayo de Luz');
+                    else _rlTgt.hp = Math.min(_rlTgt.maxHp, (_rlTgt.hp||0) + 5);
+                    _rlTgt.shield = (_rlTgt.shield||0) + 5;
+                    if (typeof applyBuff === 'function') applyBuff(targetName, { name: 'Provocacion', type: 'buff', duration: 2, emoji: '🛡️' });
+                    addLog('✨ Rayo de Luz: ' + targetName + ' +5 HP, Escudo +5 HP, Provocación 2T', 'heal');
+                }
+
+            } else if (ability.effect === 'mago_blanco_gandalf') {
+                // El Mago Blanco: Aura de Luz a todos + cura 2 HP (5 HP si <50%)
+                const _mwAtk = gameState.characters[gameState.selectedCharacter];
+                const _mwTeam = _mwAtk ? _mwAtk.team : 'team1';
+                for (const _an in gameState.characters) {
+                    const _ac = gameState.characters[_an];
+                    if (!_ac || _ac.team !== _mwTeam || _ac.isDead || _ac.hp <= 0) continue;
+                    if (typeof applyBuff === 'function') applyBuff(_an, { name: 'Aura de Luz', type: 'buff', duration: 2, emoji: '☀️' });
+                    const _healAmt = (_ac.hp / (_ac.maxHp||20)) < 0.50 ? 5 : 2;
+                    if (typeof applyHeal === 'function') applyHeal(_an, _healAmt, 'El Mago Blanco');
+                    else _ac.hp = Math.min(_ac.maxHp, (_ac.hp||0) + _healAmt);
+                    addLog('✨ El Mago Blanco: ' + _an + ' +' + _healAmt + ' HP + Aura de Luz' + (_healAmt === 5 ? ' (< 50% HP)' : ''), 'heal');
+                }
+
+            } else if (ability.effect === 'no_puedes_pasar_gandalf') {
+                // No Puedes Pasar: Escudo 8 HP + Regeneración 30% 3T a todo el equipo
+                const _npAtk = gameState.characters[gameState.selectedCharacter];
+                const _npTeam = _npAtk ? _npAtk.team : 'team1';
+                for (const _an in gameState.characters) {
+                    const _ac = gameState.characters[_an];
+                    if (!_ac || _ac.team !== _npTeam || _ac.isDead || _ac.hp <= 0) continue;
+                    _ac.shield = (_ac.shield||0) + 8;
+                    const _regenAmt = Math.ceil((_ac.maxHp||20) * 0.30);
+                    if (typeof applyBuff === 'function') applyBuff(_an, { name: 'Regeneracion', type: 'buff', duration: 3, emoji: '💖', amount: _regenAmt });
+                    addLog('✨ No Puedes Pasar: ' + _an + ' Escudo +8 HP + Regeneración 30% 3T', 'buff');
+                }
+
+            // ══ EMPERADOR PALPATINE — handlers ══
+
+            } else if (ability.effect === 'relampago_sith_palpatine') {
+                // Relámpago Sith: 2 daño + 1 debuff aleatorio
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('⚡ Relámpago Sith: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                // Aplicar debuff aleatorio
+                const _rSpDebuffs = [
+                    function(n){ if(typeof applyPoison==='function') applyPoison(n, 2); addLog('⚡ Relámpago Sith: Veneno 2T a '+n,'debuff'); },
+                    function(n){ if(typeof applyFear==='function') applyFear(n, 1); else if(typeof applyDebuff==='function') applyDebuff(n,{name:'Miedo',type:'debuff',duration:1,emoji:'😱'}); addLog('⚡ Relámpago Sith: Miedo 1T a '+n,'debuff'); },
+                    function(n){ if(typeof applyStun==='function') applyStun(n, 1); addLog('⚡ Relámpago Sith: Aturdimiento 1T a '+n,'debuff'); },
+                    function(n){ if(typeof applyDebuff==='function') applyDebuff(n,{name:'Debilitar',type:'debuff',duration:2,emoji:'💔'}); addLog('⚡ Relámpago Sith: Debilitar 2T a '+n,'debuff'); },
+                    function(n){ if(typeof applyDebuff==='function') applyDebuff(n,{name:'Silencio',type:'debuff',duration:1,emoji:'🔇'}); addLog('⚡ Relámpago Sith: Silencio 1T a '+n,'debuff'); },
+                    function(n){ if(typeof applyFlatBurn==='function') applyFlatBurn(n, 2, 2); addLog('⚡ Relámpago Sith: Quemadura 2HP a '+n,'debuff'); },
+                ];
+                const _rsTgt = gameState.characters[targetName];
+                if (_rsTgt && !_rsTgt.isDead && _rsTgt.hp > 0) {
+                    _rSpDebuffs[Math.floor(Math.random() * _rSpDebuffs.length)](targetName);
+                }
+
+            } else if (ability.effect === 'corrupcion_palpatine') {
+                // Corrupción: disipa debuffs enemigos + elimina 1 carga por debuff + activa pasiva (50% stun)
+                const _cpAtk = gameState.characters[gameState.selectedCharacter];
+                const _cpET = _cpAtk ? (_cpAtk.team==='team1'?'team2':'team1') : 'team2';
+                let _cpTotal = 0;
+                for (const _n in gameState.characters) {
+                    const _cc = gameState.characters[_n];
+                    if (!_cc || _cc.team !== _cpET || _cc.isDead || _cc.hp <= 0) continue;
+                    const _debuffs = (_cc.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff' && !e.permanent; });
+                    if (_debuffs.length > 0) {
+                        _cc.statusEffects = (_cc.statusEffects||[]).filter(function(e){ return !e || e.type !== 'debuff' || e.permanent; });
+                        _cpTotal += _debuffs.length;
+                        // Eliminar 1 carga por debuff disipado
+                        _cc.charges = Math.max(0, (_cc.charges||0) - _debuffs.length);
+                        // Pasiva: 50% aturdimiento por cada debuff disipado
+                        _debuffs.forEach(function(){
+                            if (Math.random() < 0.50 && typeof applyStun === 'function') applyStun(_n, 1);
+                        });
+                        addLog('⚡ Corrupción: ' + _debuffs.length + ' debuff(s) de ' + _n + ' disipados (-' + _debuffs.length + ' cargas)', 'debuff');
+                    }
+                }
+                addLog('⚡ Corrupción: ' + _cpTotal + ' debuffs disipados en total', 'info');
+
+            } else if (ability.effect === 'orden_sith_palpatine') {
+                // Orden Sith: disipa TODOS los buffs enemigos + 1 carga al equipo aliado por cada buff disipado
+                const _osAtk = gameState.characters[gameState.selectedCharacter];
+                const _osET = _osAtk ? (_osAtk.team==='team1'?'team2':'team1') : 'team2';
+                const _osAlly = _osAtk ? _osAtk.team : 'team1';
+                let _osTotal = 0;
+                for (const _n in gameState.characters) {
+                    const _cc = gameState.characters[_n];
+                    if (!_cc || _cc.team !== _osET || _cc.isDead || _cc.hp <= 0) continue;
+                    const _bufs = (_cc.statusEffects||[]).filter(function(e){ return e && e.type === 'buff' && !e.permanent && !e.passiveHidden; });
+                    if (_bufs.length > 0) {
+                        _cc.statusEffects = (_cc.statusEffects||[]).filter(function(e){ return !e || e.type !== 'buff' || e.permanent || e.passiveHidden; });
+                        _osTotal += _bufs.length;
+                        addLog('⚡ Orden Sith: ' + _bufs.length + ' buff(s) de ' + _n + ' disipados', 'debuff');
+                    }
+                }
+                if (_osTotal > 0) {
+                    for (const _an in gameState.characters) {
+                        const _ac = gameState.characters[_an];
+                        if (!_ac || _ac.team !== _osAlly || _ac.isDead || _ac.hp <= 0) continue;
+                        _ac.charges = Math.min(20, (_ac.charges||0) + _osTotal);
+                    }
+                    addLog('⚡ Orden Sith: +' + _osTotal + ' cargas al equipo aliado (' + _osTotal + ' buffs disipados)', 'buff');
+                }
+
+            } else if (ability.effect === 'poder_ilimitado_palpatine') {
+                // Poder Ilimitado: 5 AOE. 50% Mega Aturdimiento. Sin MegaAtur → daño triple
+                const _piAtk = gameState.characters[gameState.selectedCharacter];
+                const _piET = _piAtk ? (_piAtk.team==='team1'?'team2':'team1') : 'team2';
+                if (checkAndRedirectAOEMegaProv(_piET, finalDamage, gameState.selectedCharacter)) {
+                    addLog('⚡ Poder Ilimitado: AOE redirigido', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _cc = gameState.characters[_n];
+                        if (!_cc||_cc.team!==_piET||_cc.isDead||_cc.hp<=0) continue;
+                        if (checkAsprosAOEImmunity(_n,true)||checkMinatoAOEImmunity(_n)) continue;
+                        const _gotMegaStun = Math.random() < 0.50;
+                        let _piDmg = finalDamage;
+                        if (_gotMegaStun) {
+                            // Aplica Mega Aturdimiento
+                            if (typeof applyMegaStun === 'function') applyMegaStun(_n, 2);
+                            else if (typeof applyDebuff === 'function') applyDebuff(_n, { name: 'Mega Aturdimiento', type: 'debuff', duration: 2, emoji: '💫' });
+                            addLog('⚡ Poder Ilimitado: Mega Aturdimiento a ' + _n, 'debuff');
+                        } else {
+                            // Daño triple
+                            _piDmg = finalDamage * 3;
+                            addLog('⚡ Poder Ilimitado: ¡Daño TRIPLE! ' + _n + ' no recibió Mega Aturdimiento', 'buff');
+                        }
+                        applyDamageWithShield(_n, _piDmg, gameState.selectedCharacter);
+                        addLog('⚡ Poder Ilimitado: ' + _piDmg + ' daño a ' + _n, 'damage');
+                    }
                 }            }
 
             // Actualizar UI
