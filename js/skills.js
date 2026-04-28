@@ -3650,39 +3650,29 @@
                     }
                 }
 
-            } else if (ability.effect === 'heal_aura_luz') {
-                // El Mago Blanco (Gandalf) / similar: cura 3HP a todos los aliados + Buff Aura de Luz
+            } else if (ability.effect === 'heal_aura_luz' || ability.effect === 'el_mago_blanco' || ability.effect === 'mago_blanco_gandalf') {
+                // El Mago Blanco (Gandalf): Aura de Luz + cura 2HP al equipo (5HP si <50% HP)
                 const _halTeam = attacker.team;
-                let _healed = 0;
                 for (let _n in gameState.characters) {
                     const _c = gameState.characters[_n];
-                    if (_c && _c.team === _halTeam && !_c.isDead && _c.hp > 0) {
-                        const _heal = ability.heal || 3;
-                        const _before = _c.hp;
-                        _c.hp = Math.min(_c.maxHp, _c.hp + _heal);
-                        const _actualHeal = _c.hp - _before;
-                        if (_actualHeal > 0) {
-                            _healed += _actualHeal;
-                            triggerBendicionSagrada(_halTeam, _actualHeal);
-                            addLog('✨ ' + _n + ' recupera ' + _actualHeal + ' HP (Aura de Luz)', 'heal');
-                        }
-                        // Apply Aura de Luz buff to this ally
-                        if (!hasStatusEffect(_n, 'Aura de Luz') && !hasStatusEffect(_n, 'Aura de luz')) {
-                            applyBuff(_n, { name: 'Aura de Luz', type: 'buff', duration: 3, emoji: '✨', description: 'Aura de Luz: aliado brillante' });
-                        }
-                    }
+                    if (!_c || _c.team !== _halTeam || _c.isDead || _c.hp <= 0) continue;
+                    applyBuff(_n, { name: 'Aura de Luz', type: 'buff', duration: 2, emoji: '☀️' });
+                    const _healAmt = (_c.hp / (_c.maxHp || 20)) < 0.50 ? 5 : 2;
+                    if (typeof applyHeal === 'function') applyHeal(_n, _healAmt, 'El Mago Blanco');
+                    else _c.hp = Math.min(_c.maxHp, (_c.hp || 0) + _healAmt);
+                    addLog('✨ El Mago Blanco: ' + _n + ' +' + _healAmt + ' HP + Aura de Luz' + (_healAmt === 5 ? ' (<50% HP)' : ''), 'heal');
                 }
-                addLog('✨ ' + gameState.selectedCharacter + ' usa ' + ability.name + ' — Curación + Aura de Luz al equipo aliado', 'heal');
-            } else if (ability.effect === 'team_regen') {
-                // Gandalf Resplandor: Buff Regeneración 10% x1 a todo el equipo aliado
+                addLog('✨ El Mago Blanco: Aura de Luz + curación aplicada al equipo aliado', 'heal');
+            } else if (ability.effect === 'team_regen' || ability.effect === 'resplandor' || ability.effect === 'resplandor_gandalf') {
+                // Resplandor (Gandalf): Buff Escudo 2HP a todo el equipo aliado
                 const trTeam = attacker.team;
                 for (let trName in gameState.characters) {
                     const trC = gameState.characters[trName];
                     if (!trC || trC.team !== trTeam || trC.isDead || trC.hp <= 0) continue;
-                    trC.statusEffects = (trC.statusEffects || []).filter(e => e && !(e.name === 'Regeneracion' && !e.permanent));
-                    trC.statusEffects.push({ name: 'Regeneracion', type: 'buff', duration: 1, percent: 10, emoji: '💖' });
+                    trC.shield = (trC.shield || 0) + 2;
+                    addLog('✨ Resplandor: Escudo +2 HP a ' + trName, 'buff');
                 }
-                addLog('✨ Resplandor: Regeneración 10% x1T aplicada a todo el equipo aliado', 'buff');
+                addLog('✨ Resplandor: Escudo 2 HP aplicado a todo el equipo aliado', 'buff');
 
             } else if (ability.effect === 'escudo_sagrado_self') {
                 // Vuelo del Dragón (Daenerys): gana Buff Escudo Sagrado
@@ -3690,7 +3680,7 @@
                 attacker.statusEffects.push({ name: 'Escudo Sagrado', type: 'buff', duration: 2, emoji: '✝️' });
                 addLog('✝️ Vuelo del Dragón: ' + charName + ' gana Escudo Sagrado', 'buff');
 
-            } else if (ability.effect === 'heal_shield_prov') {
+            } else if (ability.effect === 'heal_shield_prov' || ability.effect === 'rayo_de_luz' || ability.effect === 'rayo_luz_gandalf') {
                 // Rayo de Luz (Gandalf): aliado objetivo recupera 5 HP + Escudo 5 HP + Provocación
                 const hspC = gameState.characters[targetName];
                 if (hspC) {
