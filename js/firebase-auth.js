@@ -3128,3 +3128,448 @@
         window.addEventListener('DOMContentLoaded', function() {
             // loginScreen shown by default, Firebase auth decides next
         });
+
+
+        // ==================== SISTEMA ECONÓMICO ====================
+
+        // ── Inicializar datos del jugador en Firebase si es nuevo ──
+        async function initPlayerData(uid) {
+            const snap = await db.ref('users/' + uid + '/gold').once('value');
+            if (snap.val() === null) {
+                await db.ref('users/' + uid).update({
+                    gold: 0, arcane_keys: 0, attack_runes: 0,
+                    inventory: { relics: {} },
+                    characters: {}
+                });
+            }
+        }
+
+        // ── Leer datos del jugador ──
+        async function getPlayerData(uid) {
+            const snap = await db.ref('users/' + uid).once('value');
+            return snap.val() || { gold: 0, arcane_keys: 0, attack_runes: 0, inventory: { relics: {} }, characters: {} };
+        }
+
+        // ── Actualizar HUD del lobby ──
+        async function updateLobbyHUD() {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+            const data = await getPlayerData(user.uid);
+            const goldEl = document.getElementById('hud-gold');
+            const runeEl = document.getElementById('hud-runes');
+            const keyEl  = document.getElementById('hud-keys');
+            if (goldEl) goldEl.textContent = (data.gold||0).toLocaleString();
+            if (runeEl) runeEl.textContent = data.attack_runes||0;
+            if (keyEl)  keyEl.textContent  = data.arcane_keys||0;
+        }
+
+        // ── Agregar reliquia al inventario ──
+        async function addRelicToInventory(uid, relicName) {
+            const ref = db.ref('users/' + uid + '/inventory/relics/' + relicName);
+            const snap = await ref.once('value');
+            await ref.set((snap.val()||0) + 1);
+        }
+
+        // ── Quitar reliquia del inventario ──
+        async function removeRelicFromInventory(uid, relicName) {
+            const ref = db.ref('users/' + uid + '/inventory/relics/' + relicName);
+            const snap = await ref.once('value');
+            const cur = snap.val()||0;
+            if (cur <= 1) await ref.remove();
+            else await ref.set(cur - 1);
+        }
+
+        // ── Agregar oro ──
+        async function addGold(uid, amount) {
+            const ref = db.ref('users/' + uid + '/gold');
+            const snap = await ref.once('value');
+            await ref.set((snap.val()||0) + amount);
+        }
+
+        // ── Gastar oro (retorna true si OK) ──
+        async function spendGold(uid, amount) {
+            const ref = db.ref('users/' + uid + '/gold');
+            const snap = await ref.once('value');
+            const cur = snap.val()||0;
+            if (cur < amount) return false;
+            await ref.set(cur - amount);
+            return true;
+        }
+
+        // ── Equipar reliquia en personaje ──
+        async function equipRelic(uid, charName, slotIndex, relicName) {
+            // Verificar que el jugador tiene la reliquia en inventario
+            const invRef = db.ref('users/' + uid + '/inventory/relics/' + relicName);
+            const invSnap = await invRef.once('value');
+            if ((invSnap.val()||0) < 1) {
+                alert('No tienes esta reliquia en tu inventario.');
+                return false;
+            }
+            // Verificar compatibilidad de slots
+            const charRef = db.ref('users/' + uid + '/characters/' + charName + '/slots');
+            const charSnap = await charRef.once('value');
+            const slots = charSnap.val() || { slot1: null, slot2: null, slot3: null };
+            const relic = typeof RELICS_DATA !== 'undefined' ? RELICS_DATA[relicName] : null;
+            if (!relic) { alert('Reliquia no encontrada.'); return false; }
+
+            // Verificar incompatibilidades
+            const allEquipped = [slots.slot1, slots.slot2, slots.slot3].filter(Boolean);
+            const allRelicData = allEquipped.map(function(r){ return typeof RELICS_DATA !== 'undefined' ? RELICS_DATA[r] : null; }).filter(Boolean);
+            const equippedSlots = allRelicData.map(function(r){ return r.slot; });
+
+            // Regla: no duplicados
+            if (allEquipped.includes(relicName)) {
+                alert('No puedes equipar 2 reliquias con el mismo nombre en el mismo personaje.');
+                return false;
+            }
+            // Regla: Arco excluye Arma y Escudo
+            if (relic.slot === 'Arco' && (equippedSlots.includes('Arma') || equippedSlots.includes('Escudo'))) {
+                alert('No puedes equipar Arco junto con Armas o Escudo.');
+                return false;
+            }
+            if ((relic.slot === 'Arma' || relic.slot === 'Escudo') && equippedSlots.includes('Arco')) {
+                alert('No puedes equipar Armas o Escudo junto con un Arco.');
+                return false;
+            }
+            // Regla: 2 Armas excluye Escudo y Arco
+            const armaCount = equippedSlots.filter(function(s){ return s === 'Arma'; }).length;
+            if (relic.slot === 'Escudo' && armaCount >= 2) {
+                alert('No puedes equipar Escudo con 2 Armas.');
+                return false;
+            }
+            if (relic.slot === 'Arco' && armaCount >= 1) {
+                alert('No puedes equipar Arco con Armas.');
+                return false;
+            }
+            if (relic.slot === 'Arma' && armaCount >= 1 && equippedSlots.includes('Escudo')) {
+                alert('No puedes tener 2 Armas y Escudo al mismo tiempo.');
+                return false;
+            }
+
+            // Equipar
+            const slotKey = 'slot' + slotIndex;
+            const oldRelic = slots[slotKey];
+            if (oldRelic) {
+                alert('Este slot ya tiene una reliquia. Primero remuévela (costo: 10,000 oro).');
+                return false;
+            }
+            await charRef.update({ [slotKey]: relicName });
+            await removeRelicFromInventory(uid, relicName);
+            await updateLobbyHUD();
+            alert('✅ ' + relicName + ' equipada en ' + charName);
+            return true;
+        }
+
+        // ── Remover reliquia equipada (cuesta 10,000 oro) ──
+        async function removeRelic(uid, charName, slotIndex) {
+            const slotKey = 'slot' + slotIndex;
+            const charRef = db.ref('users/' + uid + '/characters/' + charName + '/slots/' + slotKey);
+            const snap = await charRef.once('value');
+            const relicName = snap.val();
+            if (!relicName) { alert('No hay reliquia en este slot.'); return false; }
+
+            const ok = await spendGold(uid, 10000);
+            if (!ok) { alert('No tienes suficiente oro. Remover una reliquia cuesta 10,000 oro.'); return false; }
+
+            await charRef.remove();
+            await addRelicToInventory(uid, relicName);
+            await updateLobbyHUD();
+            alert('✅ ' + relicName + ' removida. Regresó a tu inventario.');
+            return true;
+        }
+
+        // ── Abrir cofre ──
+        async function openChest(uid, chestType) {
+            const prices = { rare: 10000, special: 25000, epic: 60000, arcana: 0 };
+            const goldReward = { rare: 1000, special: 2000, epic: 5000, arcana: 10000 };
+
+            if (chestType !== 'arcana') {
+                const ok = await spendGold(uid, prices[chestType]);
+                if (!ok) { alert('No tienes suficiente oro.'); return; }
+            } else {
+                const keyRef = db.ref('users/' + uid + '/arcane_keys');
+                const keySnap = await keyRef.once('value');
+                if ((keySnap.val()||0) < 1) { alert('No tienes Llaves Arcanas.'); return; }
+                await keyRef.set((keySnap.val()||0) - 1);
+            }
+
+            // Determinar reliquia
+            const relic = rollChestRelic(chestType);
+            await addGold(uid, goldReward[chestType]);
+            await addRelicToInventory(uid, relic.name);
+            await updateLobbyHUD();
+
+            showChestOpenModal(chestType, relic, goldReward[chestType]);
+        }
+
+        function rollChestRelic(chestType) {
+            const relicsByTier = { Raro:[], Especial:[], Epico:[], Legendario:[] };
+            if (typeof RELICS_DATA !== 'undefined') {
+                Object.entries(RELICS_DATA).forEach(function([name, r]){
+                    if (name !== 'Memorex') relicsByTier[r.tier].push(name);
+                });
+            }
+            let tier;
+            const r = Math.random();
+            if (chestType === 'rare')    tier = 'Raro';
+            else if (chestType === 'special') tier = r < 0.60 ? 'Raro' : 'Especial';
+            else if (chestType === 'epic')    tier = r < 0.40 ? 'Raro' : r < 0.75 ? 'Especial' : 'Epico';
+            else /* arcana */                 tier = r < 0.70 ? 'Especial' : r < 0.95 ? 'Epico' : 'Legendario';
+            const pool = relicsByTier[tier];
+            const name = pool[Math.floor(Math.random() * pool.length)];
+            return typeof RELICS_DATA !== 'undefined' ? { name, ...RELICS_DATA[name] } : { name, tier };
+        }
+
+        function showChestOpenModal(chestType, relic, goldBonus) {
+            const tierColors = { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700' };
+            const color = tierColors[relic.tier] || '#fff';
+            const ov = document.createElement('div');
+            ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;';
+            ov.innerHTML = '<div style="background:#0a1628;border:2px solid ' + color + ';border-radius:16px;padding:32px;max-width:400px;width:90%;text-align:center;">' +
+                '<div style="font-size:3rem;margin-bottom:12px;">🎁</div>' +
+                '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:' + color + ';margin-bottom:8px;">¡COFRE ABIERTO!</div>' +
+                '<img src="' + (typeof RELICS_DATA!=='undefined'&&RELICS_DATA[relic.name]?RELICS_DATA[relic.name].img:'') + '" style="width:80px;height:80px;object-fit:contain;border-radius:8px;border:2px solid ' + color + ';margin:12px auto;display:block;">' +
+                '<div style="font-size:1rem;color:#fff;font-weight:700;margin-bottom:4px;">' + relic.name + '</div>' +
+                '<div style="font-size:.8rem;color:' + color + ';margin-bottom:12px;">' + relic.tier + '</div>' +
+                '<div style="font-size:.8rem;color:#ffaa00;margin-bottom:16px;">+ ' + goldBonus.toLocaleString() + ' Oro</div>' +
+                '<button onclick="this.parentElement.parentElement.remove()" style="background:linear-gradient(135deg,#003a1a,#00aa55);border:2px solid #00ff88;color:#00ff88;border-radius:8px;padding:10px 24px;font-family:Orbitron,sans-serif;cursor:pointer;">¡GENIAL!</button>' +
+                '</div>';
+            document.body.appendChild(ov);
+        }
+
+        // ==================== JEFE DE SALA ====================
+
+        async function getBossData() {
+            const snap = await db.ref('weekly_boss/current').once('value');
+            return snap.val();
+        }
+
+        async function attackBoss(uid, playerName, playerTeam) {
+            const boss = await getBossData();
+            if (!boss || boss.status !== 'active') { alert('No hay Jefe de Sala activo.'); return; }
+
+            // Verificar límite de 1 ataque diario
+            const today = new Date().toISOString().split('T')[0];
+            const lastRef = db.ref('weekly_boss/damage_log/' + uid + '/lastAttack');
+            const lastSnap = await lastRef.once('value');
+            if (lastSnap.val() === today) {
+                alert('Ya realizaste tu ataque diario al Jefe de Sala. Vuelve mañana.');
+                return;
+            }
+            // Iniciar combate vs Broly
+            startBossBattle(uid, playerName, playerTeam, boss);
+        }
+
+        async function registerBossDamage(uid, damageDealt) {
+            const today = new Date().toISOString().split('T')[0];
+            const logRef = db.ref('weekly_boss/damage_log/' + uid);
+            const snap = await logRef.once('value');
+            const cur = snap.val() || { totalDamage: 0, attacks: [] };
+            const newTotal = (cur.totalDamage||0) + damageDealt;
+            await logRef.update({
+                totalDamage: newTotal,
+                lastAttack: today,
+                playerName: firebase.auth().currentUser?.displayName || uid
+            });
+            // Actualizar HP global del jefe
+            const hpRef = db.ref('weekly_boss/current/hp');
+            const hpSnap = await hpRef.once('value');
+            const newHp = Math.max(0, (hpSnap.val()||0) - damageDealt);
+            await hpRef.set(newHp);
+            if (newHp <= 0) await db.ref('weekly_boss/current/status').set('defeated');
+            // Recompensa diaria
+            const goldReward = Math.floor(500 + damageDealt * 0.5);
+            await addGold(uid, goldReward);
+            await updateLobbyHUD();
+            return { newHp, goldReward };
+        }
+
+        // ==================== MERCADO ====================
+
+        async function getDailyMarket() {
+            const today = new Date().toISOString().split('T')[0];
+            const ref = db.ref('market/daily');
+            const snap = await ref.once('value');
+            const data = snap.val();
+            if (data && data.date === today) return data;
+            // Generar nuevo mercado del día
+            const newMarket = generateDailyMarket(today);
+            await ref.set(newMarket);
+            return newMarket;
+        }
+
+        function generateDailyMarket(date) {
+            const r = Math.random();
+            let tier;
+            if (r < 0.75) tier = 'Raro';
+            else if (r < 0.95) tier = 'Especial';
+            else if (r < 0.99) tier = 'Epico';
+            else tier = 'Legendario';
+            const pool = typeof RELICS_DATA !== 'undefined'
+                ? Object.keys(RELICS_DATA).filter(function(n){ return RELICS_DATA[n].tier === tier; })
+                : [];
+            const relicName = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : null;
+            const prices = typeof RELIC_MARKET_PRICES !== 'undefined' ? RELIC_MARKET_PRICES : {};
+            return {
+                date,
+                relic:       relicName ? { name: relicName, tier, price: prices[tier]||10000 } : null,
+                rune:        { price: 50000 },
+                chest_rare:  { price: 10000 },
+                chest_special: { price: 25000 },
+                chest_epic:  { price: 60000 },
+                chest_arcana: { cost_type: 'key' }
+            };
+        }
+
+        async function buyDailyItem(uid, itemType) {
+            const market = await getDailyMarket();
+            if (itemType === 'relic' && market.relic) {
+                const ok = await spendGold(uid, market.relic.price);
+                if (!ok) { alert('No tienes suficiente oro.'); return; }
+                await addRelicToInventory(uid, market.relic.name);
+                await updateLobbyHUD();
+                alert('✅ ' + market.relic.name + ' agregada a tu inventario.');
+            } else if (itemType === 'rune') {
+                const ok = await spendGold(uid, 50000);
+                if (!ok) { alert('No tienes suficiente oro.'); return; }
+                await db.ref('users/' + uid + '/attack_runes').transaction(function(v){ return (v||0)+1; });
+                await updateLobbyHUD();
+                alert('✅ Runa de Ataque agregada a tu inventario.');
+            } else if (itemType.startsWith('chest_')) {
+                const type = itemType.replace('chest_','');
+                await openChest(uid, type);
+            }
+        }
+
+        // ── Venta rápida de reliquia ──
+        async function quickSellRelic(uid, relicName) {
+            const relic = typeof RELICS_DATA !== 'undefined' ? RELICS_DATA[relicName] : null;
+            if (!relic) { alert('Reliquia no encontrada.'); return; }
+            const prices = typeof RELIC_QUICK_SELL !== 'undefined' ? RELIC_QUICK_SELL : {};
+            const gold = prices[relic.tier]||0;
+            if (!confirm('¿Vender ' + relicName + ' por ' + gold.toLocaleString() + ' oro?')) return;
+            await removeRelicFromInventory(uid, relicName);
+            await addGold(uid, gold);
+            await updateLobbyHUD();
+            alert('✅ Vendida por ' + gold.toLocaleString() + ' oro.');
+        }
+
+        // ── Publicar reliquia en venta pública ──
+        async function listRelicForSale(uid, relicName, price) {
+            // Verificar que solo publique 1 por día
+            const today = new Date().toISOString().split('T')[0];
+            const listingCheckRef = db.ref('users/' + uid + '/last_listing_date');
+            const checkSnap = await listingCheckRef.once('value');
+            if (checkSnap.val() === today) {
+                alert('Solo puedes publicar 1 reliquia por día en el mercado.');
+                return false;
+            }
+            const invSnap = await db.ref('users/' + uid + '/inventory/relics/' + relicName).once('value');
+            if ((invSnap.val()||0) < 1) { alert('No tienes esta reliquia.'); return false; }
+
+            const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
+            const listingRef = db.ref('market/listings').push();
+            await listingRef.set({
+                sellerId: uid,
+                sellerName: firebase.auth().currentUser?.displayName || uid,
+                relic: relicName,
+                tier: typeof RELICS_DATA !== 'undefined' ? RELICS_DATA[relicName].tier : 'Raro',
+                price,
+                listedAt: Date.now(),
+                expiresAt
+            });
+            await removeRelicFromInventory(uid, relicName);
+            await listingCheckRef.set(today);
+            alert('✅ ' + relicName + ' publicada en el mercado por ' + price.toLocaleString() + ' oro.');
+            return true;
+        }
+
+        // ── Comprar reliquia de venta pública ──
+        async function buyListedRelic(uid, listingId) {
+            const listRef = db.ref('market/listings/' + listingId);
+            const snap = await listRef.once('value');
+            const listing = snap.val();
+            if (!listing) { alert('Esta publicación ya no está disponible.'); return; }
+            if (listing.expiresAt < Date.now()) {
+                await listRef.remove();
+                await addRelicToInventory(listing.sellerId, listing.relic);
+                alert('Esta publicación expiró.');
+                return;
+            }
+            const ok = await spendGold(uid, listing.price);
+            if (!ok) { alert('No tienes suficiente oro.'); return; }
+            await addGold(listing.sellerId, listing.price);
+            await addRelicToInventory(uid, listing.relic);
+            await listRef.remove();
+            await updateLobbyHUD();
+            alert('✅ ' + listing.relic + ' comprada y agregada a tu inventario.');
+        }
+
+        // ==================== PANEL DE ADMINISTRADOR ====================
+        const ADMIN_EMAIL = 'solisalex8291@gmail.com';
+
+        function isAdmin() {
+            const user = firebase.auth().currentUser;
+            return user && user.email === ADMIN_EMAIL;
+        }
+
+        async function adminActivateBoss(bossId, bossConfig, startDate, endDate) {
+            if (!isAdmin()) { alert('Acceso denegado.'); return; }
+            await db.ref('weekly_boss/current').set({
+                id: bossId,
+                name: bossConfig.name,
+                portrait: bossConfig.portrait,
+                hp: bossConfig.hp,
+                maxHp: bossConfig.maxHp,
+                speed: bossConfig.speed,
+                startDate, endDate,
+                status: 'active',
+                activatedBy: ADMIN_EMAIL,
+                activatedAt: Date.now()
+            });
+            // Limpiar log anterior
+            await db.ref('weekly_boss/damage_log').remove();
+            alert('✅ Evento de Jefe de Sala activado: ' + bossConfig.name);
+        }
+
+        async function adminDeactivateBoss() {
+            if (!isAdmin()) { alert('Acceso denegado.'); return; }
+            await db.ref('weekly_boss/current/status').set('ended');
+            alert('✅ Evento de Jefe de Sala desactivado.');
+        }
+
+        async function adminGetRanking() {
+            if (!isAdmin()) return [];
+            const snap = await db.ref('weekly_boss/damage_log').once('value');
+            const data = snap.val() || {};
+            return Object.entries(data)
+                .map(function([uid, d]){ return { uid, ...d }; })
+                .sort(function(a,b){ return (b.totalDamage||0) - (a.totalDamage||0); });
+        }
+
+        // Limpiar listings expirados (llamar al cargar el mercado)
+        async function cleanExpiredListings() {
+            const snap = await db.ref('market/listings').once('value');
+            const data = snap.val() || {};
+            const now = Date.now();
+            const promises = [];
+            Object.entries(data).forEach(function([id, listing]){
+                if (listing.expiresAt < now) {
+                    promises.push(
+                        db.ref('market/listings/' + id).remove().then(function(){
+                            return addRelicToInventory(listing.sellerId, listing.relic);
+                        })
+                    );
+                }
+            });
+            await Promise.all(promises);
+        }
+
+        // Inicializar al hacer login
+        firebase.auth().onAuthStateChanged(async function(user) {
+            if (user) {
+                await initPlayerData(user.uid);
+                await updateLobbyHUD();
+                await cleanExpiredListings();
+            }
+        });
