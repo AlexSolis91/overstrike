@@ -870,3 +870,71 @@
                 ]
             },
         };
+        // ==================== RELIQUIAS ====================
+        const RELICS_DATA = {
+            // ── ARMA ──
+            'Cuerno del Caos':      { tier:'Raro',      slot:'Arma',    img:'https://i.ibb.co/KRwMWSR/Gemini-Generated-Image-lk9bmxlk9bmxlk9b.png',   effect:'crit_chance_bonus',  desc:'+10% probabilidad de golpe crítico.' },
+            'Garras Lacerantes':    { tier:'Raro',      slot:'Arma',    img:'https://i.ibb.co/Cp9tyvCn/Gemini-Generated-Image-xd2b04xd2b04xd2b.png',   effect:'bleed_on_hit',       desc:'15% de aplicar Sangrado al atacar. Si aplica → +2 cargas.' },
+            'Espada del Triunfo':   { tier:'Raro',      slot:'Arma',    img:'https://i.ibb.co/tpTJnBw3/Gemini-Generated-Image-wju2u8wju2u8wju2.png',   effect:'basic_dmg_50pct',    desc:'Ataque básico causa +50% daño.' },
+            'Orbe de las Sombras':  { tier:'Raro',      slot:'Arma',    img:'https://i.ibb.co/7Nx04zPN/Captura-de-pantalla-2026-05-06-144145.png',     effect:'summon_hp_bonus',    desc:'Al invocar, la invocación gana +3 HP máximo.' },
+            'Tabla de Elementos':   { tier:'Raro',      slot:'Arma',    img:'https://i.ibb.co/hJZYDq2V/image-ab1a229d.png',                           effect:'special_dmg_plus2',  desc:'Ataques especiales causan +2 daño.' },
+            'Mistic Hammer':        { tier:'Especial',  slot:'Arma',    img:'https://i.ibb.co/4ZxCxDNX/Gemini-Generated-Image-ekv9yhekv9yhekv9.png',   effect:'stun_on_hit_50',     desc:'Ataques tienen 50% de aplicar Aturdimiento.' },
+            'Nullum':               { tier:'Especial',  slot:'Arma',    img:'https://i.ibb.co/m5bGhN88/Gemini-Generated-Image-mjblsjmjblsjmjbl.png',   effect:'special_drain_50',   desc:'Ataque especial → objetivo pierde 50% de sus cargas.' },
+            'Maza Ignea':           { tier:'Especial',  slot:'Arma',    img:'https://i.ibb.co/sph9T2ZC/Gemini-Generated-Image-tttixtttixtttixt.png',   effect:'basic_burn_2hp',     desc:'Ataque básico aplica Quemadura 2HP al objetivo.' },
+            'Daga de Kaisel':       { tier:'Especial',  slot:'Arma',    img:'https://i.ibb.co/1tNdZynH/v2-watermarked-20299d9f.jpg',                   effect:'debuff_mirror',      desc:'Al recibir Debuff → aplica ese debuff a enemigo aleatorio y le quita 2 cargas.' },
+            'Tormenta Roja':        { tier:'Especial',  slot:'Arma',    img:'https://i.ibb.co/chhbBgMg/v2-watermarked-3f4a38bf.jpg',                   effect:'dot_retaliation',    desc:'Al perder HP por Quemadura o Veneno → 3 daño a todo el equipo enemigo.' },
+            'Pyrophagos':           { tier:'Epico',     slot:'Arma',    img:'https://i.ibb.co/Y7n0KDPW/Gemini-Generated-Image-ybgturybgturybgt.png',   effect:'pyro_st_burn',       desc:'ST sobre enemigo con Quemadura → duplica Quemaduras y +3 daño.' },
+            'Aguijón Esmeralda':    { tier:'Epico',     slot:'Arma',    img:'https://i.ibb.co/pjHTcmKZ/Gemini-Generated-Image-8p0wjx8p0wjx8p0w.png',  effect:'poison_spread',      desc:'Cuando enemigo recibe daño por Veneno → aplica Veneno 2T a 2 enemigos aleatorios.' },
+            'Eco Sanador':          { tier:'Epico',     slot:'Arma',    img:'https://i.ibb.co/WpRwtvfh/Gemini-Generated-Image-3almna3almna3alm.png',   effect:'double_heal',        desc:'Movimientos de curación curan el doble de HP.' },
+            'Sable Nishant':        { tier:'Epico',     slot:'Arma',    img:'https://i.ibb.co/NnjSG3Dz/Gemini-Generated-Image-v4wxdmv4wxdmv4wx.png',   effect:'extra_turn_25',      desc:'25% de ganar turno adicional después de atacar.' },
+            'Colmillo de Agron':    { tier:'Epico',     slot:'Arma',    img:'https://i.ibb.co/bj5HPypz/Gemini-Generated-Image-xgovhnxgovhnxgov.png',   effect:'crit_team_charges',  desc:'Golpe crítico → equipo aliado genera 3 cargas.' },
+            'Skeggöx':              { tier:'Epico',     slot:'Arma',    img:'https://i.ibb.co/dwjtVByZ/image-8ea3867b.png',                           effect:'taunt_extra_turn',   desc:'Golpear enemigo con Provocación/MegaProv → turno adicional e ignora Provocación esta ronda.' },
+            'Ergonos':              { tier:'Legendario',slot:'Arma',    img:'https://i.ibb.co/fVjsbMwg/Gemini-Generated-Image-mo8zwgmo8zwgmo8z.png',   effect:'ergonos_basic',      desc:'Duplica generación de cargas del básico. El equipo genera las mismas cargas.' },
+            'Vortex':               { tier:'Legendario',slot:'Arma',    img:'https://i.ibb.co/tphxyvrS/image-f7fb9e22.png',                           effect:'vortex_pierce',      desc:'Ignora Esquiva Área. Daño doble a enemigos con Esquiva Área.' },
+            // ── ARCO ──
+            'Arco Granizo':         { tier:'Raro',      slot:'Arco',    img:'https://i.ibb.co/C5Np5yH9/Gemini-Generated-Image-7e4gh67e4gh67e4g.png',   effect:'freeze_charge',      desc:'Al aplicar Congelación → +1 carga.' },
+            'Ballesta de Cristal':  { tier:'Raro',      slot:'Arco',    img:'https://i.ibb.co/hzssnGQ/image-6c6785f0.png',                            effect:'no_charge_bonus',    desc:'Golpear enemigo sin cargas → +2 cargas.' },
+            // ── ESCUDO ──
+            'Escudo Invisible':     { tier:'Raro',      slot:'Escudo',  img:'https://i.ibb.co/HTk7QVHL/image-7911c489.png',                           effect:'shield_each_round',  desc:'Al inicio de cada ronda → Buff Escudo 2HP.' },
+            'Zenit':                { tier:'Legendario',slot:'Escudo',  img:'https://i.ibb.co/Y7f8DVSw/Gemini-Generated-Image-uzaoqbuzaoqbuzao.png',   effect:'zenit_tank',         desc:'+3 cargas al recibir golpe. Reduce 50% el daño recibido.' },
+            // ── BOTAS ──
+            'Alas de Mercurio':     { tier:'Raro',      slot:'Botas',   img:'https://i.ibb.co/VY0CdH10/Gemini-Generated-Image-yfkzzzyfkzzzyfkz.png',   effect:'speed_plus5',        desc:'+5 velocidad.' },
+            // ── GUANTE ──
+            'Puño de Obsidiana':    { tier:'Especial',  slot:'Guante',  img:'https://i.ibb.co/mCTKTrHW/Gemini-Generated-Image-gse74sgse74sgse7.png',   effect:'basic_dmg_plus2',    desc:'Ataque básico causa +2 daño.' },
+            // ── YELMO ──
+            'Yelmo de Ork':         { tier:'Raro',      slot:'Yelmo',   img:'https://i.ibb.co/FkkKch8W/v2-watermarked-32f5a869.jpg',                   effect:'hp_on_basic_hit',    desc:'+2 HP al recibir ataque básico enemigo.' },
+            // ── JOYA ──
+            'Arcillos del Alba':    { tier:'Raro',      slot:'Joya',    img:'https://i.ibb.co/8D80f9hX/Captura-de-pantalla-2026-04-30-120759.png',     effect:'hp_spd_plus3',       desc:'+3 HP máximo y +3 velocidad.' },
+            'Anillo de la Verdad':  { tier:'Raro',      slot:'Joya',    img:'https://i.ibb.co/0j9p3ZDM/Gemini-Generated-Image-y5zwy7y5zwy7y5zw.png',   effect:'debuff_resist_15',   desc:'15% de limpiar un debuff al recibirlo.' },
+            'Anillo de la Vida':    { tier:'Especial',  slot:'Joya',    img:'https://i.ibb.co/DPwGq3XP/Gemini-Generated-Image-i9i8oai9i8oai9i8.png',   effect:'regen_2hp_turn',     desc:'+2 HP por turno.' },
+            'Brazalete Demoniaco':  { tier:'Especial',  slot:'Joya',    img:'https://i.ibb.co/93TGgK4w/image-767e9daa.png',                           effect:'fear_on_hit_25',     desc:'25% de aplicar Miedo al atacante al recibir golpe.' },
+            // ── ARMADURA ──
+            'Escamas de Kindora':   { tier:'Epico',     slot:'Armadura',img:'https://i.ibb.co/rG09GYGR/image-5fc4b067.png',                           effect:'hp_max_50pct',       desc:'+50% HP máximo.' },
+            'Vestidura Arcana':     { tier:'Legendario',slot:'Armadura',img:'https://i.ibb.co/Q3Xzn1SL/Gemini-Generated-Image-c3waquc3waquc3wa.png',   effect:'vestidura_arcana',   desc:'Daño recibido genera misma cantidad de cargas. Fin de ronda +4 HP.' },
+        };
+
+        // Precios de reliquias en el mercado
+        const RELIC_MARKET_PRICES = { 'Raro': 10000, 'Especial': 25000, 'Epico': 60000, 'Legendario': 150000 };
+        // Precio de venta rápida
+        const RELIC_QUICK_SELL = { 'Raro': 1000, 'Especial': 10000, 'Epico': 20000, 'Legendario': 100000 };
+        // Costo de remover reliquia equipada
+        const RELIC_REMOVE_COST = 10000;
+
+        // ==================== JEFE DE SALA — BROLY ====================
+        const BOSS_DATA = {
+            'broly': {
+                id: 'broly',
+                name: 'Broly',
+                portrait: 'https://i.ibb.co/wrhphbYm/image.jpg',
+                hp: 10000, maxHp: 10000,
+                speed: 95, charges: 0,
+                statusEffects: [],
+                passive: { name: 'Legendario Super Sayajin', description: 'Cada vez que recibe daño, genera 3 cargas.' },
+                abilities: [
+                    { name: 'Eraser Cannon',       type: 'basic',   cost: 0,  chargeGain: 2,  damage: 3,  target: 'single', effect: 'eraser_cannon_broly',    description: 'Causa 3 daño. 50% de probabilidad de generar el doble de cargas.' },
+                    { name: 'Escudo de Energía',   type: 'special', cost: 4,  chargeGain: 0,  damage: 0,  target: 'self',   effect: 'escudo_energia_broly',   description: 'Aplica Buff Escudo de 5HP. Aplica Buff Concentración 3 turnos.' },
+                    { name: 'Liberación de Energía', type: 'special', cost: 7, chargeGain: 0, damage: 5,  target: 'aoe',    effect: 'liberacion_energia_broly', description: 'Causa 5 AOE. +4 cargas por cada enemigo que esquive.' },
+                    { name: 'Omega Bláster',       type: 'over',    cost: 20, chargeGain: 0,  damage: 20, target: 'single', effect: 'omega_blaster_broly',    description: 'Causa 20 daño. Roba todas las cargas del equipo enemigo. +1 daño por cada carga robada a 2 enemigos aleatorios.' }
+                ]
+            }
+        };
