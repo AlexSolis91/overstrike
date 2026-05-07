@@ -7720,6 +7720,72 @@
                         applyDamageWithShield(_n, _piDmg, gameState.selectedCharacter);
                         addLog('⚡ Poder Ilimitado: ' + _piDmg + ' daño a ' + _n, 'damage');
                     }
+                }
+            // ══ BROLY (Jefe de Sala) — handlers ══
+
+            } else if (ability.effect === 'eraser_cannon_broly') {
+                // Eraser Cannon: 3 ST. 50% de doble cargas.
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('💚 Eraser Cannon: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (Math.random() < 0.50) {
+                    attacker.charges = Math.min(20, (attacker.charges||0) + (ability.chargeGain||2));
+                    addLog('💚 Eraser Cannon: ¡doble cargas! +' + (ability.chargeGain||2) + ' cargas adicionales', 'buff');
+                }
+
+            } else if (ability.effect === 'escudo_energia_broly') {
+                // Escudo de Energía: Escudo 5HP + Concentración 3T
+                const _beAtk = gameState.characters[gameState.selectedCharacter];
+                if (_beAtk) {
+                    _beAtk.shield = (_beAtk.shield||0) + 5;
+                    if (typeof applyBuff === 'function') applyBuff(gameState.selectedCharacter, { name: 'Concentracion', type: 'buff', duration: 3, emoji: '🎯' });
+                    addLog('💚 Escudo de Energía: Broly gana Escudo 5HP + Concentración 3T', 'buff');
+                }
+
+            } else if (ability.effect === 'liberacion_energia_broly') {
+                // Liberación de Energía: 5 AOE. +4 cargas por cada enemigo que esquive.
+                const _leAtk = gameState.characters[gameState.selectedCharacter];
+                const _leET = _leAtk ? (_leAtk.team==='team1'?'team2':'team1') : 'team2';
+                let _leEvades = 0;
+                if (checkAndRedirectAOEMegaProv(_leET, finalDamage, gameState.selectedCharacter)) {
+                    addLog('💚 Liberación de Energía: AOE redirigido', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _cc = gameState.characters[_n];
+                        if (!_cc||_cc.team!==_leET||_cc.isDead||_cc.hp<=0) continue;
+                        if (checkAsprosAOEImmunity(_n,true)||checkMinatoAOEImmunity(_n)) { _leEvades++; continue; }
+                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                    }
+                }
+                if (_leEvades > 0 && _leAtk) {
+                    _leAtk.charges = Math.min(20, (_leAtk.charges||0) + _leEvades * 4);
+                    addLog('💚 Liberación de Energía: +' + (_leEvades*4) + ' cargas (' + _leEvades + ' enemigos esquivaron)', 'buff');
+                }
+                addLog('💚 Liberación de Energía: ' + finalDamage + ' AOE completado', 'damage');
+
+            } else if (ability.effect === 'omega_blaster_broly') {
+                // Omega Bláster: 20 ST. Roba TODAS las cargas enemigas. +1 daño por carga robada a 2 enemigos aleatorios.
+                const _obAtk = gameState.characters[gameState.selectedCharacter];
+                const _obET = _obAtk ? (_obAtk.team==='team1'?'team2':'team1') : 'team2';
+                // Robar todas las cargas del equipo enemigo
+                let _totalStolen = 0;
+                for (const _n in gameState.characters) {
+                    const _cc = gameState.characters[_n];
+                    if (!_cc||_cc.team!==_obET||_cc.isDead||_cc.hp<=0) continue;
+                    _totalStolen += (_cc.charges||0);
+                    _cc.charges = 0;
+                }
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('💚 Omega Bláster: ' + finalDamage + ' daño a ' + targetName + '. Robadas ' + _totalStolen + ' cargas del equipo enemigo.', 'damage');
+                // +1 daño por carga robada a 2 enemigos aleatorios
+                if (_totalStolen > 0) {
+                    const _bonusDmg = _totalStolen;
+                    const _rands = Object.keys(gameState.characters).filter(function(n){
+                        const _c=gameState.characters[n]; return _c&&_c.team===_obET&&!_c.isDead&&_c.hp>0;
+                    }).sort(function(){ return Math.random()-0.5; }).slice(0,2);
+                    _rands.forEach(function(n){
+                        applyDamageWithShield(n, _bonusDmg, gameState.selectedCharacter);
+                        addLog('💚 Omega Bláster: +' + _bonusDmg + ' daño a ' + n + ' (cargas robadas)', 'damage');
+                    });
                 }            }
 
             // Actualizar UI
