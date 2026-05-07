@@ -1271,6 +1271,13 @@
                 }
             }
 
+            // ── LEGENDARIO SUPER SAYAJIN (Broly): genera 3 cargas al recibir daño ──
+            if (damage > 0 && attackerName && attackerName !== targetName &&
+                target.passive && target.passive.name === 'Legendario Super Sayajin') {
+                target.charges = Math.min(20, (target.charges||0) + 3);
+                addLog('💚 Legendario Super Sayajin: Broly genera 3 cargas al recibir daño', 'buff');
+            }
+
             // ── EL OJO QUE TODO LO VE (Sauron): reducción 50% con MegaProv/ProtSagrada + Aturdimiento al atacante ──
             if (damage > 0 && attackerName && attackerName !== targetName &&
                 target.passive && target.passive.name === 'El Ojo que Todo lo Ve') {
