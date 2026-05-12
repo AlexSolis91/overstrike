@@ -433,6 +433,10 @@
             document.getElementById('inv-tab-characters').style.display = tab === 'characters' ? 'block' : 'none';
         }
 
+        function _escHtmlInv(s) {
+            return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
         async function loadInventoryData() {
             const user = firebase.auth().currentUser;
             if (!user) return;
@@ -458,7 +462,7 @@
                     '<div style="font-size:.65rem;color:' + color + ';">' + rd.tier + '</div>' +
                     '<div style="position:absolute;top:6px;right:6px;background:' + color + ';color:#000;border-radius:10px;padding:2px 6px;font-size:.65rem;font-weight:700;">×' + qty + '</div>' +
                     '<div style="display:flex;gap:4px;margin-top:6px;">' +
-                    '<button onclick="event.stopPropagation();quickSellRelic('' + user.uid + '','' + name.replace(/'/g,"\'")+'').then(loadInventoryData)" style="flex:1;background:rgba(255,68,68,0.2);border:1px solid #ff4444;color:#ff4444;border-radius:6px;padding:3px;font-size:.6rem;cursor:pointer;">Vender</button>' +
+                    '<button data-uid="' + _escHtmlInv(user.uid) + '" data-name="' + _escHtmlInv(name) + '" onclick="event.stopPropagation();var b=this;quickSellRelic(b.dataset.uid,b.dataset.name).then(function(){loadInventoryData()})" style="flex:1;background:rgba(255,68,68,0.2);border:1px solid #ff4444;color:#ff4444;border-radius:6px;padding:3px;font-size:.6rem;cursor:pointer;">Vender</button>' +
                     '</div>';
                 grid.appendChild(card);
             });
@@ -516,7 +520,7 @@
                         '<div style="font-size:.7rem;color:' + color + ';">' + rd.tier + ' · ' + rd.slot + '</div>' +
                         '<div style="font-size:.68rem;color:#aaa;margin-top:2px;">' + rd.desc + '</div>' +
                         '</div>' +
-                        '<button onclick="removeRelic('' + uid + '','' + charName.replace(/'/g,"\'")+'','+ i +').then(function(){ renderEquipSlots('' + charName.replace(/'/g,"\'")+'','' + uid + ''); })" style="background:rgba(255,51,102,0.15);border:1px solid #ff3366;color:#ff3366;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:.65rem;white-space:nowrap;">Remover<br><span style='color:#ffaa00'>10,000 🥇</span></button>';
+                        '<button data-uid="' + _escHtmlInv(uid) + '" data-char="' + _escHtmlInv(charName) + '" data-slot="' + i + '" onclick="event.stopPropagation();var b=this;removeRelic(b.dataset.uid,b.dataset.char,parseInt(b.dataset.slot)).then(function(){renderEquipSlots(b.dataset.char,b.dataset.uid)})" style="background:rgba(255,51,102,0.15);border:1px solid #ff3366;color:#ff3366;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:.65rem;white-space:nowrap;">Remover<br><span style=\'color:#ffaa00\'>10,000 🥇</span></button>';
                 } else {
                     slotEl.innerHTML = '<div style="width:48px;height:48px;border:2px dashed rgba(255,255,255,0.2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:rgba(255,255,255,0.2);">+</div>' +
                         '<div style="flex:1;color:rgba(255,255,255,0.4);font-size:.8rem;">Slot vacío</div>' +
@@ -594,7 +598,7 @@
                     '<div style="font-size:.75rem;color:#fff;font-weight:700;margin-bottom:4px;">' + market.relic.name + '</div>' +
                     '<div style="font-size:.68rem;color:' + color + ';margin-bottom:8px;">' + market.relic.tier + '</div>' +
                     '<div style="font-size:.75rem;color:#ffaa00;margin-bottom:8px;">' + market.relic.price.toLocaleString() + ' 🥇</div>' +
-                    '<button onclick="buyDailyItem('' + user.uid + '','relic')" style="width:100%;padding:6px;background:rgba(255,170,0,0.2);border:1px solid #ffaa00;color:#ffaa00;border-radius:8px;font-size:.7rem;cursor:pointer;">Comprar</button>' +
+                    '<button onclick="buyDailyItem(\'' + user.uid + '\',\'relic\')" style="width:100%;padding:6px;background:rgba(255,170,0,0.2);border:1px solid #ffaa00;color:#ffaa00;border-radius:8px;font-size:.7rem;cursor:pointer;">Comprar</button>' +
                     '</div>';
             }
             // 2. Runa de Ataque
@@ -603,7 +607,7 @@
                 '<div style="font-size:.75rem;color:#fff;font-weight:700;margin-bottom:4px;">Runa de Ataque</div>' +
                 '<div style="font-size:.68rem;color:#c864ff;margin-bottom:8px;">Especial</div>' +
                 '<div style="font-size:.75rem;color:#ffaa00;margin-bottom:8px;">50,000 🥇</div>' +
-                '<button onclick="buyDailyItem('' + user.uid + '','rune')" style="width:100%;padding:6px;background:rgba(200,100,255,0.2);border:1px solid #c864ff;color:#c864ff;border-radius:8px;font-size:.7rem;cursor:pointer;">Comprar</button>' +
+                '<button onclick="buyDailyItem(\'' + user.uid + '\',\'rune\')" style="width:100%;padding:6px;background:rgba(200,100,255,0.2);border:1px solid #c864ff;color:#c864ff;border-radius:8px;font-size:.7rem;cursor:pointer;">Comprar</button>' +
                 '</div>';
             // 3-6. Cofres
             const chests = [
@@ -617,7 +621,7 @@
                     '<div style="font-size:2.5rem;margin-bottom:8px;">🎁</div>' +
                     '<div style="font-size:.75rem;color:#fff;font-weight:700;margin-bottom:4px;">' + ch.label + '</div>' +
                     '<div style="font-size:.75rem;color:#ffaa00;margin-bottom:8px;">' + ch.price + '</div>' +
-                    '<button onclick="buyDailyItem('' + user.uid + '','' + ch.id + '')" style="width:100%;padding:6px;background:rgba(255,255,255,0.05);border:1px solid ' + ch.color + ';color:' + ch.color + ';border-radius:8px;font-size:.7rem;cursor:pointer;">Comprar</button>' +
+                    '<button onclick="buyDailyItem(\'' + user.uid + '\',\'' + ch.id + '\')" style="width:100%;padding:6px;background:rgba(255,255,255,0.05);border:1px solid ' + ch.color + ';color:' + ch.color + ';border-radius:8px;font-size:.7rem;cursor:pointer;">Comprar</button>' +
                     '</div>';
             });
         }
@@ -650,7 +654,7 @@
                     '<div style="text-align:right;">' +
                     '<div style="font-size:.85rem;color:#ffaa00;font-weight:700;margin-bottom:6px;">' + listing.price.toLocaleString() + ' 🥇</div>' +
                     (isMine ? '<div style="font-size:.65rem;color:#555;">Tu publicación</div>' :
-                     '<button onclick="buyListedRelic('' + (user?user.uid:'') + '','' + id + '').then(loadListings)" style="padding:6px 12px;background:rgba(0,255,136,0.15);border:1px solid #00ff88;color:#00ff88;border-radius:8px;font-size:.7rem;cursor:pointer;">Comprar</button>') +
+                     '<button data-uid="' + _escHtmlInv(user ? user.uid : '') + '" data-id="' + _escHtmlInv(id) + '" onclick="var b=this;buyListedRelic(b.dataset.uid,b.dataset.id).then(loadListings)" style="padding:6px 12px;background:rgba(0,200,100,0.2);border:1px solid #00cc66;color:#00cc66;border-radius:8px;font-size:.7rem;cursor:pointer;">Comprar</button>') +
                     '</div>';
                 list.appendChild(el);
             });
