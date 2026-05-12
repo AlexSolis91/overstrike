@@ -413,7 +413,12 @@
 
         window.showBossScreen = function showBossScreen() {
             document.getElementById('bossScreen').style.display = 'block';
-            loadBossScreen();
+            // Usar window.loadBossScreen para que jefe-de-sala.js pueda sobreescribirla
+            if (typeof window.loadBossScreen === 'function') {
+                window.loadBossScreen();
+            } else {
+                loadBossScreen();
+            }
         }
         window.hideBossScreen = function hideBossScreen() { document.getElementById('bossScreen').style.display = 'none'; }
 
@@ -448,7 +453,7 @@
                 const card = document.createElement('div');
                 card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid ' + color + ';border-radius:10px;padding:10px;text-align:center;position:relative;cursor:pointer;';
                 card.title = rd.desc;
-                card.innerHTML = '<img src="' + rd.img + '" style="width:56px;height:56px;object-fit:contain;border-radius:6px;" onerror="this.style.display='none'">' +
+                card.innerHTML = '<img src="' + rd.img + '" style="width:56px;height:56px;object-fit:contain;border-radius:6px;" onerror="this.style.display=\'none\'">' +
                     '<div style="font-size:.68rem;color:#ccc;margin-top:6px;line-height:1.2;">' + name + '</div>' +
                     '<div style="font-size:.65rem;color:' + color + ';">' + rd.tier + '</div>' +
                     '<div style="position:absolute;top:6px;right:6px;background:' + color + ';color:#000;border-radius:10px;padding:2px 6px;font-size:.65rem;font-weight:700;">×' + qty + '</div>' +
