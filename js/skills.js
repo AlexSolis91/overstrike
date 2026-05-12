@@ -4926,8 +4926,8 @@
                 addLog('💥 Golpe Serio: ' + _gsDmg + ' daño a ' + targetName, 'damage');
             } else if (ability.effect === 'golpe_normal_saitama') {
                 // SAITAMA — Golpe Normal: 4 dmg + Furia 2T + escalating charge bonus (pasiva)
-                // NOTE: saitamaBasicChargeBonus ya fue incrementado en el pre-handler (línea ~191)
-                // y finalChargeGain ya fue ajustado allí. No incrementar de nuevo aquí.
+                // NOTE: saitamaBasicChargeBonus ya fue incrementado en el pre-handler (~línea 191).
+                // No incrementar de nuevo aquí para evitar doble acumulación.
                 const _gnSaitama = gameState.characters[gameState.selectedCharacter];
                 let _gnDmg = finalDamage;
                 applyDamageWithShield(targetName, _gnDmg, gameState.selectedCharacter);
@@ -4936,8 +4936,9 @@
                     const _nextBonus = 1 + (_gnSaitama.saitamaBasicChargeBonus || 0);
                     addLog('💥 Golpe Normal: ' + _gnDmg + ' daño + Furia 2T. Próximo básico generará ' + _nextBonus + ' cargas', 'buff');
                 }
+
             } else if (ability.effect === 'golpes_consecutivos_saitama') {
-                // SAITAMA — Golpes Normales Consecutivos: 3 daño + 3 adicional por cada Buff activo en el objetivo
+                // SAITAMA — Golpes Normales Consecutivos: 3 daño base + 3 adicional por cada Buff activo en el objetivo
                 const _gcsTgt = gameState.characters[targetName];
                 const _gcsBuffCount = _gcsTgt
                     ? (_gcsTgt.statusEffects || []).filter(function(e) { return e && e.type === 'buff' && !e.passiveHidden; }).length
@@ -4945,7 +4946,7 @@
                 const _gcsTotalDmg = finalDamage + (_gcsBuffCount * 3);
                 applyDamageWithShield(targetName, _gcsTotalDmg, gameState.selectedCharacter);
                 if (_gcsBuffCount > 0) {
-                    addLog('💥 Golpes Consecutivos: ' + finalDamage + ' + ' + (_gcsBuffCount * 3) + ' daño extra (' + _gcsBuffCount + ' buffs × 3) = ' + _gcsTotalDmg + ' total a ' + targetName, 'damage');
+                    addLog('💥 Golpes Consecutivos: ' + finalDamage + ' + ' + (_gcsBuffCount * 3) + ' extra (' + _gcsBuffCount + ' buffs × 3) = ' + _gcsTotalDmg + ' daño a ' + targetName, 'damage');
                 } else {
                     addLog('💥 Golpes Consecutivos: ' + _gcsTotalDmg + ' daño a ' + targetName, 'damage');
                 }
@@ -7227,8 +7228,74 @@
             }
 
 
+            // ══ RENGOKU AOE — manejados ANTES del bloque Kyo para evitar que target=aoe los bloquee ══
+            if (ability.effect === 'mar_fuego_rengoku') {
+                // Mar de Fuego: 4 AOE. Ignora Esquiva Área. Disipa buffs. Quemadura 1HP. Si ya tenían Quemadura: 100% crítico
+                const _mfAtk2 = gameState.characters[gameState.selectedCharacter];
+                const _mfET2 = _mfAtk2 ? (_mfAtk2.team==='team1'?'team2':'team1') : 'team2';
+                for (const _n in gameState.characters) {
+                    const _cc = gameState.characters[_n];
+                    if (!_cc || _cc.team !== _mfET2 || _cc.isDead || _cc.hp <= 0) continue;
+                    const _mfHadBurn2 = (_cc.statusEffects||[]).some(function(e){ return e && (e.name === 'Quemadura' || e.name === 'quemadura'); });
+                    const _mfBufs2 = (_cc.statusEffects||[]).filter(function(e){ return e && e.type === 'buff' && !e.permanent && !e.passiveHidden; });
+                    if (_mfBufs2.length > 0) {
+                        _cc.statusEffects = (_cc.statusEffects||[]).filter(function(e){ return !e || e.type !== 'buff' || e.permanent || e.passiveHidden; });
+                        addLog('🔥 Mar de Fuego: ' + _mfBufs2.length + ' buff(s) disipados de ' + _n, 'debuff');
+                    }
+                    let _mfDmg2 = finalDamage;
+                    if (_mfHadBurn2) {
+                        _mfDmg2 = finalDamage * 2;
+                        gameState._isCritHit = true;
+                        addLog('🔥 Mar de Fuego: ¡Crítico 100%! ' + _n + ' tenía Quemadura activa', 'buff');
+                    }
+                    applyDamageWithShield(_n, _mfDmg2, gameState.selectedCharacter);
+                    applyFlatBurn(_n, 1, 2);
+                    addLog('🔥 Mar de Fuego: ' + _mfDmg2 + ' daño + Quemadura a ' + _n, 'damage');
+                }
+                for (const _sid in gameState.summons) {
+                    const _ss = gameState.summons[_sid];
+                    if (!_ss || _ss.team !== _mfET2 || _ss.hp <= 0) continue;
+                    applySummonDamage(_sid, finalDamage, gameState.selectedCharacter);
+                }
+                addLog('🔥 Mar de Fuego: AOE completado (ignora Esquiva Área)', 'damage');
+
+            } else if (ability.effect === 'tigre_fuego_rengoku') {
+                // Tigre de Fuego: 3 AOE + Quemadura 1HP. Si ya tenían Quemadura: +1 carga al equipo aliado por cada Quemadura activa en equipo enemigo
+                const _tfAtk2 = gameState.characters[gameState.selectedCharacter];
+                const _tfET2 = _tfAtk2 ? (_tfAtk2.team==='team1'?'team2':'team1') : 'team2';
+                const _tfAlly2 = _tfAtk2 ? _tfAtk2.team : 'team1';
+                let _tfAnyHadBurn2 = false;
+                if (checkAndRedirectAOEMegaProv(_tfET2, finalDamage, gameState.selectedCharacter)) {
+                    addLog('🔥 Tigre de Fuego: AOE redirigido por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _cc = gameState.characters[_n];
+                        if (!_cc||_cc.team!==_tfET2||_cc.isDead||_cc.hp<=0) continue;
+                        if (checkAsprosAOEImmunity(_n,true)||checkMinatoAOEImmunity(_n)) { addLog('🌟 '+_n+' esquiva (Esquiva Área)', 'buff'); continue; }
+                        const _hadB2 = (_cc.statusEffects||[]).some(function(e){ return e&&(e.name==='Quemadura'||e.name==='quemadura'); });
+                        if (_hadB2) _tfAnyHadBurn2 = true;
+                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        applyFlatBurn(_n, 1, 2);
+                    }
+                }
+                if (_tfAnyHadBurn2) {
+                    let _qcTotal2 = 0;
+                    for (const _n in gameState.characters) {
+                        const _cc = gameState.characters[_n];
+                        if (!_cc||_cc.team!==_tfET2||_cc.isDead) continue;
+                        _qcTotal2 += (_cc.statusEffects||[]).filter(function(e){ return e&&(e.name==='Quemadura'||e.name==='quemadura'); }).length;
+                    }
+                    for (const _an in gameState.characters) {
+                        const _ac = gameState.characters[_an];
+                        if (!_ac||_ac.team!==_tfAlly2||_ac.isDead||_ac.hp<=0) continue;
+                        _ac.charges = Math.min(20, (_ac.charges||0) + _qcTotal2);
+                    }
+                    addLog('🔥 Tigre de Fuego: +' + _qcTotal2 + ' cargas al equipo aliado (' + _qcTotal2 + ' Quemaduras activas)', 'buff');
+                }
+                addLog('🔥 Tigre de Fuego: 3 AOE + Quemadura 1HP', 'damage');
+
             // ── LLAMARADA KUSANAGI (Kyo): disparar pasiva al finalizar cualquier AOE ──
-            if (ability && (ability.target === 'aoe' || ability.target === 'enemy_team') && !passiveExecuting) {
+            } else if (ability && (ability.target === 'aoe' || ability.target === 'enemy_team') && !passiveExecuting) {
                 if (gameState._kyoAOEHitsByAttacker && gameState.selectedCharacter) {
                     const _kyoHits = gameState._kyoAOEHitsByAttacker[gameState.selectedCharacter] || 0;
                     if (_kyoHits > 0 && typeof triggerKyoAOEPassive === 'function') {
@@ -7439,78 +7506,6 @@
                 applyDamageWithShield(targetName, _saRDmg, gameState.selectedCharacter);
                 addLog('🔥 Sol Ascendente: ' + _saRDmg + ' daño a ' + targetName, 'damage');
                 applyFlatBurn(targetName, 1, 2);
-
-            } else if (ability.effect === 'mar_fuego_rengoku') {
-                // Mar de Fuego: 4 AOE. Ignora Esquiva Área. Disipa buffs. Quemadura 1HP. Si ya tenían Quemadura: 100% crítico
-                const _mfAtk = gameState.characters[gameState.selectedCharacter];
-                const _mfET = _mfAtk ? (_mfAtk.team==='team1'?'team2':'team1') : 'team2';
-                for (const _n in gameState.characters) {
-                    const _cc = gameState.characters[_n];
-                    if (!_cc || _cc.team !== _mfET || _cc.isDead || _cc.hp <= 0) continue;
-                    // IGNORA Esquiva Área — no llamar checkAsprosAOEImmunity ni checkMinatoAOEImmunity
-                    // Verificar si tenía Quemadura ANTES de disipar buffs
-                    const _mfHadBurn = (_cc.statusEffects||[]).some(function(e){ return e && (e.name === 'Quemadura' || e.name === 'quemadura'); });
-                    // Disipar buffs ANTES del golpe
-                    const _mfBufs = (_cc.statusEffects||[]).filter(function(e){ return e && e.type === 'buff' && !e.permanent && !e.passiveHidden; });
-                    if (_mfBufs.length > 0) {
-                        _cc.statusEffects = (_cc.statusEffects||[]).filter(function(e){ return !e || e.type !== 'buff' || e.permanent || e.passiveHidden; });
-                        addLog('🔥 Mar de Fuego: ' + _mfBufs.length + ' buff(s) disipados de ' + _n, 'debuff');
-                    }
-                    // Calcular daño — si tenía Quemadura: crítico (daño doble)
-                    let _mfDmg = finalDamage;
-                    if (_mfHadBurn) {
-                        _mfDmg = finalDamage * 2;
-                        gameState._isCritHit = true;
-                        addLog('🔥 Mar de Fuego: ¡Crítico 100%! ' + _n + ' tenía Quemadura activa', 'buff');
-                    }
-                    applyDamageWithShield(_n, _mfDmg, gameState.selectedCharacter);
-                    // Aplicar Quemadura 1HP después del daño
-                    applyFlatBurn(_n, 1, 2);
-                    addLog('🔥 Mar de Fuego: ' + _mfDmg + ' daño + Quemadura a ' + _n, 'damage');
-                }
-                // Daño también a invocaciones enemigas
-                for (const _sid in gameState.summons) {
-                    const _ss = gameState.summons[_sid];
-                    if (!_ss || _ss.team !== _mfET || _ss.hp <= 0) continue;
-                    applySummonDamage(_sid, finalDamage, gameState.selectedCharacter);
-                }
-                addLog('🔥 Mar de Fuego: AOE completado (ignora Esquiva Área)', 'damage');
-
-            } else if (ability.effect === 'tigre_fuego_rengoku') {
-                // Tigre de Fuego: 3 AOE + Quemadura 1HP. Si ya tenían Quemadura: +1 carga al equipo aliado por cada Quemadura activa en equipo enemigo
-                const _tfAtk = gameState.characters[gameState.selectedCharacter];
-                const _tfET = _tfAtk ? (_tfAtk.team==='team1'?'team2':'team1') : 'team2';
-                const _tfAlly = _tfAtk ? _tfAtk.team : 'team1';
-                let _tfAnyHadBurn = false;
-                if (checkAndRedirectAOEMegaProv(_tfET, finalDamage, gameState.selectedCharacter)) {
-                    addLog('🔥 Tigre de Fuego: AOE redirigido', 'damage');
-                } else {
-                    for (const _n in gameState.characters) {
-                        const _cc = gameState.characters[_n];
-                        if (!_cc||_cc.team!==_tfET||_cc.isDead||_cc.hp<=0) continue;
-                        if (checkAsprosAOEImmunity(_n,true)||checkMinatoAOEImmunity(_n)) continue;
-                        const _hadB = (_cc.statusEffects||[]).some(function(e){ return e&&(e.name==='Quemadura'||e.name==='quemadura'); });
-                        if (_hadB) _tfAnyHadBurn = true;
-                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
-                        applyFlatBurn(_n, 1, 2);
-                    }
-                }
-                if (_tfAnyHadBurn) {
-                    // Contar quemaduras activas en equipo enemigo
-                    let _qcTotal = 0;
-                    for (const _n in gameState.characters) {
-                        const _cc = gameState.characters[_n];
-                        if (!_cc||_cc.team!==_tfET||_cc.isDead) continue;
-                        _qcTotal += (_cc.statusEffects||[]).filter(function(e){ return e&&(e.name==='Quemadura'||e.name==='quemadura'); }).length;
-                    }
-                    for (const _an in gameState.characters) {
-                        const _ac = gameState.characters[_an];
-                        if (!_ac||_ac.team!==_tfAlly||_ac.isDead||_ac.hp<=0) continue;
-                        _ac.charges = Math.min(20, (_ac.charges||0) + _qcTotal);
-                    }
-                    addLog('🔥 Tigre de Fuego: +' + _qcTotal + ' cargas al equipo aliado (' + _qcTotal + ' Quemaduras activas en equipo enemigo)', 'buff');
-                }
-                addLog('🔥 Tigre de Fuego: 3 AOE + Quemadura 1HP', 'damage');
 
             } else if (ability.effect === 'purgatorio_rengoku') {
                 // Purgatorio: 7 daño + Mega Aturdimiento. Si objetivo tenía Quemadura: +2 daño directo por cada Quemadura activa en ambos equipos
