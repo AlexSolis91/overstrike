@@ -72,12 +72,12 @@
                 hp: 25, maxHp: 25, speed: 84, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/wTWCgJY2/Captura_de_pantalla_2026_03_15_021343.png',
-                passive: { name: 'Corazon Ardiente', description: 'Cuando Rengoku muere, aplica aturdimiento a todos los enemigos. Rengoku genera 1 punto de carga cada vez que un debuff quemadura inflige daño.' },
+                passive: { name: 'Corazon Ardiente', description: 'Al morir: Aturdimiento a todos los enemigos + 5 cargas al equipo aliado. Genera 1 carga cada vez que un debuff Quemadura inflige daño.' },
                 abilities: [
-                    { name: 'Sol Ascendente', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'sol_ascendente', burnAmount: 1, description: 'Causa 2 de daño. Se aplica Debuff Quemadura 1 HP.' },
-                    { name: 'Mar de Fuego', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'aoe', effect: 'corazon_llamas', description: 'Causa 3 AOE. 100% de golpe crítico a los enemigos con debuff Quemadura activo.' },
-                    { name: 'Tigre de Fuego', type: 'special', cost: 5, chargeGain: 0, damage: 3, target: 'aoe', effect: 'tigre_fuego_v2', burnAmount: 1, description: 'Causa 3 AOE. Aplica Debuff Quemadura de 1 HP. Si el enemigo ya tenía Debuff Quemadura activo antes de ejecutar este ataque, Genera 1 punto de carga a todo el equipo aliado.' },
-                    { name: 'Purgatorio', type: 'over', cost: 12, chargeGain: 0, damage: 7, target: 'single', effect: 'purgatorio_v2', description: 'Causa 7 de daño. Aplica debuff Mega Aturdimiento. 100% de golpe crítico si el objetivo tiene activo debuff Quemadura.' }
+                    { name: 'Sol Ascendente', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'sol_ascendente_rengoku', burnAmount: 1, description: 'Causa 2 daño. Aplica Quemadura 1HP. Si el objetivo ya tenía Quemadura, inflige +1 daño por cada Quemadura activa en el equipo enemigo.' },
+                    { name: 'Mar de Fuego', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'aoe', effect: 'mar_fuego_rengoku', description: 'Causa 4 AOE. Ignora Esquiva Área. Disipa buffs activos de los objetivos. Aplica Quemadura 1HP. Si ya tenían Quemadura antes del ataque: 100% de crítico.' },
+                    { name: 'Tigre de Fuego', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'aoe', effect: 'tigre_fuego_rengoku', burnAmount: 1, description: 'Causa 3 AOE. Aplica Quemadura 1HP. Si los enemigos golpeados ya tenían Quemadura activa antes del ataque, genera 1 carga al equipo aliado por cada Quemadura activa en el equipo enemigo.' },
+                    { name: 'Novena Postura: Purgatorio', type: 'over', cost: 12, chargeGain: 0, damage: 7, target: 'single', effect: 'purgatorio_rengoku', description: 'Causa 7 daño. Aplica Mega Aturdimiento. Si el objetivo tenía Quemadura activa antes del ataque, inflige +2 daño directo por cada Quemadura activa en ambos equipos.' }
                 ]
             },
 
@@ -188,7 +188,7 @@
                 passive: { name: 'Espíritu del Héroe', description: 'Inmunidad a debuffs. Cada vez que se realiza un ataque básico, el ataque básico aumentará en +2 las cargas generadas en su próximo uso.' },
                 abilities: [
                     { name: 'Golpe Normal', type: 'basic', cost: 0, chargeGain: 1, damage: 4, target: 'single', effect: 'golpe_normal_saitama', description: 'Causa 4 daño. Aplica Buff Furia 2 turnos.' },
-                    { name: 'Golpes Normales Consecutivos', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'single', effect: 'multi_hit', description: 'Causa 3 daño + 3 adicional por cada Buff activo en el objetivo.' },
+                    { name: 'Golpes Normales Consecutivos', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'single', effect: 'golpes_consecutivos_saitama', description: 'Causa 3 daño + 3 adicional por cada Buff activo en el objetivo.' },
                     { name: 'Golpe Serio', type: 'special', cost: 8, chargeGain: 0, damage: 6, target: 'single', effect: 'golpe_serio_saitama', description: 'Causa 6 daño. Daño triple si el objetivo tiene Provocación o Mega Provocación.' },
                     { name: 'Golpe Grave', type: 'over', cost: 20, chargeGain: 0, damage: 0, target: 'single', effect: 'golpe_grave', description: 'Elimina al enemigo golpeado.' }
                 ]
