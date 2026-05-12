@@ -3343,6 +3343,8 @@
             const snap = await db.ref('weekly_boss/current').once('value');
             return snap.val();
         }
+        // Exponer globalmente para jefe-de-sala.js
+        window.getBossData = getBossData;
 
         async function attackBoss(uid, playerName, playerTeam) {
             const boss = await getBossData();
@@ -3383,6 +3385,8 @@
             await updateLobbyHUD();
             return { newHp, goldReward };
         }
+        // Exponer globalmente para jefe-de-sala.js
+        window.registerBossDamage = registerBossDamage;
 
         // ==================== MERCADO ====================
 
