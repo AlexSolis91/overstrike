@@ -4926,18 +4926,30 @@
                 addLog('💥 Golpe Serio: ' + _gsDmg + ' daño a ' + targetName, 'damage');
             } else if (ability.effect === 'golpe_normal_saitama') {
                 // SAITAMA — Golpe Normal: 4 dmg + Furia 2T + escalating charge bonus (pasiva)
+                // NOTE: saitamaBasicChargeBonus ya fue incrementado en el pre-handler (línea ~191)
+                // y finalChargeGain ya fue ajustado allí. No incrementar de nuevo aquí.
                 const _gnSaitama = gameState.characters[gameState.selectedCharacter];
                 let _gnDmg = finalDamage;
                 applyDamageWithShield(targetName, _gnDmg, gameState.selectedCharacter);
                 applyFuria(gameState.selectedCharacter, 2);
-                // ESPÍRITU DEL HÉROE pasiva: each basic use adds +2 chargeGain next time
                 if (_gnSaitama) {
-                    _gnSaitama.saitamaBasicChargeBonus = (_gnSaitama.saitamaBasicChargeBonus || 0) + 2;
-                    const _totalCharge = (ability.chargeGain || 1) + (_gnSaitama.saitamaBasicChargeBonus - 2); // -2 because we already added 2
-                    // Actually: current usage gains the bonus from PREVIOUS uses
-                    // The bonus earned NOW applies NEXT time
-                    addLog('💥 Golpe Normal: ' + _gnDmg + ' daño + Furia 2T. Próximo básico generará ' + (1 + _gnSaitama.saitamaBasicChargeBonus) + ' cargas', 'buff');
+                    const _nextBonus = 1 + (_gnSaitama.saitamaBasicChargeBonus || 0);
+                    addLog('💥 Golpe Normal: ' + _gnDmg + ' daño + Furia 2T. Próximo básico generará ' + _nextBonus + ' cargas', 'buff');
                 }
+            } else if (ability.effect === 'golpes_consecutivos_saitama') {
+                // SAITAMA — Golpes Normales Consecutivos: 3 daño + 3 adicional por cada Buff activo en el objetivo
+                const _gcsTgt = gameState.characters[targetName];
+                const _gcsBuffCount = _gcsTgt
+                    ? (_gcsTgt.statusEffects || []).filter(function(e) { return e && e.type === 'buff' && !e.passiveHidden; }).length
+                    : 0;
+                const _gcsTotalDmg = finalDamage + (_gcsBuffCount * 3);
+                applyDamageWithShield(targetName, _gcsTotalDmg, gameState.selectedCharacter);
+                if (_gcsBuffCount > 0) {
+                    addLog('💥 Golpes Consecutivos: ' + finalDamage + ' + ' + (_gcsBuffCount * 3) + ' daño extra (' + _gcsBuffCount + ' buffs × 3) = ' + _gcsTotalDmg + ' total a ' + targetName, 'damage');
+                } else {
+                    addLog('💥 Golpes Consecutivos: ' + _gcsTotalDmg + ' daño a ' + targetName, 'damage');
+                }
+
             } else if (ability.effect === 'naipes_joker') {
                 // JOKER — Naipes Impregnados: 1 dmg + Veneno 2T
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
