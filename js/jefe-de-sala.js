@@ -48,9 +48,23 @@
         window._bossBattleData  = { boss: boss };
         window._bossHpAtStart   = boss.hp || 10000;
 
-        // Ocultar pantalla del jefe y abrir selector de personajes (modo solo)
+        // Ocultar pantalla del jefe
         if (typeof hideBossScreen === 'function') hideBossScreen();
-        if (typeof csSelectMode === 'function') csSelectMode('solo');
+
+        // Abrir selector de personajes en modo boss
+        // csSelectMode está expuesta como window.csSelectMode desde index.html
+        var modeScreen = document.getElementById('modeSelectScreen');
+        var charScreen = document.getElementById('charSelectScreen');
+
+        if (typeof window.csSelectMode === 'function') {
+            // Asegurarse de que modeSelectScreen esté visible para que csSelectMode pueda ocultarlo
+            if (modeScreen) modeScreen.style.display = 'flex';
+            window.csSelectMode('boss');
+        } else {
+            // Fallback: mostrar charSelectScreen directamente
+            if (modeScreen) modeScreen.style.display = 'none';
+            if (charScreen) charScreen.style.display = 'block';
+        }
     };
 
     // ─────────────────────────────────────────────────────────────────────────
