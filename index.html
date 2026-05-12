@@ -707,63 +707,15 @@
         }
 
         // ── Jefe de Sala ──
-        async function loadBossScreen() {
-            const content = document.getElementById('boss-content');
-            content.innerHTML = '<div style="text-align:center;color:#555;padding:40px;">Cargando...</div>';
-            const boss = await getBossData();
-            const user = firebase.auth().currentUser;
-            if (!boss || boss.status !== 'active') {
-                content.innerHTML = '<div style="text-align:center;padding:40px;"><div style="font-size:2rem;margin-bottom:12px;">😴</div><div style="color:#555;font-family:Orbitron,sans-serif;font-size:.9rem;">No hay Jefe de Sala activo.</div></div>';
-                return;
-            }
-            // HP bar
-            const hpPct = Math.max(0, Math.min(100, ((boss.hp||0)/(boss.maxHp||1))*100));
-            const today = new Date().toISOString().split('T')[0];
-            const logSnap = await db.ref('weekly_boss/damage_log').once('value');
-            const logData = logSnap.val() || {};
-            const ranking = Object.entries(logData)
-                .map(function([uid, d]){ return { uid, playerName: d.playerName||uid, totalDamage: d.totalDamage||0 }; })
-                .sort(function(a,b){ return b.totalDamage - a.totalDamage; });
-            const myLog = user ? logData[user.uid] : null;
-            const alreadyAttacked = myLog && myLog.lastAttack === today;
-            content.innerHTML =
-                '<div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-bottom:20px;">' +
-                '<img src="' + boss.portrait + '" style="width:120px;height:120px;object-fit:cover;border-radius:12px;border:2px solid #ff4444;flex-shrink:0;">' +
-                '<div style="flex:1;min-width:200px;">' +
-                '<div style="font-family:Orbitron,sans-serif;font-size:1.2rem;color:#ff4444;font-weight:900;margin-bottom:8px;">' + boss.name + '</div>' +
-                '<div style="font-size:.75rem;color:#888;margin-bottom:12px;">⚡ VEL: ' + (boss.speed||0) + '</div>' +
-                '<div style="font-size:.75rem;color:#aaa;margin-bottom:6px;">HP: ' + (boss.hp||0).toLocaleString() + ' / ' + (boss.maxHp||0).toLocaleString() + '</div>' +
-                '<div style="background:rgba(255,68,68,0.2);border-radius:8px;height:16px;overflow:hidden;margin-bottom:12px;">' +
-                '<div style="background:linear-gradient(90deg,#ff4444,#ff8844);height:100%;width:' + hpPct + '%;transition:width .5s;border-radius:8px;"></div>' +
-                '</div>' +
-                '<div style="font-size:.7rem;color:#aaa;margin-bottom:12px;">📅 Evento: ' + (boss.startDate||'').split('T')[0] + ' → ' + (boss.endDate||'').split('T')[0] + '</div>' +
-                (alreadyAttacked ?
-                    '<div style="background:rgba(255,170,0,0.1);border:1px solid rgba(255,170,0,0.3);border-radius:8px;padding:10px;font-size:.75rem;color:#ffaa00;text-align:center;">Ya realizaste tu ataque diario. ¡Vuelve mañana!</div>' :
-                    '<button onclick="initBossAttack()" style="width:100%;padding:12px;background:linear-gradient(135deg,#500000,#aa0000);border:2px solid #ff4444;color:#ff4444;border-radius:10px;font-family:Orbitron,sans-serif;font-size:.85rem;cursor:pointer;letter-spacing:.05em;">⚔️ ATACAR</button>') +
-                '</div></div>' +
-                // Ranking
-                '<div style="background:rgba(255,68,68,0.05);border:1px solid rgba(255,68,68,0.2);border-radius:12px;padding:16px;">' +
-                '<div style="font-family:Orbitron,sans-serif;font-size:.85rem;color:#ff4444;margin-bottom:12px;">🏆 RANKING DE DAÑO</div>' +
-                '<div style="display:flex;flex-direction:column;gap:6px;">' +
-                ranking.slice(0,10).map(function(entry, i){
-                    const medals = ['🥇','🥈','🥉'];
-                    const medal = medals[i] || (i+1) + '.';
-                    const isMe = user && entry.uid === user.uid;
-                    return '<div style="display:flex;justify-content:space-between;align-items:center;background:' + (isMe?'rgba(255,68,68,0.15)':'rgba(255,255,255,0.03)') + ';border-radius:6px;padding:6px 10px;">' +
-                        '<span style="font-size:.75rem;color:#ccc;">' + medal + ' ' + (entry.playerName||'???') + '</span>' +
-                        '<span style="font-size:.75rem;color:#ff4444;font-weight:700;">' + (entry.totalDamage||0).toLocaleString() + ' dmg</span>' +
-                        '</div>';
-                }).join('') +
-                '</div></div>';
+        // loadBossScreen e initBossAttack son implementados por js/jefe-de-sala.js
+        // Se definen aquí como stubs para evitar errores si jefe-de-sala.js aún no cargó
+        function loadBossScreen() {
+            var content = document.getElementById('boss-content');
+            if (content) content.innerHTML = '<div style="text-align:center;color:#555;padding:40px;font-family:Orbitron,sans-serif;font-size:.8rem;">Cargando módulo del Jefe de Sala...</div>';
         }
-
         async function initBossAttack() {
-            const user = firebase.auth().currentUser;
-            if (!user) { alert('Debes iniciar sesión.'); return; }
-            const boss = await getBossData();
-            if (!boss || boss.status !== 'active') { alert('No hay jefe activo.'); return; }
-            hideBossScreen();
-            alert('Selecciona tu equipo para atacar al Jefe de Sala. Usa el selector de equipo normal.');
+            // Stub — sobreescrito por jefe-de-sala.js
+            alert('Módulo del Jefe de Sala no cargado correctamente. Recarga la página.');
         }
 
         // ── Admin ──
@@ -809,13 +761,22 @@
             gameMode: 'multi'
         };
 
-        function csSelectMode(mode) {
+        window.csSelectMode = function csSelectMode(mode) {
             csState.gameMode = mode;
             audioManager.playSelect();
             document.getElementById('modeSelectScreen').style.display = 'none';
             document.getElementById('charSelectScreen').style.display = 'block';
             const myName = (typeof currentUser !== 'undefined' && currentUser && currentUser.displayName) ? currentUser.displayName : 'Jugador 1';
-            if (mode === 'solo') {
+            if (mode === 'boss') {
+                // Modo Jefe de Sala — el jugador sólo elige su equipo (team1)
+                const lbl = document.getElementById('csPhaseLabel');
+                if (lbl) { lbl.textContent = '⚔️ ' + myName + ' — Elige tus 5 guerreros'; lbl.className = 'cs-phase-label team1'; }
+                window._teamNames = { team1: myName, team2: 'Jefe de Sala' };
+                const n1 = document.getElementById('csTeamName1');
+                if (n1) n1.textContent = myName;
+                const n2 = document.getElementById('csTeamName2');
+                if (n2) n2.textContent = 'Jefe de Sala';
+            } else if (mode === 'solo') {
                 const lbl = document.getElementById('csPhaseLabel');
                 lbl.textContent = '🔷 ' + myName + ' — Elige tus 5 personajes (vs IA)';
                 lbl.className = 'cs-phase-label team1';
@@ -1287,7 +1248,9 @@
                 initGame(selectedChars);
 
                 const myDisplayName = (typeof currentUser !== 'undefined' && currentUser && currentUser.displayName) ? currentUser.displayName : 'Jugador 1';
-                if (csState.gameMode === 'solo' || csState.gameMode === 'ranked') {
+                if (csState.gameMode === 'boss') {
+                    window._teamNames = { team1: myDisplayName, team2: 'Jefe de Sala' };
+                } else if (csState.gameMode === 'solo' || csState.gameMode === 'ranked') {
                     const fakeOpp = window._rankedFakeOpponent || 'IA';
                     window._teamNames = { team1: myDisplayName, team2: fakeOpp };
                 } else if (csState.gameMode === 'online') {
@@ -1307,6 +1270,8 @@
                 let modeLabel;
                 if (window._rankedMode) {
                     modeLabel = '🏆 Modo Ranked';
+                } else if (csState.gameMode === 'boss') {
+                    modeLabel = '⚔️ ¡Ataque al Jefe de Sala!';
                 } else if (csState.gameMode === 'solo') {
                     modeLabel = '🤖 Modo Solitario — ¡Buena suerte contra la IA!';
                 } else {
