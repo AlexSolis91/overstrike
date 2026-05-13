@@ -2066,6 +2066,21 @@
                 var ptLabel = atkPoints >= 0 ? '+' + atkPoints : String(atkPoints);
                 var modeLabel = isRaidAttack ? '⚔️ Raid' : '🔍 Rival';
                 addLog('🏆 Puntos Ranked [' + modeLabel + ']: ' + ptLabel + ' | Total: ' + cur.points, atkPoints >= 0 ? 'buff' : 'damage');
+
+                // ── ORO POR PARTIDA RANKED ──
+                // Victoria: 100 oro × personajes vivos al finalizar
+                // Derrota: 50 oro × enemigos eliminados durante la partida
+                var goldEarned = 0;
+                if (won) {
+                    goldEarned = (survivingAllies || 0) * 100;
+                    addLog('🥇 Ranked [' + modeLabel + ']: Victoria — +' + goldEarned + ' oro (' + (survivingAllies||0) + ' personajes vivos × 100)', 'buff');
+                } else if (!isDraw) {
+                    goldEarned = (enemiesEliminated || 0) * 50;
+                    addLog('🥇 Ranked [' + modeLabel + ']: Derrota — +' + goldEarned + ' oro (' + (enemiesEliminated||0) + ' enemigos eliminados × 50)', 'info');
+                }
+                if (goldEarned > 0) {
+                    addGold(myUid, goldEarned).then(function() { updateLobbyHUD(); });
+                }
             });
 
             // ── Guardar stats del defensor ──
@@ -3516,6 +3531,7 @@
             const user = firebase.auth().currentUser;
             return user && user.email === ADMIN_EMAIL;
         }
+        window.isAdmin = isAdmin;
 
         async function adminActivateBoss(bossId, bossConfig, startDate, endDate) {
             if (!isAdmin()) { alert('Acceso denegado.'); return; }
