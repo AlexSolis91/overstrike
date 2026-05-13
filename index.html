@@ -145,6 +145,7 @@
                     <!-- Botones Inventario/Mercado/Jefe movidos al panel del chat -->
             <button onclick="showRankedTeamScreen()"  style="width:100%; padding:1rem; font-family:'Orbitron',sans-serif; font-size:.85rem; background:linear-gradient(135deg,#002040,#004080); color:#4fc3f7; border:2px solid #4fc3f7; border-radius:10px; cursor:pointer; margin-top:.5rem; transition:all .2s; letter-spacing:.05em;" onmouseover="this.style.boxShadow='0 0 18px rgba(79,195,247,0.5)'" onmouseout="this.style.boxShadow='none'">⚔️ EQUIPO RANKED</button>
                     <button id='adminBtn' onclick='window.showAdminPanel && window.showAdminPanel()' style='display:none;width:100%;padding:.5rem;font-family:Orbitron,sans-serif;font-size:.7rem;background:rgba(255,215,0,0.1);color:#ffd700;border:1px solid rgba(255,215,0,0.3);border-radius:8px;cursor:pointer;margin-top:4px;'>👑 ADMIN</button>
+                    <button id='bossActivationBtn' onclick='window.showBossActivationModal && window.showBossActivationModal()' style='display:none;width:100%;padding:.55rem;font-family:Orbitron,sans-serif;font-size:.72rem;background:linear-gradient(135deg,#1a0000,#500000);color:#ff4444;border:2px solid #ff4444;border-radius:8px;cursor:pointer;margin-top:4px;letter-spacing:.04em;'>⚡ ACTIVAR EVENTO JEFE DE SALA</button>
                     <button onclick="showLeaderboard()" style="width:100%; padding:.7rem; font-family:'Orbitron',sans-serif; font-size:.78rem; background:rgba(255,170,0,0.06); color:#ffaa00; border:1px solid rgba(255,170,0,0.3); border-radius:10px; cursor:pointer; margin-top:.5rem; letter-spacing:.05em;">📊 VER LEADERBOARD</button>
                 </div>
                 <div style="background:rgba(0,10,30,0.8); border:1px solid rgba(0,255,136,0.2); border-radius:16px; padding:1.2rem; flex:1;">
@@ -563,7 +564,10 @@
                         picker.style.display = 'none';
                         await renderEquipSlots(_equipCharName, user.uid);
                         await updateLobbyHUD();
-                if (typeof isAdmin === 'function' && isAdmin()) { const ab = document.getElementById('adminBtn'); if(ab) ab.style.display='block'; }
+                if (typeof isAdmin === 'function' && isAdmin()) {
+                    const ab = document.getElementById('adminBtn'); if(ab) ab.style.display='block';
+                    const bab = document.getElementById('bossActivationBtn'); if(bab) bab.style.display='block';
+                }
                     }
                 };
                 card.innerHTML = '<img src="' + rd.img + '" style="width:48px;height:48px;object-fit:contain;border-radius:6px;">' +
@@ -616,14 +620,14 @@
                 '</div>';
             // 3-6. Cofres
             const chests = [
-                { id:'chest_rare',    label:'Cofre Raro',    price:'10,000',  color:'#aaa',    border:'border:1px solid #aaa' },
-                { id:'chest_special', label:'Cofre Especial', price:'25,000',  color:'#4fc3f7', border:'border:1px solid #4fc3f7' },
-                { id:'chest_epic',    label:'Cofre Épico',    price:'60,000',  color:'#c864ff', border:'border:1px solid #c864ff' },
-                { id:'chest_arcana',  label:'Cofre Arcano',   price:'1 🗝️',   color:'#ffd700', border:'border:2px solid #ffd700' },
+                { id:'chest_rare',    label:'Cofre Raro',    price:'10,000',  color:'#aaa',    border:'border:1px solid #aaa',    img:'https://i.ibb.co/m5XMkCRD/Gemini-Generated-Image-6hcw6f6hcw6f6hcw.png' },
+                { id:'chest_special', label:'Cofre Especial', price:'25,000',  color:'#4fc3f7', border:'border:1px solid #4fc3f7', img:'https://i.ibb.co/fV9Q3kYf/Gemini-Generated-Image-37x6la37x6la37x6.png' },
+                { id:'chest_epic',    label:'Cofre Épico',    price:'60,000',  color:'#c864ff', border:'border:1px solid #c864ff', img:'https://i.ibb.co/8D28wG42/Gemini-Generated-Image-vqlk4cvqlk4cvqlk.png' },
+                { id:'chest_arcana',  label:'Cofre Arcano',   price:'1 🗝️',   color:'#ffd700', border:'border:2px solid #ffd700', img:'https://i.ibb.co/21Cqvp06/Gemini-Generated-Image-g76wcgg76wcgg76w.png' },
             ];
             chests.forEach(function(ch){
                 grid.innerHTML += '<div style="background:rgba(255,255,255,0.03);' + ch.border + ';border-radius:12px;padding:14px;text-align:center;">' +
-                    '<div style="font-size:2.5rem;margin-bottom:8px;">🎁</div>' +
+                    '<img src="' + ch.img + '" style="width:72px;height:72px;object-fit:contain;margin-bottom:8px;display:block;margin-left:auto;margin-right:auto;" onerror="this.style.display=\'none\'">' +
                     '<div style="font-size:.75rem;color:#fff;font-weight:700;margin-bottom:4px;">' + ch.label + '</div>' +
                     '<div style="font-size:.75rem;color:#ffaa00;margin-bottom:8px;">' + ch.price + '</div>' +
                     '<button onclick="buyDailyItem(\'' + user.uid + '\',\'' + ch.id + '\')" style="width:100%;padding:6px;background:rgba(255,255,255,0.05);border:1px solid ' + ch.color + ';color:' + ch.color + ';border-radius:8px;font-size:.7rem;cursor:pointer;">Comprar</button>' +
@@ -732,8 +736,73 @@
             alert('Módulo del Jefe de Sala no cargado correctamente. Recarga la página.');
         }
 
-        // ── Admin ──
-        // Selección visual de jefe en el panel admin
+        // ── Boss Activation Modal (Admin) ──
+        window.showBossActivationModal = function() {
+            if (typeof isAdmin === 'function' && !isAdmin()) { alert('Acceso denegado.'); return; }
+            var modal = document.getElementById('bossActivationModal');
+            modal.style.display = 'flex';
+            // Cargar estado activo
+            bamLoadActiveStatus();
+        };
+
+        async function bamLoadActiveStatus() {
+            var el = document.getElementById('bam-active-status');
+            if (!el) return;
+            try {
+                var boss = typeof window.getBossData === 'function' ? await window.getBossData() : null;
+                if (!boss || boss.status !== 'active') {
+                    el.innerHTML = '<span style="color:#555;">⚫ Sin evento activo en este momento.</span>';
+                    return;
+                }
+                var hpPct = Math.max(0, Math.min(100, (boss.hp / (boss.maxHp || 1)) * 100)).toFixed(1);
+                var endStr = boss.endDate ? boss.endDate.split('T')[0] : '?';
+                el.innerHTML =
+                    '<div style="display:flex;align-items:center;gap:10px;">' +
+                    '<img src="' + boss.portrait + '" style="width:42px;height:42px;border-radius:7px;object-fit:cover;border:2px solid #ff4444;" onerror="this.style.display=\'none\'">' +
+                    '<div style="flex:1;">' +
+                    '<div style="font-family:Orbitron,sans-serif;color:#ff4444;font-size:.78rem;font-weight:700;">✅ ACTIVO: ' + boss.name + '</div>' +
+                    '<div style="background:rgba(255,68,68,0.2);border-radius:4px;height:6px;margin:5px 0;overflow:hidden;">' +
+                    '<div style="background:#ff4444;height:100%;width:' + hpPct + '%;"></div></div>' +
+                    '<div style="font-size:.65rem;color:#888;">HP: ' + (boss.hp||0).toLocaleString() + ' / ' + (boss.maxHp||0).toLocaleString() + ' · Fin: ' + endStr + '</div>' +
+                    '</div></div>';
+            } catch(e) {
+                el.innerHTML = '<span style="color:#555;">Error al cargar estado.</span>';
+            }
+        }
+
+        window.bamActivateBoss = async function(bossId) {
+            if (typeof isAdmin === 'function' && !isAdmin()) { alert('Acceso denegado.'); return; }
+            var bossConfig = typeof BOSS_DATA !== 'undefined' ? BOSS_DATA[bossId] : null;
+            if (!bossConfig) { alert('Error: Jefe "' + bossId + '" no encontrado en BOSS_DATA.'); return; }
+            var days = parseInt(document.getElementById('bam-duration').value) || 7;
+            var now = new Date();
+            var end = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+            var pad = function(n){ return String(n).padStart(2,'0'); };
+            var fmt = function(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes()); };
+            var startDate = fmt(now);
+            var endDate = fmt(end);
+            try {
+                await adminActivateBoss(bossId, bossConfig, startDate, endDate);
+                // Refresh status card in modal
+                bamLoadActiveStatus();
+                // Also refresh boss screen if open
+                if (typeof window.loadBossScreen === 'function') window.loadBossScreen();
+            } catch(e) {
+                alert('Error al activar el evento: ' + e.message);
+            }
+        };
+
+        window.bamDeactivateBoss = async function() {
+            if (typeof isAdmin === 'function' && !isAdmin()) { alert('Acceso denegado.'); return; }
+            if (!confirm('¿Desactivar el evento de Jefe de Sala actual?')) return;
+            try {
+                if (typeof adminDeactivateBoss === 'function') await adminDeactivateBoss();
+                bamLoadActiveStatus();
+                if (typeof window.loadBossScreen === 'function') window.loadBossScreen();
+            } catch(e) {
+                alert('Error al desactivar: ' + e.message);
+            }
+        };
         function adminSelectBoss(bossId, el) {
             document.getElementById('admin-boss-select').value = bossId;
             // Highlight selected card
@@ -1605,5 +1674,87 @@
 
     
 
+
+    <!-- ==================== MODAL ACTIVAR JEFE DE SALA (ADMIN) ==================== -->
+    <div id="bossActivationModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:9000;display:none;align-items:center;justify-content:center;">
+        <div style="background:linear-gradient(135deg,#0a0010,#150020);border:2px solid #ff4444;border-radius:18px;padding:28px 24px;max-width:480px;width:90%;max-height:90vh;overflow-y:auto;box-sizing:border-box;">
+            <!-- Header -->
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <div style="font-family:Orbitron,sans-serif;color:#ff4444;font-size:1rem;font-weight:900;letter-spacing:.08em;">⚔️ ACTIVAR JEFE DE SALA</div>
+                <button onclick="document.getElementById('bossActivationModal').style.display='none'"
+                    style="background:rgba(255,51,102,0.15);border:1px solid #ff3366;color:#ff3366;border-radius:8px;padding:5px 14px;cursor:pointer;font-size:.8rem;">✕</button>
+            </div>
+
+            <!-- Evento activo actual -->
+            <div id="bam-active-status" style="background:rgba(255,68,68,0.07);border:1px solid rgba(255,68,68,0.2);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:.76rem;color:#888;">
+                Cargando estado del evento...
+            </div>
+
+            <!-- Lista de jefes disponibles -->
+            <div style="font-family:Orbitron,sans-serif;color:#aaa;font-size:.72rem;letter-spacing:.06em;margin-bottom:12px;">JEFES DISPONIBLES</div>
+
+            <!-- Broly card -->
+            <div style="background:rgba(255,68,68,0.06);border:2px solid rgba(255,68,68,0.3);border-radius:14px;padding:16px;margin-bottom:12px;">
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <img src="https://i.ibb.co/wrhphbYm/image.jpg"
+                        style="width:72px;height:72px;object-fit:cover;border-radius:10px;border:2px solid #ff4444;flex-shrink:0;"
+                        onerror="this.style.display='none'">
+                    <div style="flex:1;">
+                        <div style="font-family:Orbitron,sans-serif;color:#ff4444;font-size:.9rem;font-weight:900;">BROLY</div>
+                        <div style="font-size:.68rem;color:#888;margin-top:2px;">Legendario Super Sayajin</div>
+                        <div style="display:flex;gap:12px;margin-top:6px;">
+                            <span style="font-size:.68rem;color:#aaa;">❤️ 10,000 HP</span>
+                            <span style="font-size:.68rem;color:#aaa;">⚡ VEL 95</span>
+                        </div>
+                        <div style="font-size:.63rem;color:#666;margin-top:4px;line-height:1.4;">
+                            <span style="color:#ff8844;">Pasiva:</span> Cada vez que recibe daño, genera 3 cargas.
+                        </div>
+                    </div>
+                </div>
+                <!-- Habilidades resumen -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px;margin-bottom:14px;">
+                    <div style="background:rgba(255,255,255,0.04);border-radius:7px;padding:6px 8px;">
+                        <div style="font-size:.62rem;color:#4fc3f7;font-weight:700;">BÁSICO — Eraser Cannon</div>
+                        <div style="font-size:.6rem;color:#777;margin-top:2px;">DMG 3 · ST · 2 cargas</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.04);border-radius:7px;padding:6px 8px;">
+                        <div style="font-size:.62rem;color:#c864ff;font-weight:700;">ESPECIAL — Escudo Energía</div>
+                        <div style="font-size:.6rem;color:#777;margin-top:2px;">SELF · Escudo 5HP + Concentración</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.04);border-radius:7px;padding:6px 8px;">
+                        <div style="font-size:.62rem;color:#c864ff;font-weight:700;">ESPECIAL — Liberación</div>
+                        <div style="font-size:.6rem;color:#777;margin-top:2px;">DMG 5 · AOE · +4 cargas/esquiva</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.04);border-radius:7px;padding:6px 8px;">
+                        <div style="font-size:.62rem;color:#ffd700;font-weight:700;">OVER — Omega Bláster</div>
+                        <div style="font-size:.6rem;color:#777;margin-top:2px;">DMG 20 · Roba cargas enemigas</div>
+                    </div>
+                </div>
+                <!-- Duración -->
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+                    <span style="font-size:.72rem;color:#aaa;flex:1;">⏱️ Duración del evento:</span>
+                    <select id="bam-duration"
+                        style="background:#0a0010;border:1px solid rgba(255,68,68,0.4);color:#ff4444;border-radius:6px;padding:5px 10px;font-size:.74rem;cursor:pointer;">
+                        <option value="7" selected>7 días</option>
+                        <option value="3">3 días</option>
+                        <option value="14">14 días</option>
+                        <option value="1">1 día (prueba)</option>
+                    </select>
+                </div>
+                <button onclick="window.bamActivateBoss('broly')"
+                    style="width:100%;padding:12px;font-family:Orbitron,sans-serif;font-size:.82rem;font-weight:700;background:linear-gradient(135deg,#500000,#aa0000);border:2px solid #ff4444;color:#ff4444;border-radius:10px;cursor:pointer;letter-spacing:.06em;transition:all .2s;"
+                    onmouseover="this.style.boxShadow='0 0 20px rgba(255,68,68,0.5)'"
+                    onmouseout="this.style.boxShadow='none'">
+                    ⚔️ ACTIVAR — BROLY
+                </button>
+            </div>
+
+            <!-- Botón desactivar evento -->
+            <button onclick="window.bamDeactivateBoss()"
+                style="width:100%;padding:9px;font-family:Orbitron,sans-serif;font-size:.73rem;background:rgba(255,51,102,0.08);border:1px solid rgba(255,51,102,0.4);color:#ff3366;border-radius:8px;cursor:pointer;">
+                🛑 DESACTIVAR EVENTO ACTUAL
+            </button>
+        </div>
+    </div>
 </body>
 </html>
