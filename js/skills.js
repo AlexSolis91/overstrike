@@ -830,6 +830,18 @@
                 // SAITAMA - Golpe Grave: Elimina directamente al objetivo + turno adicional
                 const tgtGrave = gameState.characters[targetName];
                 if (tgtGrave && !tgtGrave.isDead && tgtGrave.hp > 0) {
+                    // Los jefes de sala son inmunes a One-Hit KO
+                    if (window._bossMode && tgtGrave.isBoss) {
+                        const _graveOldHp = tgtGrave.hp;
+                        const _graveDmg = Math.max(1, Math.floor(_graveOldHp * 0.10)); // 10% del HP como daño
+                        applyDamageWithShield(targetName, _graveDmg, gameState.selectedCharacter);
+                        addLog('🛡️ Golpe Grave: ¡El Jefe de Sala resiste el KO instantáneo! (' + _graveDmg + ' daño)', 'info');
+                        triggerAnticipacion(gameState.selectedCharacter, attacker.team);
+                        renderCharacters();
+                        renderSummons();
+                        showContinueButton();
+                        return;
+                    }
                     // Forzar eliminación ignorando escudo e invulnerabilidad
                     const _graveOldHp = tgtGrave.hp;
                     tgtGrave.hp = 0;
@@ -4256,6 +4268,15 @@
                 // GAARA — Sabaku Taisō: elimina al objetivo; revive con 50% HP y 0 cargas en 2 rondas
                 const _stTgt = gameState.characters[targetName];
                 if (_stTgt && !_stTgt.isDead && _stTgt.hp > 0) {
+                    // Los jefes de sala son inmunes a One-Hit KO
+                    if (window._bossMode && _stTgt.isBoss) {
+                        const _stDmg = Math.max(1, Math.floor(_stTgt.hp * 0.10));
+                        applyDamageWithShield(targetName, _stDmg, gameState.selectedCharacter);
+                        addLog('🛡️ Sabaku Taisō: ¡El Jefe de Sala resiste la eliminación! (' + _stDmg + ' daño)', 'info');
+                        renderCharacters();
+                        showContinueButton();
+                        return;
+                    }
                     addLog('🏜️ Sabaku Taisō: Gaara aplasta a ' + targetName + ' — ¡eliminado!', 'damage');
                     _stTgt.hp = 0;
                     _stTgt.isDead = true;
