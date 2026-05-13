@@ -298,6 +298,13 @@
             refreshRooms();
             trackOnlinePresence();
             initGlobalChat(); // #5
+
+            // Mostrar botones admin si es administrador
+            var _isAdmin = typeof isAdmin === 'function' && isAdmin();
+            var adminBtn = document.getElementById('adminBtn');
+            var bossBtn  = document.getElementById('bossActivationBtn');
+            if (adminBtn) adminBtn.style.display = _isAdmin ? 'block' : 'none';
+            if (bossBtn)  bossBtn.style.display  = _isAdmin ? 'block' : 'none';
         }
 
         function goToLocalMode(mode) {
