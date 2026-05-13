@@ -564,10 +564,6 @@
                         picker.style.display = 'none';
                         await renderEquipSlots(_equipCharName, user.uid);
                         await updateLobbyHUD();
-                if (typeof isAdmin === 'function' && isAdmin()) {
-                    const ab = document.getElementById('adminBtn'); if(ab) ab.style.display='block';
-                    const bab = document.getElementById('bossActivationBtn'); if(bab) bab.style.display='block';
-                }
                     }
                 };
                 card.innerHTML = '<img src="' + rd.img + '" style="width:48px;height:48px;object-fit:contain;border-radius:6px;">' +
