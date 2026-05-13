@@ -142,12 +142,7 @@
                     <button onclick="goToLocalMode('multi')" style="width:100%; padding:1rem; font-family:'Orbitron',sans-serif; font-size:.85rem; background:rgba(0,196,255,0.08); color:#aaa; border:1px solid #333; border-radius:10px; cursor:pointer; margin-bottom:.8rem;">👥 LOCAL — 2 Jugadores</button>
                     <button onclick="goToLocalMode('solo')" style="width:100%; padding:1rem; font-family:'Orbitron',sans-serif; font-size:.85rem; background:rgba(255,51,102,0.08); color:#aaa; border:1px solid #333; border-radius:10px; cursor:pointer;">🤖 SOLITARIO — vs IA</button>
                     <button onclick="showRaidLobby()" style="width:100%; padding:1rem; font-family:'Orbitron',sans-serif; font-size:.85rem; background:linear-gradient(135deg,#3a2000,#7a4500); color:#ffaa00; border:2px solid #ffaa00; border-radius:10px; cursor:pointer; margin-top:.8rem; transition:all .2s; letter-spacing:.05em; box-shadow:0 0 12px rgba(255,170,0,0.2);" onmouseover="this.style.boxShadow='0 0 24px rgba(255,170,0,0.5)'" onmouseout="this.style.boxShadow='0 0 12px rgba(255,170,0,0.2)'">🏆 RANKED — Raid Diario</button>
-                    <!-- HUD Recursos -->
-            <div style="display:flex;gap:8px;margin-bottom:8px;">
-                <button onclick="window.showInventoryScreen && window.showInventoryScreen()" style="flex:1;padding:.6rem;font-family:Orbitron,sans-serif;font-size:.75rem;background:linear-gradient(135deg,#1a0a2e,#2d1b69);color:#c864ff;border:2px solid #c864ff;border-radius:10px;cursor:pointer;" onmouseover="this.style.boxShadow='0 0 14px rgba(200,100,255,0.5)'" onmouseout="this.style.boxShadow='none'">🎒 INVENTARIO</button>
-                <button onclick="window.showMarketScreen && window.showMarketScreen()" style="flex:1;padding:.6rem;font-family:Orbitron,sans-serif;font-size:.75rem;background:linear-gradient(135deg,#1a1000,#402a00);color:#ffaa00;border:2px solid #ffaa00;border-radius:10px;cursor:pointer;" onmouseover="this.style.boxShadow='0 0 14px rgba(255,170,0,0.5)'" onmouseout="this.style.boxShadow='none'">🏪 MERCADO</button>
-            </div>
-            <button onclick="window.showBossScreen && window.showBossScreen()" style="width:100%;padding:.7rem;font-family:Orbitron,sans-serif;font-size:.8rem;background:linear-gradient(135deg,#1a0000,#500000);color:#ff4444;border:2px solid #ff4444;border-radius:10px;cursor:pointer;margin-bottom:8px;letter-spacing:.05em;" onmouseover="this.style.boxShadow='0 0 18px rgba(255,68,68,0.5)'" onmouseout="this.style.boxShadow='none'">⚔️ JEFE DE SALA</button>
+                    <!-- Botones Inventario/Mercado/Jefe movidos al panel del chat -->
             <button onclick="showRankedTeamScreen()"  style="width:100%; padding:1rem; font-family:'Orbitron',sans-serif; font-size:.85rem; background:linear-gradient(135deg,#002040,#004080); color:#4fc3f7; border:2px solid #4fc3f7; border-radius:10px; cursor:pointer; margin-top:.5rem; transition:all .2s; letter-spacing:.05em;" onmouseover="this.style.boxShadow='0 0 18px rgba(79,195,247,0.5)'" onmouseout="this.style.boxShadow='none'">⚔️ EQUIPO RANKED</button>
                     <button id='adminBtn' onclick='window.showAdminPanel && window.showAdminPanel()' style='display:none;width:100%;padding:.5rem;font-family:Orbitron,sans-serif;font-size:.7rem;background:rgba(255,215,0,0.1);color:#ffd700;border:1px solid rgba(255,215,0,0.3);border-radius:8px;cursor:pointer;margin-top:4px;'>👑 ADMIN</button>
                     <button onclick="showLeaderboard()" style="width:100%; padding:.7rem; font-family:'Orbitron',sans-serif; font-size:.78rem; background:rgba(255,170,0,0.06); color:#ffaa00; border:1px solid rgba(255,170,0,0.3); border-radius:10px; cursor:pointer; margin-top:.5rem; letter-spacing:.05em;">📊 VER LEADERBOARD</button>
@@ -179,6 +174,12 @@
                         onkeydown="if(event.key==='Enter') sendGlobalChat()">
                     <button onclick="sendGlobalChat()" style="background:linear-gradient(135deg,#7a4800,#cc7700); border:none; color:#ffcc44; border-radius:8px; padding:8px 14px; cursor:pointer; font-size:.85rem;">➤</button>
                 </div>
+                <!-- Botones de acceso rápido debajo del chat -->
+                <div style="display:flex;gap:6px;margin-top:10px;">
+                    <button onclick="window.showInventoryScreen && window.showInventoryScreen()" style="flex:1;padding:.55rem;font-family:Orbitron,sans-serif;font-size:.7rem;background:linear-gradient(135deg,#1a0a2e,#2d1b69);color:#c864ff;border:2px solid #c864ff;border-radius:9px;cursor:pointer;" onmouseover="this.style.boxShadow='0 0 14px rgba(200,100,255,0.5)'" onmouseout="this.style.boxShadow='none'">🎒 INVENTARIO</button>
+                    <button onclick="window.showMarketScreen && window.showMarketScreen()" style="flex:1;padding:.55rem;font-family:Orbitron,sans-serif;font-size:.7rem;background:linear-gradient(135deg,#1a1000,#402a00);color:#ffaa00;border:2px solid #ffaa00;border-radius:9px;cursor:pointer;" onmouseover="this.style.boxShadow='0 0 14px rgba(255,170,0,0.5)'" onmouseout="this.style.boxShadow='none'">🏪 MERCADO</button>
+                </div>
+                <button onclick="window.showBossScreen && window.showBossScreen()" style="width:100%;padding:.6rem;margin-top:6px;font-family:Orbitron,sans-serif;font-size:.78rem;background:linear-gradient(135deg,#1a0000,#500000);color:#ff4444;border:2px solid #ff4444;border-radius:9px;cursor:pointer;letter-spacing:.05em;" onmouseover="this.style.boxShadow='0 0 18px rgba(255,68,68,0.5)'" onmouseout="this.style.boxShadow='none'">⚔️ JEFE DE SALA</button>
             </div>
         </div>
         <div id="challengeModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9000; align-items:center; justify-content:center;">
@@ -425,6 +426,10 @@
         window.showAdminPanel = function showAdminPanel() {
             if (!isAdmin()) { alert('Acceso denegado.'); return; }
             document.getElementById('adminScreen').style.display = 'block';
+            // Pre-seleccionar Broly por defecto y calcular fechas
+            adminSelectBoss('broly', document.getElementById('bosscard-broly'));
+            adminUpdateBossDates();
+            adminLoadActiveBoss();
         }
 
         // ── Inventario ──
@@ -728,15 +733,69 @@
         }
 
         // ── Admin ──
+        // Selección visual de jefe en el panel admin
+        function adminSelectBoss(bossId, el) {
+            document.getElementById('admin-boss-select').value = bossId;
+            // Highlight selected card
+            document.querySelectorAll('#admin-boss-cards > div').forEach(function(c) {
+                c.style.border = '2px solid rgba(255,68,68,0.3)';
+                c.style.background = 'rgba(255,68,68,0.08)';
+            });
+            if (el) {
+                el.style.border = '2px solid #ffd700';
+                el.style.background = 'rgba(255,215,0,0.12)';
+            }
+        }
+
+        // Calcula fechas inicio/fin según la duración seleccionada
+        function adminUpdateBossDates() {
+            var days = parseInt(document.getElementById('admin-boss-duration').value) || 7;
+            var now = new Date();
+            var pad = function(n){ return String(n).padStart(2,'0'); };
+            var fmt = function(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes()); };
+            var end = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+            document.getElementById('admin-start-date').value = fmt(now);
+            document.getElementById('admin-end-date').value = fmt(end);
+        }
+
+        // Carga el evento de jefe activo en el card de estado
+        async function adminLoadActiveBoss() {
+            var el = document.getElementById('admin-active-boss-info');
+            if (!el) return;
+            try {
+                var boss = await getBossData();
+                if (!boss || boss.status !== 'active') {
+                    el.innerHTML = '<span style="color:#555;">Sin evento activo en este momento.</span>';
+                    return;
+                }
+                var hpPct = Math.max(0, Math.min(100, ((boss.hp||0)/(boss.maxHp||1))*100)).toFixed(1);
+                var startStr = boss.startDate ? boss.startDate.split('T')[0] : '?';
+                var endStr   = boss.endDate   ? boss.endDate.split('T')[0]   : '?';
+                el.innerHTML =
+                    '<div style="display:flex;align-items:center;gap:12px;">' +
+                    '<img src="'+boss.portrait+'" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:2px solid #ff4444;" onerror="this.style.display=\'none\'">' +
+                    '<div style="flex:1;">' +
+                    '<div style="font-family:Orbitron,sans-serif;color:#ff4444;font-size:.82rem;font-weight:700;">'+boss.name+'</div>' +
+                    '<div style="font-size:.7rem;color:#888;">📅 '+startStr+' → '+endStr+'</div>' +
+                    '<div style="background:rgba(255,68,68,0.15);border-radius:6px;height:8px;overflow:hidden;margin-top:5px;">' +
+                    '<div style="background:#ff4444;height:100%;width:'+hpPct+'%;border-radius:6px;"></div></div>' +
+                    '<div style="font-size:.68rem;color:#aaa;margin-top:2px;">HP: '+(boss.hp||0).toLocaleString()+' / '+(boss.maxHp||0).toLocaleString()+'</div>' +
+                    '</div></div>';
+            } catch(e) {
+                el.innerHTML = '<span style="color:#555;">Error al cargar datos.</span>';
+            }
+        }
+
         async function adminActivateBossUI() {
             if (!isAdmin()) { alert('Acceso denegado.'); return; }
-            const bossId = document.getElementById('admin-boss-select').value;
-            const startDate = document.getElementById('admin-start-date').value;
-            const endDate = document.getElementById('admin-end-date').value;
-            if (!bossId || !startDate || !endDate) { alert('Completa todos los campos.'); return; }
-            const bossConfig = typeof BOSS_DATA !== 'undefined' ? BOSS_DATA[bossId] : null;
-            if (!bossConfig) { alert('Jefe no encontrado.'); return; }
+            var bossId = document.getElementById('admin-boss-select').value;
+            var startDate = document.getElementById('admin-start-date').value;
+            var endDate = document.getElementById('admin-end-date').value;
+            if (!bossId || !startDate || !endDate) { alert('Selecciona un jefe y verifica las fechas.'); return; }
+            var bossConfig = typeof BOSS_DATA !== 'undefined' ? BOSS_DATA[bossId] : null;
+            if (!bossConfig) { alert('Jefe no encontrado en BOSS_DATA.'); return; }
             await adminActivateBoss(bossId, bossConfig, startDate, endDate);
+            adminLoadActiveBoss();
         }
 
         async function loadAdminRanking() {
@@ -1482,29 +1541,58 @@
                 <h2 style="font-family:Orbitron,sans-serif;color:#ffd700;font-size:1.2rem;margin:0;">👑 PANEL ADMINISTRADOR</h2>
                 <button onclick="document.getElementById('adminScreen').style.display='none'" style="background:rgba(255,51,102,0.2);border:1px solid #ff3366;color:#ff3366;border-radius:8px;padding:6px 16px;cursor:pointer;font-size:.75rem;">✕</button>
             </div>
+            <!-- ── Estado del Evento Actual ── -->
+            <div id="admin-boss-status-card" style="background:rgba(255,68,68,0.06);border:1px solid rgba(255,68,68,0.25);border-radius:12px;padding:14px 18px;margin-bottom:16px;">
+                <div style="font-family:Orbitron,sans-serif;color:#ff4444;font-size:.8rem;font-weight:700;margin-bottom:8px;">📡 EVENTO ACTIVO AHORA</div>
+                <div id="admin-active-boss-info" style="color:#555;font-size:.78rem;">Cargando...</div>
+            </div>
+
+            <!-- ── Gestión de Jefe de Sala ── -->
             <div style="background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.2);border-radius:12px;padding:20px;margin-bottom:16px;">
-                <h3 style="font-family:Orbitron,sans-serif;color:#ffd700;font-size:.9rem;margin:0 0 16px;">⚔️ GESTIÓN DE JEFE DE SALA</h3>
-                <div style="display:flex;flex-direction:column;gap:12px;">
+                <h3 style="font-family:Orbitron,sans-serif;color:#ffd700;font-size:.9rem;margin:0 0 14px;">⚔️ ACTIVAR JEFE DE SALA</h3>
+
+                <!-- Cards de jefes disponibles -->
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px;" id="admin-boss-cards">
+                    <!-- Broly -->
+                    <div onclick="adminSelectBoss('broly',this)" id="bosscard-broly"
+                        style="background:rgba(255,68,68,0.08);border:2px solid rgba(255,68,68,0.3);border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:all .2s;">
+                        <img src="https://i.ibb.co/wrhphbYm/image.jpg" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #ff4444;margin-bottom:6px;" onerror="this.style.display='none'">
+                        <div style="font-family:Orbitron,sans-serif;font-size:.7rem;color:#ff4444;font-weight:700;">BROLY</div>
+                        <div style="font-size:.6rem;color:#666;margin-top:2px;">10,000 HP</div>
+                        <div style="font-size:.58rem;color:#555;margin-top:1px;">Legendario SS</div>
+                    </div>
+                    <!-- Puedes agregar más jefes aquí en el futuro -->
+                </div>
+
+                <input type="hidden" id="admin-boss-select" value="broly">
+
+                <!-- Duración: 7 días automático, con opción de override -->
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.15);border-radius:8px;padding:10px 14px;">
+                    <span style="font-size:.74rem;color:#aaa;flex:1;">⏱️ Duración del evento</span>
+                    <select id="admin-boss-duration" onchange="adminUpdateBossDates()"
+                        style="background:#0a1628;border:1px solid #ffd700;color:#ffd700;border-radius:6px;padding:5px 8px;font-size:.75rem;">
+                        <option value="7" selected>7 días (estándar)</option>
+                        <option value="3">3 días</option>
+                        <option value="14">14 días</option>
+                        <option value="1">1 día (prueba)</option>
+                    </select>
+                </div>
+
+                <!-- Fechas calculadas automáticamente -->
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
                     <div>
-                        <label style="font-size:.75rem;color:#aaa;display:block;margin-bottom:4px;">Jefe</label>
-                        <select id="admin-boss-select" style="width:100%;background:#0a1628;border:1px solid #ffd700;color:#ffd700;border-radius:8px;padding:8px;font-size:.8rem;">
-                            <option value="broly">Broly — Legendario Super Sayajin</option>
-                        </select>
+                        <label style="font-size:.72rem;color:#888;display:block;margin-bottom:3px;">Inicio</label>
+                        <input type="datetime-local" id="admin-start-date" style="width:100%;background:#0a1628;border:1px solid rgba(255,215,0,0.4);color:#ffd700;border-radius:7px;padding:7px;font-size:.76rem;box-sizing:border-box;">
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                        <div>
-                            <label style="font-size:.75rem;color:#aaa;display:block;margin-bottom:4px;">Fecha Inicio</label>
-                            <input type="datetime-local" id="admin-start-date" value="2026-05-11T00:00" style="width:100%;background:#0a1628;border:1px solid #ffd700;color:#ffd700;border-radius:8px;padding:8px;font-size:.8rem;box-sizing:border-box;">
-                        </div>
-                        <div>
-                            <label style="font-size:.75rem;color:#aaa;display:block;margin-bottom:4px;">Fecha Fin</label>
-                            <input type="datetime-local" id="admin-end-date" value="2026-05-17T23:59" style="width:100%;background:#0a1628;border:1px solid #ffd700;color:#ffd700;border-radius:8px;padding:8px;font-size:.8rem;box-sizing:border-box;">
-                        </div>
+                    <div>
+                        <label style="font-size:.72rem;color:#888;display:block;margin-bottom:3px;">Fin (auto)</label>
+                        <input type="datetime-local" id="admin-end-date" style="width:100%;background:#0a1628;border:1px solid rgba(255,215,0,0.4);color:#ffd700;border-radius:7px;padding:7px;font-size:.76rem;box-sizing:border-box;">
                     </div>
-                    <div style="display:flex;gap:8px;">
-                        <button onclick="adminActivateBossUI()" style="flex:1;padding:10px;background:linear-gradient(135deg,#003a1a,#00aa55);border:2px solid #00ff88;color:#00ff88;border-radius:8px;font-family:Orbitron,sans-serif;font-size:.75rem;cursor:pointer;">✅ ACTIVAR EVENTO</button>
-                        <button onclick="adminDeactivateBoss()" style="flex:1;padding:10px;background:rgba(255,51,102,0.1);border:2px solid #ff3366;color:#ff3366;border-radius:8px;font-family:Orbitron,sans-serif;font-size:.75rem;cursor:pointer;">🛑 DESACTIVAR</button>
-                    </div>
+                </div>
+
+                <div style="display:flex;gap:8px;">
+                    <button onclick="adminActivateBossUI()" style="flex:2;padding:11px;background:linear-gradient(135deg,#003a1a,#00aa55);border:2px solid #00ff88;color:#00ff88;border-radius:9px;font-family:Orbitron,sans-serif;font-size:.78rem;cursor:pointer;font-weight:700;">✅ ACTIVAR EVENTO</button>
+                    <button onclick="adminDeactivateBoss()" style="flex:1;padding:11px;background:rgba(255,51,102,0.1);border:2px solid #ff3366;color:#ff3366;border-radius:9px;font-family:Orbitron,sans-serif;font-size:.78rem;cursor:pointer;">🛑 DETENER</button>
                 </div>
             </div>
             <div style="background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.2);border-radius:12px;padding:20px;">
