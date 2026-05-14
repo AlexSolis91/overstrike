@@ -1229,7 +1229,12 @@
 
             target.hp = Math.max(0, target.hp - remainingDamage);
 
-            // ── SINDRAGOSA Dragon de la Muerte: cuando Lich King recibe daño → 5 dmg al atacante ──
+            // ── LEGENDARIO SUPER SAYAJIN (Broly): genera 3 cargas cada vez que recibe daño ──
+            if (remainingDamage > 0 && !passiveExecuting && target.isBoss &&
+                target.passive && target.passive.name === 'Legendario Super Sayajin') {
+                target.charges = Math.min(20, (target.charges || 0) + 3);
+                addLog('💚 Legendario Super Sayajin: Broly genera 3 cargas al recibir daño (' + target.charges + '/20)', 'buff');
+            }
             if (remainingDamage > 0 && attackerName && !passiveExecuting &&
                 (targetName === 'Lich King' || targetName === 'Lich King v2') &&
                 target.hp > 0 && !target.isDead) {
