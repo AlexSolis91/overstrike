@@ -20,22 +20,25 @@
     // 1. RECOMPENSAS POR POSICIÓN
     // ─────────────────────────────────────────────────────────────────────────
     var BOSS_RANK_REWARDS = [
-        { rank: 1,  label: '🥇 1er Lugar',   gold: 5000, extra: 'Cofre Arcana',   color: '#ffd700', bg: 'rgba(255,215,0,0.12)'  },
-        { rank: 2,  label: '🥈 2do Lugar',   gold: 3000, extra: 'Cofre Épico',    color: '#c0c0c0', bg: 'rgba(192,192,192,0.08)' },
-        { rank: 3,  label: '🥉 3er Lugar',   gold: 2000, extra: 'Cofre Especial', color: '#cd7f32', bg: 'rgba(205,127,50,0.08)'  },
-        { rank: 4,  label: 'Top 5',           gold: 1000, extra: 'Cofre Raro',     color: '#00c4ff', bg: 'rgba(0,196,255,0.06)'   },
-        { rank: 5,  label: 'Top 5',           gold: 1000, extra: 'Cofre Raro',     color: '#00c4ff', bg: 'rgba(0,196,255,0.06)'   },
-        { rank: 6,  label: 'Top 10',          gold: 500,  extra: null,             color: '#888',    bg: 'rgba(255,255,255,0.02)' },
-        { rank: 7,  label: 'Top 10',          gold: 500,  extra: null,             color: '#888',    bg: 'rgba(255,255,255,0.02)' },
-        { rank: 8,  label: 'Top 10',          gold: 500,  extra: null,             color: '#888',    bg: 'rgba(255,255,255,0.02)' },
-        { rank: 9,  label: 'Top 10',          gold: 500,  extra: null,             color: '#888',    bg: 'rgba(255,255,255,0.02)' },
-        { rank: 10, label: 'Top 10',          gold: 500,  extra: null,             color: '#888',    bg: 'rgba(255,255,255,0.02)' }
+        { rank: 1,  label: '🥇 1er Lugar',  gold: 100000, keys: 2, extra: '2 Llaves Arcanas',  color: '#ffd700', bg: 'rgba(255,215,0,0.12)'  },
+        { rank: 2,  label: '🥈 2do Lugar',  gold: 50000,  keys: 1, extra: '1 Llave Arcana',    color: '#c0c0c0', bg: 'rgba(192,192,192,0.08)' },
+        { rank: 3,  label: '🥉 3er Lugar',  gold: 20000,  keys: 0, extra: 'Cofre Épico',        color: '#cd7f32', bg: 'rgba(205,127,50,0.08)'  },
+        { rank: 4,  label: '4to Lugar',      gold: 10000,  keys: 0, extra: 'Cofre Especial',     color: '#4fc3f7', bg: 'rgba(79,195,247,0.06)'  },
+        { rank: 5,  label: 'Top 5+',         gold: 5000,   keys: 0, extra: null,                 color: '#888',    bg: 'rgba(255,255,255,0.02)' },
+        { rank: 6,  label: 'Top 5+',         gold: 5000,   keys: 0, extra: null,                 color: '#888',    bg: 'rgba(255,255,255,0.02)' },
+        { rank: 7,  label: 'Top 5+',         gold: 5000,   keys: 0, extra: null,                 color: '#888',    bg: 'rgba(255,255,255,0.02)' },
+        { rank: 8,  label: 'Top 5+',         gold: 5000,   keys: 0, extra: null,                 color: '#888',    bg: 'rgba(255,255,255,0.02)' },
+        { rank: 9,  label: 'Top 5+',         gold: 5000,   keys: 0, extra: null,                 color: '#888',    bg: 'rgba(255,255,255,0.02)' },
+        { rank: 10, label: 'Top 5+',         gold: 5000,   keys: 0, extra: null,                 color: '#888',    bg: 'rgba(255,255,255,0.02)' }
     ];
 
     function getBossRewardForRank(rank) {
-        if (!rank || rank <= 0) return null;
-        if (rank <= 10) return BOSS_RANK_REWARDS[rank - 1];
-        return { rank: rank, label: '11+ Participación', gold: 250, extra: null, color: '#555', bg: 'transparent' };
+        if (!rank || rank <= 0) return { gold: 5000, keys: 0, extra: null, color: '#888', bg: 'transparent' };
+        if (rank === 1) return { rank:1, gold:100000, keys:2, extra:'2 Llaves Arcanas', color:'#ffd700', bg:'rgba(255,215,0,0.12)' };
+        if (rank === 2) return { rank:2, gold:50000,  keys:1, extra:'1 Llave Arcana',   color:'#c0c0c0', bg:'rgba(192,192,192,0.08)' };
+        if (rank === 3) return { rank:3, gold:20000,  keys:0, extra:'Cofre Épico',      color:'#cd7f32', bg:'rgba(205,127,50,0.08)' };
+        if (rank === 4) return { rank:4, gold:10000,  keys:0, extra:'Cofre Especial',   color:'#4fc3f7', bg:'rgba(79,195,247,0.06)' };
+        return           { rank:rank, gold:5000,   keys:0, extra:null,              color:'#888',    bg:'rgba(255,255,255,0.02)' };
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -602,47 +605,38 @@
             '</div>'
         );
 
-        // Filas de recompensa 1-10
-        for (var r = 1; r <= 10; r++) {
-            var rw = getBossRewardForRank(r);
-            var isMeRow = myRank === r;
+        // Filas de recompensa individuales (1-4)
+        var rewardRows = [
+            { r:1, label:'🥇 1er Lugar', gold:100000, extra:'2 Llaves Arcanas', color:'#ffd700', bg:'rgba(255,215,0,0.12)' },
+            { r:2, label:'🥈 2do Lugar', gold:50000,  extra:'1 Llave Arcana',   color:'#c0c0c0', bg:'rgba(192,192,192,0.08)' },
+            { r:3, label:'🥉 3er Lugar', gold:20000,  extra:'Cofre Épico',      color:'#cd7f32', bg:'rgba(205,127,50,0.08)' },
+            { r:4, label:'4to Lugar',    gold:10000,  extra:'Cofre Especial',   color:'#4fc3f7', bg:'rgba(79,195,247,0.06)' }
+        ];
+        rewardRows.forEach(function(rw) {
+            var isMeRow = myRank === rw.r;
             html.push(
                 '<div style="display:flex;align-items:center;justify-content:space-between;',
                     'background:', (isMeRow ? 'rgba(255,68,68,0.15)' : rw.bg), ';',
-                    'border:1px solid ', (isMeRow ? 'rgba(255,68,68,0.4)' : 'rgba(255,255,255,0.04)'), ';',
-                    'border-radius:7px;padding:6px 9px;margin-bottom:4px;">',
-
-                '<span style="font-size:.7rem;color:', rw.color, ';font-weight:700;',
-                    'font-family:Orbitron,sans-serif;">',
-                    r + '. ' + (r <= 3 ? rw.label.split(' ').slice(1).join(' ') : rw.label),
-                '</span>',
-
+                    'border:1px solid ', (isMeRow ? 'rgba(255,68,68,0.4)' : 'rgba(255,255,255,0.06)'), ';',
+                    'border-radius:7px;padding:7px 9px;margin-bottom:4px;">',
+                '<span style="font-size:.72rem;color:', rw.color, ';font-weight:700;font-family:Orbitron,sans-serif;">', rw.label, '</span>',
                 '<div style="text-align:right;flex-shrink:0;">',
-                    '<div style="font-size:.7rem;color:#ffd700;font-weight:700;">',
-                        '🪙 ', rw.gold.toLocaleString(),
-                    '</div>',
-                    rw.extra
-                        ? '<div style="font-size:.6rem;color:#888;white-space:nowrap;">' + rw.extra + '</div>'
-                        : '',
+                    '<div style="font-size:.72rem;color:#ffd700;font-weight:700;">🪙 ', rw.gold.toLocaleString(), '</div>',
+                    '<div style="font-size:.62rem;color:#aaa;">+ ', rw.extra, '</div>',
                 '</div>',
-
                 '</div>'
             );
-        }
+        });
 
-        // Fila de participación (11+)
-        var isMePart = myRank && myRank > 10;
+        // Fila 5to en adelante
+        var isMeRest = myRank && myRank >= 5;
         html.push(
             '<div style="display:flex;align-items:center;justify-content:space-between;',
-                'background:', (isMePart ? 'rgba(255,68,68,0.12)' : 'transparent'), ';',
-                'border:1px solid ', (isMePart ? 'rgba(255,68,68,0.3)' : 'rgba(255,255,255,0.04)'), ';',
-                'border-radius:7px;padding:6px 9px;margin-top:2px;">',
-
-            '<span style="font-size:.68rem;color:#555;">11+ Participación</span>',
-
-            '<div style="text-align:right;">',
-                '<div style="font-size:.68rem;color:#666;">🪙 250</div>',
-            '</div>',
+                'background:', (isMeRest ? 'rgba(255,68,68,0.12)' : 'rgba(255,255,255,0.02)'), ';',
+                'border:1px solid ', (isMeRest ? 'rgba(255,68,68,0.3)' : 'rgba(255,255,255,0.04)'), ';',
+                'border-radius:7px;padding:7px 9px;margin-bottom:4px;">',
+            '<span style="font-size:.7rem;color:#666;">5to en adelante</span>',
+            '<div style="text-align:right;"><div style="font-size:.7rem;color:#888;">🪙 5,000</div></div>',
             '</div>'
         );
 
