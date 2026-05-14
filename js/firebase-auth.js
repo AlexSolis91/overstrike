@@ -3400,8 +3400,12 @@
             const hpSnap = await hpRef.once('value');
             const newHp = Math.max(0, (hpSnap.val()||0) - damageDealt);
             await hpRef.set(newHp);
-            if (newHp <= 0) await db.ref('weekly_boss/current/status').set('defeated');
-            // Recompensa diaria
+            if (newHp <= 0) {
+                await db.ref('weekly_boss/current/status').set('defeated');
+                // ¡Jefe derrotado! — distribuir recompensas con multiplicador ×1.5
+                try { await distributeEndEventRewards(true); } catch(e) { console.error('[BOSS] Error distribuyendo recompensas:', e); }
+            }
+            // Recompensa diaria por participación
             const goldReward = Math.floor(500 + damageDealt * 0.5);
             await addGold(uid, goldReward);
             await updateLobbyHUD();
@@ -3539,6 +3543,7 @@
             return user && user.email === ADMIN_EMAIL;
         }
         window.isAdmin = isAdmin;
+        window.distributeEndEventRewards = distributeEndEventRewards;
 
         async function adminActivateBoss(bossId, bossConfig, startDate, endDate) {
             if (!isAdmin()) { alert('Acceso denegado.'); return; }
@@ -3561,8 +3566,73 @@
 
         async function adminDeactivateBoss() {
             if (!isAdmin()) { alert('Acceso denegado.'); return; }
+            // Distribuir recompensas finales antes de cerrar el evento
+            await distributeEndEventRewards(false);
             await db.ref('weekly_boss/current/status').set('ended');
-            alert('✅ Evento de Jefe de Sala desactivado.');
+            alert('✅ Evento de Jefe de Sala desactivado. Recompensas distribuidas.');
+        }
+
+        // ── Distribución de recompensas al final del evento ──────────────────────
+        // bossFelled = true si el jefe fue derrotado antes de que terminara el evento (×1.5)
+        async function distributeEndEventRewards(bossFelled) {
+            const snap = await db.ref('weekly_boss/damage_log').once('value');
+            const data = snap.val() || {};
+            const ranking = Object.entries(data)
+                .map(function([uid, d]){ return { uid: uid, playerName: d.playerName||uid, totalDamage: d.totalDamage||0 }; })
+                .sort(function(a,b){ return b.totalDamage - a.totalDamage; });
+
+            if (ranking.length === 0) return;
+
+            const multiplier = bossFelled ? 1.5 : 1.0;
+
+            const rewardsByRank = [
+                { gold: 100000, keys: 2, extra: 'chest_arcana',  extraCount: 2 },  // 1st
+                { gold: 50000,  keys: 1, extra: 'chest_arcana',  extraCount: 1 },  // 2nd
+                { gold: 20000,  keys: 0, extra: 'chest_epic',    extraCount: 1 },  // 3rd
+                { gold: 10000,  keys: 0, extra: 'chest_special', extraCount: 1 },  // 4th
+            ];
+
+            for (var i = 0; i < ranking.length; i++) {
+                var entry = ranking[i];
+                var rank  = i + 1;
+                var rw    = rank <= 4 ? rewardsByRank[rank-1] : { gold: 5000, keys: 0, extra: null };
+
+                var finalGold = Math.round(rw.gold * multiplier);
+                var finalKeys = Math.round((rw.keys||0) * multiplier);
+
+                await addGold(entry.uid, finalGold);
+
+                if (finalKeys > 0) {
+                    const keyRef = db.ref('players/' + entry.uid + '/arcaneKeys');
+                    const ks = await keyRef.once('value');
+                    await keyRef.set((ks.val()||0) + finalKeys);
+                }
+
+                if (rw.extra) {
+                    var extraCount = Math.ceil((rw.extraCount||1) * multiplier);
+                    for (var k = 0; k < extraCount; k++) {
+                        if (rw.extra === 'chest_arcana') {
+                            // Arcana chest = open directly as relic reward
+                            const keyRef2 = db.ref('players/' + entry.uid + '/arcaneKeys');
+                            const ks2 = await keyRef2.once('value');
+                            await keyRef2.set((ks2.val()||0) + 1);
+                        } else {
+                            const chestRef = db.ref('players/' + entry.uid + '/chests/' + rw.extra);
+                            const cs = await chestRef.once('value');
+                            await chestRef.set((cs.val()||0) + 1);
+                        }
+                    }
+                }
+
+                // Notificación en Firebase para el jugador
+                var notifMsg = '🏆 Fin del evento Jefe de Sala — Posición #' + rank +
+                    ': +' + finalGold.toLocaleString() + ' 🥇' +
+                    (finalKeys > 0 ? ' +' + finalKeys + ' 🗝️' : '') +
+                    (bossFelled ? ' (×1.5 Jefe derrotado!)' : '');
+                await db.ref('players/' + entry.uid + '/notifications').push({
+                    msg: notifMsg, ts: Date.now(), read: false
+                });
+            }
         }
 
         async function adminGetRanking() {
