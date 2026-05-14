@@ -7782,7 +7782,7 @@
             // ══ BROLY (Jefe de Sala) — handlers ══
 
             } else if (ability.effect === 'eraser_cannon_broly') {
-                // Eraser Cannon: 3 ST. 50% de doble cargas.
+                // Eraser Cannon: 3 ST. 50% doble cargas base (2→4).
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 addLog('💚 Eraser Cannon: ' + finalDamage + ' daño a ' + targetName, 'damage');
                 if (Math.random() < 0.50) {
@@ -7790,35 +7790,52 @@
                     addLog('💚 Eraser Cannon: ¡doble cargas! +' + (ability.chargeGain||2) + ' cargas adicionales', 'buff');
                 }
 
-            } else if (ability.effect === 'escudo_energia_broly') {
-                // Escudo de Energía: Escudo 5HP + Concentración 3T
-                const _beAtk = gameState.characters[gameState.selectedCharacter];
-                if (_beAtk) {
-                    _beAtk.shield = (_beAtk.shield||0) + 5;
-                    if (typeof applyBuff === 'function') applyBuff(gameState.selectedCharacter, { name: 'Concentracion', type: 'buff', duration: 3, emoji: '🎯' });
-                    addLog('💚 Escudo de Energía: Broly gana Escudo 5HP + Concentración 3T', 'buff');
+            } else if (ability.effect === 'onda_destruccion_broly') {
+                // Onda de Destrucción: 6 ST. Disipa Buffs del objetivo antes de golpear.
+                // Por cada Buff disipado: +200% daño (×2 por buff).
+                const _odTgt = gameState.characters[targetName];
+                let _odBufCount = 0;
+                if (_odTgt && _odTgt.statusEffects) {
+                    const _odBuffs = _odTgt.statusEffects.filter(function(e){ return e && e.type === 'buff'; });
+                    _odBufCount = _odBuffs.length;
+                    if (_odBufCount > 0) {
+                        _odTgt.statusEffects = _odTgt.statusEffects.filter(function(e){ return !e || e.type !== 'buff'; });
+                        addLog('💚 Onda de Destrucción: disipa ' + _odBufCount + ' buff(s) de ' + targetName, 'info');
+                    }
                 }
+                const _odMultiplier = 1 + (_odBufCount * 2);
+                const _odFinalDmg = Math.round(finalDamage * _odMultiplier);
+                applyDamageWithShield(targetName, _odFinalDmg, gameState.selectedCharacter);
+                addLog('💚 Onda de Destrucción: ' + _odFinalDmg + ' daño a ' + targetName +
+                    (_odBufCount > 0 ? ' (×' + _odMultiplier + ' por ' + _odBufCount + ' buffs disipados)' : ''), 'damage');
 
             } else if (ability.effect === 'liberacion_energia_broly') {
-                // Liberación de Energía: 5 AOE. +4 cargas por cada enemigo que esquive.
+                // Liberación de Energía: 5 AOE. 50% de probabilidad de ganar 4 cargas por cada enemigo golpeado.
                 const _leAtk = gameState.characters[gameState.selectedCharacter];
                 const _leET = _leAtk ? (_leAtk.team==='team1'?'team2':'team1') : 'team2';
-                let _leEvades = 0;
+                let _leHit = 0;
                 if (checkAndRedirectAOEMegaProv(_leET, finalDamage, gameState.selectedCharacter)) {
                     addLog('💚 Liberación de Energía: AOE redirigido', 'damage');
                 } else {
                     for (const _n in gameState.characters) {
                         const _cc = gameState.characters[_n];
                         if (!_cc||_cc.team!==_leET||_cc.isDead||_cc.hp<=0) continue;
-                        if (checkAsprosAOEImmunity(_n,true)||checkMinatoAOEImmunity(_n)) { _leEvades++; continue; }
+                        if (checkAsprosAOEImmunity(_n,true)||checkMinatoAOEImmunity(_n)) continue;
                         applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        _leHit++;
                     }
                 }
-                if (_leEvades > 0 && _leAtk) {
-                    _leAtk.charges = Math.min(20, (_leAtk.charges||0) + _leEvades * 4);
-                    addLog('💚 Liberación de Energía: +' + (_leEvades*4) + ' cargas (' + _leEvades + ' enemigos esquivaron)', 'buff');
+                addLog('💚 Liberación de Energía: ' + finalDamage + ' AOE a ' + _leHit + ' objetivo(s)', 'damage');
+                if (_leAtk && _leHit > 0) {
+                    let _leChargesGained = 0;
+                    for (let _li = 0; _li < _leHit; _li++) {
+                        if (Math.random() < 0.50) _leChargesGained += 4;
+                    }
+                    if (_leChargesGained > 0) {
+                        _leAtk.charges = Math.min(20, (_leAtk.charges||0) + _leChargesGained);
+                        addLog('💚 Liberación de Energía: +' + _leChargesGained + ' cargas ganadas', 'buff');
+                    }
                 }
-                addLog('💚 Liberación de Energía: ' + finalDamage + ' AOE completado', 'damage');
 
             } else if (ability.effect === 'omega_blaster_broly') {
                 // Omega Bláster: 20 ST. Roba TODAS las cargas enemigas. +1 daño por carga robada a 2 enemigos aleatorios.
