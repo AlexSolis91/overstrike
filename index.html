@@ -443,6 +443,84 @@
             return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
         }
 
+        // ── Tooltip de Reliquia ──────────────────────────────────────────────
+        function showRelicTooltip(name, rd, color, anchorEl) {
+            // Eliminar tooltip anterior
+            var prev = document.getElementById('relicTooltipPopup');
+            if (prev) {
+                if (prev._anchorEl === anchorEl) { prev.remove(); return; } // toggle
+                prev.remove();
+            }
+
+            var tierColors = { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700' };
+            var tc = tierColors[rd.tier] || color || '#aaa';
+
+            var popup = document.createElement('div');
+            popup.id = '_relicTooltipPopup';
+            popup.id = 'relicTooltipPopup';
+            popup._anchorEl = anchorEl;
+            popup.style.cssText = [
+                'position:fixed',
+                'z-index:99999',
+                'background:linear-gradient(135deg,rgba(8,2,20,0.98),rgba(15,5,30,0.98))',
+                'border:2px solid ' + tc,
+                'border-radius:14px',
+                'padding:16px 18px',
+                'min-width:220px',
+                'max-width:300px',
+                'box-shadow:0 0 32px ' + tc + '44,0 8px 24px rgba(0,0,0,0.8)',
+                'animation:relicTipIn .22s ease'
+            ].join(';');
+
+            // Inject CSS once
+            if (!document.getElementById('relicTooltipCSS')) {
+                var s = document.createElement('style');
+                s.id = 'relicTooltipCSS';
+                s.textContent = '@keyframes relicTipIn{from{opacity:0;transform:scale(.92) translateY(6px)}to{opacity:1;transform:scale(1) translateY(0)}}';
+                document.head.appendChild(s);
+            }
+
+            popup.innerHTML = [
+                '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">',
+                    '<img src="' + (rd.img||'') + '" style="width:44px;height:44px;object-fit:contain;border-radius:7px;border:1px solid ' + tc + ';" onerror="this.style.display=\'none\'">',
+                    '<div>',
+                        '<div style="font-family:Orbitron,sans-serif;font-size:.82rem;color:' + tc + ';font-weight:700;">' + name + '</div>',
+                        '<div style="font-size:.65rem;color:#666;margin-top:1px;">' + (rd.slot||'') + ' · ' + (rd.tier||'') + '</div>',
+                    '</div>',
+                '</div>',
+                '<div style="font-size:.76rem;color:#ccc;line-height:1.5;border-top:1px solid rgba(255,255,255,0.07);padding-top:10px;">' + (rd.desc||'Sin descripción.') + '</div>',
+                '<button onclick="document.getElementById(\'relicTooltipPopup\').remove()" ',
+                    'style="margin-top:12px;width:100%;padding:6px;background:rgba(255,255,255,0.04);',
+                    'border:1px solid rgba(255,255,255,0.1);color:#555;border-radius:7px;font-size:.7rem;cursor:pointer;">',
+                    '✕ Cerrar',
+                '</button>'
+            ].join('');
+
+            document.body.appendChild(popup);
+
+            // Position near the anchor element
+            var rect = anchorEl.getBoundingClientRect();
+            var pw = 300;
+            var left = rect.left + rect.width / 2 - pw / 2;
+            // Keep within viewport
+            left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
+            var top = rect.bottom + 8;
+            if (top + 200 > window.innerHeight) top = rect.top - 200;
+
+            popup.style.left = left + 'px';
+            popup.style.top  = Math.max(8, top) + 'px';
+
+            // Close on outside click
+            setTimeout(function() {
+                document.addEventListener('click', function _close(e) {
+                    if (!popup.contains(e.target) && e.target !== anchorEl) {
+                        popup.remove();
+                        document.removeEventListener('click', _close);
+                    }
+                });
+            }, 100);
+        }
+
         async function loadInventoryData() {
             const user = firebase.auth().currentUser;
             if (!user) return;
@@ -461,16 +539,18 @@
                 if (!rd) return;
                 const color = tierColors[rd.tier]||'#aaa';
                 const card = document.createElement('div');
-                card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid ' + color + ';border-radius:10px;padding:10px;text-align:center;position:relative;cursor:pointer;';
-                card.title = rd.desc;
-                card.innerHTML = '<img src="' + rd.img + '" style="width:56px;height:56px;object-fit:contain;border-radius:6px;" onerror="this.style.display=\'none\'">' +
-                    '<div style="font-size:.68rem;color:#ccc;margin-top:6px;line-height:1.2;">' + name + '</div>' +
-                    '<div style="font-size:.65rem;color:' + color + ';">' + rd.tier + '</div>' +
-                    '<div style="position:absolute;top:6px;right:6px;background:' + color + ';color:#000;border-radius:10px;padding:2px 6px;font-size:.65rem;font-weight:700;">×' + qty + '</div>' +
-                    '<div style="display:flex;gap:4px;margin-top:6px;">' +
-                    '<button data-uid="' + _escHtmlInv(user.uid) + '" data-name="' + _escHtmlInv(name) + '" onclick="event.stopPropagation();var b=this;quickSellRelic(b.dataset.uid,b.dataset.name).then(function(){loadInventoryData()})" style="flex:1;background:rgba(255,68,68,0.2);border:1px solid #ff4444;color:#ff4444;border-radius:6px;padding:3px;font-size:.6rem;cursor:pointer;">Vender</button>' +
-                    '</div>';
-                grid.appendChild(card);
+                 card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid ' + color + ';border-radius:10px;padding:10px;text-align:center;position:relative;cursor:pointer;transition:all .15s;';
+                 card.onmouseover = function(){ this.style.boxShadow='0 0 12px ' + color + '55'; };
+                 card.onmouseout  = function(){ this.style.boxShadow='none'; };
+                 card.onclick = (function(n,r,c){ return function(e){ e.stopPropagation(); showRelicTooltip(n,r,c,this); }; })(name, rd, color);
+                 card.innerHTML = '<img src="' + rd.img + '" style="width:56px;height:56px;object-fit:contain;border-radius:6px;" onerror="this.style.display=\'none\'">' +
+                     '<div style="font-size:.68rem;color:#ccc;margin-top:6px;line-height:1.2;">' + name + '</div>' +
+                     '<div style="font-size:.65rem;color:' + color + ';">' + rd.tier + '</div>' +
+                     '<div style="position:absolute;top:6px;right:6px;background:' + color + ';color:#000;border-radius:10px;padding:2px 6px;font-size:.65rem;font-weight:700;">×' + qty + '</div>' +
+                     '<div style="display:flex;gap:4px;margin-top:6px;">' +
+                     '<button data-uid="' + _escHtmlInv(user.uid) + '" data-name="' + _escHtmlInv(name) + '" onclick="event.stopPropagation();var b=this;quickSellRelic(b.dataset.uid,b.dataset.name).then(function(){loadInventoryData()})" style="flex:1;background:rgba(255,68,68,0.2);border:1px solid #ff4444;color:#ff4444;border-radius:6px;padding:3px;font-size:.6rem;cursor:pointer;">Vender</button>' +
+                     '</div>';
+                 grid.appendChild(card);
             });
             if (grid.innerHTML === '') grid.innerHTML = '<div style="color:#555;font-size:.8rem;grid-column:1/-1;text-align:center;padding:24px;">No tienes reliquias en tu inventario.</div>';
             // Renderizar personajes
@@ -1291,7 +1371,14 @@
                     }
                     csState.team1.push(name);
                     if (csState.team1.length >= CS_TEAM_SIZE) {
-                        if (csState.gameMode === 'solo') {
+                        if (csState.gameMode === 'boss') {
+                            // En modo boss: equipo1 listo → iniciar partida automáticamente
+                            csState.phase = 'done';
+                            csRenderSlots();
+                            csRenderGrid();
+                            setTimeout(function() { csStartGame(); }, 800);
+                            return;
+                        } else if (csState.gameMode === 'solo') {
                             csState.phase = 'done';
                             csAIPickTeam();
                             csRenderSlots();
