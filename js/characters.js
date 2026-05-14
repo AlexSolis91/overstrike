@@ -932,10 +932,10 @@
                 statusEffects: [],
                 passive: { name: 'Legendario Super Sayajin', description: 'Cada vez que recibe daño, genera 3 cargas.' },
                 abilities: [
-                    { name: 'Eraser Cannon',          type: 'basic',   cost: 0,  chargeGain: 2,  damage: 3,  target: 'single', effect: 'eraser_cannon_broly',      description: 'Causa 3 daño. 50% de probabilidad de generar el doble de cargas.' },
-                    { name: 'Escudo de Energía',       type: 'special', cost: 4,  chargeGain: 0,  damage: 0,  target: 'self',   effect: 'escudo_energia_broly',     description: 'Aplica Buff Escudo de 5HP. Aplica Buff Concentración 3 turnos.' },
-                    { name: 'Liberación de Energía',   type: 'special', cost: 7,  chargeGain: 0,  damage: 5,  target: 'aoe',    effect: 'liberacion_energia_broly', description: 'Causa 5 AOE. +4 cargas por cada enemigo que esquive.' },
-                    { name: 'Omega Bláster',           type: 'over',    cost: 20, chargeGain: 0,  damage: 20, target: 'single', effect: 'omega_blaster_broly',      description: 'Causa 20 daño. Roba todas las cargas del equipo enemigo. +1 daño por cada carga robada a 2 enemigos aleatorios.' }
+                    { name: 'Eraser Cannon',         type: 'basic',   cost: 0,  chargeGain: 2, damage: 3,  target: 'single', effect: 'eraser_cannon_broly',     description: 'Causa 3 daño. 50% de probabilidad de generar el doble de cargas.' },
+                    { name: 'Onda de Destrucción',   type: 'special', cost: 8,  chargeGain: 0, damage: 6,  target: 'single', effect: 'onda_destruccion_broly',   description: 'Antes de golpear, disipa todos los Buffs del objetivo. Por cada Buff disipado aumenta un 200% el daño de este ataque.' },
+                    { name: 'Liberación de Energía', type: 'special', cost: 10, chargeGain: 0, damage: 5,  target: 'aoe',    effect: 'liberacion_energia_broly', description: '50% de probabilidad de ganar 4 cargas por cada enemigo golpeado.' },
+                    { name: 'Omega Bláster',         type: 'over',    cost: 20, chargeGain: 0, damage: 20, target: 'single', effect: 'omega_blaster_broly',      description: 'Causa 20 daño. Roba todas las cargas del equipo enemigo. Por cada carga robada causa +1 daño a 2 enemigos aleatorios.' }
                 ]
             }
         };
