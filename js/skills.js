@@ -7342,21 +7342,51 @@
                 }
 
             } else if (ability.effect === 'susanoo_madara') {
+                // MADARA — Susanoo (actualizado):
+                // Antes de golpear: disipa todos los Buffs del objetivo.
+                // Aplica Escudo 4HP a Madara.
+                // 50% crítico → roba 3HP del objetivo.
                 const _suAtk = gameState.characters[gameState.selectedCharacter];
-                let _suDmg = finalDamage;
+                const _suTgt = gameState.characters[targetName];
+
+                // 1. Disipar todos los Buffs del objetivo
+                if (_suTgt && _suTgt.statusEffects) {
+                    const _suBuffsBefore = _suTgt.statusEffects.filter(function(e){ return e && e.type === 'buff'; });
+                    _suTgt.statusEffects = _suTgt.statusEffects.filter(function(e){ return !e || e.type !== 'buff'; });
+                    if (_suBuffsBefore.length > 0) {
+                        addLog('🌀 Susanoo: disipa ' + _suBuffsBefore.length + ' buff(s) de ' + targetName, 'info');
+                    }
+                }
+
+                // 2. Aplicar escudo fijo de 4HP a Madara
+                if (_suAtk) {
+                    _suAtk.shield = (_suAtk.shield || 0) + 4;
+                    addLog('🌀 Susanoo: ' + gameState.selectedCharacter + ' obtiene Escudo 4HP', 'buff');
+                }
+
+                // 3. Golpe base + 50% crítico
                 const _suCrit = Math.random() < 0.50;
-                if (_suCrit) { _suDmg *= 2; gameState._isCritHit = true; addLog('🌀 Susanoo: ¡Crítico!', 'buff'); }
+                let _suDmg = finalDamage;
+                if (_suCrit) {
+                    _suDmg = _suDmg * 2;
+                    gameState._isCritHit = true;
+                    addLog('🌀 Susanoo: ¡Crítico!', 'buff');
+                }
                 applyDamageWithShield(targetName, _suDmg, gameState.selectedCharacter);
                 addLog('🌀 Susanoo: ' + _suDmg + ' daño a ' + targetName, 'damage');
-                // Escudo al propio Madara (el atacante), no al objetivo
-                const _suSelf = gameState.characters[gameState.selectedCharacter];
-                if (_suSelf) {
-                    _suSelf.shield = (_suSelf.shield||0) + _suDmg;
-                    addLog('🌀 Susanoo: Escudo de ' + _suDmg + ' HP aplicado a ' + gameState.selectedCharacter, 'buff');
-                }
-                if (_suCrit && _suAtk) {
-                    if (_suAtk.rikudoMode) _suAtk.charges = Math.min(20, (_suAtk.charges||0) + 3);
-                    addLog('🌀 Gakido: turno adicional por crítico', 'buff');
+
+                // 4. Si crítico → roba 3HP del objetivo
+                if (_suCrit && _suAtk && _suTgt && !_suTgt.isDead) {
+                    const _suSteal = Math.min(3, _suTgt.hp);
+                    if (_suSteal > 0) {
+                        _suTgt.hp = Math.max(0, _suTgt.hp - _suSteal);
+                        _suAtk.hp = Math.min(_suAtk.maxHp, (_suAtk.hp || 0) + _suSteal);
+                        if (_suTgt.hp <= 0) { _suTgt.isDead = true; }
+                        addLog('🌀 Susanoo: roba ' + _suSteal + ' HP de ' + targetName, 'buff');
+                    }
+                    // Turno adicional por rikudoMode
+                    if (_suAtk.rikudoMode) _suAtk.charges = Math.min(20, (_suAtk.charges || 0) + 3);
+                    addLog('🌀 Susanoo: turno adicional por crítico', 'buff');
                     if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, _suAtk.team);
                     renderCharacters(); renderSummons(); showContinueButton(); return;
                 }
