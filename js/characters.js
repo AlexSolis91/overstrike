@@ -11,7 +11,7 @@
                 passive: { name: 'Gakido', description: 'Absorbe daño directo de aliados (gana cargas en lugar de HP). Inmune a debuffs con Escudo activo. Cada golpe crítico otorga 1 turno adicional.' },
                 abilities: [
                     { name: 'Rinbo: Hengoku', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'rinbo_hengoku_madara', description: 'Causa 2 daño. 50% de probabilidad de golpe crítico.' },
-                    { name: 'Susanoo', type: 'special', cost: 6, chargeGain: 0, damage: 4, target: 'single', effect: 'susanoo_madara', description: 'Causa 4 daño. Aplica Escudo equivalente al daño causado. 50% de crítico.' },
+                    { name: 'Susanoo', type: 'special', cost: 6, chargeGain: 0, damage: 4, target: 'single', effect: 'susanoo_madara', description: 'Antes de golpear, disipa todos los Buffs del objetivo. Madara se aplica Escudo 4HP. Si es crítico (50%), roba 3HP del objetivo.' },
                     { name: 'Modo Rikudō', type: 'special', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'rikudo_mode_madara', description: 'Transformación: todos sus ataques cuestan la mitad y causan daño doble. Cada turno adicional genera 3 cargas.' },
                     { name: 'Chibaku Tensei', type: 'over', cost: 12, chargeGain: 0, damage: 6, target: 'aoe', effect: 'chibaku_tensei_madara', description: 'Causa 6 AOE. Roba todas las cargas del equipo enemigo. 50% de crítico.' }
                 ]
