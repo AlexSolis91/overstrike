@@ -406,6 +406,26 @@
                 let chosen = usable[0];
 
                 // ═══════════════════════════════════════════════════════════════════
+                // JEFE DE SALA — Prioridad especial para bosses
+                // 1. Usar Over si está disponible
+                // 2. Si no, usar el movimiento de mayor daño contra el enemigo más
+                //    débil (menor HP) o más peligroso (mayor cargas)
+                // ═══════════════════════════════════════════════════════════════════
+                if (window._bossMode && char.isBoss) {
+                    const _bossOver = usable.find(function(ab){ return ab.type === 'over'; });
+                    if (_bossOver) {
+                        chosen = _bossOver;
+                    } else {
+                        // Elegir el movimiento de mayor daño disponible (excluyendo self)
+                        const _bossAttacks = usable.filter(function(ab){ return ab.target !== 'self'; });
+                        if (_bossAttacks.length > 0) {
+                            _bossAttacks.sort(function(a, b){ return (b.damage||0) - (a.damage||0); });
+                            chosen = _bossAttacks[0];
+                        }
+                    }
+                }
+
+                // ═══════════════════════════════════════════════════════════════════
                 // PERSONAJES ESPECIALES — lógica personalizada de IA
                 // ═══════════════════════════════════════════════════════════════════
 
@@ -661,6 +681,20 @@
 
                 // AMATERASU override: if there's an enemy summon, target it instead
                 let _finalTarget = _saitamaOverride || target;
+
+                // BOSS override: apuntar al enemigo más peligroso (más cargas) o más débil en HP
+                if (window._bossMode && char.isBoss && enemies.length > 0 && chosen.target === 'single') {
+                    const _bossTarget = enemies.reduce(function(best, n) {
+                        const cb = gameState.characters[best];
+                        const cn = gameState.characters[n];
+                        if (!cn) return best;
+                        // Prioridad: más cargas (peligroso) o menos HP (más débil)
+                        const scoreB = (cb ? cb.charges : 0) * 3 + (cb ? (1 - cb.hp / (cb.maxHp || 1)) * 2 : 0);
+                        const scoreN = (cn.charges || 0) * 3 + (1 - (cn.hp || 0) / (cn.maxHp || 1)) * 2;
+                        return scoreN > scoreB ? n : best;
+                    }, enemies[0]);
+                    _finalTarget = _bossTarget;
+                }
                 let _amaterasuSummonId = null;
                 if (chosen.effect === 'amaterasu_itachi') {
                     const _amSummonEntry = Object.entries(gameState.summons).find(function(e) {
