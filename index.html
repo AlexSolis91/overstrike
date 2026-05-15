@@ -443,7 +443,54 @@
             return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
         }
 
-        // ── Tooltip de Reliquia ──────────────────────────────────────────────
+        // ── Tooltip genérico para ítems del mercado (cofres, runas) ────────────
+        function showItemTooltip(name, imgSrc, color, typeLabel, desc, anchorEl) {
+            var prev = document.getElementById('relicTooltipPopup');
+            if (prev) { if (prev._anchorEl === anchorEl) { prev.remove(); return; } prev.remove(); }
+
+            var popup = document.createElement('div');
+            popup.id = 'relicTooltipPopup';
+            popup._anchorEl = anchorEl;
+            popup.style.cssText = [
+                'position:fixed','z-index:99999',
+                'background:linear-gradient(135deg,rgba(8,2,20,0.98),rgba(15,5,30,0.98))',
+                'border:2px solid ' + color,
+                'border-radius:14px','padding:16px 18px',
+                'min-width:220px','max-width:300px',
+                'box-shadow:0 0 32px ' + color + '44,0 8px 24px rgba(0,0,0,0.8)',
+                'animation:relicTipIn .22s ease'
+            ].join(';');
+
+            popup.innerHTML = [
+                '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">',
+                    '<img src="' + imgSrc + '" style="width:44px;height:44px;object-fit:contain;border-radius:7px;border:1px solid ' + color + ';" onerror="this.style.display=\'none\'">',
+                    '<div>',
+                        '<div style="font-family:Orbitron,sans-serif;font-size:.82rem;color:' + color + ';font-weight:700;">' + name + '</div>',
+                        '<div style="font-size:.65rem;color:#666;margin-top:1px;">' + typeLabel + '</div>',
+                    '</div>',
+                '</div>',
+                '<div style="font-size:.76rem;color:#ccc;line-height:1.5;border-top:1px solid rgba(255,255,255,0.07);padding-top:10px;">' + desc + '</div>',
+                '<button onclick="document.getElementById(\'relicTooltipPopup\').remove()" ',
+                    'style="margin-top:12px;width:100%;padding:6px;background:rgba(255,255,255,0.04);',
+                    'border:1px solid rgba(255,255,255,0.1);color:#555;border-radius:7px;font-size:.7rem;cursor:pointer;">',
+                    '✕ Cerrar',
+                '</button>'
+            ].join('');
+
+            document.body.appendChild(popup);
+            var rect = anchorEl.getBoundingClientRect();
+            var pw = 300;
+            var left = Math.max(8, Math.min(rect.left + rect.width/2 - pw/2, window.innerWidth - pw - 8));
+            var top = rect.bottom + 8;
+            if (top + 200 > window.innerHeight) top = Math.max(8, rect.top - 220);
+            popup.style.left = left + 'px';
+            popup.style.top = top + 'px';
+            setTimeout(function() {
+                document.addEventListener('click', function _c(e) {
+                    if (!popup.contains(e.target) && e.target !== anchorEl) { popup.remove(); document.removeEventListener('click', _c); }
+                });
+            }, 100);
+        }
         function showRelicTooltip(name, rd, color, anchorEl) {
             // Eliminar tooltip anterior
             var prev = document.getElementById('relicTooltipPopup');
@@ -678,8 +725,12 @@
             if (market.relic) {
                 const rd = typeof RELICS_DATA !== 'undefined' ? RELICS_DATA[market.relic.name] : null;
                 const color = tierColors[market.relic.tier]||'#aaa';
+                var _mrn = market.relic.name.replace(/'/g,"\\'");
+                var _mrc = color;
                 grid.innerHTML += '<div style="background:rgba(255,255,255,0.04);border:2px solid ' + color + ';border-radius:12px;padding:14px;text-align:center;">' +
-                    '<img src="' + (rd?rd.img:'') + '" style="width:64px;height:64px;object-fit:contain;border-radius:8px;margin-bottom:8px;">' +
+                    '<img src="' + (rd?rd.img:'') + '" style="width:64px;height:64px;object-fit:contain;border-radius:8px;margin-bottom:8px;cursor:pointer;" ' +
+                    'onclick="showRelicTooltip(\'' + _mrn + '\',typeof RELICS_DATA!==\'undefined\'?RELICS_DATA[\'' + _mrn + '\']: null,\'' + _mrc + '\',this)" ' +
+                    'title="Ver descripción">' +
                     '<div style="font-size:.75rem;color:#fff;font-weight:700;margin-bottom:4px;">' + market.relic.name + '</div>' +
                     '<div style="font-size:.68rem;color:' + color + ';margin-bottom:8px;">' + market.relic.tier + '</div>' +
                     '<div style="font-size:.75rem;color:#ffaa00;margin-bottom:8px;">' + market.relic.price.toLocaleString() + ' 🥇</div>' +
@@ -688,7 +739,9 @@
             }
             // 2. Runa de Ataque
             grid.innerHTML += '<div style="background:rgba(200,100,255,0.05);border:2px solid #c864ff;border-radius:12px;padding:14px;text-align:center;">' +
-                '<img src="https://i.ibb.co/8D3s84Nw/image-53bcf67.png" style="width:64px;height:64px;object-fit:contain;border-radius:8px;margin-bottom:8px;">' +
+                '<img src="https://i.ibb.co/8D3s84Nw/image-53bcf67.png" style="width:64px;height:64px;object-fit:contain;border-radius:8px;margin-bottom:8px;cursor:pointer;" ' +
+                'onclick="showItemTooltip(\'Runa de Ataque\',\'https://i.ibb.co/8D3s84Nw/image-53bcf67.png\',\'#c864ff\',\'Runa Especial\',\'Aumenta el daño de los ataques especiales del portador. Se aplica automáticamente al equipar.\',this)" ' +
+                'title="Ver descripción">' +
                 '<div style="font-size:.75rem;color:#fff;font-weight:700;margin-bottom:4px;">Runa de Ataque</div>' +
                 '<div style="font-size:.68rem;color:#c864ff;margin-bottom:8px;">Especial</div>' +
                 '<div style="font-size:.75rem;color:#ffaa00;margin-bottom:8px;">50,000 🥇</div>' +
@@ -701,9 +754,21 @@
                 { id:'chest_epic',    label:'Cofre Épico',    price:'60,000',  color:'#c864ff', border:'border:1px solid #c864ff', img:'https://i.ibb.co/8D28wG42/Gemini-Generated-Image-vqlk4cvqlk4cvqlk.png' },
                 { id:'chest_arcana',  label:'Cofre Arcano',   price:'1 🗝️',   color:'#ffd700', border:'border:2px solid #ffd700', img:'https://i.ibb.co/21Cqvp06/Gemini-Generated-Image-g76wcgg76wcgg76w.png' },
             ];
+            var _chestContents = {
+                'chest_rare':    'Contiene: 1 Reliquia aleatoria de tier Raro o Especial.',
+                'chest_special': 'Contiene: 1 Reliquia aleatoria de tier Especial o Épico, con probabilidad de Legendaria.',
+                'chest_epic':    'Contiene: 1 Reliquia aleatoria de tier Épico, con probabilidad de Legendaria.',
+                'chest_arcana':  'Contiene: 1 Reliquia Legendaria garantizada.',
+            };
             chests.forEach(function(ch){
+                var _chDesc = _chestContents[ch.id] || 'Cofre con reliquias.';
+                var _chImg = ch.img.replace(/'/g,"\\'");
+                var _chLabel = ch.label.replace(/'/g,"\\'");
+                var _chColor = ch.color;
                 grid.innerHTML += '<div style="background:rgba(255,255,255,0.03);' + ch.border + ';border-radius:12px;padding:14px;text-align:center;">' +
-                    '<img src="' + ch.img + '" style="width:72px;height:72px;object-fit:contain;margin-bottom:8px;display:block;margin-left:auto;margin-right:auto;" onerror="this.style.display=\'none\'">' +
+                    '<img src="' + ch.img + '" style="width:72px;height:72px;object-fit:contain;margin-bottom:8px;display:block;margin-left:auto;margin-right:auto;cursor:pointer;" ' +
+                    'onclick="showItemTooltip(\'' + _chLabel + '\',\'' + _chImg + '\',\'' + _chColor + '\',\'Cofre\',\'' + _chDesc + '\',this)" ' +
+                    'onerror="this.style.display=\'none\'"> ' +
                     '<div style="font-size:.75rem;color:#fff;font-weight:700;margin-bottom:4px;">' + ch.label + '</div>' +
                     '<div style="font-size:.75rem;color:#ffaa00;margin-bottom:8px;">' + ch.price + '</div>' +
                     '<button onclick="buyDailyItem(\'' + user.uid + '\',\'' + ch.id + '\')" style="width:100%;padding:6px;background:rgba(255,255,255,0.05);border:1px solid ' + ch.color + ';color:' + ch.color + ';border-radius:8px;font-size:.7rem;cursor:pointer;">Comprar</button>' +
@@ -1264,6 +1329,47 @@
                     passiveBox.appendChild(pdesc);
                     meta.appendChild(passiveBox);
                 }
+
+                // ── Reliquias equipadas por el jugador en este personaje ──
+                const _csUser = firebase && firebase.auth ? firebase.auth().currentUser : null;
+                if (_csUser && typeof db !== 'undefined') {
+                    const _csRelicRef = db.ref('players/' + _csUser.uid + '/equipment/' + name);
+                    _csRelicRef.once('value').then(function(snap) {
+                        const _csEquip = snap.val() || {};
+                        const _csRelicNames = [_csEquip.slot1, _csEquip.slot2, _csEquip.slot3].filter(Boolean);
+                        if (_csRelicNames.length === 0) return;
+                        const relicBox = el('div', '');
+                        relicBox.style.cssText = 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;margin-top:8px;';
+                        const relicTitle = el('div', '', '🔮 Reliquias equipadas');
+                        relicTitle.style.cssText = 'font-size:.68rem;color:#888;font-family:Orbitron,sans-serif;letter-spacing:.05em;margin-bottom:8px;';
+                        relicBox.appendChild(relicTitle);
+                        const relicRow = el('div', '');
+                        relicRow.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;';
+                        const TIER_COLORS = { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700' };
+                        _csRelicNames.forEach(function(rName) {
+                            const rd = typeof RELICS_DATA !== 'undefined' ? RELICS_DATA[rName] : null;
+                            const tc = rd ? (TIER_COLORS[rd.tier] || '#aaa') : '#aaa';
+                            const rCard = el('div', '');
+                            rCard.style.cssText = 'display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.04);border:1px solid ' + tc + ';border-radius:8px;padding:5px 8px;cursor:pointer;';
+                            rCard.title = rd ? (rd.desc || rName) : rName;
+                            rCard.onclick = (function(n, r, c) { return function(e) { e.stopPropagation(); showRelicTooltip(n, r, c, this); }; })(rName, rd, tc);
+                            if (rd && rd.img) {
+                                const rImg = el('img', '');
+                                rImg.src = rd.img;
+                                rImg.style.cssText = 'width:28px;height:28px;object-fit:contain;border-radius:4px;';
+                                rImg.onerror = function(){ this.style.display='none'; };
+                                rCard.appendChild(rImg);
+                            }
+                            const rLabel = el('div', '');
+                            rLabel.style.cssText = 'font-size:.62rem;color:' + tc + ';line-height:1.2;max-width:80px;';
+                            rLabel.textContent = rName;
+                            rCard.appendChild(rLabel);
+                            relicRow.appendChild(rCard);
+                        });
+                        relicBox.appendChild(relicRow);
+                        meta.appendChild(relicBox);
+                    }).catch(function(){});
+                }
                 hero.appendChild(meta);
                 modal.appendChild(hero);
 
@@ -1506,12 +1612,43 @@
                 }
                 gameState.gameMode = csState.gameMode;
                 gameState.aiTeam = 'team2';
+                gameState.myTeam = 'team1';
                 if (window._rankedMode) {
                     gameState.gameMode = 'ranked';
                     if (window._rankedFakeOpponent) {
                         addLog('🏆 RANKED: ' + (currentUser ? currentUser.displayName || 'Jugador' : 'Jugador') + ' vs ' + window._rankedFakeOpponent, 'info');
                     }
                 }
+
+                // ── Cargar reliquias equipadas del jugador en sus personajes ──
+                (function() {
+                    var user = firebase.auth().currentUser;
+                    if (!user || typeof db === 'undefined') return;
+                    var myCharNames = Object.keys(gameState.characters).filter(function(n) {
+                        var c = gameState.characters[n];
+                        return c && c.team === 'team1';
+                    });
+                    myCharNames.forEach(function(charName) {
+                        db.ref('players/' + user.uid + '/equipment/' + charName).once('value').then(function(snap) {
+                            var equip = snap.val() || {};
+                            var slots = [equip.slot1, equip.slot2, equip.slot3].filter(Boolean);
+                            if (!slots.length) return;
+                            var ch = gameState.characters[charName];
+                            if (!ch) return;
+                            ch.equippedRelics = slots;
+                            // Apply relic stat bonuses
+                            if (typeof RELICS_DATA !== 'undefined') {
+                                slots.forEach(function(relicName) {
+                                    var rd = RELICS_DATA[relicName];
+                                    if (!rd) return;
+                                    if (rd.hpBonus)  { ch.hp = ch.hp + rd.hpBonus; ch.maxHp = ch.maxHp + rd.hpBonus; }
+                                    if (rd.velBonus) { ch.speed = ch.speed + rd.velBonus; }
+                                });
+                            }
+                            renderCharacters();
+                        }).catch(function(){});
+                    });
+                })();
                 audioManager.playRandomBattle();
             } catch(err) {
                 console.error('Error en csStartGame:', err);
