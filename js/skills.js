@@ -830,12 +830,10 @@
                 // SAITAMA - Golpe Grave: Elimina directamente al objetivo + turno adicional
                 const tgtGrave = gameState.characters[targetName];
                 if (tgtGrave && !tgtGrave.isDead && tgtGrave.hp > 0) {
-                    // Los jefes de sala son inmunes a One-Hit KO
+                    // Los jefes de sala son inmunes a One-Hit KO — causa 20 de daño fijo
                     if (window._bossMode && tgtGrave.isBoss) {
-                        const _graveOldHp = tgtGrave.hp;
-                        const _graveDmg = Math.max(1, Math.floor(_graveOldHp * 0.10)); // 10% del HP como daño
-                        applyDamageWithShield(targetName, _graveDmg, gameState.selectedCharacter);
-                        addLog('🛡️ Golpe Grave: ¡El Jefe de Sala resiste el KO instantáneo! (' + _graveDmg + ' daño)', 'info');
+                        applyDamageWithShield(targetName, 20, gameState.selectedCharacter);
+                        addLog('💀 Golpe Grave: ¡El Jefe de Sala resiste el KO! 20 daño aplicado', 'damage');
                         triggerAnticipacion(gameState.selectedCharacter, attacker.team);
                         renderCharacters();
                         renderSummons();
@@ -920,7 +918,30 @@
 
             // ── CAMBIO DE SANGRE (Nakime updated) ──
             } else if (ability.effect === 'cambio_sangre') {
-                // Cambio de Sangre: intercambia HP entre aliado (menos HP) y enemigo (más HP)
+                // Cambio de Sangre: intercambia HP entre aliado y enemigo
+                // Vs Jefe de Sala: solo quita/recupera max 10 HP
+                const _csIsBoss = window._bossMode && gameState.characters[targetName] && gameState.characters[targetName].isBoss;
+                if (_csIsBoss) {
+                    // Buscar aliado con menos HP
+                    const _csMyTeam = attacker.team;
+                    const _csAllies = Object.keys(gameState.characters).filter(function(n){
+                        const c = gameState.characters[n]; return c && c.team === _csMyTeam && !c.isDead && c.hp > 0;
+                    });
+                    const _csBestAlly = _csAllies.reduce(function(a, b){
+                        return (gameState.characters[a].hp / gameState.characters[a].maxHp) < (gameState.characters[b].hp / gameState.characters[b].maxHp) ? a : b;
+                    }, _csAllies[0]);
+                    const _csBossChar = gameState.characters[targetName];
+                    const _csAllyChar = gameState.characters[_csBestAlly];
+                    if (_csBossChar && _csAllyChar) {
+                        const _csBossDmg = Math.min(10, _csBossChar.hp);
+                        _csBossChar.hp = Math.max(0, _csBossChar.hp - _csBossDmg);
+                        _csAllyChar.hp = Math.min(_csAllyChar.maxHp, _csAllyChar.hp + _csBossDmg);
+                        addLog('🔄 Cambio de Sangre: Roba ' + _csBossDmg + ' HP de ' + targetName + ' → ' + _csBestAlly, 'damage');
+                    }
+                    renderCharacters();
+                    if (typeof checkGameOver === 'function') checkGameOver();
+                    endTurn(); return;
+                }
                 gameState.nakimePendingSwap = { type: 'sangre', enemy: targetName };
                 // If AI controls Nakime: auto-select targets
                 const _nakimeChar = gameState.characters[gameState.selectedCharacter];
@@ -2100,8 +2121,9 @@
                 }
                 
             } else if (ability.effect === 'revive_ally') {
-                // Milagro de la vida
+                // Milagro de la vida — coste actualizado a 10 cargas
                 reviveAlly(targetName);
+                addLog('✨ Milagro de la Vida: ' + targetName + ' revive con 100% HP y 10 cargas', 'buff');
                 
             } else if (ability.effect === 'damage_and_heal') {
                 // Great Horn - Daño + Curación
@@ -3848,9 +3870,18 @@
             // ══════════════════════════════════════════════════════
 
             } else if (ability.effect === 'kusanagi_sasuke') {
-                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                // Corte: Espada Kusanagi — si el objetivo es Jefe de Sala: +daño igual a sus cargas actuales
+                const _kusIsBoss = window._bossMode && gameState.characters[targetName] && gameState.characters[targetName].isBoss;
+                const _kusTgtChar = gameState.characters[targetName];
+                let _kusTotalDmg = finalDamage;
+                if (_kusIsBoss && _kusTgtChar) {
+                    const _kusChargeBonus = _kusTgtChar.charges || 0;
+                    _kusTotalDmg = finalDamage + _kusChargeBonus;
+                    if (_kusChargeBonus > 0) addLog('⚡ Corte Kusanagi [Jefe]: +' + _kusChargeBonus + ' daño por cargas del Jefe', 'buff');
+                }
+                applyDamageWithShield(targetName, _kusTotalDmg, gameState.selectedCharacter);
                 applyAgotamiento(targetName, 3);
-                addLog('⚡ Corte Kusanagi: ' + finalDamage + ' daño + Agotamiento 3T a ' + targetName, 'damage');
+                addLog('⚡ Corte Kusanagi: ' + _kusTotalDmg + ' daño + Agotamiento 3T a ' + targetName, 'damage');
 
             } else if (ability.effect === 'chidori_sasuke') {
                 // SASUKE — Chidori: 4 daño + roba hasta 4 cargas; si queda en 0 → crítico
@@ -4268,12 +4299,17 @@
                 // GAARA — Sabaku Taisō: elimina al objetivo; revive con 50% HP y 0 cargas en 2 rondas
                 const _stTgt = gameState.characters[targetName];
                 if (_stTgt && !_stTgt.isDead && _stTgt.hp > 0) {
-                    // Los jefes de sala son inmunes a One-Hit KO
+                    // Vs Jefe de Sala: daño = 10 × (personajes vivos + invocaciones vivas del equipo atacante)
                     if (window._bossMode && _stTgt.isBoss) {
-                        const _stDmg = Math.max(1, Math.floor(_stTgt.hp * 0.10));
+                        const _stMyTeam = gameState.characters[gameState.selectedCharacter] ? gameState.characters[gameState.selectedCharacter].team : 'team1';
+                        const _stAliveChars = Object.values(gameState.characters).filter(function(c){ return c && c.team === _stMyTeam && !c.isDead && c.hp > 0; }).length;
+                        const _stAliveSummons = Object.values(gameState.summons).filter(function(s){ return s && s.team === _stMyTeam && s.hp > 0; }).length;
+                        const _stTotal = (_stAliveChars + _stAliveSummons);
+                        const _stDmg = _stTotal * 10;
                         applyDamageWithShield(targetName, _stDmg, gameState.selectedCharacter);
-                        addLog('🛡️ Sabaku Taisō: ¡El Jefe de Sala resiste la eliminación! (' + _stDmg + ' daño)', 'info');
+                        addLog('🏜️ Sabaku Taisō [Jefe]: ' + _stDmg + ' daño (' + _stAliveChars + ' personajes + ' + _stAliveSummons + ' invocaciones × 10)', 'damage');
                         renderCharacters();
+                        if (typeof checkGameOver === 'function') checkGameOver();
                         showContinueButton();
                         return;
                     }
@@ -5019,19 +5055,31 @@
                 addLog('🃏 Detonador del Caos: 3 AOE completado', 'damage');
 
             } else if (ability.effect === 'por_que_serio_joker') {
-                // JOKER — ¿Por qué tan serio?: 2 dmg + si tiene Veneno → -60% HP actual
+                // JOKER — ¿Por qué tan serio?: 2 dmg
+                // Vs normal: si tiene Veneno → -60% HP actual
+                // Vs Jefe de Sala: daño = número de stacks de veneno acumulados
                 const _pqTgt = gameState.characters[targetName];
+                const _pqIsBoss = window._bossMode && _pqTgt && _pqTgt.isBoss;
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('🃏 ¿Por qué tan serio?: ' + finalDamage + ' daño a ' + targetName, 'damage');
                 if (_pqTgt && !_pqTgt.isDead && _pqTgt.hp > 0) {
-                    const _hasVeneno = (_pqTgt.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'').toLowerCase().includes('veneno'); });
-                    if (_hasVeneno) {
-                        const _pqLoss = Math.floor(_pqTgt.hp * 0.60);
-                        _pqTgt.hp = Math.max(0, _pqTgt.hp - _pqLoss);
-                        if (_pqTgt.hp <= 0) { _pqTgt.isDead = true; registerKill(gameState.selectedCharacter, targetName, false); if (typeof checkGameOver === 'function') checkGameOver(); }
-                        addLog('🃏 ¿Por qué tan serio? -60% HP: ' + targetName + ' pierde ' + _pqLoss + ' HP', 'damage');
+                    const _pqVenoStacks = (_pqTgt.statusEffects||[]).filter(function(e){ return e && normAccent(e.name||'').toLowerCase().includes('veneno'); }).length;
+                    if (_pqIsBoss) {
+                        if (_pqVenoStacks > 0) {
+                            applyDamageWithShield(targetName, _pqVenoStacks, gameState.selectedCharacter);
+                            addLog('🃏 ¿Por qué tan serio? [Jefe]: ' + _pqVenoStacks + ' daño por stacks de veneno (' + _pqVenoStacks + ' stacks)', 'damage');
+                        } else {
+                            addLog('🃏 ¿Por qué tan serio? [Jefe]: sin stacks de veneno', 'info');
+                        }
+                    } else {
+                        if (_pqVenoStacks > 0) {
+                            const _pqLoss = Math.floor(_pqTgt.hp * 0.60);
+                            _pqTgt.hp = Math.max(0, _pqTgt.hp - _pqLoss);
+                            if (_pqTgt.hp <= 0) { _pqTgt.isDead = true; registerKill(gameState.selectedCharacter, targetName, false); if (typeof checkGameOver === 'function') checkGameOver(); }
+                            addLog('🃏 ¿Por qué tan serio? -60% HP: ' + targetName + ' pierde ' + _pqLoss + ' HP', 'damage');
+                        }
                     }
                 }
-                addLog('🃏 ¿Por qué tan serio?: ' + finalDamage + ' daño a ' + targetName, 'damage');
             } else if (ability.effect === 'batarang_batman') {
                 // BATMAN — Batarang Táctico: 2 dmg + 50% stun + 50% steal 2 cargas
                 const _bbAtk = gameState.characters[gameState.selectedCharacter];
@@ -5269,13 +5317,20 @@
                             _ikK.charges = Math.min(20, (_ikK.charges || 0) + 2);
                             addLog('⚔️ Dios de la Guerra: ' + gameState.selectedCharacter + ' genera 2 cargas (Sangrado previo en ' + _n + ')', 'buff');
                         }
-                        // 10% instant kill
+                        // 10% instant kill — si es boss con sangrado: 75 daño en su lugar
                         const _cNow = gameState.characters[_n];
-                        if (_cNow && !_cNow.isDead && _cNow.hp > 0 && Math.random() < 0.10) {
-                            _cNow.hp = 0; _cNow.isDead = true;
-                if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, _cNowName||targetName, false);
-                            addLog('💀 Ira de Kratos: ¡' + _n + ' eliminado (10%)!', 'damage');
-                            if (typeof checkGameOver === 'function') checkGameOver();
+                        if (_cNow && !_cNow.isDead && _cNow.hp > 0) {
+                            const _cNowIsBoss = window._bossMode && _cNow.isBoss;
+                            const _cNowHasBleedIK = (_cNow.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'').toLowerCase() === 'sangrado'; });
+                            if (_cNowIsBoss && _cNowHasBleedIK) {
+                                applyDamageWithShield(_n, 75, gameState.selectedCharacter);
+                                addLog('⚔️ Ira de Kratos [Jefe + Sangrado]: ¡75 daño a ' + _n + '!', 'damage');
+                            } else if (!_cNowIsBoss && Math.random() < 0.10) {
+                                _cNow.hp = 0; _cNow.isDead = true;
+                                if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, _n, false);
+                                addLog('💀 Ira de Kratos: ¡' + _n + ' eliminado (10%)!', 'damage');
+                                if (typeof checkGameOver === 'function') checkGameOver();
+                            }
                         }
                     }
                 applyAOEToSummons(_ikTeam, finalDamage, gameState.selectedCharacter);
@@ -5570,39 +5625,45 @@
                 addLog('💥 Skill Drain: ' + finalDamage + ' AOE + robo de HP completado', 'damage');
 
             } else if (ability.effect === 'devastator_punish') {
-                // Nuevo: 5 daño. 10% de eliminar al objetivo. Si lo elimina: disipar buffs enemigos + mega aturdimiento a todos
+                // 5 daño base. Vs boss: 10-30 daño adicional. Vs normal: 10% eliminar → buffs disipados + Mega Aturdimiento
                 const _dpTgt = gameState.characters[targetName];
                 const _dpWasAlive = _dpTgt && !_dpTgt.isDead && _dpTgt.hp > 0;
                 const _dpET = attacker.team === 'team1' ? 'team2' : 'team1';
-                // 10% de probabilidad de ejecutar al objetivo
-                const _dpExecute = Math.random() < 0.10;
-                let _dpDmg = finalDamage;
-                if (_dpExecute && _dpTgt && _dpTgt.hp > 0) {
-                    _dpDmg = _dpTgt.hp; // daño suficiente para eliminar
-                    addLog('💥 Devastator Punish: ¡EJECUCIÓN! 10% activado', 'buff');
-                }
-                applyDamageWithShield(targetName, _dpDmg, charName);
-                addLog('💥 Devastator Punish: ' + _dpDmg + ' daño a ' + targetName, 'damage');
-                // Si el objetivo fue eliminado
-                const _dpTgtNow = gameState.characters[targetName];
-                if (_dpWasAlive && _dpTgtNow && (_dpTgtNow.isDead || _dpTgtNow.hp <= 0)) {
-                    // Disipar buffs de todo el equipo enemigo
-                    let _dpTotalBufs = 0;
-                    for (const _n in gameState.characters) {
-                        const _cc = gameState.characters[_n];
-                        if (!_cc || _cc.team !== _dpET || _cc.isDead) continue;
-                        const _bufs = (_cc.statusEffects||[]).filter(e => e && e.type === 'buff' && !e.permanent && !e.passiveHidden);
-                        _cc.statusEffects = (_cc.statusEffects||[]).filter(e => !e || e.type !== 'buff' || e.permanent || e.passiveHidden);
-                        _dpTotalBufs += _bufs.length;
+                const _dpIsBoss = window._bossMode && _dpTgt && _dpTgt.isBoss;
+
+                if (_dpIsBoss) {
+                    // Vs Jefe de Sala: 5 daño base + 10-30 daño adicional
+                    applyDamageWithShield(targetName, finalDamage, charName);
+                    const _dpBonusDmg = Math.floor(Math.random() * 21) + 10; // 10-30
+                    applyDamageWithShield(targetName, _dpBonusDmg, charName);
+                    addLog('💥 Devastator Punish: ' + finalDamage + ' + ' + _dpBonusDmg + ' daño al Jefe de Sala', 'damage');
+                } else {
+                    const _dpExecute = Math.random() < 0.10;
+                    let _dpDmg = finalDamage;
+                    if (_dpExecute && _dpTgt && _dpTgt.hp > 0) {
+                        _dpDmg = _dpTgt.hp;
+                        addLog('💥 Devastator Punish: ¡EJECUCIÓN! 10% activado', 'buff');
                     }
-                    addLog('💥 Devastator Punish: ' + _dpTotalBufs + ' buffs disipados del equipo enemigo', 'debuff');
-                    // Mega Aturdimiento a todos los enemigos vivos
-                    for (const _n in gameState.characters) {
-                        const _cc = gameState.characters[_n];
-                        if (!_cc || _cc.team !== _dpET || _cc.isDead || _cc.hp <= 0 || _n === targetName) continue;
-                        applyStun(_n, 2);
+                    applyDamageWithShield(targetName, _dpDmg, charName);
+                    addLog('💥 Devastator Punish: ' + _dpDmg + ' daño a ' + targetName, 'damage');
+                    const _dpTgtNow = gameState.characters[targetName];
+                    if (_dpWasAlive && _dpTgtNow && (_dpTgtNow.isDead || _dpTgtNow.hp <= 0)) {
+                        let _dpTotalBufs = 0;
+                        for (const _n in gameState.characters) {
+                            const _cc = gameState.characters[_n];
+                            if (!_cc || _cc.team !== _dpET || _cc.isDead) continue;
+                            const _bufs = (_cc.statusEffects||[]).filter(e => e && e.type === 'buff' && !e.permanent && !e.passiveHidden);
+                            _cc.statusEffects = (_cc.statusEffects||[]).filter(e => !e || e.type !== 'buff' || e.permanent || e.passiveHidden);
+                            _dpTotalBufs += _bufs.length;
+                        }
+                        addLog('💥 Devastator Punish: ' + _dpTotalBufs + ' buffs disipados del equipo enemigo', 'debuff');
+                        for (const _n in gameState.characters) {
+                            const _cc = gameState.characters[_n];
+                            if (!_cc || _cc.team !== _dpET || _cc.isDead || _cc.hp <= 0 || _n === targetName) continue;
+                            applyStun(_n, 2);
+                        }
+                        addLog('💥 Devastator Punish: Mega Aturdimiento a todo el equipo enemigo', 'debuff');
                     }
-                    addLog('💥 Devastator Punish: Mega Aturdimiento a todo el equipo enemigo', 'debuff');
                 }
 
             // ══════════════════════════════════════════════════════
