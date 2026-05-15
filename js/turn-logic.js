@@ -1442,22 +1442,24 @@
                     gameState.currentRound++;
                     gameState.turnsInRound = 0;
 
-                    // ── EMPATE / BOSS WINS: ronda 30 sin ganador ──
-                    if (gameState.currentRound > 30 && !gameState.gameOver) {
+                    // ── EMPATE / BOSS WINS: límite de rondas ──
+                    // Boss: máximo 10 rondas. Normal: máximo 30 rondas.
+                    const _roundLimit = window._bossMode ? 10 : 30;
+                    if (gameState.currentRound > _roundLimit && !gameState.gameOver) {
                         gameState.gameOver = true;
 
                         if (window._bossMode) {
                             // En modo Jefe de Sala: victoria para el jefe, se registra el daño causado
                             gameState.winner = gameState.aiTeam || 'team2';
-                            addLog('💀 ¡RONDA 30! El Jefe de Sala resiste — ¡victoria del Jefe!', 'damage');
+                            addLog('💀 ¡RONDA ' + _roundLimit + '! El Jefe de Sala resiste — ¡victoria del Jefe!', 'damage');
                             if (typeof showGameOver === 'function') {
-                                showGameOver('💀 ¡RONDA 30! — El Jefe de Sala ha resistido tu ataque');
+                                showGameOver('💀 ¡RONDA ' + _roundLimit + '! — El Jefe de Sala ha resistido tu ataque');
                             }
                         } else {
                             gameState.winner = 'EMPATE';
-                            addLog('⚖️ ¡RONDA 30! La batalla termina en EMPATE.', 'info');
+                            addLog('⚖️ ¡RONDA ' + _roundLimit + '! La batalla termina en EMPATE.', 'info');
                             if (typeof showGameOver === 'function') {
-                                showGameOver('⚖️ ¡EMPATE! — La batalla llegó a la ronda 30');
+                                showGameOver('⚖️ ¡EMPATE! — La batalla llegó a la ronda ' + _roundLimit);
                             }
                         }
                         return;
