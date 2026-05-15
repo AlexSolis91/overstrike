@@ -398,11 +398,39 @@
                         </div>
                         
                         ${renderStatusEffects(char)}
+                        ${renderRelicMiniatures(name, char)}
                     </div>
                 `;
                 
                 container.innerHTML += cardHTML;
             }
+        }
+
+        // ── Reliquias en miniatura en la tarjeta de batalla ──────────────────
+        function renderRelicMiniatures(charName, char) {
+            // Solo mostramos reliquias del jugador local (team1 o según _myTeam)
+            var myTeam = (typeof gameState !== 'undefined' && gameState.myTeam) ? gameState.myTeam : 'team1';
+            // En modo boss solo aplica para team1 (jugador)
+            if (char.team !== myTeam) return '';
+            // Leer reliquias del estado del juego
+            var equippedRelics = char.equippedRelics || [];
+            if (!equippedRelics || equippedRelics.length === 0) return '';
+            var html = '<div style="display:flex;gap:3px;flex-wrap:wrap;padding:4px 6px 0;justify-content:center;">';
+            equippedRelics.forEach(function(relicName) {
+                if (!relicName) return;
+                var rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[relicName] : null;
+                var imgSrc = rd ? (rd.img || '') : '';
+                var tierColors = { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700' };
+                var tc = rd ? (tierColors[rd.tier] || '#aaa') : '#aaa';
+                var safeRelicName = relicName.replace(/'/g, "\'");
+                html += '<img src="' + imgSrc + '" ' +
+                    'title="' + relicName + '" ' +
+                    'data-relic="' + safeRelicName + '" data-tc="' + tc + '" onclick="event.stopPropagation();var b=this;var rn=b.dataset.relic;showRelicTooltip(rn,typeof RELICS_DATA!==\"undefined\"?RELICS_DATA[rn]:null,b.dataset.tc,b)" ' +
+                    'style="width:20px;height:20px;object-fit:contain;border-radius:3px;border:1px solid ' + tc + ';background:rgba(0,0,0,0.4);cursor:pointer;" ' +
+                    'onerror="this.style.display=\'none\'">';
+            });
+            html += '</div>';
+            return html;
         }
 
         function renderAbilities(charName, char) {
