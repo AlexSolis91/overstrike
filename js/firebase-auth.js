@@ -3432,10 +3432,10 @@
         function generateDailyMarket(date) {
             const r = Math.random();
             let tier;
-            if (r < 0.75) tier = 'Raro';
-            else if (r < 0.95) tier = 'Especial';
-            else if (r < 0.99) tier = 'Epico';
-            else tier = 'Legendario';
+            if (r < 0.70)      tier = 'Raro';       // 70%
+            else if (r < 0.95) tier = 'Especial';   // 25%
+            else if (r < 0.995) tier = 'Epico';     // 4.5%
+            else               tier = 'Legendario'; // 0.5%
             const pool = typeof RELICS_DATA !== 'undefined'
                 ? Object.keys(RELICS_DATA).filter(function(n){ return RELICS_DATA[n].tier === tier; })
                 : [];
