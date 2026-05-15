@@ -1333,7 +1333,7 @@
                 // ── Reliquias equipadas por el jugador en este personaje ──
                 const _csUser = firebase && firebase.auth ? firebase.auth().currentUser : null;
                 if (_csUser && typeof db !== 'undefined') {
-                    const _csRelicRef = db.ref('players/' + _csUser.uid + '/equipment/' + name);
+                    const _csRelicRef = db.ref('users/' + _csUser.uid + '/characters/' + name + '/slots');
                     _csRelicRef.once('value').then(function(snap) {
                         const _csEquip = snap.val() || {};
                         const _csRelicNames = [_csEquip.slot1, _csEquip.slot2, _csEquip.slot3].filter(Boolean);
@@ -1633,7 +1633,7 @@
                         charNames.forEach(function(charName) {
                             // Normalizar nombre (quitar " v2", " v3" para buscar en equipment)
                             var baseName = charName.replace(/ v\d+$/, '');
-                            db.ref('players/' + uid + '/equipment/' + baseName).once('value').then(function(snap) {
+                            db.ref('users/' + uid + '/characters/' + baseName + '/slots').once('value').then(function(snap) {
                                 var equip = snap.val() || {};
                                 var slots = [equip.slot1, equip.slot2, equip.slot3].filter(Boolean);
                                 var ch = gameState.characters[charName];
