@@ -152,6 +152,7 @@
                 speed:        boss.speed  || 95,
                 charges:      0,
                 team:         'team2',
+                isBoss:       true,          // ← INMUNIDAD A ONE-HIT KO + PORTRAIT GRANDE
                 statusEffects:[],
                 shield:       0,
                 shieldEffect: null,
