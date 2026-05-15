@@ -1620,34 +1620,48 @@
                     }
                 }
 
-                // ── Cargar reliquias equipadas del jugador en sus personajes ──
+                // ── Cargar reliquias del jugador (team1) y del rival (team2 si es online) ──
                 (function() {
                     var user = firebase.auth().currentUser;
                     if (!user || typeof db === 'undefined') return;
+
+                    // Cargar reliquias propias (team1)
                     var myCharNames = Object.keys(gameState.characters).filter(function(n) {
-                        var c = gameState.characters[n];
-                        return c && c.team === 'team1';
+                        return gameState.characters[n] && gameState.characters[n].team === 'team1';
                     });
-                    myCharNames.forEach(function(charName) {
-                        db.ref('players/' + user.uid + '/equipment/' + charName).once('value').then(function(snap) {
-                            var equip = snap.val() || {};
-                            var slots = [equip.slot1, equip.slot2, equip.slot3].filter(Boolean);
-                            if (!slots.length) return;
-                            var ch = gameState.characters[charName];
-                            if (!ch) return;
-                            ch.equippedRelics = slots;
-                            // Apply relic stat bonuses
-                            if (typeof RELICS_DATA !== 'undefined') {
-                                slots.forEach(function(relicName) {
-                                    var rd = RELICS_DATA[relicName];
-                                    if (!rd) return;
-                                    if (rd.hpBonus)  { ch.hp = ch.hp + rd.hpBonus; ch.maxHp = ch.maxHp + rd.hpBonus; }
-                                    if (rd.velBonus) { ch.speed = ch.speed + rd.velBonus; }
-                                });
-                            }
-                            renderCharacters();
-                        }).catch(function(){});
-                    });
+                    function loadRelicsForUid(uid, charNames, team) {
+                        charNames.forEach(function(charName) {
+                            // Normalizar nombre (quitar " v2", " v3" para buscar en equipment)
+                            var baseName = charName.replace(/ v\d+$/, '');
+                            db.ref('players/' + uid + '/equipment/' + baseName).once('value').then(function(snap) {
+                                var equip = snap.val() || {};
+                                var slots = [equip.slot1, equip.slot2, equip.slot3].filter(Boolean);
+                                var ch = gameState.characters[charName];
+                                if (!ch) return;
+                                ch.equippedRelics = slots;
+                                if (slots.length && typeof RELICS_DATA !== 'undefined') {
+                                    slots.forEach(function(relicName) {
+                                        var rd = RELICS_DATA[relicName];
+                                        if (!rd || team !== 'team1') return; // solo aplicar bonus al equipo propio
+                                        if (rd.hpBonus)  { ch.hp += rd.hpBonus; ch.maxHp += rd.hpBonus; }
+                                        if (rd.velBonus) { ch.speed += rd.velBonus; }
+                                    });
+                                }
+                                renderCharacters();
+                            }).catch(function(){});
+                        });
+                    }
+
+                    loadRelicsForUid(user.uid, myCharNames, 'team1');
+
+                    // Cargar reliquias del rival (team2) — online y local con uid guardado
+                    var opUid = window._opponentUid || null;
+                    if (opUid) {
+                        var rivalCharNames = Object.keys(gameState.characters).filter(function(n) {
+                            return gameState.characters[n] && gameState.characters[n].team === 'team2';
+                        });
+                        loadRelicsForUid(opUid, rivalCharNames, 'team2');
+                    }
                 })();
                 audioManager.playRandomBattle();
             } catch(err) {
