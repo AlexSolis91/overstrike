@@ -1573,6 +1573,7 @@
                         db.ref('ranked_teams/' + opponentUid).once('value', function(snap2) {
                             const oppTeams = snap2.val() || {};
                             window._teamNames = { team1: myName, team2: opponentData.name || 'Rival' };
+                            window._opponentUid = opponentUid; // Guardar para cargar reliquias del rival
                             db.ref('rooms/' + roomId).set({
                                 host: { uid: myUid, name: myName, photo: currentUser.photoURL || '' },
                                 guest: { uid: opponentUid, name: opponentData.name || 'Rival' },
