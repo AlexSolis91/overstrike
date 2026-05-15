@@ -1486,6 +1486,17 @@
                     addLog(`⏱️ ¡RONDA ${gameState.currentRound} COMIENZA!`, 'info');
                     // ── BANNER CINEMATOGRÁFICO DE RONDA ──
                     _showRoundBanner(gameState.currentRound);
+
+                    // ── LEGENDARIO SUPER SAYAJIN (Broly): genera N cargas al inicio de la ronda N ──
+                    for (const _brolyN in gameState.characters) {
+                        const _brolyC = gameState.characters[_brolyN];
+                        if (!_brolyC || _brolyC.isDead || _brolyC.hp <= 0) continue;
+                        if (_brolyC.isBoss && _brolyC.passive && _brolyC.passive.name === 'Legendario Super Sayajin') {
+                            const _brolyRoundCharges = gameState.currentRound; // Ronda 1→1, Ronda 2→2, etc.
+                            _brolyC.charges = Math.min(20, (_brolyC.charges || 0) + _brolyRoundCharges);
+                            addLog('💚 Legendario Super Sayajin: Broly genera ' + _brolyRoundCharges + ' cargas al inicio de la ronda ' + gameState.currentRound + ' (' + _brolyC.charges + '/20)', 'buff');
+                        }
+                    }
                     // ── EXPLOSIÓN FINAL (Vegeta): countdown revivir ──
                     for (const _vn in gameState.characters) {
                         const _vc = gameState.characters[_vn];
