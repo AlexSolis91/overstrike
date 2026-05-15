@@ -63,7 +63,7 @@
                     { name: 'Curación Mágica', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'ally_single', effect: 'heal_ally', heal: 3, description: 'Recupera 3 HP a un aliado de tu elección.' },
                     { name: 'Protección Celestial', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'dispel_ally_charges', description: 'Limpia 1 debuff activo de cada aliado. Por cada debuff limpiado: +1 HP y +1 carga a todo el equipo aliado.' },
                     { name: 'Sanación Heroica', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'ally_team', effect: 'heal_all_allies', heal: 4, description: 'Sacrifica el 50% de su HP actual. Cura esa cantidad de HP a todos los aliados del equipo (excepto Min Byung). Min Byung recibe Regeneración 25% por 3 turnos.' },
-                    { name: 'Milagro de la vida', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'ally_dead', effect: 'revive_ally', description: 'Revive a un aliado caído con 100% de su HP y 10 cargas.' }
+                    { name: 'Milagro de la vida', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'ally_dead', effect: 'revive_ally', description: 'Revive a un aliado caído con 100% de su HP y 10 cargas.' }
                 ]
             },
 
@@ -193,7 +193,7 @@
                     { name: 'Golpe Normal', type: 'basic', cost: 0, chargeGain: 1, damage: 4, target: 'single', effect: 'golpe_normal_saitama', description: 'Causa 4 daño. Aplica Buff Furia 2 turnos.' },
                     { name: 'Golpes Normales Consecutivos', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'single', effect: 'golpes_consecutivos_saitama', description: 'Causa 3 daño + 3 adicional por cada Buff activo en el objetivo.' },
                     { name: 'Golpe Serio', type: 'special', cost: 8, chargeGain: 0, damage: 6, target: 'single', effect: 'golpe_serio_saitama', description: 'Causa 6 daño. Daño triple si el objetivo tiene Provocación o Mega Provocación.' },
-                    { name: 'Golpe Grave', type: 'over', cost: 20, chargeGain: 0, damage: 0, target: 'single', effect: 'golpe_grave', description: 'Elimina al enemigo golpeado.' }
+                    { name: 'Golpe Grave', type: 'over', cost: 20, chargeGain: 0, damage: 0, target: 'single', effect: 'golpe_grave', description: 'Elimina al enemigo golpeado. Vs Jefe de Sala: causa 20 de daño en lugar de eliminar.' }
                 ]
             },
 
@@ -283,7 +283,7 @@
                 passive: { name: 'Castillo Infinito', description: 'Inmune a daño Single Target. Al inicio de cada ronda, el primer ataque enemigo impacta sobre un personaje del equipo enemigo.' },
                 abilities: [
                     { name: 'Nota del Biwa', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'single', effect: 'apply_confusion', description: 'Se aplica Debuff Confusión al objetivo.' },
-                    { name: 'Cambio de Sangre', type: 'special', cost: 8, chargeGain: 0, damage: 0, target: 'single', effect: 'cambio_sangre', description: 'Selecciona un enemigo e intercambia los HP con un aliado.' },
+                    { name: 'Cambio de Sangre', type: 'special', cost: 8, chargeGain: 0, damage: 0, target: 'single', effect: 'cambio_sangre', description: 'Selecciona un enemigo e intercambia los HP con un aliado. Vs Jefe de Sala: roba hasta 10 HP al jefe y los otorga al aliado con menos vida.' },
                     { name: 'Cambio Demoniaco', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'single', effect: 'cambio_demoniaco', description: 'Selecciona un enemigo e intercambia los puntos de carga con un aliado.' },
                     { name: 'Colapso', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'self', effect: 'cambio_vida_v2', description: 'Elimina el 50% de los puntos de carga actuales del equipo enemigo. Genera un 50% de puntos de carga actuales del equipo aliado.' }
                 ]
@@ -403,7 +403,7 @@
                     { name: 'Rugido del Devastador', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'rugido_devastador', description: 'Se aplica Buff Provocación. Se aplica Buff Cuerpo Perfecto.' },
                     { name: 'Smashing Strike', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'multi', effect: 'smashing_strike', description: 'Ataca 2 veces a enemigos aleatorios. Cada golpe tiene 50% de Aturdimiento.' },
                     { name: 'Skill Drain', type: 'special', cost: 7, chargeGain: 0, damage: 3, target: 'aoe', effect: 'skill_drain', description: 'Causa 3 AOE. Roba de 1 a 5 HP del enemigo golpeado por este ataque.' },
-                    { name: 'Devastator Punish', type: 'over', cost: 8, chargeGain: 0, damage: 5, target: 'single', effect: 'devastator_punish', description: 'Causa 5 daño. 10% de probabilidad de eliminar al objetivo. Si lo elimina: disipa todos los Buffs del equipo enemigo y aplica Mega Aturdimiento a todos los enemigos.' }
+                    { name: 'Devastator Punish', type: 'over', cost: 8, chargeGain: 0, damage: 5, target: 'single', effect: 'devastator_punish', description: 'Causa 5 daño. 10% de probabilidad de eliminar al objetivo — si lo elimina: disipa Buffs enemigos y aplica Mega Aturdimiento. Vs Jefe de Sala: causa 10-30 daño adicional en lugar del 10% KO.' }
                 ]
             },
             'Ikki de Fenix': {
@@ -505,7 +505,7 @@
                     { name: 'Naipes Impregnados', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'naipes_joker', description: 'Causa 1 daño. Aplica debuff Veneno 2 turnos sobre el objetivo.' },
                     { name: 'Granada de Humo Púrpura', type: 'special', cost: 2, chargeGain: 0, damage: 1, target: 'aoe', effect: 'granada_joker', description: 'Causa 1 AOE. Aplica debuff Veneno 3 turnos sobre los enemigos.' },
                     { name: 'Detonador del Caos', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'aoe', effect: 'detonador_joker', description: 'Causa 3 AOE. Si el enemigo tiene Veneno o Aturdimiento, 50% de eliminar todas sus cargas.' },
-                    { name: '¿Por qué tan serio?', type: 'over', cost: 8, chargeGain: 0, damage: 2, target: 'single', effect: 'por_que_serio_joker', description: 'Causa 2 daño. Si el objetivo tiene Veneno activo, reduce un 60% su HP actual.' }
+                    { name: '¿Por qué tan serio?', type: 'over', cost: 8, chargeGain: 0, damage: 2, target: 'single', effect: 'por_que_serio_joker', description: 'Causa 2 daño. Si tiene Veneno: -60% HP actual. Vs Jefe de Sala: daño igual al número de stacks de Veneno del jefe.' }
                 ]
             },
             'Batman': {
@@ -543,7 +543,7 @@
                     { name: 'Ciclón del Caos', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'aoe', effect: 'ciclon_caos_kratos', description: 'Causa 1 AOE. 50% de Sangrado por enemigo. 20% de daño triple.' },
                     { name: 'Ira del Tártaro', type: 'special', cost: 3, chargeGain: 0, damage: 3, target: 'single', effect: 'ira_tartaro_kratos', description: 'Causa 3 daño + Sangrado. Si el objetivo ya tenía Sangrado, aplica Mega Aturdimiento.' },
                     { name: 'Tempestad de Jord', type: 'special', cost: 6, chargeGain: 0, damage: 2, target: 'single', effect: 'tempestad_jord_kratos', description: 'Causa 2 daño. Si el objetivo tiene Sangrado, daño triple. 50% de golpe crítico.' },
-                    { name: 'Ira de Kratos', type: 'over', cost: 12, chargeGain: 0, damage: 7, target: 'aoe', effect: 'ira_kratos', description: 'Causa 7 AOE. 10% de probabilidad de eliminar al enemigo golpeado.' }
+                    { name: 'Ira de Kratos', type: 'over', cost: 12, chargeGain: 0, damage: 7, target: 'aoe', effect: 'ira_kratos', description: 'Causa 7 AOE. 10% de probabilidad de eliminar al enemigo golpeado. Vs Jefe de Sala con Sangrado: causa 75 de daño en lugar del 10% KO.' }
                 ]
             },
             'Shaka de Virgo': {
@@ -687,7 +687,7 @@
                 portrait: 'https://i.ibb.co/nNQ9Q0MB/Captura-de-pantalla-2026-04-06-105515.png',
                 passive: { name: 'Venganza Eterna', description: 'Cada vez que un aliado es derrotado, Sasuke genera 20 cargas y gana 1 turno adicional. La primera vez por ronda que vaya a recibir un Special u OVER, esquiva ese ataque y el atacante recibe 5 daño directo.' },
                 abilities: [
-                    { name: 'Corte: Espada Kusanagi', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'single', effect: 'kusanagi_sasuke', description: 'Causa 1 daño. Aplica Agotamiento 3 turnos al objetivo.' },
+                    { name: 'Corte: Espada Kusanagi', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'single', effect: 'kusanagi_sasuke', description: 'Causa 1 daño. Aplica Agotamiento 3 turnos al objetivo. Vs Jefe de Sala: +daño adicional igual a las cargas actuales del jefe.' },
                     { name: 'Chidori', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'single', effect: 'chidori_sasuke', description: 'Causa 4 daño. Roba hasta 4 cargas del objetivo. Si tras el robo el objetivo queda en 0 cargas, causa daño crítico.' },
                     { name: 'Kirin', type: 'special', cost: 6, chargeGain: 0, damage: 6, target: 'single', effect: 'kirin_sasuke', description: 'Causa 6 daño. Ignora Provocación y Mega Provocación. Si elimina al objetivo, reduce 10 cargas a todos los enemigos. 50% de crítico si el objetivo tiene menos de 5 cargas.' },
                     { name: 'Flecha de Indra', type: 'over', cost: 10, chargeGain: 0, damage: 10, target: 'single', effect: 'flecha_indra_sasuke', description: 'Causa 10 daño. 50% de dividirse y golpear a un enemigo aleatorio adicional. Sasuke gana 1 turno adicional.' }
@@ -729,7 +729,7 @@
                     { name: 'Garra de Arena', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'garra_arena_gaara', description: 'Causa 2 daño. 50% de aplicar Debuff Aturdimiento. Genera 1 carga adicional por cada debuff activo en el objetivo.' },
                     { name: 'Arenas Movedizas', type: 'special', cost: 3, chargeGain: 0, damage: 2, target: 'aoe', effect: 'arenas_movedizas_gaara', description: 'Causa 2 AOE. Enemigos golpeados pierden 10% velocidad por 3 rondas. Si el objetivo tiene 80 vel o menos, roba 2 cargas de ese objetivo.' },
                     { name: 'Granizo de Arena Imperial', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'aoe', effect: 'granizo_arena_gaara', description: 'Causa 3 AOE. Ignora Esquiva Área y Mega Provocación. Triple daño si vel ≤ 70. Invocaciones golpeadas tienen 50% de ser eliminadas sin activar su pasiva.' },
-                    { name: 'Sabaku Taisō', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'single', effect: 'sabaku_taiso_gaara', description: 'Elimina al objetivo. Revive con 50% HP y 0 cargas en 2 rondas.' }
+                    { name: 'Sabaku Taisō', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'single', effect: 'sabaku_taiso_gaara', description: 'Elimina al objetivo. Revive con 50% HP y 0 cargas en 2 rondas. Vs Jefe de Sala: causa 10 daño × (personajes + invocaciones vivas en tu equipo) en lugar de eliminar.' }
                 ]
             },
  
