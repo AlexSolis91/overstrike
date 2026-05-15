@@ -356,12 +356,15 @@
                     else if (char.vegetaForm === 'ultra_ego' && char.portraitUltraEgo) _dynPortrait = char.portraitUltraEgo;
                 }
                 const activePortrait = _dynPortrait;
+                // Boss de Sala: portrait más grande y centrado verticalmente
+                const isBossChar = !!(char.isBoss);
+                const bossImgStyle = isBossChar ? 'width:160px;height:210px;object-fit:cover;border-radius:12px;border:3px solid #ff4444;box-shadow:0 0 28px rgba(255,68,68,0.7);display:block;margin:0 auto;' : '';
                 const portraitHTML = activePortrait
-                    ? `<img class="character-portrait${isDefeated ? ' defeated-img' : ''}" src="${activePortrait}" alt="${name}" loading="eager" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="character-portrait-placeholder" style="display:none">⚔️</div>`
+                    ? `<img class="character-portrait${isDefeated ? ' defeated-img' : ''}" src="${activePortrait}" alt="${name}" loading="eager" referrerpolicy="no-referrer" style="${bossImgStyle}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="character-portrait-placeholder" style="display:none">⚔️</div>`
                     : `<div class="character-portrait-placeholder">⚔️</div>`;
 
                 const cardHTML = `
-                    <div class="character-card ${isDefeated ? 'defeated' : ''} ${isTransformed ? 'transformed-mode' : ''}" id="char-${name.replace(/\s+/g, '-')}" data-charname="${name}" style="cursor:pointer;" title="Ver ficha de ${name}">
+                    <div class="character-card ${isDefeated ? 'defeated' : ''} ${isTransformed ? 'transformed-mode' : ''} ${isBossChar ? 'boss-card' : ''}" id="char-${name.replace(/\s+/g, '-')}" data-charname="${name}" style="cursor:pointer;${isBossChar ? 'min-height:340px;display:flex;flex-direction:column;align-items:center;justify-content:center;' : ''}" title="Ver ficha de ${name}">
                         <div class="character-header">
                             <div class="character-name">
                                 ${name}
@@ -407,26 +410,25 @@
         }
 
         // ── Reliquias en miniatura en la tarjeta de batalla ──────────────────
+        // Muestra reliquias para AMBOS equipos — el jugador puede ver las del rival
         function renderRelicMiniatures(charName, char) {
-            // Solo mostramos reliquias del jugador local (team1 o según _myTeam)
-            var myTeam = (typeof gameState !== 'undefined' && gameState.myTeam) ? gameState.myTeam : 'team1';
-            // En modo boss solo aplica para team1 (jugador)
-            if (char.team !== myTeam) return '';
-            // Leer reliquias del estado del juego
             var equippedRelics = char.equippedRelics || [];
-            if (!equippedRelics || equippedRelics.length === 0) return '';
+            if (!equippedRelics.length) return '';
+            var tierColors = { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700' };
             var html = '<div style="display:flex;gap:3px;flex-wrap:wrap;padding:4px 6px 0;justify-content:center;">';
             equippedRelics.forEach(function(relicName) {
                 if (!relicName) return;
                 var rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[relicName] : null;
                 var imgSrc = rd ? (rd.img || '') : '';
-                var tierColors = { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700' };
                 var tc = rd ? (tierColors[rd.tier] || '#aaa') : '#aaa';
-                var safeRelicName = relicName.replace(/'/g, "\'");
                 html += '<img src="' + imgSrc + '" ' +
                     'title="' + relicName + '" ' +
-                    'data-relic="' + safeRelicName + '" data-tc="' + tc + '" onclick="event.stopPropagation();var b=this;var rn=b.dataset.relic;showRelicTooltip(rn,typeof RELICS_DATA!==\"undefined\"?RELICS_DATA[rn]:null,b.dataset.tc,b)" ' +
-                    'style="width:20px;height:20px;object-fit:contain;border-radius:3px;border:1px solid ' + tc + ';background:rgba(0,0,0,0.4);cursor:pointer;" ' +
+                    'data-relic="' + encodeURIComponent(relicName) + '" ' +
+                    'data-tc="' + tc + '" ' +
+                    'onclick="event.stopPropagation();var b=this;var rn=decodeURIComponent(b.dataset.relic);showRelicTooltip(rn,typeof RELICS_DATA!==undefined?RELICS_DATA[rn]:null,b.dataset.tc,b)" ' +
+                    'style="width:22px;height:22px;object-fit:contain;border-radius:4px;border:1px solid ' + tc + ';background:rgba(0,0,0,0.5);cursor:pointer;transition:transform .15s;" ' +
+                    'onmouseover="this.style.transform=\'scale(1.4)\'" ' +
+                    'onmouseout="this.style.transform=\'scale(1)\'" ' +
                     'onerror="this.style.display=\'none\'">';
             });
             html += '</div>';
