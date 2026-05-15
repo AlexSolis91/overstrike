@@ -4303,13 +4303,14 @@
                     if (window._bossMode && _stTgt.isBoss) {
                         const _stMyTeam = gameState.characters[gameState.selectedCharacter] ? gameState.characters[gameState.selectedCharacter].team : 'team1';
                         const _stAliveChars = Object.values(gameState.characters).filter(function(c){ return c && c.team === _stMyTeam && !c.isDead && c.hp > 0; }).length;
-                        const _stAliveSummons = Object.values(gameState.summons).filter(function(s){ return s && s.team === _stMyTeam && s.hp > 0; }).length;
+                        const _stAliveSummons = Object.values(gameState.summons||{}).filter(function(s){ return s && s.team === _stMyTeam && s.hp > 0; }).length;
                         const _stTotal = (_stAliveChars + _stAliveSummons);
                         const _stDmg = _stTotal * 10;
-                        applyDamageWithShield(targetName, _stDmg, gameState.selectedCharacter);
+                        // Aplicar daño pero nunca dejar al jefe en 0 por este movimiento (mínimo 1 HP)
+                        const _stNewHp = Math.max(1, _stTgt.hp - _stDmg);
+                        _stTgt.hp = _stNewHp;
                         addLog('🏜️ Sabaku Taisō [Jefe]: ' + _stDmg + ' daño (' + _stAliveChars + ' personajes + ' + _stAliveSummons + ' invocaciones × 10)', 'damage');
                         renderCharacters();
-                        if (typeof checkGameOver === 'function') checkGameOver();
                         showContinueButton();
                         return;
                     }
