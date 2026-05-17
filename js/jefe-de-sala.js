@@ -176,6 +176,33 @@
             if (typeof gameState !== 'undefined') {
                 gameState.gameMode = 'boss';
                 gameState.aiTeam   = 'team2';  // la IA controla al Jefe
+                gameState.myTeam   = 'team1';
+
+                // ── Cargar reliquias del jugador en modo boss ──
+                var _bUser = typeof firebase !== 'undefined' && firebase.auth ? firebase.auth().currentUser : null;
+                if (_bUser && typeof db !== 'undefined') {
+                    Object.keys(gameState.characters).forEach(function(charName) {
+                        var _ch = gameState.characters[charName];
+                        if (!_ch || _ch.team !== 'team1') return;
+                        var baseName = charName.replace(/ v\d+$/, '');
+                        db.ref('users/' + _bUser.uid + '/characters/' + baseName + '/slots').once('value').then(function(snap) {
+                            var equip = snap.val();
+                            if (!equip) return;
+                            var slots = [equip.slot1, equip.slot2, equip.slot3].filter(Boolean);
+                            if (!slots.length) return;
+                            _ch.equippedRelics = slots;
+                            if (typeof RELICS_DATA !== 'undefined') {
+                                slots.forEach(function(relicName) {
+                                    var rd = RELICS_DATA[relicName];
+                                    if (!rd) return;
+                                    if (rd.hpBonus)  { _ch.hp = (_ch.hp||0) + rd.hpBonus; _ch.maxHp = (_ch.maxHp||0) + rd.hpBonus; }
+                                    if (rd.velBonus) { _ch.speed = (_ch.speed||0) + rd.velBonus; }
+                                });
+                            }
+                            if (typeof renderCharacters === 'function') renderCharacters();
+                        }).catch(function(){});
+                    });
+                }
             }
         };
     }());
