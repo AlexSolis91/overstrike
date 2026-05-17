@@ -177,6 +177,7 @@
                 gameState.gameMode = 'boss';
                 gameState.aiTeam   = 'team2';  // la IA controla al Jefe
                 gameState.myTeam   = 'team1';
+                window._antividaBossUses = 0; // Resetear contador de Ecuación de la Antivida
 
                 // ── Cargar reliquias del jugador en modo boss ──
                 var _bUser = typeof firebase !== 'undefined' && firebase.auth ? firebase.auth().currentUser : null;
