@@ -1687,9 +1687,10 @@
                 const defOwnerName = defData.name || 'Rival';
                 window._rankedMode = true;
                 window._rankedFromMatchmaking = true;
-                window._rankedPlayerTeam = 'team1'; // player always attacks as team1
+                window._rankedPlayerTeam = 'team1';
                 window._rankedFakeOpponent = defOwnerName;
                 window._rankedDefenseOwnerUid = defOwnerUid;
+                window._opponentUid = defOwnerUid; // ← para cargar reliquias del rival
                 window._teamNames = { team1: myName, team2: defOwnerName };
 
                 getRankedTeams(function(myTeams) {
@@ -2892,6 +2893,10 @@
                     window._rankedMode = true;
                     window._rankedPlayerTeam = asHost ? 'team1' : 'team2';
                     window._rankedOpponentName = asHost ? guestName : hostName;
+                    // ← Guardar UID del rival para cargar sus reliquias
+                    window._opponentUid = asHost
+                        ? (room.guest && room.guest.uid ? room.guest.uid : null)
+                        : (room.host  && room.host.uid  ? room.host.uid  : null);
                     csState.gameMode   = 'online';
                     csState.onlineTeam = asHost ? 'team1' : 'team2';
                     csState.phase      = 'done';
