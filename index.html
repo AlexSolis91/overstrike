@@ -1655,7 +1655,7 @@
                     });
                     loadRelicsForUid(user.uid, myCharNames, 'team1');
 
-                    var opUid = window._opponentUid || null;
+                    var opUid = window._opponentUid || window._rankedDefenseOwnerUid || null;
                     if (opUid) {
                         var rivalCharNames = Object.keys(gameState.characters).filter(function(n) {
                             return gameState.characters[n] && gameState.characters[n].team === 'team2';
