@@ -1304,7 +1304,11 @@
                 // Ataques disponibles
                 '<div style="background:rgba(255,170,0,0.05);border:1px solid rgba(255,170,0,0.2);border-radius:12px;padding:12px 16px;margin-bottom:18px;">',
                 '<div style="font-size:.7rem;color:#888;letter-spacing:.15em;margin-bottom:8px;">ATAQUES DISPONIBLES HOY</div>',
-                '<div style="display:flex;gap:8px;align-items:center;">' + attackIcons + '<span style="color:#888;font-size:.8rem;margin-left:4px;">(' + attacksLeft + '/5)</span></div>',
+                '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' + attackIcons + '<span style="color:#888;font-size:.8rem;margin-left:4px;">(' + attacksLeft + '/5)</span></div>',
+                // Botón recargar ataques con Runa
+                attacksLeft === 0
+                    ? '<button onclick="raidRefillAttacks()" style="margin-top:10px;width:100%;padding:8px;background:rgba(200,100,255,0.1);border:1px solid #c864ff;color:#c864ff;border-radius:8px;font-size:.74rem;cursor:pointer;font-family:Orbitron,sans-serif;letter-spacing:.04em;">🔮 RECARGAR ATAQUES (cuesta 1 Runa de Ataque)</button>'
+                    : '',
                 '</div>',
 
                 // Lista de objetivos
@@ -1327,6 +1331,30 @@
 
         function _escapeHtmlRaid(str) {
             return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        async function raidRefillAttacks() {
+            if (!currentUser) return;
+            var uid = currentUser.uid;
+            // Verificar runas de ataque
+            var runaSnap = await db.ref('users/' + uid + '/attack_runes').once('value');
+            var runas = runaSnap.val() || 0;
+            if (runas <= 0) {
+                alert('No tienes Runas de Ataque disponibles. Consíguela en el Mercado.');
+                return;
+            }
+            if (!confirm('¿Gastar 1 Runa de Ataque para recargar tus 5 ataques de Raid Diario?')) return;
+            // Descontar runa
+            await db.ref('users/' + uid + '/attack_runes').transaction(function(v){ return Math.max(0, (v||0) - 1); });
+            // Recargar ataques: leer el raid data actual y resetear attacksLeft
+            var todayKey = _getTodayMidnightKey();
+            await db.ref('ranked_stats/' + uid + '/raidToday').update({ attacksLeft: 5, date: todayKey });
+            await updateLobbyHUD();
+            // Cerrar y reabrir el modal raid
+            var modal = document.getElementById('raidLobbyModal');
+            if (modal) modal.remove();
+            if (typeof showRaidLobby === 'function') showRaidLobby();
+            else if (typeof loadRaidLobby === 'function') loadRaidLobby();
         }
 
         function raidAttackTarget(targetUid, targetName) {
