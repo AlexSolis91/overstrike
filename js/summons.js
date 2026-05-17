@@ -1115,6 +1115,15 @@
             }
             
             let remainingDamage = damage;
+
+            // ── ZENIT: reduce 50% el daño recibido ───────────────────────────
+            if (remainingDamage > 0 && attackerName !== null) {
+                const _zenTgt = gameState.characters[targetName];
+                if (_zenTgt && (_zenTgt.equippedRelics||[]).indexOf('Zenit') >= 0) {
+                    remainingDamage = Math.ceil(remainingDamage * 0.5);
+                    damage = remainingDamage; // keep in sync
+                }
+            }
             
             // DOT damage (burns, poison, solar burn) bypasses shields — goes directly to HP
             // attackerName === null means this is DOT/status effect damage
@@ -1276,11 +1285,213 @@
                 }
             }
 
-            // ── LEGENDARIO SUPER SAYAJIN (Broly): genera 3 cargas al recibir daño ──
-            if (damage > 0 && attackerName && attackerName !== targetName &&
-                target.passive && target.passive.name === 'Legendario Super Sayajin') {
-                target.charges = Math.min(20, (target.charges||0) + 3);
-                addLog('💚 Legendario Super Sayajin: Broly genera 3 cargas al recibir daño', 'buff');
+            // ── EFECTOS DE RELIQUIAS DEL ATACANTE ──────────────────────────────
+            if (remainingDamage > 0 && attackerName && attackerName !== targetName && !passiveExecuting) {
+                const _atkChar = gameState.characters[attackerName];
+                const _relics  = _atkChar ? (_atkChar.equippedRelics || []) : [];
+                const _tgtChar = gameState.characters[targetName];
+
+                _relics.forEach(function(relicName) {
+                    if (!relicName) return;
+                    const _rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[relicName] : null;
+                    if (!_rd || !_rd.effect) return;
+
+                    switch (_rd.effect) {
+
+                        // 15% Sangrado al atacar. Si aplica → +2 cargas
+                        case 'bleed_on_hit':
+                            if (Math.random() < 0.15) {
+                                if (typeof applyDebuff === 'function')
+                                    applyDebuff(targetName, { name:'Sangrado', type:'debuff', duration:3, emoji:'🩸', dotDamage:1 });
+                                if (_atkChar) _atkChar.charges = Math.min(20, (_atkChar.charges||0) + 2);
+                                addLog('🩸 Garras Lacerantes: Sangrado aplicado a ' + targetName + ' +2 cargas', 'debuff');
+                            }
+                            break;
+
+                        // +10% probabilidad crítico (applied in finalDamage calc, here we log)
+                        case 'crit_chance_bonus': break; // handled in executeAbility pre-phase
+
+                        // Básico +50% daño — handled in executeAbility
+                        case 'basic_dmg_50pct': break;
+
+                        // Básico +2 daño — handled in executeAbility
+                        case 'basic_dmg_plus2': break;
+
+                        // Especial +2 daño — handled in executeAbility
+                        case 'special_dmg_plus2': break;
+
+                        // 50% Aturdimiento al atacar
+                        case 'stun_on_hit_50':
+                            if (Math.random() < 0.50) {
+                                if (typeof applyStun === 'function') applyStun(targetName, 1);
+                                else if (typeof applyDebuff === 'function')
+                                    applyDebuff(targetName, { name:'Aturdimiento', type:'debuff', duration:1, emoji:'⭐' });
+                                addLog('⭐ Mistic Hammer: Aturdimiento a ' + targetName, 'debuff');
+                            }
+                            break;
+
+                        // Especial → objetivo pierde 50% cargas
+                        case 'special_drain_50':
+                            if (ability && ability.type === 'special' && _tgtChar) {
+                                const _drain = Math.floor((_tgtChar.charges||0) * 0.50);
+                                if (_drain > 0) {
+                                    _tgtChar.charges = Math.max(0, (_tgtChar.charges||0) - _drain);
+                                    addLog('🌀 Nullum: ' + targetName + ' pierde ' + _drain + ' cargas', 'debuff');
+                                }
+                            }
+                            break;
+
+                        // Básico aplica Quemadura 2HP
+                        case 'basic_burn_2hp':
+                            if (ability && ability.type === 'basic') {
+                                if (typeof applyDebuff === 'function')
+                                    applyDebuff(targetName, { name:'Quemadura', type:'debuff', duration:2, emoji:'🔥', dotDamage:2 });
+                                addLog('🔥 Maza Ignea: Quemadura 2HP a ' + targetName, 'debuff');
+                            }
+                            break;
+
+                        // ST sobre enemigo con Quemadura → duplica Quemaduras y +3 daño
+                        case 'pyro_st_burn':
+                            if (ability && ability.target === 'single' && _tgtChar) {
+                                const _burns = (_tgtChar.statusEffects||[]).filter(function(e){ return e && e.name === 'Quemadura'; });
+                                if (_burns.length > 0) {
+                                    _burns.forEach(function(b){ if (typeof applyDebuff === 'function') applyDebuff(targetName, Object.assign({}, b)); });
+                                    applyDamageWithShield(targetName, 3, attackerName);
+                                    addLog('🔥 Pyrophagos: duplica Quemaduras +3 daño a ' + targetName, 'damage');
+                                }
+                            }
+                            break;
+
+                        // 25% turno adicional
+                        case 'extra_turn_25':
+                            if (Math.random() < 0.25) {
+                                if (typeof triggerAnticipacion === 'function') triggerAnticipacion(attackerName, _atkChar.team);
+                                addLog('✨ Sable Nishant: turno adicional para ' + attackerName, 'buff');
+                            }
+                            break;
+
+                        // Crítico → equipo aliado +3 cargas
+                        case 'crit_team_charges':
+                            if (gameState._isCritHit) {
+                                const _ctTeam = _atkChar.team;
+                                Object.keys(gameState.characters).forEach(function(n) {
+                                    const _c = gameState.characters[n];
+                                    if (_c && _c.team === _ctTeam && !_c.isDead) _c.charges = Math.min(20, (_c.charges||0) + 3);
+                                });
+                                addLog('⚡ Colmillo de Agron: equipo gana 3 cargas por crítico', 'buff');
+                            }
+                            break;
+
+                        // Duplica generación de cargas del básico + equipo genera igual
+                        case 'ergonos_basic':
+                            if (ability && ability.type === 'basic' && ability.chargeGain > 0) {
+                                _atkChar.charges = Math.min(20, (_atkChar.charges||0) + ability.chargeGain);
+                                const _ergTeam = _atkChar.team;
+                                Object.keys(gameState.characters).forEach(function(n) {
+                                    const _c = gameState.characters[n];
+                                    if (_c && _c.team === _ergTeam && n !== attackerName && !_c.isDead)
+                                        _c.charges = Math.min(20, (_c.charges||0) + ability.chargeGain);
+                                });
+                                addLog('⚡ Ergonos: +' + ability.chargeGain + ' cargas a todo el equipo', 'buff');
+                            }
+                            break;
+
+                        // Ignora Esquiva Área, daño doble a objetivo con Esquiva Área
+                        case 'vortex_pierce':
+                            if (_tgtChar && hasStatusEffect && hasStatusEffect(targetName, 'Esquiva Área')) {
+                                applyDamageWithShield(targetName, remainingDamage, attackerName);
+                                addLog('🌀 Vortex: daño doble a ' + targetName + ' (tenía Esquiva Área)', 'damage');
+                            }
+                            break;
+
+                        // Al congelar → +1 carga
+                        case 'freeze_charge': break; // handled in applyFreeze
+
+                        // Golpear enemigo sin cargas → +2 cargas
+                        case 'no_charge_bonus':
+                            if (_tgtChar && (_tgtChar.charges||0) === 0) {
+                                _atkChar.charges = Math.min(20, (_atkChar.charges||0) + 2);
+                                addLog('⚡ Ballesta de Cristal: +2 cargas (objetivo sin cargas)', 'buff');
+                            }
+                            break;
+
+                        // Zenit: +3 cargas al recibir golpe (handled in defender section below)
+                        case 'zenit_tank': break;
+
+                        // Regen +2HP por turno (handled in turn start)
+                        case 'regen_2hp_turn': break;
+
+                        // 25% aplicar Miedo al atacante al recibir golpe (defender relic)
+                        case 'fear_on_hit_25': break;
+
+                        // Vestidura Arcana: daño recibido → mismas cargas + fin ronda +4HP (handled elsewhere)
+                        case 'vestidura_arcana': break;
+
+                        // Golpear con Provocación activa → turno adicional
+                        case 'taunt_extra_turn':
+                            if (_tgtChar && (hasStatusEffect(targetName,'Provocacion') || hasStatusEffect(targetName,'Mega Provocacion'))) {
+                                if (typeof triggerAnticipacion === 'function') triggerAnticipacion(attackerName, _atkChar.team);
+                                addLog('🪓 Skeggöx: turno adicional (objetivo con Provocación)', 'buff');
+                            }
+                            break;
+
+                        // Veneno se extiende al causar daño a enemigo envenenado
+                        case 'poison_spread':
+                            if (_tgtChar && hasStatusEffect && hasStatusEffect(targetName,'Veneno')) {
+                                const _enemies = Object.keys(gameState.characters).filter(function(n){
+                                    const _c = gameState.characters[n]; return _c && _c.team !== _atkChar.team && !_c.isDead && n !== targetName;
+                                }).sort(function(){ return Math.random()-0.5; }).slice(0,2);
+                                _enemies.forEach(function(n){
+                                    if (typeof applyDebuff === 'function')
+                                        applyDebuff(n, { name:'Veneno', type:'debuff', duration:2, emoji:'☠️', dotDamage:1 });
+                                    addLog('☠️ Aguijón Esmeralda: Veneno a ' + n, 'debuff');
+                                });
+                            }
+                            break;
+                    }
+                });
+
+                // ── EFECTOS DE RELIQUIAS DEL DEFENSOR ──
+                const _defRelics = _tgtChar ? (_tgtChar.equippedRelics || []) : [];
+                _defRelics.forEach(function(relicName) {
+                    if (!relicName) return;
+                    const _rd2 = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[relicName] : null;
+                    if (!_rd2) return;
+
+                    if (_rd2.effect === 'zenit_tank' && remainingDamage > 0) {
+                        // +3 cargas al recibir golpe, 50% reducción ya aplicada en pre-damage
+                        if (_tgtChar) {
+                            _tgtChar.charges = Math.min(20, (_tgtChar.charges||0) + 3);
+                            addLog('🛡️ Zenit: ' + targetName + ' gana 3 cargas al recibir daño', 'buff');
+                        }
+                    }
+                    if (_rd2.effect === 'fear_on_hit_25' && Math.random() < 0.25 && _atkChar) {
+                        if (typeof applyDebuff === 'function')
+                            applyDebuff(attackerName, { name:'Miedo', type:'debuff', duration:2, emoji:'😨' });
+                        addLog('😨 Brazalete Demoniaco: Miedo aplicado a ' + attackerName, 'debuff');
+                    }
+                    if (_rd2.effect === 'vestidura_arcana' && remainingDamage > 0 && _tgtChar) {
+                        _tgtChar.charges = Math.min(20, (_tgtChar.charges||0) + remainingDamage);
+                        addLog('🔮 Vestidura Arcana: ' + targetName + ' gana ' + remainingDamage + ' cargas', 'buff');
+                    }
+                    if (_rd2.effect === 'hp_on_basic_hit' && ability && ability.type === 'basic' && _tgtChar) {
+                        _tgtChar.hp = Math.min(_tgtChar.maxHp, (_tgtChar.hp||0) + 2);
+                        addLog('💚 Yelmo de Ork: ' + targetName + ' recupera 2HP', 'heal');
+                    }
+                    if (_rd2.effect === 'debuff_resist_15' && Math.random() < 0.15) {
+                        // Remove a random debuff from defender (called externally on debuff apply)
+                        // This is best-effort here: try to remove one
+                        const _deBufDebuffs = (_tgtChar.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff'; });
+                        if (_deBufDebuffs.length > 0 && _tgtChar) {
+                            const _toRemove = _deBufDebuffs[0];
+                            _tgtChar.statusEffects = _tgtChar.statusEffects.filter(function(e){ return e !== _toRemove; });
+                            addLog('🛡️ Anillo de la Verdad: ' + targetName + ' limpia un debuff', 'buff');
+                        }
+                    }
+                    if (_rd2.effect === 'daga_kaisel_reflect' || _rd2.effect === 'debuff_mirror') {
+                        // On receiving debuff (handled in applyDebuff) — skip here
+                    }
+                });
             }
 
             // ── EL OJO QUE TODO LO VE (Sauron): reducción 50% con MegaProv/ProtSagrada + Aturdimiento al atacante ──
