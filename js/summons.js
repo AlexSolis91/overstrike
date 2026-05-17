@@ -1621,9 +1621,9 @@
                 target.hp <= 10) {
                 target.tirionLowHpTriggered = true;
                 passiveExecuting = true;
-                // Protección Sagrada
+                // Protección Sagrada — 2 turnos, limpiable por habilidades de disipación
                 if (typeof hasStatusEffect === 'function' && !hasStatusEffect(targetName, 'Proteccion Sagrada')) {
-                    target.statusEffects.push({ name: 'Proteccion Sagrada', type: 'buff', duration: 999, permanent: true, emoji: '🛡️' });
+                    target.statusEffects.push({ name: 'Proteccion Sagrada', type: 'buff', duration: 2, emoji: '🛡️' });
                 }
                 // Escudo Sagrado
                 target.statusEffects = (target.statusEffects||[]).filter(function(e){ return !e || normAccent(e.name||'') !== 'escudo sagrado'; });
