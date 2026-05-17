@@ -373,9 +373,9 @@
                             <div class="character-speed">⚡${char.speed}</div>
                         </div>
 
-                        <div class="character-portrait-row">
+                        <div class="character-portrait-row" style="${isBossChar ? 'flex-direction:column;align-items:center;' : ''}">
                             ${portraitHTML}
-                            <div class="character-info-col">
+                            <div class="character-info-col" style="${isBossChar ? 'width:100%;margin-top:8px;' : ''}">
                                 <div class="stat-bars">
                                     <div class="stat-bar">
                                         <div class="stat-label">
