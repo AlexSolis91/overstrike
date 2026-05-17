@@ -757,7 +757,7 @@
                     { name: 'Toque de la Antivida', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'toque_antivida_darkseid', description: 'Roba 0-4 HP del objetivo. Genera 0-4 cargas adicionales.' },
                     { name: 'Rayo de la Desintegración', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'single', effect: 'rayo_desintegracion_darkseid', description: 'Causa 3 daño. 50% golpe crítico. Si es crítico genera 2 cargas por cada enemigo (personaje e invocación).' },
                     { name: 'Sanción Omega', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'self', effect: 'sancion_omega_darkseid', description: 'Elimina hasta 3 invocaciones enemigas. Causa 3 daño directo por cada invocación eliminada sobre 1 enemigo aleatorio.' },
-                    { name: 'Ecuación de la Antivida', type: 'over', cost: 14, chargeGain: 0, damage: 0, target: 'single', effect: 'ecuacion_antivida_darkseid', description: 'Reduce 50%-90% el HP del objetivo. Darkseid recupera el mismo HP que el objetivo perdió.' }
+                    { name: 'Ecuación de la Antivida', type: 'over', cost: 14, chargeGain: 0, damage: 0, target: 'single', effect: 'ecuacion_antivida_darkseid', description: 'Reduce 50%-90% el HP del objetivo y Darkseid recupera ese mismo HP. Vs Jefe de Sala: daño base 10, +10 por cada uso previo en la misma partida (10, 20, 30...).' }
                 ]
             },
 
@@ -926,7 +926,7 @@
                 id: 'broly',
                 name: 'Broly',
                 portrait: 'https://i.ibb.co/wrhphbYm/image.jpg',
-                hp: 10000, maxHp: 10000,
+                hp: 20000, maxHp: 20000,
                 speed: 95, charges: 0,
                 isBoss: true,           // Inmune a One-Hit KO
                 statusEffects: [],
