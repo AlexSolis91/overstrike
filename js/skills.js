@@ -248,6 +248,30 @@
                     addLog(`🦅 Armadura Divina: daño triple en ${targetName} (tiene Quemadura)`, 'buff');
                 }
             }
+
+            // ── BONOS DE RELIQUIAS al daño (pre-ataque) ──────────────────────
+            if (finalDamage > 0 && attacker && (attacker.equippedRelics||[]).length > 0) {
+                (attacker.equippedRelics||[]).forEach(function(relicName) {
+                    const _rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[relicName] : null;
+                    if (!_rd) return;
+                    if (_rd.effect === 'crit_chance_bonus' && !gameState._isCritHit && Math.random() < 0.10) {
+                        finalDamage *= 2; gameState._isCritHit = true;
+                        addLog('💫 Cuerno del Caos: ¡Crítico! (+10%)', 'buff');
+                    }
+                    if (_rd.effect === 'basic_dmg_50pct' && ability && ability.type === 'basic') {
+                        finalDamage = Math.ceil(finalDamage * 1.5);
+                        addLog('⚔️ Espada del Triunfo: básico +50% daño', 'buff');
+                    }
+                    if (_rd.effect === 'basic_dmg_plus2' && ability && ability.type === 'basic') {
+                        finalDamage += 2;
+                        addLog('⚔️ Puño de Obsidiana: básico +2 daño', 'buff');
+                    }
+                    if (_rd.effect === 'special_dmg_plus2' && ability && (ability.type === 'special' || ability.type === 'over')) {
+                        finalDamage += 2;
+                        addLog('📋 Tabla de Elementos: especial +2 daño', 'buff');
+                    }
+                });
+            }
             
             // Consumir cargas
             attacker.charges -= adjustedCost;
@@ -4525,14 +4549,31 @@
                 }
 
             } else if (ability.effect === 'ecuacion_antivida_darkseid') {
-                // DARKSEID — Ecuación de la Antivida: reduce 50%-90% HP + lifesteal
+                // DARKSEID — Ecuación de la Antivida
+                // Vs normal: reduce 50%-90% HP + lifesteal
+                // Vs Jefe de Sala: daño base 10, +10 por cada uso previo (acumulado en partida)
                 const _eaAtk = gameState.characters[gameState.selectedCharacter];
                 const _eaTgt = gameState.characters[targetName];
-                if (_eaTgt && !_eaTgt.isDead && _eaTgt.hp > 0 && _eaAtk) {
+                const _eaIsBoss = window._bossMode && _eaTgt && _eaTgt.isBoss;
+
+                if (_eaIsBoss) {
+                    // Inicializar contador de usos en partida
+                    if (typeof window._antividaBossUses === 'undefined') window._antividaBossUses = 0;
+                    window._antividaBossUses++;
+                    const _eaBossDmg = 10 * window._antividaBossUses; // 10, 20, 30, 40...
+                    // Aplicar daño directo (respeta HP mínimo 1 para no eliminar al jefe)
+                    const _eaNewHp = Math.max(1, (_eaTgt.hp||0) - _eaBossDmg);
+                    _eaTgt.hp = _eaNewHp;
+                    addLog('🔥 Ecuación de la Antivida [Jefe]: ' + _eaBossDmg + ' daño (uso #' + window._antividaBossUses + ')', 'damage');
+                    if (_eaAtk) {
+                        _eaAtk.hp = Math.min(_eaAtk.maxHp, (_eaAtk.hp||0) + Math.floor(_eaBossDmg * 0.5));
+                        addLog('🔥 Darkseid absorbe ' + Math.floor(_eaBossDmg * 0.5) + ' HP', 'heal');
+                    }
+                } else if (_eaTgt && !_eaTgt.isDead && _eaTgt.hp > 0 && _eaAtk) {
                     const _eaPct = 0.50 + Math.random() * 0.40; // 50-90%
                     const _eaLost = Math.ceil(_eaTgt.hp * _eaPct);
                     _eaTgt.hp = Math.max(0, _eaTgt.hp - _eaLost);
-                    if (_eaTgt.hp <= 0) { _eaTgt.isDead = true; registerKill(gameState.selectedCharacter, targetName, false); }
+                    if (_eaTgt.hp <= 0) { _eaTgt.isDead = true; registerKill(gameState.selectedCharacter, targetName, false); if (typeof checkGameOver === 'function') checkGameOver(); }
                     _eaAtk.hp = Math.min(_eaAtk.maxHp, (_eaAtk.hp||0) + _eaLost);
                     addLog('🔥 Ecuación de la Antivida: ' + targetName + ' pierde ' + _eaLost + ' HP (' + Math.round(_eaPct*100) + '%), Darkseid recupera ' + _eaLost + ' HP', 'heal');
                 }
