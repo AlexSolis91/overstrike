@@ -1346,15 +1346,19 @@
             if (!confirm('¿Gastar 1 Runa de Ataque para recargar tus 5 ataques de Raid Diario?')) return;
             // Descontar runa
             await db.ref('users/' + uid + '/attack_runes').transaction(function(v){ return Math.max(0, (v||0) - 1); });
-            // Recargar ataques: leer el raid data actual y resetear attacksLeft
+            // Recargar ataques: resetear attacksLeft Y limpiar attackedTargets para habilitar nuevos rivales
             var todayKey = _getTodayMidnightKey();
-            await db.ref('ranked_stats/' + uid + '/raidToday').update({ attacksLeft: 5, date: todayKey });
+            await db.ref('ranked_stats/' + uid + '/raidToday').update({
+                attacksLeft: 5,
+                attackedTargets: [],   // ← Limpia la lista de ya atacados
+                targets: [],           // ← Fuerza regeneración de nuevos objetivos
+                date: todayKey
+            });
             await updateLobbyHUD();
-            // Cerrar y reabrir el modal raid
+            // Cerrar y reabrir el modal raid (showRaidLobby regenerará nuevos targets)
             var modal = document.getElementById('raidLobbyModal');
             if (modal) modal.remove();
-            if (typeof showRaidLobby === 'function') showRaidLobby();
-            else if (typeof loadRaidLobby === 'function') loadRaidLobby();
+            showRaidLobby();
         }
 
         function raidAttackTarget(targetUid, targetName) {
@@ -3348,9 +3352,17 @@
             const relic = rollChestRelic(chestType);
             await addGold(uid, goldReward[chestType]);
             await addRelicToInventory(uid, relic.name);
-            await updateLobbyHUD();
 
-            showChestOpenModal(chestType, relic, goldReward[chestType]);
+            // Probabilidad de obtener Runa de Ataque como bonus
+            const runeChance = { rare: 0, special: 0.05, epic: 0.10, arcana: 0.20 };
+            let bonusRune = false;
+            if (runeChance[chestType] && Math.random() < runeChance[chestType]) {
+                await db.ref('users/' + uid + '/attack_runes').transaction(function(v){ return (v||0) + 1; });
+                bonusRune = true;
+            }
+
+            await updateLobbyHUD();
+            showChestOpenModal(chestType, relic, goldReward[chestType], bonusRune);
         }
 
         function rollChestRelic(chestType) {
@@ -3365,13 +3377,13 @@
             if (chestType === 'rare')    tier = 'Raro';
             else if (chestType === 'special') tier = r < 0.60 ? 'Raro' : 'Especial';
             else if (chestType === 'epic')    tier = r < 0.40 ? 'Raro' : r < 0.75 ? 'Especial' : 'Epico';
-            else /* arcana */                 tier = r < 0.70 ? 'Especial' : r < 0.95 ? 'Epico' : 'Legendario';
+            else /* arcana */                 tier = r < 0.70 ? 'Especial' : r < 0.99 ? 'Epico' : 'Legendario'; // 70% Especial, 29% Épico, 1% Legendario
             const pool = relicsByTier[tier];
             const name = pool[Math.floor(Math.random() * pool.length)];
             return typeof RELICS_DATA !== 'undefined' ? { name, ...RELICS_DATA[name] } : { name, tier };
         }
 
-        function showChestOpenModal(chestType, relic, goldBonus) {
+        function showChestOpenModal(chestType, relic, goldBonus, bonusRune) {
             const tierColors = { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700' };
             const color = tierColors[relic.tier] || '#fff';
             const ov = document.createElement('div');
@@ -3382,7 +3394,8 @@
                 '<img src="' + (typeof RELICS_DATA!=='undefined'&&RELICS_DATA[relic.name]?RELICS_DATA[relic.name].img:'') + '" style="width:80px;height:80px;object-fit:contain;border-radius:8px;border:2px solid ' + color + ';margin:12px auto;display:block;">' +
                 '<div style="font-size:1rem;color:#fff;font-weight:700;margin-bottom:4px;">' + relic.name + '</div>' +
                 '<div style="font-size:.8rem;color:' + color + ';margin-bottom:12px;">' + relic.tier + '</div>' +
-                '<div style="font-size:.8rem;color:#ffaa00;margin-bottom:16px;">+ ' + goldBonus.toLocaleString() + ' Oro</div>' +
+                '<div style="font-size:.8rem;color:#ffaa00;margin-bottom:' + (bonusRune ? '6px' : '16px') + ';">+ ' + goldBonus.toLocaleString() + ' Oro</div>' +
+                (bonusRune ? '<div style="font-size:.85rem;color:#c864ff;font-weight:700;margin-bottom:16px;">🔮 + 1 Runa de Ataque</div>' : '') +
                 '<button onclick="this.parentElement.parentElement.remove()" style="background:linear-gradient(135deg,#003a1a,#00aa55);border:2px solid #00ff88;color:#00ff88;border-radius:8px;padding:10px 24px;font-family:Orbitron,sans-serif;cursor:pointer;">¡GENIAL!</button>' +
                 '</div>';
             document.body.appendChild(ov);
