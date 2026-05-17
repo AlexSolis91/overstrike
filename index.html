@@ -755,10 +755,10 @@
                 { id:'chest_arcana',  label:'Cofre Arcano',   price:'1 🗝️',   color:'#ffd700', border:'border:2px solid #ffd700', img:'https://i.ibb.co/21Cqvp06/Gemini-Generated-Image-g76wcgg76wcgg76w.png' },
             ];
             var _chestContents = {
-                'chest_rare':    'Contiene: 1 Reliquia aleatoria de tier Raro o Especial.',
-                'chest_special': 'Contiene: 1 Reliquia aleatoria de tier Especial o Épico, con probabilidad de Legendaria.',
-                'chest_epic':    'Contiene: 1 Reliquia aleatoria de tier Épico, con probabilidad de Legendaria.',
-                'chest_arcana':  'Contiene: 1 Reliquia Legendaria garantizada.',
+                'chest_rare':    'Contiene: 1 Reliquia aleatoria (100% Rara). +1,000 Oro.',
+                'chest_special': 'Contiene: 1 Reliquia aleatoria (60% Rara · 40% Especial). +2,000 Oro. 5% de bonus: +1 Runa de Ataque.',
+                'chest_epic':    'Contiene: 1 Reliquia aleatoria (40% Rara · 35% Especial · 25% Épica). +5,000 Oro. 10% de bonus: +1 Runa de Ataque.',
+                'chest_arcana':  'Contiene: 1 Reliquia aleatoria (70% Especial · 29% Épica · 1% Legendaria). +10,000 Oro. 20% de bonus: +1 Runa de Ataque.',
             };
             chests.forEach(function(ch){
                 var _chDesc = _chestContents[ch.id] || 'Cofre con reliquias.';
