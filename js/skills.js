@@ -4060,7 +4060,7 @@
                 if (_efV) {
                     _efV.hp = 0;
                     _efV.isDead = true;
-                    if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, _efVn, false);
+                    if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, gameState.selectedCharacter, false);
                     _efV._vegetaRevivePending = 3;
                     addLog('💥 Explosión Final: Vegeta (' + Math.round(_efPct*100) + '% HP) → ' + _efDmg + ' daño AOE (5 base + ' + _efBonus + ' bonus)!', 'damage');
                 }
@@ -7436,7 +7436,7 @@
                 const _rhCrit = Math.random() < 0.50;
                 if (_rhCrit) { _rhDmg *= 2; gameState._isCritHit = true; addLog('🌀 Rinbo Hengoku: ¡Crítico!', 'buff'); }
                 applyDamageWithShield(targetName, _rhDmg, gameState.selectedCharacter);
-                addLog('🌀 Rinbo: Hengoku: ' + _rhDmg + ' daño a ' + targetName, 'damage');
+                addLog('🌀 Rinbo Hengoku: ' + _rhDmg + ' daño a ' + targetName, 'damage');
                 if (_rhCrit && _rhAtk) {
                     if (_rhAtk.rikudoMode) _rhAtk.charges = Math.min(20, (_rhAtk.charges||0) + 3);
                     addLog('🌀 Gakido: turno adicional por crítico', 'buff');
