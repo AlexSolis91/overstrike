@@ -1286,7 +1286,9 @@
             }
 
             // ── EFECTOS DE RELIQUIAS DEL ATACANTE ──────────────────────────────
-            if (remainingDamage > 0 && attackerName && attackerName !== targetName && !passiveExecuting) {
+            // _relicEffectsActive previene recursión (vortex, pyro etc. llaman applyDamageWithShield)
+            if (remainingDamage > 0 && attackerName && attackerName !== targetName && !passiveExecuting && !gameState._relicEffectsActive) {
+                gameState._relicEffectsActive = true;
                 const _atkChar = gameState.characters[attackerName];
                 const _relics  = _atkChar ? (_atkChar.equippedRelics || []) : [];
                 const _tgtChar = gameState.characters[targetName];
@@ -1492,6 +1494,7 @@
                         // On receiving debuff (handled in applyDebuff) — skip here
                     }
                 });
+                gameState._relicEffectsActive = false;
             }
 
             // ── EL OJO QUE TODO LO VE (Sauron): reducción 50% con MegaProv/ProtSagrada + Aturdimiento al atacante ──
