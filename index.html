@@ -439,6 +439,50 @@
             document.getElementById('inv-tab-characters').style.display = tab === 'characters' ? 'block' : 'none';
         }
 
+        // ── Cargador de reliquias compartido — todos los modos ──────────────
+        window.loadGameRelics = function() {
+            setTimeout(function() {
+                var user = firebase.auth().currentUser;
+                if (!user || typeof db === 'undefined') return;
+                var myTeamSlot = window._rankedPlayerTeam || 'team1';
+                var opTeamSlot = myTeamSlot === 'team1' ? 'team2' : 'team1';
+                var opUid = window._opponentUid || window._rankedDefenseOwnerUid || null;
+                function _loadRelicsForUid(uid, charNames, applyBonuses) {
+                    charNames.forEach(function(charName) {
+                        var baseName = charName.replace(/ v\d+$/, '');
+                        db.ref('users/' + uid + '/characters/' + baseName + '/slots').once('value').then(function(snap) {
+                            var equip = snap.val();
+                            if (!equip) return;
+                            var slots = [equip.slot1, equip.slot2, equip.slot3].filter(Boolean);
+                            if (!slots.length) return;
+                            var ch = gameState.characters[charName];
+                            if (!ch) return;
+                            ch.equippedRelics = slots;
+                            if (applyBonuses && typeof RELICS_DATA !== 'undefined') {
+                                slots.forEach(function(relicName) {
+                                    var rd = RELICS_DATA[relicName];
+                                    if (!rd) return;
+                                    if (rd.hpBonus)  { ch.hp = (ch.hp||0) + rd.hpBonus; ch.maxHp = (ch.maxHp||0) + rd.hpBonus; }
+                                    if (rd.velBonus) { ch.speed = (ch.speed||0) + rd.velBonus; }
+                                });
+                            }
+                            if (typeof renderCharacters === 'function') renderCharacters();
+                        }).catch(function(e){ console.error('[Relics]', charName, e); });
+                    });
+                }
+                var myChars = Object.keys(gameState.characters).filter(function(n){
+                    return gameState.characters[n] && gameState.characters[n].team === myTeamSlot;
+                });
+                _loadRelicsForUid(user.uid, myChars, true);
+                if (opUid) {
+                    var opChars = Object.keys(gameState.characters).filter(function(n){
+                        return gameState.characters[n] && gameState.characters[n].team === opTeamSlot;
+                    });
+                    _loadRelicsForUid(opUid, opChars, false);
+                }
+            }, 600);
+        };
+
         function _escHtmlInv(s) {
             return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
         }
@@ -1620,52 +1664,8 @@
                     }
                 }
 
-                // ── Cargar reliquias del jugador y del rival ──────────────────────────
-                // En ranked como guest, el jugador es team2, no team1
-                setTimeout(function() {
-                    var user = firebase.auth().currentUser;
-                    if (!user || typeof db === 'undefined') return;
-
-                    var myTeamSlot = window._rankedPlayerTeam || 'team1';
-                    var opTeamSlot = myTeamSlot === 'team1' ? 'team2' : 'team1';
-                    var opUid = window._opponentUid || window._rankedDefenseOwnerUid || null;
-
-                    function loadRelicsForUid(uid, charNames, applyBonuses) {
-                        charNames.forEach(function(charName) {
-                            var baseName = charName.replace(/ v\d+$/, '');
-                            db.ref('users/' + uid + '/characters/' + baseName + '/slots').once('value').then(function(snap) {
-                                var equip = snap.val();
-                                if (!equip) return;
-                                var slots = [equip.slot1, equip.slot2, equip.slot3].filter(Boolean);
-                                if (!slots.length) return;
-                                var ch = gameState.characters[charName];
-                                if (!ch) return;
-                                ch.equippedRelics = slots;
-                                if (applyBonuses && typeof RELICS_DATA !== 'undefined') {
-                                    slots.forEach(function(relicName) {
-                                        var rd = RELICS_DATA[relicName];
-                                        if (!rd) return;
-                                        if (rd.hpBonus)  { ch.hp = (ch.hp||0) + rd.hpBonus; ch.maxHp = (ch.maxHp||0) + rd.hpBonus; }
-                                        if (rd.velBonus) { ch.speed = (ch.speed||0) + rd.velBonus; }
-                                    });
-                                }
-                                if (typeof renderCharacters === 'function') renderCharacters();
-                            }).catch(function(e){ console.error('[Relics] Error loading:', charName, e); });
-                        });
-                    }
-
-                    var myCharNames = Object.keys(gameState.characters).filter(function(n) {
-                        return gameState.characters[n] && gameState.characters[n].team === myTeamSlot;
-                    });
-                    loadRelicsForUid(user.uid, myCharNames, true);
-
-                    if (opUid) {
-                        var rivalCharNames = Object.keys(gameState.characters).filter(function(n) {
-                            return gameState.characters[n] && gameState.characters[n].team === opTeamSlot;
-                        });
-                        loadRelicsForUid(opUid, rivalCharNames, false);
-                    }
-                }, 500);
+                // Cargar reliquias para todos los modos
+                window.loadGameRelics();
                 audioManager.playRandomBattle();
             } catch(err) {
                 console.error('Error en csStartGame:', err);
@@ -1944,7 +1944,7 @@
                             <span style="font-size:.68rem;color:#aaa;">⚡ VEL 95</span>
                         </div>
                         <div style="font-size:.63rem;color:#666;margin-top:4px;line-height:1.4;">
-                            <span style="color:#ff8844;">Pasiva:</span> Cada vez que recibe daño, genera 3 cargas.
+                            <span style="color:#ff8844;">Pasiva:</span> Cada vez que recibe daño, genera 3 cargas. Genera N cargas al inicio de la ronda N. 25% de probabilidad de esquivar Debuffs.
                         </div>
                     </div>
                 </div>
