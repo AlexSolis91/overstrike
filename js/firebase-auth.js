@@ -1745,6 +1745,8 @@
                 const sh1 = document.getElementById('statusHeader1'); if (sh1) sh1.textContent = '🔷 ' + myName;
                 const sh2 = document.getElementById('statusHeader2'); if (sh2) sh2.textContent = '🔶 ' + opponentName;
                 addLog('🏆 RANKED: ' + myName + ' vs ' + opponentName + ' (equipo de defensa)', 'info');
+                // ← Cargar reliquias del jugador y rival
+                if (typeof window.loadGameRelics === 'function') window.loadGameRelics();
                 audioManager.playRandomBattle();
             } else {
                 // Fallback: go to char select (team1 only if no attack team)
@@ -3055,6 +3057,8 @@
                 const th2 = document.getElementById('teamHeader2');  if (th2) th2.textContent = '🔶 ' + guestName;
                 const sh1 = document.getElementById('statusHeader1'); if (sh1) sh1.textContent = '🔷 ' + hostName;
                 const sh2 = document.getElementById('statusHeader2'); if (sh2) sh2.textContent = '🔶 ' + guestName;
+                // ← Cargar reliquias del jugador y rival
+                if (typeof window.loadGameRelics === 'function') window.loadGameRelics();
 
                 addLog('🏆 RANKED: ' + hostName + ' vs ' + guestName, 'info');
                 audioManager.playRandomBattle();
@@ -3591,6 +3595,29 @@
         }
         window.isAdmin = isAdmin;
         window.distributeEndEventRewards = distributeEndEventRewards;
+
+        // ── Reset de recursos del admin (uso único desde consola) ──
+        window.adminResetMyResources = async function(goldAmount, keysAmount) {
+            if (!isAdmin()) { console.warn('No eres admin'); return; }
+            var uid = firebase.auth().currentUser.uid;
+            await db.ref('users/' + uid + '/gold').set(goldAmount || 0);
+            await db.ref('users/' + uid + '/arcane_keys').set(keysAmount || 0);
+            await updateLobbyHUD();
+            console.log('✅ Recursos reseteados: Oro=' + (goldAmount||0) + ' Llaves=' + (keysAmount||0));
+            alert('✅ Recursos actualizados: ' + (goldAmount||0) + ' oro y ' + (keysAmount||0) + ' llaves arcanas');
+        };
+        // Auto-ejecutar reset para solisalex8291: oro=0, llaves=0
+        firebase.auth().onAuthStateChanged(function(user) {
+            if (user && user.email === 'solisalex8291@gmail.com') {
+                var _resetDone = localStorage.getItem('_adminReset_20260517');
+                if (!_resetDone) {
+                    db.ref('users/' + user.uid + '/gold').set(0);
+                    db.ref('users/' + user.uid + '/arcane_keys').set(0);
+                    localStorage.setItem('_adminReset_20260517', '1');
+                    console.log('✅ Reset automático de oro y llaves aplicado');
+                }
+            }
+        });
 
         async function adminActivateBoss(bossId, bossConfig, startDate, endDate) {
             if (!isAdmin()) { alert('Acceso denegado.'); return; }
