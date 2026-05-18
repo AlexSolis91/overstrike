@@ -1359,6 +1359,8 @@
 
         function endTurn() {
             gameState._miedoActive = false; // Limpiar flag de Miedo
+            gameState._relicEffectsActive = false; // Limpiar flag anti-recursión de reliquias
+            gameState._isCritHit = false; // Limpiar flag de crítico
             // Cap all character charges at 20 and HP at maxHp
             for (let n in gameState.characters) {
                 const _c = gameState.characters[n];
@@ -1488,6 +1490,31 @@
                     addLog(`⏱️ ¡RONDA ${gameState.currentRound} COMIENZA!`, 'info');
                     // ── BANNER CINEMATOGRÁFICO DE RONDA ──
                     _showRoundBanner(gameState.currentRound);
+
+                    // ── EFECTOS DE RELIQUIAS AL INICIO DE RONDA ──────────────
+                    for (const _rn in gameState.characters) {
+                        const _rc = gameState.characters[_rn];
+                        if (!_rc || _rc.isDead || _rc.hp <= 0) continue;
+                        (_rc.equippedRelics||[]).forEach(function(relicName) {
+                            const _rrd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[relicName] : null;
+                            if (!_rrd) return;
+                            // +2 HP por turno (Anillo de la Vida)
+                            if (_rrd.effect === 'regen_2hp_turn') {
+                                _rc.hp = Math.min(_rc.maxHp, (_rc.hp||0) + 2);
+                                addLog('💚 Anillo de la Vida: ' + _rn + ' regenera 2HP', 'heal');
+                            }
+                            // Escudo 2HP al inicio de ronda (Escudo Invisible)
+                            if (_rrd.effect === 'shield_each_round') {
+                                _rc.shield = (_rc.shield||0) + 2;
+                                addLog('🛡️ Escudo Invisible: ' + _rn + ' gana Escudo 2HP', 'buff');
+                            }
+                            // Vestidura Arcana: +4HP al final de ronda (handled at END of round, here is start)
+                            if (_rrd.effect === 'vestidura_arcana') {
+                                _rc.hp = Math.min(_rc.maxHp, (_rc.hp||0) + 4);
+                                addLog('🔮 Vestidura Arcana: ' + _rn + ' recupera 4HP al inicio de ronda', 'heal');
+                            }
+                        });
+                    }
 
                     // ── LEGENDARIO SUPER SAYAJIN (Broly): genera N cargas al inicio de la ronda N ──
                     for (const _brolyN in gameState.characters) {
