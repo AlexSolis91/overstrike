@@ -930,7 +930,7 @@
                 speed: 95, charges: 0,
                 isBoss: true,           // Inmune a One-Hit KO
                 statusEffects: [],
-                passive: { name: 'Legendario Super Sayajin', description: 'Cada vez que recibe daño, genera 3 cargas.' },
+                passive: { name: 'Legendario Super Sayajin', description: 'Cada vez que recibe daño, genera 3 cargas. Genera N cargas al inicio de cada ronda N. 25% de probabilidad de esquivar Debuffs.' },
                 abilities: [
                     { name: 'Eraser Cannon',         type: 'basic',   cost: 0,  chargeGain: 2, damage: 3,  target: 'single', effect: 'eraser_cannon_broly',     description: 'Causa 3 daño. 50% de probabilidad de generar el doble de cargas.' },
                     { name: 'Onda de Destrucción',   type: 'special', cost: 8,  chargeGain: 0, damage: 6,  target: 'single', effect: 'onda_destruccion_broly',   description: 'Antes de golpear, disipa todos los Buffs del objetivo. Por cada Buff disipado aumenta un 200% el daño de este ataque.' },
