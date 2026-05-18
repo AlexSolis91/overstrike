@@ -1354,12 +1354,14 @@
 
                         // ST sobre enemigo con Quemadura → duplica Quemaduras y +3 daño
                         case 'pyro_st_burn':
-                            if (ability && ability.target === 'single' && _tgtChar) {
+                            if (ability && ability.target === 'single' && _tgtChar && !passiveExecuting) {
                                 const _burns = (_tgtChar.statusEffects||[]).filter(function(e){ return e && e.name === 'Quemadura'; });
                                 if (_burns.length > 0) {
+                                    passiveExecuting = true;
                                     _burns.forEach(function(b){ if (typeof applyDebuff === 'function') applyDebuff(targetName, Object.assign({}, b)); });
                                     applyDamageWithShield(targetName, 3, attackerName);
                                     addLog('🔥 Pyrophagos: duplica Quemaduras +3 daño a ' + targetName, 'damage');
+                                    passiveExecuting = false;
                                 }
                             }
                             break;
@@ -1400,9 +1402,11 @@
 
                         // Ignora Esquiva Área, daño doble a objetivo con Esquiva Área
                         case 'vortex_pierce':
-                            if (_tgtChar && hasStatusEffect && hasStatusEffect(targetName, 'Esquiva Área')) {
+                            if (_tgtChar && !passiveExecuting && hasStatusEffect && hasStatusEffect(targetName, 'Esquiva Área')) {
+                                passiveExecuting = true;
                                 applyDamageWithShield(targetName, remainingDamage, attackerName);
                                 addLog('🌀 Vortex: daño doble a ' + targetName + ' (tenía Esquiva Área)', 'damage');
+                                passiveExecuting = false;
                             }
                             break;
 
@@ -1429,11 +1433,15 @@
                         // Vestidura Arcana: daño recibido → mismas cargas + fin ronda +4HP (handled elsewhere)
                         case 'vestidura_arcana': break;
 
-                        // Golpear con Provocación activa → turno adicional
+                        // Golpear con Provocación/MegaProv → turno adicional + ignorar Provocación esa ronda
                         case 'taunt_extra_turn':
-                            if (_tgtChar && (hasStatusEffect(targetName,'Provocacion') || hasStatusEffect(targetName,'Mega Provocacion'))) {
+                            if (_tgtChar && (hasStatusEffect(targetName, 'Provocacion') || hasStatusEffect(targetName, 'Mega Provocacion') ||
+                                            hasStatusEffect(targetName, 'Provocación') || hasStatusEffect(targetName, 'MegaProvocacion'))) {
+                                // Turno adicional
                                 if (typeof triggerAnticipacion === 'function') triggerAnticipacion(attackerName, _atkChar.team);
-                                addLog('🪓 Skeggöx: turno adicional (objetivo con Provocación)', 'buff');
+                                // Ignorar provocación en el próximo ataque de este personaje
+                                if (_atkChar) _atkChar._ignoreTauntNextAttack = true;
+                                addLog('🪓 Skeggöx: turno adicional (objetivo con Provocación) + ignora Provocación próximo ataque', 'buff');
                             }
                             break;
 
