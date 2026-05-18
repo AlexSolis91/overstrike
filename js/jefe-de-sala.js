@@ -160,7 +160,7 @@
                 portrait:     boss.portrait || '',
                 passive:      boss.passive  || {
                     name: 'Legendario Super Sayajin',
-                    description: 'Cada vez que recibe daño, genera 3 cargas.'
+                    description: 'Cada vez que recibe daño, genera 3 cargas. Genera N cargas al inicio de la ronda N. 25% de probabilidad de esquivar Debuffs.'
                 },
                 abilities:    boss.abilities || (
                     typeof BOSS_DATA !== 'undefined' && BOSS_DATA.broly
