@@ -3649,8 +3649,9 @@
 
                 await addGold(entry.uid, finalGold);
 
+                // Llaves Arcanas — ruta correcta: users/{uid}/arcane_keys
                 if (finalKeys > 0) {
-                    const keyRef = db.ref('players/' + entry.uid + '/arcaneKeys');
+                    const keyRef = db.ref('users/' + entry.uid + '/arcane_keys');
                     const ks = await keyRef.once('value');
                     await keyRef.set((ks.val()||0) + finalKeys);
                 }
@@ -3659,8 +3660,8 @@
                     var extraCount = Math.ceil((rw.extraCount||1) * multiplier);
                     for (var k = 0; k < extraCount; k++) {
                         if (rw.extra === 'chest_arcana') {
-                            // Arcana chest = open directly as relic reward
-                            const keyRef2 = db.ref('players/' + entry.uid + '/arcaneKeys');
+                            // Llave Arcana adicional como recompensa de cofre
+                            const keyRef2 = db.ref('users/' + entry.uid + '/arcane_keys');
                             const ks2 = await keyRef2.once('value');
                             await keyRef2.set((ks2.val()||0) + 1);
                         } else {
