@@ -1620,13 +1620,17 @@
                     }
                 }
 
-                // ── Cargar reliquias del jugador (team1) y del rival (team2 si es online) ──
-                // Delay pequeño para asegurar que initGame haya terminado de poblar gameState
+                // ── Cargar reliquias del jugador y del rival ──────────────────────────
+                // En ranked como guest, el jugador es team2, no team1
                 setTimeout(function() {
                     var user = firebase.auth().currentUser;
                     if (!user || typeof db === 'undefined') return;
 
-                    function loadRelicsForUid(uid, charNames, team) {
+                    var myTeamSlot = window._rankedPlayerTeam || 'team1';
+                    var opTeamSlot = myTeamSlot === 'team1' ? 'team2' : 'team1';
+                    var opUid = window._opponentUid || window._rankedDefenseOwnerUid || null;
+
+                    function loadRelicsForUid(uid, charNames, applyBonuses) {
                         charNames.forEach(function(charName) {
                             var baseName = charName.replace(/ v\d+$/, '');
                             db.ref('users/' + uid + '/characters/' + baseName + '/slots').once('value').then(function(snap) {
@@ -1637,7 +1641,7 @@
                                 var ch = gameState.characters[charName];
                                 if (!ch) return;
                                 ch.equippedRelics = slots;
-                                if (team === 'team1' && typeof RELICS_DATA !== 'undefined') {
+                                if (applyBonuses && typeof RELICS_DATA !== 'undefined') {
                                     slots.forEach(function(relicName) {
                                         var rd = RELICS_DATA[relicName];
                                         if (!rd) return;
@@ -1651,16 +1655,15 @@
                     }
 
                     var myCharNames = Object.keys(gameState.characters).filter(function(n) {
-                        return gameState.characters[n] && gameState.characters[n].team === 'team1';
+                        return gameState.characters[n] && gameState.characters[n].team === myTeamSlot;
                     });
-                    loadRelicsForUid(user.uid, myCharNames, 'team1');
+                    loadRelicsForUid(user.uid, myCharNames, true);
 
-                    var opUid = window._opponentUid || window._rankedDefenseOwnerUid || null;
                     if (opUid) {
                         var rivalCharNames = Object.keys(gameState.characters).filter(function(n) {
-                            return gameState.characters[n] && gameState.characters[n].team === 'team2';
+                            return gameState.characters[n] && gameState.characters[n].team === opTeamSlot;
                         });
-                        loadRelicsForUid(opUid, rivalCharNames, 'team2');
+                        loadRelicsForUid(opUid, rivalCharNames, false);
                     }
                 }, 500);
                 audioManager.playRandomBattle();
