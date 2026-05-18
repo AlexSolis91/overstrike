@@ -235,6 +235,11 @@ function triggerMaboroshi(targetTeam, debuffName) {
 function applyDebuff(targetName, effectObj) {
             const target = gameState.characters[targetName];
             if (!target || !target.statusEffects) return;
+            // JEFE DE SALA: 25% de probabilidad de esquivar debuffs (complemento de la pasiva)
+            if (target.isBoss && Math.random() < 0.25) {
+                addLog('🛡️ Legendario Super Sayajin: ' + targetName + ' esquiva el debuff (' + (effectObj.name || 'efecto') + ')', 'buff');
+                return;
+            }
             // BUFF REFLEJAR: el portador es inmune a nuevos debuffs mientras Reflejar esté activo
             if (hasStatusEffect(targetName, 'Reflejar')) {
                 addLog('🪞 Reflejar: ' + targetName + ' es inmune al debuff (Reflejar activo)', 'buff');
