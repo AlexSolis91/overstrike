@@ -1636,12 +1636,19 @@
                     // ── VALKYR (Sirviente de la Muerte): inicio de ronda → +10 velocidad al equipo aliado ──
                     const _valkyr = Object.values(gameState.summons).find(function(s){ return s && s.name === 'Valkyr' && s.hp > 0; });
                     if (_valkyr) {
-                        for (const _vn in gameState.characters) {
-                            const _vc = gameState.characters[_vn];
-                            if (!_vc || _vc.isDead || _vc.hp <= 0 || _vc.team !== _valkyr.team) continue;
-                            _vc.speed = (_vc.speed||80) + 10;
+                        const _valETeam = _valkyr.team === 'team1' ? 'team2' : 'team1';
+                        const _valEnemies = Object.keys(gameState.characters).filter(function(n){
+                            const _c = gameState.characters[n];
+                            return _c && _c.team === _valETeam && !_c.isDead && _c.hp > 0 && (_c.charges||0) > 0;
+                        });
+                        if (_valEnemies.length > 0) {
+                            const _valTarget = _valEnemies[Math.floor(Math.random() * _valEnemies.length)];
+                            const _valDrain = Math.min(5, gameState.characters[_valTarget].charges||0);
+                            gameState.characters[_valTarget].charges = Math.max(0, (gameState.characters[_valTarget].charges||0) - _valDrain);
+                            addLog('⚔️ Valkyr (Sirviente de la Muerte): ' + _valTarget + ' pierde ' + _valDrain + ' cargas', 'debuff');
+                        } else {
+                            addLog('⚔️ Valkyr (Sirviente de la Muerte): ningún enemigo tiene cargas', 'info');
                         }
-                        addLog('⚔️ Valkyr (Sirviente de la Muerte): +10 velocidad al equipo aliado', 'buff');
                     }
 
                     // ── CABALLERO DE LA MUERTE (Espada de Ébano): inicio de ronda → +4 cargas al equipo aliado ──
