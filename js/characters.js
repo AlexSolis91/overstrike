@@ -437,7 +437,7 @@
                 vegetaForm: null, // null | 'ssblue_evo' | 'ultra_ego'
                 portrait: 'https://i.ibb.co/G301wx8Z/Captura-de-pantalla-2026-03-19-113940.png',
                 portraitSSBlueEvo: 'https://i.ibb.co/PZGp5fKN/Whats-App-Image-2026-04-07-at-2-42-40-PM-1.jpg',
-                portraitUltraEgo: 'https://i.ibb.co/hJBTVdHL/Whats-App-Image-2026-04-07-at-2-42-40-PM.jpg',
+                portraitUltraEgo: 'https://i.ibb.co/BHhJp7hk/Whats-App-Image-2026-05-19-at-11-39-53-AM.jpg',
                 passive: { name: 'Principe de los Sayajins', description: 'Si un enemigo tiene Buffs activos al ser golpeado, elimina sus buffs antes del daño. Por cada buff eliminado/disipado en enemigos, Vegeta genera 2 cargas. Al 40-70% HP: Super Sayajin Blue Evolution (cargas = cargas del objetivo al golpear). Al 1-39% HP: Ultra Ego (50% menos daño por golpe e inmune a daño directo).' },
                 abilities: [
                     { name: 'Rafagas de Ki', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'aoe', effect: 'rafagas_ki_vegeta', description: 'Causa 1 AOE. 50% de probabilidad de daño triple.' },
@@ -860,7 +860,7 @@
                 hp: 25, maxHp: 25, speed: 83, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 tirionLowHpTriggered: false,
-                portrait: 'https://i.ibb.co/BHhJp7hk/Whats-App-Image-2026-05-19-at-11-39-53-AM.jpg',
+                portrait: 'https://i.ibb.co/mrcVTbh7/Whats-App-Image-2026-04-16-at-3-22-08-PM.jpg',
                 passive: { name: 'Paladín de la Mano de Plata', description: 'Si llega a 10 HP: Protección Sagrada + Escudo Sagrado + 20 cargas (solo una vez). Cada vez que un enemigo usa Over: +3 HP y +3 cargas al equipo aliado.' },
                 abilities: [
                     { name: 'Luz del Alba', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'aoe', effect: 'luz_del_alba_tirion', description: 'Causa 1 AOE. Cura 1 HP al equipo aliado. Aplica Aura de Luz al equipo aliado.' },
