@@ -2541,7 +2541,7 @@
                                 if (ds.hp <= 0) { delete gameState.summons[sid]; addLog('💨 ' + ds.name + ' fue derrotado por Drogon', 'damage'); }
                             }
                         }
-                        // Drogon también tiene Megaprovocacion activa (se maneja en target selection)
+                        // Drogon ya no tiene MegaProvocación
                     } else if (s.effect === 'burn_team' || s.dragonEffect === 'burn_team') {
                         // Rhaegal: aplica Quemadura 10% por 1 turno a todo el equipo enemigo
                         const rhTeam = s.team === 'team1' ? 'team2' : 'team1';
