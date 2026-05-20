@@ -251,6 +251,7 @@
 
             // ── BONOS DE RELIQUIAS al daño (pre-ataque) ──────────────────────
             if (finalDamage > 0 && attacker && (attacker.equippedRelics||[]).length > 0) {
+                gameState._lastAbilityType = ability ? ability.type : null; // para reliquias del defensor
                 (attacker.equippedRelics||[]).forEach(function(relicName) {
                     const _rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[relicName] : null;
                     if (!_rd) return;
@@ -7353,7 +7354,7 @@
 
 
             // ══ RENGOKU AOE — manejados ANTES del bloque Kyo para evitar que target=aoe los bloquee ══
-            if (ability.effect === 'mar_fuego_rengoku') {
+            if (typeof ability !== 'undefined' && ability && ability.effect === 'mar_fuego_rengoku') {
                 // Mar de Fuego: 4 AOE. Ignora Esquiva Área. Disipa buffs. Quemadura 1HP. Si ya tenían Quemadura: 100% crítico
                 const _mfAtk2 = gameState.characters[gameState.selectedCharacter];
                 const _mfET2 = _mfAtk2 ? (_mfAtk2.team==='team1'?'team2':'team1') : 'team2';
