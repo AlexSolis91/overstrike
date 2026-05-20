@@ -86,13 +86,18 @@
                 const rdnBypass = !!((_rdnAttacker && _rdnAttacker.passive && _rdnAttacker.passive.name === 'Invierno Eterno'));
                 // GOLPE GRAVE (Saitama): ignora Provocacion y MegaProvocacion
                 const golpeGraveBypass = ability.effect === 'golpe_grave';
-                const hasMegaProv = !sauronBypass && !ivarBypass && !rdnBypass && !golpeGraveBypass && typeof checkKamishMegaProvocation === 'function' && checkKamishMegaProvocation(enemyTeam);
-                const hasProvocacion = !sauronBypass && !ivarBypass && !rdnBypass && !golpeGraveBypass && !hasMegaProv && Object.keys(gameState.characters).some(function(n) {
+                // SKEGGÖX (Reliquia): ignora Provocacion y MegaProvocacion en el siguiente ataque
+                const skeggoxBypass = !!(_rdnAttacker && _rdnAttacker._ignoreTauntNextAttack);
+                if (skeggoxBypass && _rdnAttacker) {
+                    _rdnAttacker._ignoreTauntNextAttack = false; // Consumir el bypass
+                }
+                const hasMegaProv = !sauronBypass && !ivarBypass && !rdnBypass && !golpeGraveBypass && !skeggoxBypass && typeof checkKamishMegaProvocation === 'function' && checkKamishMegaProvocation(enemyTeam);
+                const hasProvocacion = !sauronBypass && !ivarBypass && !rdnBypass && !golpeGraveBypass && !skeggoxBypass && !hasMegaProv && Object.keys(gameState.characters).some(function(n) {
                     const c = gameState.characters[n];
                     return c && c.team === enemyTeam && !c.isDead && c.hp > 0 &&
                         (c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'provocacion'; });
                 });
-                if (!hasMegaProv && !hasProvocacion && !sauronBypass && !ivarBypass && !rdnBypass && !golpeGraveBypass) {
+                if (!hasMegaProv && !hasProvocacion && !sauronBypass && !ivarBypass && !rdnBypass && !golpeGraveBypass && !skeggoxBypass) {
                     // Check if every alive enemy has Sigilo
                     const aliveEnemies = Object.keys(gameState.characters).filter(function(n) {
                         const c = gameState.characters[n];
