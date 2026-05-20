@@ -1307,6 +1307,11 @@
             if (remainingDamage > 0 && attackerName && attackerName !== targetName && !passiveExecuting && !gameState._relicEffectsActive) {
                 gameState._relicEffectsActive = true;
                 const _atkChar = gameState.characters[attackerName];
+                // Consumir el bypass de provocación de Skeggöx AHORA (justo antes de procesar reliquias)
+                // para que no se active Skeggöx de nuevo en este mismo ataque
+                if (_atkChar && _atkChar._ignoreTauntNextAttack) {
+                    _atkChar._ignoreTauntNextAttack = false;
+                }
                 const _relics  = _atkChar ? (_atkChar.equippedRelics || []) : [];
                 const _tgtChar = gameState.characters[targetName];
 
@@ -1450,15 +1455,22 @@
                         // Vestidura Arcana: daño recibido → mismas cargas + fin ronda +4HP (handled elsewhere)
                         case 'vestidura_arcana': break;
 
-                        // Golpear con Provocación/MegaProv → turno adicional + ignorar Provocación esa ronda
+                        // Golpear con Provocación/MegaProv → 1 turno adicional por ronda + ignorar Provocación en ese turno
                         case 'taunt_extra_turn':
                             if (_tgtChar && (hasStatusEffect(targetName, 'Provocacion') || hasStatusEffect(targetName, 'Mega Provocacion') ||
                                             hasStatusEffect(targetName, 'Provocación') || hasStatusEffect(targetName, 'MegaProvocacion'))) {
-                                // Marcar turno adicional pendiente — endTurn lo leerá y no avanzará el turno
-                                gameState._skeggoxExtraTurn = gameState.selectedCharacter || attackerName;
-                                // Ignorar provocación en el próximo ataque de este personaje
-                                if (_atkChar) _atkChar._ignoreTauntNextAttack = true;
-                                addLog('🪓 Skeggöx: ' + (gameState.selectedCharacter || attackerName) + ' ganará turno adicional + ignora Provocación próximo ataque', 'buff');
+                                // Solo 1 vez por ronda por personaje
+                                var _skRoundKey = '_skeggoxUsedRound_' + (gameState.selectedCharacter || attackerName).replace(/\s/g,'_');
+                                var _skAlreadyUsed = gameState[_skRoundKey] === gameState.currentRound;
+                                if (!_skAlreadyUsed) {
+                                    gameState[_skRoundKey] = gameState.currentRound; // marcar como usada esta ronda
+                                    // Marcar turno adicional pendiente — endTurn lo leerá
+                                    gameState._skeggoxExtraTurn = gameState.selectedCharacter || attackerName;
+                                    // El bypass de provocacion se activa y se consume DESPUÉS del ataque del turno extra
+                                    // No se consume en ability-select, sino en summons.js al completar el turno extra
+                                    if (_atkChar) _atkChar._ignoreTauntNextAttack = true;
+                                    addLog('🪓 Skeggöx: ' + (gameState.selectedCharacter || attackerName) + ' gana turno adicional + ignora Provocación en ese turno (1x por ronda)', 'buff');
+                                }
                             }
                             break;
 
