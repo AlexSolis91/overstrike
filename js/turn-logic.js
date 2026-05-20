@@ -1361,6 +1361,25 @@
             gameState._miedoActive = false; // Limpiar flag de Miedo
             gameState._relicEffectsActive = false; // Limpiar flag anti-recursión de reliquias
             gameState._isCritHit = false; // Limpiar flag de crítico
+
+            // ── SKEGGÖX: turno adicional pendiente ──
+            if (gameState._skeggoxExtraTurn) {
+                const _skChar = gameState._skeggoxExtraTurn;
+                gameState._skeggoxExtraTurn = null;
+                // Insertar al personaje al inicio de la cola de turnos (después del índice actual)
+                const _skIdx = gameState.turnOrder ? gameState.turnOrder.indexOf(_skChar) : -1;
+                if (_skIdx >= 0) {
+                    gameState.turnOrder.splice(_skIdx, 1);
+                }
+                const _skCurIdx = gameState.currentTurnIndex || 0;
+                if (gameState.turnOrder) {
+                    gameState.turnOrder.splice(_skCurIdx, 0, _skChar);
+                }
+                addLog('🪓 Skeggöx: ¡' + _skChar + ' gana turno adicional!', 'buff');
+                // No avanzar el índice — el personaje está ahora en la posición actual
+                setTimeout(function() { startTurn(); }, 700);
+                return;
+            }
             // Cap all character charges at 20 and HP at maxHp
             for (let n in gameState.characters) {
                 const _c = gameState.characters[n];
