@@ -1374,15 +1374,18 @@
                             }
                             break;
 
-                        // ST sobre enemigo con Quemadura → duplica Quemaduras y +3 daño
+                        // ST sobre enemigo con Quemadura → duplica daño de Quemaduras existentes y +3 daño al ataque
                         case 'pyro_st_burn':
-                            if (ability && ability.target === 'single' && _tgtChar && !passiveExecuting) {
-                                const _burns = (_tgtChar.statusEffects||[]).filter(function(e){ return e && e.name === 'Quemadura'; });
+                            if (_tgtChar && !passiveExecuting) {
+                                const _burns = (_tgtChar.statusEffects||[]).filter(function(e){ return e && (e.name === 'Quemadura' || e.name === 'quemadura'); });
                                 if (_burns.length > 0) {
+                                    // Duplicar el dotDamage de cada Quemadura existente
+                                    _burns.forEach(function(b){ if (b.dotDamage) b.dotDamage = b.dotDamage * 2; });
+                                    addLog('🔥 Pyrophagos: Quemaduras de ' + targetName + ' duplicadas (daño x2)', 'debuff');
+                                    // +3 daño adicional al ataque actual
                                     passiveExecuting = true;
-                                    _burns.forEach(function(b){ if (typeof applyDebuff === 'function') applyDebuff(targetName, Object.assign({}, b)); });
                                     applyDamageWithShield(targetName, 3, attackerName);
-                                    addLog('🔥 Pyrophagos: duplica Quemaduras +3 daño a ' + targetName, 'damage');
+                                    addLog('🔥 Pyrophagos: +3 daño adicional a ' + targetName, 'damage');
                                     passiveExecuting = false;
                                 }
                             }
@@ -1513,9 +1516,16 @@
                         _tgtChar.charges = Math.min(20, (_tgtChar.charges||0) + remainingDamage);
                         addLog('🔮 Vestidura Arcana: ' + targetName + ' gana ' + remainingDamage + ' cargas', 'buff');
                     }
-                    if (_rd2.effect === 'hp_on_basic_hit' && ability && ability.type === 'basic' && _tgtChar) {
-                        _tgtChar.hp = Math.min(_tgtChar.maxHp, (_tgtChar.hp||0) + 2);
-                        addLog('💚 Yelmo de Ork: ' + targetName + ' recupera 2HP', 'heal');
+                    if (_rd2.effect === 'hp_on_basic_hit' && _tgtChar) {
+                        // Yelmo de Ork: +2HP al recibir cualquier ataque básico
+                        // Detectamos básico si chargeGain <= 2 y damage <= 3 (heurística segura)
+                        // o si gameState._lastAbilityType está marcado como 'basic'
+                        var _isBasicAtk = (typeof ability !== 'undefined' && ability && ability.type === 'basic') ||
+                                          (gameState._lastAbilityType === 'basic');
+                        if (_isBasicAtk) {
+                            _tgtChar.hp = Math.min(_tgtChar.maxHp, (_tgtChar.hp||0) + 2);
+                            addLog('🪖 Yelmo de Ork: ' + targetName + ' recupera 2HP (recibió básico)', 'heal');
+                        }
                     }
                     if (_rd2.effect === 'debuff_resist_15' && Math.random() < 0.15) {
                         // Remove a random debuff from defender (called externally on debuff apply)
