@@ -1303,15 +1303,17 @@
             }
 
             // ── EFECTOS DE RELIQUIAS DEL ATACANTE ──────────────────────────────
-            // _relicEffectsActive previene recursión (vortex, pyro etc. llaman applyDamageWithShield)
-            if (remainingDamage > 0 && attackerName && attackerName !== targetName && !passiveExecuting && !gameState._relicEffectsActive) {
-                gameState._relicEffectsActive = true;
-                const _atkChar = gameState.characters[attackerName];
-                // Consumir el bypass de provocación de Skeggöx AHORA (justo antes de procesar reliquias)
-                // para que no se active Skeggöx de nuevo en este mismo ataque
-                if (_atkChar && _atkChar._ignoreTauntNextAttack) {
-                    _atkChar._ignoreTauntNextAttack = false;
-                }
+            // _relicEffectsActive previene recursión DENTRO de una sola cadena de llamadas.
+            // Se resetea aquí para que cada ataque nuevo pueda disparar reliquias fresca.
+            // Solo bloqueamos si YA estamos dentro del procesamiento de reliquias (recursión).
+            if (remainingDamage > 0 && attackerName && attackerName !== targetName && !passiveExecuting) {
+                if (!gameState._relicEffectsActive) {
+                    gameState._relicEffectsActive = true;
+                    const _atkChar = gameState.characters[attackerName];
+                    // Consumir el bypass de provocación de Skeggöx AHORA
+                    if (_atkChar && _atkChar._ignoreTauntNextAttack) {
+                        _atkChar._ignoreTauntNextAttack = false;
+                    }
                 const _relics  = _atkChar ? (_atkChar.equippedRelics || []) : [];
                 const _tgtChar = gameState.characters[targetName];
 
@@ -1374,15 +1376,21 @@
                             }
                             break;
 
-                        // ST sobre enemigo con Quemadura → duplica daño de Quemaduras existentes y +3 daño al ataque
+                        // ST sobre enemigo con Quemadura → añade una copia de cada Quemadura activa y +3 daño
                         case 'pyro_st_burn':
                             if (_tgtChar && !passiveExecuting) {
                                 const _burns = (_tgtChar.statusEffects||[]).filter(function(e){ return e && (e.name === 'Quemadura' || e.name === 'quemadura'); });
                                 if (_burns.length > 0) {
-                                    // Duplicar el dotDamage de cada Quemadura existente
-                                    _burns.forEach(function(b){ if (b.dotDamage) b.dotDamage = b.dotDamage * 2; });
-                                    addLog('🔥 Pyrophagos: Quemaduras de ' + targetName + ' duplicadas (daño x2)', 'debuff');
-                                    // +3 daño adicional al ataque actual
+                                    // Duplicar: añadir una copia de cada Quemadura existente
+                                    _burns.forEach(function(b){
+                                        if (typeof applyDebuff === 'function') {
+                                            applyDebuff(targetName, Object.assign({}, b, { duration: b.duration || 2 }));
+                                        } else {
+                                            _tgtChar.statusEffects.push(Object.assign({}, b));
+                                        }
+                                    });
+                                    addLog('🔥 Pyrophagos: Quemaduras de ' + targetName + ' duplicadas (+' + _burns.length + ' stack(s))', 'debuff');
+                                    // +3 daño adicional
                                     passiveExecuting = true;
                                     applyDamageWithShield(targetName, 3, attackerName);
                                     addLog('🔥 Pyrophagos: +3 daño adicional a ' + targetName, 'damage');
@@ -1542,7 +1550,8 @@
                     }
                 });
                 gameState._relicEffectsActive = false;
-            }
+                } // end if (!gameState._relicEffectsActive)
+            } // end if (remainingDamage > 0 && attackerName...)
 
             // ── EL OJO QUE TODO LO VE (Sauron): reducción 50% con MegaProv/ProtSagrada + Aturdimiento al atacante ──
             if (damage > 0 && attackerName && attackerName !== targetName &&
