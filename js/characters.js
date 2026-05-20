@@ -20,7 +20,7 @@
             'Sun Jin Woo': {
                 hp: 20, maxHp: 20, speed: 96, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/3rSZSvdF/Captura_de_pantalla_2026_03_11_105214.png',
+                portrait: 'https://i.ibb.co/prGM9z1K/Whats-App-Image-2026-05-19-at-11-39-05-AM.jpg',
                 passive: { name: 'Arise!', description: 'Al inicio de su turno invoca una sombra aleatoria. Cada vez que una invocación es eliminada genera 2 cargas.' },
                 abilities: [
                     { name: 'Sigilo de las Sombras', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'sigilo_sombras_sjw', description: 'Se aplica Buff Sigilo por 2 turnos.' },
@@ -729,7 +729,7 @@
                     { name: 'Garra de Arena', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'garra_arena_gaara', description: 'Causa 2 daño. 50% de aplicar Debuff Aturdimiento. Genera 1 carga adicional por cada debuff activo en el objetivo.' },
                     { name: 'Arenas Movedizas', type: 'special', cost: 3, chargeGain: 0, damage: 2, target: 'aoe', effect: 'arenas_movedizas_gaara', description: 'Causa 2 AOE. Enemigos golpeados pierden 10% velocidad por 3 rondas. Si el objetivo tiene 80 vel o menos, roba 2 cargas de ese objetivo.' },
                     { name: 'Granizo de Arena Imperial', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'aoe', effect: 'granizo_arena_gaara', description: 'Causa 3 AOE. Ignora Esquiva Área y Mega Provocación. Triple daño si vel ≤ 70. Invocaciones golpeadas tienen 50% de ser eliminadas sin activar su pasiva.' },
-                    { name: 'Sabaku Taisō', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'single', effect: 'sabaku_taiso_gaara', description: 'Elimina al objetivo. Revive con 50% HP y 0 cargas en 2 rondas. Vs Jefe de Sala: causa 10 daño × (personajes + invocaciones vivas en tu equipo) en lugar de eliminar.' }
+                    { name: 'Sabaku Taisō', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'single', effect: 'sabaku_taiso_gaara', description: 'Elimina al objetivo. Revive con 50% HP y 0 cargas en 2 rondas. Vs Jefe de Sala: causa 5 daño × (personajes + invocaciones vivas en tu equipo) en lugar de eliminar.' }
                 ]
             },
  
@@ -860,7 +860,7 @@
                 hp: 25, maxHp: 25, speed: 83, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 tirionLowHpTriggered: false,
-                portrait: 'https://i.ibb.co/mrcVTbh7/Whats-App-Image-2026-04-16-at-3-22-08-PM.jpg',
+                portrait: 'https://i.ibb.co/BHhJp7hk/Whats-App-Image-2026-05-19-at-11-39-53-AM.jpg',
                 passive: { name: 'Paladín de la Mano de Plata', description: 'Si llega a 10 HP: Protección Sagrada + Escudo Sagrado + 20 cargas (solo una vez). Cada vez que un enemigo usa Over: +3 HP y +3 cargas al equipo aliado.' },
                 abilities: [
                     { name: 'Luz del Alba', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'aoe', effect: 'luz_del_alba_tirion', description: 'Causa 1 AOE. Cura 1 HP al equipo aliado. Aplica Aura de Luz al equipo aliado.' },
