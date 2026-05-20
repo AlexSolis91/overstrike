@@ -1510,6 +1510,11 @@
                     // ── BANNER CINEMATOGRÁFICO DE RONDA ──
                     _showRoundBanner(gameState.currentRound);
 
+                    // ── Resetear flags de Skeggöx por ronda ──
+                    for (const _rk in gameState) {
+                        if (_rk.startsWith('_skeggoxUsedRound_')) delete gameState[_rk];
+                    }
+
                     // ── EFECTOS DE RELIQUIAS AL INICIO DE RONDA ──────────────
                     for (const _rn in gameState.characters) {
                         const _rc = gameState.characters[_rn];
