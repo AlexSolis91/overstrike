@@ -3277,7 +3277,7 @@
                             team: attacker.team, summoner: charName,
                             passive: drData.passive, img: drData.img || '',
                             effect: drData.effect || '',
-                            megaProvocation: drChosen === 'Drogon',
+                            megaProvocation: false, // Drogon ya no tiene MegaProvocación
                             statusEffects: []
                         };
                         addLog('🐉 Madre de Dragones: ' + charName + ' invoca a ' + drChosen, 'buff');
@@ -8032,7 +8032,7 @@
                 // Kamish mantiene vivo al equipo si su summoner sigue vivo
                 const _kamSumAlive = s.summoner && gameState.characters[s.summoner] &&
                     !gameState.characters[s.summoner].isDead && gameState.characters[s.summoner].hp > 0;
-                if (s.megaProvocation || s.name === 'Drogon' ||
+                if (s.megaProvocation ||
                     s.name === 'Sindragosa' || s.name === 'Caballero de la Muerte' ||
                     (s.name === 'Kamish' && _kamSumAlive)) {
                     if (s.team === 'team1') team1Alive++;
