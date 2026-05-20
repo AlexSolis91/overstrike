@@ -86,11 +86,10 @@
                 const rdnBypass = !!((_rdnAttacker && _rdnAttacker.passive && _rdnAttacker.passive.name === 'Invierno Eterno'));
                 // GOLPE GRAVE (Saitama): ignora Provocacion y MegaProvocacion
                 const golpeGraveBypass = ability.effect === 'golpe_grave';
-                // SKEGGÖX (Reliquia): ignora Provocacion y MegaProvocacion en el siguiente ataque
+                // SKEGGÖX (Reliquia): ignora Provocacion y MegaProvocacion en el turno adicional
+                // El flag se mantiene activo durante la selección y se consume en el ataque (summons.js)
                 const skeggoxBypass = !!(_rdnAttacker && _rdnAttacker._ignoreTauntNextAttack);
-                if (skeggoxBypass && _rdnAttacker) {
-                    _rdnAttacker._ignoreTauntNextAttack = false; // Consumir el bypass
-                }
+                // NO consumir el flag aquí — se consume después de completar el ataque del turno extra
                 const hasMegaProv = !sauronBypass && !ivarBypass && !rdnBypass && !golpeGraveBypass && !skeggoxBypass && typeof checkKamishMegaProvocation === 'function' && checkKamishMegaProvocation(enemyTeam);
                 const hasProvocacion = !sauronBypass && !ivarBypass && !rdnBypass && !golpeGraveBypass && !skeggoxBypass && !hasMegaProv && Object.keys(gameState.characters).some(function(n) {
                     const c = gameState.characters[n];
