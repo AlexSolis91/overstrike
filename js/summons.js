@@ -1454,11 +1454,11 @@
                         case 'taunt_extra_turn':
                             if (_tgtChar && (hasStatusEffect(targetName, 'Provocacion') || hasStatusEffect(targetName, 'Mega Provocacion') ||
                                             hasStatusEffect(targetName, 'Provocación') || hasStatusEffect(targetName, 'MegaProvocacion'))) {
-                                // Turno adicional
-                                if (typeof triggerAnticipacion === 'function') triggerAnticipacion(attackerName, _atkChar.team);
+                                // Marcar turno adicional pendiente — endTurn lo leerá y no avanzará el turno
+                                gameState._skeggoxExtraTurn = gameState.selectedCharacter || attackerName;
                                 // Ignorar provocación en el próximo ataque de este personaje
                                 if (_atkChar) _atkChar._ignoreTauntNextAttack = true;
-                                addLog('🪓 Skeggöx: turno adicional (objetivo con Provocación) + ignora Provocación próximo ataque', 'buff');
+                                addLog('🪓 Skeggöx: ' + (gameState.selectedCharacter || attackerName) + ' ganará turno adicional + ignora Provocación próximo ataque', 'buff');
                             }
                             break;
 
