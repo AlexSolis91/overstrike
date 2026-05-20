@@ -9,6 +9,12 @@
                 return;
             }
 
+            // ── ANILLO DE LA VIDA (Reliquia): +2HP al inicio de cada turno propio ──
+            if ((char.equippedRelics||[]).some(function(r){ return r === 'Anillo de la Vida'; })) {
+                char.hp = Math.min(char.maxHp, (char.hp||0) + 2);
+                addLog('💍 Anillo de la Vida: ' + charName + ' recupera 2HP', 'heal');
+            }
+
             const regenEffects = char.statusEffects.filter(e => e && e.name === 'Regeneracion');
             if (regenEffects.length > 0) {
                 regenEffects.forEach(regen => {
