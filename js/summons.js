@@ -63,7 +63,7 @@
                     // Copy effect as dragonEffect for legacy EOR checks
                     dragonEffect: shadowTemplate.effect || null,
                     // Drogon gets megaProvocation from summonData template
-                    megaProvocation: shadowTemplate.megaProvocation || (shadowName === 'Drogon') || false
+                    megaProvocation: shadowTemplate.megaProvocation || false // Drogon ya no tiene megaProv
                 };
                 
                 addLog(`👻 ${summonerName} invoca a ${shadowName}!`, 'buff');
@@ -264,7 +264,7 @@
             const alreadySummoned = Object.values(gameState.summons).some(s => s && s.name === dragonName && s.summoner === summoner);
             if (alreadySummoned) { addLog('🐉 ' + dragonName + ' ya está invocado', 'info'); return; }
             const dragonStats = {
-                'Drogon':  { hp: 15, maxHp: 15, effect: 'mega_prov_aoe_dmg', passive: '🔴 Megaprovoción activa. Inflige 3 de daño AOE al equipo enemigo al final de cada ronda.' },
+                'Drogon':  { hp: 15, maxHp: 15, effect: 'mega_prov_aoe_dmg', passive: '🔥 Sombra de Fuego: Inflige 3 daño AOE al equipo enemigo al final de cada ronda. Cada vez que Daenerys recibe daño, causa el mismo daño al atacante.' },
                 'Rhaegal': { hp: 8, maxHp: 8, effect: 'burn_team', passive: '🟢 Al final de cada ronda aplica Quemadura 1 HP por 1 turno a todo el equipo enemigo.' },
                 'Viserion': { hp: 6, maxHp: 6, effect: 'heal_team', passive: '⚪ Al final de cada ronda cura 2 HP a todo el equipo aliado.' }
             };
@@ -274,7 +274,7 @@
                 name: dragonName, summoner: summoner, team: team,
                 hp: stats.hp, maxHp: stats.maxHp, isDead: false, statusEffects: [],
                 dragonEffect: stats.effect, passive: stats.passive || 'Pasiva especial de dragón',
-                megaProvocation: dragonName === 'Drogon' // Drogon tiene Megaprovocación
+                megaProvocation: false // Drogon ya no tiene Megaprovocación
             };
             renderSummons();
             addLog('🐉 ' + summoner + ' invoca a ' + dragonName + ' (' + stats.hp + ' HP)', 'buff');
@@ -588,8 +588,7 @@
                 for (let summonId in gameState.summons) {
                     const s = gameState.summons[summonId];
                     if (s && s.team === targetTeam && s.hp > 0 &&
-                        (s.megaProvocation || s.name === 'Caballero de la Muerte' ||
-                         s.name === 'Sindragosa' || s.name === 'Drogon')) {
+                        (s.megaProvocation || s.name === 'Caballero de la Muerte')) {
                         return { id: summonId, holder: s, isCharacter: false, kamish: s };
                     }
                 }
@@ -1243,6 +1242,24 @@
                 target.passive && target.passive.name === 'Legendario Super Sayajin') {
                 target.charges = Math.min(20, (target.charges || 0) + 3);
                 addLog('💚 Legendario Super Sayajin: Broly genera 3 cargas al recibir daño (' + target.charges + '/20)', 'buff');
+            }
+            // ── SOMBRA DE FUEGO (Drogon): cuando Daenerys recibe daño → mismo daño al atacante ──
+            if (remainingDamage > 0 && attackerName && !passiveExecuting &&
+                (targetName === 'Daenerys Targaryen' || targetName === 'Daenerys Targaryen v2') &&
+                target.hp > 0 && !target.isDead) {
+                const _dragonAlive = Object.values(gameState.summons).some(function(s){
+                    return s && s.name === 'Drogon' && s.team === target.team && s.hp > 0;
+                });
+                if (_dragonAlive) {
+                    const _daeAtk = gameState.characters[attackerName];
+                    if (_daeAtk && !_daeAtk.isDead && _daeAtk.hp > 0) {
+                        passiveExecuting = true;
+                        _daeAtk.hp = Math.max(0, (_daeAtk.hp||0) - remainingDamage);
+                        if (_daeAtk.hp <= 0) { _daeAtk.isDead = true; if (typeof registerKill === 'function') registerKill(targetName, attackerName, false); }
+                        addLog('🔥 Sombra de Fuego: Drogon inflige ' + remainingDamage + ' daño a ' + attackerName + ' (atacó a Daenerys)', 'damage');
+                        passiveExecuting = false;
+                    }
+                }
             }
             if (remainingDamage > 0 && attackerName && !passiveExecuting &&
                 (targetName === 'Lich King' || targetName === 'Lich King v2') &&
