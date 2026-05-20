@@ -191,7 +191,7 @@
                 name: 'Sindragosa',
                 hp: 30, maxHp: 30, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/T1G26Gxf/Captura_de_pantalla_2026_03_15_003004.png',
-                passive: 'Dragon de la Muerte: Cuando un enemigo golpea a Lich King, inflige 5 daño sobre el atacante. Si el atacante muere, es revivido como aliado con 50% de vida y 0 cargas.'
+                passive: 'Dragon de la Muerte: 50% de probabilidad de aplicar debuff Megacongelacion en cada enemigo. Cada vez que Lich King recibe daño, inflige 5 daño al atacante.'
             },
             'Banshee': {
                 name: 'Banshee',
@@ -203,7 +203,7 @@
                 name: 'Valkyr',
                 hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.ibb.co/MkRdczcs/Whats-App-Image-2026-04-16-at-12-08-44-PM.jpg',
-                passive: 'Sirviente de la Muerte: Al inicio de cada ronda, aumenta la velocidad del equipo aliado en 10 puntos.'
+                passive: 'Sirviente de la Muerte: Al inicio de cada ronda, elimina 5 puntos de carga de un enemigo aleatorio.'
             },
             'Necrofago': {
                 name: 'Necrofago',
@@ -212,10 +212,10 @@
                 passive: 'Castigo de la Muerte: Inflige 3 HP a un enemigo aleatorio. 50% de probabilidad de aplicar debuff Aturdimiento.'
             },
             'Caballero de la Muerte': {
-                name: 'Caballero de la Muerte', megaProvocation: true,
+                name: 'Caballero de la Muerte',
                 hp: 20, maxHp: 20, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.ibb.co/1fJqBYgz/Whats-App-Image-2026-04-16-at-12-10-35-PM.jpg',
-                passive: 'Espada de Ébano: Mega Provocación. Al inicio de cada ronda genera 4 cargas al equipo aliado.'
+                passive: 'Espada de Ébano: Al inicio de cada ronda genera 4 puntos de cargas al equipo aliado.'
             },
             'Señuelo': {
                 name: 'Señuelo',
@@ -224,10 +224,10 @@
                 passive: 'Distraccion de emergencia: Al morir genera 2 puntos de carga al equipo aliado'
             },
             'Drogon': {
-                name: 'Drogon', effect: 'mega_prov_aoe_dmg', megaProvocation: true,
+                name: 'Drogon', effect: 'mega_prov_aoe_dmg',
                 hp: 15, maxHp: 15, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/Gtr3CrRL/Captura_de_pantalla_2026_03_15_002747.png',
-                passive: 'Sombra de Fuego: Mega provocacion. Inflige 3 puntos de Daño a todo el equipo enemigo al final de cada ronda'
+                passive: 'Sombra de Fuego: Inflige 3 puntos de Daño a todo el equipo enemigo al final de cada ronda. Cada vez que Daenerys Targaryen recibe daño, causa el mismo daño al atacante.'
             },
             'Rhaegal': {
                 name: 'Rhaegal', effect: 'burn_team',
