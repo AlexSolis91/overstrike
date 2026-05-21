@@ -511,7 +511,8 @@
         }
 
         function continueTurn() {
-            gameState._relicEffectsActive = false; // Permitir reliquias en el turno adicional
+            gameState._relicEffectsActive = false;
+            gameState._abilityExecuting = false; // Permitir siguiente ataque
             // ── ENFORCE PERMANENT PASSIVES AT TURN START ──
             for (const _epn in gameState.characters) {
                 const _epc = gameState.characters[_epn];
@@ -1360,8 +1361,9 @@
 
         function endTurn() {
             gameState._miedoActive = false;
-            gameState._relicEffectsActive = false; // Limpiar flag anti-recursión de reliquias
+            gameState._relicEffectsActive = false;
             gameState._isCritHit = false;
+            gameState._abilityExecuting = false; // Limpiar guard de ejecución
 
             // ── SKEGGÖX: turno adicional pendiente ──
             if (gameState._skeggoxExtraTurn) {
