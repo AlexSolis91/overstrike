@@ -98,6 +98,12 @@
         }
 
         function executeAbility(targetName) {
+            // Guard: prevent double execution (can happen with rapid AI timer firing)
+            if (gameState._abilityExecuting) {
+                console.warn('[OVERSTRIKE] executeAbility called while already executing — ignored');
+                return;
+            }
+            gameState._abilityExecuting = true;
             // ── OVER CINEMATIC: mostrar pantalla épica antes de ejecutar ──
             if (gameState.selectedAbility && gameState.selectedAbility.type === 'over' &&
                 typeof _showOverCinematic === 'function') {
@@ -113,8 +119,7 @@
         }
 
         function _executeAbilityCore(targetName) {
-            audioManager.playSelect(); // SFX on every ability/action
-            // SFX especial para OVER
+            audioManager.playSelect(); // SFX on every ability/action            // SFX especial para OVER
             if (gameState.selectedAbility && gameState.selectedAbility.type === 'over') {
                 audioManager.playOverSfx();
                 if (typeof _animCard === 'function') _animCard(gameState.selectedCharacter, 'anim-over', 700);
@@ -7973,16 +7978,20 @@
             
             // Verificar fin del juego
             if (checkGameOver()) {
+                gameState._abilityExecuting = false;
                 return;
             }
             
             // Finalizar turno
+            gameState._abilityExecuting = false;
             endTurn();
         } catch (error) {
             const errMsg = error && error.message ? error.message : String(error);
             const errAbility = (gameState.selectedAbility && gameState.selectedAbility.name) || 'desconocida';
             console.error('Error en executeAbility [' + errAbility + ']:', error);
             addLog('❌ Error al ejecutar ' + errAbility + ': ' + errMsg, 'info');
+            gameState._abilityExecuting = false;
+            endTurn();
             try {
                 renderCharacters();
                 renderSummons();
