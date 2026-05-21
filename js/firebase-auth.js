@@ -1954,9 +1954,102 @@
         // ── Obtener semana actual como string YYYY-Www ──
         function getCurrentSeasonKey() {
             var d = new Date();
-            // Temporada mensual: YYYY-MM (del día 1 al último del mes)
             return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
         }
+
+        // ── Premio de fin de temporada Ranked ──────────────────────────────────
+        async function distributeSeasonRewards() {
+            const snap = await db.ref('ranked_stats').once('value');
+            const all = snap.val() || {};
+            const curSeason = getCurrentSeasonKey();
+
+            // Verificar si ya se distribuyeron los premios de esta temporada
+            const rewardCheckSnap = await db.ref('season_rewards_distributed').once('value');
+            if (rewardCheckSnap.val() === curSeason) {
+                console.log('[Season] Premios ya distribuidos para:', curSeason);
+                return;
+            }
+
+            // Obtener ranking ordenado por puntos
+            const ranking = Object.entries(all)
+                .map(function([uid, data]) { return { uid, points: data.points || 0, name: data.name || uid }; })
+                .filter(function(e) { return e.points > 0; })
+                .sort(function(a, b) { return b.points - a.points; });
+
+            if (ranking.length === 0) return;
+
+            const rewardTiers = [
+                { gold: 200000, relics: 3, relicPool: [{ tier:'Legendario', pct:0.01 }, { tier:'Epico', pct:0.50 }, { tier:'Especial', pct:0.49 }] },  // 1st
+                { gold: 100000, relics: 3, relicPool: [{ tier:'Epico', pct:0.50 }, { tier:'Especial', pct:0.50 }] },  // 2nd
+                { gold: 100000, relics: 1, relicPool: [{ tier:'Epico', pct:0.50 }, { tier:'Especial', pct:0.50 }] },  // 3rd
+                { gold: 50000,  relics: 0 },  // 4th
+                { gold: 50000,  relics: 0 },  // 5th
+            ];
+            const defaultReward = { gold: 30000, relics: 0 };
+
+            function rollRelicFromPool(pool) {
+                var r = Math.random();
+                var acc = 0;
+                for (var i = 0; i < pool.length; i++) {
+                    acc += pool[i].pct;
+                    if (r < acc) return pool[i].tier;
+                }
+                return pool[pool.length-1].tier;
+            }
+
+            function getRandomRelicByTier(tier) {
+                if (typeof RELICS_DATA === 'undefined') return null;
+                var candidates = Object.keys(RELICS_DATA).filter(function(k){ return RELICS_DATA[k].tier === tier; });
+                if (!candidates.length) return null;
+                return candidates[Math.floor(Math.random() * candidates.length)];
+            }
+
+            for (var i = 0; i < ranking.length; i++) {
+                var entry = ranking[i];
+                var rank  = i + 1;
+                var rw    = rank <= 5 ? rewardTiers[rank - 1] : defaultReward;
+
+                // Oro
+                await addGold(entry.uid, rw.gold);
+
+                // Reliquias
+                for (var j = 0; j < (rw.relics || 0); j++) {
+                    var tier   = rollRelicFromPool(rw.relicPool);
+                    var rName  = getRandomRelicByTier(tier);
+                    if (rName) await addRelicToInventory(entry.uid, rName);
+                }
+
+                // Notificación
+                var msg = '🏆 Fin de Temporada ' + curSeason + ' — Posición #' + rank +
+                    ': +' + rw.gold.toLocaleString() + ' 🥇' +
+                    (rw.relics ? ' + ' + rw.relics + ' Reliquia(s)' : '');
+                await db.ref('players/' + entry.uid + '/notifications').push({ msg, ts: Date.now(), read: false });
+            }
+
+            // Marcar como distribuido
+            await db.ref('season_rewards_distributed').set(curSeason);
+            console.log('[Season] Premios de temporada ' + curSeason + ' distribuidos a ' + ranking.length + ' jugadores.');
+        }
+        window.distributeSeasonRewards = distributeSeasonRewards;
+
+        // ── Trigger automático: último día del mes a medianoche ──────────────
+        (function checkSeasonEnd() {
+            var now   = new Date();
+            var lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0); // último día del mes
+            lastDay.setHours(0, 0, 0, 0);
+            var tomorrow = new Date(now);
+            tomorrow.setHours(0, 0, 0, 0);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+
+            // Es el último día del mes y es medianoche (primeros 5 minutos)
+            if (now.getDate() === lastDay.getDate() && now.getHours() === 0 && now.getMinutes() < 5) {
+                firebase.auth().onAuthStateChanged(function(user) {
+                    if (user && typeof isAdmin === 'function' && isAdmin()) {
+                        distributeSeasonRewards().catch(console.error);
+                    }
+                });
+            }
+        })();
 
         function saveRankedResult(winnerTeam, playerTeam, playerChars, opponentName, opponentChars, battleStats) {
             if (!currentUser || !window._rankedMode) return;
