@@ -857,34 +857,76 @@
         let _sellRelicSelected = null;
         async function loadSellTab() {
             _sellRelicSelected = null;
-            document.getElementById('market-sell-form').style.display = 'none';
+            const sellForm = document.getElementById('market-sell-form');
+            if (sellForm) sellForm.style.display = 'none';
             const grid = document.getElementById('market-sell-relics');
-            grid.innerHTML = '';
+            grid.innerHTML = '<div style="color:#555;font-size:.75rem;text-align:center;padding:12px;">Cargando...</div>';
             const user = firebase.auth().currentUser;
             if (!user) return;
+
+            // Verificar límite 24h
+            const today = new Date().toISOString().split('T')[0];
+            const lastListSnap = await db.ref('users/' + user.uid + '/last_listing_date').once('value');
+            const alreadyListed = lastListSnap.val() === today;
+
+            // Publicación activa del jugador
+            const activeSnap = await db.ref('market/listings').orderByChild('sellerId').equalTo(user.uid).once('value');
+            const activeData = activeSnap.val() || {};
+            const activeListings = Object.entries(activeData);
+
+            let headerHTML = '';
+            if (activeListings.length > 0) {
+                const al = activeListings[0][1];
+                const timeLeft = Math.max(0, Math.round((al.expiresAt - Date.now()) / 3600000));
+                headerHTML = '<div style="background:rgba(0,200,100,0.08);border:1px solid #00cc66;border-radius:10px;padding:10px 14px;margin-bottom:14px;">' +
+                    '<div style="font-size:.72rem;color:#00cc66;font-weight:700;margin-bottom:4px;">📦 TU PUBLICACIÓN ACTIVA</div>' +
+                    '<div style="font-size:.75rem;color:#ccc;">' + al.relic + ' · ' + (al.price||0).toLocaleString() + ' 🥇</div>' +
+                    '<div style="font-size:.65rem;color:#888;margin-top:3px;">⏱️ Expira en ~' + timeLeft + 'h</div>' +
+                    '</div>';
+            } else if (alreadyListed) {
+                headerHTML = '<div style="background:rgba(255,170,0,0.07);border:1px solid rgba(255,170,0,0.3);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:.72rem;color:#ffaa00;">⏳ Ya publicaste un artículo hoy. Podrás publicar otro mañana.</div>';
+            }
+
             const data = await getPlayerData(user.uid);
             const relics = (data.inventory && data.inventory.relics) || {};
             const tierColors = { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700' };
+            let gridHTML = '';
             Object.entries(relics).forEach(function([name, qty]) {
                 if (!qty || qty <= 0) return;
                 const rd = typeof RELICS_DATA !== 'undefined' ? RELICS_DATA[name] : null;
                 if (!rd) return;
                 const color = tierColors[rd.tier]||'#aaa';
-                const card = document.createElement('div');
-                card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid ' + color + ';border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:all .15s;';
-                card.onclick = function(){
-                    _sellRelicSelected = name;
-                    document.getElementById('market-sell-selected-name').textContent = '💎 ' + name + ' (' + rd.tier + ')';
-                    document.getElementById('market-sell-form').style.display = 'block';
-                    document.getElementById('market-sell-price-row').style.display = 'none';
-                };
-                card.innerHTML = '<img src="' + rd.img + '" style="width:48px;height:48px;object-fit:contain;border-radius:6px;">' +
-                    '<div style="font-size:.65rem;color:#ccc;margin-top:4px;">' + name + '</div>' +
-                    '<div style="font-size:.6rem;color:' + color + ';">×' + qty + '</div>';
-                grid.appendChild(card);
+                gridHTML += '<div class="_sellRelicCard" data-name="' + name.replace(/"/g,"&quot;") + '" ' +
+                    'data-tier="' + rd.tier + '" data-color="' + color + '" onclick="window.loadSellSelectRelic(this,this.dataset.name,this.dataset.tier,this.dataset.color)" ' +
+                    'style="background:rgba(255,255,255,0.04);border:1px solid ' + color + ';border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:all .15s;" ' +
+                    'onmouseover="this.style.boxShadow=\'0 0 10px ' + color + '55\'" onmouseout="this.style.boxShadow=\'none\'">' +
+                    '<img src="' + rd.img + '" style="width:48px;height:48px;object-fit:contain;border-radius:6px;" onerror="this.style.display=\'none\'">' +
+                    '<div style="font-size:.65rem;color:#ccc;margin-top:4px;line-height:1.2;">' + name + '</div>' +
+                    '<div style="font-size:.6rem;color:' + color + ';">×' + qty + ' · ' + rd.tier + '</div>' +
+                    '</div>';
             });
-            if (grid.innerHTML === '') grid.innerHTML = '<div style="color:#555;font-size:.8rem;text-align:center;padding:16px;">No tienes reliquias para vender.</div>';
+            if (!gridHTML) gridHTML = '<div style="color:#555;font-size:.8rem;text-align:center;padding:16px;grid-column:1/-1;">No tienes reliquias disponibles para vender.</div>';
+            grid.innerHTML = headerHTML + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;">' + gridHTML + '</div>';
+            if (alreadyListed && sellForm) sellForm.style.display = 'none';
         }
+
+        window.loadSellSelectRelic = function(cardEl, name, tier, color) {
+            const today = new Date().toISOString().split('T')[0];
+            db.ref('users/' + firebase.auth().currentUser.uid + '/last_listing_date').once('value').then(function(s) {
+                if (s.val() === today) { alert('Ya publicaste un artículo hoy. Vuelve mañana.'); return; }
+                document.querySelectorAll('._sellRelicCard').forEach(function(c){ c.style.borderWidth='1px'; });
+                if (cardEl) cardEl.style.borderWidth = '3px';
+                _sellRelicSelected = name;
+                document.getElementById('market-sell-selected-name').textContent = '💎 ' + name + ' (' + tier + ')';
+                const form = document.getElementById('market-sell-form');
+                if (form) {
+                    form.style.display = 'block';
+                    const typeEl = document.getElementById('market-sell-type');
+                    if (typeEl) typeEl.value = 'public';
+                    document.getElementById('market-sell-price-row').style.display = 'block';
+                }
+            });
+        };
 
         document.addEventListener('DOMContentLoaded', function(){
             const sellType = document.getElementById('market-sell-type');
