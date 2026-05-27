@@ -24,9 +24,10 @@
                     _kyoAOEHits++;
                 }
             }
-            // Pasiva Llamarada Kusanagi: quemaduras al atacante por cada aliado golpeado
-            if (_kyoAOEHits > 0 && attackerName && typeof triggerKyoAOEPassive === 'function') {
-                triggerKyoAOEPassive(attackerName, _kyoAOEHits);
+            // Registrar hits para post-handler de Llamarada Kusanagi (una sola vez)
+            if (_kyoAOEHits > 0 && attackerName) {
+                if (!gameState._kyoAOEHitsByAttacker) gameState._kyoAOEHitsByAttacker = {};
+                gameState._kyoAOEHitsByAttacker[attackerName] = (gameState._kyoAOEHitsByAttacker[attackerName]||0) + _kyoAOEHits;
             }
             for (let sid in gameState.summons) {
                 const s = gameState.summons[sid];
@@ -3600,7 +3601,7 @@
                 applyAOEToSummons(_rnETeam, finalDamage, gameState.selectedCharacter);
                 addLog('🌪️ Futon Rasenshuriken: AOE completado', 'damage');
                 if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, _rnN ? _rnN.team : 'team1');
-                renderCharacters(); renderSummons(); showContinueButton(); return;
+                gameState._abilityExecuting = false; renderCharacters(); renderSummons(); showContinueButton(); return;
 
             } else if (ability.effect === 'voluntad_hoja_naruto') {
                 // NARUTO — Voluntad de la Hoja: 50% HP + Quemadura 5HP 2T
@@ -3970,7 +3971,7 @@
                 }
                 addLog('⚡ Flecha de Indra: Sasuke gana turno adicional', 'buff');
                 if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, _fiAtk ? _fiAtk.team : 'team1');
-                renderCharacters(); renderSummons(); showContinueButton(); return;
+                gameState._abilityExecuting = false; renderCharacters(); renderSummons(); showContinueButton(); return;
 
 
             // ══════════════════════════════════════════════════════
@@ -7447,7 +7448,7 @@
                     if (_rhAtk.rikudoMode) _rhAtk.charges = Math.min(20, (_rhAtk.charges||0) + 3);
                     addLog('🌀 Gakido: turno adicional por crítico', 'buff');
                     if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, _rhAtk.team);
-                    renderCharacters(); renderSummons(); showContinueButton(); return;
+                    gameState._abilityExecuting = false; renderCharacters(); renderSummons(); showContinueButton(); return;
                 }
 
             } else if (ability.effect === 'susanoo_madara') {
@@ -7497,7 +7498,7 @@
                     if (_suAtk.rikudoMode) _suAtk.charges = Math.min(20, (_suAtk.charges || 0) + 3);
                     addLog('🌀 Susanoo: turno adicional por crítico', 'buff');
                     if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, _suAtk.team);
-                    renderCharacters(); renderSummons(); showContinueButton(); return;
+                    gameState._abilityExecuting = false; renderCharacters(); renderSummons(); showContinueButton(); return;
                 }
 
             } else if (ability.effect === 'rikudo_mode_madara') {
@@ -7541,7 +7542,7 @@
                     if (_ctAtk.rikudoMode) _ctAtk.charges = Math.min(20, (_ctAtk.charges||0) + 3);
                     addLog('🌀 Gakido: turno adicional por crítico', 'buff');
                     if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, _ctAtk.team);
-                    renderCharacters(); renderSummons(); showContinueButton(); return;
+                    gameState._abilityExecuting = false; renderCharacters(); renderSummons(); showContinueButton(); return;
                 }
 
             // ══ SAURON — handlers ══
