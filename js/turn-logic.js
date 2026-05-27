@@ -200,11 +200,22 @@
                 checkGameOver();
             } catch (error) {
                 console.error('Error en startTurn:', error);
-                // Solo reintentar si el juego sigue activo y no es un error de función indefinida
-                if (!gameState.gameOver && error && !String(error.message).includes('is not defined')) {
+                // NO reintentar automáticamente - causaba turnos dobles.
+                // Solo avanzar el índice para no quedar bloqueado.
+                if (!gameState.gameOver) {
                     try {
+                        gameState._abilityExecuting = false;
+                        gameState._relicEffectsActive = false;
                         gameState.currentTurnIndex = (gameState.currentTurnIndex + 1) % gameState.turnOrder.length;
-                        setTimeout(() => startTurn(), 1000);
+                        // Solo reintentar si el error NO es de función/variable indefinida
+                        // (esos errores son bugs de código, no transitorios)
+                        const _errMsg = error && error.message ? error.message : String(error);
+                        if (!_errMsg.includes('is not defined') && !_errMsg.includes('is not a function') && !_errMsg.includes('Cannot read')) {
+                            setTimeout(() => startTurn(), 1000);
+                        } else {
+                            console.warn('[OVERSTRIKE] Error de código detectado, saltando turno sin retry:', _errMsg);
+                            setTimeout(() => startTurn(), 500);
+                        }
                     } catch (e) {
                         console.error('Error crítico en startTurn:', e);
                     }
@@ -1369,14 +1380,19 @@
             if (gameState._skeggoxExtraTurn) {
                 const _skChar = gameState._skeggoxExtraTurn;
                 gameState._skeggoxExtraTurn = null;
-                // Insertar al personaje al inicio de la cola de turnos (después del índice actual)
-                const _skIdx = gameState.turnOrder ? gameState.turnOrder.indexOf(_skChar) : -1;
-                if (_skIdx >= 0) {
-                    gameState.turnOrder.splice(_skIdx, 1);
-                }
-                const _skCurIdx = gameState.currentTurnIndex || 0;
+                // Insertar al personaje en la SIGUIENTE posición del turno actual
+                // (no remover de turnOrder para evitar corrupción de índices — simplemente insertar)
+                const _skCurIdx = (gameState.currentTurnIndex || 0);
                 if (gameState.turnOrder) {
-                    gameState.turnOrder.splice(_skCurIdx, 0, _skChar);
+                    // Limpiar cualquier duplicado previo
+                    const _skOldIdx = gameState.turnOrder.indexOf(_skChar);
+                    if (_skOldIdx >= 0) gameState.turnOrder.splice(_skOldIdx, 1);
+                    // Recalcular índice de inserción (puede haber cambiado tras el splice)
+                    const _skInsertAt = Math.min(_skCurIdx, gameState.turnOrder.length);
+                    gameState.turnOrder.splice(_skInsertAt, 0, _skChar);
+                    // Ajustar el índice actual si la inserción fue antes del índice actual
+                    // Para que startTurn() apunte al personaje recién insertado
+                    gameState.currentTurnIndex = _skInsertAt;
                 }
                 addLog('🪓 Skeggöx: ¡' + _skChar + ' gana turno adicional!', 'buff');
                 // No avanzar el índice — el personaje está ahora en la posición actual
@@ -1535,11 +1551,7 @@
                                 _rc.shield = (_rc.shield||0) + 2;
                                 addLog('🛡️ Escudo Invisible: ' + _rn + ' gana Escudo 2HP', 'buff');
                             }
-                            // Vestidura Arcana: +4HP al final de ronda (handled at END of round, here is start)
-                            if (_rrd.effect === 'vestidura_arcana') {
-                                _rc.hp = Math.min(_rc.maxHp, (_rc.hp||0) + 4);
-                                addLog('🔮 Vestidura Arcana: ' + _rn + ' recupera 4HP al inicio de ronda', 'heal');
-                            }
+                            // Vestidura Arcana: efecto en applyDamageWithShield (no round-start)
                         });
                     }
 
