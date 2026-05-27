@@ -869,6 +869,20 @@
                     { name: 'Una Luz en la Oscuridad', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'self', effect: 'luz_oscuridad_tirion', description: 'Solo usable si Tirion es el único aliado vivo. Revive a todos los aliados con 20 HP y 10 cargas.' }
                 ]
             },
+
+            'Viejo Maestro Yoda': {
+                name: 'Viejo Maestro Yoda',
+                hp: 15, maxHp: 15,
+                speed: 70,
+                portrait: 'https://i.ibb.co/5gJPj7Q7/Whats-App-Image-2026-05-27-at-11-12-51-AM.jpg',
+                passive: { name: 'Sabiduría Antigua', description: 'Anticipación pasiva permanente. Yoda es inmune a todo daño, buffs y debuffs. Si todos sus aliados mueren, Yoda muere al instante.' },
+                abilities: [
+                    { name: 'Guía del Maestro', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'guia_maestro_yoda', description: 'Los 4 aliados del equipo ejecutan su ataque básico, aplicando y generando todos sus efectos.' },
+                    { name: 'Reflejo de Sombras', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'self', effect: 'reflejo_sombras_yoda', description: 'Limpia 1 debuff de cada aliado del equipo. Aplica 1 buff aleatorio a cada aliado del equipo.' },
+                    { name: 'Espíritu de la Fuerza', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'self', effect: 'espiritu_fuerza_yoda', description: 'Limpia 1 buff de cada enemigo del equipo. Aplica 1 debuff aleatorio a cada enemigo del equipo.' },
+                    { name: 'Lado Luminoso', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'lado_luminoso_yoda', description: 'Genera 10 cargas al objetivo aliado y le otorga un turno adicional.' }
+                ]
+            },
         };
         // ==================== RELIQUIAS ====================
         const RELICS_DATA = {
