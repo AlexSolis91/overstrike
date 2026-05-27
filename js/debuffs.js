@@ -151,6 +151,11 @@ function triggerMaboroshi(targetTeam, debuffName) {
         function applyBuff(targetName, effectObj) {
             const target = gameState.characters[targetName];
             if (!target || !target.statusEffects) return;
+            // SABIDURÍA ANTIGUA (Yoda): inmune a buffs (los enemigos no pueden buffear a Yoda)
+            // Sus propias habilidades sí aplican buffs a sus ALIADOS — no a Yoda mismo
+            if (target.passive && target.passive.name === 'Sabiduría Antigua') {
+                return; // Yoda rechaza cualquier buff externo silenciosamente
+            }
             // No stackeable si ya existe (salvo stackeables explícitos)
             const stackable = ['furia', 'frenesi', 'regeneracion', 'escudo', 'celeridad', 'armadura', 'anticipacion', 'sangrado', 'debilitar', 'confusion', 'miedo', 'agotamiento', 'veneno', 'quemadura', 'quemadura solar'];
             const effNorm = normAccent(effectObj.name || '');
@@ -235,6 +240,11 @@ function triggerMaboroshi(targetTeam, debuffName) {
 function applyDebuff(targetName, effectObj) {
             const target = gameState.characters[targetName];
             if (!target || !target.statusEffects) return;
+            // SABIDURÍA ANTIGUA (Yoda): inmune a todos los debuffs
+            if (target.passive && target.passive.name === 'Sabiduría Antigua') {
+                addLog('🟢 Sabiduría Antigua: ' + targetName + ' es inmune a debuffs', 'buff');
+                return;
+            }
             // BUFF REFLEJAR: el portador es inmune a nuevos debuffs mientras Reflejar esté activo
             if (hasStatusEffect(targetName, 'Reflejar')) {
                 addLog('🪞 Reflejar: ' + targetName + ' es inmune al debuff (Reflejar activo)', 'buff');
