@@ -235,11 +235,6 @@ function triggerMaboroshi(targetTeam, debuffName) {
 function applyDebuff(targetName, effectObj) {
             const target = gameState.characters[targetName];
             if (!target || !target.statusEffects) return;
-            // JEFE DE SALA: 25% de probabilidad de esquivar debuffs (complemento de la pasiva)
-            if (target.isBoss && Math.random() < 0.25) {
-                addLog('🛡️ Legendario Super Sayajin: ' + targetName + ' esquiva el debuff (' + (effectObj.name || 'efecto') + ')', 'buff');
-                return;
-            }
             // BUFF REFLEJAR: el portador es inmune a nuevos debuffs mientras Reflejar esté activo
             if (hasStatusEffect(targetName, 'Reflejar')) {
                 addLog('🪞 Reflejar: ' + targetName + ' es inmune al debuff (Reflejar activo)', 'buff');
@@ -518,6 +513,18 @@ function applyDebuff(targetName, effectObj) {
             const speedPenalty = mega ? 0.20 : 0.10;
             const target = gameState.characters[targetName];
             if (!target) return;
+
+            // Arco Granizo: al aplicar Congelación (no Mega) → +1 carga al atacante
+            if (!mega) {
+                var _afAttacker = gameState._currentTurnAttacker || gameState.selectedCharacter;
+                if (_afAttacker && _afAttacker !== targetName) {
+                    var _afChar = gameState.characters[_afAttacker];
+                    if (_afChar && (_afChar.equippedRelics||[]).some(function(r){ return r === 'Arco Granizo'; })) {
+                        _afChar.charges = Math.min(20, (_afChar.charges||0) + 1);
+                        addLog('🏹 Arco Granizo: ' + _afAttacker + ' gana 1 carga por congelar a ' + targetName, 'buff');
+                    }
+                }
+            }
             // Guardar velocidad base antes de penalizar
             const _freezeBaseSpeed = target.baseSpeed || target.speed;
             target.baseSpeed = _freezeBaseSpeed;
