@@ -430,12 +430,16 @@
         
         function triggerAnticipacion(attackerName, attackerTeam) {
             // Anticipacion: when enemy gains extra turn, chars with this buff fire 3 basics on attacker
+            // Yoda has PASIVA Anticipacion (permanent, no buff needed)
             const defenderTeam = attackerTeam === 'team1' ? 'team2' : 'team1';
             Object.keys(gameState.characters).forEach(function(n) {
                 const c = gameState.characters[n];
                 if (!c || c.isDead || c.hp <= 0) return;
                 if (c.team !== defenderTeam) return;
-                if (!hasStatusEffect(n, 'Anticipacion')) return;
+                // Check: has Anticipacion buff OR has Sabiduría Antigua passive (Yoda)
+                const hasAnticipacion = hasStatusEffect(n, 'Anticipacion') ||
+                    (c.passive && c.passive.name === 'Sabiduría Antigua');
+                if (!hasAnticipacion) return;
                 const basic = c.abilities && c.abilities.find(function(a) { return a.type === 'basic'; });
                 if (!basic) return;
                 if (passiveExecuting) return;
@@ -448,7 +452,7 @@
                 passiveExecuting = false;
             });
         }
-function triggerFalange(attackerTeam) {
+        function triggerFalange(attackerTeam) {
             if (passiveExecuting) return;
             const leonidas = gameState.characters['Leonidas'];
             if (!leonidas || leonidas.isDead || leonidas.hp <= 0) return;
