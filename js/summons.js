@@ -1766,6 +1766,12 @@
                 passiveExecuting = false;
             }
 
+            // ── SABIDURÍA ANTIGUA (Yoda): inmune a todo daño ──────────────────────
+            if (remainingDamage > 0 && target.passive && target.passive.name === 'Sabiduría Antigua') {
+                addLog('🟢 Sabiduría Antigua: Yoda es inmune al daño', 'buff');
+                return 0; // Yoda recibe 0 daño siempre
+            }
+
             // ── PALADÍN DE LA MANO DE PLATA (Tirion): al llegar a 10 HP → Protección Sagrada + Escudo Sagrado + 20 cargas ──
             if (remainingDamage > 0 && !passiveExecuting &&
                 target.passive && target.passive.name === 'Paladín de la Mano de Plata' &&
