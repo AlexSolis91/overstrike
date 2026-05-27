@@ -6793,6 +6793,132 @@
                 }
 
             // ══════════════════════════════════════════════════════
+            // VIEJO MAESTRO YODA — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'guia_maestro_yoda') {
+                // Guía del Maestro: los 4 aliados ejecutan su ataque básico
+                const _gmYoda = gameState.characters[gameState.selectedCharacter];
+                const _gmTeam = _gmYoda ? _gmYoda.team : 'team1';
+                const _gmETeam = _gmTeam === 'team1' ? 'team2' : 'team1';
+                const _gmAllies = Object.keys(gameState.characters).filter(function(n) {
+                    const _c = gameState.characters[n];
+                    return _c && _c.team === _gmTeam && !_c.isDead && _c.hp > 0 && n !== gameState.selectedCharacter;
+                });
+                const _gmEnemies = Object.keys(gameState.characters).filter(function(n) {
+                    const _c = gameState.characters[n];
+                    return _c && _c.team === _gmETeam && !_c.isDead && _c.hp > 0;
+                });
+                if (_gmEnemies.length === 0) {
+                    addLog('✨ Guía del Maestro: no hay enemigos disponibles', 'info');
+                } else {
+                    _gmAllies.forEach(function(allyName) {
+                        const _ally = gameState.characters[allyName];
+                        if (!_ally || _ally.isDead || _ally.hp <= 0) return;
+                        const _basicAb = (_ally.abilities || []).find(function(a){ return a && a.type === 'basic'; });
+                        if (!_basicAb) return;
+                        // Pick target (random enemy or lowest HP)
+                        const _tgt = _gmEnemies.reduce(function(best, n) {
+                            const _cb = gameState.characters[best];
+                            const _cn = gameState.characters[n];
+                            return (_cn && _cb && _cn.hp < _cb.hp) ? n : best;
+                        }, _gmEnemies[0]);
+                        const _tgtChar = gameState.characters[_tgt];
+                        if (!_tgtChar || _tgtChar.isDead || _tgtChar.hp <= 0) return;
+                        // Apply basic damage
+                        const _dmg = Math.max(1, _basicAb.damage || 1);
+                        applyDamageWithShield(_tgt, _dmg, allyName);
+                        // Apply chargeGain to ally
+                        if (_basicAb.chargeGain > 0) {
+                            _ally.charges = Math.min(20, (_ally.charges || 0) + _basicAb.chargeGain);
+                        }
+                        addLog('✨ Guía del Maestro: ' + allyName + ' ataca a ' + _tgt + ' por ' + _dmg + ' daño', 'damage');
+                        if (_tgtChar.hp <= 0 || _tgtChar.isDead) {
+                            _tgtChar.isDead = true;
+                            if (typeof registerKill === 'function') registerKill(allyName, _tgt, false);
+                        }
+                    });
+                }
+                renderCharacters(); renderSummons();
+                if (checkGameOver()) { gameState._abilityExecuting = false; return; }
+
+            } else if (ability.effect === 'reflejo_sombras_yoda') {
+                // Reflejo de Sombras: limpia 1 debuff de cada aliado + aplica 1 buff aleatorio a cada aliado
+                const _rsYoda = gameState.characters[gameState.selectedCharacter];
+                const _rsTeam = _rsYoda ? _rsYoda.team : 'team1';
+                const _randomBuffs = ['Frenesi', 'Furia', 'Escudo', 'Regeneracion', 'Anticipacion', 'Aura de Luz', 'Concentracion'];
+                const _buffEmojis  = {'Frenesi':'💪','Furia':'🔥','Escudo':'🛡️','Regeneracion':'💚','Anticipacion':'⚡','Aura de Luz':'✨','Concentracion':'⚡'};
+                Object.keys(gameState.characters).forEach(function(allyName) {
+                    const _ally = gameState.characters[allyName];
+                    if (!_ally || _ally.team !== _rsTeam || _ally.isDead || _ally.hp <= 0) return;
+                    // Remove 1 debuff
+                    const _debuffs = (_ally.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff'; });
+                    if (_debuffs.length > 0) {
+                        const _toRemove = _debuffs[0];
+                        _ally.statusEffects = (_ally.statusEffects||[]).filter(function(e){ return e !== _toRemove; });
+                        addLog('✨ Reflejo de Sombras: ' + allyName + ' limpia "' + _toRemove.name + '"', 'buff');
+                    }
+                    // Apply random buff
+                    const _rb = _randomBuffs[Math.floor(Math.random() * _randomBuffs.length)];
+                    const _rbe = _buffEmojis[_rb] || '✨';
+                    if (typeof applyBuff === 'function') {
+                        applyBuff(allyName, { name: _rb, type: 'buff', duration: 2, emoji: _rbe });
+                    } else {
+                        (_ally.statusEffects = _ally.statusEffects||[]).push({ name: _rb, type: 'buff', duration: 2, emoji: _rbe });
+                    }
+                    addLog('✨ Reflejo de Sombras: ' + allyName + ' obtiene buff "' + _rb + '"', 'buff');
+                });
+                renderCharacters();
+
+            } else if (ability.effect === 'espiritu_fuerza_yoda') {
+                // Espíritu de la Fuerza: limpia 1 buff de cada enemigo + aplica 1 debuff aleatorio a cada enemigo
+                const _efYoda = gameState.characters[gameState.selectedCharacter];
+                const _efTeam = _efYoda ? _efYoda.team : 'team1';
+                const _efETeam = _efTeam === 'team1' ? 'team2' : 'team1';
+                const _randomDebuffs = ['Aturdimiento', 'Quemadura', 'Veneno', 'Miedo', 'Congelacion', 'Debilidad', 'Reduccion Velocidad'];
+                const _debuffDefs = {
+                    'Aturdimiento':       { type:'debuff', duration:1, emoji:'⭐', stun:true },
+                    'Quemadura':          { type:'debuff', duration:2, emoji:'🔥', dotDamage:2 },
+                    'Veneno':             { type:'debuff', duration:2, emoji:'☠️', dotDamage:1 },
+                    'Miedo':              { type:'debuff', duration:2, emoji:'😨' },
+                    'Congelacion':        { type:'debuff', duration:1, emoji:'❄️' },
+                    'Debilidad':          { type:'debuff', duration:2, emoji:'💀' },
+                    'Reduccion Velocidad':{ type:'debuff', duration:2, emoji:'🐢' },
+                };
+                Object.keys(gameState.characters).forEach(function(enemyName) {
+                    const _enemy = gameState.characters[enemyName];
+                    if (!_enemy || _enemy.team !== _efETeam || _enemy.isDead || _enemy.hp <= 0) return;
+                    // Remove 1 buff
+                    const _buffs = (_enemy.statusEffects||[]).filter(function(e){ return e && e.type === 'buff' && !e.permanent; });
+                    if (_buffs.length > 0) {
+                        const _toRemove = _buffs[0];
+                        _enemy.statusEffects = (_enemy.statusEffects||[]).filter(function(e){ return e !== _toRemove; });
+                        addLog('⚡ Espíritu de la Fuerza: ' + enemyName + ' pierde buff "' + _toRemove.name + '"', 'damage');
+                    }
+                    // Apply random debuff
+                    const _rd = _randomDebuffs[Math.floor(Math.random() * _randomDebuffs.length)];
+                    const _rdd = Object.assign({ name: _rd }, _debuffDefs[_rd] || { type:'debuff', duration:2, emoji:'🌑' });
+                    if (typeof applyDebuff === 'function') {
+                        applyDebuff(enemyName, _rdd);
+                    } else {
+                        (_enemy.statusEffects = _enemy.statusEffects||[]).push(_rdd);
+                    }
+                    addLog('⚡ Espíritu de la Fuerza: ' + enemyName + ' recibe debuff "' + _rd + '"', 'debuff');
+                });
+                renderCharacters();
+
+            } else if (ability.effect === 'lado_luminoso_yoda') {
+                // Lado Luminoso: +10 cargas al aliado objetivo + turno adicional
+                const _llAlly = gameState.characters[targetName];
+                if (_llAlly && !_llAlly.isDead && _llAlly.hp > 0) {
+                    _llAlly.charges = Math.min(20, (_llAlly.charges || 0) + 10);
+                    addLog('💫 Lado Luminoso: ' + targetName + ' recibe 10 cargas y gana turno adicional!', 'buff');
+                    // Grant extra turn via Skeggöx mechanism
+                    gameState._skeggoxExtraTurn = targetName;
+                    renderCharacters();
+                }
+
+            // ══════════════════════════════════════════════════════
             // KYO KUSANAGI — handlers
             // ══════════════════════════════════════════════════════
 
