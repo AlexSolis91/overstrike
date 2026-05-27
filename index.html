@@ -464,6 +464,14 @@
                                     if (!rd) return;
                                     if (rd.hpBonus)  { ch.hp = (ch.hp||0) + rd.hpBonus; ch.maxHp = (ch.maxHp||0) + rd.hpBonus; }
                                     if (rd.velBonus) { ch.speed = (ch.speed||0) + rd.velBonus; }
+                                    // speed_plus5: Alas de Mercurio +5 velocidad
+                                    if (rd.effect === 'speed_plus5' && !ch._speedPlus5Applied) { ch.speed = (ch.speed||80) + 5; ch._speedPlus5Applied = true; }
+                                    // hp_spd_plus3: Arcillos del Alba +3 HP +3 vel
+                                    if (rd.effect === 'hp_spd_plus3' && !ch._hpSpdApplied) { ch.hp=(ch.hp||0)+3; ch.maxHp=(ch.maxHp||0)+3; ch.speed=(ch.speed||80)+3; ch._hpSpdApplied=true; }
+                                    // hp_max_50pct: Escamas de Kindora +50% HP máximo
+                                    if (rd.effect === 'hp_max_50pct' && !ch._hpMax50Applied) { var _b=Math.ceil((ch.maxHp||20)*0.5); ch.maxHp=(ch.maxHp||20)+_b; ch.hp=(ch.hp||0)+_b; ch._hpMax50Applied=true; }
+                                    // double_heal: Eco Sanador → flag para duplicar curaciones
+                                    if (rd.effect === 'double_heal') { ch._doubleHeal = true; }
                                 });
                             }
                             if (typeof renderCharacters === 'function') renderCharacters();
