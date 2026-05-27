@@ -65,6 +65,13 @@
                     // Drogon gets megaProvocation from summonData template
                     megaProvocation: shadowTemplate.megaProvocation || false // Drogon ya no tiene megaProv
                 };
+
+                // Orbe de las Sombras: +3 HP máx al invocar si el invocador tiene esta reliquia
+                if ((summoner.equippedRelics||[]).some(function(r){ return r === 'Orbe de las Sombras'; })) {
+                    gameState.summons[summonId].maxHp = (gameState.summons[summonId].maxHp||15) + 3;
+                    gameState.summons[summonId].hp = Math.min(gameState.summons[summonId].maxHp, (gameState.summons[summonId].hp||0) + 3);
+                    addLog('🔮 Orbe de las Sombras: ' + shadowName + ' gana +3 HP máx', 'buff');
+                }
                 
                 addLog(`👻 ${summonerName} invoca a ${shadowName}!`, 'buff');
                 // NO llamar renderSummons aquí - se llama al final del turno
@@ -1237,6 +1244,27 @@
 
             target.hp = Math.max(0, target.hp - remainingDamage);
 
+            // ── TORMENTA ROJA: al recibir daño de DOT (Quemadura/Veneno) → 3 daño AOE al equipo enemigo ──
+            if (remainingDamage > 0 && attackerName === null && !passiveExecuting) {
+                var _trChar = gameState.characters[targetName];
+                if (_trChar && (_trChar.equippedRelics||[]).indexOf('Tormenta Roja') >= 0) {
+                    var _trTeam = _trChar.team;
+                    var _trETeam = _trTeam === 'team1' ? 'team2' : 'team1';
+                    var _trHit = false;
+                    passiveExecuting = true;
+                    Object.keys(gameState.characters).forEach(function(n){
+                        var _c = gameState.characters[n];
+                        if (_c && _c.team === _trETeam && !_c.isDead && _c.hp > 0) {
+                            _c.hp = Math.max(0, (_c.hp||0) - 3);
+                            if (_c.hp <= 0) { _c.isDead = true; if(typeof registerKill==='function') registerKill(targetName,n,false); }
+                            _trHit = true;
+                        }
+                    });
+                    if (_trHit) addLog('⚡ Tormenta Roja: ' + targetName + ' recibió DOT → 3 daño AOE al equipo enemigo', 'damage');
+                    passiveExecuting = false;
+                }
+            }
+
             // ── LEGENDARIO SUPER SAYAJIN (Broly): genera 3 cargas cada vez que recibe daño ──
             if (remainingDamage > 0 && !passiveExecuting && target.isBoss &&
                 target.passive && target.passive.name === 'Legendario Super Sayajin') {
@@ -1454,6 +1482,56 @@
                             }
                             break;
 
+                        // Sable Nishant: 25% turno extra
+                        case 'extra_turn_25':
+                            if (Math.random() < 0.25 && !gameState._skeggoxExtraTurn) {
+                                gameState._skeggoxExtraTurn = attackerName;
+                                addLog('✨ Sable Nishant: ' + attackerName + ' gana turno adicional (25%)', 'buff');
+                            }
+                            break;
+
+                        // Colmillo de Agron: golpe crítico → equipo aliado +3 cargas
+                        case 'crit_team_charges':
+                            if (gameState._isCritHit && _atkChar) {
+                                var _ctTeam = _atkChar.team;
+                                Object.keys(gameState.characters).forEach(function(n) {
+                                    var _c = gameState.characters[n];
+                                    if (_c && _c.team === _ctTeam && !_c.isDead) _c.charges = Math.min(20, (_c.charges||0) + 3);
+                                });
+                                addLog('⚡ Colmillo de Agron: equipo ' + _ctTeam + ' gana 3 cargas por crítico', 'buff');
+                            }
+                            break;
+
+                        // Ergonos: básico duplica carga del personaje y da igual al equipo
+                        case 'ergonos_basic':
+                            if (ability && ability.type === 'basic' && (ability.chargeGain||0) > 0 && _atkChar) {
+                                var _ergGain = ability.chargeGain;
+                                _atkChar.charges = Math.min(20, (_atkChar.charges||0) + _ergGain);
+                                var _ergTeam = _atkChar.team;
+                                Object.keys(gameState.characters).forEach(function(n) {
+                                    var _c = gameState.characters[n];
+                                    if (_c && _c.team === _ergTeam && n !== attackerName && !_c.isDead)
+                                        _c.charges = Math.min(20, (_c.charges||0) + _ergGain);
+                                });
+                                addLog('⚡ Ergonos: básico +' + _ergGain + ' cargas a todo el equipo', 'buff');
+                            }
+                            break;
+
+                        // Aguijón Esmeralda: si objetivo tiene Veneno, extiende a 2 enemigos más
+                        case 'poison_spread':
+                            if (_tgtChar && typeof hasStatusEffect !== 'undefined' && hasStatusEffect(targetName, 'Veneno')) {
+                                var _psEnemies = Object.keys(gameState.characters).filter(function(n){
+                                    var _c = gameState.characters[n];
+                                    return _c && _c.team !== _atkChar.team && !_c.isDead && n !== targetName;
+                                }).sort(function(){ return Math.random()-0.5; }).slice(0,2);
+                                _psEnemies.forEach(function(n){
+                                    if (typeof applyDebuff === 'function')
+                                        applyDebuff(n, { name:'Veneno', type:'debuff', duration:2, emoji:'☠️', dotDamage:1 });
+                                    addLog('☠️ Aguijón Esmeralda: Veneno extendido a ' + n, 'debuff');
+                                });
+                            }
+                            break;
+
                         // Zenit: +3 cargas al recibir golpe (handled in defender section below)
                         case 'zenit_tank': break;
 
@@ -1545,8 +1623,23 @@
                             addLog('🛡️ Anillo de la Verdad: ' + targetName + ' limpia un debuff', 'buff');
                         }
                     }
-                    if (_rd2.effect === 'daga_kaisel_reflect' || _rd2.effect === 'debuff_mirror') {
-                        // On receiving debuff (handled in applyDebuff) — skip here
+                    if (_rd2.effect === 'debuff_mirror' && remainingDamage > 0 && _atkChar && !passiveExecuting) {
+                        // Daga de Kaisel: al recibir debuff → aplica ese debuff a enemigo aleatorio y -2 cargas
+                        // Este efecto aplica al recibir DAÑO con debuff activo
+                        var _daDebuffs = (_tgtChar && _tgtChar.statusEffects||[]).filter(function(e){ return e && e.type==='debuff'; });
+                        if (_daDebuffs.length > 0 && Math.random() < 0.40) {
+                            var _daDebuff = _daDebuffs[Math.floor(Math.random()*_daDebuffs.length)];
+                            var _daEnemies = Object.keys(gameState.characters).filter(function(n){
+                                var _c = gameState.characters[n]; return _c && _c.team===_atkChar.team && !_c.isDead && n!==attackerName;
+                            });
+                            if (_daEnemies.length > 0) {
+                                var _daTarget = _daEnemies[Math.floor(Math.random()*_daEnemies.length)];
+                                if (typeof applyDebuff === 'function') applyDebuff(_daTarget, Object.assign({}, _daDebuff));
+                                var _daChar = gameState.characters[attackerName];
+                                if (_daChar) _daChar.charges = Math.max(0, (_daChar.charges||0) - 2);
+                                addLog('🗡️ Daga de Kaisel: ' + _daDebuff.name + ' reflejado a ' + _daTarget + ' -2 cargas al atacante', 'debuff');
+                            }
+                        }
                     }
                 });
                 gameState._relicEffectsActive = false;
