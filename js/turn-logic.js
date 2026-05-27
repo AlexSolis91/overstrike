@@ -1529,6 +1529,22 @@
                     // ── BANNER CINEMATOGRÁFICO DE RONDA ──
                     _showRoundBanner(gameState.currentRound);
 
+                    // ── SABIDURÍA ANTIGUA (Yoda): si todos sus aliados mueren, Yoda muere ──
+                    for (const _yn in gameState.characters) {
+                        const _yc = gameState.characters[_yn];
+                        if (!_yc || _yc.isDead || !_yc.passive || _yc.passive.name !== 'Sabiduría Antigua') continue;
+                        const _yTeam = _yc.team;
+                        const _yAlliesAlive = Object.keys(gameState.characters).some(function(n) {
+                            const _c = gameState.characters[n];
+                            return _c && _c.team === _yTeam && !_c.isDead && _c.hp > 0 && n !== _yn;
+                        });
+                        if (!_yAlliesAlive) {
+                            _yc.isDead = true; _yc.hp = 0;
+                            addLog('☯️ Sabiduría Antigua: ' + _yn + ' muere al instante — todos sus aliados han caído', 'damage');
+                            if (typeof registerKill === 'function') registerKill('Sabiduría Antigua', _yn, false);
+                        }
+                    }
+
                     // ── Resetear flags de Skeggöx por ronda ──
                     for (const _rk in gameState) {
                         if (_rk.startsWith('_skeggoxUsedRound_')) delete gameState[_rk];
