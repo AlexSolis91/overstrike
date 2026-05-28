@@ -6797,7 +6797,7 @@
             // ══════════════════════════════════════════════════════
 
             } else if (ability.effect === 'guia_maestro_yoda') {
-                // Guía del Maestro: los 4 aliados ejecutan su ataque básico
+                // Guía del Maestro: cada aliado vivo ejecuta su ataque básico contra un enemigo aleatorio
                 const _gmYoda = gameState.characters[gameState.selectedCharacter];
                 const _gmTeam = _gmYoda ? _gmYoda.team : 'team1';
                 const _gmETeam = _gmTeam === 'team1' ? 'team2' : 'team1';
@@ -6805,11 +6805,13 @@
                     const _c = gameState.characters[n];
                     return _c && _c.team === _gmTeam && !_c.isDead && _c.hp > 0 && n !== gameState.selectedCharacter;
                 });
-                const _gmEnemies = Object.keys(gameState.characters).filter(function(n) {
-                    const _c = gameState.characters[n];
-                    return _c && _c.team === _gmETeam && !_c.isDead && _c.hp > 0;
-                });
-                if (_gmEnemies.length === 0) {
+                const _gmGetEnemies = function() {
+                    return Object.keys(gameState.characters).filter(function(n) {
+                        const _c = gameState.characters[n];
+                        return _c && _c.team === _gmETeam && !_c.isDead && _c.hp > 0;
+                    });
+                };
+                if (_gmGetEnemies().length === 0) {
                     addLog('✨ Guía del Maestro: no hay enemigos disponibles', 'info');
                 } else {
                     _gmAllies.forEach(function(allyName) {
@@ -6817,22 +6819,22 @@
                         if (!_ally || _ally.isDead || _ally.hp <= 0) return;
                         const _basicAb = (_ally.abilities || []).find(function(a){ return a && a.type === 'basic'; });
                         if (!_basicAb) return;
-                        // Pick target (random enemy or lowest HP)
-                        const _tgt = _gmEnemies.reduce(function(best, n) {
-                            const _cb = gameState.characters[best];
-                            const _cn = gameState.characters[n];
-                            return (_cn && _cb && _cn.hp < _cb.hp) ? n : best;
-                        }, _gmEnemies[0]);
+                        // Pick RANDOM enemy
+                        const _enemies = _gmGetEnemies();
+                        if (!_enemies.length) return;
+                        const _tgt = _enemies[Math.floor(Math.random() * _enemies.length)];
                         const _tgtChar = gameState.characters[_tgt];
                         if (!_tgtChar || _tgtChar.isDead || _tgtChar.hp <= 0) return;
-                        // Apply basic damage
-                        const _dmg = Math.max(1, _basicAb.damage || 1);
-                        applyDamageWithShield(_tgt, _dmg, allyName);
+                        // Apply damage
+                        if (_basicAb.damage > 0) {
+                            applyDamageWithShield(_tgt, _basicAb.damage, allyName);
+                        }
                         // Apply chargeGain to ally
                         if (_basicAb.chargeGain > 0) {
                             _ally.charges = Math.min(20, (_ally.charges || 0) + _basicAb.chargeGain);
                         }
-                        addLog('✨ Guía del Maestro: ' + allyName + ' ataca a ' + _tgt + ' por ' + _dmg + ' daño', 'damage');
+                        addLog('✨ Guía del Maestro: ' + allyName + ' ataca a ' + _tgt + ' [' + _basicAb.name + '] por ' + _basicAb.damage + ' daño', 'damage');
+                        // Mark target as dead if HP reached 0
                         if (_tgtChar.hp <= 0 || _tgtChar.isDead) {
                             _tgtChar.isDead = true;
                             if (typeof registerKill === 'function') registerKill(allyName, _tgt, false);
