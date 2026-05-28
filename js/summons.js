@@ -695,6 +695,13 @@
             const target = gameState.characters[targetName];
             if (!target) return 0;
 
+            // ── SABIDURÍA ANTIGUA (Yoda): INMUNE A TODO DAÑO (directo, DOT, AOE, etc.) ──
+            if (target.passive && target.passive.name === 'Sabiduría Antigua') {
+                // Solo log si hay daño real para no spamear el log
+                // addLog('🟢 Sabiduría Antigua: Yoda es inmune', 'buff'); // silencioso
+                return 0;
+            }
+
             // ── MUNDO TRANSPARENTE (Yorichi): limpiar flag si el objetivo ya no tiene QS ──
             if (target._passiveBlockedByYorichi) {
                 const _hasQSNow = (target.statusEffects||[]).some(function(e){
@@ -1766,12 +1773,6 @@
                 passiveExecuting = false;
             }
 
-            // ── SABIDURÍA ANTIGUA (Yoda): inmune a todo daño ──────────────────────
-            if (remainingDamage > 0 && target.passive && target.passive.name === 'Sabiduría Antigua') {
-                addLog('🟢 Sabiduría Antigua: Yoda es inmune al daño', 'buff');
-                return 0; // Yoda recibe 0 daño siempre
-            }
-
             // ── PALADÍN DE LA MANO DE PLATA (Tirion): al llegar a 10 HP → Protección Sagrada + Escudo Sagrado + 20 cargas ──
             if (remainingDamage > 0 && !passiveExecuting &&
                 target.passive && target.passive.name === 'Paladín de la Mano de Plata' &&
@@ -2289,6 +2290,34 @@
             if (byInvocation) {
                 // +5 puntos extra por kill via invocación
                 _mvp('summonKills', killerName);
+            }
+
+            // ── SABIDURÍA ANTIGUA (Yoda): si todos sus aliados murieron, Yoda muere al instante ──
+            if (victimName && victimName !== 'Sabiduría Antigua') {
+                const _victim = gameState.characters[victimName];
+                if (_victim) {
+                    const _victimTeam = _victim.team;
+                    // Find Yoda in the same team
+                    for (const _yn in gameState.characters) {
+                        const _yc = gameState.characters[_yn];
+                        if (!_yc || _yc.isDead || !_yc.passive || _yc.passive.name !== 'Sabiduría Antigua') continue;
+                        if (_yc.team !== _victimTeam) continue;
+                        // Check if any other ally is still alive
+                        const _anyAllyAlive = Object.keys(gameState.characters).some(function(n) {
+                            const _c = gameState.characters[n];
+                            return _c && _c.team === _victimTeam && !_c.isDead && _c.hp > 0 && n !== _yn;
+                        });
+                        if (!_anyAllyAlive) {
+                            _yc.isDead = true; _yc.hp = 0;
+                            addLog('☯️ Sabiduría Antigua: ' + _yn + ' muere al instante — sus aliados han caído', 'damage');
+                            // Trigger checkGameOver after a brief delay
+                            setTimeout(function() {
+                                if (typeof checkGameOver === 'function') checkGameOver();
+                                if (typeof renderCharacters === 'function') renderCharacters();
+                            }, 100);
+                        }
+                    }
+                }
             }
         }
 
