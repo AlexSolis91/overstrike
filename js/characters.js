@@ -874,6 +874,7 @@
                 name: 'Viejo Maestro Yoda',
                 hp: 15, maxHp: 15,
                 speed: 70,
+                charges: 0,
                 portrait: 'https://i.ibb.co/5gJPj7Q7/Whats-App-Image-2026-05-27-at-11-12-51-AM.jpg',
                 passive: { name: 'Sabiduría Antigua', description: 'Anticipación pasiva permanente. Yoda es inmune a todo daño, buffs y debuffs. Si todos sus aliados mueren, Yoda muere al instante.' },
                 abilities: [
