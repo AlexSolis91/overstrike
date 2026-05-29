@@ -245,6 +245,13 @@ function applyDebuff(targetName, effectObj) {
                 addLog('🟢 Sabiduría Antigua: ' + targetName + ' es inmune a debuffs', 'buff');
                 return;
             }
+            // ANILLO DE LA VERDAD (debuff_resist_15): 15% de resistir cualquier debuff
+            if ((target.equippedRelics||[]).some(function(r){ return r === 'Anillo de la Verdad'; })) {
+                if (Math.random() < 0.15) {
+                    addLog('💍 Anillo de la Verdad: ' + targetName + ' resiste el debuff "' + (effectObj.name||'') + '" (15%)', 'buff');
+                    return;
+                }
+            }
             // BUFF REFLEJAR: el portador es inmune a nuevos debuffs mientras Reflejar esté activo
             if (hasStatusEffect(targetName, 'Reflejar')) {
                 addLog('🪞 Reflejar: ' + targetName + ' es inmune al debuff (Reflejar activo)', 'buff');
