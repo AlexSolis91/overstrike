@@ -1393,7 +1393,7 @@
 
                         // Especial → objetivo pierde 50% cargas
                         case 'special_drain_50':
-                            if (ability && ability.type === 'special' && _tgtChar) {
+                            if (gameState._lastAbilityType === 'special' && _tgtChar) {
                                 const _drain = Math.floor((_tgtChar.charges||0) * 0.50);
                                 if (_drain > 0) {
                                     _tgtChar.charges = Math.max(0, (_tgtChar.charges||0) - _drain);
@@ -1404,7 +1404,7 @@
 
                         // Básico aplica Quemadura 2HP
                         case 'basic_burn_2hp':
-                            if (ability && ability.type === 'basic') {
+                            if (gameState._lastAbilityType === 'basic') {
                                 if (typeof applyDebuff === 'function')
                                     applyDebuff(targetName, { name:'Quemadura', type:'debuff', duration:2, emoji:'🔥', dotDamage:2 });
                                 addLog('🔥 Maza Ignea: Quemadura 2HP a ' + targetName, 'debuff');
@@ -1456,15 +1456,16 @@
 
                         // Duplica generación de cargas del básico + equipo genera igual
                         case 'ergonos_basic':
-                            if (ability && ability.type === 'basic' && ability.chargeGain > 0) {
-                                _atkChar.charges = Math.min(20, (_atkChar.charges||0) + ability.chargeGain);
-                                const _ergTeam = _atkChar.team;
+                            if (gameState._lastAbilityType === 'basic' && (gameState._lastAbilityChargeGain||0) > 0 && _atkChar) {
+                                var _ergGain1 = gameState._lastAbilityChargeGain;
+                                _atkChar.charges = Math.min(20, (_atkChar.charges||0) + _ergGain1);
+                                const _ergTeam1 = _atkChar.team;
                                 Object.keys(gameState.characters).forEach(function(n) {
                                     const _c = gameState.characters[n];
-                                    if (_c && _c.team === _ergTeam && n !== attackerName && !_c.isDead)
-                                        _c.charges = Math.min(20, (_c.charges||0) + ability.chargeGain);
+                                    if (_c && _c.team === _ergTeam1 && n !== attackerName && !_c.isDead)
+                                        _c.charges = Math.min(20, (_c.charges||0) + _ergGain1);
                                 });
-                                addLog('⚡ Ergonos: +' + ability.chargeGain + ' cargas a todo el equipo', 'buff');
+                                addLog('⚡ Ergonos: +' + _ergGain1 + ' cargas a todo el equipo (básico)', 'buff');
                             }
                             break;
 
@@ -1509,20 +1510,7 @@
                             }
                             break;
 
-                        // Ergonos: básico duplica carga del personaje y da igual al equipo
-                        case 'ergonos_basic':
-                            if (ability && ability.type === 'basic' && (ability.chargeGain||0) > 0 && _atkChar) {
-                                var _ergGain = ability.chargeGain;
-                                _atkChar.charges = Math.min(20, (_atkChar.charges||0) + _ergGain);
-                                var _ergTeam = _atkChar.team;
-                                Object.keys(gameState.characters).forEach(function(n) {
-                                    var _c = gameState.characters[n];
-                                    if (_c && _c.team === _ergTeam && n !== attackerName && !_c.isDead)
-                                        _c.charges = Math.min(20, (_c.charges||0) + _ergGain);
-                                });
-                                addLog('⚡ Ergonos: básico +' + _ergGain + ' cargas a todo el equipo', 'buff');
-                            }
-                            break;
+                        // ergonos_basic: handled above (no duplicate)
 
                         // Aguijón Esmeralda: si objetivo tiene Veneno, extiende a 2 enemigos más
                         case 'poison_spread':
@@ -1594,7 +1582,12 @@
                     if (!_rd2) return;
 
                     if (_rd2.effect === 'zenit_tank' && remainingDamage > 0) {
-                        // +3 cargas al recibir golpe, 50% reducción ya aplicada en pre-damage
+                        // 50% reducción de daño recibido + 3 cargas
+                        var _zenitReduce = Math.floor(remainingDamage * 0.5);
+                        if (_zenitReduce > 0 && _tgtChar) {
+                            _tgtChar.hp = Math.min(_tgtChar.maxHp, (_tgtChar.hp||0) + _zenitReduce);
+                            addLog('🛡️ Zenit: ' + targetName + ' reduce ' + _zenitReduce + ' daño (50%)', 'buff');
+                        }
                         if (_tgtChar) {
                             _tgtChar.charges = Math.min(20, (_tgtChar.charges||0) + 3);
                             addLog('🛡️ Zenit: ' + targetName + ' gana 3 cargas al recibir daño', 'buff');
