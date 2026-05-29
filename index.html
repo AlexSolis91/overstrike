@@ -398,7 +398,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260516"></script>
+    <script src="js/firebase-auth.js?v=20260527"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -447,7 +447,7 @@
                 var myTeamSlot = window._rankedPlayerTeam || 'team1';
                 var opTeamSlot = myTeamSlot === 'team1' ? 'team2' : 'team1';
                 var opUid = window._opponentUid || window._rankedDefenseOwnerUid || null;
-                function _loadRelicsForUid(uid, charNames, applyBonuses) {
+                function _loadRelicsForUid(uid, charNames) {
                     charNames.forEach(function(charName) {
                         var baseName = charName.replace(/ v\d+$/, '');
                         db.ref('users/' + uid + '/characters/' + baseName + '/slots').once('value').then(function(snap) {
@@ -458,19 +458,16 @@
                             var ch = gameState.characters[charName];
                             if (!ch) return;
                             ch.equippedRelics = slots;
-                            if (applyBonuses && typeof RELICS_DATA !== 'undefined') {
+                            // Apply ALL stat bonuses for ALL teams — relics work equally for AI and player
+                            if (typeof RELICS_DATA !== 'undefined') {
                                 slots.forEach(function(relicName) {
                                     var rd = RELICS_DATA[relicName];
                                     if (!rd) return;
                                     if (rd.hpBonus)  { ch.hp = (ch.hp||0) + rd.hpBonus; ch.maxHp = (ch.maxHp||0) + rd.hpBonus; }
                                     if (rd.velBonus) { ch.speed = (ch.speed||0) + rd.velBonus; }
-                                    // speed_plus5: Alas de Mercurio +5 velocidad
                                     if (rd.effect === 'speed_plus5' && !ch._speedPlus5Applied) { ch.speed = (ch.speed||80) + 5; ch._speedPlus5Applied = true; }
-                                    // hp_spd_plus3: Arcillos del Alba +3 HP +3 vel
                                     if (rd.effect === 'hp_spd_plus3' && !ch._hpSpdApplied) { ch.hp=(ch.hp||0)+3; ch.maxHp=(ch.maxHp||0)+3; ch.speed=(ch.speed||80)+3; ch._hpSpdApplied=true; }
-                                    // hp_max_50pct: Escamas de Kindora +50% HP máximo
                                     if (rd.effect === 'hp_max_50pct' && !ch._hpMax50Applied) { var _b=Math.ceil((ch.maxHp||20)*0.5); ch.maxHp=(ch.maxHp||20)+_b; ch.hp=(ch.hp||0)+_b; ch._hpMax50Applied=true; }
-                                    // double_heal: Eco Sanador → flag para duplicar curaciones
                                     if (rd.effect === 'double_heal') { ch._doubleHeal = true; }
                                 });
                             }
@@ -481,12 +478,12 @@
                 var myChars = Object.keys(gameState.characters).filter(function(n){
                     return gameState.characters[n] && gameState.characters[n].team === myTeamSlot;
                 });
-                _loadRelicsForUid(user.uid, myChars, true);
+                _loadRelicsForUid(user.uid, myChars);
                 if (opUid) {
                     var opChars = Object.keys(gameState.characters).filter(function(n){
                         return gameState.characters[n] && gameState.characters[n].team === opTeamSlot;
                     });
-                    _loadRelicsForUid(opUid, opChars, false);
+                    _loadRelicsForUid(opUid, opChars);
                 }
             }, 600);
         };
@@ -1117,9 +1114,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260516"></script>
+    <script src="js/characters.js?v=20260527"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260516"></script>
+    <script src="js/audio-state.js?v=20260527"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -1724,23 +1721,23 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260516"></script>
+    <script src="js/ai-engine.js?v=20260527"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260516"></script>
+    <script src="js/init-render.js?v=20260527"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260516"></script>
+    <script src="js/turn-logic.js?v=20260527"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260516"></script>
+    <script src="js/status-effects.js?v=20260527"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260516"></script>
+    <script src="js/debuffs.js?v=20260527"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260516"></script>
+    <script src="js/summons.js?v=20260527"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260516"></script>
+    <script src="js/ability-select.js?v=20260527"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260516"></script>
+<script src="js/skills.js?v=20260527"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260516"></script>
+    <script src="js/jefe-de-sala.js?v=20260527"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
