@@ -255,9 +255,13 @@
                 }
             }
 
+            // ── TRACK ABILITY TYPE (para reliquias del defensor y del atacante IA) ──
+            // Se setea SIEMPRE, no solo cuando el atacante tiene reliquias
+            gameState._lastAbilityType = ability ? ability.type : null;
+            gameState._lastAbilityChargeGain = ability ? (ability.chargeGain || 0) : 0;
+
             // ── BONOS DE RELIQUIAS al daño (pre-ataque) ──────────────────────
             if (finalDamage > 0 && attacker && (attacker.equippedRelics||[]).length > 0) {
-                gameState._lastAbilityType = ability ? ability.type : null; // para reliquias del defensor
                 (attacker.equippedRelics||[]).forEach(function(relicName) {
                     const _rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[relicName] : null;
                     if (!_rd) return;
