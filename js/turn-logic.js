@@ -1545,6 +1545,16 @@
                         }
                     }
 
+                    // ── MÁSCARA DE TYRAEL: +3 cargas al portador al final de cada ronda ──
+                    for (const _mtN in gameState.characters) {
+                        const _mtC = gameState.characters[_mtN];
+                        if (!_mtC || _mtC.isDead || _mtC.hp <= 0) continue;
+                        if ((_mtC.equippedRelics||[]).some(function(r){ return r === 'Mascara de Tyrael'; })) {
+                            _mtC.charges = Math.min(20, (_mtC.charges||0) + 3);
+                            addLog('🪖 Máscara de Tyrael: ' + _mtN + ' genera 3 cargas (fin de ronda)', 'buff');
+                        }
+                    }
+
                     // ── Resetear flags de Skeggöx por ronda ──
                     for (const _rk in gameState) {
                         if (_rk.startsWith('_skeggoxUsedRound_')) delete gameState[_rk];
@@ -1580,6 +1590,28 @@
                             _brolyC.charges = Math.min(20, (_brolyC.charges || 0) + _brolyRoundCharges);
                             addLog('💚 Legendario Super Sayajin: Broly genera ' + _brolyRoundCharges + ' cargas al inicio de la ronda ' + gameState.currentRound + ' (' + _brolyC.charges + '/20)', 'buff');
                         }
+                    }
+                    // ── REY DE LA MUERTE (Lich King): inicio de ronda → 40% congelación, miedo, posesión ──
+                    for (const _lkN in gameState.characters) {
+                        const _lkC = gameState.characters[_lkN];
+                        if (!_lkC || _lkC.isDead || !_lkC.passive || _lkC.passive.name !== 'Rey de la Muerte') continue;
+                        const _lkET = _lkC.team === 'team1' ? 'team2' : 'team1';
+                        Object.keys(gameState.characters).forEach(function(en) {
+                            const _ec = gameState.characters[en];
+                            if (!_ec || _ec.team !== _lkET || _ec.isDead || _ec.hp <= 0) return;
+                            if (Math.random() < 0.40 && typeof applyFreeze === 'function') {
+                                applyFreeze(en, 1, false);
+                                addLog('❄️ Rey de la Muerte: Congelación aplicada a ' + en + ' (40%)', 'debuff');
+                            }
+                            if (Math.random() < 0.40 && typeof applyDebuff === 'function') {
+                                applyDebuff(en, { name:'Miedo', type:'debuff', duration:2, emoji:'😨' });
+                                addLog('😨 Rey de la Muerte: Miedo aplicado a ' + en + ' (40%)', 'debuff');
+                            }
+                            if (Math.random() < 0.40 && typeof applyDebuff === 'function') {
+                                applyDebuff(en, { name:'Posesion', type:'debuff', duration:1, emoji:'👻' });
+                                addLog('👻 Rey de la Muerte: Posesión aplicada a ' + en + ' (40%)', 'debuff');
+                            }
+                        });
                     }
                     // ── EXPLOSIÓN FINAL (Vegeta): countdown revivir ──
                     for (const _vn in gameState.characters) {

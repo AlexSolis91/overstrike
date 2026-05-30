@@ -1469,6 +1469,39 @@
                             }
                             break;
 
+                        // FROSTMOURNE (Legendario): daño doble + roba cargas = daño causado + revive víctima
+                        case 'frostmourne':
+                            if (_tgtChar && remainingDamage > 0 && !passiveExecuting) {
+                                // El daño ya fue aplicado. Robar cargas = daño causado
+                                var _frostSteal = Math.min((_tgtChar.charges||0), remainingDamage);
+                                if (_frostSteal > 0) {
+                                    _tgtChar.charges = Math.max(0, (_tgtChar.charges||0) - _frostSteal);
+                                    if (_atkChar) _atkChar.charges = Math.min(20, (_atkChar.charges||0) + _frostSteal);
+                                    addLog('❄️ Frostmourne: robadas ' + _frostSteal + ' cargas de ' + targetName, 'buff');
+                                }
+                                // Revivir como aliado si el objetivo muere
+                                if (_tgtChar.hp <= 0 || _tgtChar.isDead) {
+                                    setTimeout(function() {
+                                        var _ft = gameState.characters[targetName];
+                                        if (!_ft) return;
+                                        _ft.isDead = false;
+                                        _ft.hp = _ft.maxHp || 20;
+                                        _ft.charges = 20;
+                                        _ft.statusEffects = [];
+                                        _ft.team = _atkChar ? _atkChar.team : _ft.team;
+                                        addLog('❄️ Frostmourne: ' + targetName + ' revive como aliado con 100% HP y 20 cargas!', 'buff');
+                                        if (typeof renderCharacters === 'function') renderCharacters();
+                                    }, 400);
+                                }
+                            }
+                            break;
+
+                        // MÁSCARA DE TYRAEL: +3 cargas al final de ronda (handled in turn-logic round-end block)
+                        case 'tyrael_mask': break;
+
+                        // IGNIFUGOZ: inmune a quemaduras y debuffs de quemadura (handled in applyDebuff + DOT)
+                        case 'ignifugoz_immunity': break;
+
                         // Ignora Esquiva Área, daño doble a objetivo con Esquiva Área
                         case 'vortex_pierce':
                             if (_tgtChar && !passiveExecuting && hasStatusEffect && hasStatusEffect(targetName, 'Esquiva Área')) {
@@ -2283,6 +2316,26 @@
             if (byInvocation) {
                 // +5 puntos extra por kill via invocación
                 _mvp('summonKills', killerName);
+            }
+
+            // ── REY DE LA MUERTE (Lich King): si el Lich King mata a alguien → revive como aliado ──
+            if (killerName && victimName) {
+                const _lkKiller = gameState.characters[killerName];
+                const _lkVictim = gameState.characters[victimName];
+                if (_lkKiller && _lkVictim && _lkKiller.passive && _lkKiller.passive.name === 'Rey de la Muerte') {
+                    setTimeout(function() {
+                        const _v = gameState.characters[victimName];
+                        if (!_v) return;
+                        _v.isDead = false;
+                        _v.hp = Math.ceil((_v.maxHp||20) * 0.50);
+                        _v.charges = 10;
+                        _v.statusEffects = [];
+                        _v.team = _lkKiller.team; // cambia de equipo
+                        addLog('💀 Rey de la Muerte: ' + victimName + ' revive como aliado del Lich King con ' + _v.hp + ' HP y 10 cargas!', 'buff');
+                        if (typeof renderCharacters === 'function') renderCharacters();
+                        if (typeof renderSummons === 'function') renderSummons();
+                    }, 500);
+                }
             }
 
             // ── SABIDURÍA ANTIGUA (Yoda): si todos sus aliados murieron, Yoda muere al instante ──

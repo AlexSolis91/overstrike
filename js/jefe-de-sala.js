@@ -32,6 +32,25 @@
         { rank: 10, label: 'Top 5+',         gold: 5000,   keys: 0, extra: null,                 color: '#888',    bg: 'rgba(255,255,255,0.02)' }
     ];
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // BOSS_ABILITIES — abilities por boss (mapeadas por nombre)
+    // ─────────────────────────────────────────────────────────────────────────
+    var BOSS_ABILITIES = {
+        'Broly': [
+            { name:'Eraser Cannon', type:'basic',   cost:0,  chargeGain:3, damage:3,  target:'single', effect:'eraser_cannon_broly',           description:'3 daño ST. Si genera cargas dobles al objetivo, duplica la generación de cargas.' },
+            { name:'Onda de Destrucción', type:'special', cost:8, chargeGain:0, damage:5, target:'aoe', effect:'onda_destruccion_broly',        description:'5 daño AOE. Si todos los enemigos tienen debuffs, +2 daño adicional.' },
+            { name:'Liberación de Energía', type:'special', cost:10, chargeGain:0, damage:7, target:'aoe', effect:'liberacion_energia_broly',   description:'7 daño AOE. Aplica Sangrado 2HP 2T a todos los enemigos.' },
+            { name:'Omega Bláster', type:'over', cost:20, chargeGain:0, damage:20, target:'single', effect:'omega_blaster_broly',               description:'20 daño ST. Roba TODAS las cargas enemigas. +1 daño por carga robada a 2 enemigos.' }
+        ],
+        'Lich King': [
+            { name:'Robar Alma',               type:'basic',   cost:0,  chargeGain:3, damage:2,  target:'single', effect:'robar_alma_lich',                    description:'2 daño ST. 50% probabilidad de robar 2 cargas del objetivo.' },
+            { name:'Invierno sin Remordimiento', type:'special', cost:8, chargeGain:0, damage:7, target:'aoe',    effect:'invierno_sin_remordimiento_lich',    description:'7 daño AOE + Congelación. Si el objetivo ya estaba congelado: daño doble.' },
+            { name:'Apocalipsis',              type:'special', cost:10, chargeGain:0, damage:10, target:'aoe',    effect:'apocalipsis_lich',                   description:'10 daño AOE. 50% de probabilidad de aplicar Mega Congelación.' },
+            { name:'Muerte y Descomposición',  type:'over',    cost:20, chargeGain:0, damage:10, target:'aoe',   effect:'muerte_descomposicion_lich',          description:'10 daño AOE + Mega Posesión. +3 daño por cada debuff activo en el objetivo.' }
+        ]
+    };
+    window.BOSS_ABILITIES = BOSS_ABILITIES;
+
     function getBossRewardForRank(rank) {
         if (!rank || rank <= 0) return { gold: 5000, keys: 0, extra: null, color: '#888', bg: 'transparent' };
         if (rank === 1) return { rank:1, gold:100000, keys:2, extra:'2 Llaves Arcanas', color:'#ffd700', bg:'rgba(255,215,0,0.12)' };
@@ -162,11 +181,13 @@
                     name: 'Legendario Super Sayajin',
                     description: 'Cada vez que recibe daño, genera 3 cargas. Genera N cargas al inicio de la ronda N. 25% de probabilidad de esquivar Debuffs.'
                 },
-                abilities:    boss.abilities || (
-                    typeof BOSS_DATA !== 'undefined' && BOSS_DATA.broly
-                        ? BOSS_DATA.broly.abilities
-                        : []
-                )
+                abilities:    boss.abilities ||
+                    (typeof BOSS_ABILITIES !== 'undefined' && BOSS_ABILITIES[bossKey]
+                        ? BOSS_ABILITIES[bossKey]
+                        : (typeof BOSS_DATA !== 'undefined' && BOSS_DATA.broly
+                            ? BOSS_DATA.broly.abilities
+                            : [])
+                    )
             };
 
             // Llamar al initGame original con los personajes ya inyectados

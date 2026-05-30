@@ -3451,7 +3451,7 @@
             }
 
             // Determinar reliquia
-            const relic = rollChestRelic(chestType);
+            const relic = chestType === 'arcana' ? await rollChestRelicAsync(uid, chestType) : rollChestRelic(chestType);
             await addGold(uid, goldReward[chestType]);
             await addRelicToInventory(uid, relic.name);
 
@@ -3467,22 +3467,70 @@
             showChestOpenModal(chestType, relic, goldReward[chestType], bonusRune);
         }
 
+        async function rollChestRelicAsync(uid, chestType) {
+            const relicsByTier = { Raro:[], Especial:[], Epico:[], Legendario:[] };
+            const eventRelicsByBoss = {};
+            if (typeof RELICS_DATA !== 'undefined') {
+                Object.entries(RELICS_DATA).forEach(function([name, r]){
+                    if (name === 'Memorex') return;
+                    if (r.isEventRelic && r.eventBoss) {
+                        eventRelicsByBoss[r.eventBoss] = eventRelicsByBoss[r.eventBoss] || [];
+                        eventRelicsByBoss[r.eventBoss].push(name);
+                    } else {
+                        (relicsByTier[r.tier] = relicsByTier[r.tier]||[]).push(name);
+                    }
+                });
+            }
+            // Pity counter
+            const now = Date.now();
+            const pitySnap = await db.ref('users/' + uid + '/arcane_pity').once('value');
+            let pityData = pitySnap.val() || { bonus: 0, lastOpenAt: 0 };
+            if (now - (pityData.lastOpenAt||0) > 120000) pityData.bonus = 0;
+
+            const bossData = typeof getBossData === 'function' ? await getBossData() : null;
+            const bossIsLichKing = bossData && bossData.status === 'active' && bossData.name === 'Lich King';
+            const perOpenBonus = bossIsLichKing ? 0.015 : 0.01;
+            const baseLegPct   = bossIsLichKing ? 0.010 : 0.005;
+            const totalLegPct  = Math.min(0.50, baseLegPct + pityData.bonus);
+            // Update pity
+            await db.ref('users/' + uid + '/arcane_pity').set({ bonus: pityData.bonus + perOpenBonus, lastOpenAt: now });
+
+            const rv = Math.random();
+            let tier;
+            if (rv < totalLegPct) tier = 'Legendario';
+            else { const rv2 = Math.random(); tier = rv2 < 0.70 ? 'Especial' : 'Epico'; }
+
+            let name;
+            if (tier === 'Legendario' && bossIsLichKing && (eventRelicsByBoss['Lich King']||[]).length > 0) {
+                const evPool = eventRelicsByBoss['Lich King'];
+                name = evPool[Math.floor(Math.random() * evPool.length)];
+                await db.ref('users/' + uid + '/arcane_pity').set({ bonus: 0, lastOpenAt: now }); // reset pity on legendary
+            } else if (tier === 'Legendario') {
+                const pool = relicsByTier['Legendario']||[];
+                name = pool.length ? pool[Math.floor(Math.random() * pool.length)] : (relicsByTier['Epico'][0]||'Anillo de la Vida');
+                await db.ref('users/' + uid + '/arcane_pity').set({ bonus: 0, lastOpenAt: now }); // reset pity
+            } else {
+                const pool = relicsByTier[tier]||[];
+                name = pool.length ? pool[Math.floor(Math.random() * pool.length)] : 'Anillo de la Vida';
+            }
+            return typeof RELICS_DATA !== 'undefined' && RELICS_DATA[name] ? { name, ...RELICS_DATA[name] } : { name, tier };
+        }
+
         function rollChestRelic(chestType) {
             const relicsByTier = { Raro:[], Especial:[], Epico:[], Legendario:[] };
             if (typeof RELICS_DATA !== 'undefined') {
                 Object.entries(RELICS_DATA).forEach(function([name, r]){
-                    if (name !== 'Memorex') relicsByTier[r.tier].push(name);
+                    if (name !== 'Memorex' && !r.isEventRelic) (relicsByTier[r.tier] = relicsByTier[r.tier]||[]).push(name);
                 });
             }
-            let tier;
-            const r = Math.random();
+            let tier; const r = Math.random();
             if (chestType === 'rare')    tier = 'Raro';
             else if (chestType === 'special') tier = r < 0.60 ? 'Raro' : 'Especial';
             else if (chestType === 'epic')    tier = r < 0.40 ? 'Raro' : r < 0.75 ? 'Especial' : 'Epico';
-            else /* arcana */                 tier = r < 0.70 ? 'Especial' : r < 0.99 ? 'Epico' : 'Legendario'; // 70% Especial, 29% Épico, 1% Legendario
-            const pool = relicsByTier[tier];
-            const name = pool[Math.floor(Math.random() * pool.length)];
-            return typeof RELICS_DATA !== 'undefined' ? { name, ...RELICS_DATA[name] } : { name, tier };
+            else tier = r < 0.70 ? 'Especial' : r < 0.99 ? 'Epico' : 'Legendario';
+            const pool = (relicsByTier[tier])||[];
+            const name = pool.length ? pool[Math.floor(Math.random() * pool.length)] : 'Anillo de la Vida';
+            return typeof RELICS_DATA !== 'undefined' && RELICS_DATA[name] ? { name, ...RELICS_DATA[name] } : { name, tier };
         }
 
         function showChestOpenModal(chestType, relic, goldBonus, bonusRune) {

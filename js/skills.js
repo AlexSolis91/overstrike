@@ -269,6 +269,10 @@
                         finalDamage *= 2; gameState._isCritHit = true;
                         addLog('💫 Cuerno del Caos: ¡Crítico! (+10%)', 'buff');
                     }
+                    if (_rd.effect === 'frostmourne') {
+                        finalDamage = finalDamage * 2;
+                        addLog('❄️ Frostmourne: daño duplicado (' + finalDamage + ')', 'buff');
+                    }
                     if (_rd.effect === 'basic_dmg_50pct' && ability && ability.type === 'basic') {
                         finalDamage = Math.ceil(finalDamage * 1.5);
                         addLog('⚔️ Espada del Triunfo: básico +50% daño', 'buff');
@@ -8103,7 +8107,75 @@
                         applyDamageWithShield(n, _bonusDmg, gameState.selectedCharacter);
                         addLog('💚 Omega Bláster: +' + _bonusDmg + ' daño a ' + n + ' (cargas robadas)', 'damage');
                     });
-                }            }
+                }
+
+            // ══════════════════════════════════════════════════════
+            // LICH KING — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'robar_alma_lich') {
+                // Robar Alma: 2 daño ST + 50% robar 2 cargas
+                const _raAtk = gameState.characters[gameState.selectedCharacter];
+                const _raTgt = gameState.characters[targetName];
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('💀 Robar Alma: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (Math.random() < 0.50 && _raTgt && (_raTgt.charges||0) >= 2) {
+                    _raTgt.charges = Math.max(0, (_raTgt.charges||0) - 2);
+                    if (_raAtk) _raAtk.charges = Math.min(20, (_raAtk.charges||0) + 2);
+                    addLog('💀 Robar Alma: robadas 2 cargas de ' + targetName + ' (50%)', 'debuff');
+                }
+
+            } else if (ability.effect === 'invierno_sin_remordimiento_lich') {
+                // Invierno sin Remordimiento: 7 AOE + Congelación. Si ya congelado → daño doble
+                const _iwAtk = gameState.characters[gameState.selectedCharacter];
+                const _iwET = _iwAtk ? (_iwAtk.team==='team1'?'team2':'team1') : 'team2';
+                Object.keys(gameState.characters).forEach(function(n) {
+                    const _c = gameState.characters[n];
+                    if (!_c||_c.team!==_iwET||_c.isDead||_c.hp<=0) return;
+                    const _wasCongelado = ((_c.statusEffects||[]).some(function(e){
+                        return e && (normAccent(e.name||'')==='congelacion' || normAccent(e.name||'')==='mega congelacion');
+                    }));
+                    const _dmg = _wasCongelado ? finalDamage * 2 : finalDamage;
+                    applyDamageWithShield(n, _dmg, gameState.selectedCharacter);
+                    addLog('❄️ Invierno sin Remordimiento: ' + _dmg + ' daño a ' + n + (_wasCongelado?' (×2 congelado)':''), 'damage');
+                    if (typeof applyFreeze === 'function') applyFreeze(n, 2, false);
+                });
+
+            } else if (ability.effect === 'apocalipsis_lich') {
+                // Apocalipsis: 10 AOE + 50% Mega Congelación
+                const _apAtk = gameState.characters[gameState.selectedCharacter];
+                const _apET = _apAtk ? (_apAtk.team==='team1'?'team2':'team1') : 'team2';
+                Object.keys(gameState.characters).forEach(function(n) {
+                    const _c = gameState.characters[n];
+                    if (!_c||_c.team!==_apET||_c.isDead||_c.hp<=0) return;
+                    applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
+                    addLog('💀 Apocalipsis: ' + finalDamage + ' daño a ' + n, 'damage');
+                    if (Math.random() < 0.50) {
+                        if (typeof applyFreeze === 'function') applyFreeze(n, 2, true); // mega=true
+                        addLog('🧊 Apocalipsis: Mega Congelación a ' + n + ' (50%)', 'debuff');
+                    }
+                });
+
+            } else if (ability.effect === 'muerte_descomposicion_lich') {
+                // Muerte y Descomposición: 10 AOE + Mega Posesión + 3 daño extra por debuff activo
+                const _mdAtk = gameState.characters[gameState.selectedCharacter];
+                const _mdET = _mdAtk ? (_mdAtk.team==='team1'?'team2':'team1') : 'team2';
+                Object.keys(gameState.characters).forEach(function(n) {
+                    const _c = gameState.characters[n];
+                    if (!_c||_c.team!==_mdET||_c.isDead||_c.hp<=0) return;
+                    const _debuffCount = (_c.statusEffects||[]).filter(function(e){ return e && e.type==='debuff'; }).length;
+                    const _extraDmg = _debuffCount * 3;
+                    const _totalDmg = finalDamage + _extraDmg;
+                    applyDamageWithShield(n, _totalDmg, gameState.selectedCharacter);
+                    addLog('💀 Muerte y Descomposición: ' + _totalDmg + ' daño a ' + n + ' (+' + _extraDmg + ' por ' + _debuffCount + ' debuffs)', 'damage');
+                    // Mega Posesión: personaje pasa al control del Lich King por 1 turno
+                    if (typeof applyDebuff === 'function') {
+                        applyDebuff(n, { name:'Mega Posesion', type:'debuff', duration:1, emoji:'💀', megaPosesion:true });
+                    }
+                    addLog('💀 Mega Posesión aplicada a ' + n, 'debuff');
+                });
+
+            } // end Lich King handlers
 
             // Actualizar UI
             renderCharacters();

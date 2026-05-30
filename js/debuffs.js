@@ -245,6 +245,29 @@ function applyDebuff(targetName, effectObj) {
                 addLog('🟢 Sabiduría Antigua: ' + targetName + ' es inmune a debuffs', 'buff');
                 return;
             }
+            // IGNIFUGOZ (Armadura): inmune a Quemadura y Quemadura Solar
+            if ((target.equippedRelics||[]).some(function(r){ return r === 'Ignifugoz'; })) {
+                if (effectObj && (effectObj.name === 'Quemadura' || effectObj.name === 'Quemadura Solar' ||
+                    effectObj.name === 'quemadura' || effectObj.name === 'quemadura solar')) {
+                    addLog('🔥 Ignifugoz: ' + targetName + ' es inmune a Quemadura', 'buff');
+                    return;
+                }
+            }
+            // REY DE LA MUERTE (Lich King): genera 5 cargas por cada debuff aplicado al equipo enemigo
+            if (typeof gameState !== 'undefined' && gameState.characters) {
+                var _lkDebuffChar = null;
+                var _targetChar2 = gameState.characters[targetName];
+                if (_targetChar2) {
+                    for (var _lkn in gameState.characters) {
+                        var _lkc = gameState.characters[_lkn];
+                        if (!_lkc || _lkc.isDead || !_lkc.passive || _lkc.passive.name !== 'Rey de la Muerte') continue;
+                        if (_lkc.team !== _targetChar2.team) {
+                            _lkc.charges = Math.min(20, (_lkc.charges||0) + 5);
+                            // silent - no log spam
+                        }
+                    }
+                }
+            }
             // ANILLO DE LA VERDAD (debuff_resist_15): 15% de resistir cualquier debuff
             if ((target.equippedRelics||[]).some(function(r){ return r === 'Anillo de la Verdad'; })) {
                 if (Math.random() < 0.15) {
