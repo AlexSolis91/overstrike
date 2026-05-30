@@ -860,6 +860,30 @@
         }
 
         let _sellRelicSelected = null;
+        // ── loadSellSelectRelic: global, disponible desde el principio ──
+        window.loadSellSelectRelic = function(cardEl, name, tier, color) {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+            const today = new Date().toISOString().split('T')[0];
+            db.ref('users/' + user.uid + '/last_listing_date').once('value').then(function(s) {
+                if (s.val() === today) { alert('Ya publicaste un artículo hoy. Vuelve mañana.'); return; }
+                document.querySelectorAll('._sellRelicCard').forEach(function(c){ c.style.border='2px solid ' + (c.dataset.color||'#888') + '55'; });
+                if (cardEl) cardEl.style.border = '3px solid ' + (color||'#00ff88');
+                _sellRelicSelected = name;
+                document.getElementById('market-sell-selected-name').textContent = '💎 ' + name + ' (' + tier + ') — ingresa el precio:';
+                const form = document.getElementById('market-sell-form');
+                if (form) {
+                    form.style.display = 'block';
+                    const selType = document.getElementById('market-sell-type');
+                    if (selType) selType.value = 'public';
+                    const priceRow = document.getElementById('market-sell-price-row');
+                    if (priceRow) priceRow.style.display = 'block';
+                    const inp = document.getElementById('market-sell-price-input');
+                    if (inp) { inp.value = ''; setTimeout(function(){ inp.focus(); }, 50); }
+                }
+            });
+        };
+
         async function loadSellTab() {
             _sellRelicSelected = null;
             const sellForm = document.getElementById('market-sell-form');
@@ -915,29 +939,6 @@
                 (canList ? '<div style="font-size:.72rem;color:#aaa;margin-bottom:8px;">Selecciona la reliquia que quieres publicar:</div>' : '') +
                 '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;">' + gridHTML + '</div>';
         }
-
-        window.loadSellSelectRelic = function(cardEl, name, tier, color) {
-            const user = firebase.auth().currentUser;
-            if (!user) return;
-            const today = new Date().toISOString().split('T')[0];
-            db.ref('users/' + user.uid + '/last_listing_date').once('value').then(function(s) {
-                if (s.val() === today) { alert('Ya publicaste un artículo hoy. Vuelve mañana.'); return; }
-                document.querySelectorAll('._sellRelicCard').forEach(function(c){ c.style.border='2px solid ' + (c.dataset.color||'#888') + '55'; });
-                if (cardEl) cardEl.style.border = '3px solid ' + (color||'#00ff88');
-                _sellRelicSelected = name;
-                document.getElementById('market-sell-selected-name').textContent = '💎 ' + name + ' (' + tier + ') — ingresa el precio:';
-                const form = document.getElementById('market-sell-form');
-                if (form) {
-                    form.style.display = 'block';
-                    const selType = document.getElementById('market-sell-type');
-                    if (selType) selType.value = 'public';
-                    const priceRow = document.getElementById('market-sell-price-row');
-                    if (priceRow) priceRow.style.display = 'block';
-                    const inp = document.getElementById('market-sell-price-input');
-                    if (inp) { inp.value = ''; setTimeout(function(){ inp.focus(); }, 50); }
-                }
-            });
-        };
 
 
         document.addEventListener('DOMContentLoaded', function(){
@@ -1042,6 +1043,23 @@
                 alert('Error al desactivar: ' + e.message);
             }
         };
+        // ── BOSS_DATA: configuración de todos los jefes disponibles ──
+        var BOSS_DATA = {
+            'broly': {
+                name: 'Broly',
+                portrait: 'https://i.ibb.co/wrhphbYm/image.jpg',
+                hp: 20000, maxHp: 20000, speed: 95,
+                passive: { name: 'Legendario Super Sayajin', description: 'Cada vez que recibe daño, genera 3 cargas. Genera N cargas al inicio de la ronda N. 25% de probabilidad de esquivar Debuffs.' }
+            },
+            'lich_king': {
+                name: 'Lich King',
+                portrait: 'https://i.ibb.co/q365QSyQ/PS.jpg',
+                hp: 15000, maxHp: 15000, speed: 80,
+                passive: { name: 'Rey de la Muerte', description: 'Cada debuff aplicado al equipo enemigo genera 5 cargas. Inicio de ronda: 40% congelación, miedo y posesión al equipo enemigo. Al matar un enemigo, revive como aliado con 50% HP y 10 cargas.' }
+            }
+        };
+        window.BOSS_DATA = BOSS_DATA;
+
         function adminSelectBoss(bossId, el) {
             document.getElementById('admin-boss-select').value = bossId;
             // Highlight selected card
@@ -1921,7 +1939,14 @@
                         <div style="font-size:.6rem;color:#666;margin-top:2px;">10,000 HP</div>
                         <div style="font-size:.58rem;color:#555;margin-top:1px;">Legendario SS</div>
                     </div>
-                    <!-- Puedes agregar más jefes aquí en el futuro -->
+                    <!-- Lich King -->
+                    <div onclick="adminSelectBoss('lich_king',this)" id="bosscard-lich_king"
+                        style="background:rgba(100,0,200,0.08);border:2px solid rgba(100,0,200,0.3);border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:all .2s;">
+                        <img src="https://i.ibb.co/q365QSyQ/PS.jpg" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #6400c8;margin-bottom:6px;" onerror="this.style.display='none'">
+                        <div style="font-family:Orbitron,sans-serif;font-size:.7rem;color:#a855f7;font-weight:700;">LICH KING</div>
+                        <div style="font-size:.6rem;color:#666;margin-top:2px;">15,000 HP</div>
+                        <div style="font-size:.58rem;color:#555;margin-top:1px;">Rey de la Muerte</div>
+                    </div>
                 </div>
 
                 <input type="hidden" id="admin-boss-select" value="broly">
