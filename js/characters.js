@@ -959,3 +959,8 @@
                 ]
             }
         };
+
+// ── Expose globals ──
+window.characterData = characterData;
+window.RELICS_DATA = RELICS_DATA;
+window.BOSS_DATA_CHARS = typeof BOSS_DATA !== "undefined" ? BOSS_DATA : {};

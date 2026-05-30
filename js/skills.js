@@ -8762,16 +8762,24 @@
         }
 
         // ==================== INICIO DEL JUEGO ====================
-        window.onload = function() {
+        // Usar addEventListener en lugar de window.onload para no ser sobreescrito
+        function _initGame() {
             csInit();
-            // Add floating mute/unmute button
-            const muteBtn = document.createElement('button');
-            muteBtn.id = 'audioToggleBtn';
-            muteBtn.textContent = '🔊';
-            muteBtn.title = 'Silenciar/Activar música';
-            muteBtn.style.cssText = 'position:fixed;top:14px;right:14px;z-index:9999;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.3);color:#fff;font-size:1.2rem;padding:6px 10px;border-radius:8px;cursor:pointer;transition:all .2s;';
-            muteBtn.onmouseover = function() { this.style.background = 'rgba(0,196,255,0.3)'; };
-            muteBtn.onmouseout = function() { this.style.background = 'rgba(0,0,0,0.6)'; };
-            muteBtn.onclick = function() { audioManager.toggleMute(); };
-            document.body.appendChild(muteBtn);
-        };
+            // Crear botón de mute flotante si no existe
+            if (!document.getElementById('audioToggleBtn')) {
+                const muteBtn = document.createElement('button');
+                muteBtn.id = 'audioToggleBtn';
+                muteBtn.textContent = '🔊';
+                muteBtn.title = 'Silenciar/Activar música';
+                muteBtn.style.cssText = 'position:fixed;top:14px;right:14px;z-index:9999;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.3);color:#fff;font-size:1.2rem;padding:6px 10px;border-radius:8px;cursor:pointer;transition:all .2s;';
+                muteBtn.onmouseover = function() { this.style.background = 'rgba(0,196,255,0.3)'; };
+                muteBtn.onmouseout  = function() { this.style.background = 'rgba(0,0,0,0.6)'; };
+                muteBtn.onclick = function() { if (typeof audioManager !== 'undefined') audioManager.toggleMute(); };
+                document.body.appendChild(muteBtn);
+            }
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', _initGame);
+        } else {
+            _initGame();
+        }
