@@ -263,33 +263,36 @@
 
     <!-- ==================== GAME BATTLE CONTAINER ==================== -->
     <div class="game-container" style="display:none;">
-        <div class="game-header">
-            <h1 class="game-title">OVERSTRIKE</h1>
+        <div class="game-header" style="padding:4px 12px 2px;margin-bottom:2px;">
+            <h1 class="game-title" style="font-size:1.1rem;margin:0;">OVERSTRIKE</h1>
         </div>
         <div class="battle-arena">
+            <!-- TEAM 1 -->
             <div class="team-column">
-                <div style="text-align: center; font-family: 'Orbitron', sans-serif; font-size: 1.1em; color: var(--team1); margin-bottom: 10px; text-shadow: 0 0 10px var(--team1);" id="teamHeader1">🔷 HUNTERS</div>
-                <div id="team1Characters"></div>
-                <div id="team1Summons"></div>
+                <div id="teamHeader1" style="text-align:center;font-family:'Orbitron',sans-serif;font-size:.75rem;color:var(--team1);padding:4px 0 2px;letter-spacing:.08em;text-shadow:0 0 8px var(--team1);flex-shrink:0;">🔷 HUNTERS</div>
+                <div id="team1Characters" style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:3px;"></div>
+                <div id="team1Summons" style="flex-shrink:0;"></div>
             </div>
+            <!-- CENTER: turn info + battle log -->
             <div class="center-column">
-                <div class="control-panel">
+                <div class="control-panel" style="flex-shrink:0;">
                     <div class="turn-info">
                         <div class="current-turn" id="currentTurnDisplay">Calculando...</div>
                     </div>
                 </div>
-                <div class="battle-log">
-                    <div class="battle-log-title" style="display:flex;align-items:center;gap:8px;">
-                        <span>📜 BATTLE LOG</span>
-                        <button onclick="showBuffDebuffGuide()" style="background:rgba(0,196,255,0.15);border:1px solid #00c4ff;color:#00c4ff;font-family:'Orbitron',sans-serif;font-size:.55rem;padding:3px 7px;border-radius:6px;cursor:pointer;letter-spacing:.05em;" title="Guía de Buffs y Debuffs">📖 GUÍA</button>
+                <div class="battle-log" style="flex:1;min-height:0;font-size:0.7rem;">
+                    <div class="battle-log-title" style="display:flex;align-items:center;gap:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:6px;">
+                        <span style="font-size:.7rem;">📜 BATTLE LOG</span>
+                        <button onclick="showBuffDebuffGuide()" style="background:rgba(0,196,255,0.1);border:1px solid #00c4ff44;color:#00c4ff;font-family:'Orbitron',sans-serif;font-size:.5rem;padding:2px 6px;border-radius:6px;cursor:pointer;letter-spacing:.05em;" title="Guía de Buffs y Debuffs">📖 GUÍA</button>
                     </div>
                     <div id="battleLogContent"></div>
                 </div>
             </div>
+            <!-- TEAM 2 -->
             <div class="team-column">
-                <div style="text-align: center; font-family: 'Orbitron', sans-serif; font-size: 1.1em; color: var(--team2); margin-bottom: 10px; text-shadow: 0 0 10px var(--team2);" id="teamHeader2">🔶 REAPERS</div>
-                <div id="team2Characters"></div>
-                <div id="team2Summons"></div>
+                <div id="teamHeader2" style="text-align:center;font-family:'Orbitron',sans-serif;font-size:.75rem;color:var(--team2);padding:4px 0 2px;letter-spacing:.08em;text-shadow:0 0 8px var(--team2);flex-shrink:0;">🔶 REAPERS</div>
+                <div id="team2Characters" style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:3px;"></div>
+                <div id="team2Summons" style="flex-shrink:0;"></div>
             </div>
         </div>
     </div>
