@@ -1958,79 +1958,121 @@
         }
 
         // ── Premio de fin de temporada Ranked ──────────────────────────────────
+        // ── LIGAS RANKED ───────────────────────────────────────────────
+        const RANKED_LEAGUES = [
+            { name:'Bronce',   min:0,     max:1499,  gold:50000,   keys:0,  emoji:'🥉', color:'#cd7f32' },
+            { name:'Plata',    min:1500,  max:2999,  gold:100000,  keys:0,  emoji:'🥈', color:'#C0C0C0' },
+            { name:'Oro',      min:3000,  max:4499,  gold:200000,  keys:0,  emoji:'🥇', color:'#FFD700' },
+            { name:'Diamante', min:4500,  max:5999,  gold:300000,  keys:1,  emoji:'💎', color:'#b9f2ff' },
+            { name:'Platino',  min:6000,  max:7499,  gold:400000,  keys:2,  emoji:'⭐', color:'#e5e4e2' },
+            { name:'Master',   min:7500,  max:9999,  gold:500000,  keys:5,  emoji:'👑', color:'#ff88ff' },
+            { name:'Leyenda',  min:10000, max:Infinity, gold:1000000, keys:10, emoji:'🌟', color:'#ff6600' },
+        ];
+        window.RANKED_LEAGUES = RANKED_LEAGUES;
+
+        function getLeagueForPoints(pts) {
+            for (var i = RANKED_LEAGUES.length - 1; i >= 0; i--) {
+                if (pts >= RANKED_LEAGUES[i].min) return RANKED_LEAGUES[i];
+            }
+            return RANKED_LEAGUES[0];
+        }
+        window.getLeagueForPoints = getLeagueForPoints;
+
         async function distributeSeasonRewards() {
             const snap = await db.ref('ranked_stats').once('value');
             const all = snap.val() || {};
             const curSeason = getCurrentSeasonKey();
 
-            // Verificar si ya se distribuyeron los premios de esta temporada
-            const rewardCheckSnap = await db.ref('season_rewards_distributed').once('value');
-            if (rewardCheckSnap.val() === curSeason) {
-                console.log('[Season] Premios ya distribuidos para:', curSeason);
-                return;
-            }
+            // Verificar si ya se distribuyeron
+            const checkSnap = await db.ref('season_rewards_distributed').once('value');
+            if (checkSnap.val() === curSeason) { console.log('[Season] Ya distribuidos:', curSeason); return; }
 
-            // Obtener ranking ordenado por puntos
-            const ranking = Object.entries(all)
-                .map(function([uid, data]) { return { uid, points: data.points || 0, name: data.name || uid }; })
-                .filter(function(e) { return e.points > 0; })
-                .sort(function(a, b) { return b.points - a.points; });
+            const players = Object.entries(all)
+                .map(function([uid, d]) { return { uid, points: d.points || 0, name: d.name || uid }; })
+                .filter(function(e) { return e.points >= 0; });
 
-            if (ranking.length === 0) return;
+            if (players.length === 0) return;
 
-            const rewardTiers = [
-                { gold: 200000, relics: 3, relicPool: [{ tier:'Legendario', pct:0.01 }, { tier:'Epico', pct:0.50 }, { tier:'Especial', pct:0.49 }] },  // 1st
-                { gold: 100000, relics: 3, relicPool: [{ tier:'Epico', pct:0.50 }, { tier:'Especial', pct:0.50 }] },  // 2nd
-                { gold: 100000, relics: 1, relicPool: [{ tier:'Epico', pct:0.50 }, { tier:'Especial', pct:0.50 }] },  // 3rd
-                { gold: 50000,  relics: 0 },  // 4th
-                { gold: 50000,  relics: 0 },  // 5th
-            ];
-            const defaultReward = { gold: 30000, relics: 0 };
+            for (var i = 0; i < players.length; i++) {
+                var p = players[i];
+                var league = getLeagueForPoints(p.points);
 
-            function rollRelicFromPool(pool) {
-                var r = Math.random();
-                var acc = 0;
-                for (var i = 0; i < pool.length; i++) {
-                    acc += pool[i].pct;
-                    if (r < acc) return pool[i].tier;
-                }
-                return pool[pool.length-1].tier;
-            }
+                // Otorgar oro
+                await addGold(p.uid, league.gold);
 
-            function getRandomRelicByTier(tier) {
-                if (typeof RELICS_DATA === 'undefined') return null;
-                var candidates = Object.keys(RELICS_DATA).filter(function(k){ return RELICS_DATA[k].tier === tier; });
-                if (!candidates.length) return null;
-                return candidates[Math.floor(Math.random() * candidates.length)];
-            }
-
-            for (var i = 0; i < ranking.length; i++) {
-                var entry = ranking[i];
-                var rank  = i + 1;
-                var rw    = rank <= 5 ? rewardTiers[rank - 1] : defaultReward;
-
-                // Oro
-                await addGold(entry.uid, rw.gold);
-
-                // Reliquias
-                for (var j = 0; j < (rw.relics || 0); j++) {
-                    var tier   = rollRelicFromPool(rw.relicPool);
-                    var rName  = getRandomRelicByTier(tier);
-                    if (rName) await addRelicToInventory(entry.uid, rName);
+                // Otorgar llaves arcanas
+                if (league.keys > 0) {
+                    var keysSnap = await db.ref('users/' + p.uid + '/arcane_keys').once('value');
+                    await db.ref('users/' + p.uid + '/arcane_keys').set((keysSnap.val() || 0) + league.keys);
                 }
 
-                // Notificación
-                var msg = '🏆 Fin de Temporada ' + curSeason + ' — Posición #' + rank +
-                    ': +' + rw.gold.toLocaleString() + ' 🥇' +
-                    (rw.relics ? ' + ' + rw.relics + ' Reliquia(s)' : '');
-                await db.ref('players/' + entry.uid + '/notifications').push({ msg, ts: Date.now(), read: false });
+                // Guardar notificación de premio pendiente de reclamar
+                var reward = { 
+                    season: curSeason,
+                    league: league.name,
+                    leagueEmoji: league.emoji,
+                    points: p.points,
+                    gold: league.gold,
+                    keys: league.keys,
+                    ts: Date.now(),
+                    claimed: false
+                };
+                await db.ref('users/' + p.uid + '/season_reward_pending').set(reward);
+                console.log('[Season] Recompensa pendiente para', p.name, '— liga:', league.name);
             }
 
-            // Marcar como distribuido
             await db.ref('season_rewards_distributed').set(curSeason);
-            console.log('[Season] Premios de temporada ' + curSeason + ' distribuidos a ' + ranking.length + ' jugadores.');
+            console.log('[Season] Premios distribuidos para', players.length, 'jugadores, temporada', curSeason);
         }
         window.distributeSeasonRewards = distributeSeasonRewards;
+
+        // Verificar al login si hay un premio pendiente de reclamar
+        async function checkPendingSeasonReward(uid) {
+            var snap = await db.ref('users/' + uid + '/season_reward_pending').once('value');
+            var reward = snap.val();
+            if (!reward || reward.claimed) return;
+            // Mostrar ventana emergente
+            showSeasonRewardModal(uid, reward);
+        }
+        window.checkPendingSeasonReward = checkPendingSeasonReward;
+
+        function showSeasonRewardModal(uid, reward) {
+            var existing = document.getElementById('seasonRewardModal');
+            if (existing) existing.remove();
+
+            var league = reward.league || 'Bronce';
+            var emoji = reward.leagueEmoji || '🥉';
+            var gold = (reward.gold || 0).toLocaleString();
+            var keys = reward.keys || 0;
+            var pts = (reward.points || 0).toLocaleString();
+            var season = reward.season || '';
+
+            // Find league color
+            var lData = RANKED_LEAGUES.find(function(l){ return l.name === league; }) || RANKED_LEAGUES[0];
+            var color = lData.color || '#ffd700';
+
+            var modal = document.createElement('div');
+            modal.id = 'seasonRewardModal';
+            modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:99999;display:flex;align-items:center;justify-content:center;animation:bossFadeIn .4s ease;';
+            modal.innerHTML = '<div style="background:linear-gradient(135deg,#0a0e17,#1a1a2e);border:2px solid ' + color + ';border-radius:20px;padding:36px 40px;text-align:center;max-width:420px;width:90%;box-shadow:0 0 40px ' + color + '44;">' +
+                '<div style="font-size:3.5rem;margin-bottom:12px;">' + emoji + '</div>' +
+                '<div style="font-family:Orbitron,sans-serif;color:' + color + ';font-size:1.1rem;font-weight:700;margin-bottom:6px;letter-spacing:.05em;">TEMPORADA ' + season + ' FINALIZADA</div>' +
+                '<div style="color:#aaa;font-size:.85rem;margin-bottom:20px;">Terminaste en <strong style="color:' + color + ';">Liga ' + league + '</strong> con <strong style="color:#fff;">' + pts + ' puntos</strong></div>' +
+                '<div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:16px;margin-bottom:24px;">' +
+                '<div style="font-family:Orbitron,sans-serif;color:#ffd700;font-size:.8rem;margin-bottom:12px;letter-spacing:.04em;">🎁 RECOMPENSA OBTENIDA</div>' +
+                '<div style="color:#ffd700;font-size:1.4rem;font-weight:700;margin-bottom:6px;">+' + gold + ' 🥇</div>' +
+                (keys > 0 ? '<div style="color:#b9f2ff;font-size:1rem;">+' + keys + ' 🗝️ Llave' + (keys > 1 ? 's' : '') + ' Arcana' + (keys > 1 ? 's' : '') + '</div>' : '') +
+                '</div>' +
+                '<button onclick="window.claimSeasonReward(\"' + uid + '\")">✅ RECLAMAR RECOMPENSA</button>' +
+                '</div>';
+            document.body.appendChild(modal);
+        }
+
+        window.claimSeasonReward = async function(uid) {
+            await db.ref('users/' + uid + '/season_reward_pending/claimed').set(true);
+            var modal = document.getElementById('seasonRewardModal');
+            if (modal) modal.remove();
+        };
 
         // ── Trigger automático: último día del mes a medianoche ──────────────
         (function checkSeasonEnd() {
@@ -3884,5 +3926,7 @@
                 await initPlayerData(user.uid);
                 await updateLobbyHUD();
                 await cleanExpiredListings();
+                // Verificar si hay un premio de temporada pendiente de reclamar
+                try { await checkPendingSeasonReward(user.uid); } catch(e) {}
             }
         });
