@@ -1961,6 +1961,12 @@
             }
 
             // Verificar si fue derrotado
+            // Damage tick animation
+            if (oldHp > 0 && target.hp < oldHp && !target._naginiImmuneRound) {
+                const _dmgDelta = target.hp - oldHp; // negative
+                if (typeof showHpTick === 'function') showHpTick(targetName, _dmgDelta);
+            }
+
             if (target.hp <= 0 && oldHp > 0) {
                 target.isDead = true;
                 if (typeof _animCard === 'function') _animCard(targetName, 'anim-defeat', 700);

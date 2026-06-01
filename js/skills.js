@@ -8268,11 +8268,18 @@
                 Object.keys(gameState.characters).forEach(function(n) {
                     const _c = gameState.characters[n];
                     if (!_c || _c.team !== _tmETeam || _c.isDead || _c.hp <= 0) return;
-                    applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
-                    const _hasBuff = (_c.statusEffects||[]).some(function(e){
-                        return e && (normAccent(e.name||'') === 'miedo' || normAccent(e.name||'') === 'sangrado');
+                    // Check BEFORE damage (so death doesn't wipe statusEffects)
+                    const _effects = _c.statusEffects || [];
+                    const _hasMiedoSangrado = _effects.some(function(e){
+                        if (!e || !e.name) return false;
+                        const _n = normAccent(e.name);
+                        return _n === 'miedo' || _n === 'sangrado';
                     });
-                    if (_hasBuff) _tmChargeGain += 2;
+                    if (_hasMiedoSangrado) {
+                        _tmChargeGain += 2;
+                        addLog('🌊 Tormenta: ' + n + ' tiene Miedo/Sangrado → +2 cargas al equipo aliado', 'buff');
+                    }
+                    applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
                 });
                 addLog('🌊 Tormenta del Mediterráneo: ' + finalDamage + ' AOE', 'damage');
                 if (_tmChargeGain > 0) {
