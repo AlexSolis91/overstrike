@@ -940,27 +940,9 @@
         // Costo de remover reliquia equipada
         const RELIC_REMOVE_COST = 10000;
 
-        // ==================== JEFE DE SALA — BROLY ====================
-        const BOSS_DATA = {
-            'broly': {
-                id: 'broly',
-                name: 'Broly',
-                portrait: 'https://i.ibb.co/wrhphbYm/image.jpg',
-                hp: 20000, maxHp: 20000,
-                speed: 95, charges: 0,
-                isBoss: true,           // Inmune a One-Hit KO
-                statusEffects: [],
-                passive: { name: 'Legendario Super Sayajin', description: 'Cada vez que recibe daño, genera 3 cargas. Genera N cargas al inicio de cada ronda N. 25% de probabilidad de esquivar Debuffs.' },
-                abilities: [
-                    { name: 'Eraser Cannon',         type: 'basic',   cost: 0,  chargeGain: 2, damage: 3,  target: 'single', effect: 'eraser_cannon_broly',     description: 'Causa 3 daño. 50% de probabilidad de generar el doble de cargas.' },
-                    { name: 'Onda de Destrucción',   type: 'special', cost: 8,  chargeGain: 0, damage: 6,  target: 'single', effect: 'onda_destruccion_broly',   description: 'Antes de golpear, disipa todos los Buffs del objetivo. Por cada Buff disipado aumenta un 200% el daño de este ataque.' },
-                    { name: 'Liberación de Energía', type: 'special', cost: 10, chargeGain: 0, damage: 5,  target: 'aoe',    effect: 'liberacion_energia_broly', description: '50% de probabilidad de ganar 4 cargas por cada enemigo golpeado.' },
-                    { name: 'Omega Bláster',         type: 'over',    cost: 20, chargeGain: 0, damage: 20, target: 'single', effect: 'omega_blaster_broly',      description: 'Causa 20 daño. Roba todas las cargas del equipo enemigo. Por cada carga robada causa +1 daño a 2 enemigos aleatorios.' }
-                ]
-            }
-        };
-
 // ── Expose globals ──
 window.characterData = characterData;
 window.RELICS_DATA = RELICS_DATA;
-window.BOSS_DATA_CHARS = typeof BOSS_DATA !== "undefined" ? BOSS_DATA : {};
+window.RELIC_MARKET_PRICES = RELIC_MARKET_PRICES;
+window.RELIC_QUICK_SELL = RELIC_QUICK_SELL;
+window.RELIC_REMOVE_COST = RELIC_REMOVE_COST;
