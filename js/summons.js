@@ -697,8 +697,12 @@
 
             // ── SABIDURÍA ANTIGUA (Yoda): INMUNE A TODO DAÑO (directo, DOT, AOE, etc.) ──
             if (target.passive && target.passive.name === 'Sabiduría Antigua') {
-                // Solo log si hay daño real para no spamear el log
-                // addLog('🟢 Sabiduría Antigua: Yoda es inmune', 'buff'); // silencioso
+                return 0;
+            }
+            // ── HORROCRUX VIVIENTE (Voldemort): inmune a daño en la ronda que sobrevivió ──
+            if (target.passive && target.passive.name === 'Horrocrux Viviente' &&
+                target._naginiImmuneRound === gameState.currentRound) {
+                addLog('🐍 Horrocrux Viviente: Voldemort es inmune al daño esta ronda (Nagini activa)', 'buff');
                 return 0;
             }
 
@@ -1272,24 +1276,6 @@
                 }
             }
 
-            // ── HORROCRUX VIVIENTE (Voldemort): al recibir daño fatal con Nagini activa → sobrevive con 1 HP ──
-            if (remainingDamage > 0 && !passiveExecuting) {
-                const _voldChar = gameState.characters[targetName];
-                if (_voldChar && _voldChar.passive && _voldChar.passive.name === 'Horrocrux Viviente') {
-                    // Check if this hit would kill Voldemort and Nagini is active
-                    if (_voldChar.hp <= 0 || _voldChar.isDead) {
-                        const _voldTeam = _voldChar.team;
-                        const _naginiActive = Object.values(gameState.summons||{}).some(function(s){ return s && s.name === 'Nagini' && s.team === _voldTeam && !s.isDead && s.hp > 0; });
-                        if (_naginiActive && !_voldChar._naginiReviveUsed) {
-                            _voldChar.hp = 1;
-                            _voldChar.isDead = false;
-                            _voldChar._naginiSurvivedRound = gameState.currentRound;
-                            addLog('🐍 Horrocrux Viviente: Voldemort sobrevive con 1 HP (Nagini activa)', 'buff');
-                        }
-                    }
-                }
-            }
-
             // ── LEGENDARIO SUPER SAYAJIN (Broly): genera 3 cargas cada vez que recibe daño ──
             if (remainingDamage > 0 && !passiveExecuting && target.isBoss &&
                 target.passive && target.passive.name === 'Legendario Super Sayajin') {
@@ -1454,9 +1440,9 @@
 
                         // 25% turno adicional
                         case 'extra_turn_25':
-                            if (Math.random() < 0.25) {
-                                if (typeof triggerAnticipacion === 'function') triggerAnticipacion(attackerName, _atkChar.team);
-                                addLog('✨ Sable Nishant: turno adicional para ' + attackerName, 'buff');
+                            if (Math.random() < 0.25 && !gameState._skeggoxExtraTurn) {
+                                gameState._skeggoxExtraTurn = attackerName;
+                                addLog('✨ Sable Nishant: turno adicional para ' + attackerName + ' (25%)', 'buff');
                             }
                             break;
 
@@ -1955,6 +1941,22 @@
                         addLog('🔥 Monarca de la Destruccion: ' + _mn2 + ' gana 1 carga (daño directo a ' + targetName + ')', 'buff');
                         break;
                     }
+                }
+            }
+
+            // ── HORROCRUX VIVIENTE (Voldemort): interceptar muerte si Nagini activa → sobrevive con 1 HP ──
+            if (target && target.hp <= 0 && !target.isDead && target.passive && target.passive.name === 'Horrocrux Viviente') {
+                const _voldTeam = target.team;
+                const _naginiActive = Object.values(gameState.summons||{}).some(function(s){
+                    return s && s.name === 'Nagini' && s.team === _voldTeam && !s.isDead && s.hp > 0;
+                });
+                if (_naginiActive) {
+                    target.hp = 1;
+                    target.isDead = false;
+                    target._naginiSurvivedRound = gameState.currentRound;
+                    addLog('🐍 Horrocrux Viviente: Voldemort sobrevive con 1 HP — no puede recibir más daño esta ronda', 'buff');
+                    // Mark as immune until next round
+                    target._naginiImmuneRound = gameState.currentRound;
                 }
             }
 

@@ -356,15 +356,12 @@
                     else if (char.vegetaForm === 'ultra_ego' && char.portraitUltraEgo) _dynPortrait = char.portraitUltraEgo;
                 }
                 const activePortrait = _dynPortrait;
-                // Boss de Sala: portrait más grande y centrado verticalmente
-                const isBossChar = !!(char.isBoss);
-                const bossImgStyle = isBossChar ? 'width:160px;height:210px;object-fit:cover;border-radius:12px;border:3px solid #ff4444;box-shadow:0 0 28px rgba(255,68,68,0.7);display:block;margin:0 auto;' : '';
                 const portraitHTML = activePortrait
-                    ? `<img class="character-portrait${isDefeated ? ' defeated-img' : ''}" src="${activePortrait}" alt="${name}" loading="eager" referrerpolicy="no-referrer" style="${bossImgStyle}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="character-portrait-placeholder" style="display:none">⚔️</div>`
+                    ? `<img class="character-portrait${isDefeated ? ' defeated-img' : ''}" src="${activePortrait}" alt="${name}" loading="eager" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="character-portrait-placeholder" style="display:none">⚔️</div>`
                     : `<div class="character-portrait-placeholder">⚔️</div>`;
 
                 const cardHTML = `
-                    <div class="character-card ${isDefeated ? 'defeated' : ''} ${isTransformed ? 'transformed-mode' : ''} ${isBossChar ? 'boss-card' : ''}" id="char-${name.replace(/\s+/g, '-')}" data-charname="${name}" style="cursor:pointer;${isBossChar ? 'min-height:340px;display:flex;flex-direction:column;align-items:center;justify-content:center;' : ''}" title="Ver ficha de ${name}">
+                    <div class="character-card ${isDefeated ? 'defeated' : ''} ${isTransformed ? 'transformed-mode' : ''}" id="char-${name.replace(/\s+/g, '-')}" data-charname="${name}" style="cursor:pointer;" title="Ver ficha de ${name}">
                         <div class="character-header">
                             <div class="character-name">
                                 ${name}
@@ -373,9 +370,9 @@
                             <div class="character-speed">⚡${char.speed}</div>
                         </div>
 
-                        <div class="character-portrait-row" style="${isBossChar ? 'flex-direction:column;align-items:center;' : ''}">
+                        <div class="character-portrait-row">
                             ${portraitHTML}
-                            <div class="character-info-col" style="${isBossChar ? 'width:100%;margin-top:8px;' : ''}">
+                            <div class="character-info-col">
                                 <div class="stat-bars">
                                     <div class="stat-bar">
                                         <div class="stat-label">
@@ -401,38 +398,11 @@
                         </div>
                         
                         ${renderStatusEffects(char)}
-                        ${renderRelicMiniatures(name, char)}
                     </div>
                 `;
                 
                 container.innerHTML += cardHTML;
             }
-        }
-
-        // ── Reliquias en miniatura en la tarjeta de batalla ──────────────────
-        // Muestra reliquias para AMBOS equipos — el jugador puede ver las del rival
-        function renderRelicMiniatures(charName, char) {
-            var equippedRelics = char.equippedRelics || [];
-            if (!equippedRelics.length) return '';
-            var tierColors = { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700' };
-            var html = '<div style="display:flex;gap:3px;flex-wrap:wrap;padding:4px 6px 0;justify-content:center;">';
-            equippedRelics.forEach(function(relicName) {
-                if (!relicName) return;
-                var rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[relicName] : null;
-                var imgSrc = rd ? (rd.img || '') : '';
-                var tc = rd ? (tierColors[rd.tier] || '#aaa') : '#aaa';
-                html += '<img src="' + imgSrc + '" ' +
-                    'title="' + relicName + '" ' +
-                    'data-relic="' + encodeURIComponent(relicName) + '" ' +
-                    'data-tc="' + tc + '" ' +
-                    'onclick="event.stopPropagation();var b=this;var rn=decodeURIComponent(b.dataset.relic);showRelicTooltip(rn,typeof RELICS_DATA!==undefined?RELICS_DATA[rn]:null,b.dataset.tc,b)" ' +
-                    'style="width:22px;height:22px;object-fit:contain;border-radius:4px;border:1px solid ' + tc + ';background:rgba(0,0,0,0.5);cursor:pointer;transition:transform .15s;" ' +
-                    'onmouseover="this.style.transform=\'scale(1.4)\'" ' +
-                    'onmouseout="this.style.transform=\'scale(1)\'" ' +
-                    'onerror="this.style.display=\'none\'">';
-            });
-            html += '</div>';
-            return html;
         }
 
         function renderAbilities(charName, char) {
@@ -468,8 +438,11 @@
                     });
                 }
 
-                const disabled = !canUse || char.hp <= 0 || blockedBySilence || blockedBySummon;
-                const _disabledTitle = blockedBySummon ? ' title="' + _summonName + ' ya está en campo"' : '';
+                const disabled = !canUse || char.hp <= 0 || blockedBySilence || blockedBySummon ||
+                    // Piel de Acero Legendaria: bloqueada durante cooldown
+                    (ability.effect === 'piel_acero_bjorn' && (char._pielAceroCooldown||0) > 0);
+                const _disabledTitle = blockedBySummon ? ' title="' + _summonName + ' ya está en campo"' :
+                    (ability.effect === 'piel_acero_bjorn' && (char._pielAceroCooldown||0) > 0) ? ' title="Cooldown: ' + char._pielAceroCooldown + ' turno(s)"' : '';
                 // Over listo: el Over es usable y no está bloqueado
                 const isOverReady = ability.type === 'over' && !disabled;
                 

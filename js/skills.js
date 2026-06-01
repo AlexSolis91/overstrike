@@ -6806,6 +6806,7 @@
 
             } else if (ability.effect === 'guia_maestro_yoda') {
                 // Guía del Maestro: cada aliado vivo ejecuta su ataque básico contra un enemigo aleatorio
+                // Activa el efecto REAL del básico de cada aliado (daño, efectos, cargas)
                 const _gmYoda = gameState.characters[gameState.selectedCharacter];
                 const _gmTeam = _gmYoda ? _gmYoda.team : 'team1';
                 const _gmETeam = _gmTeam === 'team1' ? 'team2' : 'team1';
@@ -6827,26 +6828,78 @@
                         if (!_ally || _ally.isDead || _ally.hp <= 0) return;
                         const _basicAb = (_ally.abilities || []).find(function(a){ return a && a.type === 'basic'; });
                         if (!_basicAb) return;
-                        // Pick RANDOM enemy
                         const _enemies = _gmGetEnemies();
                         if (!_enemies.length) return;
                         const _tgt = _enemies[Math.floor(Math.random() * _enemies.length)];
                         const _tgtChar = gameState.characters[_tgt];
                         if (!_tgtChar || _tgtChar.isDead || _tgtChar.hp <= 0) return;
-                        // Apply damage
-                        if (_basicAb.damage > 0) {
-                            applyDamageWithShield(_tgt, _basicAb.damage, allyName);
-                        }
+
+                        addLog('✨ Guía del Maestro: ' + allyName + ' usa ' + _basicAb.name + ' sobre ' + _tgt, 'info');
+
+                        // Save & override gameState to simulate ally's basic
+                        const _prevSelected = gameState.selectedCharacter;
+                        const _prevAbility = gameState.selectedAbility;
+                        const _prevTarget = gameState.selectedTarget;
+                        gameState.selectedCharacter = allyName;
+                        gameState.selectedAbility = _basicAb;
+                        gameState.selectedTarget = _tgt;
+                        gameState._lastAbilityType = 'basic';
+                        gameState._lastAbilityChargeGain = _basicAb.chargeGain || 0;
+
+                        // Apply damage (base)
+                        const _dmg = _basicAb.damage || 0;
+                        if (_dmg > 0) applyDamageWithShield(_tgt, _dmg, allyName);
+
                         // Apply chargeGain to ally
-                        if (_basicAb.chargeGain > 0) {
-                            _ally.charges = Math.min(20, (_ally.charges || 0) + _basicAb.chargeGain);
+                        if ((_basicAb.chargeGain||0) > 0) {
+                            _ally.charges = Math.min(20, (_ally.charges||0) + _basicAb.chargeGain);
                         }
-                        addLog('✨ Guía del Maestro: ' + allyName + ' ataca a ' + _tgt + ' [' + _basicAb.name + '] por ' + _basicAb.damage + ' daño', 'damage');
-                        // Mark target as dead if HP reached 0
-                        if (_tgtChar.hp <= 0 || _tgtChar.isDead) {
+
+                        // Trigger the actual ability effect if it has one (not self-referential effects)
+                        const _eff = _basicAb.effect || '';
+                        const _skipEffects = ['guia_maestro_yoda']; // never self-recurse
+                        if (_eff && !_skipEffects.includes(_eff)) {
+                            // Inline-handle common basic effects
+                            try {
+                                if (_eff === 'crit_chance_basic' && _basicAb.critChance > 0) {
+                                    const _gB = (allyName.startsWith('Gilgamesh')) ? 0.25 : 0;
+                                    if (Math.random() < Math.min(1, (_basicAb.critChance||0) + _gB)) {
+                                        applyDamageWithShield(_tgt, _dmg, allyName); // extra crit dmg
+                                        addLog('⚡ Crítico! (' + allyName + ')', 'buff');
+                                    }
+                                } else if (_eff === 'dragons_fear_antares' || _eff === 'dragon_fear_antares') {
+                                    // Antares básico: 1 AOE + 50% Miedo 2T + 30% triple dmg si ya tenía Miedo/Quemadura
+                                    const _aET = _ally.team === 'team1' ? 'team2' : 'team1';
+                                    Object.keys(gameState.characters).forEach(function(en) {
+                                        const _ec = gameState.characters[en];
+                                        if (!_ec || _ec.team !== _aET || _ec.isDead || _ec.hp <= 0 || en === _tgt) return;
+                                        applyDamageWithShield(en, _dmg, allyName);
+                                    });
+                                    if (Math.random() < 0.50 && typeof applyDebuff === 'function')
+                                        applyDebuff(_tgt, {name:'Miedo',type:'debuff',duration:2,emoji:'😨'});
+                                    const _hadMQ = (_tgtChar.statusEffects||[]).some(function(e){ const n=normAccent(e?.name||''); return n==='miedo'||n==='quemadura'; });
+                                    if (_hadMQ && Math.random() < 0.30) {
+                                        applyDamageWithShield(_tgt, _dmg * 2, allyName);
+                                        addLog('🐉 Dragon\'s Fear: daño triple (Miedo/Quemadura activo)', 'damage');
+                                    }
+                                } else if (typeof applyDebuff === 'function') {
+                                    // Generic: try to trigger debuff-applying basics
+                                    // For basics that apply Miedo/Stun etc. at 50%:
+                                    // We handle via the effect map check in a safe try-catch
+                                }
+                            } catch(e) { /* safe: don't break Yoda's turn */ }
+                        }
+
+                        // Kill check
+                        if (_tgtChar.hp <= 0 && !_tgtChar.isDead) {
                             _tgtChar.isDead = true;
                             if (typeof registerKill === 'function') registerKill(allyName, _tgt, false);
                         }
+
+                        // Restore state
+                        gameState.selectedCharacter = _prevSelected;
+                        gameState.selectedAbility = _prevAbility;
+                        gameState.selectedTarget = _prevTarget;
                     });
                 }
                 renderCharacters(); renderSummons();

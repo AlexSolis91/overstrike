@@ -105,6 +105,11 @@
                                 _flashCd._singularidadCooldown--;
                                 if (_flashCd._singularidadCooldown === 0) addLog('⚡ Singularidad Escarlata: cooldown listo', 'buff');
                             }
+                            // BJORN — decrementar cooldown Piel de Acero Legendaria (por turno propio)
+                            if (_flashCd && _flashCd._pielAceroCooldown > 0) {
+                                _flashCd._pielAceroCooldown--;
+                                if (_flashCd._pielAceroCooldown === 0) addLog('🛡️ Piel de Acero Legendaria: cooldown listo', 'buff');
+                            }
                             // VENENO: aplica al INICIO del turno del personaje con el debuff
                             processNewDebuffEffects(currentCharName);
                         }
@@ -1613,13 +1618,6 @@
                         }
                     }
 
-                    // ── PIEL DE ACERO (Bjorn): decrementar cooldown por ronda ──
-                    for (const _bjCdN in gameState.characters) {
-                        const _bjCdC = gameState.characters[_bjCdN];
-                        if (!_bjCdC || _bjCdC.isDead || !_bjCdC._pielAceroCooldown) continue;
-                        _bjCdC._pielAceroCooldown = Math.max(0, _bjCdC._pielAceroCooldown - 1);
-                    }
-
                     // ── Resetear flags de Skeggöx por ronda ──
                     for (const _rk in gameState) {
                         if (_rk.startsWith('_skeggoxUsedRound_')) delete gameState[_rk];
@@ -1750,22 +1748,20 @@
                         break; // Solo 1 Gaara puede estar en el campo
                     }
 
-                    // ── HORROCRUX VIVIENTE (Voldemort): inicio de ronda → invoca Nagini + revivir si sobrevivió ──
+                    // ── HORROCRUX VIVIENTE (Voldemort): inicio de ronda → invoca Nagini + restaurar HP si sobrevivió ──
                     for (const _vn in gameState.characters) {
                         const _vc = gameState.characters[_vn];
                         if (!_vc || _vc.isDead || !_vc.passive || _vc.passive.name !== 'Horrocrux Viviente') continue;
                         const _vTeam = _vc.team;
-                        // Revivir si sobrevivió el round anterior con 1HP y Nagini sigue activa
-                        if (_vc._naginiSurvivedRound && _vc._naginiSurvivedRound < gameState.currentRound) {
-                            const _naginiStillActive = Object.values(gameState.summons||{}).some(function(s){ return s && s.name === 'Nagini' && s.team === _vTeam && !s.isDead && s.hp > 0; });
-                            if (_naginiStillActive) {
-                                _vc.hp = _vc.maxHp;
-                                _vc._naginiSurvivedRound = null;
-                                addLog('🐍 Horrocrux Viviente: ¡Voldemort revive con ' + _vc.maxHp + ' HP (Nagini sigue activa)!', 'heal');
-                            }
+                        const _naginiExists = Object.values(gameState.summons||{}).some(function(s){ return s && s.name === 'Nagini' && s.team === _vTeam && !s.isDead && s.hp > 0; });
+                        // Si sobrevivió el round anterior con 1HP y Nagini sigue activa → restaurar HP máximo
+                        if (_vc._naginiSurvivedRound && _vc._naginiSurvivedRound < gameState.currentRound && _naginiExists) {
+                            _vc.hp = _vc.maxHp;
+                            _vc._naginiSurvivedRound = null;
+                            _vc._naginiImmuneRound = null; // ya no es inmune
+                            addLog('🐍 Horrocrux Viviente: ¡Voldemort recupera ' + _vc.maxHp + ' HP! (Nagini sigue activa)', 'heal');
                         }
                         // Invocar Nagini si no está activa
-                        const _naginiExists = Object.values(gameState.summons||{}).some(function(s){ return s && s.name === 'Nagini' && s.team === _vTeam && !s.isDead && s.hp > 0; });
                         if (!_naginiExists && typeof summonShadow === 'function') {
                             summonShadow('Nagini', _vn);
                             addLog('🐍 Horrocrux Viviente: Nagini invocada', 'buff');
@@ -1778,7 +1774,8 @@
                         if (!_sn || _sn.name !== 'Nagini' || _sn.isDead || _sn.hp <= 0) continue;
                         // +2 HP regen
                         _sn.hp = Math.min(_sn.maxHp, (_sn.hp||0) + 2);
-                        addLog('🐍 Parsel: Nagini recupera 2 HP', 'heal');
+                        addLog('🐍 Parsel: Nagini recupera 2 HP (' + _sn.hp + '/' + _sn.maxHp + ')', 'heal');
+                        if (typeof renderSummons === 'function') renderSummons();
                         // Veneno al equipo enemigo
                         const _nagETeam = _sn.team === 'team1' ? 'team2' : 'team1';
                         for (const _en in gameState.characters) {
