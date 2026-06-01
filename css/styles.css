@@ -122,42 +122,37 @@
             50% { transform: scale(1.02); filter: brightness(1.2); }
         }
 
+        /* ═══ BATTLE ARENA REDESIGN ═══════════════════════════════════════ */
         .battle-arena {
             display: grid;
-            grid-template-columns: 280px 1fr 280px;
-            gap: 10px;
-            margin-bottom: 10px;
+            grid-template-columns: 320px minmax(0,1fr) 320px;
+            gap: 8px;
             position: relative;
-            height: 85vh;
+            height: calc(100vh - 60px);
+            min-height: 600px;
+            padding: 0 4px;
         }
 
         .team-column {
             display: flex;
             flex-direction: column;
-            gap: 5px;
-            overflow-y: hidden;
+            gap: 4px;
+            overflow-y: auto;
+            overflow-x: hidden;
             height: 100%;
+            padding-bottom: 8px;
         }
 
-        .team-column::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .team-column::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 10px;
-        }
-
-        .team-column::-webkit-scrollbar-thumb {
-            background: var(--primary-glow);
-            border-radius: 10px;
-        }
+        .team-column::-webkit-scrollbar { width: 3px; }
+        .team-column::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+        .team-column::-webkit-scrollbar-thumb { background: var(--primary-glow); border-radius: 6px; }
 
         .center-column {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
             height: 100%;
+            min-width: 0;
         }
 
         .team1 {
@@ -208,16 +203,16 @@
         }
 
         .character-card {
-            background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 6px;
-            padding: 8px;
-            margin-bottom: 5px;
-            transition: all 0.3s ease;
+            background: linear-gradient(160deg, rgba(15,25,45,0.95) 0%, rgba(8,14,26,0.98) 100%);
+            border: 1px solid rgba(0,196,255,0.18);
+            border-radius: 10px;
+            padding: 0;
+            margin-bottom: 4px;
+            transition: all 0.25s ease;
             cursor: pointer;
             position: relative;
             overflow: hidden;
-            max-height: 150px;
+            min-height: 100px;
         }
 
         .character-card::before {
@@ -249,15 +244,16 @@
         }
 
         .character-portrait {
-            width: 56px;
-            height: 56px;
-            border-radius: 6px;
+            width: 72px;
+            height: 88px;
+            border-radius: 8px;
             object-fit: cover;
             object-position: top center;
-            border: 2px solid rgba(0, 217, 255, 0.4);
+            border: 2px solid rgba(0,217,255,0.5);
             flex-shrink: 0;
-            background: rgba(0,0,0,0.4);
+            background: rgba(0,0,0,0.5);
             display: block;
+            box-shadow: 0 0 12px rgba(0,196,255,0.2);
         }
 
         .character-portrait.defeated-img {
@@ -265,9 +261,9 @@
         }
 
         .character-portrait-placeholder {
-            width: 56px;
-            height: 56px;
-            border-radius: 6px;
+            width: 72px;
+            height: 88px;
+            border-radius: 8px;
             border: 2px dashed rgba(255,255,255,0.15);
             flex-shrink: 0;
             display: flex;
@@ -515,14 +511,15 @@
         }
 
         .battle-log {
-            background: rgba(0, 0, 0, 0.6);
-            border: 2px solid rgba(0, 217, 255, 0.3);
+            background: rgba(5,10,20,0.92);
+            border: 1px solid rgba(0,196,255,0.15);
             border-radius: 10px;
-            padding: 10px;
+            padding: 8px 10px;
             flex: 1;
             overflow-y: auto;
-            display: flex;
-            flex-direction: column;
+            min-height: 0;
+            max-height: 100%;
+            font-size: 0.72rem;
         }
 
         .battle-log-title {
@@ -745,19 +742,19 @@
 
         .status-effects {
             display: flex;
-            gap: 4px;
-            margin-top: 6px;
             flex-wrap: wrap;
+            gap: 2px;
+            padding: 4px 8px 6px;
         }
 
         .status-effect {
-            background: rgba(255, 170, 0, 0.2);
-            border: 1px solid var(--warning);
-            padding: 2px 6px;
-            border-radius: 5px;
-            font-size: 0.75em;
+            font-size: 0.62rem;
+            padding: 1px 5px;
+            border-radius: 8px;
             font-weight: 600;
-            line-height: 1.3;
+            letter-spacing: 0.02em;
+            line-height: 1.4;
+            white-space: nowrap;
         }
 
         .status-effect.buff {
@@ -2306,3 +2303,170 @@
         }
 
         /* ==================== END OVER CINEMATIC ==================== */
+
+        /* ═══ CHARACTER CARD INTERIOR REDESIGN ═══════════════════════════ */
+        .char-inner {
+            display: flex;
+            flex-direction: row;
+            padding: 8px;
+            gap: 8px;
+            position: relative;
+        }
+        .char-portrait-wrap {
+            position: relative;
+            flex-shrink: 0;
+        }
+        .char-portrait-wrap .char-hp-overlay {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+            border-radius: 0 0 7px 7px;
+            text-align: center;
+            font-size: 0.6rem;
+            color: #55ff99;
+            padding: 2px 0 3px;
+            font-weight: 700;
+            pointer-events: none;
+        }
+        .char-body {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .char-toprow {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .char-name-badge {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #e0f4ff;
+            letter-spacing: 0.02em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 160px;
+        }
+        .char-speed-badge {
+            background: rgba(255,170,0,0.15);
+            border: 1px solid rgba(255,170,0,0.5);
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #ffaa00;
+            flex-shrink: 0;
+        }
+        .char-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .char-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .char-bar-label {
+            font-size: 0.6rem;
+            color: #aaa;
+            width: 14px;
+            flex-shrink: 0;
+        }
+        .char-bar-track {
+            flex: 1;
+            height: 5px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .char-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.35s ease;
+        }
+        .char-bar-fill.hp { background: linear-gradient(90deg, #00cc66, #00ff88); }
+        .char-bar-fill.hp.med { background: linear-gradient(90deg, #cc8800, #ffaa00); }
+        .char-bar-fill.hp.low { background: linear-gradient(90deg, #cc0033, #ff3366); }
+        .char-bar-fill.ch { background: linear-gradient(90deg, #0088cc, #00c8ff); }
+        .char-bar-fill.ch.full { background: linear-gradient(90deg, #8800ff, #cc44ff); }
+        .char-bar-val {
+            font-size: 0.58rem;
+            color: #ccc;
+            width: 34px;
+            text-align: right;
+            flex-shrink: 0;
+            font-variant-numeric: tabular-nums;
+        }
+        .char-relics {
+            display: flex;
+            gap: 2px;
+            flex-wrap: wrap;
+            margin-top: 1px;
+        }
+        .char-relic-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            object-fit: contain;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(0,0,0,0.4);
+        }
+        .char-relic-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            background: rgba(255,170,0,0.2);
+            border: 1px solid rgba(255,170,0,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.5rem;
+            color: #ffaa00;
+        }
+        .char-effects-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            padding: 0 8px 5px;
+        }
+        .char-shield-bar {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: rgba(100,200,255,0.5);
+            border-radius: 10px 10px 0 0;
+        }
+        /* HP heal/damage floating ticks */
+        .hp-tick {
+            position: absolute;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            pointer-events: none;
+            z-index: 9999;
+            animation: hpTickFloat 1.4s ease forwards;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+        }
+        .hp-tick.heal { color: #00ff88; }
+        .hp-tick.dmg  { color: #ff3355; }
+        @keyframes hpTickFloat {
+            0%   { opacity: 1; transform: translateY(0) scale(1); }
+            30%  { opacity: 1; transform: translateY(-18px) scale(1.15); }
+            100% { opacity: 0; transform: translateY(-38px) scale(0.9); }
+        }
+        /* Active turn highlight */
+        .character-card.active-turn .char-name-badge {
+            color: #ffdd44;
+            text-shadow: 0 0 8px rgba(255,220,0,0.6);
+        }
+        /* Defeated state */
+        .character-card.defeated .char-inner { opacity: 0.28; filter: grayscale(1); }
+        /* Shield top bar */
+        .character-card .char-inner .char-portrait-wrap::after {
+            content: '';
+        }
