@@ -286,6 +286,24 @@
             return display;
         }
 
+        // ── HP tick animation helper ──────────────────────────────────────
+        function showHpTick(charName, delta) {
+            if (!delta || delta === 0) return;
+            const cardEl = document.getElementById('char-' + charName.replace(/\s+/g, '-'));
+            if (!cardEl) return;
+            const tick = document.createElement('div');
+            tick.className = 'hp-tick ' + (delta > 0 ? 'heal' : 'dmg');
+            tick.textContent = (delta > 0 ? '+' : '') + delta;
+            const rect = cardEl.getBoundingClientRect();
+            tick.style.cssText = 'left:' + (rect.left + rect.width/2 - 20) + 'px;top:' + (rect.top + rect.height * 0.3) + 'px;position:fixed;';
+            document.body.appendChild(tick);
+            setTimeout(function(){ tick.remove(); }, 1500);
+        }
+        window.showHpTick = showHpTick;
+
+        // Track previous HP to detect changes for tick animation
+        var _prevHpMap = {};
+
         function renderCharacters() {
             const team1Container = document.getElementById('team1Characters');
             const team2Container = document.getElementById('team2Characters');
@@ -294,13 +312,20 @@
                 console.error('Error: Contenedores de equipos no encontrados');
                 return;
             }
+
+            // Snapshot current HP for tick detection
+            var _newHpMap = {};
+            for (let _hn in gameState.characters) {
+                const _hc = gameState.characters[_hn];
+                if (_hc) _newHpMap[_hn] = _hc.hp;
+            }
             
             team1Container.innerHTML = '';
             team2Container.innerHTML = '';
             
             for (let name in gameState.characters) {
                 const char = gameState.characters[name];
-                if (!char) continue; // Skip si el personaje no existe
+                if (!char) continue;
                 
                 const container = char.team === 'team1' ? team1Container : team2Container;
                 
@@ -360,49 +385,85 @@
                     ? `<img class="character-portrait${isDefeated ? ' defeated-img' : ''}" src="${activePortrait}" alt="${name}" loading="eager" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="character-portrait-placeholder" style="display:none">⚔️</div>`
                     : `<div class="character-portrait-placeholder">⚔️</div>`;
 
-                const cardHTML = `
-                    <div class="character-card ${isDefeated ? 'defeated' : ''} ${isTransformed ? 'transformed-mode' : ''}" id="char-${name.replace(/\s+/g, '-')}" data-charname="${name}" style="cursor:pointer;" title="Ver ficha de ${name}">
-                        <div class="character-header">
-                            <div class="character-name">
-                                ${name}
-                                ${isTransformed ? ' <span style="font-size: 0.65em; color: #ff9900;">⚡TRANSFORMADO⚡</span>' : ''}
-                            </div>
-                            <div class="character-speed">⚡${char.speed}</div>
-                        </div>
+                // Build relic icons HTML
+                const _relics = char.equippedRelics || [];
+                let _relicIconsHTML = '';
+                if (_relics.length > 0 && typeof RELICS_DATA !== 'undefined') {
+                    _relics.forEach(function(rname) {
+                        const _rd = RELICS_DATA[rname];
+                        const _tierColor = { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700' };
+                        const _tc = _rd ? (_tierColor[_rd.tier]||'#aaa') : '#aaa';
+                        if (_rd && _rd.img) {
+                            _relicIconsHTML += '<img class="char-relic-icon" src="' + _rd.img + '" title="' + rname + '" style="border-color:' + _tc + '44;" onerror="this.style.display=\'none\'">'; 
+                        } else {
+                            _relicIconsHTML += '<div class="char-relic-dot" style="border-color:' + _tc + ';" title="' + rname + '">💎</div>';
+                        }
+                    });
+                }
 
-                        <div class="character-portrait-row">
-                            ${portraitHTML}
-                            <div class="character-info-col">
-                                <div class="stat-bars">
-                                    <div class="stat-bar">
-                                        <div class="stat-label">
-                                            <span>💚 HP ${char.shield > 0 ? `<span class="shield-indicator">🛡️${char.shield}</span>` : ''}</span>
-                                            <span>${char.hp}/${char.maxHp}</span>
+                const _hpPct = char.maxHp > 0 ? char.hp / char.maxHp : 0;
+                const _hpClass = _hpPct > 0.6 ? 'hp' : (_hpPct > 0.3 ? 'hp med' : 'hp low');
+                const _chPct = Math.min(1, (char.charges || 0) / 20);
+                const _chClass = (char.charges || 0) >= 20 ? 'ch full' : 'ch';
+
+                // Status effects for this card
+                const _sfx = renderStatusEffects(char);
+
+                const cardHTML = `
+                    <div class="character-card ${isDefeated ? 'defeated' : ''} ${isTransformed ? 'transformed-mode' : ''}" 
+                         id="char-${name.replace(/\s+/g, '-')}" 
+                         data-charname="${name}" 
+                         onclick="window._showCharInfoPanel && window._showCharInfoPanel('${name}')"
+                         title="${name}">
+                        ${char.shield > 0 ? '<div class="char-shield-bar" style="background:linear-gradient(90deg,rgba(100,200,255,0.6),rgba(0,150,255,0.3));height:3px;"></div>' : ''}
+                        <div class="char-inner">
+                            <div class="char-portrait-wrap">
+                                ${activePortrait
+                                    ? `<img class="character-portrait${isDefeated ? ' defeated-img' : ''}" src="${activePortrait}" alt="${name}" loading="eager" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
+                                    : `<div class="character-portrait-placeholder">⚔️</div>`}
+                                <div class="char-hp-overlay">${char.hp}/${char.maxHp}${char.shield > 0 ? ' 🛡️'+char.shield : ''}</div>
+                            </div>
+                            <div class="char-body">
+                                <div class="char-toprow">
+                                    <span class="char-name-badge">${name}${isTransformed ? ' ⚡' : ''}</span>
+                                    <span class="char-speed-badge">⚡${char.speed}</span>
+                                </div>
+                                <div class="char-bars">
+                                    <div class="char-bar-row">
+                                        <span class="char-bar-label" style="color:#55ff99;">💚</span>
+                                        <div class="char-bar-track">
+                                            <div class="char-bar-fill ${_hpClass}" style="width:${Math.max(0,_hpPct*100).toFixed(1)}%"></div>
                                         </div>
-                                        <div class="bar-container">
-                                            <div class="bar-fill hp-bar ${(char.hp/char.maxHp) > 0.6 ? '' : (char.hp/char.maxHp) > 0.3 ? 'hp-medium' : 'hp-critical'}" style="width: ${(char.hp / char.maxHp) * 100}%"></div>
-                                        </div>
+                                        <span class="char-bar-val" id="hpval-${name.replace(/\s+/g,'-')}">${char.hp}/${char.maxHp}</span>
                                     </div>
-                                    
-                                    <div class="stat-bar">
-                                        <div class="stat-label">
-                                            <span>⚡ CARGAS</span>
-                                            <span id="chval-${name.replace(/\s+/g,'-')}" class="">${char.charges}</span>
+                                    <div class="char-bar-row">
+                                        <span class="char-bar-label" style="color:#00c8ff;">⚡</span>
+                                        <div class="char-bar-track">
+                                            <div class="char-bar-fill ${_chClass}" style="width:${(_chPct*100).toFixed(1)}%"></div>
                                         </div>
-                                        <div class="bar-container">
-                                            <div class="bar-fill charge-bar ${char.charges >= 20 ? 'charge-full' : ''}" style="width: ${(char.charges / 20) * 100}%"></div>
-                                        </div>
+                                        <span class="char-bar-val" id="chval-${name.replace(/\s+/g,'-')}">${char.charges}</span>
                                     </div>
                                 </div>
+                                ${_relicIconsHTML ? '<div class="char-relics">' + _relicIconsHTML + '</div>' : ''}
                             </div>
                         </div>
-                        
-                        ${renderStatusEffects(char)}
+                        ${_sfx ? '<div class="char-effects-row">' + _sfx.replace(/<div class="status-effects">|<\/div>$/g,'') + '</div>' : ''}
                     </div>
                 `;
                 
                 container.innerHTML += cardHTML;
             }
+
+            // Fire HP tick animations for changes since last render
+            for (let _tn in _newHpMap) {
+                const _prev = _prevHpMap[_tn];
+                if (_prev !== undefined && _prev !== _newHpMap[_tn]) {
+                    const _delta = _newHpMap[_tn] - _prev;
+                    if (_delta > 0) showHpTick(_tn, _delta); // heal
+                    // damage ticks are handled separately for better UX
+                }
+            }
+            _prevHpMap = _newHpMap;
         }
 
         function renderAbilities(charName, char) {
@@ -459,18 +520,15 @@
         }
 
         function renderStatusEffects(char) {
-            if (!char || !char.statusEffects || char.statusEffects.length === 0) {
-                return '';
-            }
-            
+            if (!char || !char.statusEffects || char.statusEffects.length === 0) return '';
             const displayEffects = buildDisplayEffects(char.statusEffects);
-            let html = '<div class="status-effects">';
+            if (!displayEffects.length) return '';
+            let html = '';
             displayEffects.forEach(function(d) {
-                const className = d.type === 'buff' ? 'buff' : 'debuff';
-                const subLabel = d.sub !== '' ? ' <span style="opacity:0.7;font-size:0.85em;">(' + d.sub + ')</span>' : '';
-                html += '<span class="status-effect ' + className + '">' + d.emoji + ' ' + d.label + subLabel + '</span>';
+                const cn = d.type === 'buff' ? 'buff' : 'debuff';
+                const sub = d.sub ? ' <span style="opacity:.65;font-size:.82em;">('+d.sub+')</span>' : '';
+                html += '<span class="status-effect ' + cn + '">' + d.emoji + ' ' + d.label + sub + '</span>';
             });
-            html += '</div>';
             return html;
         }
 
