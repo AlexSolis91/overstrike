@@ -1475,7 +1475,11 @@
                 gameState.turnsInRound++;
                 
                 // Usar el snapshot tomado al inicio de la ronda para no desincronizar
-                if (gameState.turnsInRound >= gameState.aliveCountAtRoundStart) {
+                // Check if round is complete: all alive characters have had their turn
+                // Use CURRENT alive count (not start-of-round) to handle mid-round deaths
+                const _currentAlive = Object.values(gameState.characters).filter(c => c && !c.isDead && c.hp > 0).length;
+                const _roundComplete = gameState.turnsInRound >= Math.min(gameState.aliveCountAtRoundStart, _currentAlive > 0 ? _currentAlive : 1);
+                if (_roundComplete) {
                     // Procesar efectos de final de ronda ANTES de incrementar la ronda
                     processEndOfRoundEffects();
                     
