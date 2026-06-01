@@ -1648,13 +1648,21 @@
         }
 
         function csAIPickTeam() {
+            // Boss mode: no AI team needed, jefe-de-sala.js injects Broly/Lich King
+            if (csState.gameMode === 'boss') return;
             if (window._revanchaAITeamFixed && csState.team2 && csState.team2.length === CS_TEAM_SIZE) {
                 window._revanchaAITeamFixed = false;
                 addLog('🤖 La IA repite su equipo anterior.', 'info');
                 return;
             }
             window._revanchaAITeamFixed = false;
-            const allNames = Object.keys(characterData).filter(n => characterData[n] && characterData[n].abilities);
+            // Guard: characterData must exist
+            var _cd = typeof characterData !== 'undefined' ? characterData : (window.characterData || {});
+            if (!_cd || Object.keys(_cd).length === 0) {
+                console.error('[csAIPickTeam] characterData not available');
+                return;
+            }
+            const allNames = Object.keys(_cd).filter(n => _cd[n] && _cd[n].abilities);
             const shuffled = allNames.slice().sort(() => Math.random() - 0.5);
             csState.team2 = shuffled.slice(0, CS_TEAM_SIZE);
             addLog('🤖 La IA ha seleccionado su equipo.', 'info');
@@ -1670,11 +1678,14 @@
                 const selectedChars = {};
                 const nameCount = {};
                 const allSelected = csState.team1.map(n=>({name:n,team:'team1'})).concat(csState.team2.map(n=>({name:n,team:'team2'})));
+                // Guard: use window.characterData if local const is undefined
+                var _charData = typeof characterData !== 'undefined' ? characterData : (window.characterData || {});
                 allSelected.forEach(function(entry) {
                     const base = entry.name;
                     nameCount[base] = (nameCount[base] || 0) + 1;
                     const key = nameCount[base] > 1 ? base + ' v' + nameCount[base] : base;
-                    const charCopy = JSON.parse(JSON.stringify(characterData[base]));
+                    if (!_charData[base]) { console.error('[csStartGame] Character not found:', base); return; }
+                    const charCopy = JSON.parse(JSON.stringify(_charData[base]));
                     charCopy.team = entry.team;
                     charCopy.baseName = base;
                     selectedChars[key] = charCopy;
