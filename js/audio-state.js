@@ -303,4 +303,10 @@
                 img: 'https://i.ibb.co/xSxps7gW/Captura-de-pantalla-2026-04-14-174255.png',
                 passive: 'Luz Divina del Sol: Al inicio de cada ronda reduce 10% los HP del equipo enemigo. Al final de cada ronda inflige 3 daño directo a enemigos con QS activa y elimina 5 cargas a enemigos con QS activa.'
             },
+            'Nagini': {
+                name: 'Nagini',
+                hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.ibb.co/RTWtZwMf/image.png',
+                passive: 'Parsel: Al inicio de cada ronda Nagini recupera 2 HP y aplica Veneno 1T a cada personaje del equipo enemigo.'
+            },
         };

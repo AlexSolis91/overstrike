@@ -1272,6 +1272,24 @@
                 }
             }
 
+            // ── HORROCRUX VIVIENTE (Voldemort): al recibir daño fatal con Nagini activa → sobrevive con 1 HP ──
+            if (remainingDamage > 0 && !passiveExecuting) {
+                const _voldChar = gameState.characters[targetName];
+                if (_voldChar && _voldChar.passive && _voldChar.passive.name === 'Horrocrux Viviente') {
+                    // Check if this hit would kill Voldemort and Nagini is active
+                    if (_voldChar.hp <= 0 || _voldChar.isDead) {
+                        const _voldTeam = _voldChar.team;
+                        const _naginiActive = Object.values(gameState.summons||{}).some(function(s){ return s && s.name === 'Nagini' && s.team === _voldTeam && !s.isDead && s.hp > 0; });
+                        if (_naginiActive && !_voldChar._naginiReviveUsed) {
+                            _voldChar.hp = 1;
+                            _voldChar.isDead = false;
+                            _voldChar._naginiSurvivedRound = gameState.currentRound;
+                            addLog('🐍 Horrocrux Viviente: Voldemort sobrevive con 1 HP (Nagini activa)', 'buff');
+                        }
+                    }
+                }
+            }
+
             // ── LEGENDARIO SUPER SAYAJIN (Broly): genera 3 cargas cada vez que recibe daño ──
             if (remainingDamage > 0 && !passiveExecuting && target.isBoss &&
                 target.passive && target.passive.name === 'Legendario Super Sayajin') {
@@ -1798,6 +1816,30 @@
                 }
                 passiveExecuting = false;
             }
+
+            // ── PIEL DE NANOOK (Bjorn): al recibir daño → Miedo 2T al atacante + roba 1 carga de todos los enemigos ──
+            if (remainingDamage > 0 && attackerName && attackerName !== targetName && !passiveExecuting) {
+                const _bjornChar = gameState.characters[targetName];
+                if (_bjornChar && _bjornChar.passive && _bjornChar.passive.name === 'Piel de Nanook') {
+                    const _bjTeam = _bjornChar.team;
+                    const _bjETeam = _bjTeam === 'team1' ? 'team2' : 'team1';
+                    passiveExecuting = true;
+                    // Fear on attacker
+                    if (typeof applyDebuff === 'function') applyDebuff(attackerName, { name:'Miedo', type:'debuff', duration:2, emoji:'😨' });
+                    addLog('🐻 Piel de Nanook: ' + attackerName + ' recibe Miedo 2T', 'debuff');
+                    // Steal 1 charge from ALL enemies
+                    Object.values(gameState.characters).forEach(function(c) {
+                        if (!c || c.team !== _bjETeam || c.isDead || (c.charges||0) <= 0) return;
+                        c.charges = Math.max(0, (c.charges||0) - 1);
+                    });
+                    if (_bjornChar) _bjornChar.charges = Math.min(20, (_bjornChar.charges||0) + 1);
+                    addLog('🐻 Piel de Nanook: roba 1 carga de todos los enemigos', 'buff');
+                    passiveExecuting = false;
+                }
+            }
+
+            // ── PIEL DE NANOOK (Bjorn): inmune a Congelación y MegaCongelación ──
+            // (handled in applyFreeze/applyDebuff)
 
             // ── PALADÍN DE LA MANO DE PLATA (Tirion): al llegar a 10 HP → Protección Sagrada + Escudo Sagrado + 20 cargas ──
             if (remainingDamage > 0 && !passiveExecuting &&

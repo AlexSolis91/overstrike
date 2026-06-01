@@ -8175,7 +8175,197 @@
                     addLog('💀 Mega Posesión aplicada a ' + n, 'debuff');
                 });
 
-            } // end Lich King handlers
+            // ══════════════════════════════════════════════════════
+            // BJORN IRONSIDE — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'impacto_norte_bjorn') {
+                // Impacto del Norte: 1 ST + Miedo 2T. Si ya tenía Miedo → aliados +1HP por Miedo en equipo enemigo
+                const _bjAtk = gameState.characters[gameState.selectedCharacter];
+                const _bjTgt = gameState.characters[targetName];
+                const _bjTeam = _bjAtk ? _bjAtk.team : 'team1';
+                const _bjETeam = _bjTeam === 'team1' ? 'team2' : 'team1';
+                // Check if target already has Miedo BEFORE the hit
+                const _hadMiedo = _bjTgt && (_bjTgt.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'miedo'; });
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('🪓 Impacto del Norte: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (typeof applyDebuff === 'function') applyDebuff(targetName, { name:'Miedo', type:'debuff', duration:2, emoji:'😨' });
+                if (_hadMiedo) {
+                    // Count all Miedo debuffs on enemy team
+                    let _miedoCount = 0;
+                    Object.values(gameState.characters).forEach(function(c) {
+                        if (!c || c.team !== _bjETeam || c.isDead) return;
+                        _miedoCount += (c.statusEffects||[]).filter(function(e){ return e && normAccent(e.name||'') === 'miedo'; }).length;
+                    });
+                    if (_miedoCount > 0) {
+                        Object.values(gameState.characters).forEach(function(c) {
+                            if (!c || c.team !== _bjTeam || c.isDead || c.hp <= 0) return;
+                            c.hp = Math.min(c.maxHp, (c.hp||0) + _miedoCount);
+                        });
+                        addLog('🪓 Impacto del Norte: equipo aliado recupera ' + _miedoCount + ' HP (Miedos activos en enemigos)', 'heal');
+                    }
+                }
+
+            } else if (ability.effect === 'tormenta_mediterraneo_bjorn') {
+                // Tormenta del Mediterráneo: 3 AOE. Por cada enemigo con Miedo/Sangrado → equipo aliado +2 cargas
+                const _tmAtk = gameState.characters[gameState.selectedCharacter];
+                const _tmTeam = _tmAtk ? _tmAtk.team : 'team1';
+                const _tmETeam = _tmTeam === 'team1' ? 'team2' : 'team1';
+                let _tmChargeGain = 0;
+                Object.keys(gameState.characters).forEach(function(n) {
+                    const _c = gameState.characters[n];
+                    if (!_c || _c.team !== _tmETeam || _c.isDead || _c.hp <= 0) return;
+                    applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
+                    const _hasBuff = (_c.statusEffects||[]).some(function(e){
+                        return e && (normAccent(e.name||'') === 'miedo' || normAccent(e.name||'') === 'sangrado');
+                    });
+                    if (_hasBuff) _tmChargeGain += 2;
+                });
+                addLog('🌊 Tormenta del Mediterráneo: ' + finalDamage + ' AOE', 'damage');
+                if (_tmChargeGain > 0) {
+                    Object.values(gameState.characters).forEach(function(c) {
+                        if (!c || c.team !== _tmTeam || c.isDead) return;
+                        c.charges = Math.min(20, (c.charges||0) + _tmChargeGain);
+                    });
+                    addLog('🌊 Tormenta del Mediterráneo: equipo aliado +' + _tmChargeGain + ' cargas (enemigos con Miedo/Sangrado)', 'buff');
+                }
+
+            } else if (ability.effect === 'piel_acero_bjorn') {
+                // Piel de Acero Legendaria: Armadura 3T + Regeneración 3T + Cuerpo Perfecto 3T
+                // Cooldown 3 turnos
+                const _psAtk = gameState.characters[gameState.selectedCharacter];
+                if (_psAtk && (_psAtk._pielAceroCooldown||0) > 0) {
+                    addLog('🛡️ Piel de Acero Legendaria: en cooldown (' + _psAtk._pielAceroCooldown + ' turnos)', 'info');
+                } else {
+                    if (_psAtk) _psAtk._pielAceroCooldown = 3;
+                    if (typeof applyBuff === 'function') {
+                        applyBuff(gameState.selectedCharacter, { name:'Armadura', type:'buff', duration:3, emoji:'🛡️' });
+                        applyBuff(gameState.selectedCharacter, { name:'Regeneracion', type:'buff', duration:3, emoji:'💚', regenPct:0.20 });
+                        applyBuff(gameState.selectedCharacter, { name:'Cuerpo Perfecto', type:'buff', duration:3, emoji:'✨', cuerpoPerf:true });
+                    }
+                    addLog('🛡️ Piel de Acero Legendaria: Armadura + Regeneración + Cuerpo Perfecto 3T', 'buff');
+                }
+
+            } else if (ability.effect === 'ira_rey_inmortal_bjorn') {
+                // Ira del Rey Inmortal: dmg base = 4 × (Miedo+Sangrado+Congelación en equipo enemigo)
+                // + 2 daño directo a todos los enemigos × (buffs aliados + debuffs enemigos)
+                const _irAtk = gameState.characters[gameState.selectedCharacter];
+                const _irTeam = _irAtk ? _irAtk.team : 'team1';
+                const _irETeam = _irTeam === 'team1' ? 'team2' : 'team1';
+                // Count debuffs (Miedo, Sangrado, Congelación) on enemy team
+                let _irDebuffCount = 0;
+                Object.values(gameState.characters).forEach(function(c) {
+                    if (!c || c.team !== _irETeam || c.isDead) return;
+                    _irDebuffCount += (c.statusEffects||[]).filter(function(e){
+                        if (!e) return false;
+                        const n = normAccent(e.name||'');
+                        return n === 'miedo' || n === 'sangrado' || n === 'congelacion' || n === 'mega congelacion';
+                    }).length;
+                });
+                const _irBaseDmg = Math.max(1, 4 * _irDebuffCount);
+                applyDamageWithShield(targetName, _irBaseDmg, gameState.selectedCharacter);
+                addLog('👑 Ira del Rey Inmortal: ' + _irBaseDmg + ' daño a ' + targetName + ' (4 × ' + _irDebuffCount + ' debuffs)', 'damage');
+                // Count buffs on ally team + all debuffs on enemy team for extra damage
+                let _irAllyBuffs = 0, _irEnemyDebuffs = 0;
+                Object.values(gameState.characters).forEach(function(c) {
+                    if (!c || c.isDead) return;
+                    if (c.team === _irTeam) _irAllyBuffs += (c.statusEffects||[]).filter(function(e){ return e && e.type === 'buff'; }).length;
+                    if (c.team === _irETeam) _irEnemyDebuffs += (c.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff'; }).length;
+                });
+                const _irExtraPerEnemy = (_irAllyBuffs + _irEnemyDebuffs) * 2;
+                if (_irExtraPerEnemy > 0) {
+                    Object.keys(gameState.characters).forEach(function(n) {
+                        const _c = gameState.characters[n];
+                        if (!_c || _c.team !== _irETeam || _c.isDead || _c.hp <= 0) return;
+                        _c.hp = Math.max(0, (_c.hp||0) - _irExtraPerEnemy);
+                        if (_c.hp <= 0) { _c.isDead = true; if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, n, false); }
+                    });
+                    addLog('👑 Ira del Rey Inmortal: ' + _irExtraPerEnemy + ' daño directo a todos los enemigos (' + _irAllyBuffs + ' buffs aliados + ' + _irEnemyDebuffs + ' debuffs enemigos)', 'damage');
+                }
+
+            // ══════════════════════════════════════════════════════
+            // LORD VOLDEMORT — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'crucio_voldemort') {
+                // Crucio: 2 ST + 50% Aturdimiento
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('🐍 Crucio: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (Math.random() < 0.50 && typeof applyDebuff === 'function') {
+                    applyDebuff(targetName, { name:'Aturdimiento', type:'debuff', duration:1, emoji:'⭐', stun:true });
+                    addLog('🐍 Crucio: Aturdimiento a ' + targetName + ' (50%)', 'debuff');
+                }
+
+            } else if (ability.effect === 'imperio_voldemort') {
+                // Imperio: 4 ST. Si tenía Veneno antes → +4 cargas a Voldemort y aliado aleatorio
+                const _impTgt = gameState.characters[targetName];
+                const _impAtk = gameState.characters[gameState.selectedCharacter];
+                const _hadVeneno = _impTgt && (_impTgt.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'veneno'; });
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('🐍 Imperio: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (_hadVeneno && _impAtk) {
+                    _impAtk.charges = Math.min(20, (_impAtk.charges||0) + 4);
+                    const _impTeam = _impAtk.team;
+                    const _allies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===_impTeam&&!c.isDead&&n!==gameState.selectedCharacter; });
+                    if (_allies.length > 0) {
+                        const _ra = _allies[Math.floor(Math.random()*_allies.length)];
+                        gameState.characters[_ra].charges = Math.min(20, (gameState.characters[_ra].charges||0) + 4);
+                        addLog('🐍 Imperio: +4 cargas a Voldemort y ' + _ra + ' (objetivo tenía Veneno)', 'buff');
+                    } else {
+                        addLog('🐍 Imperio: +4 cargas a Voldemort (objetivo tenía Veneno)', 'buff');
+                    }
+                }
+
+            } else if (ability.effect === 'aliento_serpiente_voldemort') {
+                // Aliento de la Serpiente: 5 AOE. Por cada objetivo con Veneno → Nagini +1 HP máx
+                const _asAtk = gameState.characters[gameState.selectedCharacter];
+                const _asETeam = _asAtk ? (_asAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                let _naginiBonus = 0;
+                Object.keys(gameState.characters).forEach(function(n) {
+                    const _c = gameState.characters[n];
+                    if (!_c || _c.team !== _asETeam || _c.isDead || _c.hp <= 0) return;
+                    applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
+                    if ((_c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'veneno'; })) {
+                        _naginiBonus++;
+                    }
+                });
+                addLog('🐍 Aliento de la Serpiente: ' + finalDamage + ' AOE', 'damage');
+                if (_naginiBonus > 0) {
+                    // Find Nagini in summons
+                    Object.values(gameState.summons||{}).forEach(function(s) {
+                        if (!s || s.name !== 'Nagini' || s.team !== (_asAtk ? _asAtk.team : 'team1')) return;
+                        s.maxHp = (s.maxHp||8) + _naginiBonus;
+                        s.hp = Math.min(s.maxHp, (s.hp||0) + _naginiBonus);
+                        addLog('🐍 Aliento de la Serpiente: Nagini +' + _naginiBonus + ' HP máx', 'buff');
+                    });
+                }
+
+            } else if (ability.effect === 'avada_kedavra_voldemort') {
+                // Avada Kedavra: 10 ST + activa todos los ticks de Veneno acumulados del equipo enemigo
+                const _avAtk = gameState.characters[gameState.selectedCharacter];
+                const _avETeam = _avAtk ? (_avAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('💚 Avada Kedavra: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                // Fire all remaining poison ticks on every enemy
+                Object.keys(gameState.characters).forEach(function(n) {
+                    const _c = gameState.characters[n];
+                    if (!_c || _c.team !== _avETeam || _c.isDead || _c.hp <= 0) return;
+                    const _poisons = (_c.statusEffects||[]).filter(function(e){ return e && normAccent(e.name||'') === 'veneno'; });
+                    if (_poisons.length === 0) return;
+                    let _totalDmg = 0;
+                    _poisons.forEach(function(p) {
+                        // Each tick does dotDamage * remaining duration
+                        const _tickDmg = (p.dotDamage || 1);
+                        const _ticks = (p.duration || 1);
+                        _totalDmg += _tickDmg * _ticks;
+                        p.duration = 0; // consume all ticks
+                    });
+                    _c.statusEffects = (_c.statusEffects||[]).filter(function(e){ return !e || normAccent(e.name||'') !== 'veneno' || (e.duration||0) > 0; });
+                    applyDamageWithShield(n, _totalDmg, gameState.selectedCharacter);
+                    addLog('💀 Avada Kedavra: ' + n + ' recibe ' + _totalDmg + ' daño (todos los ticks de Veneno)', 'damage');
+                });
+
+            } // end Voldemort handlers
 
             // Actualizar UI
             renderCharacters();

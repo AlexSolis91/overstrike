@@ -1549,6 +1549,60 @@
                         }
                     }
 
+                    // ── PIEL DE NANOOK (Bjorn): fin de ronda → roba 2 cargas de enemigos con Miedo activo ──
+                    for (const _bjEndN in gameState.characters) {
+                        const _bjEndC = gameState.characters[_bjEndN];
+                        if (!_bjEndC || _bjEndC.isDead || !_bjEndC.passive || _bjEndC.passive.name !== 'Piel de Nanook') continue;
+                        const _bjEndTeam = _bjEndC.team;
+                        const _bjEndETeam = _bjEndTeam === 'team1' ? 'team2' : 'team1';
+                        let _bjStolenTotal = 0;
+                        for (const _en in gameState.characters) {
+                            const _ec = gameState.characters[_en];
+                            if (!_ec || _ec.team !== _bjEndETeam || _ec.isDead || (_ec.charges||0) <= 0) continue;
+                            const _hasMiedo = (_ec.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'miedo'; });
+                            if (_hasMiedo) {
+                                const _steal = Math.min(2, _ec.charges||0);
+                                _ec.charges = Math.max(0, (_ec.charges||0) - _steal);
+                                _bjStolenTotal += _steal;
+                            }
+                        }
+                        if (_bjStolenTotal > 0) {
+                            _bjEndC.charges = Math.min(20, (_bjEndC.charges||0) + _bjStolenTotal);
+                            addLog('🐻 Piel de Nanook: Bjorn roba ' + _bjStolenTotal + ' cargas de enemigos con Miedo (fin de ronda)', 'buff');
+                        }
+                    }
+
+                    // ── HORROCRUX VIVIENTE (Voldemort): fin de ronda → activa ticks de Veneno si Nagini activa ──
+                    for (const _vEndN in gameState.characters) {
+                        const _vEndC = gameState.characters[_vEndN];
+                        if (!_vEndC || _vEndC.isDead || !_vEndC.passive || _vEndC.passive.name !== 'Horrocrux Viviente') continue;
+                        const _vTeam = _vEndC.team;
+                        const _vETeam = _vTeam === 'team1' ? 'team2' : 'team1';
+                        const _naginiActive = Object.values(gameState.summons||{}).some(function(s){ return s && s.name === 'Nagini' && s.team === _vTeam && !s.isDead && s.hp > 0; });
+                        if (!_naginiActive) continue;
+                        for (const _en in gameState.characters) {
+                            const _ec = gameState.characters[_en];
+                            if (!_ec || _ec.team !== _vETeam || _ec.isDead || _ec.hp <= 0) continue;
+                            const _poisons = (_ec.statusEffects||[]).filter(function(e){ return e && normAccent(e.name||'') === 'veneno'; });
+                            if (!_poisons.length) continue;
+                            let _poisonDmg = 0;
+                            _poisons.forEach(function(p){ _poisonDmg += (p.dotDamage||1); });
+                            if (typeof applyDamageWithShield === 'function') applyDamageWithShield(_en, _poisonDmg, _vEndN);
+                            addLog('🐍 Horrocrux Viviente: ' + _en + ' recibe ' + _poisonDmg + ' daño por Veneno (Nagini activa, fin de ronda)', 'damage');
+                        }
+                    }
+
+                    // ── CUERPO PERFECTO (buff): fin de ronda → elimina debuffs del portador ──
+                    for (const _cpN in gameState.characters) {
+                        const _cpC = gameState.characters[_cpN];
+                        if (!_cpC || _cpC.isDead) continue;
+                        const _hasCuerpo = (_cpC.statusEffects||[]).some(function(e){ return e && e.name === 'Cuerpo Perfecto' && (e.duration||0) > 0; });
+                        if (!_hasCuerpo) continue;
+                        const _debuffsBefore = (_cpC.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff'; }).length;
+                        _cpC.statusEffects = (_cpC.statusEffects||[]).filter(function(e){ return !e || e.type !== 'debuff'; });
+                        if (_debuffsBefore > 0) addLog('✨ Cuerpo Perfecto: ' + _cpN + ' elimina ' + _debuffsBefore + ' debuffs (fin de ronda)', 'buff');
+                    }
+
                     // ── MÁSCARA DE TYRAEL: +3 cargas al portador al final de cada ronda ──
                     for (const _mtN in gameState.characters) {
                         const _mtC = gameState.characters[_mtN];
@@ -1557,6 +1611,13 @@
                             _mtC.charges = Math.min(20, (_mtC.charges||0) + 3);
                             addLog('🪖 Máscara de Tyrael: ' + _mtN + ' genera 3 cargas (fin de ronda)', 'buff');
                         }
+                    }
+
+                    // ── PIEL DE ACERO (Bjorn): decrementar cooldown por ronda ──
+                    for (const _bjCdN in gameState.characters) {
+                        const _bjCdC = gameState.characters[_bjCdN];
+                        if (!_bjCdC || _bjCdC.isDead || !_bjCdC._pielAceroCooldown) continue;
+                        _bjCdC._pielAceroCooldown = Math.max(0, _bjCdC._pielAceroCooldown - 1);
                     }
 
                     // ── Resetear flags de Skeggöx por ronda ──
@@ -1687,6 +1748,45 @@
                             _dvC.statusEffects = (_dvC.statusEffects||[]).filter(function(e){ return !e || e.name !== 'Arena_VelDebuff' || (e._roundsLeft !== undefined ? e._roundsLeft > 0 : true); });
                         }
                         break; // Solo 1 Gaara puede estar en el campo
+                    }
+
+                    // ── HORROCRUX VIVIENTE (Voldemort): inicio de ronda → invoca Nagini + revivir si sobrevivió ──
+                    for (const _vn in gameState.characters) {
+                        const _vc = gameState.characters[_vn];
+                        if (!_vc || _vc.isDead || !_vc.passive || _vc.passive.name !== 'Horrocrux Viviente') continue;
+                        const _vTeam = _vc.team;
+                        // Revivir si sobrevivió el round anterior con 1HP y Nagini sigue activa
+                        if (_vc._naginiSurvivedRound && _vc._naginiSurvivedRound < gameState.currentRound) {
+                            const _naginiStillActive = Object.values(gameState.summons||{}).some(function(s){ return s && s.name === 'Nagini' && s.team === _vTeam && !s.isDead && s.hp > 0; });
+                            if (_naginiStillActive) {
+                                _vc.hp = _vc.maxHp;
+                                _vc._naginiSurvivedRound = null;
+                                addLog('🐍 Horrocrux Viviente: ¡Voldemort revive con ' + _vc.maxHp + ' HP (Nagini sigue activa)!', 'heal');
+                            }
+                        }
+                        // Invocar Nagini si no está activa
+                        const _naginiExists = Object.values(gameState.summons||{}).some(function(s){ return s && s.name === 'Nagini' && s.team === _vTeam && !s.isDead && s.hp > 0; });
+                        if (!_naginiExists && typeof summonShadow === 'function') {
+                            summonShadow('Nagini', _vn);
+                            addLog('🐍 Horrocrux Viviente: Nagini invocada', 'buff');
+                        }
+                    }
+
+                    // ── PARSEL (Nagini): inicio de ronda → +2 HP + Veneno al equipo enemigo ──
+                    for (const _sId in (gameState.summons||{})) {
+                        const _sn = gameState.summons[_sId];
+                        if (!_sn || _sn.name !== 'Nagini' || _sn.isDead || _sn.hp <= 0) continue;
+                        // +2 HP regen
+                        _sn.hp = Math.min(_sn.maxHp, (_sn.hp||0) + 2);
+                        addLog('🐍 Parsel: Nagini recupera 2 HP', 'heal');
+                        // Veneno al equipo enemigo
+                        const _nagETeam = _sn.team === 'team1' ? 'team2' : 'team1';
+                        for (const _en in gameState.characters) {
+                            const _ec = gameState.characters[_en];
+                            if (!_ec || _ec.team !== _nagETeam || _ec.isDead || _ec.hp <= 0) continue;
+                            if (typeof applyDebuff === 'function') applyDebuff(_en, { name:'Veneno', type:'debuff', duration:1, emoji:'☠️', dotDamage:1 });
+                        }
+                        addLog('🐍 Parsel: Veneno 1T aplicado a todo el equipo enemigo', 'debuff');
                     }
 
                     // ── REINO DE LAS SOMBRAS (Marik Ishtar): inicio de ronda → 50% Aura Oscura a cada aliado ──

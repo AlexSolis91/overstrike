@@ -245,6 +245,14 @@ function applyDebuff(targetName, effectObj) {
                 addLog('🟢 Sabiduría Antigua: ' + targetName + ' es inmune a debuffs', 'buff');
                 return;
             }
+            // PIEL DE NANOOK (Bjorn): inmune a Congelación y MegaCongelación
+            if (target.passive && target.passive.name === 'Piel de Nanook') {
+                if (effectObj && (effectObj.name === 'Congelacion' || effectObj.name === 'Mega Congelacion' ||
+                    effectObj.name === 'Congelación' || effectObj.name === 'Mega Congelación')) {
+                    addLog('🐻 Piel de Nanook: ' + targetName + ' es inmune a Congelación', 'buff');
+                    return;
+                }
+            }
             // IGNIFUGOZ (Armadura): inmune a Quemadura y Quemadura Solar
             if ((target.equippedRelics||[]).some(function(r){ return r === 'Ignifugoz'; })) {
                 if (effectObj && (effectObj.name === 'Quemadura' || effectObj.name === 'Quemadura Solar' ||

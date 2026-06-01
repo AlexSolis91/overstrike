@@ -884,6 +884,33 @@
                     { name: 'Lado Luminoso', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'lado_luminoso_yoda', description: 'Genera 10 cargas al objetivo aliado y le otorga un turno adicional.' }
                 ]
             },
+
+            'Bjorn Ironside': {
+                name: 'Bjorn Ironside',
+                hp: 30, maxHp: 30, speed: 76, charges: 0,
+                portrait: 'https://i.ibb.co/vvx6KLyJ/image.png',
+                passive: { name: 'Piel de Nanook', description: 'Inmune a Congelación y Megacongelación. Al recibir daño por golpe: aplica Miedo 2T al atacante y roba 1 carga de todos los enemigos. Al final de cada ronda: roba 2 cargas de todos los enemigos con Miedo activo.' },
+                abilities: [
+                    { name: 'Impacto del Norte',          type: 'basic',   cost: 0,  chargeGain: 1,  damage: 1, target: 'single',   effect: 'impacto_norte_bjorn',      description: 'Causa 1 daño. Aplica Miedo 2T al objetivo. Si el objetivo ya tenía Miedo activo, los aliados recuperan 1 HP por cada Miedo activo en el equipo enemigo.' },
+                    { name: 'Tormenta del Mediterráneo',  type: 'special',  cost: 3,  chargeGain: 0,  damage: 3, target: 'aoe',      effect: 'tormenta_mediterraneo_bjorn', description: 'Causa 3 AOE. Por cada enemigo golpeado con Miedo y/o Sangrado activo, el equipo aliado genera 2 cargas.' },
+                    { name: 'Piel de Acero Legendaria',   type: 'special',  cost: 5,  chargeGain: 10, damage: 0, target: 'self',     effect: 'piel_acero_bjorn',         description: 'Aplica Buff Armadura 3T, Buff Regeneración 20% 3T y Buff Cuerpo Perfecto 3T sobre Bjorn. Cooldown: 3 turnos.' },
+                    { name: 'Ira del Rey Inmortal',       type: 'over',     cost: 10, chargeGain: 0,  damage: 4, target: 'single',   effect: 'ira_rey_inmortal_bjorn',   description: 'Daño base 4 × (debuffs Miedo+Sangrado+Congelación en equipo enemigo). Además 2 daño directo a todos los enemigos × (buffs aliados + debuffs enemigos totales).' },
+                ]
+            },
+
+            'Lord Voldemort': {
+                name: 'Lord Voldemort',
+                hp: 20, maxHp: 20, speed: 83, charges: 0,
+                portrait: 'https://i.ibb.co/s9nC7Gz4/image.png',
+                passive: { name: 'Horrocrux Viviente', description: 'Al inicio de cada ronda invoca a Nagini. Si Voldemort llega a 0 HP mientras Nagini está activa, conserva 1 HP. Si en la siguiente ronda Nagini sigue activa, recupera todos sus HP. Al final de ronda, activa los ticks de Veneno acumulados del equipo enemigo si Nagini está activa.' },
+                abilities: [
+                    { name: 'Crucio',                  type: 'basic',   cost: 0,  chargeGain: 2, damage: 2, target: 'single', effect: 'crucio_voldemort',             description: 'Causa 2 daño. 50% probabilidad de aplicar Aturdimiento.' },
+                    { name: 'Imperio',                 type: 'special',  cost: 5,  chargeGain: 0, damage: 4, target: 'single', effect: 'imperio_voldemort',            description: 'Causa 4 daño. Si el objetivo tenía Veneno activo antes del ataque, genera 4 cargas para Voldemort y un aliado aleatorio.' },
+                    { name: 'Aliento de la Serpiente', type: 'special',  cost: 7,  chargeGain: 0, damage: 5, target: 'aoe',    effect: 'aliento_serpiente_voldemort', description: 'Causa 5 AOE. Por cada objetivo golpeado con Veneno activo, Nagini gana +1 HP máximo.' },
+                    { name: 'Avada Kedavra',           type: 'over',     cost: 12, chargeGain: 0, damage: 10, target: 'single', effect: 'avada_kedavra_voldemort',    description: 'Causa 10 daño. Activa todos los ticks de Veneno acumulados del equipo enemigo de una sola vez.' },
+                ]
+            },
+
         };
         // ==================== RELIQUIAS ====================
         const RELICS_DATA = {
