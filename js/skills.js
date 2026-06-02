@@ -8490,6 +8490,130 @@
 
             } // end Voldemort handlers
 
+            // ══════════════════════════════════════════════════════
+            // PAIN — handlers
+            // ══════════════════════════════════════════════════════
+
+            else if (ability.effect === 'gakido_pain') {
+                // Gakidō: 50% Silenciar a cada enemigo + limpia 1 buff de cada enemigo
+                const _gkAtk = gameState.characters[gameState.selectedCharacter];
+                const _gkETeam = _gkAtk ? (_gkAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                Object.keys(gameState.characters).forEach(function(n) {
+                    const _c = gameState.characters[n];
+                    if (!_c || _c.team !== _gkETeam || _c.isDead || _c.hp <= 0) return;
+                    // 50% Silenciar
+                    if (Math.random() < 0.5 && typeof applyDebuff === 'function') {
+                        applyDebuff(n, { name:'Silencio', type:'debuff', duration:2, emoji:'🤫', silence:true });
+                        addLog('👁️ Gakidō: ' + n + ' recibe Silencio', 'debuff');
+                    }
+                    // Limpia 1 buff
+                    const _buffs = (_c.statusEffects||[]).filter(function(e){ return e && e.type === 'buff' && !e.permanent; });
+                    if (_buffs.length > 0) {
+                        const _toRemove = _buffs[0];
+                        _c.statusEffects = (_c.statusEffects||[]).filter(function(e){ return e !== _toRemove; });
+                        addLog('👁️ Gakidō: limpia ' + _toRemove.name + ' de ' + n, 'buff');
+                    }
+                });
+                addLog('👁️ Gakidō: AOE completado', 'damage');
+
+            } else if (ability.effect === 'ningendo_pain') {
+                // Ningendō: 2 daño ST + elimina todas las cargas del objetivo + 2 daño por carga eliminada
+                const _ngTgt = gameState.characters[targetName];
+                const _ngAtk = gameState.characters[gameState.selectedCharacter];
+                const _stolenCharges = _ngTgt ? (_ngTgt.charges || 0) : 0;
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('👁️ Ningendō: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (_stolenCharges > 0 && _ngTgt) {
+                    _ngTgt.charges = 0;
+                    const _bonusDmg = _stolenCharges * 2;
+                    applyDamageWithShield(targetName, _bonusDmg, gameState.selectedCharacter);
+                    addLog('👁️ Ningendō: elimina ' + _stolenCharges + ' cargas → +' + _bonusDmg + ' daño adicional a ' + targetName, 'damage');
+                }
+
+            } else if (ability.effect === 'gedo_rinne_pain') {
+                // Gedō Rinne Tensei: sacrifica 50% HP, revive 1 aliado muerto con 50% HP y 20 cargas
+                // Aplica Regeneración 25% 2T + Armadura 2T a todos los aliados
+                const _grPain = gameState.characters[gameState.selectedCharacter];
+                const _grTeam = _grPain ? _grPain.team : 'team1';
+                if (_grPain) {
+                    const _sacrifice = Math.ceil((_grPain.hp||0) * 0.5);
+                    _grPain.hp = Math.max(1, (_grPain.hp||0) - _sacrifice);
+                    addLog('👁️ Gedō Rinne Tensei: Pain sacrifica ' + _sacrifice + ' HP', 'damage');
+                }
+                // Revive 1 aliado derrotado aleatorio
+                const _deadAllies = Object.keys(gameState.characters).filter(function(n) {
+                    const _c = gameState.characters[n];
+                    return _c && _c.team === _grTeam && (_c.isDead || _c.hp <= 0) && n !== gameState.selectedCharacter;
+                });
+                if (_deadAllies.length > 0) {
+                    const _revName = _deadAllies[Math.floor(Math.random() * _deadAllies.length)];
+                    const _rev = gameState.characters[_revName];
+                    _rev.isDead = false;
+                    _rev.hp = Math.ceil(_rev.maxHp * 0.5);
+                    _rev.charges = 20;
+                    _rev.statusEffects = (_rev.statusEffects||[]).filter(function(e){ return !e || e.type !== 'debuff'; });
+                    addLog('👁️ Gedō Rinne Tensei: ¡' + _revName + ' revive con ' + _rev.hp + ' HP y 20 cargas!', 'heal');
+                    // Recalculate turn order to include revived character
+                    if (typeof calculateTurnOrder === 'function') calculateTurnOrder();
+                } else {
+                    addLog('👁️ Gedō Rinne Tensei: no hay aliados derrotados para revivir', 'info');
+                }
+                // Regeneración 25% + Armadura 2T a todos los aliados
+                Object.keys(gameState.characters).forEach(function(n) {
+                    const _c = gameState.characters[n];
+                    if (!_c || _c.team !== _grTeam || _c.isDead || _c.hp <= 0) return;
+                    if (typeof applyBuff === 'function') {
+                        applyBuff(n, { name:'Regeneracion', type:'buff', duration:2, emoji:'💚', regenPct:0.25, percent:25 });
+                        applyBuff(n, { name:'Armadura',     type:'buff', duration:2, emoji:'🛡️' });
+                    } else {
+                        (_c.statusEffects = _c.statusEffects||[]).push({ name:'Regeneracion', type:'buff', duration:2, emoji:'💚', regenPct:0.25 });
+                        _c.statusEffects.push({ name:'Armadura', type:'buff', duration:2, emoji:'🛡️' });
+                    }
+                });
+                addLog('👁️ Gedō Rinne Tensei: Regeneración 25% + Armadura 2T aplicados a todo el equipo aliado', 'buff');
+
+            } else if (ability.effect === 'shinra_tensei_pain') {
+                // Shinra Tensei: elimina TODAS las cargas de ambos equipos
+                // Por cada carga eliminada: 3 daño directo a un enemigo aleatorio
+                const _stAtk = gameState.characters[gameState.selectedCharacter];
+                const _stTeam = _stAtk ? _stAtk.team : 'team1';
+                const _stETeam = _stTeam === 'team1' ? 'team2' : 'team1';
+                let _totalCharges = 0;
+                // Drain ALL charges from both teams
+                Object.values(gameState.characters).forEach(function(_c) {
+                    if (!_c || _c.isDead) return;
+                    _totalCharges += (_c.charges||0);
+                    _c.charges = 0;
+                });
+                addLog('👁️ Shinra Tensei: elimina ' + _totalCharges + ' cargas totales de ambos equipos', 'damage');
+                // 3 direct damage per charge drained, distributed randomly among enemies
+                if (_totalCharges > 0) {
+                    const _stEnemies = Object.keys(gameState.characters).filter(function(n) {
+                        const _c = gameState.characters[n];
+                        return _c && _c.team === _stETeam && !_c.isDead && _c.hp > 0;
+                    });
+                    if (_stEnemies.length > 0) {
+                        const _totalDmg = _totalCharges * 3;
+                        // Distribute randomly: each hit goes to a random enemy
+                        for (let _i = 0; _i < _totalCharges; _i++) {
+                            const _stEnemiesCurrent = _stEnemies.filter(function(n){
+                                return gameState.characters[n] && !gameState.characters[n].isDead && gameState.characters[n].hp > 0;
+                            });
+                            if (!_stEnemiesCurrent.length) break;
+                            const _rndTarget = _stEnemiesCurrent[Math.floor(Math.random() * _stEnemiesCurrent.length)];
+                            const _tc = gameState.characters[_rndTarget];
+                            _tc.hp = Math.max(0, (_tc.hp||0) - 3);
+                            if (_tc.hp <= 0 && !_tc.isDead) {
+                                _tc.isDead = true;
+                                if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, _rndTarget, false);
+                            }
+                        }
+                        addLog('👁️ Shinra Tensei: ' + _totalDmg + ' daño directo total distribuido entre enemigos (' + _totalCharges + ' × 3)', 'damage');
+                    }
+                }
+
+            } // end Pain handlers
+
             // Actualizar UI
             renderCharacters();
             renderSummons();

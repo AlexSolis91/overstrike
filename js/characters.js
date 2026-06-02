@@ -7,7 +7,7 @@
                 hp: 20, maxHp: 20, speed: 90, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/spKxL75H/descarga.jpg',
-                transformPortrait: 'https://i.ibb.co/nMJG3RBJ/descarga-1.jpg',
+                transformPortrait: 'https://i.ibb.co/Y4qQbMX5/Whats-App-Image-2026-06-02-at-4-50-41-PM.jpg',
                 passive: { name: 'Gakido', description: 'Absorbe daño directo de aliados (gana cargas en lugar de HP). Inmune a debuffs con Escudo activo. Cada golpe crítico otorga 1 turno adicional.' },
                 abilities: [
                     { name: 'Rinbo: Hengoku', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'rinbo_hengoku_madara', description: 'Causa 2 daño. 50% de probabilidad de golpe crítico.' },
@@ -461,7 +461,7 @@
             'Itachi Uchiha': {
                 hp: 20, maxHp: 20, speed: 88, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.ibb.co/JRPVCpGp/Captura-de-pantalla-2026-03-26-230228.png',
+                portrait: 'https://i.ibb.co/6VGGF0Q/Whats-App-Image-2026-06-02-at-4-50-41-PM-1.jpg',
                 passive: { name: 'Izanami', description: 'La primera vez por ronda que Itachi fuera a recibir un golpe de 3+ daño, esquiva y roba hasta 2 cargas del atacante. Cada vez que un debuff (Posesion, Veneno, Quemaduras, Confusion) es aplicado sobre un aliado, limpia hasta 1 debuff activo del equipo aliado y genera 2 cargas por debuff limpiado.' },
                 abilities: [
                     { name: 'Genjutsu', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'genjutsu_itachi', description: 'Causa 1 daño. Aplica Posesión al objetivo. Genera 1 carga por cada Buff activo del objetivo golpeado.' },
@@ -895,6 +895,19 @@
                     { name: 'Furia de Nanook',             type: 'special',  cost: 3,  chargeGain: 0,  damage: 2, target: 'aoe',      effect: 'furia_nanook_bjorn',          description: 'Causa 2 AOE. El equipo aliado genera 1 carga por cada enemigo con Miedo activo, 1 por Sangrado activo y 1 por Congelación activa.' },
                     { name: 'Piel de Acero Legendaria',   type: 'special',  cost: 5,  chargeGain: 10, damage: 0, target: 'self',     effect: 'piel_acero_bjorn',         description: 'Aplica Buff Armadura 3T, Buff Regeneración 20% 3T y Buff Cuerpo Perfecto 3T sobre Bjorn. Cooldown: 3 turnos.' },
                     { name: 'Ira del Rey Inmortal',       type: 'over',     cost: 10, chargeGain: 0,  damage: 4, target: 'single',   effect: 'ira_rey_inmortal_bjorn',   description: 'Daño base 4 × (debuffs Miedo+Sangrado+Congelación en equipo enemigo). Además 2 daño directo a todos los enemigos × (buffs aliados + debuffs enemigos totales).' },
+                ]
+            },
+
+            'Pain': {
+                name: 'Pain',
+                hp: 25, maxHp: 25, speed: 85, charges: 0,
+                portrait: 'https://i.ibb.co/LDJkvJxy/Whats-App-Image-2026-06-02-at-4-58-46-PM.jpg',
+                passive: { name: 'Six Paths', description: 'Al recibir un aliado un debuff: 50% de limpiarlo y Pain gana 3 cargas. Al aplicarse un buff a un enemigo: 50% de disipar ese buff y el equipo aliado gana 3 cargas. Al ejecutar un enemigo un ataque especial: aplica Aturdimiento a ese enemigo.' },
+                abilities: [
+                    { name: 'Gakidō',                      type: 'basic',   cost: 0,  chargeGain: 1, damage: 0, target: 'aoe',    effect: 'gakido_pain',         description: '50% de probabilidad de aplicar Silenciar a cada enemigo. Limpia 1 buff activo de cada enemigo.' },
+                    { name: 'Ningendō',                     type: 'special', cost: 6,  chargeGain: 0, damage: 2, target: 'single', effect: 'ningendo_pain',        description: 'Causa 2 daño. Elimina todas las cargas del objetivo. Por cada carga eliminada causa +2 daño adicional.' },
+                    { name: 'Gedō: Rinne Tensei no Jutsu',  type: 'special', cost: 10, chargeGain: 0, damage: 0, target: 'self',   effect: 'gedo_rinne_pain',      description: 'Sacrifica 50% del HP actual. Revive 1 aliado derrotado aleatorio con 50% HP máx y 20 cargas. Aplica Regeneración 25% 2T y Armadura 2T a todos los aliados.' },
+                    { name: 'Shinra Tensei',                type: 'over',    cost: 15, chargeGain: 0, damage: 0, target: 'aoe',   effect: 'shinra_tensei_pain',   description: 'Elimina todas las cargas de ambos equipos. Causa 3 daño directo por cada carga eliminada (repartido aleatoriamente entre enemigos).' },
                 ]
             },
 

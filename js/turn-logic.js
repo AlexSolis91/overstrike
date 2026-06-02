@@ -99,6 +99,28 @@
                         if (_isMyCharOnline) {
                             // Resetear flags de pasivas de un disparo por turno
                             gameState._izanamiUsedThisTurn = false;
+
+                            // ── SIX PATHS (Pain): si el personaje que acaba de actuar usó especial/over,
+                            //    aplicar Aturdimiento si Pain está en el equipo enemigo ──
+                            (function() {
+                                const _lastType = gameState._lastAbilityType || '';
+                                if (_lastType !== 'special' && _lastType !== 'over') return;
+                                const _actorName = currentCharName;
+                                const _actor = gameState.characters[_actorName];
+                                if (!_actor) return;
+                                const _actorETeam = _actor.team === 'team1' ? 'team2' : 'team1';
+                                for (const _pn in gameState.characters) {
+                                    const _pain = gameState.characters[_pn];
+                                    if (!_pain || _pain.isDead || _pain.team !== _actorETeam) continue;
+                                    if (!_pain.passive || _pain.passive.name !== 'Six Paths') continue;
+                                    // Apply stun to the attacker AFTER the special
+                                    if (typeof applyDebuff === 'function') {
+                                        applyDebuff(_actorName, { name:'Aturdimiento', type:'debuff', duration:1, emoji:'⭐', stun:true });
+                                        addLog('👁️ Six Paths: ' + _actorName + ' queda Aturdido por usar ataque especial', 'debuff');
+                                    }
+                                    break;
+                                }
+                            })();
                             // FLASH — decrementar cooldown Singularidad Escarlata
                             const _flashCd = gameState.characters[currentCharName];
                             if (_flashCd && _flashCd._singularidadCooldown > 0) {

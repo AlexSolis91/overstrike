@@ -156,6 +156,27 @@ function triggerMaboroshi(targetTeam, debuffName) {
             if (target.passive && target.passive.name === 'Sabiduría Antigua') {
                 return; // Yoda rechaza cualquier buff externo silenciosamente
             }
+
+            // ── SIX PATHS (Pain): 50% interceptar buff en enemigo ──
+            if (!passiveExecuting && effectObj && effectObj.type === 'buff') {
+                const _sixAllyTeam = target.team === 'team1' ? 'team2' : 'team1';
+                for (const _pn in gameState.characters) {
+                    const _pain = gameState.characters[_pn];
+                    if (!_pain || _pain.isDead || _pain.team !== _sixAllyTeam) continue;
+                    if (!_pain.passive || _pain.passive.name !== 'Six Paths') continue;
+                    if (Math.random() < 0.5) {
+                        for (const _an in gameState.characters) {
+                            const _ac = gameState.characters[_an];
+                            if (_ac && _ac.team === _sixAllyTeam && !_ac.isDead) {
+                                _ac.charges = Math.min(20, (_ac.charges||0) + 3);
+                            }
+                        }
+                        addLog('👁️ Six Paths: buff ' + (effectObj.name||'') + ' sobre ' + targetName + ' disipado (+3 cargas al equipo aliado)', 'buff');
+                        return;
+                    }
+                    break;
+                }
+            }
             // No stackeable si ya existe (salvo stackeables explícitos)
             const stackable = ['furia', 'frenesi', 'regeneracion', 'escudo', 'celeridad', 'armadura', 'anticipacion', 'sangrado', 'debilitar', 'confusion', 'miedo', 'agotamiento', 'veneno', 'quemadura', 'quemadura solar'];
             const effNorm = normAccent(effectObj.name || '');
@@ -163,6 +184,20 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 if (target.statusEffects.some(e => e && normAccent(e.name || '') === effNorm)) {
                     addLog(`✨ ${targetName} ya tiene ${effectObj.name} activo`, 'info');
                     return;
+                }
+            }
+                        // ── SIX PATHS (Pain): 50% interceptar debuff en aliado ──
+            if (!passiveExecuting) {
+                for (const _pn in gameState.characters) {
+                    const _pain = gameState.characters[_pn];
+                    if (!_pain || _pain.isDead || _pain.team !== target.team) continue;
+                    if (!_pain.passive || _pain.passive.name !== 'Six Paths') continue;
+                    if (Math.random() < 0.5) {
+                        _pain.charges = Math.min(20, (_pain.charges||0) + 3);
+                        addLog('👁️ Six Paths: debuff ' + (effectObj.name||'') + ' sobre ' + targetName + ' bloqueado (+3 cargas a Pain)', 'buff');
+                        return;
+                    }
+                    break;
                 }
             }
             target.statusEffects.push(effectObj);
