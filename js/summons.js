@@ -2176,7 +2176,7 @@
                             const _stkHpBefore = _stkAlly.hp;
                             const _stkOld = _stkAlly.hp;
                     _stkAlly.hp = Math.min(_stkAlly.maxHp, _stkAlly.hp + 1);
-                    if (_stkAlly.hp > _stkOld && typeof showHpTick === 'function') showHpTick(n, _stkAlly.hp - _stkOld);
+                    if (_stkAlly.hp > _stkOld && typeof showHpTick === 'function') showHpTick(_stkAllyName, _stkAlly.hp - _stkOld);
                             if (_stkAlly.hp > _stkHpBefore) {
                                 addLog('✨ Tesoro del Cielo: ' + _stkAllyName + ' recupera 1 HP', 'heal');
                                 if (_stkAllyName === _stkName) {
