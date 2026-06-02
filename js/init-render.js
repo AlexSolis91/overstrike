@@ -327,6 +327,23 @@
         // Track previous HP to detect changes for tick animation
         var _prevHpMap = {};
 
+        function renderTurnOrder() {
+            // turnOrderList element removed in new layout — no-op kept for compatibility
+            const turnOrderList = document.getElementById('turnOrderList');
+            if (!turnOrderList) return;
+            turnOrderList.innerHTML = '';
+            (gameState.turnOrder || []).forEach(function(charName, index) {
+                const char = gameState.characters[charName];
+                if (!char || char.hp <= 0 || char.isDead) return;
+                const isActive = index === gameState.currentTurnIndex;
+                turnOrderList.innerHTML += '<div class="turn-order-item ' + (isActive ? 'active' : '') + '">' +
+                    '<div style="font-size:.9em;opacity:.8;">#' + (index+1) + '</div>' +
+                    '<div>' + charName + '</div>' +
+                    '<div style="font-size:.85em;color:var(--warning);">⚡' + char.speed + '</div>' +
+                    '</div>';
+            });
+        }
+
         function renderStatusEffects(char) {
             if (!char || !char.statusEffects || char.statusEffects.length === 0) return '';
             const displayEffects = buildDisplayEffects(char.statusEffects);
