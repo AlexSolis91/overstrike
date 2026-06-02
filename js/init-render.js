@@ -293,13 +293,36 @@
             if (!cardEl) return;
             const tick = document.createElement('div');
             tick.className = 'hp-tick ' + (delta > 0 ? 'heal' : 'dmg');
-            tick.textContent = (delta > 0 ? '+' : '') + delta;
+            tick.textContent = (delta > 0 ? '+' : '') + Math.round(delta);
             const rect = cardEl.getBoundingClientRect();
-            tick.style.cssText = 'left:' + (rect.left + rect.width/2 - 20) + 'px;top:' + (rect.top + rect.height * 0.3) + 'px;position:fixed;';
+            tick.style.cssText = 'left:' + (rect.left + rect.width/2 - 22) + 'px;top:' + (rect.top + rect.height * 0.25) + 'px;position:fixed;';
             document.body.appendChild(tick);
-            setTimeout(function(){ tick.remove(); }, 1500);
+            setTimeout(function(){ tick.remove(); }, 2400); // 2.4s so it's clearly visible
         }
         window.showHpTick = showHpTick;
+
+        window._closeRelicPopup = function(){ var m=document.getElementById('_relicPopupModal'); if(m)m.remove(); };
+        window._showRelicPopup = function(relicName) {
+            if (!relicName) return;
+            if (typeof RELICS_DATA === 'undefined' || !RELICS_DATA[relicName]) return;
+            const rd = RELICS_DATA[relicName];
+            const tierColors = { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700' };
+            const color = tierColors[rd.tier] || '#aaa';
+            const existing = document.getElementById('_relicPopupModal');
+            if (existing) existing.remove();
+            const modal = document.createElement('div');
+            modal.id = '_relicPopupModal';
+            modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:99999;display:flex;align-items:center;justify-content:center;';
+            modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+            var _relicHtml = '<div style="background:linear-gradient(135deg,#0a0e17,#12192e);border:2px solid ' + color + ';border-radius:16px;padding:24px 28px;max-width:320px;width:90%;text-align:center;box-shadow:0 0 40px ' + color + '44;">';
+            if (rd.img) _relicHtml += '<img src="' + rd.img + '" style="width:72px;height:72px;object-fit:contain;border-radius:10px;border:2px solid ' + color + ';margin-bottom:10px;">';
+            _relicHtml += '<div style="font-family:Orbitron,sans-serif;color:' + color + ';font-size:.9rem;font-weight:700;margin-bottom:4px;">' + relicName + '</div>';
+            _relicHtml += '<div style="font-size:.72rem;color:' + color + ';margin-bottom:10px;opacity:.8;">[ ' + (rd.tier||'') + ' · ' + (rd.slot||'') + ' ]</div>';
+            _relicHtml += '<div style="font-size:.78rem;color:#ccc;line-height:1.55;margin-bottom:16px;">' + (rd.desc||'Sin descripción') + '</div>';
+            _relicHtml += '<button onclick="window._closeRelicPopup()" style="background:rgba(0,0,0,0.4);border:1px solid ' + color + ';color:' + color + ';padding:7px 20px;border-radius:8px;cursor:pointer;font-family:Orbitron,sans-serif;font-size:.7rem;">CERRAR</button></div>';
+            modal.innerHTML = _relicHtml;
+            document.body.appendChild(modal);
+        };
 
         // Track previous HP to detect changes for tick animation
         var _prevHpMap = {};
@@ -394,9 +417,9 @@
                         const _tierColor = { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700' };
                         const _tc = _rd ? (_tierColor[_rd.tier]||'#aaa') : '#aaa';
                         if (_rd && _rd.img) {
-                            _relicIconsHTML += '<img class="char-relic-icon" src="' + _rd.img + '" title="' + rname + '" style="border-color:' + _tc + '44;" onerror="this.style.display=\'none\'">'; 
+                            _relicIconsHTML += '<img class="char-relic-icon" src="' + _rd.img + '" title="' + rname + '" style="border-color:' + _tc + ';cursor:pointer;" onclick="window._showRelicPopup(this.dataset.rn)" data-rn="' + rname.replace(/"/g,'&quot;') + '">';
                         } else {
-                            _relicIconsHTML += '<div class="char-relic-dot" style="border-color:' + _tc + ';" title="' + rname + '">💎</div>';
+                            _relicIconsHTML += '<div class="char-relic-dot" style="border-color:' + _tc + ';cursor:pointer;" title="' + rname + '" onclick="window._showRelicPopup(this.dataset.rn)" data-rn="' + rname.replace(/"/g,'&quot;') + '">💎</div>';
                         }
                     });
                 }
@@ -405,152 +428,43 @@
                 const _hpClass = _hpPct > 0.6 ? 'hp' : (_hpPct > 0.3 ? 'hp med' : 'hp low');
                 const _chPct = Math.min(1, (char.charges || 0) / 20);
                 const _chClass = (char.charges || 0) >= 20 ? 'ch full' : 'ch';
-
-                // Status effects for this card
                 const _sfx = renderStatusEffects(char);
 
-                const cardHTML = `
-                    <div class="character-card ${isDefeated ? 'defeated' : ''} ${isTransformed ? 'transformed-mode' : ''}" 
-                         id="char-${name.replace(/\s+/g, '-')}" 
-                         data-charname="${name}" 
-                         onclick="window._showCharInfoPanel && window._showCharInfoPanel('${name}')"
-                         title="${name}">
-                        ${char.shield > 0 ? '<div class="char-shield-bar" style="background:linear-gradient(90deg,rgba(100,200,255,0.6),rgba(0,150,255,0.3));height:3px;"></div>' : ''}
-                        <div class="char-inner">
-                            <div class="char-portrait-wrap">
-                                ${activePortrait
-                                    ? `<img class="character-portrait${isDefeated ? ' defeated-img' : ''}" src="${activePortrait}" alt="${name}" loading="eager" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
-                                    : `<div class="character-portrait-placeholder">⚔️</div>`}
-                                <div class="char-hp-overlay">${char.hp}/${char.maxHp}${char.shield > 0 ? ' 🛡️'+char.shield : ''}</div>
-                            </div>
-                            <div class="char-body">
-                                <div class="char-toprow">
-                                    <span class="char-name-badge">${name}${isTransformed ? ' ⚡' : ''}</span>
-                                    <span class="char-speed-badge">⚡${char.speed}</span>
-                                </div>
-                                <div class="char-bars">
-                                    <div class="char-bar-row">
-                                        <span class="char-bar-label" style="color:#55ff99;">💚</span>
-                                        <div class="char-bar-track">
-                                            <div class="char-bar-fill ${_hpClass}" style="width:${Math.max(0,_hpPct*100).toFixed(1)}%"></div>
-                                        </div>
-                                        <span class="char-bar-val" id="hpval-${name.replace(/\s+/g,'-')}">${char.hp}/${char.maxHp}</span>
-                                    </div>
-                                    <div class="char-bar-row">
-                                        <span class="char-bar-label" style="color:#00c8ff;">⚡</span>
-                                        <div class="char-bar-track">
-                                            <div class="char-bar-fill ${_chClass}" style="width:${(_chPct*100).toFixed(1)}%"></div>
-                                        </div>
-                                        <span class="char-bar-val" id="chval-${name.replace(/\s+/g,'-')}">${char.charges}</span>
-                                    </div>
-                                </div>
-                                ${_relicIconsHTML ? '<div class="char-relics">' + _relicIconsHTML + '</div>' : ''}
-                            </div>
-                        </div>
-                        ${_sfx ? '<div class="char-effects-row">' + _sfx.replace(/<div class="status-effects">|<\/div>$/g,'') + '</div>' : ''}
-                    </div>
-                `;
-                
+                const cardHTML = '<div class="character-card ' + (isDefeated ? 'defeated' : '') + ' ' + (isTransformed ? 'transformed-mode' : '') + '"' +
+                    ' id="char-' + name.replace(/\s+/g, '-') + '"' +
+                    ' data-charname="' + name + '">' +
+                    (char.shield > 0 ? '<div class="char-shield-bar"></div>' : '') +
+                    '<div class="char-inner">' +
+                    '<div class="char-portrait-wrap">' +
+                    (activePortrait
+                        ? '<img class="character-portrait' + (isDefeated ? ' defeated-img' : '') + '" src="' + activePortrait + '" alt="' + name + '" loading="eager" referrerpolicy="no-referrer">'
+                        : '<div class="character-portrait-placeholder">⚔️</div>') +
+                    '<div class="char-hp-overlay">' + char.hp + '/' + char.maxHp + (char.shield > 0 ? ' 🛡️'+char.shield : '') + '</div>' +
+                    '</div>' +
+                    '<div class="char-body">' +
+                    '<div class="char-toprow">' +
+                    '<span class="char-name-badge">' + name + (isTransformed ? ' ⚡' : '') + '</span>' +
+                    '<span class="char-speed-badge">⚡' + char.speed + '</span>' +
+                    '</div>' +
+                    '<div class="char-bars">' +
+                    '<div class="char-bar-row"><span class="char-bar-label" style="color:#55ff99;">💚</span><div class="char-bar-track"><div class="char-bar-fill ' + _hpClass + '" style="width:' + Math.max(0,_hpPct*100).toFixed(1) + '%"></div></div><span class="char-bar-val">' + char.hp + '/' + char.maxHp + '</span></div>' +
+                    '<div class="char-bar-row"><span class="char-bar-label" style="color:#00c8ff;">⚡</span><div class="char-bar-track"><div class="char-bar-fill ' + _chClass + '" style="width:' + (_chPct*100).toFixed(1) + '%"></div></div><span class="char-bar-val">' + char.charges + '</span></div>' +
+                    '</div>' +
+                    (_relicIconsHTML ? '<div class="char-relics">' + _relicIconsHTML + '</div>' : '') +
+                    '</div>' +
+                    '</div>' +
+                    (_sfx ? '<div class="char-effects-row">' + _sfx + '</div>' : '') +
+                    '</div>';
+
                 container.innerHTML += cardHTML;
             }
 
-            // Fire HP tick animations for changes since last render
+            // Fire HEAL tick animations only
             for (let _tn in _newHpMap) {
                 const _prev = _prevHpMap[_tn];
-                if (_prev !== undefined && _prev !== _newHpMap[_tn]) {
-                    const _delta = _newHpMap[_tn] - _prev;
-                    if (_delta > 0) showHpTick(_tn, _delta); // heal
-                    // damage ticks are handled separately for better UX
+                if (_prev !== undefined && _newHpMap[_tn] > _prev) {
+                    showHpTick(_tn, _newHpMap[_tn] - _prev);
                 }
             }
             _prevHpMap = _newHpMap;
-        }
-
-        function renderAbilities(charName, char) {
-            let html = '';
-            // Mapeo de effect → nombre de la invocación única que genera
-            const SINGLE_SUMMON_MAP = {
-                'summon_sphinx':       'Abu el-Hol Sphinx',
-                'summon_ramesseum':    'Ramesseum Tentyris',
-                'summon_douma_hielo':  'Douma de Hielo',
-                'summon_gigante_hielo':'Gigante de Hielo',
-                'summon_señuelo':      'Señuelo',
-                'summon_ghost':        'Ghost',
-            };
-            char.abilities.forEach((ability, index) => {
-                // Calcular costo ajustado por modo Rikudō
-                let adjustedCost = ability.cost;
-                if (char.rikudoMode && charName === 'Madara Uchiha') {
-                    adjustedCost = Math.ceil(ability.cost / 2);
-                }
-                
-                const canUse = char.charges >= adjustedCost;
-                // Verificar Silenciar
-                const silEffect2 = (char.statusEffects||[]).find(e => e && normAccent(e.name||'')==='silenciar');
-                const blockedBySilence = silEffect2 && ability.type === silEffect2.silencedCategory;
-
-                // Verificar si es invocación única ya activa en campo
-                let blockedBySummon = false;
-                const _summonName = SINGLE_SUMMON_MAP[ability.effect];
-                if (_summonName && typeof gameState !== 'undefined' && gameState.summons) {
-                    blockedBySummon = Object.values(gameState.summons).some(function(s) {
-                        return s && s.name === _summonName && s.hp > 0 &&
-                               s.summoner === charName;
-                    });
-                }
-
-                const disabled = !canUse || char.hp <= 0 || blockedBySilence || blockedBySummon ||
-                    // Piel de Acero Legendaria: bloqueada durante cooldown
-                    (ability.effect === 'piel_acero_bjorn' && (char._pielAceroCooldown||0) > 0);
-                const _disabledTitle = blockedBySummon ? ' title="' + _summonName + ' ya está en campo"' :
-                    (ability.effect === 'piel_acero_bjorn' && (char._pielAceroCooldown||0) > 0) ? ' title="Cooldown: ' + char._pielAceroCooldown + ' turno(s)"' : '';
-                // Over listo: el Over es usable y no está bloqueado
-                const isOverReady = ability.type === 'over' && !disabled;
-                
-                html += `
-                    <button class="ability-btn${isOverReady ? ' over-ready' : ''}" 
-                            onclick="selectAbility('${charName}', ${index})"
-                            ${disabled ? 'disabled' : ''}${_disabledTitle}>
-                        ${ability.name}
-                        <span class="ability-cost">💎 ${adjustedCost}</span>
-                    </button>
-                `;
-            });
-            return html;
-        }
-
-        function renderStatusEffects(char) {
-            if (!char || !char.statusEffects || char.statusEffects.length === 0) return '';
-            const displayEffects = buildDisplayEffects(char.statusEffects);
-            if (!displayEffects.length) return '';
-            let html = '';
-            displayEffects.forEach(function(d) {
-                const cn = d.type === 'buff' ? 'buff' : 'debuff';
-                const sub = d.sub ? ' <span style="opacity:.65;font-size:.82em;">('+d.sub+')</span>' : '';
-                html += '<span class="status-effect ' + cn + '">' + d.emoji + ' ' + d.label + sub + '</span>';
-            });
-            return html;
-        }
-
-        function renderTurnOrder() {
-            const turnOrderList = document.getElementById('turnOrderList');
-            if (!turnOrderList) return; // Ya no existe en el nuevo layout
-            
-            turnOrderList.innerHTML = '';
-            
-            gameState.turnOrder.forEach((charName, index) => {
-                const char = gameState.characters[charName];
-                const isActive = index === gameState.currentTurnIndex;
-                const isDead = char.hp <= 0 || char.isDead;
-                
-                if (!isDead) {
-                    turnOrderList.innerHTML += `
-                        <div class="turn-order-item ${isActive ? 'active' : ''}">
-                            <div style="font-size: 0.9em; opacity: 0.8;">#${index + 1}</div>
-                            <div>${charName}</div>
-                            <div style="font-size: 0.85em; color: var(--warning);">⚡${char.speed}</div>
-                        </div>
-                    `;
-                }
-            });
         }

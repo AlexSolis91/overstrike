@@ -1400,7 +1400,12 @@
                     gameState.currentTurnIndex = _skInsertAt;
                 }
                 addLog('🪓 Skeggöx: ¡' + _skChar + ' gana turno adicional!', 'buff');
-                // No avanzar el índice — el personaje está ahora en la posición actual
+                gameState._wasExtraTurn = true; // marcar para que no cuente en turnsInRound
+                if (onlineMode) {
+                    // En modo online: push state para que el rival sepa que el turno extra
+                    // es del mismo equipo (no le habilita controles al rival)
+                    if (typeof pushGameState === 'function') pushGameState();
+                }
                 setTimeout(function() { startTurn(); }, 700);
                 return;
             }
@@ -1477,11 +1482,13 @@
                 }
                 
                 // Incrementar contador de turnos en la ronda
-                gameState.turnsInRound++;
-                
-                // Usar el snapshot tomado al inicio de la ronda para no desincronizar
-                // Check if round is complete: all alive characters have had their turn
-                // Use CURRENT alive count (not start-of-round) to handle mid-round deaths
+                // No contar turnos extra (Skeggöx/Lado Luminoso) para no terminar la ronda antes de tiempo
+                if (!gameState._wasExtraTurn) {
+                    gameState.turnsInRound++;
+                }
+                gameState._wasExtraTurn = false;
+
+                // Check if round is complete
                 const _currentAlive = Object.values(gameState.characters).filter(c => c && !c.isDead && c.hp > 0).length;
                 const _roundComplete = gameState.turnsInRound >= Math.min(gameState.aliveCountAtRoundStart, _currentAlive > 0 ? _currentAlive : 1);
                 if (_roundComplete) {

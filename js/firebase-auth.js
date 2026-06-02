@@ -1580,22 +1580,37 @@
             rankedMatchmakingListener = db.ref('ranked_queue').on('value', function(snap) {
                 if (matched) return;
                 const queue = snap.val() || {};
+
+                // If we already received a matchedRoomId, process it (we were matched as guest)
+                if (queue[myUid] && queue[myUid].matchedRoomId) {
+                    // Handled below by the specific listener — do nothing here
+                    return;
+                }
+
                 const others = Object.entries(queue).filter(function(e) {
-                    return e[0] !== myUid && !e[1].matchedRoomId;
+                    return e[0] !== myUid && !e[1].matchedRoomId && !e[1].matchedBy;
                 });
                 if (others.length === 0) return;
 
                 // Found a rival — Ataque vs Ataque
                 const [opponentUid, opponentData] = others[0];
                 const iAmHost = myUid < opponentUid;
-                matched = true;
-                clearRankedTimer();
-                db.ref('ranked_queue/' + myUid).remove();
-                db.ref('ranked_queue').off('value', rankedMatchmakingListener);
 
-                if (iAmHost) {
+                // RACE CONDITION guard: use Firebase transaction so only one player becomes host
+                db.ref('ranked_queue/' + opponentUid + '/matchedBy').transaction(function(current) {
+                    if (current !== null) return; // already matched by someone else
+                    return myUid;
+                }, function(err, committed) {
+                    if (err || !committed) return; // lost the race
+                    if (matched) return;
+                    matched = true;
+                    clearRankedTimer();
+                    db.ref('ranked_queue').off('value', rankedMatchmakingListener);
+
+                    if (iAmHost) {
                     const roomId = 'R_' + generateRoomCode();
-                    db.ref('ranked_queue/' + opponentUid).update({ matchedRoomId: roomId, matchedBy: myUid });
+                    db.ref('ranked_queue/' + opponentUid).update({ matchedRoomId: roomId });
+                    db.ref('ranked_queue/' + myUid).remove();
                     currentRoomId = roomId; isRoomHost = true; onlineMode = true;
                     window._rankedMode = true;
                     window._rankedFromMatchmaking = true;
@@ -1644,6 +1659,7 @@
                         });
                     });
                 }
+                }); // end transaction
             });
 
             // 10s timer: no rival → fight random player's defense team
