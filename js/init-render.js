@@ -491,6 +491,65 @@
                 const _chClass = (char.charges || 0) >= 20 ? 'ch full' : 'ch';
                 const _sfx = renderStatusEffects(char);
 
+                // ══ BOSS CARD — tarjeta especial para Jefe de Sala ══════════════════
+                if (char.isBoss) {
+                    // Determine boss accent color
+                    const _bossName = (name || '').toLowerCase();
+                    const _bossColor = _bossName.includes('lich') ? '#00c8ff' :   // Lich King = azul
+                                       _bossName.includes('broly') ? '#00ff66' :  // Broly = verde
+                                       '#00ff66'; // default green
+                    const _bossGlow  = _bossName.includes('lich') ? 'rgba(0,200,255,0.55)' : 'rgba(0,255,100,0.55)';
+                    const _bossGlow2 = _bossName.includes('lich') ? 'rgba(0,150,255,0.15)' : 'rgba(0,200,80,0.15)';
+
+                    const _bossHpPct  = char.maxHp > 0 ? Math.max(0, char.hp / char.maxHp) : 0;
+                    const _bossHpCls  = _bossHpPct > 0.6 ? '#00ff88' : _bossHpPct > 0.3 ? '#ffaa00' : '#ff3366';
+                    const _bossChPct  = Math.min(1, (char.charges||0) / 20);
+                    const _bossSfx    = renderStatusEffects(char);
+
+                    const _bossCard = '<div class="character-card boss-card ' + (isDefeated ? 'defeated' : '') + '"' +
+                        ' id="char-' + name.replace(/\s+/g,'-') + '"' +
+                        ' data-charname="' + name + '"' +
+                        ' style="border-color:' + _bossColor + ';box-shadow:0 0 18px ' + _bossGlow + ',0 0 40px ' + _bossGlow2 + ',inset 0 0 20px ' + _bossGlow2 + ';background:linear-gradient(160deg,rgba(8,12,22,0.97),rgba(4,8,18,0.99));">' +
+                        // Top glow bar
+                        '<div style="height:3px;width:100%;background:linear-gradient(90deg,transparent,' + _bossColor + ',transparent);border-radius:10px 10px 0 0;"></div>' +
+                        // Portrait
+                        '<div class="boss-portrait-wrap">' +
+                        (activePortrait
+                            ? '<img class="boss-portrait' + (isDefeated ? ' defeated-img' : '') + '" src="' + activePortrait + '" alt="' + name + '" loading="eager" referrerpolicy="no-referrer">'
+                            : '<div class="boss-portrait-placeholder">👹</div>') +
+                        // Name overlay on portrait
+                        '<div class="boss-name-overlay" style="background:linear-gradient(to top,rgba(0,0,0,0.92) 0%,rgba(0,0,0,0.6) 50%,transparent 100%);">' +
+                        '<div style="font-family:Orbitron,sans-serif;font-size:.82rem;font-weight:700;color:' + _bossColor + ';letter-spacing:.05em;text-shadow:0 0 10px ' + _bossColor + ';margin-bottom:2px;">' + name + '</div>' +
+                        '<div style="font-size:.62rem;color:#aaa;">⚡ ' + char.speed + ' &nbsp;|&nbsp; 💀 JEFE DE SALA</div>' +
+                        '</div>' +
+                        '</div>' +
+                        // HP bar (full width)
+                        '<div class="boss-bars">' +
+                        '<div class="boss-bar-row">' +
+                        '<span style="font-size:.65rem;color:#55ff99;margin-right:4px;">💚</span>' +
+                        '<div class="boss-bar-track">' +
+                        '<div class="boss-bar-fill" style="width:' + (_bossHpPct*100).toFixed(1) + '%;background:linear-gradient(90deg,' + _bossHpCls + ',' + _bossHpCls + 'aa);transition:width .4s ease;"></div>' +
+                        '</div>' +
+                        '<span style="font-size:.65rem;color:#ddd;min-width:70px;text-align:right;">' + char.hp.toLocaleString() + '/' + char.maxHp.toLocaleString() + '</span>' +
+                        '</div>' +
+                        // Charge bar (full width)
+                        '<div class="boss-bar-row">' +
+                        '<span style="font-size:.65rem;color:#00c8ff;margin-right:4px;">⚡</span>' +
+                        '<div class="boss-bar-track">' +
+                        '<div class="boss-bar-fill" style="width:' + (_bossChPct*100).toFixed(1) + '%;background:linear-gradient(90deg,' + (_bossChPct>=1?'#cc44ff':'#0088cc') + ',' + (_bossChPct>=1?'#aa22ee':'#00c8ff') + ');transition:width .4s ease;"></div>' +
+                        '</div>' +
+                        '<span style="font-size:.65rem;color:#ddd;min-width:30px;text-align:right;">' + (char.charges||0) + '</span>' +
+                        '</div>' +
+                        '</div>' +
+                        // Status effects
+                        (_bossSfx ? '<div class="boss-effects">' + _bossSfx + '</div>' : '') +
+                        '</div>';
+
+                    container.innerHTML += _bossCard;
+                    continue; // skip normal card rendering
+                }
+                // ══ END BOSS CARD ════════════════════════════════════════════════════
+
                 const cardHTML = '<div class="character-card ' + (isDefeated ? 'defeated' : '') + ' ' + (isTransformed ? 'transformed-mode' : '') + '"' +
                     ' id="char-' + name.replace(/\s+/g, '-') + '"' +
                     ' data-charname="' + name + '">' +
