@@ -1810,25 +1810,38 @@
             }
 
             // ── PIEL DE NANOOK (Bjorn): al recibir daño → Miedo 2T al atacante + roba 1 carga de todos los enemigos ──
-            if (remainingDamage > 0 && attackerName && attackerName !== targetName && !passiveExecuting) {
+            // Fires after damage applied, uses oldHp-target.hp to confirm real damage received
+            (function() {
+                if (passiveExecuting) return;
                 const _bjornChar = gameState.characters[targetName];
-                if (_bjornChar && _bjornChar.passive && _bjornChar.passive.name === 'Piel de Nanook') {
-                    const _bjTeam = _bjornChar.team;
-                    const _bjETeam = _bjTeam === 'team1' ? 'team2' : 'team1';
-                    passiveExecuting = true;
-                    // Fear on attacker
-                    if (typeof applyDebuff === 'function') applyDebuff(attackerName, { name:'Miedo', type:'debuff', duration:2, emoji:'😨' });
-                    addLog('🐻 Piel de Nanook: ' + attackerName + ' recibe Miedo 2T', 'debuff');
-                    // Steal 1 charge from ALL enemies
-                    Object.values(gameState.characters).forEach(function(c) {
-                        if (!c || c.team !== _bjETeam || c.isDead || (c.charges||0) <= 0) return;
-                        c.charges = Math.max(0, (c.charges||0) - 1);
-                    });
-                    if (_bjornChar) _bjornChar.charges = Math.min(20, (_bjornChar.charges||0) + 1);
-                    addLog('🐻 Piel de Nanook: roba 1 carga de todos los enemigos', 'buff');
-                    passiveExecuting = false;
+                if (!_bjornChar || !_bjornChar.passive || _bjornChar.passive.name !== 'Piel de Nanook') return;
+                if (!attackerName || attackerName === targetName) return;
+                const _realDmg = oldHp - _bjornChar.hp;
+                if (_realDmg <= 0) return; // no real damage received
+                const _bjTeam = _bjornChar.team;
+                const _bjETeam = _bjTeam === 'team1' ? 'team2' : 'team1';
+                passiveExecuting = true;
+                // Apply Miedo 2T to attacker
+                if (typeof applyDebuff === 'function') {
+                    applyDebuff(attackerName, { name:'Miedo', type:'debuff', duration:2, emoji:'😨' });
+                } else {
+                    const _atk = gameState.characters[attackerName];
+                    if (_atk) (_atk.statusEffects = _atk.statusEffects||[]).push({ name:'Miedo', type:'debuff', duration:2, emoji:'😨' });
                 }
-            }
+                addLog('🐻 Piel de Nanook: ' + attackerName + ' recibe Miedo 2T', 'debuff');
+                // Steal 1 charge from EACH enemy → Bjorn gains total stolen
+                let _stolen = 0;
+                Object.values(gameState.characters).forEach(function(ec) {
+                    if (!ec || ec.team !== _bjETeam || ec.isDead || (ec.charges||0) <= 0) return;
+                    ec.charges = Math.max(0, ec.charges - 1);
+                    _stolen++;
+                });
+                if (_stolen > 0) {
+                    _bjornChar.charges = Math.min(20, (_bjornChar.charges||0) + _stolen);
+                    addLog('🐻 Piel de Nanook: roba 1 carga de ' + _stolen + ' enemigos (+' + _stolen + ' cargas a Bjorn)', 'buff');
+                }
+                passiveExecuting = false;
+            })();
 
             // ── PIEL DE NANOOK (Bjorn): inmune a Congelación y MegaCongelación ──
             // (handled in applyFreeze/applyDebuff)

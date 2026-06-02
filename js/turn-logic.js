@@ -1561,7 +1561,7 @@
                         }
                     }
 
-                    // ── PIEL DE NANOOK (Bjorn): fin de ronda → roba 2 cargas de enemigos con Miedo activo ──
+                    // ── PIEL DE NANOOK (Bjorn): fin de ronda → roba 2 cargas de cada enemigo con Miedo activo ──
                     for (const _bjEndN in gameState.characters) {
                         const _bjEndC = gameState.characters[_bjEndN];
                         if (!_bjEndC || _bjEndC.isDead || !_bjEndC.passive || _bjEndC.passive.name !== 'Piel de Nanook') continue;
@@ -1570,17 +1570,25 @@
                         let _bjStolenTotal = 0;
                         for (const _en in gameState.characters) {
                             const _ec = gameState.characters[_en];
-                            if (!_ec || _ec.team !== _bjEndETeam || _ec.isDead || (_ec.charges||0) <= 0) continue;
-                            const _hasMiedo = (_ec.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'miedo'; });
-                            if (_hasMiedo) {
-                                const _steal = Math.min(2, _ec.charges||0);
+                            if (!_ec || _ec.team !== _bjEndETeam || _ec.isDead) continue;
+                            // Check Miedo using direct string comparison (robust)
+                            const _hasMiedo = (_ec.statusEffects||[]).some(function(e){
+                                if (!e || !e.name) return false;
+                                const _l = e.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+                                return _l === 'miedo';
+                            });
+                            if (!_hasMiedo) continue;
+                            // Roba 2 cargas (o las que tenga)
+                            const _steal = Math.min(2, _ec.charges||0);
+                            if (_steal > 0) {
                                 _ec.charges = Math.max(0, (_ec.charges||0) - _steal);
                                 _bjStolenTotal += _steal;
+                                addLog('🐻 Piel de Nanook: roba ' + _steal + ' cargas de ' + _en + ' (tenía Miedo)', 'buff');
                             }
                         }
                         if (_bjStolenTotal > 0) {
                             _bjEndC.charges = Math.min(20, (_bjEndC.charges||0) + _bjStolenTotal);
-                            addLog('🐻 Piel de Nanook: Bjorn roba ' + _bjStolenTotal + ' cargas de enemigos con Miedo (fin de ronda)', 'buff');
+                            addLog('🐻 Piel de Nanook: Bjorn gana +' + _bjStolenTotal + ' cargas totales (fin de ronda)', 'buff');
                         }
                     }
 

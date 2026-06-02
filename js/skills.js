@@ -8253,7 +8253,14 @@
                     if (_miedoCount > 0) {
                         Object.values(gameState.characters).forEach(function(c) {
                             if (!c || c.team !== _bjTeam || c.isDead || c.hp <= 0) return;
+                            const _prevHp = c.hp;
                             c.hp = Math.min(c.maxHp, (c.hp||0) + _miedoCount);
+                            const _healed = c.hp - _prevHp;
+                            if (_healed > 0 && typeof showHpTick === 'function') {
+                                // Find name of this character
+                                const _cname = Object.keys(gameState.characters).find(function(k){ return gameState.characters[k] === c; });
+                                if (_cname) showHpTick(_cname, _healed);
+                            }
                         });
                         addLog('🪓 Impacto del Norte: equipo aliado recupera ' + _miedoCount + ' HP (Miedos activos en enemigos)', 'heal');
                     }
@@ -8278,7 +8285,7 @@
                     if (!_x || !_x.statusEffects) return;
                     (_x.statusEffects).forEach(function(e) {
                         if (!e || !e.name) return;
-                        const _l = e.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+                        const _l = e.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
                         if (_l === 'miedo')       _fnMiedo++;
                         if (_l === 'sangrado')    _fnSangrado++;
                         if (_l === 'congelacion' || _l === 'mega congelacion') _fnCongelacion++;
@@ -8315,12 +8322,25 @@
                     addLog('🛡️ Piel de Acero Legendaria: en cooldown (' + _psAtk._pielAceroCooldown + ' turnos)', 'info');
                 } else {
                     if (_psAtk) _psAtk._pielAceroCooldown = 3;
-                    if (typeof applyBuff === 'function') {
-                        applyBuff(gameState.selectedCharacter, { name:'Armadura', type:'buff', duration:3, emoji:'🛡️' });
-                        applyBuff(gameState.selectedCharacter, { name:'Regeneracion', type:'buff', duration:3, emoji:'💚', regenPct:0.20 });
-                        applyBuff(gameState.selectedCharacter, { name:'Cuerpo Perfecto', type:'buff', duration:3, emoji:'✨', cuerpoPerf:true });
+                    // Apply buffs directly to statusEffects (fallback if applyBuff not defined)
+                    const _psTarget = gameState.selectedCharacter;
+                    const _psTgt = gameState.characters[_psTarget];
+                    if (_psTgt) {
+                        _psTgt.statusEffects = _psTgt.statusEffects || [];
+                        // Remove old instances first
+                        _psTgt.statusEffects = _psTgt.statusEffects.filter(function(e){ return !e || !['Armadura','Regeneracion','Cuerpo Perfecto'].includes(e.name); });
+                        // Add fresh buffs
+                        if (typeof applyBuff === 'function') {
+                            applyBuff(_psTarget, { name:'Armadura',      type:'buff', duration:3, emoji:'🛡️' });
+                            applyBuff(_psTarget, { name:'Regeneracion',  type:'buff', duration:3, emoji:'💚', regenPct:0.20, percent:20 });
+                            applyBuff(_psTarget, { name:'Cuerpo Perfecto', type:'buff', duration:3, emoji:'✨', cuerpoPerf:true });
+                        } else {
+                            _psTgt.statusEffects.push({ name:'Armadura',      type:'buff', duration:3, emoji:'🛡️', shield: true });
+                            _psTgt.statusEffects.push({ name:'Regeneracion',  type:'buff', duration:3, emoji:'💚', regenPct:0.20, percent:20 });
+                            _psTgt.statusEffects.push({ name:'Cuerpo Perfecto', type:'buff', duration:3, emoji:'✨', cuerpoPerf:true });
+                        }
                     }
-                    addLog('🛡️ Piel de Acero Legendaria: Armadura + Regeneración + Cuerpo Perfecto 3T', 'buff');
+                    addLog('🛡️ Piel de Acero Legendaria: ' + gameState.selectedCharacter + ' gana Armadura + Regeneración + Cuerpo Perfecto 3T', 'buff');
                 }
 
             } else if (ability.effect === 'ira_rey_inmortal_bjorn') {
@@ -8351,13 +8371,23 @@
                 });
                 const _irExtraPerEnemy = (_irAllyBuffs + _irEnemyDebuffs) * 2;
                 if (_irExtraPerEnemy > 0) {
-                    Object.keys(gameState.characters).forEach(function(n) {
+                    const _irTargets = Object.keys(gameState.characters).filter(function(n) {
                         const _c = gameState.characters[n];
-                        if (!_c || _c.team !== _irETeam || _c.isDead || _c.hp <= 0) return;
-                        _c.hp = Math.max(0, (_c.hp||0) - _irExtraPerEnemy);
-                        if (_c.hp <= 0) { _c.isDead = true; if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, n, false); }
+                        return _c && _c.team === _irETeam && !_c.isDead && _c.hp > 0;
                     });
-                    addLog('👑 Ira del Rey Inmortal: ' + _irExtraPerEnemy + ' daño directo a todos los enemigos (' + _irAllyBuffs + ' buffs aliados + ' + _irEnemyDebuffs + ' debuffs enemigos)', 'damage');
+                    _irTargets.forEach(function(n) {
+                        // Direct damage bypasses shield (as per spec: "daño directo")
+                        const _dc = gameState.characters[n];
+                        if (!_dc || _dc.isDead || _dc.hp <= 0) return;
+                        _dc.hp = Math.max(0, (_dc.hp||0) - _irExtraPerEnemy);
+                        if (_dc.hp <= 0 && !_dc.isDead) {
+                            _dc.isDead = true;
+                            if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, n, false);
+                        }
+                    });
+                    addLog('👑 Ira del Rey Inmortal: ' + _irExtraPerEnemy + ' daño directo a cada enemigo (' + _irAllyBuffs + ' buffs aliados + ' + _irEnemyDebuffs + ' debuffs enemigos)', 'damage');
+                } else {
+                    addLog('👑 Ira del Rey Inmortal: sin buffs/debuffs para daño adicional', 'info');
                 }
 
             // ══════════════════════════════════════════════════════
