@@ -110,7 +110,7 @@
 
     <!-- ==================== LOBBY SCREEN ==================== -->
     <div id="lobbyScreen" style="display:none; flex-direction:column; align-items:center; min-height:100vh; background:linear-gradient(rgba(5,5,20,0.9),rgba(5,5,20,0.9)), url(https://i.postimg.cc/jSmHp0dw/4c9b34ddf1759d2a2950c4c8e1694ca9.jpg) center/cover no-repeat; padding:2rem; gap:1.5rem;">
-        <div style="display:flex; width:100%; max-width:1100px; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
+        <div style="display:flex; width:100%; width:98vw; max-width:none; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
             <div style="font-family:'Orbitron',sans-serif; font-size:1.6rem; font-weight:900; color:#00c4ff; text-shadow:0 0 15px #00c4ff;">⚔️ OVERSTRIKE</div>
             <div style="display:flex;align-items:center;gap:8px;">
             <div id="lobbyHUD" style="display:flex;align-items:center;gap:10px;margin-right:4px;">
@@ -134,7 +134,7 @@
             </div>
             </div><!-- end hud+user wrapper -->
         </div>
-        <div style="display:flex; gap:1.5rem; width:100%; max-width:1100px; flex-wrap:wrap;">
+        <div style="display:flex; gap:1.2rem; width:98vw; max-width:none; flex-wrap:nowrap; height:calc(100vh - 110px);">
             <div style="flex:1; min-width:220px; display:flex; flex-direction:column; gap:1rem;">
                 <div style="background:rgba(0,10,30,0.8); border:1px solid rgba(0,196,255,0.2); border-radius:16px; padding:1.5rem;">
                     <div style="font-family:'Orbitron',sans-serif; font-size:.8rem; color:#00c4ff; margin-bottom:1rem; letter-spacing:.1em;">MODO DE JUEGO</div>
@@ -145,7 +145,7 @@
                     <!-- Botones Inventario/Mercado/Jefe movidos al panel del chat -->
             <button onclick="showRankedTeamScreen()"  style="width:100%; padding:1rem; font-family:'Orbitron',sans-serif; font-size:.85rem; background:linear-gradient(135deg,#002040,#004080); color:#4fc3f7; border:2px solid #4fc3f7; border-radius:10px; cursor:pointer; margin-top:.5rem; transition:all .2s; letter-spacing:.05em;" onmouseover="this.style.boxShadow='0 0 18px rgba(79,195,247,0.5)'" onmouseout="this.style.boxShadow='none'">⚔️ EQUIPO RANKED</button>
                     <button id='adminBtn' onclick='window.showAdminPanel && window.showAdminPanel()' style='display:none;width:100%;padding:.5rem;font-family:Orbitron,sans-serif;font-size:.7rem;background:rgba(255,215,0,0.1);color:#ffd700;border:1px solid rgba(255,215,0,0.3);border-radius:8px;cursor:pointer;margin-top:4px;'>👑 ADMIN</button>
-                    <button id='bossActivationBtn' onclick='window.showBossActivationModal && window.showBossActivationModal()' style='display:none;width:100%;padding:.55rem;font-family:Orbitron,sans-serif;font-size:.72rem;background:linear-gradient(135deg,#1a0000,#500000);color:#ff4444;border:2px solid #ff4444;border-radius:8px;cursor:pointer;margin-top:4px;letter-spacing:.04em;'>⚡ ACTIVAR EVENTO JEFE DE SALA</button>
+                    
                     <button onclick="showLeaderboard()" style="width:100%; padding:.7rem; font-family:'Orbitron',sans-serif; font-size:.78rem; background:rgba(255,170,0,0.06); color:#ffaa00; border:1px solid rgba(255,170,0,0.3); border-radius:10px; cursor:pointer; margin-top:.5rem; letter-spacing:.05em;">📊 VER LEADERBOARD</button>
                 </div>
                 <div style="background:rgba(0,10,30,0.8); border:1px solid rgba(0,255,136,0.2); border-radius:16px; padding:1.2rem; flex:1;">
@@ -154,7 +154,7 @@
                         <span style="font-family:'Orbitron',sans-serif; font-size:.75rem; color:#00ff88; letter-spacing:.05em;">JUGADORES EN LÍNEA</span>
                         <span id="onlineCount" style="font-size:.8rem; color:#666; margin-left:auto;">0</span>
                     </div>
-                    <div id="playersList" style="display:flex; flex-direction:column; gap:.5rem; max-height:200px; overflow-y:auto;"></div>
+                    <div id="playersList" style="display:flex; flex-direction:column; gap:.5rem; max-height:400px; overflow-y:auto; flex:1;"></div>
                 </div>
             </div>
             <div style="flex:2; min-width:280px; background:rgba(0,10,30,0.8); border:1px solid rgba(0,196,255,0.2); border-radius:16px; padding:1.5rem;">
@@ -162,13 +162,13 @@
                     <div style="font-family:'Orbitron',sans-serif; font-size:.8rem; color:#00c4ff; letter-spacing:.1em;">SALAS DISPONIBLES</div>
                     <button onclick="refreshRooms()" style="background:none; border:1px solid #333; color:#666; border-radius:8px; padding:4px 10px; font-size:.75rem; cursor:pointer;">🔄 Actualizar</button>
                 </div>
-                <div id="roomsList" style="display:flex; flex-direction:column; gap:.6rem; min-height:200px;">
+                <div id="roomsList" style="display:flex; flex-direction:column; gap:.6rem; min-height:300px; flex:1; overflow-y:auto;">
                     <div style="text-align:center; color:#444; padding:2rem; font-size:.85rem;">Cargando salas...</div>
                 </div>
             </div>
             <div style="flex:1.2; min-width:240px; background:rgba(0,10,30,0.8); border:1px solid rgba(255,170,0,0.25); border-radius:16px; padding:1.5rem; display:flex; flex-direction:column;">
                 <div style="font-family:'Orbitron',sans-serif; font-size:.75rem; color:#ffaa00; letter-spacing:.1em; margin-bottom:.8rem;">💬 CHAT GLOBAL</div>
-                <div id="globalChatMessages" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:.4rem; min-height:220px; max-height:300px; margin-bottom:.8rem;"></div>
+                <div id="globalChatMessages" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:.4rem; min-height:0; flex:1; max-height:none; margin-bottom:.8rem;"></div>
                 <div style="display:flex; gap:.5rem;">
                     <input id="globalChatInput" type="text" placeholder="Mensaje al lobby..." maxlength="120"
                         style="flex:1; background:rgba(255,170,0,0.07); border:1px solid rgba(255,170,0,0.2); border-radius:8px; padding:8px 12px; color:#fff; font-size:.82rem; outline:none;"
