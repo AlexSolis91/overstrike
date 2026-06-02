@@ -2460,7 +2460,7 @@
                         const _vegPrinceTriple = attacker.passive && attacker.passive.name === 'Príncipe de los Sayajins' && Math.random() < 0.20;
                         if (_vegPrinceTriple) { _rkDmg *= 3; addLog('💥 Príncipe de los Sayajins: ¡Daño Triple!', 'damage'); }
                         _c.hp = Math.max(0, _c.hp - _rkDmg);
-                        if (_c.hp <= 0) { _c.isDead = true; if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, _rn, false); }
+                        if (_c.hp <= 0) { _c.isDead = true; if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, _n, false); }
                         addLog('💥 Ráfagas de Ki: ' + _n + ' recibe ' + _rkDmg + ' daño directo', 'damage');
                     }
                 }
