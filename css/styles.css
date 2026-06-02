@@ -2589,3 +2589,82 @@
         }
         .ability-cost { font-size: 0.7rem !important; }
 
+
+        /* ═══ BOSS CARD — Jefe de Sala ══════════════════════════════════════ */
+        .boss-card {
+            border-radius: 12px;
+            border: 2px solid;
+            padding: 0;
+            overflow: hidden;
+            margin-bottom: 0;
+            flex-shrink: 0;
+            cursor: default;
+            position: relative;
+            transition: box-shadow 0.3s ease;
+        }
+        .boss-card:hover {
+            transform: none;
+        }
+        .boss-portrait-wrap {
+            position: relative;
+            width: 100%;
+        }
+        .boss-portrait {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            object-position: top center;
+            display: block;
+        }
+        .boss-portrait-placeholder {
+            width: 100%;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            background: rgba(0,0,0,0.5);
+        }
+        .boss-name-overlay {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            padding: 24px 10px 8px;
+            text-align: center;
+        }
+        .boss-bars {
+            padding: 8px 10px 4px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .boss-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .boss-bar-track {
+            flex: 1;
+            height: 8px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .boss-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+        }
+        .boss-effects {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+            padding: 4px 10px 8px;
+        }
+        /* Team column for boss: center the card */
+        #team2Col:has(.boss-card) {
+            justify-content: center;
+            align-items: center;
+            padding-top: 60px;
+        }
+        #team2Col .boss-card {
+            width: 170px;
+        }
