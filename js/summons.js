@@ -1961,11 +1961,7 @@
             }
 
             // Verificar si fue derrotado
-            // Damage tick animation — only show on the PRIMARY hit, not recursive/passive calls
-            if (oldHp > 0 && target.hp < oldHp && !target._naginiImmuneRound && !passiveExecuting) {
-                const _dmgDelta = target.hp - oldHp; // negative
-                if (typeof showHpTick === 'function') showHpTick(targetName, _dmgDelta);
-            }
+            // Damage tick animation removed
 
             if (target.hp <= 0 && oldHp > 0) {
                 target.isDead = true;
