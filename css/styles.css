@@ -94,7 +94,8 @@
             padding: 0;
             overflow: hidden;
             display: none;
-            background: var(--bg-primary);
+            background: #06090f;
+            background-image: none !important;
         }
 
         .game-header {
