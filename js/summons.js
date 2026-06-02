@@ -1961,8 +1961,8 @@
             }
 
             // Verificar si fue derrotado
-            // Damage tick animation
-            if (oldHp > 0 && target.hp < oldHp && !target._naginiImmuneRound) {
+            // Damage tick animation — only show on the PRIMARY hit, not recursive/passive calls
+            if (oldHp > 0 && target.hp < oldHp && !target._naginiImmuneRound && !passiveExecuting) {
                 const _dmgDelta = target.hp - oldHp; // negative
                 if (typeof showHpTick === 'function') showHpTick(targetName, _dmgDelta);
             }
