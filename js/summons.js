@@ -1581,7 +1581,9 @@
                         // Golpear con Provocación/MegaProv → 1 turno adicional por ronda + ignorar Provocación en ese turno
                         case 'taunt_extra_turn':
                             if (_tgtChar && (hasStatusEffect(targetName, 'Provocacion') || hasStatusEffect(targetName, 'Mega Provocacion') ||
-                                            hasStatusEffect(targetName, 'Provocación') || hasStatusEffect(targetName, 'MegaProvocacion'))) {
+                                            hasStatusEffect(targetName, 'Provocación') || hasStatusEffect(targetName, 'MegaProvocacion') ||
+                                            // Also check passive-based Provocacion (Aldebaran, Nazgul)
+                                            (_tgtChar.passive && (_tgtChar.passive.name === 'Fortaleza de Tauro' || _tgtChar.passive.name === 'Señor de los Nazgul')))) {
                                 // Solo 1 vez por ronda por personaje
                                 var _skRoundKey = '_skeggoxUsedRound_' + (gameState.selectedCharacter || attackerName).replace(/\s/g,'_');
                                 var _skAlreadyUsed = gameState[_skRoundKey] === gameState.currentRound;

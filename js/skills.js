@@ -7635,16 +7635,6 @@
                 }
                 addLog('🔥 Tigre de Fuego: 3 AOE + Quemadura 1HP', 'damage');
 
-            // ── LLAMARADA KUSANAGI (Kyo): disparar pasiva al finalizar cualquier AOE ──
-            } else if (ability && (ability.target === 'aoe' || ability.target === 'enemy_team') && !passiveExecuting) {
-                if (gameState._kyoAOEHitsByAttacker && gameState.selectedCharacter) {
-                    const _kyoHits = gameState._kyoAOEHitsByAttacker[gameState.selectedCharacter] || 0;
-                    if (_kyoHits > 0 && typeof triggerKyoAOEPassive === 'function') {
-                        triggerKyoAOEPassive(gameState.selectedCharacter, _kyoHits);
-                    }
-                    delete gameState._kyoAOEHitsByAttacker;
-                }
-
             // ══ MADARA UCHIHA — handlers ══
 
             } else if (ability.effect === 'rinbo_hengoku_madara') {
@@ -8498,6 +8488,16 @@
             // Actualizar UI
             renderCharacters();
             renderSummons();
+
+            // ── LLAMARADA KUSANAGI (Kyo): pasiva AOE — siempre verificar después de cualquier habilidad ──
+            if (!passiveExecuting && gameState._kyoAOEHitsByAttacker) {
+                const _kyoAttacker = gameState.selectedCharacter;
+                const _kyoHits = (_kyoAttacker && gameState._kyoAOEHitsByAttacker[_kyoAttacker]) || 0;
+                if (_kyoHits > 0 && typeof triggerKyoAOEPassive === 'function') {
+                    triggerKyoAOEPassive(_kyoAttacker, _kyoHits);
+                }
+                delete gameState._kyoAOEHitsByAttacker;
+            }
             
             // Verificar fin del juego
             if (checkGameOver()) {

@@ -210,6 +210,26 @@
             
             // Snapshot de vivos al inicio de la primera ronda
             gameState.aliveCountAtRoundStart = Object.values(gameState.characters).filter(c => c && !c.isDead && c.hp > 0).length;
+            // ── Aplicar efectos permanentes de pasivas al inicio ──
+            for (let _pn in gameState.characters) {
+                const _pc = gameState.characters[_pn];
+                if (!_pc || !_pc.passive) continue;
+                // Fortaleza de Tauro (Aldebaran) → Provocacion permanente
+                if (_pc.passive.name === 'Fortaleza de Tauro') {
+                    _pc.statusEffects = _pc.statusEffects || [];
+                    if (!_pc.statusEffects.some(function(e){ return e && (e.name === 'Provocacion' || e.name === 'Provocación'); })) {
+                        _pc.statusEffects.push({ name:'Provocacion', type:'buff', duration:9999, emoji:'🛡️', permanent:true });
+                    }
+                }
+                // Señor de los Nazgul → Provocacion permanente
+                if (_pc.passive.name === 'Señor de los Nazgul' || _pc.passive.name === 'Senor de los Nazgul') {
+                    _pc.statusEffects = _pc.statusEffects || [];
+                    if (!_pc.statusEffects.some(function(e){ return e && (e.name === 'Provocacion' || e.name === 'Provocación'); })) {
+                        _pc.statusEffects.push({ name:'Provocacion', type:'buff', duration:9999, emoji:'🛡️', permanent:true });
+                    }
+                }
+            }
+
             // Snapshot HP inicial para Aspecto de la Vida
             for (let n in gameState.characters) {
                 const c = gameState.characters[n];
