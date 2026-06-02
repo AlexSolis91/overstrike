@@ -8260,34 +8260,45 @@
                 }
 
             } else if (ability.effect === 'tormenta_mediterraneo_bjorn') {
-                // Tormenta del Mediterráneo: 3 AOE. Por cada enemigo con Miedo/Sangrado → equipo aliado +2 cargas
+                // Tormenta del Mediterráneo: 3 AOE + por cada enemigo con Miedo/Sangrado → equipo aliado +2 cargas
                 const _tmAtk = gameState.characters[gameState.selectedCharacter];
                 const _tmTeam = _tmAtk ? _tmAtk.team : 'team1';
                 const _tmETeam = _tmTeam === 'team1' ? 'team2' : 'team1';
                 let _tmChargeGain = 0;
-                Object.keys(gameState.characters).forEach(function(n) {
+                // Snapshot enemies BEFORE any damage
+                const _tmEnemies = Object.keys(gameState.characters).filter(function(n) {
                     const _c = gameState.characters[n];
-                    if (!_c || _c.team !== _tmETeam || _c.isDead || _c.hp <= 0) return;
-                    // Check BEFORE damage (so death doesn't wipe statusEffects)
-                    const _effects = _c.statusEffects || [];
-                    const _hasMiedoSangrado = _effects.some(function(e){
+                    return _c && _c.team === _tmETeam && !_c.isDead && _c.hp > 0;
+                });
+                // Count debuffed enemies BEFORE applying damage
+                _tmEnemies.forEach(function(n) {
+                    const _c = gameState.characters[n];
+                    if (!_c) return;
+                    const _hasBuff = (_c.statusEffects || []).some(function(e) {
                         if (!e || !e.name) return false;
-                        const _n = normAccent(e.name);
-                        return _n === 'miedo' || _n === 'sangrado';
+                        const _low = e.name.toLowerCase();
+                        return _low.includes('miedo') || _low.includes('sangrado');
                     });
-                    if (_hasMiedoSangrado) {
+                    if (_hasBuff) {
                         _tmChargeGain += 2;
-                        addLog('🌊 Tormenta: ' + n + ' tiene Miedo/Sangrado → +2 cargas al equipo aliado', 'buff');
+                        addLog('🌊 Tormenta: ' + n + ' tiene Miedo/Sangrado → equipo aliado +2 cargas', 'buff');
                     }
+                });
+                // Apply damage to all enemies
+                _tmEnemies.forEach(function(n) {
                     applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
                 });
-                addLog('🌊 Tormenta del Mediterráneo: ' + finalDamage + ' AOE', 'damage');
+                addLog('🌊 Tormenta del Mediterráneo: ' + finalDamage + ' AOE a ' + _tmEnemies.length + ' enemigos', 'damage');
+                // Apply charge gain to ALL allies
                 if (_tmChargeGain > 0) {
-                    Object.values(gameState.characters).forEach(function(c) {
-                        if (!c || c.team !== _tmTeam || c.isDead) return;
-                        c.charges = Math.min(20, (c.charges||0) + _tmChargeGain);
+                    Object.keys(gameState.characters).forEach(function(n) {
+                        const _c = gameState.characters[n];
+                        if (!_c || _c.team !== _tmTeam || _c.isDead || _c.hp <= 0) return;
+                        _c.charges = Math.min(20, (_c.charges || 0) + _tmChargeGain);
                     });
-                    addLog('🌊 Tormenta del Mediterráneo: equipo aliado +' + _tmChargeGain + ' cargas (enemigos con Miedo/Sangrado)', 'buff');
+                    addLog('🌊 Tormenta del Mediterráneo: equipo aliado ×' + (_tmEnemies.length) + ' +' + _tmChargeGain + ' cargas totales', 'buff');
+                } else {
+                    addLog('🌊 Tormenta: ningún enemigo tenía Miedo/Sangrado activo', 'info');
                 }
 
             } else if (ability.effect === 'piel_acero_bjorn') {
