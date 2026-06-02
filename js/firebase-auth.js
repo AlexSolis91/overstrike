@@ -228,48 +228,8 @@
         ];
 
         function applyBattleBackground() {
-            var url = BATTLE_BACKGROUNDS[Math.floor(Math.random() * BATTLE_BACKGROUNDS.length)];
-            // Fixed full-screen background div — sits above body bg, below all game UI
-            var bg = document.getElementById('battle-bg-fullscreen');
-            if (!bg) {
-                bg = document.createElement('div');
-                bg.id = 'battle-bg-fullscreen';
-                document.body.insertBefore(bg, document.body.firstChild);
-            }
-            bg.style.cssText =
-                'position:fixed;top:0;left:0;width:100vw;height:100vh;' +
-                'background-size:cover;background-position:center center;' +
-                'background-repeat:no-repeat;' +
-                'z-index:0;pointer-events:none;display:block;';
-            bg.style.backgroundImage = 'url(' + url + ')';
-            // Dark overlay for readability
-            var overlay = document.getElementById('battle-bg-overlay');
-            if (!overlay) {
-                overlay = document.createElement('div');
-                overlay.id = 'battle-bg-overlay';
-                overlay.style.cssText =
-                    'position:fixed;top:0;left:0;width:100vw;height:100vh;' +
-                    'background:rgba(5,8,16,0.52);' +
-                    'z-index:1;pointer-events:none;display:block;';
-                document.body.insertBefore(overlay, bg.nextSibling);
-            } else {
-                overlay.style.display = 'block';
-            }
-            // Make body and all screen containers transparent so bg shows through
-            var style = document.getElementById('battle-bg-style');
-            if (!style) {
-                style = document.createElement('style');
-                style.id = 'battle-bg-style';
-                document.head.appendChild(style);
-            }
-            style.textContent =
-                'body { background: transparent !important; }' +
-                'html { background: transparent !important; }' +
-                '#lobbyScreen,#modeSelectScreen,#charSelectScreen,#loginScreen,#waitingScreen,' +
-                '.game-container,.battle-arena,.game-header {' +
-                '  background: transparent !important;' +
-                '  position: relative; z-index: 2;' +
-                '}';
+            // Disabled: game uses dark CSS background only, no image overlay
+            document.querySelector('.game-container').style.backgroundImage = 'none';
         }
 
         function clearBattleBackground() {
@@ -1736,7 +1696,7 @@
                     const el = document.getElementById(id); if (el) el.style.display = 'none';
                 });
                 document.querySelector('.game-container').style.display = 'block';
-                applyBattleBackground();
+                // applyBattleBackground(); // disabled per redesign
                 // Build character map
                 const selectedChars = {};
                 const nameCount = {};
@@ -3181,8 +3141,10 @@
                     const base = entry.name;
                     nameCount[base] = (nameCount[base] || 0) + 1;
                     const key = nameCount[base] > 1 ? base + ' v' + nameCount[base] : base;
-                    if (!characterData || !characterData[base]) return;
-                    const charCopy = JSON.parse(JSON.stringify(characterData[base]));
+                    // Use window.characterData as fallback if local const is not available
+                    const _cd = (typeof characterData !== 'undefined' && characterData) ? characterData : (window.characterData || {});
+                    if (!_cd[base]) { console.warn('[Ranked] Character not found:', base); return; }
+                    const charCopy = JSON.parse(JSON.stringify(_cd[base]));
                     charCopy.team = entry.team;
                     charCopy.baseName = base;
                     selectedChars[key] = charCopy;
@@ -3191,7 +3153,7 @@
                 // Hide any screens, show game
                 document.getElementById('charSelectScreen').style.display = 'none';
                 document.querySelector('.game-container').style.display = 'block';
-                applyBattleBackground();
+                // Background disabled - game uses CSS background only
                 // Hide lobby/other screens
                 ['lobbyScreen','waitingScreen','modeSelectScreen'].forEach(function(id) {
                     const el = document.getElementById(id);
