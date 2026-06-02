@@ -100,13 +100,15 @@
 
         function executeAbility(targetName) {
             // Guard: prevent double execution (can happen with rapid AI timer firing)
-            if (gameState._abilityExecuting) {
+            // Exception: Guía del Maestro calls _executeAbilityCore directly, bypasses this guard
+            if (gameState._abilityExecuting && !gameState._guiaMaestroActive) {
                 console.warn('[OVERSTRIKE] executeAbility called while already executing — ignored');
                 return;
             }
             gameState._abilityExecuting = true;
             // ── OVER CINEMATIC: mostrar pantalla épica antes de ejecutar ──
-            if (gameState.selectedAbility && gameState.selectedAbility.type === 'over' &&
+            // (no cinematic during Guía del Maestro - it only triggers basics anyway)
+            if (!gameState._guiaMaestroActive && gameState.selectedAbility && gameState.selectedAbility.type === 'over' &&
                 typeof _showOverCinematic === 'function') {
                 const _ocChar = gameState.selectedCharacter;
                 const _ocAb   = gameState.selectedAbility;
@@ -189,7 +191,10 @@
             // Phalanx (Leonidas) passive now fires at round start — removed enemy special trigger
             
             // Calcular daño y generación de cargas ajustados por modo Rikudō
-            let finalDamage = ability.damage;
+            // Guía del Maestro can override finalDamage to reflect ally's own buffs
+            let finalDamage = (gameState._gmOverrideFinalDamage !== null && gameState._gmOverrideFinalDamage !== undefined)
+                ? (gameState._gmOverrideFinalDamage) : (ability.damage);
+            gameState._gmOverrideFinalDamage = null;
             let finalChargeGain = ability.chargeGain;
             // ESPÍRITU DEL HÉROE (Saitama): +accumulated bonus on basic attacks
             if (ability.type === 'basic' && attacker.passive && attacker.passive.name === 'Espíritu del Héroe') {
@@ -6826,102 +6831,102 @@
             // ══════════════════════════════════════════════════════
 
             } else if (ability.effect === 'guia_maestro_yoda') {
-                // Guía del Maestro: cada aliado vivo ejecuta su ataque básico contra un enemigo aleatorio
-                // Activa el efecto REAL del básico de cada aliado (daño, efectos, cargas)
+                // Guía del Maestro: cada aliado vivo ejecuta su básico completo como si fuera su propio turno
                 const _gmYoda = gameState.characters[gameState.selectedCharacter];
                 const _gmTeam = _gmYoda ? _gmYoda.team : 'team1';
                 const _gmETeam = _gmTeam === 'team1' ? 'team2' : 'team1';
+                const _gmYodaName = gameState.selectedCharacter;
+
                 const _gmAllies = Object.keys(gameState.characters).filter(function(n) {
                     const _c = gameState.characters[n];
-                    return _c && _c.team === _gmTeam && !_c.isDead && _c.hp > 0 && n !== gameState.selectedCharacter;
+                    return _c && _c.team === _gmTeam && !_c.isDead && _c.hp > 0 && n !== _gmYodaName;
                 });
+
                 const _gmGetEnemies = function() {
                     return Object.keys(gameState.characters).filter(function(n) {
                         const _c = gameState.characters[n];
                         return _c && _c.team === _gmETeam && !_c.isDead && _c.hp > 0;
                     });
                 };
+
                 if (_gmGetEnemies().length === 0) {
                     addLog('✨ Guía del Maestro: no hay enemigos disponibles', 'info');
                 } else {
-                    _gmAllies.forEach(function(allyName) {
-                        const _ally = gameState.characters[allyName];
-                        if (!_ally || _ally.isDead || _ally.hp <= 0) return;
-                        const _basicAb = (_ally.abilities || []).find(function(a){ return a && a.type === 'basic'; });
-                        if (!_basicAb) return;
-                        const _enemies = _gmGetEnemies();
-                        if (!_enemies.length) return;
-                        const _tgt = _enemies[Math.floor(Math.random() * _enemies.length)];
-                        const _tgtChar = gameState.characters[_tgt];
-                        if (!_tgtChar || _tgtChar.isDead || _tgtChar.hp <= 0) return;
+                    // Save the original executor state
+                    const _gmPrevChar    = gameState.selectedCharacter;
+                    const _gmPrevAbility = gameState.selectedAbility;
+                    const _gmPrevTarget  = gameState.selectedTarget;
 
-                        addLog('✨ Guía del Maestro: ' + allyName + ' usa ' + _basicAb.name + ' sobre ' + _tgt, 'info');
+                    // Set recursion guard so executeAbility's own guard doesn't block us
+                    gameState._guiaMaestroActive = true;
+                    gameState._abilityExecuting = false; // allow inner calls
 
-                        // Save & override gameState to simulate ally's basic
-                        const _prevSelected = gameState.selectedCharacter;
-                        const _prevAbility = gameState.selectedAbility;
-                        const _prevTarget = gameState.selectedTarget;
-                        gameState.selectedCharacter = allyName;
-                        gameState.selectedAbility = _basicAb;
-                        gameState.selectedTarget = _tgt;
-                        gameState._lastAbilityType = 'basic';
-                        gameState._lastAbilityChargeGain = _basicAb.chargeGain || 0;
+                    for (var _gmi = 0; _gmi < _gmAllies.length; _gmi++) {
+                        var _gmAllyName = _gmAllies[_gmi];
+                        var _gmAlly = gameState.characters[_gmAllyName];
+                        if (!_gmAlly || _gmAlly.isDead || _gmAlly.hp <= 0) continue;
 
-                        // Apply damage (base)
-                        const _dmg = _basicAb.damage || 0;
-                        if (_dmg > 0) applyDamageWithShield(_tgt, _dmg, allyName);
-
-                        // Apply chargeGain to ally
-                        if ((_basicAb.chargeGain||0) > 0) {
-                            _ally.charges = Math.min(20, (_ally.charges||0) + _basicAb.chargeGain);
+                        // Find ally's basic ability
+                        var _gmBasic = null;
+                        for (var _ab = 0; _ab < (_gmAlly.abilities||[]).length; _ab++) {
+                            if (_gmAlly.abilities[_ab] && _gmAlly.abilities[_ab].type === 'basic') {
+                                _gmBasic = _gmAlly.abilities[_ab];
+                                break;
+                            }
                         }
+                        if (!_gmBasic) continue;
 
-                        // Trigger the actual ability effect if it has one (not self-referential effects)
-                        const _eff = _basicAb.effect || '';
-                        const _skipEffects = ['guia_maestro_yoda']; // never self-recurse
-                        if (_eff && !_skipEffects.includes(_eff)) {
-                            // Inline-handle common basic effects
-                            try {
-                                if (_eff === 'crit_chance_basic' && _basicAb.critChance > 0) {
-                                    const _gB = (allyName.startsWith('Gilgamesh')) ? 0.25 : 0;
-                                    if (Math.random() < Math.min(1, (_basicAb.critChance||0) + _gB)) {
-                                        applyDamageWithShield(_tgt, _dmg, allyName); // extra crit dmg
-                                        addLog('⚡ Crítico! (' + allyName + ')', 'buff');
-                                    }
-                                } else if (_eff === 'dragons_fear_antares' || _eff === 'dragon_fear_antares') {
-                                    // Antares básico: 1 AOE + 50% Miedo 2T + 30% triple dmg si ya tenía Miedo/Quemadura
-                                    const _aET = _ally.team === 'team1' ? 'team2' : 'team1';
-                                    Object.keys(gameState.characters).forEach(function(en) {
-                                        const _ec = gameState.characters[en];
-                                        if (!_ec || _ec.team !== _aET || _ec.isDead || _ec.hp <= 0 || en === _tgt) return;
-                                        applyDamageWithShield(en, _dmg, allyName);
-                                    });
-                                    if (Math.random() < 0.50 && typeof applyDebuff === 'function')
-                                        applyDebuff(_tgt, {name:'Miedo',type:'debuff',duration:2,emoji:'😨'});
-                                    const _hadMQ = (_tgtChar.statusEffects||[]).some(function(e){ const n=normAccent(e?.name||''); return n==='miedo'||n==='quemadura'; });
-                                    if (_hadMQ && Math.random() < 0.30) {
-                                        applyDamageWithShield(_tgt, _dmg * 2, allyName);
-                                        addLog('🐉 Dragon\'s Fear: daño triple (Miedo/Quemadura activo)', 'damage');
-                                    }
-                                } else if (typeof applyDebuff === 'function') {
-                                    // Generic: try to trigger debuff-applying basics
-                                    // For basics that apply Miedo/Stun etc. at 50%:
-                                    // We handle via the effect map check in a safe try-catch
-                                }
-                            } catch(e) { /* safe: don't break Yoda's turn */ }
+                        // Pick random enemy
+                        var _gmEnemies = _gmGetEnemies();
+                        if (!_gmEnemies.length) break;
+                        var _gmTgt = _gmEnemies[Math.floor(Math.random() * _gmEnemies.length)];
+
+                        addLog('✨ Guía del Maestro: ' + _gmAllyName + ' → ' + _gmBasic.name + ' sobre ' + _gmTgt, 'info');
+
+                        // Set gameState as if this ally is executing their own turn
+                        gameState.selectedCharacter = _gmAllyName;
+                        gameState.selectedAbility   = _gmBasic;
+                        gameState.selectedTarget    = _gmTgt;
+                        gameState._lastAbilityType       = 'basic';
+                        gameState._lastAbilityChargeGain = _gmBasic.chargeGain || 0;
+
+                        // Calculate finalDamage for this ally (respects buffs/Furia/etc)
+                        var _gmFinalDmg = _gmBasic.damage || 0;
+                        var _gmAllyBuff = (_gmAlly.statusEffects||[]).some(function(e){
+                            return e && (normAccent(e.name||'') === 'furia' || normAccent(e.name||'') === 'frenesi');
+                        });
+                        if (_gmAllyBuff) _gmFinalDmg = Math.ceil(_gmFinalDmg * 1.5);
+
+                        // Run the full ability core (with current selectedCharacter = ally)
+                        // Pass a synthetic finalDamage so the handler uses the right value
+                        gameState._gmOverrideFinalDamage = _gmFinalDmg;
+                        try {
+                            _executeAbilityCore(_gmTgt);
+                        } catch(e) {
+                            // Fallback: at minimum apply damage + chargeGain
+                            if (_gmFinalDmg > 0) applyDamageWithShield(_gmTgt, _gmFinalDmg, _gmAllyName);
+                            if (_gmBasic.chargeGain > 0) _gmAlly.charges = Math.min(20, (_gmAlly.charges||0) + _gmBasic.chargeGain);
+                            console.error('[Guía del Maestro] Error en básico de ' + _gmAllyName + ':', e);
                         }
+                        gameState._gmOverrideFinalDamage = null;
+                        gameState._abilityExecuting = false; // reset for next ally
 
-                        // Kill check
-                        if (_tgtChar.hp <= 0 && !_tgtChar.isDead) {
-                            _tgtChar.isDead = true;
-                            if (typeof registerKill === 'function') registerKill(allyName, _tgt, false);
+                        // Re-check if game is over after each ally
+                        if (checkGameOver()) {
+                            gameState._guiaMaestroActive = false;
+                            gameState._abilityExecuting = false;
+                            gameState.selectedCharacter = _gmPrevChar;
+                            gameState.selectedAbility   = _gmPrevAbility;
+                            gameState.selectedTarget    = _gmPrevTarget;
+                            return;
                         }
+                    }
 
-                        // Restore state
-                        gameState.selectedCharacter = _prevSelected;
-                        gameState.selectedAbility = _prevAbility;
-                        gameState.selectedTarget = _prevTarget;
-                    });
+                    // Restore Yoda as the active character
+                    gameState._guiaMaestroActive = false;
+                    gameState.selectedCharacter = _gmPrevChar;
+                    gameState.selectedAbility   = _gmPrevAbility;
+                    gameState.selectedTarget    = _gmPrevTarget;
                 }
                 renderCharacters(); renderSummons();
                 if (checkGameOver()) { gameState._abilityExecuting = false; return; }
