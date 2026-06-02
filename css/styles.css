@@ -95,7 +95,8 @@
             overflow: hidden;
             display: none;
             background: #06090f;
-            background-image: none !important;
+            background-size: cover;
+            background-position: center;
         }
 
         .game-header {
@@ -146,7 +147,16 @@
             overflow-y: auto;
             overflow-x: hidden;
             height: 100%;
-            padding: 48px 6px 90px 6px;  /* top: space for turn banner, bottom: space for continue btn */
+            padding: 48px 6px 90px 6px;
+            scrollbar-width: thin;
+        }
+        /* Cards shrink slightly when many characters are present */
+        .team-column:has(.character-card:nth-child(7)) .char-inner {
+            padding: 4px 6px 3px 6px;
+        }
+        .team-column:has(.character-card:nth-child(7)) .character-portrait {
+            width: 60px;
+            height: 75px;
         }
 
         .team-column::-webkit-scrollbar { width: 3px; }
