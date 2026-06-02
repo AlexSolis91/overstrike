@@ -228,8 +228,23 @@
         ];
 
         function applyBattleBackground() {
-            // Disabled: game uses dark CSS background only, no image overlay
-            document.querySelector('.game-container').style.backgroundImage = 'none';
+            var url = BATTLE_BACKGROUNDS[Math.floor(Math.random() * BATTLE_BACKGROUNDS.length)];
+            var gc = document.querySelector('.game-container');
+            if (gc) {
+                gc.style.backgroundImage = 'url(' + url + ')';
+                gc.style.backgroundSize = 'cover';
+                gc.style.backgroundPosition = 'center';
+                gc.style.backgroundRepeat = 'no-repeat';
+                // Dark overlay via pseudo or inner div
+                var ov = document.getElementById('_battleBgOverlay');
+                if (!ov) {
+                    ov = document.createElement('div');
+                    ov.id = '_battleBgOverlay';
+                    ov.style.cssText = 'position:absolute;inset:0;background:rgba(4,8,18,0.62);pointer-events:none;z-index:0;';
+                    gc.insertBefore(ov, gc.firstChild);
+                }
+                ov.style.display = 'block';
+            }
         }
 
         function clearBattleBackground() {
@@ -3153,7 +3168,7 @@
                 // Hide any screens, show game
                 document.getElementById('charSelectScreen').style.display = 'none';
                 document.querySelector('.game-container').style.display = 'block';
-                // Background disabled - game uses CSS background only
+                applyBattleBackground();
                 // Hide lobby/other screens
                 ['lobbyScreen','waitingScreen','modeSelectScreen'].forEach(function(id) {
                     const el = document.getElementById(id);

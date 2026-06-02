@@ -2465,6 +2465,27 @@
                     }
                 }
                 applyAOEToSummons(_rkETeam, finalDamage, gameState.selectedCharacter);
+                // ── Trigger Kyo Llamarada Kusanagi (AOE direct bypass also triggers burn) ──
+                if (typeof triggerLlamaradaKusanagi === 'function') {
+                    triggerLlamaradaKusanagi(gameState.selectedCharacter, _rkTeam, _hitCount || 0);
+                } else {
+                    // Inline: find Kyo in _rkTeam and apply burn to attacker
+                    (function() {
+                        var _kyoHits = 0;
+                        for (var _kn in gameState.characters) {
+                            var _kc = gameState.characters[_kn];
+                            if (_kc && _kc.team === _rkTeam && !_kc.isDead && _kc.passive && _kc.passive.name === 'Llamarada Kusanagi') {
+                                // Count allies hit
+                                _kyoHits = Object.keys(gameState.characters).filter(function(n){ var c=gameState.characters[n]; return c&&c.team===_rkTeam&&!c.isDead; }).length;
+                                if (_kyoHits > 0 && typeof applyFlatBurn === 'function') {
+                                    for (var _bi=0; _bi<_kyoHits; _bi++) applyFlatBurn(gameState.selectedCharacter, 2, 2);
+                                    addLog('🔥 Llamarada Kusanagi: ' + gameState.selectedCharacter + ' recibe ' + _kyoHits + ' Quemadura(s) (Ráfagas de Ki)', 'debuff');
+                                }
+                                break;
+                            }
+                        }
+                    })();
+                }
                 addLog('💥 Ráfagas de Ki: AOE completado', 'damage');
 
             } else if (ability.effect === 'final_flash') {

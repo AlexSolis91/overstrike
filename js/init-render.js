@@ -345,16 +345,31 @@
         }
 
         function renderStatusEffects(char) {
-            if (!char || !char.statusEffects || char.statusEffects.length === 0) return '';
-            const displayEffects = buildDisplayEffects(char.statusEffects);
-            if (!displayEffects.length) return '';
-            let html = '';
-            displayEffects.forEach(function(d) {
-                const cn = d.type === 'buff' ? 'buff' : 'debuff';
-                const sub = d.sub ? ' <span style="opacity:.65;font-size:.82em;">('+d.sub+')</span>' : '';
-                html += '<span class="status-effect ' + cn + '">' + d.emoji + ' ' + d.label + sub + '</span>';
-            });
-            return html;
+            if (!char || !char.statusEffects) return '';
+            const effects = char.statusEffects.filter(function(e){ return e && e.name && (e.duration === undefined || e.duration > 0); });
+            if (!effects.length) return '';
+            try {
+                const displayEffects = buildDisplayEffects(effects);
+                if (!displayEffects || !displayEffects.length) return '';
+                let html = '';
+                displayEffects.forEach(function(d) {
+                    if (!d) return;
+                    const cn = d.type === 'buff' ? 'buff' : 'debuff';
+                    const sub = d.sub ? ' <span style="opacity:.65;font-size:.78em;">('+d.sub+')</span>' : '';
+                    html += '<span class="status-effect ' + cn + '">' + (d.emoji||'') + ' ' + (d.label||'') + sub + '</span>';
+                });
+                return html;
+            } catch(e) {
+                // Fallback: simple render without buildDisplayEffects
+                let html = '';
+                effects.forEach(function(e) {
+                    if (!e || !e.name) return;
+                    const cn = e.type === 'buff' ? 'buff' : 'debuff';
+                    const dur = e.duration !== undefined ? ' ('+e.duration+'T)' : '';
+                    html += '<span class="status-effect ' + cn + '">' + (e.emoji||'•') + ' ' + e.name + dur + '</span>';
+                });
+                return html;
+            }
         }
 
         function renderCharacters() {
