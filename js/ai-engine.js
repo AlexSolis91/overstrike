@@ -25,8 +25,12 @@
                 function getAliveEnemies() {
                     return Object.keys(gameState.characters).filter(n => {
                         const c = gameState.characters[n];
-                        return c && c.team === enemyTeam && !c.isDead && c.hp > 0 &&
-                            !(c.statusEffects && c.statusEffects.some(e => e && normAccent(e.name||'') === 'sigilo'));
+                        if (!c || c.team !== enemyTeam || c.isDead || c.hp <= 0) return false;
+                        // IA nunca ataca a Viejo Maestro Yoda (pasiva Sabiduría Antigua: inmune a todo)
+                        if (c.passive && c.passive.name === 'Sabiduría Antigua') return false;
+                        // Sigilo
+                        if (c.statusEffects && c.statusEffects.some(e => e && normAccent(e.name||'') === 'sigilo')) return false;
+                        return true;
                     });
                 }
                 function getUsableAbilities() {

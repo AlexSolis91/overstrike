@@ -11,7 +11,9 @@
 
             // ── ANILLO DE LA VIDA (Reliquia): +2HP al inicio de cada turno propio ──
             if ((char.equippedRelics||[]).some(function(r){ return r === 'Anillo de la Vida'; })) {
+                const _anilloOld = char.hp;
                 char.hp = Math.min(char.maxHp, (char.hp||0) + 2);
+                if (char.hp > _anilloOld && typeof showHpTick === 'function') showHpTick(charName, char.hp - _anilloOld);
                 addLog('💍 Anillo de la Vida: ' + charName + ' recupera 2HP', 'heal');
             }
 
@@ -36,6 +38,7 @@
                     const actualHeal = char.hp - oldHp;
                     
                     if (actualHeal > 0) {
+                        if (typeof showHpTick === 'function') showHpTick(charName, actualHeal);
                         addLog(`💖 ${charName} recuperó ${actualHeal} HP por Regeneración${_regenAura ? ' (x2 Aura de Luz)' : ''}`, 'heal');
                         // Activar pasiva de Min Byung si está en el equipo
                         triggerBendicionSagrada(char.team, actualHeal);

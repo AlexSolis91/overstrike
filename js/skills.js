@@ -8259,58 +8259,54 @@
                     }
                 }
 
-            } else if (ability.effect === 'tormenta_mediterraneo_bjorn') {
-                // Tormenta del Mediterráneo: 3 AOE
-                // Por cada enemigo golpeado con Miedo y/o Sangrado activo → todo el equipo aliado +2 cargas
-                const _tmAtk = gameState.characters[gameState.selectedCharacter];
-                const _tmTeam = _tmAtk ? _tmAtk.team : 'team1';
-                const _tmETeam = _tmTeam === 'team1' ? 'team2' : 'team1';
+            } else if (ability.effect === 'furia_nanook_bjorn') {
+                // Furia de Nanook: 2 AOE + 1 carga por enemigo con Miedo, 1 por Sangrado, 1 por Congelación
+                const _fnAtk = gameState.characters[gameState.selectedCharacter];
+                const _fnTeam = _fnAtk ? _fnAtk.team : 'team1';
+                const _fnETeam = _fnTeam === 'team1' ? 'team2' : 'team1';
 
-                // PASO 1: Lista de enemigos vivos ANTES del daño
-                const _tmEnemies = Object.keys(gameState.characters).filter(function(n) {
+                // Snapshot live enemies BEFORE damage
+                const _fnEnemies = Object.keys(gameState.characters).filter(function(n) {
                     const _x = gameState.characters[n];
-                    return _x && _x.team === _tmETeam && !_x.isDead && _x.hp > 0;
+                    return _x && _x.team === _fnETeam && !_x.isDead && _x.hp > 0;
                 });
 
-                // PASO 2: Por cada enemigo vivo, checar debuffs ANTES de aplicar daño
-                let _tmDebuffCount = 0;
-                _tmEnemies.forEach(function(n) {
+                // Count debuffs BEFORE damage (death could clear statusEffects)
+                let _fnMiedo = 0, _fnSangrado = 0, _fnCongelacion = 0;
+                _fnEnemies.forEach(function(n) {
                     const _x = gameState.characters[n];
                     if (!_x || !_x.statusEffects) return;
-                    var _tieneMiedo    = false;
-                    var _tieneSangrado = false;
-                    for (var _i = 0; _i < _x.statusEffects.length; _i++) {
-                        var _e = _x.statusEffects[_i];
-                        if (!_e || !_e.name) continue;
-                        var _low = _e.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
-                        if (_low === 'miedo')    _tieneMiedo    = true;
-                        if (_low === 'sangrado') _tieneSangrado = true;
-                    }
-                    if (_tieneMiedo || _tieneSangrado) {
-                        _tmDebuffCount++;
-                        addLog('🌊 Tormenta: ' + n + ' tiene' + (_tieneMiedo?' Miedo':'') + (_tieneSangrado?' Sangrado':'') + ' → +2 cargas al equipo aliado', 'buff');
-                    }
+                    (_x.statusEffects).forEach(function(e) {
+                        if (!e || !e.name) return;
+                        const _l = e.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+                        if (_l === 'miedo')       _fnMiedo++;
+                        if (_l === 'sangrado')    _fnSangrado++;
+                        if (_l === 'congelacion' || _l === 'mega congelacion') _fnCongelacion++;
+                    });
                 });
 
-                // PASO 3: Aplicar 3 AOE a todos los enemigos
-                _tmEnemies.forEach(function(n) {
+                // Apply 2 AOE
+                _fnEnemies.forEach(function(n) {
                     applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
                 });
-                addLog('🌊 Tormenta del Mediterráneo: ' + finalDamage + ' AOE (' + _tmEnemies.length + ' enemigos)', 'damage');
+                addLog('🐻 Furia de Nanook: ' + finalDamage + ' AOE (' + _fnEnemies.length + ' enemigos)', 'damage');
 
-                // PASO 4: Generar cargas al equipo aliado (+2 por cada enemigo debuffeado)
-                if (_tmDebuffCount > 0) {
-                    var _tmGain = _tmDebuffCount * 2;
+                // Charge gain per debuff type
+                const _fnGain = _fnMiedo + _fnSangrado + _fnCongelacion;
+                if (_fnGain > 0) {
                     Object.keys(gameState.characters).forEach(function(n) {
-                        var _a = gameState.characters[n];
-                        if (!_a || _a.team !== _tmTeam || _a.isDead || _a.hp <= 0) return;
-                        _a.charges = Math.min(20, (_a.charges || 0) + _tmGain);
+                        const _a = gameState.characters[n];
+                        if (!_a || _a.team !== _fnTeam || _a.isDead || _a.hp <= 0) return;
+                        _a.charges = Math.min(20, (_a.charges || 0) + _fnGain);
                     });
-                    addLog('🌊 Tormenta del Mediterráneo: +' + _tmGain + ' cargas a todo el equipo aliado (' + _tmDebuffCount + ' enemig' + (_tmDebuffCount===1?'o':'os') + ' con debuffs)', 'buff');
+                    const _fnParts = [];
+                    if (_fnMiedo    > 0) _fnParts.push(_fnMiedo    + ' Miedo');
+                    if (_fnSangrado > 0) _fnParts.push(_fnSangrado + ' Sangrado');
+                    if (_fnCongelacion > 0) _fnParts.push(_fnCongelacion + ' Congelación');
+                    addLog('🐻 Furia de Nanook: equipo aliado +' + _fnGain + ' cargas (' + _fnParts.join(', ') + ')', 'buff');
                 } else {
-                    addLog('🌊 Tormenta del Mediterráneo: ningún enemigo tenía Miedo/Sangrado → 0 cargas generadas', 'info');
+                    addLog('🐻 Furia de Nanook: ningún enemigo tenía Miedo/Sangrado/Congelación', 'info');
                 }
-
             } else if (ability.effect === 'piel_acero_bjorn') {
                 // Piel de Acero Legendaria: Armadura 3T + Regeneración 3T + Cuerpo Perfecto 3T
                 // Cooldown 3 turnos

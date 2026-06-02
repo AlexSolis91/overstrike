@@ -1765,7 +1765,8 @@
                         if (_vc._naginiSurvivedRound && _vc._naginiSurvivedRound < gameState.currentRound && _naginiExists) {
                             _vc.hp = _vc.maxHp;
                             _vc._naginiSurvivedRound = null;
-                            _vc._naginiImmuneRound = null; // ya no es inmune
+                            _vc._naginiImmuneRound = null;
+                            if (typeof showHpTick === 'function') showHpTick(_vn, _vc.maxHp);
                             addLog('🐍 Horrocrux Viviente: ¡Voldemort recupera ' + _vc.maxHp + ' HP! (Nagini sigue activa)', 'heal');
                         }
                         // Invocar Nagini si no está activa
@@ -1780,7 +1781,10 @@
                         const _sn = gameState.summons[_sId];
                         if (!_sn || _sn.name !== 'Nagini' || _sn.isDead || _sn.hp <= 0) continue;
                         // +2 HP regen
+                        const _nagOld = _sn.hp;
                         _sn.hp = Math.min(_sn.maxHp, (_sn.hp||0) + 2);
+                        const _nagGain = _sn.hp - _nagOld;
+                        if (_nagGain > 0 && typeof showHpTick === 'function') showHpTick('Nagini', _nagGain);
                         addLog('🐍 Parsel: Nagini recupera 2 HP (' + _sn.hp + '/' + _sn.maxHp + ')', 'heal');
                         if (typeof renderSummons === 'function') renderSummons();
                         // Veneno al equipo enemigo
