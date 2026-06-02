@@ -327,6 +327,19 @@
         // Track previous HP to detect changes for tick animation
         var _prevHpMap = {};
 
+        function renderStatusEffects(char) {
+            if (!char || !char.statusEffects || char.statusEffects.length === 0) return '';
+            const displayEffects = buildDisplayEffects(char.statusEffects);
+            if (!displayEffects.length) return '';
+            let html = '';
+            displayEffects.forEach(function(d) {
+                const cn = d.type === 'buff' ? 'buff' : 'debuff';
+                const sub = d.sub ? ' <span style="opacity:.65;font-size:.82em;">('+d.sub+')</span>' : '';
+                html += '<span class="status-effect ' + cn + '">' + d.emoji + ' ' + d.label + sub + '</span>';
+            });
+            return html;
+        }
+
         function renderCharacters() {
             const team1Container = document.getElementById('team1Characters');
             const team2Container = document.getElementById('team2Characters');
