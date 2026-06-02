@@ -366,12 +366,8 @@
                 return;
             }
 
-            // Snapshot current HP for tick detection
+            // HP tick detection removed - ticks fired directly in applyDamageWithShield and applyHeal
             var _newHpMap = {};
-            for (let _hn in gameState.characters) {
-                const _hc = gameState.characters[_hn];
-                if (_hc) _newHpMap[_hn] = _hc.hp;
-            }
             
             team1Container.innerHTML = '';
             team2Container.innerHTML = '';
@@ -489,12 +485,5 @@
                 container.innerHTML += cardHTML;
             }
 
-            // Fire HEAL tick animations only
-            for (let _tn in _newHpMap) {
-                const _prev = _prevHpMap[_tn];
-                if (_prev !== undefined && _newHpMap[_tn] > _prev) {
-                    showHpTick(_tn, _newHpMap[_tn] - _prev);
-                }
-            }
-            _prevHpMap = _newHpMap;
+               // Ticks fired directly in applyDamageWithShield and applyHeal
         }
