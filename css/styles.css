@@ -2464,7 +2464,6 @@
             letter-spacing: 0.05em;
         }
         .hp-tick.heal { color: #00ff88; }
-        .hp-tick.dmg  { color: #ff3355; }
         @keyframes hpTickFloat {
             0%   { opacity: 1; transform: translateY(0) scale(1.1); }
             20%  { opacity: 1; transform: translateY(-14px) scale(1.25); }
