@@ -1705,6 +1705,13 @@
                 });
                 document.querySelector('.game-container').style.display = 'block';
 
+                // Apply battle background (boss mode gets boss-specific bg, others get random)
+                if (typeof applyBattleBackground === 'function') {
+                    var _bgBossName = (csState.gameMode === 'boss' && window._bossBattleData && window._bossBattleData.boss)
+                        ? window._bossBattleData.boss.name : '';
+                    applyBattleBackground(_bgBossName);
+                }
+
                 initGame(selectedChars);
 
                 const myDisplayName = (typeof currentUser !== 'undefined' && currentUser && currentUser.displayName) ? currentUser.displayName : 'Jugador 1';
