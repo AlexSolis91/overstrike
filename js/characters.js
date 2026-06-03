@@ -921,7 +921,7 @@
                     { name: 'Gakidō',                      type: 'basic',   cost: 0,  chargeGain: 1, damage: 0, target: 'aoe',    effect: 'gakido_pain',         description: '50% de probabilidad de aplicar Silenciar a cada enemigo. Limpia 1 buff activo de cada enemigo.' },
                     { name: 'Ningendō',                     type: 'special', cost: 6,  chargeGain: 0, damage: 2, target: 'single', effect: 'ningendo_pain',        description: 'Causa 2 daño. Elimina todas las cargas del objetivo. Por cada carga eliminada causa +2 daño adicional.' },
                     { name: 'Gedō: Rinne Tensei no Jutsu',  type: 'special', cost: 10, chargeGain: 0, damage: 0, target: 'self',   effect: 'gedo_rinne_pain',      description: 'Sacrifica 50% del HP actual. Revive 1 aliado derrotado aleatorio con 50% HP máx y 20 cargas. Aplica Regeneración 25% 2T y Armadura 2T a todos los aliados.' },
-                    { name: 'Shinra Tensei',                type: 'over',    cost: 15, chargeGain: 0, damage: 0, target: 'aoe',   effect: 'shinra_tensei_pain',   description: 'Elimina todas las cargas de ambos equipos. Causa 3 daño directo por cada carga eliminada (repartido aleatoriamente entre enemigos).' },
+                    { name: 'Shinra Tensei',                type: 'over',    cost: 15, chargeGain: 0, damage: 0, target: 'aoe',   effect: 'shinra_tensei_pain',   description: 'Elimina todas las cargas de ambos equipos. Causa 1 daño por golpe por cada carga eliminada (repartido aleatoriamente entre enemigos).' },
                 ]
             },
 

@@ -8602,13 +8602,9 @@
                             if (!_stEnemiesCurrent.length) break;
                             const _rndTarget = _stEnemiesCurrent[Math.floor(Math.random() * _stEnemiesCurrent.length)];
                             const _tc = gameState.characters[_rndTarget];
-                            _tc.hp = Math.max(0, (_tc.hp||0) - 3);
-                            if (_tc.hp <= 0 && !_tc.isDead) {
-                                _tc.isDead = true;
-                                if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, _rndTarget, false);
-                            }
+                            applyDamageWithShield(_rndTarget, 1, gameState.selectedCharacter);
                         }
-                        addLog('👁️ Shinra Tensei: ' + _totalDmg + ' daño directo total distribuido entre enemigos (' + _totalCharges + ' × 3)', 'damage');
+                        addLog('👁️ Shinra Tensei: ' + _totalCharges + ' golpes de 1 daño distribuidos entre enemigos (' + _totalCharges + ' × 1)', 'damage');
                     }
                 }
 
@@ -8655,21 +8651,18 @@
             } else if (ability.effect === 'marca_demonio_meliodas') {
                 // Marca de Demonio: Provocación 2T + Reflejar + Anticipación
                 const _mdName = gameState.selectedCharacter;
-                if (typeof applyBuff === 'function') {
-                    applyBuff(_mdName, { name:'Provocacion', type:'buff', duration:2, emoji:'🛡️' });
-                    applyBuff(_mdName, { name:'Reflejar',    type:'buff', duration:3, emoji:'🪞', reflect:true });
-                    applyBuff(_mdName, { name:'Anticipacion', type:'buff', duration:3, emoji:'👁️‍🗨️', anticipacion:true });
-                } else {
-                    const _mdChar = gameState.characters[_mdName];
-                    if (_mdChar) {
-                        (_mdChar.statusEffects = _mdChar.statusEffects||[]).push(
-                            { name:'Provocacion', type:'buff', duration:2, emoji:'🛡️' },
-                            { name:'Reflejar',    type:'buff', duration:3, emoji:'🪞', reflect:true },
-                            { name:'Anticipacion', type:'buff', duration:3, emoji:'👁️‍🗨️', anticipacion:true }
-                        );
-                    }
+                const _mdChar = gameState.characters[_mdName];
+                if (_mdChar) {
+                    _mdChar.statusEffects = (_mdChar.statusEffects||[]).filter(function(e){
+                        if (!e||!e.name) return true;
+                        const _n = e.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+                        return _n !== 'provocacion' && _n !== 'reflejar' && _n !== 'anticipacion';
+                    });
+                    _mdChar.statusEffects.push({ name:'Provocación', type:'buff', duration:2, emoji:'🛡️', permanent:false });
+                    _mdChar.statusEffects.push({ name:'Reflejar',    type:'buff', duration:3, emoji:'🪞', reflect:true });
+                    _mdChar.statusEffects.push({ name:'Anticipación', type:'buff', duration:3, emoji:'👁️‍🗨️', anticipacion:true });
                 }
-                addLog('⚔️ Marca de Demonio: Provocación + Reflejar + Anticipación sobre ' + _mdName, 'buff');
+                addLog('⚔️ Marca de Demonio: Provocación 2T + Reflejar + Anticipación sobre ' + _mdName, 'buff');
 
             } else if (ability.effect === 'mil_cortes_meliodas') {
                 // Mil Cortes Divinos: 5× Lost Vayne sobre enemigos aleatorios
