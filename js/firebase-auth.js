@@ -188,35 +188,56 @@
         var LICH_KING_BACKGROUND = 'https://i.ibb.co/Txt7q1bY/descarga-8.jpg';
 
         function applyBattleBackground(bossName) {
-            // Lich King gets his own background, everyone else gets random
             var url = (bossName && bossName.toLowerCase().includes('lich'))
                 ? LICH_KING_BACKGROUND
                 : BATTLE_BACKGROUNDS[Math.floor(Math.random() * BATTLE_BACKGROUNDS.length)];
-            var gc = document.querySelector('.game-container');
-            if (gc) {
-                gc.style.backgroundImage = 'url(' + url + ')';
-                gc.style.backgroundSize = 'cover';
-                gc.style.backgroundPosition = 'center';
-                gc.style.backgroundRepeat = 'no-repeat';
-                // Dark overlay via pseudo or inner div
-                var ov = document.getElementById('_battleBgOverlay');
-                if (!ov) {
-                    ov = document.createElement('div');
-                    ov.id = '_battleBgOverlay';
-                    ov.style.cssText = 'position:absolute;inset:0;background:rgba(4,8,18,0.55);pointer-events:none;z-index:0;border-radius:0;';
-                    gc.insertBefore(ov, gc.firstChild);
-                }
-                ov.style.display = 'block';
+            // Use a dedicated fullscreen div OUTSIDE game-container to avoid CSS conflicts
+            var bgDiv = document.getElementById('_battleBgDiv');
+            if (!bgDiv) {
+                bgDiv = document.createElement('div');
+                bgDiv.id = '_battleBgDiv';
+                bgDiv.style.cssText = [
+                    'position:fixed',
+                    'inset:0',
+                    'z-index:500',   // below game UI (z-index:1) but above body bg
+                    'background-size:cover',
+                    'background-position:center center',
+                    'background-repeat:no-repeat',
+                    'pointer-events:none',
+                    'transition:opacity 0.5s ease'
+                ].join(';');
+                document.body.insertBefore(bgDiv, document.body.firstChild);
             }
+            bgDiv.style.backgroundImage = 'url(' + url + ')';
+            bgDiv.style.display = 'block';
+            bgDiv.style.opacity = '1';
+            // Dark overlay on top of image
+            var ovDiv = document.getElementById('_battleBgOv');
+            if (!ovDiv) {
+                ovDiv = document.createElement('div');
+                ovDiv.id = '_battleBgOv';
+                ovDiv.style.cssText = [
+                    'position:fixed',
+                    'inset:0',
+                    'z-index:501',
+                    'background:rgba(4,8,18,0.52)',
+                    'pointer-events:none'
+                ].join(';');
+                document.body.insertBefore(ovDiv, bgDiv.nextSibling);
+            }
+            ovDiv.style.display = 'block';
         }
 
         function clearBattleBackground() {
-            var bg = document.getElementById('battle-bg-fullscreen');
-            if (bg) { bg.style.backgroundImage = 'none'; bg.style.display = 'none'; }
-            var overlay = document.getElementById('battle-bg-overlay');
-            if (overlay) overlay.style.display = 'none';
-            var style = document.getElementById('battle-bg-style');
-            if (style) style.remove();
+            var bg = document.getElementById('_battleBgDiv');
+            if (bg) bg.style.display = 'none';
+            var ov = document.getElementById('_battleBgOv');
+            if (ov) ov.style.display = 'none';
+            // Legacy cleanup
+            var bg2 = document.getElementById('battle-bg-fullscreen');
+            if (bg2) bg2.style.display = 'none';
+            var ov2 = document.getElementById('battle-bg-overlay');
+            if (ov2) ov2.style.display = 'none';
         }
 
         function showLobby() {
