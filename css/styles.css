@@ -127,17 +127,15 @@
         }
 
         /* ═══ BATTLE ARENA — FULL SCREEN LAYOUT ═══════════════════════════ */
-        /* Layout: [team1 | team2] take 80% width, battle-log takes 20% on far right */
-        /* Turn banner sits fixed at top */
-
         .battle-arena {
             position: absolute;
             inset: 0;
             display: grid;
-            /* team1 | center(turn+log) | team2 */
             grid-template-columns: 1fr 220px 1fr;
             grid-template-rows: 100%;
             gap: 0;
+            background: transparent;
+            z-index: 1;
         }
 
         .team-column {
@@ -149,6 +147,7 @@
             height: 100%;
             padding: 48px 6px 90px 6px;
             scrollbar-width: thin;
+            background: transparent;
         }
         /* Cards shrink slightly when many characters are present */
         .team-column:has(.character-card:nth-child(7)) .char-inner {
@@ -170,6 +169,7 @@
             padding: 48px 4px 90px 4px;
             gap: 4px;
             overflow: hidden;
+            background: transparent;
         }
 
         .team1 {
