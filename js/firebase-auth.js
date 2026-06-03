@@ -203,7 +203,7 @@
                 if (!ov) {
                     ov = document.createElement('div');
                     ov.id = '_battleBgOverlay';
-                    ov.style.cssText = 'position:absolute;inset:0;background:rgba(4,8,18,0.62);pointer-events:none;z-index:0;';
+                    ov.style.cssText = 'position:absolute;inset:0;background:rgba(4,8,18,0.55);pointer-events:none;z-index:0;border-radius:0;';
                     gc.insertBefore(ov, gc.firstChild);
                 }
                 ov.style.display = 'block';
