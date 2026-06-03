@@ -1828,7 +1828,7 @@
                     applyDebuff(attackerName, { name:'Miedo', type:'debuff', duration:2, emoji:'😨' });
                 } else {
                     const _atk = gameState.characters[attackerName];
-                    if (_atk) (_atk.statusEffects = _atk.statusEffects||[]).push({ name:'Miedo', type:'debuff', duration:2, emoji:'😨' });
+                    if (_atk && typeof applyDebuff === 'function') applyDebuff(attackerName, { name:'Miedo', type:'debuff', duration:2, emoji:'😱' });
                 }
                 addLog('🐻 Piel de Nanook: ' + attackerName + ' recibe Miedo 2T', 'debuff');
                 // Steal 1 charge from EACH enemy → Bjorn gains total stolen

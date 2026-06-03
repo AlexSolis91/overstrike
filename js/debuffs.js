@@ -267,6 +267,25 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 return; // Yoda rechaza cualquier buff externo silenciosamente
             }
 
+            // ── HARD DEDUP: non-stackable buffs cannot stack ──
+            if (effectObj && effectObj.name) {
+                var _bnm = effectObj.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+                var _bstack = ['escudo','quemadura','veneno','sangrado'];
+                if (_bstack.indexOf(_bnm) < 0) {
+                    var _bex = (target.statusEffects || []).findIndex(function(e) {
+                        if (!e || !e.name) return false;
+                        return e.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') === _bnm;
+                    });
+                    if (_bex >= 0) {
+                        if (effectObj.duration !== undefined) {
+                            target.statusEffects[_bex].duration = Math.max(
+                                target.statusEffects[_bex].duration || 0, effectObj.duration);
+                        }
+                        return;
+                    }
+                }
+            }
+
             // ── SIX PATHS (Pain): 50% interceptar buff en enemigo ──
             if (!passiveExecuting && effectObj && effectObj.type === 'buff') {
                 const _sixAllyTeam = target.team === 'team1' ? 'team2' : 'team1';
@@ -296,9 +315,37 @@ function triggerMaboroshi(targetTeam, debuffName) {
                     return;
                 }
             }
-                        // Normalize: fix emoji, canonical name, enforce no-duplicate
-            effectObj = _normalizeEffect(effectObj, target);
-            if (!effectObj) return; // already existed, duration refreshed
+                        // Normalize: fix emoji, canonical name
+            if (typeof _normalizeEffect === 'function') {
+                effectObj = _normalizeEffect(effectObj, target);
+                if (!effectObj) return; // no-stack: duration refreshed, don't push
+            }
+
+            // ── HARD DEDUPLICATION: non-stackable debuffs cannot stack ──
+            // (catches direct pushes and any path that bypassed _normalizeEffect)
+            (function() {
+                if (!effectObj || !effectObj.name) return;
+                var _nm = effectObj.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+                var _stackable = ['quemadura','veneno','sangrado','escudo'];
+                if (_stackable.indexOf(_nm) >= 0) return; // stackable - allow
+                // Check if already present
+                var _existing = (target.statusEffects || []).findIndex(function(e) {
+                    if (!e || !e.name) return false;
+                    var _en = e.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+                    return _en === _nm;
+                });
+                if (_existing >= 0) {
+                    // Refresh duration
+                    if (effectObj.duration !== undefined) {
+                        target.statusEffects[_existing].duration = Math.max(
+                            target.statusEffects[_existing].duration || 0,
+                            effectObj.duration
+                        );
+                    }
+                    effectObj = null; // cancel push
+                }
+            })();
+            if (!effectObj) return;
 
             // ── SIX PATHS (Pain): 50% interceptar debuff en aliado ──
             if (!passiveExecuting) {
