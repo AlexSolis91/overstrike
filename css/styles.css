@@ -318,9 +318,9 @@
         }
 
         .character-card.transformed-mode {
-            border: 2px solid #ff4400;
-            background: linear-gradient(135deg, rgba(255, 68, 0, 0.18), rgba(200, 0, 50, 0.08));
-            box-shadow: 0 0 14px rgba(255, 68, 0, 0.7);
+            border: 2px solid #ff6600;
+            background: linear-gradient(160deg, rgba(80,30,0,0.92) 0%, rgba(50,15,0,0.95) 100%);
+            box-shadow: 0 0 18px rgba(255,100,0,0.7), inset 0 0 12px rgba(255,80,0,0.15);
             animation: transformedPulse 2s ease-in-out infinite;
         }
 
