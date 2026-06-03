@@ -289,8 +289,14 @@
                     poisonMaxDur = Math.max(poisonMaxDur, e.duration || 0);
                     poisonAdded = true;
                 } else {
-                    // Normal single display
-                    display.push({ emoji: e.emoji || '✨', label: e.name, sub: e.duration !== undefined ? e.duration : '', type: e.type });
+                    // Normal single display — use official emoji from _EFFECT_MAP if available
+                    var _dispEmoji = e.emoji || '✨';
+                    var _dispName = e.name;
+                    if (typeof _EFFECT_MAP !== 'undefined' && _EFFECT_MAP[e.name]) {
+                        _dispEmoji = _EFFECT_MAP[e.name].emoji;
+                        if (_EFFECT_MAP[e.name].canonical) _dispName = _EFFECT_MAP[e.name].canonical;
+                    }
+                    display.push({ emoji: _dispEmoji, label: _dispName, sub: e.duration !== undefined ? e.duration : '', type: e.type });
                 }
             });
 

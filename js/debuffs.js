@@ -148,6 +148,116 @@ function triggerMaboroshi(targetTeam, debuffName) {
         }
 
 
+        // ══ OFFICIAL BUFF/DEBUFF NORMALIZATION ════════════════════════════════
+        // Single source of truth for names and emojis.
+        // Stackable: Quemadura, Veneno, Sangrado, Escudo (can have multiple instances)
+        // All others: only 1 instance per character at a time (refreshes duration)
+        const _EFFECT_MAP = {
+            'Furia':              { emoji:'⚡',      stackable:false },
+            'Frenesi':            { emoji:'🔥',      stackable:false, canonical:'Frenesí' },
+            'Frenesí':            { emoji:'🔥',      stackable:false },
+            'Escudo':             { emoji:'🛡️',     stackable:true  },
+            'Escudo Sagrado':     { emoji:'✝️',      stackable:false },
+            'Proteccion Sagrada': { emoji:'🛡️✨',   stackable:false, canonical:'Protección Sagrada' },
+            'Protección Sagrada': { emoji:'🛡️✨',   stackable:false },
+            'Regeneracion':       { emoji:'💖',      stackable:false, canonical:'Regeneración' },
+            'Regeneración':       { emoji:'💖',      stackable:false },
+            'Sigilo':             { emoji:'👤',      stackable:false },
+            'Provocacion':        { emoji:'🛡️',     stackable:false, canonical:'Provocación' },
+            'Provocación':        { emoji:'🛡️',     stackable:false },
+            'MegaProvocacion':    { emoji:'🌑',      stackable:false, canonical:'Mega Provocación' },
+            'Mega Provocacion':   { emoji:'🌑',      stackable:false, canonical:'Mega Provocación' },
+            'Mega Provocación':   { emoji:'🌑',      stackable:false },
+            'Esquivar':           { emoji:'💨',      stackable:false },
+            'Esquiva Area':       { emoji:'🌟',      stackable:false, canonical:'Esquiva Área' },
+            'Esquiva Área':       { emoji:'🌟',      stackable:false },
+            'Contraataque':       { emoji:'🔄',      stackable:false },
+            'Espinas':            { emoji:'🌵',      stackable:false },
+            'Armadura':           { emoji:'🛡️',     stackable:false },
+            'Celeridad':          { emoji:'⚡',      stackable:false },
+            'Anticipacion':       { emoji:'👁️‍🗨️',   stackable:false, canonical:'Anticipación' },
+            'Anticipación':       { emoji:'👁️‍🗨️',   stackable:false },
+            'Concentracion':      { emoji:'🎯',      stackable:false, canonical:'Concentración' },
+            'Concentración':      { emoji:'🎯',      stackable:false },
+            'Cuerpo Perfecto':    { emoji:'💠',      stackable:false },
+            'Divinidad':          { emoji:'✨',      stackable:false },
+            'Aura de Fuego':      { emoji:'🔥',      stackable:false },
+            'Aura de fuego':      { emoji:'🔥',      stackable:false, canonical:'Aura de Fuego' },
+            'Aura Gelida':        { emoji:'❄️',      stackable:false, canonical:'Aura Gélida' },
+            'Aura Gélida':        { emoji:'❄️',      stackable:false },
+            'Aura Oscura':        { emoji:'🌑',      stackable:false },
+            'Aura de Luz':        { emoji:'✨',      stackable:false },
+            'Infectar':           { emoji:'🦠',      stackable:false },
+            'Asistir':            { emoji:'🤝',      stackable:false },
+            'Reflejar':           { emoji:'🪞',      stackable:false },
+            // DEBUFFS
+            'Quemadura':          { emoji:'🔥',      stackable:true  },
+            'quemadura':          { emoji:'🔥',      stackable:true,  canonical:'Quemadura' },
+            'Quemadura Solar':    { emoji:'☀️',      stackable:false },
+            'Veneno':             { emoji:'☠️',      stackable:true  },
+            'Sangrado':           { emoji:'🩸',      stackable:true  },
+            'Aturdimiento':       { emoji:'⭐',      stackable:false },
+            'Mega Aturdimiento':  { emoji:'💫',      stackable:false },
+            'Congelacion':        { emoji:'❄️',      stackable:false, canonical:'Congelación' },
+            'Congelación':        { emoji:'❄️',      stackable:false },
+            'Mega Congelacion':   { emoji:'🧊',      stackable:false, canonical:'Megacongelación' },
+            'Mega Congelación':   { emoji:'🧊',      stackable:false, canonical:'Megacongelación' },
+            'Megacongelacion':    { emoji:'🧊',      stackable:false, canonical:'Megacongelación' },
+            'Megacongelación':    { emoji:'🧊',      stackable:false },
+            'MegaCongelacion':    { emoji:'🧊',      stackable:false, canonical:'Megacongelación' },
+            'Miedo':              { emoji:'😱',      stackable:false },
+            'Confusion':          { emoji:'😵',      stackable:false, canonical:'Confusión' },
+            'Confusión':          { emoji:'😵',      stackable:false },
+            'Posesion':           { emoji:'👁️',      stackable:false, canonical:'Posesión' },
+            'Posesión':           { emoji:'👁️',      stackable:false },
+            'Mega Posesion':      { emoji:'👁️👁️',  stackable:false, canonical:'Mega Posesión' },
+            'Mega Posesión':      { emoji:'👁️👁️',  stackable:false },
+            'Debilitar':          { emoji:'💔',      stackable:false },
+            'Silenciar':          { emoji:'🔇',      stackable:false },
+            'Silencio':           { emoji:'🔇',      stackable:false, canonical:'Silenciar' },
+            'Agotamiento':        { emoji:'😴',      stackable:false },
+        };
+
+        // Normalize an effectObj: correct emoji, canonical name, enforce no-stack
+        function _normalizeEffect(effectObj, target) {
+            if (!effectObj || !effectObj.name) return effectObj;
+            var info = _EFFECT_MAP[effectObj.name];
+            if (info) {
+                // Use official emoji
+                effectObj.emoji = info.emoji;
+                // Use canonical name if available
+                if (info.canonical) effectObj.name = info.canonical;
+                // Enforce no-duplicate for non-stackable effects
+                if (!info.stackable && target && target.statusEffects) {
+                    var existIdx = -1;
+                    for (var _i = 0; _i < target.statusEffects.length; _i++) {
+                        var _e = target.statusEffects[_i];
+                        if (!_e) continue;
+                        // Match by canonical name
+                        var _eName = _e.name;
+                        var _eInfo = _EFFECT_MAP[_eName];
+                        var _eCanon = (_eInfo && _eInfo.canonical) ? _eInfo.canonical : _eName;
+                        var _newCanon = info.canonical || effectObj.name;
+                        if (_eCanon === _newCanon) { existIdx = _i; break; }
+                    }
+                    if (existIdx >= 0) {
+                        // Refresh duration instead of stacking
+                        if (effectObj.duration !== undefined) {
+                            target.statusEffects[existIdx].duration = Math.max(
+                                target.statusEffects[existIdx].duration || 0,
+                                effectObj.duration
+                            );
+                        }
+                        return null; // signal: don't push, already handled
+                    }
+                }
+            }
+            return effectObj;
+        }
+        window._normalizeEffect = _normalizeEffect;
+        window._EFFECT_MAP = _EFFECT_MAP;
+        // ══ END NORMALIZATION ═══════════════════════════════════════════════════
+
         function applyBuff(targetName, effectObj) {
             const target = gameState.characters[targetName];
             if (!target || !target.statusEffects) return;
@@ -186,7 +296,11 @@ function triggerMaboroshi(targetTeam, debuffName) {
                     return;
                 }
             }
-                        // ── SIX PATHS (Pain): 50% interceptar debuff en aliado ──
+                        // Normalize: fix emoji, canonical name, enforce no-duplicate
+            effectObj = _normalizeEffect(effectObj, target);
+            if (!effectObj) return; // already existed, duration refreshed
+
+            // ── SIX PATHS (Pain): 50% interceptar debuff en aliado ──
             if (!passiveExecuting) {
                 for (const _pn in gameState.characters) {
                     const _pain = gameState.characters[_pn];
