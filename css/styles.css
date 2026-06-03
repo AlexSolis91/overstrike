@@ -94,9 +94,8 @@
             padding: 0;
             overflow: hidden;
             display: none;
-            background: #06090f;
-            background-size: cover;
-            background-position: center;
+            background: transparent;
+            z-index: 502;
         }
 
         .game-header {
