@@ -2212,6 +2212,17 @@
                 triggerOzyPassive(targetName, attackerName);
                 // CONTRAATAQUE (Darth Vader, Goku UI, cualquier personaje con buff)
                 if (!passiveExecuting) triggerCounterattack(targetName, attackerName);
+                // ── PECADO DE LA IRA (Meliodas): contraataque → Meliodas +2 cargas ──
+                if (!passiveExecuting && attackerName && (hasStatusEffect(targetName, 'Contraataque') || hasStatusEffect(targetName, 'Reflejar'))) {
+                    for (const _mn in gameState.characters) {
+                        const _mel = gameState.characters[_mn];
+                        if (!_mel || _mel.isDead || _mel.team !== gameState.characters[targetName].team) continue;
+                        if (!_mel.passive || _mel.passive.name !== 'Pecado de la Ira') continue;
+                        _mel.charges = Math.min(20, (_mel.charges||0) + 2);
+                        addLog('⚔️ Pecado de la Ira: Meliodas gana 2 cargas (contraataque)', 'buff');
+                        break;
+                    }
+                }
                 // BUFF REFLEJAR: interceptado antes del daño (ver arriba en applyDamageWithShield)
                 // AURA DE FUEGO: atacante recibe Quemadura 2HP por 2 turnos
                 if (attackerName && (hasStatusEffect(targetName, 'Aura de fuego') || hasStatusEffect(targetName, 'Aura de Fuego'))) {

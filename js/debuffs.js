@@ -693,6 +693,29 @@ function applyDebuff(targetName, effectObj) {
                     triggerIzanamiPartB(targetName);
                 }
             }
+
+            // ── PECADO DE LA IRA (Meliodas): cuando aliado recibe debuff → mirror en enemigo aleatorio ──
+            if (!passiveExecuting && effectObj && target) {
+                const _melTeam = target.team;
+                for (const _mn in gameState.characters) {
+                    const _melC = gameState.characters[_mn];
+                    if (!_melC || _melC.isDead || _melC.team !== _melTeam) continue;
+                    if (!_melC.passive || _melC.passive.name !== 'Pecado de la Ira') continue;
+                    const _melETeam = _melTeam === 'team1' ? 'team2' : 'team1';
+                    const _melEnemies = Object.keys(gameState.characters).filter(function(n){
+                        const _ec = gameState.characters[n];
+                        return _ec && _ec.team === _melETeam && !_ec.isDead && _ec.hp > 0;
+                    });
+                    if (!_melEnemies.length) break;
+                    const _mirrorTarget = _melEnemies[Math.floor(Math.random()*_melEnemies.length)];
+                    const _mirrorEff = Object.assign({}, effectObj);
+                    passiveExecuting = true;
+                    applyDebuff(_mirrorTarget, _mirrorEff);
+                    passiveExecuting = false;
+                    addLog('⚔️ Pecado de la Ira: ' + (effectObj.name||'debuff') + ' reflejado en ' + _mirrorTarget, 'debuff');
+                    break;
+                }
+            }
         }
 
         function applyStun(targetName, duration = 1) {

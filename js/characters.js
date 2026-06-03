@@ -898,6 +898,20 @@
                 ]
             },
 
+            'Meliodas': {
+                name: 'Meliodas',
+                hp: 20, maxHp: 20, speed: 85, charges: 0,
+                portrait: 'https://i.ibb.co/B2Lq7WJ0/image.png',
+                transformPortrait: 'https://i.ibb.co/FvS9MSm/image.png',
+                passive: { name: 'Pecado de la Ira', description: 'Contraataque: genera 2 cargas cada vez que Meliodas o un aliado ejecuta un contraataque. Cuando un aliado recibe un debuff, aplica ese mismo debuff en un enemigo aleatorio.' },
+                abilities: [
+                    { name: 'Lost Vayne',          type: 'basic',   cost: 0,  chargeGain: 1, damage: 2, target: 'single', effect: 'lost_vayne_meliodas',     description: 'Causa 2 daño. Aplica Sangrado al objetivo. Si Meliodas tiene Provocación activa, cura 3 HP a Meliodas.' },
+                    { name: 'Marca de Demonio',     type: 'special', cost: 6,  chargeGain: 0, damage: 0, target: 'self',   effect: 'marca_demonio_meliodas',  description: 'Aplica Provocación 2T, Reflejar y Anticipación sobre Meliodas.' },
+                    { name: 'Mil Cortes Divinos',   type: 'special', cost: 10, chargeGain: 0, damage: 0, target: 'single', effect: 'mil_cortes_meliodas',     description: 'Ejecuta 5 veces Lost Vayne sobre enemigos aleatorios, aplicando todos sus efectos.' },
+                    { name: 'El Rey Demonio',       type: 'over',    cost: 12, chargeGain: 0, damage: 0, target: 'self',   effect: 'rey_demonio_meliodas',    description: 'Transformación permanente: +10 velocidad. Cada vez que Meliodas aplica Sangrado a un enemigo, un aliado aleatorio gana 2 cargas.' },
+                ]
+            },
+
             'Pain': {
                 name: 'Pain',
                 hp: 25, maxHp: 25, speed: 85, charges: 0,

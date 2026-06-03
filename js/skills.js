@@ -8614,6 +8614,115 @@
 
             } // end Pain handlers
 
+            // ══════════════════════════════════════════════════════
+            // MELIODAS — handlers
+            // ══════════════════════════════════════════════════════
+
+            else if (ability.effect === 'lost_vayne_meliodas') {
+                // Lost Vayne: 2 ST + Sangrado. Si tiene Provocación activa → cura 3 HP a Meliodas
+                const _lvMel = gameState.characters[gameState.selectedCharacter];
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('⚔️ Lost Vayne: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (typeof applyDebuff === 'function') {
+                    applyDebuff(targetName, { name:'Sangrado', type:'debuff', duration:2, emoji:'🩸', dotDamage:1 });
+                }
+                // Check Provocación
+                if (_lvMel && (_lvMel.statusEffects||[]).some(function(e){
+                    if (!e||!e.name) return false;
+                    var _l = e.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+                    return _l === 'provocacion';
+                })) {
+                    if (typeof applyHeal === 'function') {
+                        applyHeal(gameState.selectedCharacter, 3, 'Lost Vayne');
+                    } else if (_lvMel) {
+                        _lvMel.hp = Math.min(_lvMel.maxHp, (_lvMel.hp||0) + 3);
+                        addLog('⚔️ Lost Vayne: Meliodas cura 3 HP (Provocación activa)', 'heal');
+                    }
+                }
+                // El Rey Demonio bonus: al aplicar Sangrado, aliado aleatorio +2 cargas
+                if (_lvMel && _lvMel._reyDemonioActive) {
+                    const _melTeam = _lvMel.team;
+                    const _allies = Object.keys(gameState.characters).filter(function(n){
+                        const _c = gameState.characters[n]; return _c && _c.team === _melTeam && !_c.isDead && n !== gameState.selectedCharacter;
+                    });
+                    if (_allies.length > 0) {
+                        const _ra = _allies[Math.floor(Math.random()*_allies.length)];
+                        gameState.characters[_ra].charges = Math.min(20, (gameState.characters[_ra].charges||0) + 2);
+                        addLog('👑 Rey Demonio: ' + _ra + ' gana 2 cargas (Sangrado aplicado)', 'buff');
+                    }
+                }
+
+            } else if (ability.effect === 'marca_demonio_meliodas') {
+                // Marca de Demonio: Provocación 2T + Reflejar + Anticipación
+                const _mdName = gameState.selectedCharacter;
+                if (typeof applyBuff === 'function') {
+                    applyBuff(_mdName, { name:'Provocacion', type:'buff', duration:2, emoji:'🛡️' });
+                    applyBuff(_mdName, { name:'Reflejar',    type:'buff', duration:3, emoji:'🪞', reflect:true });
+                    applyBuff(_mdName, { name:'Anticipacion', type:'buff', duration:3, emoji:'👁️‍🗨️', anticipacion:true });
+                } else {
+                    const _mdChar = gameState.characters[_mdName];
+                    if (_mdChar) {
+                        (_mdChar.statusEffects = _mdChar.statusEffects||[]).push(
+                            { name:'Provocacion', type:'buff', duration:2, emoji:'🛡️' },
+                            { name:'Reflejar',    type:'buff', duration:3, emoji:'🪞', reflect:true },
+                            { name:'Anticipacion', type:'buff', duration:3, emoji:'👁️‍🗨️', anticipacion:true }
+                        );
+                    }
+                }
+                addLog('⚔️ Marca de Demonio: Provocación + Reflejar + Anticipación sobre ' + _mdName, 'buff');
+
+            } else if (ability.effect === 'mil_cortes_meliodas') {
+                // Mil Cortes Divinos: 5× Lost Vayne sobre enemigos aleatorios
+                const _mcMel = gameState.characters[gameState.selectedCharacter];
+                const _mcTeam = _mcMel ? _mcMel.team : 'team1';
+                const _mcETeam = _mcTeam === 'team1' ? 'team2' : 'team1';
+                addLog('⚔️ Mil Cortes Divinos: 5 ataques Lost Vayne', 'damage');
+                // Save state
+                const _mcPrevChar = gameState.selectedCharacter;
+                const _mcPrevAb   = gameState.selectedAbility;
+                const _mcPrevTgt  = gameState.selectedTarget;
+                const _mcBasic = (_mcMel && _mcMel.abilities||[]).find(function(a){ return a && a.effect === 'lost_vayne_meliodas'; });
+                if (_mcBasic) {
+                    gameState._guiaMaestroActive = true;
+                    for (var _mi = 0; _mi < 5; _mi++) {
+                        const _mcEnemies = Object.keys(gameState.characters).filter(function(n){
+                            const _c = gameState.characters[n]; return _c && _c.team === _mcETeam && !_c.isDead && _c.hp > 0;
+                        });
+                        if (!_mcEnemies.length) break;
+                        const _mcTgt = _mcEnemies[Math.floor(Math.random()*_mcEnemies.length)];
+                        gameState.selectedCharacter = _mcPrevChar;
+                        gameState.selectedAbility   = _mcBasic;
+                        gameState.selectedTarget    = _mcTgt;
+                        gameState._gmOverrideFinalDamage = _mcBasic.damage || 2;
+                        try { _executeAbilityCore(_mcTgt); } catch(e) {
+                            applyDamageWithShield(_mcTgt, 2, _mcPrevChar);
+                            console.error('[Mil Cortes] Error:', e);
+                        }
+                        gameState._abilityExecuting = false;
+                        if (checkGameOver()) break;
+                    }
+                    gameState._guiaMaestroActive = false;
+                }
+                gameState.selectedCharacter = _mcPrevChar;
+                gameState.selectedAbility   = _mcPrevAb;
+                gameState.selectedTarget    = _mcPrevTgt;
+                renderCharacters(); renderSummons();
+                if (checkGameOver()) { gameState._abilityExecuting = false; return; }
+
+            } else if (ability.effect === 'rey_demonio_meliodas') {
+                // El Rey Demonio: transformación permanente +10 vel + bonus Sangrado
+                const _rdMel = gameState.characters[gameState.selectedCharacter];
+                if (_rdMel) {
+                    _rdMel._reyDemonioActive = true;
+                    _rdMel.speed = (_rdMel.speed || 85) + 10;
+                    _rdMel.isTransformed = true;
+                    // Recalcular orden de turnos con nueva velocidad
+                    if (typeof calculateTurnOrder === 'function') calculateTurnOrder();
+                }
+                addLog('👑 El Rey Demonio: Meliodas se transforma — +10 velocidad. Sangrado ahora genera cargas a aliados.', 'buff');
+
+            } // end Meliodas handlers
+
             // Actualizar UI
             renderCharacters();
             renderSummons();
