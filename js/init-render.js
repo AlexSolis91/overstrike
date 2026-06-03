@@ -427,6 +427,7 @@
                                       ((name === 'Goku' || name === 'Goku v2') && (char.ultraInstinto || char.gokuForm)) ||
                                       ((name === 'Naruto' || name === 'Naruto v2') && char.narutoForm) ||
                                       ((name === 'Antares' || name === 'Antares v2') && char.antaresTransformed) ||
+                                      ((name === 'Meliodas' || name === 'Meliodas v2') && char._reyDemonioActive) ||
                                       ((name === 'Vegeta' || name === 'Vegeta v2') && char.vegetaForm) ||
                                       ((name === 'Anakin Skywalker' || name === 'Anakin Skywalker v2') && char.darkSideAwakened) ||
                                       ((name === 'Muzan Kibutsuji' || name === 'Muzan Kibutsuji v2') && char.muzanTransformed) ||
@@ -463,6 +464,9 @@
                 }
                 // Portrait Antares transformado
                 if ((name === 'Antares' || name === 'Antares v2') && char.antaresTransformed && char.transformPortrait) {
+                    _dynPortrait = char.transformPortrait;
+                }
+                if ((name === 'Meliodas' || name === 'Meliodas v2') && char._reyDemonioActive && char.transformPortrait) {
                     _dynPortrait = char.transformPortrait;
                 }
                 // Portrait Vegeta por forma
