@@ -7,7 +7,7 @@
             const target = gameState.characters[targetName];
             if (!attacker || !target) return 0;
             const stolen = Math.min(target.charges, amount);
-            target.charges -= stolen;
+            target.charges = Math.max(0, (target.charges||0) - (stolen));
             attacker.charges += stolen;
             if (stolen > 0) addLog(`⚡ ${attackerName} roba ${stolen} carga${stolen > 1 ? 's' : ''} a ${targetName}`, 'buff');
             else addLog(`⚡ ${targetName} no tiene cargas que robar`, 'info');

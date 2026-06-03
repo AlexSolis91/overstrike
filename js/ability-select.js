@@ -36,6 +36,11 @@
                 addLog(`❌ Another Dimension en cooldown (${ability.cooldown} turno${ability.cooldown > 1 ? 's' : ''} restante${ability.cooldown > 1 ? 's' : ''})`, 'info');
                 return;
             }
+            // EL REY DEMONIO: bloqueado tras transformación
+            if (ability.effect === 'rey_demonio_meliodas' && char._reyDemonioActive) {
+                addLog('👑 El Rey Demonio: Meliodas ya se ha transformado', 'info');
+                return;
+            }
             
             gameState.selectedAbility = ability;
             gameState.adjustedCost = adjustedCost;
@@ -903,7 +908,7 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 }
                 
                 // Consumir cargas
-                attacker.charges -= adjustedCost;
+                attacker.charges = Math.max(0, (attacker.charges||0) - adjustedCost);
                 
                 // LANZA DE HIELO (Rey de la Noche): tomar control de la invocación — NO aplica daño
                 if (ability.effect === 'lanza_hielo_rdn') {

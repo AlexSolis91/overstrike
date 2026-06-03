@@ -294,7 +294,7 @@
             }
             
             // Consumir cargas
-            attacker.charges -= adjustedCost;
+            attacker.charges = Math.max(0, (attacker.charges||0) - adjustedCost);
             // Marcar que el personaje activo realizó un ataque (para romper Sigilo)
             if (ability.target === 'single' || ability.target === 'aoe') {
                 gameState._attackedThisTurn = true;
@@ -1865,7 +1865,7 @@
                         // Enemigo más rápido: roba 2 cargas
                         const stolen = Math.min(2, c.charges || 0);
                         if (stolen > 0) {
-                            c.charges -= stolen;
+                            c.charges = Math.max(0, (c.charges||0) - stolen);
                             attacker.charges = Math.min(20, attacker.charges + stolen);
                             addLog(`⚡ Destello: ${n} (más rápido) pierde ${stolen} cargas → Minato las roba`, 'buff');
                         }
@@ -1885,7 +1885,7 @@
                     applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
                     if (Math.random() < 0.5 && c.charges > 0) {
                         const stolen = Math.min(3, c.charges);
-                        c.charges -= stolen;
+                        c.charges = Math.max(0, (c.charges||0) - stolen);
                         attacker.charges = Math.min(20, attacker.charges + stolen);
                         addLog(`🌀 Rasen Senkō: roba ${stolen} cargas de ${n}`, 'buff');
                     }
@@ -5170,7 +5170,7 @@
                 if (Math.random() < 0.50) { applyStun(targetName, 1); addLog('🦇 Batarang: ' + targetName + ' aturdido', 'debuff'); }
                 const _bbTgt = gameState.characters[targetName];
                 if (Math.random() < 0.50 && _bbTgt && _bbTgt.charges >= 2) {
-                    _bbTgt.charges -= 2;
+                    _bbTgt.charges = Math.max(0, (_bbTgt.charges||0) - 2);
                     if (_bbAtk) _bbAtk.charges = Math.min(20, (_bbAtk.charges||0) + 2);
                     addLog('🦇 Batarang: Batman roba 2 cargas de ' + targetName, 'buff');
                 }
@@ -6580,7 +6580,7 @@
                 if (adTgt) {
                     const adSteal = Math.floor((adTgt.charges || 0) / 2);
                     if (adSteal > 0) {
-                        adTgt.charges -= adSteal;
+                        adTgt.charges = Math.max(0, (adTgt.charges||0) - adSteal);
                         attacker.charges = Math.min(20, (attacker.charges || 0) + adSteal);
                         addLog('🌀 Another Dimension: ' + charName + ' roba ' + adSteal + ' cargas de ' + targetName, 'buff');
                     }
