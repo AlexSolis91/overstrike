@@ -1662,7 +1662,7 @@
                     const el = document.getElementById(id); if (el) el.style.display = 'none';
                 });
                 document.querySelector('.game-container').style.display = 'block';
-                // applyBattleBackground(); // disabled per redesign
+                applyBattleBackground(''); // fondo aleatorio para ranked
                 // Build character map
                 const selectedChars = {};
                 const nameCount = {};
