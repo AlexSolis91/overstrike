@@ -191,53 +191,20 @@
             var url = (bossName && bossName.toLowerCase().includes('lich'))
                 ? LICH_KING_BACKGROUND
                 : BATTLE_BACKGROUNDS[Math.floor(Math.random() * BATTLE_BACKGROUNDS.length)];
-            // Use a dedicated fullscreen div OUTSIDE game-container to avoid CSS conflicts
-            var bgDiv = document.getElementById('_battleBgDiv');
-            if (!bgDiv) {
-                bgDiv = document.createElement('div');
-                bgDiv.id = '_battleBgDiv';
-                bgDiv.style.cssText = [
-                    'position:fixed',
-                    'inset:0',
-                    'z-index:500',   // below game UI (z-index:1) but above body bg
-                    'background-size:cover',
-                    'background-position:center center',
-                    'background-repeat:no-repeat',
-                    'pointer-events:none',
-                    'transition:opacity 0.5s ease'
-                ].join(';');
-                document.body.insertBefore(bgDiv, document.body.firstChild);
-            }
-            bgDiv.style.backgroundImage = 'url(' + url + ')';
-            bgDiv.style.display = 'block';
-            bgDiv.style.opacity = '1';
-            // Dark overlay on top of image
-            var ovDiv = document.getElementById('_battleBgOv');
-            if (!ovDiv) {
-                ovDiv = document.createElement('div');
-                ovDiv.id = '_battleBgOv';
-                ovDiv.style.cssText = [
-                    'position:fixed',
-                    'inset:0',
-                    'z-index:501',
-                    'background:rgba(4,8,18,0.52)',
-                    'pointer-events:none'
-                ].join(';');
-                document.body.insertBefore(ovDiv, bgDiv.nextSibling);
-            }
-            ovDiv.style.display = 'block';
+            // Set body background — game-container is transparent so it shows through
+            document.body.style.backgroundImage = 'url(' + url + ')';
+            document.body.style.backgroundSize = 'cover';
+            document.body.style.backgroundPosition = 'center center';
+            document.body.style.backgroundRepeat = 'no-repeat';
+            document.body.style.backgroundAttachment = 'fixed';
+            var gc = document.querySelector('.game-container');
+            if (gc) gc.style.background = 'transparent';
         }
 
         function clearBattleBackground() {
-            var bg = document.getElementById('_battleBgDiv');
-            if (bg) bg.style.display = 'none';
-            var ov = document.getElementById('_battleBgOv');
-            if (ov) ov.style.display = 'none';
-            // Legacy cleanup
-            var bg2 = document.getElementById('battle-bg-fullscreen');
-            if (bg2) bg2.style.display = 'none';
-            var ov2 = document.getElementById('battle-bg-overlay');
-            if (ov2) ov2.style.display = 'none';
+            document.body.style.backgroundImage = '';
+            var gc = document.querySelector('.game-container');
+            if (gc) gc.style.background = '';
         }
 
         function showLobby() {
