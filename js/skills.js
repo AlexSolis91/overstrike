@@ -8634,20 +8634,23 @@
                 return;
             }
             
-            // Finalizar turno
+            // Finalizar turno — pero NO si somos un sub-turno de Guía del Maestro
             gameState._abilityExecuting = false;
-            endTurn();
+            if (!gameState._guiaMaestroActive) {
+                endTurn();
+            }
         } catch (error) {
             const errMsg = error && error.message ? error.message : String(error);
             const errAbility = (gameState.selectedAbility && gameState.selectedAbility.name) || 'desconocida';
             console.error('Error en executeAbility [' + errAbility + ']:', error);
             addLog('❌ Error al ejecutar ' + errAbility + ': ' + errMsg, 'info');
             gameState._abilityExecuting = false;
-            endTurn();
+            if (!gameState._guiaMaestroActive) {
+                endTurn();
+            }
             try {
                 renderCharacters();
                 renderSummons();
-                endTurn();
             } catch (e) {
                 console.error('Error crítico en executeAbility:', e);
             }
