@@ -219,7 +219,7 @@
         }
 
         .character-card {
-            background: linear-gradient(160deg, rgba(12,20,38,0.97) 0%, rgba(6,12,24,0.99) 100%);
+            background: linear-gradient(160deg, rgba(12,20,38,0.88) 0%, rgba(6,12,24,0.92) 100%);
             border: 1px solid rgba(0,196,255,0.2);
             border-radius: 10px;
             padding: 0;
@@ -526,7 +526,7 @@
         }
 
         .battle-log {
-            background: rgba(4,8,18,0.96);
+            background: rgba(4,8,18,0.82);
             border: 1px solid rgba(0,196,255,0.12);
             border-radius: 8px;
             padding: 6px 8px;
