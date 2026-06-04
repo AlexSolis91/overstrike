@@ -40,6 +40,8 @@
                     if (actualHeal > 0) {
                         if (typeof showHpTick === 'function') showHpTick(charName, actualHeal);
                         addLog(`💖 ${charName} recuperó ${actualHeal} HP por Regeneración${_regenAura ? ' (x2 Aura de Luz)' : ''}`, 'heal');
+                        // BENDICIÓN SAGRADA
+                        if (typeof triggerBendicionSagrada === 'function') triggerBendicionSagrada(char.team, actualHeal);
                         // Activar pasiva de Min Byung si está en el equipo
                         triggerBendicionSagrada(char.team, actualHeal);
                         // PRESENCIA OSCURA (Darth Vader): +1 carga cuando enemigo recupera HP
@@ -487,6 +489,11 @@ function processBurnEffects(charName) {
             // ADAPTACION REACTIVA: disparar cuando Doomsday recupera HP por curación
             if (_actual > 0 && typeof triggerAdaptacionReactivaHeal === 'function') {
                 triggerAdaptacionReactivaHeal(charName);
+            }
+            // BENDICIÓN SAGRADA (Min Byung): cualquier curación activa la pasiva
+            if (_actual > 0 && !passiveExecuting && typeof triggerBendicionSagrada === 'function') {
+                const _healedChar = gameState.characters[charName];
+                if (_healedChar) triggerBendicionSagrada(_healedChar.team, _actual);
             }
             return _actual;
         }

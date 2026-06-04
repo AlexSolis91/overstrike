@@ -1824,6 +1824,7 @@
                             _vc._naginiSurvivedRound = null;
                             _vc._naginiImmuneRound = null;
                             if (typeof showHpTick === 'function') showHpTick(_vn, _vc.maxHp);
+                    if (typeof triggerBendicionSagrada === 'function' && !passiveExecuting) { const _bsChar = gameState.characters[_vn]; if (_bsChar) triggerBendicionSagrada(_bsChar.team, 0); }
                             addLog('🐍 Horrocrux Viviente: ¡Voldemort recupera ' + _vc.maxHp + ' HP! (Nagini sigue activa)', 'heal');
                         }
                         // Invocar Nagini si no está activa

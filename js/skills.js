@@ -3106,7 +3106,7 @@
                 } else {
                     const _psOld = attacker.hp;
                     attacker.hp = Math.min(attacker.maxHp, attacker.hp + 2);
-                    if (attacker.hp > _psOld && typeof showHpTick === 'function') showHpTick(charName, attacker.hp - _psOld);
+                    if (attacker.hp > _psOld && typeof showHpTick === 'function') showHpTick(charName, attacker.hp - _psOld); if (attacker.hp > _psOld && typeof triggerBendicionSagrada === 'function' && !passiveExecuting && attacker) triggerBendicionSagrada(attacker.team, attacker.hp - _psOld);
                     addLog('💛 Purificación Solar: ' + charName + ' recupera ' + (attacker.hp - _psOld) + ' HP', 'heal');
                 }
                 applyFlatBurn(targetName, 2, 1);
@@ -8292,9 +8292,11 @@
                             c.hp = Math.min(c.maxHp, (c.hp||0) + _miedoCount);
                             const _healed = c.hp - _prevHp;
                             if (_healed > 0 && typeof showHpTick === 'function') {
-                                // Find name of this character
                                 const _cname = Object.keys(gameState.characters).find(function(k){ return gameState.characters[k] === c; });
-                                if (_cname) showHpTick(_cname, _healed);
+                                if (_cname) {
+                                    showHpTick(_cname, _healed);
+                                    if (typeof triggerBendicionSagrada === 'function' && !passiveExecuting) triggerBendicionSagrada(c.team, _healed);
+                                }
                             }
                         });
                         addLog('🪓 Impacto del Norte: equipo aliado recupera ' + _miedoCount + ' HP (Miedos activos en enemigos)', 'heal');

@@ -1338,7 +1338,7 @@
                     if (_atkOmega.hp <= 0) { _atkOmega.isDead = true; if (typeof registerKill === 'function') registerKill(targetName, attackerName, false); }
                     const _omOld = target.hp;
                     target.hp = Math.min(target.maxHp, (target.hp||0) + 1);
-                    if (target.hp > _omOld && typeof showHpTick === 'function') showHpTick(targetName, target.hp - _omOld);
+                    if (target.hp > _omOld && typeof showHpTick === 'function') showHpTick(targetName, target.hp - _omOld); if (typeof triggerBendicionSagrada === 'function' && !passiveExecuting) { var _bsC = gameState.characters[targetName]; if (_bsC) triggerBendicionSagrada(_bsC.team, 0); }
                     addLog('⚡ Efecto Omega: Darkseid roba 1 HP de ' + attackerName, 'heal');
                 }
             }
@@ -1628,7 +1628,7 @@
                         if (_zenitReduce > 0 && _tgtChar) {
                             const _znOld = _tgtChar.hp;
                             _tgtChar.hp = Math.min(_tgtChar.maxHp, (_tgtChar.hp||0) + _zenitReduce);
-                            if (_tgtChar.hp > _znOld && typeof showHpTick === 'function') showHpTick(targetName, _tgtChar.hp - _znOld);
+                            if (_tgtChar.hp > _znOld && typeof showHpTick === 'function') showHpTick(targetName, _tgtChar.hp - _znOld); if (typeof triggerBendicionSagrada === 'function' && !passiveExecuting) { var _bsC = gameState.characters[targetName]; if (_bsC) triggerBendicionSagrada(_bsC.team, 0); }
                             addLog('🛡️ Zenit: ' + targetName + ' reduce ' + _zenitReduce + ' daño (50%)', 'buff');
                         }
                         if (_tgtChar) {
@@ -1654,7 +1654,7 @@
                         if (_isBasicAtk) {
                             const _mtOld = _tgtChar.hp;
                             _tgtChar.hp = Math.min(_tgtChar.maxHp, (_tgtChar.hp||0) + 2);
-                            if (_tgtChar.hp > _mtOld && typeof showHpTick === 'function') showHpTick(targetName, _tgtChar.hp - _mtOld);
+                            if (_tgtChar.hp > _mtOld && typeof showHpTick === 'function') showHpTick(targetName, _tgtChar.hp - _mtOld); if (typeof triggerBendicionSagrada === 'function' && !passiveExecuting) { var _bsC = gameState.characters[targetName]; if (_bsC) triggerBendicionSagrada(_bsC.team, 0); }
                             addLog('🪖 Yelmo de Ork: ' + targetName + ' recupera 2HP (recibió básico)', 'heal');
                         }
                     }
@@ -1923,7 +1923,7 @@
                 if (target.hp > 0 && !target.isDead) {
                     const _tauroOld = target.hp;
                     target.hp = Math.min(target.maxHp, target.hp + 2);
-                    if (target.hp > _tauroOld && typeof showHpTick === 'function') showHpTick(targetName, target.hp - _tauroOld);
+                    if (target.hp > _tauroOld && typeof showHpTick === 'function') showHpTick(targetName, target.hp - _tauroOld); if (typeof triggerBendicionSagrada === 'function' && !passiveExecuting) { var _bsC = gameState.characters[targetName]; if (_bsC) triggerBendicionSagrada(_bsC.team, 0); }
                     addLog('💪 Adaptación Reactiva: ' + targetName + ' recupera 2 HP tras recibir el golpe', 'heal');
                 }
             }
@@ -2089,7 +2089,7 @@
                         passiveExecuting = true;
                         const _ddOld = _ddChar.hp;
                         _ddChar.hp = Math.min(_ddChar.maxHp, (_ddChar.hp||0) + 2);
-                        if (_ddChar.hp > _ddOld && typeof showHpTick === 'function') showHpTick(_ddChar.name||'', _ddChar.hp - _ddOld);
+                        if (_ddChar.hp > _ddOld && typeof showHpTick === 'function') showHpTick(_ddChar.name||'', _ddChar.hp - _ddOld); if (typeof triggerBendicionSagrada === 'function' && !passiveExecuting && _ddChar) triggerBendicionSagrada(_ddChar.team, 0);
                         const _ddHealed = _ddChar.hp - _ddOld;
                         if (_ddHealed > 0) {
                             addLog('Adaptacion Reactiva: Doomsday recupera ' + _ddHealed + ' HP', 'heal');
@@ -2176,7 +2176,7 @@
                             const _stkHpBefore = _stkAlly.hp;
                             const _stkOld = _stkAlly.hp;
                     _stkAlly.hp = Math.min(_stkAlly.maxHp, _stkAlly.hp + 1);
-                    if (_stkAlly.hp > _stkOld && typeof showHpTick === 'function') showHpTick(_stkAllyName, _stkAlly.hp - _stkOld);
+                    if (_stkAlly.hp > _stkOld && typeof showHpTick === 'function') showHpTick(_stkAllyName, _stkAlly.hp - _stkOld); if (typeof triggerBendicionSagrada === 'function' && !passiveExecuting) { var _bsC = gameState.characters[_stkAllyName]; if (_bsC) triggerBendicionSagrada(_bsC.team, 0); }
                             if (_stkAlly.hp > _stkHpBefore) {
                                 addLog('✨ Tesoro del Cielo: ' + _stkAllyName + ' recupera 1 HP', 'heal');
                                 if (_stkAllyName === _stkName) {
@@ -2643,7 +2643,7 @@
             const before = c.hp;
             const _fhOld = c.hp;
             c.hp = Math.min(c.maxHp, c.hp + finalHeal);
-            if (c.hp > _fhOld && typeof showHpTick === 'function') showHpTick(charName, c.hp - _fhOld);
+            if (c.hp > _fhOld && typeof showHpTick === 'function') showHpTick(charName, c.hp - _fhOld); if (typeof triggerBendicionSagrada === 'function' && !passiveExecuting) { var _bsC = gameState.characters[charName]; if (_bsC) triggerBendicionSagrada(_bsC.team, 0); }
             const _hcActual = c.hp - before;
             if (_hcActual > 0) {
                 if (typeof _animCard === 'function') {
