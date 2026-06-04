@@ -286,14 +286,17 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 }
             }
 
-            // ── SIX PATHS (Pain): 50% interceptar buff en enemigo ──
+            // ── SIX PATHS (Pain): 50% interceptar buff aplicado sobre un ENEMIGO ──
+            // Pain solo intercepta buffs en el equipo contrario al suyo
             if (!passiveExecuting && effectObj && effectObj.type === 'buff') {
-                const _sixAllyTeam = target.team === 'team1' ? 'team2' : 'team1';
                 for (const _pn in gameState.characters) {
                     const _pain = gameState.characters[_pn];
-                    if (!_pain || _pain.isDead || _pain.team !== _sixAllyTeam) continue;
+                    if (!_pain || _pain.isDead) continue;
                     if (!_pain.passive || _pain.passive.name !== 'Six Paths') continue;
+                    // Only fire if target is on the OPPOSITE team to Pain
+                    if (_pain.team === target.team) break; // target is ally of Pain → skip
                     if (Math.random() < 0.5) {
+                        const _sixAllyTeam = _pain.team;
                         for (const _an in gameState.characters) {
                             const _ac = gameState.characters[_an];
                             if (_ac && _ac.team === _sixAllyTeam && !_ac.isDead) {
