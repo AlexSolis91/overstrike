@@ -8586,25 +8586,41 @@
                     _c.charges = 0;
                 });
                 addLog('👁️ Shinra Tensei: elimina ' + _totalCharges + ' cargas totales de ambos equipos', 'damage');
-                // 3 direct damage per charge drained, distributed randomly among enemies
                 if (_totalCharges > 0) {
+                    // Multiplier based on alive allies
+                    const _stAllies = Object.keys(gameState.characters).filter(function(n) {
+                        const _c = gameState.characters[n];
+                        return _c && _c.team === _stTeam && !_c.isDead && _c.hp > 0;
+                    }).length;
+                    const _multipliers = { 5:1.0, 4:1.5, 3:2.0, 2:2.5, 1:3.0 };
+                    const _mult = _multipliers[_stAllies] !== undefined ? _multipliers[_stAllies] : (_stAllies >= 5 ? 1.0 : 3.0);
+                    const _totalDmg = Math.floor(_totalCharges * _mult);
+
                     const _stEnemies = Object.keys(gameState.characters).filter(function(n) {
                         const _c = gameState.characters[n];
                         return _c && _c.team === _stETeam && !_c.isDead && _c.hp > 0;
                     });
-                    if (_stEnemies.length > 0) {
-                        const _totalDmg = _totalCharges * 3;
-                        // Distribute randomly: each hit goes to a random enemy
-                        for (let _i = 0; _i < _totalCharges; _i++) {
-                            const _stEnemiesCurrent = _stEnemies.filter(function(n){
+
+                    if (_stEnemies.length > 0 && _totalDmg > 0) {
+                        // Distribute _totalDmg randomly among enemies so sum = _totalDmg
+                        const _dmgPerEnemy = {};
+                        _stEnemies.forEach(function(n){ _dmgPerEnemy[n] = 0; });
+                        for (let _d = 0; _d < _totalDmg; _d++) {
+                            const _alive = _stEnemies.filter(function(n){
                                 return gameState.characters[n] && !gameState.characters[n].isDead && gameState.characters[n].hp > 0;
                             });
-                            if (!_stEnemiesCurrent.length) break;
-                            const _rndTarget = _stEnemiesCurrent[Math.floor(Math.random() * _stEnemiesCurrent.length)];
-                            const _tc = gameState.characters[_rndTarget];
-                            applyDamageWithShield(_rndTarget, 1, gameState.selectedCharacter);
+                            if (!_alive.length) break;
+                            const _rnd = _alive[Math.floor(Math.random() * _alive.length)];
+                            _dmgPerEnemy[_rnd] = (_dmgPerEnemy[_rnd]||0) + 1;
                         }
-                        addLog('👁️ Shinra Tensei: ' + _totalCharges + ' golpes de 1 daño distribuidos entre enemigos (' + _totalCharges + ' × 1)', 'damage');
+                        // Apply accumulated damage to each enemy
+                        Object.keys(_dmgPerEnemy).forEach(function(n) {
+                            const _dmg = _dmgPerEnemy[n];
+                            if (_dmg <= 0) return;
+                            applyDamageWithShield(n, _dmg, gameState.selectedCharacter);
+                            addLog('👁️ Shinra Tensei: ' + n + ' recibe ' + _dmg + ' daño', 'damage');
+                        });
+                        addLog('👁️ Shinra Tensei: ' + _totalCharges + ' cargas × ' + _mult + ' (' + _stAllies + ' aliados vivos) = ' + _totalDmg + ' daño total', 'damage');
                     }
                 }
 
