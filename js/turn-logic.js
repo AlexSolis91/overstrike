@@ -1645,6 +1645,33 @@
                         if (_debuffsBefore > 0) addLog('✨ Cuerpo Perfecto: ' + _cpN + ' elimina ' + _debuffsBefore + ' debuffs (fin de ronda)', 'buff');
                     }
 
+                    // ── PRIMOGÉNITO DEL SOL (Thestalos): fin de ronda → +2 Escudo por cada enemigo con Quemadura ──
+                    for (const _thN in gameState.characters) {
+                        const _thC = gameState.characters[_thN];
+                        if (!_thC || _thC.isDead || !_thC.passive) continue;
+                        const _thPn = _thC.passive.name;
+                        if (_thPn !== 'Primogénito del Sol' && _thPn !== 'Primogenito del Sol') continue;
+                        const _thETeam = _thC.team === 'team1' ? 'team2' : 'team1';
+                        let _thBurnCount = 0;
+                        Object.values(gameState.characters).forEach(function(ec) {
+                            if (!ec || ec.team !== _thETeam || ec.isDead) return;
+                            if ((ec.statusEffects||[]).some(function(e){
+                                if(!e||!e.name) return false;
+                                const _l = e.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+                                return _l === 'quemadura' || _l === 'quemadura solar';
+                            })) _thBurnCount++;
+                        });
+                        if (_thBurnCount > 0) {
+                            const _shieldGain = _thBurnCount * 2;
+                            if (typeof applyShield === 'function') {
+                                applyShield(_thN, _shieldGain);
+                            } else {
+                                _thC.shield = (_thC.shield||0) + _shieldGain;
+                            }
+                            addLog('☀️ Primogénito del Sol: ' + _thN + ' gana +' + _shieldGain + ' Escudo (' + _thBurnCount + ' enemigos con Quemadura)', 'buff');
+                        }
+                    }
+
                     // ── MÁSCARA DE TYRAEL: +3 cargas al portador al final de cada ronda ──
                     for (const _mtN in gameState.characters) {
                         const _mtC = gameState.characters[_mtN];
