@@ -108,15 +108,14 @@
             },
 
             'Thestalos': {
-                hp: 25, maxHp: 25, speed: 86, charges: 0, team: 'team1',
-                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                hp: 25, maxHp: 25, speed: 86, charges: 0,
                 portrait: 'https://i.postimg.cc/9f6kNBpV/Gemini_Generated_Image_ac4u14ac4u14ac4u.png',
-                passive: { name: 'Primogenito del Sol', description: 'Contraataque.' },
+                passive: { name: 'Primogénito del Sol', description: 'Contraataque. Provocación permanente. Al final de cada ronda: gana Escudo de 2 HP por cada enemigo con Quemadura activa.' },
                 abilities: [
-                    { name: 'Purificación Solar', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'purificacion_solar', heal: 2, burnAmount: 2, description: 'Causa 1 de daño. Recupera 2 de HP. Aplica Quemaduras de 2 HP.' },
-                    { name: 'Proteccion del Astro Rey', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'self', effect: 'proteccion_astro_rey', shieldAmount: 4, description: 'Se aplica Buff Provocación. Se aplica Buff Escudo 4 HP.' },
-                    { name: 'Magma Strength', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'self', effect: 'magma_strength', heal: 8, description: 'Recupera 8 HP. Se aplica Buff Escudo Sagrado.' },
-                    { name: 'Furia de Thestalos', type: 'over', cost: 8, chargeGain: 0, damage: 2, target: 'aoe', effect: 'furia_thestalos', description: 'Causa 2 AOE. 50% probabilidad de golpe crítico. 50% de probabilidad de causar daño triple.' }
+                    { name: 'Purificación Solar',      type: 'basic',   cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'purificacion_solar_thes',    description: 'Causa 1 daño. Recupera 2 HP. Aplica Quemadura 2HP al objetivo.' },
+                    { name: 'Protección del Astro Rey', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'self',   effect: 'proteccion_astro_rey_thes',  description: 'Aplica Buff Armadura 2T a todo el equipo aliado.' },
+                    { name: 'Magma Strength',           type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'self',   effect: 'magma_strength_thes',        description: 'Recupera 8 HP. Aplica Buff Escudo Sagrado.' },
+                    { name: 'Juicio del Astro Rey',     type: 'over',    cost: 8, chargeGain: 0, damage: 4, target: 'single', effect: 'juicio_astro_rey_thes',      description: 'Causa 4 daño ST. Aplica Quemadura 4HP a todo el equipo enemigo. Cada uso duplica el daño base y el HP de las quemaduras de este movimiento.' }
                 ]
             },
 

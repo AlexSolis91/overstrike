@@ -3098,12 +3098,17 @@
                 }
                 generateChargesInline(charName, ability.chargeGain);
 
-            } else if (ability.effect === 'purificacion_solar') {
-                // Thestalos básico: daño + cura 2 HP a sí mismo + Quemadura 2 HP al objetivo
+            } else if (ability.effect === 'purificacion_solar' || ability.effect === 'purificacion_solar_thes') {
+                // Purificación Solar: 1 ST + recupera 2 HP + Quemadura 2HP al objetivo
                 applyDamageWithShield(targetName, finalDamage, charName);
-                const psOldHp = attacker.hp;
-                attacker.hp = Math.min(attacker.maxHp, attacker.hp + 2);
-                if (attacker.hp > psOldHp) addLog('💛 Purificación Solar: ' + charName + ' recupera ' + (attacker.hp - psOldHp) + ' HP', 'heal');
+                if (typeof applyHeal === 'function') {
+                    applyHeal(charName, 2, 'Purificación Solar');
+                } else {
+                    const _psOld = attacker.hp;
+                    attacker.hp = Math.min(attacker.maxHp, attacker.hp + 2);
+                    if (attacker.hp > _psOld && typeof showHpTick === 'function') showHpTick(charName, attacker.hp - _psOld);
+                    addLog('💛 Purificación Solar: ' + charName + ' recupera ' + (attacker.hp - _psOld) + ' HP', 'heal');
+                }
                 applyFlatBurn(targetName, 2, 1);
                 generateChargesInline(charName, ability.chargeGain);
 
@@ -3116,20 +3121,34 @@
                 applyShield(charName, ability.shieldAmount || 2);
                 generateChargesInline(charName, ability.chargeGain);
 
-            } else if (ability.effect === 'proteccion_astro_rey') {
-                // Thestalos especial: Provocación + Escudo 4 HP en sí mismo
-                attacker.statusEffects = (attacker.statusEffects || []).filter(e => e && normAccent(e.name||'') !== 'provocacion');
-                attacker.statusEffects.push({ name: 'Provocación', type: 'buff', duration: 2, emoji: '🛡️' });
-                addLog('🛡️ Protección del Astro Rey: ' + charName + ' gana Provocación', 'buff');
-                applyShield(charName, ability.shieldAmount || 4);
+            } else if (ability.effect === 'proteccion_astro_rey' || ability.effect === 'proteccion_astro_rey_thes') {
+                // Protección del Astro Rey: Armadura 2T a todo el equipo aliado
+                const _patTeam = attacker ? attacker.team : 'team1';
+                Object.keys(gameState.characters).forEach(function(n) {
+                    const _ac = gameState.characters[n];
+                    if (!_ac || _ac.team !== _patTeam || _ac.isDead || _ac.hp <= 0) return;
+                    if (typeof applyBuff === 'function') {
+                        applyBuff(n, { name:'Armadura', type:'buff', duration:2, emoji:'🛡️' });
+                    } else {
+                        (_ac.statusEffects = _ac.statusEffects||[]).push({ name:'Armadura', type:'buff', duration:2, emoji:'🛡️' });
+                    }
+                });
+                addLog('🛡️ Protección del Astro Rey: Armadura 2T aplicada a todo el equipo aliado', 'buff');
 
-            } else if (ability.effect === 'magma_strength') {
-                // Thestalos especial: cura 8 HP + Escudo Sagrado
-                const msOldHp = attacker.hp;
-                attacker.hp = Math.min(attacker.maxHp, attacker.hp + (ability.heal || 8));
-                addLog('🔥 Magma Strength: ' + charName + ' recupera ' + (attacker.hp - msOldHp) + ' HP', 'heal');
-                attacker.statusEffects = (attacker.statusEffects || []).filter(e => e && e.name !== 'Escudo Sagrado');
-                attacker.statusEffects.push({ name: 'Escudo Sagrado', type: 'buff', duration: 2, emoji: '✝️' });
+            } else if (ability.effect === 'magma_strength' || ability.effect === 'magma_strength_thes') {
+                // Magma Strength: recupera 8 HP + Escudo Sagrado
+                if (typeof applyHeal === 'function') {
+                    applyHeal(charName, 8, 'Magma Strength');
+                } else {
+                    const _msOld = attacker.hp;
+                    attacker.hp = Math.min(attacker.maxHp, attacker.hp + 8);
+                    addLog('🔥 Magma Strength: ' + charName + ' recupera ' + (attacker.hp - _msOld) + ' HP', 'heal');
+                }
+                if (typeof applyBuff === 'function') {
+                    applyBuff(charName, { name:'Escudo Sagrado', type:'buff', duration:3, emoji:'✝️' });
+                } else {
+                    (attacker.statusEffects = attacker.statusEffects||[]).push({ name:'Escudo Sagrado', type:'buff', duration:3, emoji:'✝️' });
+                }
                 addLog('✝️ Magma Strength: ' + charName + ' gana Escudo Sagrado', 'buff');
 
             } else if (ability.effect === 'apply_weaken_basic') {
@@ -8625,6 +8644,33 @@
                 }
 
             } // end Pain handlers
+
+            // ══ THESTALOS — Juicio del Astro Rey ══
+            else if (ability.effect === 'juicio_astro_rey_thes') {
+                // Juicio del Astro Rey: ST daño (se duplica cada uso) + Quemadura al equipo enemigo (también se duplica)
+                const _jarAtk = gameState.characters[gameState.selectedCharacter];
+                const _jarTeam = _jarAtk ? _jarAtk.team : 'team1';
+                const _jarETeam = _jarTeam === 'team1' ? 'team2' : 'team1';
+                // Get current damage/burn multiplier (doubles each use, starts at 1)
+                if (!_jarAtk._juicioUses) _jarAtk._juicioUses = 0;
+                const _jarMult = Math.pow(2, _jarAtk._juicioUses);
+                const _jarDmg = 4 * _jarMult;
+                const _jarBurn = 4 * _jarMult;
+                // Apply damage to target
+                applyDamageWithShield(targetName, _jarDmg, gameState.selectedCharacter);
+                addLog('☀️ Juicio del Astro Rey: ' + _jarDmg + ' daño a ' + targetName + ' (×' + _jarMult + ')', 'damage');
+                // Apply burn to entire enemy team
+                Object.keys(gameState.characters).forEach(function(n) {
+                    const _ec = gameState.characters[n];
+                    if (!_ec || _ec.team !== _jarETeam || _ec.isDead || _ec.hp <= 0) return;
+                    applyFlatBurn(n, _jarBurn, 2);
+                });
+                addLog('☀️ Juicio del Astro Rey: Quemadura ' + _jarBurn + 'HP aplicada a todo el equipo enemigo', 'debuff');
+                // Increment uses — next use will double again
+                _jarAtk._juicioUses++;
+                addLog('☀️ Juicio del Astro Rey: próximo uso → ' + (4 * Math.pow(2, _jarAtk._juicioUses)) + ' daño / ' + (4 * Math.pow(2, _jarAtk._juicioUses)) + 'HP quemadura', 'info');
+
+            } // end Thestalos handlers
 
             // ══════════════════════════════════════════════════════
             // MELIODAS — handlers

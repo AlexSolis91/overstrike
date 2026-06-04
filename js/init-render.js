@@ -221,6 +221,13 @@
                         _pc.statusEffects.push({ name:'Provocacion', type:'buff', duration:9999, emoji:'🛡️', permanent:true });
                     }
                 }
+                // Primogénito del Sol (Thestalos) → Provocacion permanente
+                if (_pc.passive.name === 'Primogénito del Sol' || _pc.passive.name === 'Primogenito del Sol') {
+                    _pc.statusEffects = _pc.statusEffects || [];
+                    if (!_pc.statusEffects.some(function(e){ return e && (e.name === 'Provocacion' || e.name === 'Provocación'); })) {
+                        _pc.statusEffects.push({ name:'Provocacion', type:'buff', duration:9999, emoji:'🛡️', permanent:true });
+                    }
+                }
                 // Señor de los Nazgul → Provocacion permanente
                 if (_pc.passive.name === 'Señor de los Nazgul' || _pc.passive.name === 'Senor de los Nazgul') {
                     _pc.statusEffects = _pc.statusEffects || [];
