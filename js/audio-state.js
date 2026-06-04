@@ -303,6 +303,12 @@
                 img: 'https://i.ibb.co/xSxps7gW/Captura-de-pantalla-2026-04-14-174255.png',
                 passive: 'Luz Divina del Sol: Al inicio de cada ronda reduce 10% los HP del equipo enemigo. Al final de cada ronda inflige 3 daño directo a enemigos con QS activa y elimina 5 cargas a enemigos con QS activa.'
             },
+            'Kaisellin': {
+                name: 'Kaisellin',
+                hp: 5, maxHp: 5, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.ibb.co/fGYqqCCb/image.png',
+                passive: 'Kaisellin: No puede ser objetivo de ataques ST enemigos. Al final de cada ronda pierde 2 HP. Al inicio de cada turno enemigo: 50% de Aturdimiento al atacante.'
+            },
             'Nagini': {
                 name: 'Nagini',
                 hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],

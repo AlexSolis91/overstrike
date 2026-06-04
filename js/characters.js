@@ -897,6 +897,19 @@
                 ]
             },
 
+            'Baran': {
+                name: 'Baran',
+                hp: 25, maxHp: 25, speed: 90, charges: 0,
+                portrait: 'https://i.ibb.co/27bpRFPM/descarga.jpg',
+                passive: { name: 'Monarca de los Demonios', description: 'Al inicio de cada ronda ejecuta Frenzied Slash automáticamente. Al final de cada ronda, si Kaisellin está invocado, roba 2 cargas a cada enemigo. Cada ataque de Baran tiene 50% de aplicar Miedo y 10% de aplicar Mega Aturdimiento.' },
+                abilities: [
+                    { name: 'Frenzied Slash',                            type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'frenzied_slash_baran',       description: 'Ataca 3 veces a enemigos aleatorios. 50% crítico. Roba 1 HP por golpe.' },
+                    { name: 'Grito de Kaisellin',                        type: 'special', cost: 4,  chargeGain: 0, damage: 0, target: 'self',   effect: 'grito_kaisellin_baran',      description: 'Invoca a Kaisellin. Aplica Frenesí 2T a todos los aliados.' },
+                    { name: 'Aliento de Relámpagos',                     type: 'special', cost: 6,  chargeGain: 0, damage: 3, target: 'aoe',    effect: 'aliento_relampagos_baran',   description: 'Causa 3 AOE. Daño triple contra enemigos con debuffs activos.' },
+                    { name: 'Manifestación: Llamas Blancas',             type: 'over',    cost: 10, chargeGain: 0, damage: 3, target: 'aoe',    effect: 'llamas_blancas_baran',       description: 'Ataca 1 vez a cada enemigo. Roba 5 HP a cada enemigo golpeado.' },
+                ]
+            },
+
             'Meliodas': {
                 name: 'Meliodas',
                 hp: 20, maxHp: 20, speed: 85, charges: 0,

@@ -8783,6 +8783,134 @@
 
             } // end Meliodas handlers
 
+            // ══════════════════════════════════════════════════════
+            // BARAN — handlers
+            // ══════════════════════════════════════════════════════
+
+            else if (ability.effect === 'frenzied_slash_baran') {
+                // Frenzied Slash: 3 ataques aleatorios. 50% crit (daño doble). Roba 1 HP por golpe.
+                const _fsAtk = gameState.characters[gameState.selectedCharacter];
+                const _fsTeam = _fsAtk ? _fsAtk.team : 'team1';
+                const _fsETeam = _fsTeam === 'team1' ? 'team2' : 'team1';
+                let _fsTotalStolen = 0;
+                for (var _fsi = 0; _fsi < 3; _fsi++) {
+                    const _fsEnemies = Object.keys(gameState.characters).filter(function(n){
+                        const _c = gameState.characters[n];
+                        return _c && _c.team === _fsETeam && !_c.isDead && _c.hp > 0;
+                    });
+                    if (!_fsEnemies.length) break;
+                    const _fsTgt = _fsEnemies[Math.floor(Math.random() * _fsEnemies.length)];
+                    const _fsCrit = Math.random() < 0.5;
+                    const _fsDmg = _fsCrit ? finalDamage * 2 : finalDamage;
+                    applyDamageWithShield(_fsTgt, _fsDmg, gameState.selectedCharacter);
+                    if (_fsCrit) addLog('💥 Frenzied Slash: ¡Crítico! ' + _fsDmg + ' daño a ' + _fsTgt, 'damage');
+                    else addLog('⚔️ Frenzied Slash: ' + _fsDmg + ' daño a ' + _fsTgt, 'damage');
+                    // Roba 1 HP
+                    const _fsTgtC = gameState.characters[_fsTgt];
+                    if (_fsTgtC && _fsTgtC.hp > 0) {
+                        const _fsOldHp = _fsTgtC.hp;
+                        _fsTgtC.hp = Math.max(0, _fsTgtC.hp - 1);
+                        if (_fsTgtC.hp <= 0 && !_fsTgtC.isDead) { _fsTgtC.isDead = true; if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, _fsTgt, false); }
+                        _fsTotalStolen++;
+                    }
+                    // Pasiva: 50% Miedo, 10% Mega Aturdimiento
+                    if (_fsAtk && _fsAtk.passive && _fsAtk.passive.name === 'Monarca de los Demonios') {
+                        const _fsTgtC2 = gameState.characters[_fsTgt];
+                        if (_fsTgtC2 && !_fsTgtC2.isDead) {
+                            if (Math.random() < 0.5 && typeof applyDebuff === 'function') {
+                                applyDebuff(_fsTgt, { name:'Miedo', type:'debuff', duration:2, emoji:'😱' });
+                            }
+                            if (Math.random() < 0.10 && typeof applyDebuff === 'function') {
+                                applyDebuff(_fsTgt, { name:'Mega Aturdimiento', type:'debuff', duration:2, emoji:'💫', stun:true, mega:true });
+                            }
+                        }
+                    }
+                    if (checkGameOver()) break;
+                }
+                if (_fsTotalStolen > 0 && _fsAtk) {
+                    const _fsHealAmt = Math.min(_fsTotalStolen, _fsAtk.maxHp - _fsAtk.hp);
+                    if (_fsHealAmt > 0) applyHeal ? applyHeal(gameState.selectedCharacter, _fsHealAmt, 'Frenzied Slash') : (_fsAtk.hp = Math.min(_fsAtk.maxHp, _fsAtk.hp + _fsHealAmt));
+                    addLog('⚔️ Frenzied Slash: Baran roba ' + _fsTotalStolen + ' HP', 'heal');
+                }
+
+            } else if (ability.effect === 'grito_kaisellin_baran') {
+                // Grito de Kaisellin: invoca Kaisellin + Frenesí 2T a todos los aliados
+                const _gkAtk = gameState.characters[gameState.selectedCharacter];
+                const _gkTeam = _gkAtk ? _gkAtk.team : 'team1';
+                // Summon Kaisellin
+                if (typeof spawnSummon === 'function') {
+                    spawnSummon('Kaisellin', gameState.selectedCharacter, _gkTeam);
+                } else {
+                    // Fallback: direct spawn
+                    const _sData = typeof summonData !== 'undefined' ? summonData['Kaisellin'] : null;
+                    if (_sData) {
+                        const _kId = 'Kaisellin_' + gameState.selectedCharacter;
+                        gameState.summons = gameState.summons || {};
+                        gameState.summons[_kId] = Object.assign({}, _sData, { team: _gkTeam, summoner: gameState.selectedCharacter, hp: 5, maxHp: 5, statusEffects: [] });
+                        addLog('👹 Kaisellin invocado por ' + gameState.selectedCharacter, 'buff');
+                    }
+                }
+                // Frenesí 2T a todos los aliados
+                Object.keys(gameState.characters).forEach(function(n) {
+                    const _ac = gameState.characters[n];
+                    if (!_ac || _ac.team !== _gkTeam || _ac.isDead || _ac.hp <= 0) return;
+                    if (typeof applyBuff === 'function') {
+                        applyBuff(n, { name:'Frenesí', type:'buff', duration:2, emoji:'🔥', frenesi:true });
+                    } else {
+                        (_ac.statusEffects = _ac.statusEffects||[]).push({ name:'Frenesí', type:'buff', duration:2, emoji:'🔥', frenesi:true });
+                    }
+                });
+                addLog('👹 Grito de Kaisellin: Frenesí 2T a todo el equipo aliado', 'buff');
+
+            } else if (ability.effect === 'aliento_relampagos_baran') {
+                // Aliento de Relámpagos: 3 AOE. Triple daño a enemigos con debuffs activos.
+                const _arAtk = gameState.characters[gameState.selectedCharacter];
+                const _arETeam = _arAtk ? (_arAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _arEnemies = Object.keys(gameState.characters).filter(function(n){
+                    const _c = gameState.characters[n]; return _c && _c.team === _arETeam && !_c.isDead && _c.hp > 0;
+                });
+                _arEnemies.forEach(function(n) {
+                    const _ec = gameState.characters[n];
+                    if (!_ec || _ec.isDead) return;
+                    const _hasDebuff = (_ec.statusEffects||[]).some(function(e){ return e && e.type === 'debuff' && e.name; });
+                    const _arDmg = _hasDebuff ? finalDamage * 3 : finalDamage;
+                    applyDamageWithShield(n, _arDmg, gameState.selectedCharacter);
+                    if (_hasDebuff) addLog('⚡ Aliento de Relámpagos: ' + n + ' recibe ' + _arDmg + ' daño triple (debuffs activos)', 'damage');
+                    else addLog('⚡ Aliento de Relámpagos: ' + n + ' recibe ' + _arDmg + ' daño', 'damage');
+                });
+
+            } else if (ability.effect === 'llamas_blancas_baran') {
+                // Manifestación: Llamas Blancas — 1 golpe a cada enemigo + roba 5 HP
+                const _lbAtk = gameState.characters[gameState.selectedCharacter];
+                const _lbETeam = _lbAtk ? (_lbAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _lbEnemies = Object.keys(gameState.characters).filter(function(n){
+                    const _c = gameState.characters[n]; return _c && _c.team === _lbETeam && !_c.isDead && _c.hp > 0;
+                });
+                let _lbTotalStolen = 0;
+                _lbEnemies.forEach(function(n) {
+                    const _ec = gameState.characters[n];
+                    if (!_ec || _ec.isDead) return;
+                    applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
+                    // Roba 5 HP
+                    if (!_ec.isDead && _ec.hp > 0) {
+                        const _stolen = Math.min(5, _ec.hp);
+                        _ec.hp = Math.max(0, _ec.hp - _stolen);
+                        _lbTotalStolen += _stolen;
+                        if (_ec.hp <= 0 && !_ec.isDead) { _ec.isDead = true; if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, n, false); }
+                        addLog('🔥 Llamas Blancas: ' + n + ' pierde ' + _stolen + ' HP (robado)', 'damage');
+                    }
+                });
+                if (_lbTotalStolen > 0 && _lbAtk) {
+                    if (typeof applyHeal === 'function') {
+                        applyHeal(gameState.selectedCharacter, _lbTotalStolen, 'Llamas Blancas');
+                    } else {
+                        _lbAtk.hp = Math.min(_lbAtk.maxHp, _lbAtk.hp + _lbTotalStolen);
+                    }
+                    addLog('🔥 Llamas Blancas: Baran recupera ' + _lbTotalStolen + ' HP total', 'heal');
+                }
+
+            } // end Baran handlers
+
             // Actualizar UI
             renderCharacters();
             renderSummons();

@@ -68,6 +68,22 @@
                         // Registrar el personaje activo como atacante del turno (para kills por efecto)
                         gameState._currentTurnAttacker = currentCharName;
 
+                        // ── KAISELLIN: 50% Aturdimiento al inicio del turno de cada enemigo ──
+                        (function() {
+                            const _curC2 = gameState.characters[currentCharName];
+                            if (!_curC2) return;
+                            const _kaisellinOppTeam = _curC2.team === 'team1' ? 'team2' : 'team1';
+                            for (const _kId2 in gameState.summons||{}) {
+                                const _ks2 = gameState.summons[_kId2];
+                                if (!_ks2 || _ks2.name !== 'Kaisellin' || _ks2.team !== _kaisellinOppTeam || _ks2.hp <= 0) continue;
+                                if (Math.random() < 0.5 && typeof applyDebuff === 'function') {
+                                    applyDebuff(currentCharName, { name:'Aturdimiento', type:'debuff', duration:1, emoji:'⭐', stun:true });
+                                    addLog('👹 Kaisellin: ' + currentCharName + ' recibe Aturdimiento (50%)', 'debuff');
+                                }
+                                break;
+                            }
+                        })();
+
                         // SUN JIN WOO PASIVA: Sigilo al inicio de su turno, dura hasta fin de ronda (no es permanente)
                         if ((currentCharName === 'Sun Jin Woo' || currentCharName.startsWith('Sun Jin Woo')) || currentCharName === 'Sun Jin Woo v2') {
                             const sjw = gameState.characters['Sun Jin Woo'];
@@ -1627,6 +1643,19 @@
                         }
                     }
 
+                    // ── KAISELLIN: fin de ronda → pierde 2 HP ──
+                    for (const _kId in gameState.summons||{}) {
+                        const _ks = gameState.summons[_kId];
+                        if (!_ks || _ks.name !== 'Kaisellin') continue;
+                        _ks.hp = Math.max(0, (_ks.hp||0) - 2);
+                        addLog('👹 Kaisellin pierde 2 HP al final de la ronda (' + _ks.hp + '/' + _ks.maxHp + ')', 'damage');
+                        if (_ks.hp <= 0) {
+                            delete gameState.summons[_kId];
+                            addLog('👹 Kaisellin es eliminado del campo', 'damage');
+                            if (typeof renderSummons === 'function') renderSummons();
+                        }
+                    }
+
                     // ── HORROCRUX VIVIENTE (Voldemort): fin de ronda → activa ticks de Veneno si Nagini activa ──
                     for (const _vEndN in gameState.characters) {
                         const _vEndC = gameState.characters[_vEndN];
@@ -1658,6 +1687,29 @@
                         if (_debuffsBefore > 0) addLog('✨ Cuerpo Perfecto: ' + _cpN + ' elimina ' + _debuffsBefore + ' debuffs (fin de ronda)', 'buff');
                     }
 
+                    // ── MONARCA DE LOS DEMONIOS (Baran): fin de ronda → roba 2 cargas/enemigo si Kaisellin activo ──
+                    for (const _baN in gameState.characters) {
+                        const _baC = gameState.characters[_baN];
+                        if (!_baC || _baC.isDead || !_baC.passive || _baC.passive.name !== 'Monarca de los Demonios') continue;
+                        // Check if Kaisellin is on field
+                        const _kaisellinActive = Object.values(gameState.summons||{}).some(function(s){
+                            return s && s.name === 'Kaisellin' && s.team === _baC.team && s.hp > 0;
+                        });
+                        if (!_kaisellinActive) continue;
+                        const _baETeam = _baC.team === 'team1' ? 'team2' : 'team1';
+                        let _baTotalStolen = 0;
+                        Object.values(gameState.characters).forEach(function(ec) {
+                            if (!ec || ec.team !== _baETeam || ec.isDead || (ec.charges||0) <= 0) return;
+                            const _steal = Math.min(2, ec.charges);
+                            ec.charges = Math.max(0, ec.charges - _steal);
+                            _baTotalStolen += _steal;
+                        });
+                        if (_baTotalStolen > 0) {
+                            _baC.charges = Math.min(20, (_baC.charges||0) + _baTotalStolen);
+                            addLog('👹 Monarca de los Demonios: Baran roba ' + _baTotalStolen + ' cargas (Kaisellin activo)', 'buff');
+                        }
+                    }
+
                     // ── PRIMOGÉNITO DEL SOL (Thestalos): fin de ronda → +2 Escudo por cada enemigo con Quemadura ──
                     for (const _thN in gameState.characters) {
                         const _thC = gameState.characters[_thN];
@@ -1682,6 +1734,19 @@
                                 _thC.shield = (_thC.shield||0) + _shieldGain;
                             }
                             addLog('☀️ Primogénito del Sol: ' + _thN + ' gana +' + _shieldGain + ' Escudo (' + _thBurnCount + ' enemigos con Quemadura)', 'buff');
+                        }
+                    }
+
+                    // ── ESCUDO SAGRADO: +4 cargas al portador al final de cada ronda ──
+                    for (const _esN in gameState.characters) {
+                        const _esC = gameState.characters[_esN];
+                        if (!_esC || _esC.isDead || !_esC.statusEffects) continue;
+                        const _hasES = _esC.statusEffects.some(function(e){
+                            return e && e.name === 'Escudo Sagrado';
+                        });
+                        if (_hasES) {
+                            _esC.charges = Math.min(20, (_esC.charges||0) + 4);
+                            addLog('✝️ Escudo Sagrado: ' + _esN + ' genera 4 cargas (fin de ronda)', 'buff');
                         }
                     }
 
@@ -1731,6 +1796,30 @@
                             addLog('💚 Legendario Super Sayajin: Broly genera ' + _brolyRoundCharges + ' cargas al inicio de la ronda ' + gameState.currentRound + ' (' + _brolyC.charges + '/20)', 'buff');
                         }
                     }
+                    // ── MONARCA DE LOS DEMONIOS (Baran): inicio de ronda → Frenzied Slash automático ──
+                    for (const _baRN in gameState.characters) {
+                        const _baRC = gameState.characters[_baRN];
+                        if (!_baRC || _baRC.isDead || !_baRC.passive || _baRC.passive.name !== 'Monarca de los Demonios') continue;
+                        const _baBasic = (_baRC.abilities||[]).find(function(a){ return a && a.effect === 'frenzied_slash_baran'; });
+                        if (!_baBasic) continue;
+                        const _baPrevChar = gameState.selectedCharacter;
+                        const _baPrevAb   = gameState.selectedAbility;
+                        const _baPrevTgt  = gameState.selectedTarget;
+                        gameState.selectedCharacter = _baRN;
+                        gameState.selectedAbility   = _baBasic;
+                        gameState._guiaMaestroActive = true;
+                        gameState._abilityExecuting = false;
+                        gameState._gmOverrideFinalDamage = _baBasic.damage || 1;
+                        try { _executeAbilityCore(null); } catch(e) { console.error('[Baran pasiva]', e); }
+                        gameState._guiaMaestroActive = false;
+                        gameState._abilityExecuting = false;
+                        gameState.selectedCharacter = _baPrevChar;
+                        gameState.selectedAbility   = _baPrevAb;
+                        gameState.selectedTarget    = _baPrevTgt;
+                        addLog('👹 Monarca de los Demonios: Baran ejecuta Frenzied Slash automáticamente', 'damage');
+                        if (checkGameOver()) break;
+                    }
+
                     // ── REY DE LA MUERTE (Lich King): inicio de ronda → 40% congelación, miedo, posesión ──
                     for (const _lkN in gameState.characters) {
                         const _lkC = gameState.characters[_lkN];

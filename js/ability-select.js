@@ -346,6 +346,8 @@
                             const _ironNoST  = summon.ironNoST  || (_sumBaseD && _sumBaseD.ironNoST);
                             const _kamishNoST = summon.kamishNoST || (_sumBaseD && _sumBaseD.kamishNoST);
                             if ((_ironNoST || _kamishNoST) && ability && (ability.target === 'single' || ability.type === 'basic')) continue;
+                            // Kaisellin: inmune a ataques ST
+                            if (summon.name === 'Kaisellin' && ability && (ability.target === 'single' || ability.type === 'basic')) continue;
                             hasTargets = true;
                             // Obtener imagen de la invocación desde summonData
                             const _sumData = typeof summonData !== 'undefined' ? summonData[summon.name] : null;
