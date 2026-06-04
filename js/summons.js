@@ -1583,7 +1583,7 @@
                             if (_tgtChar && (hasStatusEffect(targetName, 'Provocacion') || hasStatusEffect(targetName, 'Mega Provocacion') ||
                                             hasStatusEffect(targetName, 'Provocación') || hasStatusEffect(targetName, 'MegaProvocacion') ||
                                             // Also check passive-based Provocacion (Aldebaran, Nazgul)
-                                            (_tgtChar.passive && (_tgtChar.passive.name === 'Fortaleza de Tauro' || _tgtChar.passive.name === 'Señor de los Nazgul')))) {
+                                            (_tgtChar.passive && (_tgtChar.passive.name === 'Fortaleza de Tauro' || _tgtChar.passive.name === 'Señor de los Nazgul' || _tgtChar.passive.name === 'Primogénito del Sol' || _tgtChar.passive.name === 'Primogenito del Sol')))) {
                                 // Solo 1 vez por ronda por personaje
                                 var _skRoundKey = '_skeggoxUsedRound_' + (gameState.selectedCharacter || attackerName).replace(/\s/g,'_');
                                 var _skAlreadyUsed = gameState[_skRoundKey] === gameState.currentRound;

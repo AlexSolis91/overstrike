@@ -631,11 +631,14 @@
                             if (_c.statusEffects && _c.statusEffects.some(e => e && normAccent(e.name||'') === 'provocacion')) {
                                 aiTauntTarget = _n; break;
                             }
-                            // Pasiva de Provocación (Señor de los Nazgul, Hombre de Acero, Efecto Omega)
+                            // Pasiva de Provocación
                             if (_c.passive && (_c.passive.name === 'Señor de los Nazgul' ||
                                                _c.passive.name === 'Hombre de Acero' ||
-                                               _c.passive.name === 'Efecto Omega')) {
-                                aiTauntTarget = _n; // no break — un buff activo puede tomar prioridad
+                                               _c.passive.name === 'Efecto Omega' ||
+                                               _c.passive.name === 'Fortaleza de Tauro' ||
+                                               _c.passive.name === 'Primogénito del Sol' ||
+                                               _c.passive.name === 'Primogenito del Sol')) {
+                                aiTauntTarget = _n;
                             }
                         }
                         const kamishData = checkKamishMegaProvocation(enemyTeam);

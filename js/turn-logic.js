@@ -1101,8 +1101,11 @@
                                        ((charName === 'Daemon Targaryen') && (char.daemonJineteTurns||0) > 0) ||
                                        (char.ultraInstinto && (charName === 'Goku' || charName.startsWith('Goku'))) ||
                                        (char.darkSideAwakened && (charName === 'Anakin Skywalker' || charName === 'Anakin Skywalker v2')) ||
-                                       (char.muzanTransformed && (charName === 'Muzan Kibutsuji' || charName === 'Muzan Kibutsuji v2'));
-                        const modalPortrait = char.portrait || char.transformPortrait || char.transformationPortrait || '';
+                                       (char.muzanTransformed && (charName === 'Muzan Kibutsuji' || charName === 'Muzan Kibutsuji v2')) ||
+                                       (char._reyDemonioActive && (charName === 'Meliodas' || charName === 'Meliodas v2'));
+            const modalPortrait = (isTransformedModal && (char.transformPortrait || char.transformationPortrait))
+                ? (char.transformPortrait || char.transformationPortrait)
+                : (char.portrait || char.transformPortrait || char.transformationPortrait || '');
             if (modalPortrait) {
                 portraitImg.src = modalPortrait;
                 portraitImg.alt = charName;
@@ -1186,6 +1189,16 @@
                 }
                 
                 const canUse = char.charges >= adjustedCost;
+                
+                // El Rey Demonio: bloqueado tras transformación
+                if (ability.effect === 'rey_demonio_meliodas' && char._reyDemonioActive) {
+                    const lockedCard = document.createElement('div');
+                    lockedCard.className = 'ability-card locked';
+                    lockedCard.style.cssText = 'opacity:0.4;pointer-events:none;cursor:not-allowed;';
+                    lockedCard.innerHTML = `<div class="ability-name">${ability.name}</div><div class="ability-desc" style="color:#888;">Ya transformado</div><div style="margin-top:8px;font-size:0.7rem;color:#ff6600;">🔒 USADO</div>`;
+                    container.appendChild(lockedCard);
+                    return;
+                }
                 
                 // SILENCIAR: bloquear la categoría silenciada
                 const silencedCat = gameState._silencedCategory;

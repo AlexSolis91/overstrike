@@ -61,7 +61,8 @@
                              ((name === 'Anakin Skywalker' || name === 'Anakin Skywalker v2') && char.darkSideAwakened) ||
                              ((name === 'Muzan Kibutsuji' || name === 'Muzan Kibutsuji v2') && char.muzanTransformed) ||
                              (char.garouSaitamaMode && (name === 'Garou' || name === 'Garou v2')) ||
-                             (char.supermanPrimeMode && (name === 'Superman' || name === 'Superman v2'));
+                             (char.supermanPrimeMode && (name === 'Superman' || name === 'Superman v2')) ||
+                             (char._reyDemonioActive && (name === 'Meliodas' || name === 'Meliodas v2'));
             return (isTransf && (char.transformPortrait || char.transformationPortrait)) ? (char.transformPortrait || char.transformationPortrait) : (char.portrait || null);
         }
 
