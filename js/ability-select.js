@@ -290,10 +290,13 @@
                             tauntTarget = n;
                             break;
                         }
-                        // Pasiva Provocación (Señor de los Nazgul, Efecto Omega, etc.)
+                        // Pasiva Provocación
                         if (c.passive && (c.passive.name === 'Señor de los Nazgul' ||
                                           c.passive.name === 'Efecto Omega' ||
-                                          c.passive.name === 'Hombre de Acero')) {
+                                          c.passive.name === 'Hombre de Acero' ||
+                                          c.passive.name === 'Fortaleza de Tauro' ||
+                                          c.passive.name === 'Primogénito del Sol' ||
+                                          c.passive.name === 'Primogenito del Sol')) {
                             tauntTarget = n;
                             // No break — seguir buscando por si hay buff activo que tenga prioridad
                         }

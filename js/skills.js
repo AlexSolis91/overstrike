@@ -3124,16 +3124,19 @@
             } else if (ability.effect === 'proteccion_astro_rey' || ability.effect === 'proteccion_astro_rey_thes') {
                 // Protección del Astro Rey: Armadura 2T a todo el equipo aliado
                 const _patTeam = attacker ? attacker.team : 'team1';
+                let _patCount = 0;
                 Object.keys(gameState.characters).forEach(function(n) {
                     const _ac = gameState.characters[n];
                     if (!_ac || _ac.team !== _patTeam || _ac.isDead || _ac.hp <= 0) return;
-                    if (typeof applyBuff === 'function') {
-                        applyBuff(n, { name:'Armadura', type:'buff', duration:2, emoji:'🛡️' });
-                    } else {
-                        (_ac.statusEffects = _ac.statusEffects||[]).push({ name:'Armadura', type:'buff', duration:2, emoji:'🛡️' });
-                    }
+                    // Remove existing Armadura then push fresh
+                    _ac.statusEffects = (_ac.statusEffects||[]).filter(function(e){
+                        if (!e||!e.name) return true;
+                        return e.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') !== 'armadura';
+                    });
+                    _ac.statusEffects.push({ name:'Armadura', type:'buff', duration:2, emoji:'🛡️' });
+                    _patCount++;
                 });
-                addLog('🛡️ Protección del Astro Rey: Armadura 2T aplicada a todo el equipo aliado', 'buff');
+                addLog('🛡️ Protección del Astro Rey: Armadura 2T aplicada a ' + _patCount + ' aliados', 'buff');
 
             } else if (ability.effect === 'magma_strength' || ability.effect === 'magma_strength_thes') {
                 // Magma Strength: recupera 8 HP + Escudo Sagrado
