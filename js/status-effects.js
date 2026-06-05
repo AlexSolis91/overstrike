@@ -522,7 +522,7 @@ function processBurnEffects(charName) {
                                 if (!_alive.length) break;
                                 const _rnd = _alive[Math.floor(Math.random()*_alive.length)];
                                 if (typeof applyDamageWithShield === 'function') {
-                                    applyDamageWithShield(_rnd, 1, _nn || charName);
+                                    applyDamageWithShield(_rnd, 1, charName);
                                 } else {
                                     const _ec = gameState.characters[_rnd];
                                     if (_ec) { _ec.hp = Math.max(0, _ec.hp - 1); if (_ec.hp<=0&&!_ec.isDead){_ec.isDead=true;} }
