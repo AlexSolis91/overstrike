@@ -1767,7 +1767,7 @@
             { name: 'Diamante',  min: 4500,  max: 5999,  icon: '💎',  subs: ['III','II','I'] },
             { name: 'Platino',   min: 6000,  max: 7499,  icon: '⭐',  subs: ['III','II','I'] },
             { name: 'Master',    min: 7500,  max: 9999,  icon: '👑',  subs: ['III','II','I'] },
-            { name: 'Leyenda',   min: 10000, max: 999999,icon: '🌟',  subs: ['III','II','I'] },
+            { name: 'Leyenda',   min: 10000, max: 999999,icon: '🔱',  subs: ['III','II','I'] },
             { name: 'Campeones', min: 11000, max: 14999, icon: '👑',  subs: [] },
             { name: 'Leyenda',   min: 15000, max: Infinity, icon: '🔱', subs: [] }
         ];
@@ -1911,7 +1911,7 @@
             { name:'Diamante', min:4500,  max:5999,  gold:300000,   keys:1,  emoji:'💎', color:'#b9f2ff' },
             { name:'Platino',  min:6000,  max:7499,  gold:400000,   keys:2,  emoji:'⭐', color:'#E5E4E2' },
             { name:'Master',   min:7500,  max:9999,  gold:500000,   keys:5,  emoji:'👑', color:'#FFD700' },
-            { name:'Leyenda',  min:10000, max:999999, gold:1000000, keys:10, emoji:'🌟', color:'#00ffcc' },
+            { name:'Leyenda',  min:10000, max:999999, gold:1000000, keys:10, emoji:'🔱', color:'#00ffcc' },
         ];
         window.RANKED_LEAGUES = RANKED_LEAGUES;
 
@@ -2005,7 +2005,7 @@
                 '<div style="color:#aaa;font-size:.85rem;margin-bottom:20px;">Terminaste en <strong style="color:' + color + ';">Liga ' + league + '</strong> con <strong style="color:#fff;">' + pts + ' puntos</strong></div>' +
                 '<div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:16px;margin-bottom:24px;">' +
                 '<div style="font-family:Orbitron,sans-serif;color:#ffd700;font-size:.8rem;margin-bottom:12px;letter-spacing:.04em;">🎁 RECOMPENSA OBTENIDA</div>' +
-                '<div style="color:#ffd700;font-size:1.4rem;font-weight:700;margin-bottom:6px;">+' + gold + ' 🥇</div>' +
+                '<div style="color:#ffd700;font-size:1.4rem;font-weight:700;margin-bottom:6px;">+' + gold + ' 🪙</div>' +
                 (keys > 0 ? '<div style="color:#b9f2ff;font-size:1rem;">+' + keys + ' 🗝️ Llave' + (keys > 1 ? 's' : '') + ' Arcana' + (keys > 1 ? 's' : '') + '</div>' : '') +
                 '</div>' +
                 '<button onclick="window.claimSeasonReward(\"' + uid + '\")">✅ RECLAMAR RECOMPENSA</button>' +
@@ -2411,7 +2411,7 @@
                 { name:'Diamante', min:4500,  max:5999,  gold:'300,000',   keys:1,  emoji:'💎', color:'#b9f2ff' },
                 { name:'Platino',  min:6000,  max:7499,  gold:'400,000',   keys:2,  emoji:'⭐', color:'#E5E4E2' },
                 { name:'Master',   min:7500,  max:9999,  gold:'500,000',   keys:5,  emoji:'👑', color:'#FFD700' },
-                { name:'Leyenda',  min:10000, max:999999, gold:'1,000,000', keys:10, emoji:'🌟', color:'#00ffcc' },
+                { name:'Leyenda',  min:10000, max:999999, gold:'1,000,000', keys:10, emoji:'🔱', color:'#00ffcc' },
             ];
             var rows = SEASON_LEAGUES.map(function(lg) {
                 var keysStr = lg.keys > 0 ? ' + ' + lg.keys + ' 🗝️' : '';
@@ -2511,7 +2511,10 @@
             var top3 = entries.filter(function(e) { return e.league.name === 'Leyenda'; }).slice(0,3);
 
             var rows = entries.map(function(e, i) {
-                var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '<span style="font-family:Orbitron,sans-serif;font-size:.8rem;color:#666;">' + (i+1) + '</span>';
+                // Use league icon for position indicator
+                var _entryPts = (entry && entry.points) ? entry.points : 0;
+                var _entryLg = typeof getLeague === 'function' ? getLeague(_entryPts) : null;
+                var medal = _entryLg ? '<span style="font-size:1.2rem;">' + _entryLg.icon + '</span>' : (i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '<span style="font-family:Orbitron,sans-serif;font-size:.8rem;color:#666;">' + (i+1) + '</span>');
                 // Colores por liga
                 var lgColors = {
                     'Bronce':      { bg: 'rgba(180,100,30,0.10)',  border: 'rgba(205,127,50,0.40)',  glow: 'rgba(205,127,50,0.12)',  accent: '#cd7f32' },
@@ -2634,7 +2637,9 @@
                         else                     sorted.sort(function(a,b){ return b.id - a.id || b.used - a.used; }); // default: Puntuación
                         var rowsH = sorted.map(function(e, i) {
                             var wrColor  = e.wr >= 60 ? '#00ff88' : e.wr >= 50 ? '#ffaa00' : e.wr >= 40 ? '#ff8844' : '#ff4466';
-                            var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1);
+                            var _mPts2 = (entry && entry.points) ? entry.points : 0;
+                            var _mLg2 = typeof getLeague === 'function' ? getLeague(_mPts2) : null;
+                            var medal = _mLg2 ? _mLg2.icon : (i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1));
                             var portrait = getCharPortrait(e.name);
                             return [
                                 '<div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:8px 10px;margin-bottom:5px;">',
