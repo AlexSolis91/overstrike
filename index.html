@@ -405,7 +405,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260527"></script>
+    <script src="js/firebase-auth.js?v=20260603"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -454,6 +454,7 @@
                 var myTeamSlot = window._rankedPlayerTeam || 'team1';
                 var opTeamSlot = myTeamSlot === 'team1' ? 'team2' : 'team1';
                 var opUid = window._opponentUid || window._rankedDefenseOwnerUid || null;
+                console.log('[loadGameRelics] mySlot:', myTeamSlot, 'opSlot:', opTeamSlot, 'opUid:', opUid, '_opponentUid:', window._opponentUid, '_defOwnerUid:', window._rankedDefenseOwnerUid);
                 function _loadRelicsForUid(uid, charNames) {
                     charNames.forEach(function(charName) {
                         var baseName = charName.replace(/ v\d+$/, '');
@@ -1146,9 +1147,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260527"></script>
+    <script src="js/characters.js?v=20260603"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260527"></script>
+    <script src="js/audio-state.js?v=20260603"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -1753,6 +1754,37 @@
                 }
                 gameState.gameMode = csState.gameMode;
                 gameState.aiTeam = 'team2';
+                // Assign random relics to AI team ONLY in pure solo mode (not ranked vs IA)
+                // Ranked vs IA loads real relics from Firebase via loadGameRelics()
+                if (csState.gameMode === 'solo' && !window._rankedMode && !window._rankedFromMatchmaking && typeof RELICS_DATA !== 'undefined') {
+                    var _aiRelicKeys = Object.keys(RELICS_DATA);
+                    var _aiChars2 = Object.keys(gameState.characters).filter(function(n){
+                        return gameState.characters[n] && gameState.characters[n].team === 'team2';
+                    });
+                    _aiChars2.forEach(function(charName) {
+                        var _ch2 = gameState.characters[charName];
+                        if (!_ch2 || _ch2.equippedRelics) return;
+                        var _avail = _aiRelicKeys.slice();
+                        var _slots2 = [];
+                        var _num = 1 + Math.floor(Math.random() * 3);
+                        for (var _ri2 = 0; _ri2 < _num && _avail.length; _ri2++) {
+                            var _ix = Math.floor(Math.random() * _avail.length);
+                            _slots2.push(_avail.splice(_ix, 1)[0]);
+                        }
+                        _ch2.equippedRelics = _slots2;
+                        _slots2.forEach(function(rn) {
+                            var _rd2 = RELICS_DATA[rn];
+                            if (!_rd2) return;
+                            if (_rd2.hpBonus)  { _ch2.hp = (_ch2.hp||0)+_rd2.hpBonus; _ch2.maxHp = (_ch2.maxHp||0)+_rd2.hpBonus; }
+                            if (_rd2.velBonus) { _ch2.speed = (_ch2.speed||0)+_rd2.velBonus; }
+                            if (_rd2.effect === 'speed_plus5' && !_ch2._speedPlus5Applied) { _ch2.speed=(_ch2.speed||80)+5; _ch2._speedPlus5Applied=true; }
+                            if (_rd2.effect === 'hp_spd_plus3' && !_ch2._hpSpdApplied) { _ch2.hp=(_ch2.hp||0)+3; _ch2.maxHp=(_ch2.maxHp||0)+3; _ch2.speed=(_ch2.speed||80)+3; _ch2._hpSpdApplied=true; }
+                            if (_rd2.effect === 'hp_max_50pct' && !_ch2._hpMax50Applied) { var _b2=Math.ceil((_ch2.maxHp||20)*0.5); _ch2.maxHp=(_ch2.maxHp||20)+_b2; _ch2.hp=(_ch2.hp||0)+_b2; _ch2._hpMax50Applied=true; }
+                            if (_rd2.effect === 'double_heal') { _ch2._doubleHeal=true; }
+                        });
+                    });
+                    if (typeof renderCharacters === 'function') renderCharacters();
+                }
                 gameState.myTeam = 'team1';
                 if (window._rankedMode) {
                     gameState.gameMode = 'ranked';
@@ -1771,23 +1803,23 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260527"></script>
+    <script src="js/ai-engine.js?v=20260603"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260527"></script>
+    <script src="js/init-render.js?v=20260603"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260527"></script>
+    <script src="js/turn-logic.js?v=20260603"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260527"></script>
+    <script src="js/status-effects.js?v=20260603"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260527"></script>
+    <script src="js/debuffs.js?v=20260603"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260527"></script>
+    <script src="js/summons.js?v=20260603"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260527"></script>
+    <script src="js/ability-select.js?v=20260603"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260527"></script>
+<script src="js/skills.js?v=20260603"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260527"></script>
+    <script src="js/jefe-de-sala.js?v=20260603"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
