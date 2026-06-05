@@ -2512,7 +2512,7 @@
 
             var rows = entries.map(function(e, i) {
                 // Use league icon for position indicator
-                var _entryPts = (entry && entry.points) ? entry.points : 0;
+                var _entryPts = (e && e.points) ? e.points : 0;
                 var _entryLg = typeof getLeague === 'function' ? getLeague(_entryPts) : null;
                 var medal = _entryLg ? '<span style="font-size:1.2rem;">' + _entryLg.icon + '</span>' : (i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '<span style="font-family:Orbitron,sans-serif;font-size:.8rem;color:#666;">' + (i+1) + '</span>');
                 // Colores por liga
@@ -2637,7 +2637,7 @@
                         else                     sorted.sort(function(a,b){ return b.id - a.id || b.used - a.used; }); // default: Puntuación
                         var rowsH = sorted.map(function(e, i) {
                             var wrColor  = e.wr >= 60 ? '#00ff88' : e.wr >= 50 ? '#ffaa00' : e.wr >= 40 ? '#ff8844' : '#ff4466';
-                            var _mPts2 = (entry && entry.points) ? entry.points : 0;
+                            var _mPts2 = (e && e.points) ? e.points : 0;
                             var _mLg2 = typeof getLeague === 'function' ? getLeague(_mPts2) : null;
                             var medal = _mLg2 ? _mLg2.icon : (i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1));
                             var portrait = getCharPortrait(e.name);
