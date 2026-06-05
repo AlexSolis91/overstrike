@@ -1643,6 +1643,34 @@
                         }
                     }
 
+                    // ── ABSOLUTE ZERO (Sub-Zero): inicio de ronda → Megacongelación en enemigo aleatorio ──
+                    for (const _szN in gameState.characters) {
+                        const _szC = gameState.characters[_szN];
+                        if (!_szC || _szC.isDead || !_szC.passive || _szC.passive.name !== 'Absolute Zero') continue;
+                        const _szETeam = _szC.team === 'team1' ? 'team2' : 'team1';
+                        const _szEnemies = Object.keys(gameState.characters).filter(function(n){
+                            const _c = gameState.characters[n]; return _c && _c.team === _szETeam && !_c.isDead && _c.hp > 0;
+                        });
+                        if (!_szEnemies.length) continue;
+                        const _szRnd = _szEnemies[Math.floor(Math.random() * _szEnemies.length)];
+                        if (typeof applyDebuff === 'function') {
+                            applyDebuff(_szRnd, { name:'Megacongelación', type:'debuff', duration:2, emoji:'🧊', freeze:true, mega:true });
+                        }
+                        addLog('❄️ Absolute Zero: ' + _szRnd + ' recibe Megacongelación (inicio de ronda)', 'debuff');
+                    }
+
+                    // ── ICE CLON: fin de ronda → Sub-Zero +3 cargas si activo ──
+                    for (const _icId in gameState.summons||{}) {
+                        const _ics = gameState.summons[_icId];
+                        if (!_ics || _ics.name !== 'ICE CLON' || _ics.hp <= 0) continue;
+                        const _icSummoner = _ics.summoner;
+                        const _icSZ = _icSummoner ? gameState.characters[_icSummoner] : null;
+                        if (_icSZ && !_icSZ.isDead) {
+                            _icSZ.charges = Math.min(20, (_icSZ.charges||0) + 3);
+                            addLog('🧊 ICE CLON: ' + _icSummoner + ' gana 3 cargas (ICE CLON activo)', 'buff');
+                        }
+                    }
+
                     // ── KAISELLIN: fin de ronda → pierde 2 HP ──
                     for (const _kId in gameState.summons||{}) {
                         const _ks = gameState.summons[_kId];

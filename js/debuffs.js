@@ -444,6 +444,21 @@ function applyDebuff(targetName, effectObj) {
                 addLog('🟢 Sabiduría Antigua: ' + targetName + ' es inmune a debuffs', 'buff');
                 return;
             }
+            // ABSOLUTE ZERO (Sub-Zero): inmune a Congelación y Megacongelación (siempre)
+            if (target.passive && target.passive.name === 'Absolute Zero') {
+                if (effectObj) {
+                    const _szEffL = (effectObj.name||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+                    if (_szEffL === 'congelacion' || _szEffL === 'megacongelacion') {
+                        addLog('❄️ Absolute Zero: ' + targetName + ' es inmune a ' + effectObj.name, 'buff');
+                        return;
+                    }
+                }
+                // Full immunity while ICE CLON is active
+                if (target._iceClonActive) {
+                    addLog('🧊 ICE CLON: ' + targetName + ' es inmune a debuffs (ICE CLON activo)', 'buff');
+                    return;
+                }
+            }
             // PIEL DE NANOOK (Bjorn): inmune a Congelación y MegaCongelación
             if (target.passive && target.passive.name === 'Piel de Nanook') {
                 if (effectObj && (effectObj.name === 'Congelacion' || effectObj.name === 'Mega Congelacion' ||

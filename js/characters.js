@@ -897,6 +897,19 @@
                 ]
             },
 
+            'Sub-Zero': {
+                name: 'Sub-Zero',
+                hp: 25, maxHp: 25, speed: 81, charges: 0,
+                portrait: 'https://i.ibb.co/5xLctVtj/Cryomancy-Master.jpg',
+                passive: { name: 'Absolute Zero', description: 'Inmune a Congelación y Megacongelación. Al inicio de cada ronda aplica Megacongelación a un enemigo aleatorio. Al atacar a un enemigo con Congelación/Megacongelación activa: roba 3 cargas de CADA enemigo vivo (Sub-Zero gana el total).' },
+                abilities: [
+                    { name: 'Golpe Gélido',             type: 'basic',   cost: 0,  chargeGain: 1, damage: 2, target: 'single', effect: 'golpe_gelido_subzero',       description: 'Causa 2 daño. Aplica Megacongelación al objetivo.' },
+                    { name: 'Ráfaga de Hielo',           type: 'special', cost: 3,  chargeGain: 0, damage: 2, target: 'single', effect: 'rafaga_hielo_subzero',       description: 'Golpea 1-3 veces a enemigos aleatorios. Los enemigos golpeados reciben Congelación 2T.' },
+                    { name: 'Clon de Criogenia',         type: 'special', cost: 6,  chargeGain: 0, damage: 0, target: 'self',   effect: 'clon_criogenia_subzero',    description: 'Invoca ICE CLON. Disipa debuffs de Sub-Zero. Sub-Zero inmune a debuffs mientras ICE CLON esté activo.' },
+                    { name: 'Ejecución de la Tundra',   type: 'over',    cost: 15, chargeGain: 0, damage: 1, target: 'single', effect: 'ejecucion_tundra_subzero',  description: 'Aplica Megacongelación al objetivo. Causa daño = suma HP de todos los enemigos con Megacongelación, repartido aleatoriamente entre todos los enemigos.' },
+                ]
+            },
+
             'Nezuko Kamado': {
                 name: 'Nezuko Kamado',
                 hp: 20, maxHp: 20, speed: 78, charges: 0,

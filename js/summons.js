@@ -1845,6 +1845,51 @@
                 passiveExecuting = false;
             })();
 
+            // ── ICE CLON: absorb damage meant for Sub-Zero ──
+            (function() {
+                if (passiveExecuting) return;
+                const _szC2 = gameState.characters[targetName];
+                if (!_szC2 || !_szC2.passive || _szC2.passive.name !== 'Absolute Zero') return;
+                if (!_szC2._iceClonActive) return;
+                // Find ICE CLON summoned by this Sub-Zero
+                let _iceClonId = null;
+                for (const _icId in gameState.summons||{}) {
+                    const _ic = gameState.summons[_icId];
+                    if (_ic && _ic.name === 'ICE CLON' && _ic.summoner === targetName && _ic.hp > 0) {
+                        _iceClonId = _icId; break;
+                    }
+                }
+                if (!_iceClonId) { _szC2._iceClonActive = false; return; } // ICE CLON gone
+                const _ic2 = gameState.summons[_iceClonId];
+                // Redirect damage to ICE CLON
+                const _icOldHp = _ic2.hp;
+                _ic2.hp = Math.max(0, _ic2.hp - (remainingDamage||0));
+                const _icDmgTaken = _icOldHp - _ic2.hp;
+                addLog('🧊 ICE CLON absorbe ' + _icDmgTaken + ' daño de ' + targetName, 'buff');
+                // Apply Megacongelación to random enemy when ICE CLON loses HP
+                if (_icDmgTaken > 0) {
+                    const _icETeam = _szC2.team === 'team1' ? 'team2' : 'team1';
+                    const _icEnemies = Object.keys(gameState.characters).filter(function(n){
+                        const _cc=gameState.characters[n]; return _cc&&_cc.team===_icETeam&&!_cc.isDead&&_cc.hp>0;
+                    });
+                    if (_icEnemies.length && typeof applyDebuff === 'function') {
+                        passiveExecuting = true;
+                        const _rndE = _icEnemies[Math.floor(Math.random()*_icEnemies.length)];
+                        applyDebuff(_rndE, { name:'Megacongelación', type:'debuff', duration:2, emoji:'🧊', freeze:true, mega:true });
+                        passiveExecuting = false;
+                        addLog('🧊 ICE CLON: Megacongelación aplicada a ' + _rndE, 'debuff');
+                    }
+                    if (_ic2.hp <= 0) {
+                        delete gameState.summons[_iceClonId];
+                        _szC2._iceClonActive = false;
+                        addLog('🧊 ICE CLON destruido — Sub-Zero pierde inmunidad a debuffs', 'damage');
+                        if (typeof renderSummons === 'function') renderSummons();
+                    }
+                }
+                // Block original damage to Sub-Zero
+                remainingDamage = 0;
+            })();
+
             // ── EXPLOSIÓN DE SANGRE (Nezuko): al recibir daño → cura 3 HP al aliado con menos HP ──
             (function() {
                 if (passiveExecuting) return;

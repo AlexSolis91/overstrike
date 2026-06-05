@@ -9001,6 +9001,172 @@
 
             } // end Nezuko handlers
 
+            // ══════════════════════════════════════════════════════
+            // SUB-ZERO — handlers
+            // ══════════════════════════════════════════════════════
+
+            else if (ability.effect === 'golpe_gelido_subzero') {
+                // Golpe Gélido: 2 ST + Megacongelación
+                const _ggSZ = gameState.characters[gameState.selectedCharacter];
+                const _ggETeam = _ggSZ ? (_ggSZ.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                // Check if target already had Congelación/Megacongelación BEFORE attack
+                const _ggTgtC = gameState.characters[targetName];
+                const _ggWasFrozen = _ggTgtC && (_ggTgtC.statusEffects||[]).some(function(e){
+                    if(!e||!e.name) return false;
+                    const _l = e.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+                    return _l === 'congelacion' || _l === 'megacongelacion';
+                });
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                if (typeof applyDebuff === 'function') {
+                    applyDebuff(targetName, { name:'Megacongelación', type:'debuff', duration:2, emoji:'🧊', freeze:true, mega:true });
+                }
+                addLog('🧊 Golpe Gélido: ' + finalDamage + ' daño + Megacongelación a ' + targetName, 'damage');
+                // Absolute Zero: steal 3 charges from each enemy if target was frozen
+                if (_ggWasFrozen && _ggSZ) {
+                    let _szTotalStolen = 0;
+                    Object.values(gameState.characters).forEach(function(ec) {
+                        if (!ec || ec.team !== _ggETeam || ec.isDead || (ec.charges||0) <= 0) return;
+                        const _steal = Math.min(3, ec.charges);
+                        ec.charges = Math.max(0, ec.charges - _steal);
+                        _szTotalStolen += _steal;
+                    });
+                    if (_szTotalStolen > 0) {
+                        _ggSZ.charges = Math.min(20, (_ggSZ.charges||0) + _szTotalStolen);
+                        addLog('❄️ Absolute Zero: Sub-Zero roba ' + _szTotalStolen + ' cargas totales (objetivo tenía congelación)', 'buff');
+                    }
+                }
+
+            } else if (ability.effect === 'rafaga_hielo_subzero') {
+                // Ráfaga de Hielo: 1-3 golpes aleatorios + Congelación a cada objetivo golpeado
+                const _rhSZ = gameState.characters[gameState.selectedCharacter];
+                const _rhETeam = _rhSZ ? (_rhSZ.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _numHits = 1 + Math.floor(Math.random() * 3); // 1-3 hits
+                addLog('❄️ Ráfaga de Hielo: ' + _numHits + ' golpes', 'damage');
+                const _hitTargets = new Set();
+                for (var _rhi = 0; _rhi < _numHits; _rhi++) {
+                    const _rhEnemies = Object.keys(gameState.characters).filter(function(n){
+                        const _c = gameState.characters[n]; return _c && _c.team === _rhETeam && !_c.isDead && _c.hp > 0;
+                    });
+                    if (!_rhEnemies.length) break;
+                    const _rhTgt = _rhEnemies[Math.floor(Math.random() * _rhEnemies.length)];
+                    // Check if frozen before attack
+                    const _rhTgtC = gameState.characters[_rhTgt];
+                    const _rhWasFrozen = _rhTgtC && (_rhTgtC.statusEffects||[]).some(function(e){
+                        if(!e||!e.name) return false;
+                        const _l = e.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+                        return _l === 'congelacion' || _l === 'megacongelacion';
+                    });
+                    applyDamageWithShield(_rhTgt, finalDamage, gameState.selectedCharacter);
+                    _hitTargets.add(_rhTgt);
+                    // Absolute Zero charge steal
+                    if (_rhWasFrozen && _rhSZ && !_hitTargets._stoleAlready) {
+                        _hitTargets._stoleAlready = true;
+                        let _szStolen2 = 0;
+                        Object.values(gameState.characters).forEach(function(ec) {
+                            if (!ec || ec.team !== _rhETeam || ec.isDead || (ec.charges||0) <= 0) return;
+                            const _s = Math.min(3, ec.charges);
+                            ec.charges = Math.max(0, ec.charges - _s);
+                            _szStolen2 += _s;
+                        });
+                        if (_szStolen2 > 0) {
+                            _rhSZ.charges = Math.min(20, (_rhSZ.charges||0) + _szStolen2);
+                            addLog('❄️ Absolute Zero: Sub-Zero roba ' + _szStolen2 + ' cargas totales', 'buff');
+                        }
+                    }
+                    if (checkGameOver()) break;
+                }
+                // Apply Congelación to all hit targets
+                _hitTargets.forEach && _hitTargets.forEach(function(n) {
+                    if(n === '_stoleAlready') return;
+                    const _htC = gameState.characters[n];
+                    if (!_htC || _htC.isDead) return;
+                    if (typeof applyDebuff === 'function') {
+                        applyDebuff(n, { name:'Congelación', type:'debuff', duration:2, emoji:'❄️', freeze:true });
+                    }
+                });
+                addLog('❄️ Ráfaga de Hielo: Congelación aplicada a objetivos golpeados', 'debuff');
+
+            } else if (ability.effect === 'clon_criogenia_subzero') {
+                // Clon de Criogenia: invoca ICE CLON + disipa debuffs de Sub-Zero + inmunidad
+                const _ccSZ = gameState.characters[gameState.selectedCharacter];
+                const _ccTeam = _ccSZ ? _ccSZ.team : 'team1';
+                // Remove all debuffs from Sub-Zero
+                if (_ccSZ) {
+                    const _debuffs = (_ccSZ.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff'; }).length;
+                    _ccSZ.statusEffects = (_ccSZ.statusEffects||[]).filter(function(e){ return !e || e.type !== 'debuff'; });
+                    _ccSZ._iceClonActive = true; // immunity while ICE CLON is active
+                    addLog('🧊 Clon de Criogenia: ' + _debuffs + ' debuffs disipados de Sub-Zero + inmunidad activa', 'buff');
+                }
+                // Spawn ICE CLON
+                if (typeof spawnSummon === 'function') {
+                    spawnSummon('ICE CLON', gameState.selectedCharacter, _ccTeam);
+                } else {
+                    const _sdIce = typeof summonData !== 'undefined' ? summonData['ICE CLON'] : null;
+                    if (_sdIce) {
+                        gameState.summons = gameState.summons || {};
+                        const _iceId = 'ICE_CLON_' + gameState.selectedCharacter;
+                        gameState.summons[_iceId] = Object.assign({}, _sdIce, { team: _ccTeam, summoner: gameState.selectedCharacter, hp: 10, maxHp: 10, statusEffects: [] });
+                        addLog('🧊 ICE CLON invocado', 'buff');
+                    }
+                }
+
+            } else if (ability.effect === 'ejecucion_tundra_subzero') {
+                // Ejecución de la Tundra: 1 ST + Megacongelación + daño = suma HP de enemigos con Megacongelación
+                const _etSZ = gameState.characters[gameState.selectedCharacter];
+                const _etETeam = _etSZ ? (_etSZ.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                // Check frozen before attack
+                const _etTgtC = gameState.characters[targetName];
+                const _etWasFrozen = _etTgtC && (_etTgtC.statusEffects||[]).some(function(e){
+                    if(!e||!e.name) return false;
+                    const _l = e.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+                    return _l === 'congelacion' || _l === 'megacongelacion';
+                });
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                if (typeof applyDebuff === 'function') {
+                    applyDebuff(targetName, { name:'Megacongelación', type:'debuff', duration:2, emoji:'🧊', freeze:true, mega:true });
+                }
+                addLog('🧊 Ejecución de la Tundra: ' + finalDamage + ' daño + Megacongelación a ' + targetName, 'damage');
+                // Absolute Zero charge steal
+                if (_etWasFrozen && _etSZ) {
+                    let _szStolen3 = 0;
+                    Object.values(gameState.characters).forEach(function(ec) {
+                        if (!ec || ec.team !== _etETeam || ec.isDead || (ec.charges||0) <= 0) return;
+                        const _s = Math.min(3, ec.charges);
+                        ec.charges = Math.max(0, ec.charges - _s);
+                        _szStolen3 += _s;
+                    });
+                    if (_szStolen3 > 0) {
+                        _etSZ.charges = Math.min(20, (_etSZ.charges||0) + _szStolen3);
+                        addLog('❄️ Absolute Zero: Sub-Zero roba ' + _szStolen3 + ' cargas totales', 'buff');
+                    }
+                }
+                // Sum HP of ALL enemies with Megacongelación AFTER applying it to target
+                const _etEnemies = Object.keys(gameState.characters).filter(function(n){
+                    const _c = gameState.characters[n];
+                    if (!_c || _c.team !== _etETeam || _c.isDead || _c.hp <= 0) return false;
+                    return (_c.statusEffects||[]).some(function(e){
+                        if(!e||!e.name) return false;
+                        const _l = e.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+                        return _l === 'megacongelacion';
+                    });
+                });
+                const _etBonusDmg = _etEnemies.reduce(function(sum, n){ return sum + (gameState.characters[n].hp||0); }, 0);
+                if (_etBonusDmg > 0) {
+                    // Distribute damage randomly among all enemies
+                    const _etAllEnemies = Object.keys(gameState.characters).filter(function(n){
+                        const _c = gameState.characters[n]; return _c && _c.team === _etETeam && !_c.isDead && _c.hp > 0;
+                    });
+                    for (var _eti = 0; _eti < _etBonusDmg; _eti++) {
+                        const _alive = _etAllEnemies.filter(function(n){ const _c=gameState.characters[n]; return _c&&!_c.isDead&&_c.hp>0; });
+                        if (!_alive.length) break;
+                        const _rnd = _alive[Math.floor(Math.random() * _alive.length)];
+                        applyDamageWithShield(_rnd, 1, gameState.selectedCharacter);
+                    }
+                    addLog('🧊 Ejecución de la Tundra: ' + _etBonusDmg + ' daño adicional (suma HP de enemigos con Megacongelación: ' + _etEnemies.join(', ') + ')', 'damage');
+                }
+
+            } // end Sub-Zero handlers
+
             // Actualizar UI
             renderCharacters();
             renderSummons();
