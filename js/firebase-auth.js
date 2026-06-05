@@ -1761,10 +1761,13 @@
 
         // ── Ligas ──
         var LEAGUES = [
-            { name: 'Bronce',    min: 0,     max: 1499,  icon: '⚔️',  subs: ['III','II','I'] },
-            { name: 'Plata',     min: 1500,  max: 3499,  icon: '🥈',  subs: ['III','II','I'] },
-            { name: 'Oro',       min: 3500,  max: 6999,  icon: '🥇',  subs: ['III','II','I'] },
-            { name: 'Diamante',  min: 7000,  max: 10999, icon: '💎',  subs: ['III','II','I'] },
+            { name: 'Bronce',    min: 0,     max: 1499,  icon: '🥉',  subs: ['III','II','I'] },
+            { name: 'Plata',     min: 1500,  max: 2999,  icon: '🥈',  subs: ['III','II','I'] },
+            { name: 'Oro',       min: 3000,  max: 4499,  icon: '🥇',  subs: ['III','II','I'] },
+            { name: 'Diamante',  min: 4500,  max: 5999,  icon: '💎',  subs: ['III','II','I'] },
+            { name: 'Platino',   min: 6000,  max: 7499,  icon: '⭐',  subs: ['III','II','I'] },
+            { name: 'Master',    min: 7500,  max: 9999,  icon: '👑',  subs: ['III','II','I'] },
+            { name: 'Leyenda',   min: 10000, max: 999999,icon: '🌟',  subs: ['III','II','I'] },
             { name: 'Campeones', min: 11000, max: 14999, icon: '👑',  subs: [] },
             { name: 'Leyenda',   min: 15000, max: Infinity, icon: '🔱', subs: [] }
         ];
@@ -1902,13 +1905,13 @@
         // ── Premio de fin de temporada Ranked ──────────────────────────────────
         // ── LIGAS RANKED ───────────────────────────────────────────────
         const RANKED_LEAGUES = [
-            { name:'Bronce',   min:0,     max:1499,  gold:50000,   keys:0,  emoji:'🥉', color:'#cd7f32' },
-            { name:'Plata',    min:1500,  max:2999,  gold:100000,  keys:0,  emoji:'🥈', color:'#C0C0C0' },
-            { name:'Oro',      min:3000,  max:4499,  gold:200000,  keys:0,  emoji:'🥇', color:'#FFD700' },
-            { name:'Diamante', min:4500,  max:5999,  gold:300000,  keys:1,  emoji:'💎', color:'#b9f2ff' },
-            { name:'Platino',  min:6000,  max:7499,  gold:400000,  keys:2,  emoji:'⭐', color:'#e5e4e2' },
-            { name:'Master',   min:7500,  max:9999,  gold:500000,  keys:5,  emoji:'👑', color:'#ff88ff' },
-            { name:'Leyenda',  min:10000, max:Infinity, gold:1000000, keys:10, emoji:'🌟', color:'#ff6600' },
+            { name:'Bronce',   min:0,     max:1499,  gold:50000,    keys:0,  emoji:'🥉', color:'#cd7f32' },
+            { name:'Plata',    min:1500,  max:2999,  gold:100000,   keys:0,  emoji:'🥈', color:'#C0C0C0' },
+            { name:'Oro',      min:3000,  max:4499,  gold:200000,   keys:0,  emoji:'🥇', color:'#FFD700' },
+            { name:'Diamante', min:4500,  max:5999,  gold:300000,   keys:1,  emoji:'💎', color:'#b9f2ff' },
+            { name:'Platino',  min:6000,  max:7499,  gold:400000,   keys:2,  emoji:'⭐', color:'#E5E4E2' },
+            { name:'Master',   min:7500,  max:9999,  gold:500000,   keys:5,  emoji:'👑', color:'#FFD700' },
+            { name:'Leyenda',  min:10000, max:999999, gold:1000000, keys:10, emoji:'🌟', color:'#00ffcc' },
         ];
         window.RANKED_LEAGUES = RANKED_LEAGUES;
 
@@ -2372,6 +2375,7 @@
                         '<div style="display:flex;gap:8px;align-items:center;">',
                             '<button id="lbBtnRanking" onclick="lbShowTab(\'ranking\')" style="background:rgba(255,170,0,0.2);border:1px solid #ffaa00;color:#ffaa00;border-radius:8px;padding:7px 14px;cursor:pointer;font-size:.78rem;font-family:Orbitron,sans-serif;">🏅 RANKING</button>',
                             '<button id="lbBtnMeta" onclick="lbShowTab(\'meta\')" style="background:rgba(100,200,100,0.1);border:1px solid #4a4;color:#8f8;border-radius:8px;padding:7px 14px;cursor:pointer;font-size:.78rem;font-family:Orbitron,sans-serif;">📊 META</button>',
+                            '<button id="lbBtnRewards" onclick="lbShowRewards()" style="background:rgba(255,215,0,0.15);border:1px solid #ffd700;color:#ffd700;border-radius:8px;padding:7px 14px;cursor:pointer;font-size:.78rem;font-family:Orbitron,sans-serif;">🏆 RECOMPENSAS</button>',
                             '<button id="leaderboardCloseBtn" style="background:rgba(255,68,102,0.2);border:2px solid #ff4466;color:#ff4466;font-size:1.1rem;width:36px;height:36px;border-radius:50%;cursor:pointer;">✕</button>',
                         '</div>',
                     '</div>',
@@ -2393,6 +2397,50 @@
             modal.style.display = 'flex';
             lbShowTab('ranking');
         }
+
+        window.lbShowRewards = function() {
+            var existing = document.getElementById('_rewardsModal');
+            if (existing) { existing.remove(); return; }
+            var modal = document.createElement('div');
+            modal.id = '_rewardsModal';
+            modal.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);';
+            var SEASON_LEAGUES = [
+                { name:'Bronce',   min:0,     max:1499,  gold:'50,000',    keys:0,  emoji:'🥉', color:'#cd7f32' },
+                { name:'Plata',    min:1500,  max:2999,  gold:'100,000',   keys:0,  emoji:'🥈', color:'#C0C0C0' },
+                { name:'Oro',      min:3000,  max:4499,  gold:'200,000',   keys:0,  emoji:'🥇', color:'#FFD700' },
+                { name:'Diamante', min:4500,  max:5999,  gold:'300,000',   keys:1,  emoji:'💎', color:'#b9f2ff' },
+                { name:'Platino',  min:6000,  max:7499,  gold:'400,000',   keys:2,  emoji:'⭐', color:'#E5E4E2' },
+                { name:'Master',   min:7500,  max:9999,  gold:'500,000',   keys:5,  emoji:'👑', color:'#FFD700' },
+                { name:'Leyenda',  min:10000, max:999999, gold:'1,000,000', keys:10, emoji:'🌟', color:'#00ffcc' },
+            ];
+            var rows = SEASON_LEAGUES.map(function(lg) {
+                var keysStr = lg.keys > 0 ? ' + ' + lg.keys + ' 🗝️' : '';
+                return '<tr style="border-bottom:1px solid rgba(255,255,255,0.06);">' +
+                    '<td style="padding:10px 14px;font-size:1.2rem;text-align:center;">' + lg.emoji + '</td>' +
+                    '<td style="padding:10px 14px;color:' + lg.color + ';font-family:Orbitron,sans-serif;font-weight:700;font-size:.85rem;">' + lg.name + '</td>' +
+                    '<td style="padding:10px 14px;color:#aaa;font-size:.78rem;">' + lg.min.toLocaleString() + (lg.max < 999999 ? ' – ' + lg.max.toLocaleString() : '+') + ' pts</td>' +
+                    '<td style="padding:10px 14px;color:#ffd700;font-size:.78rem;">🪙 ' + lg.gold + keysStr + '</td>' +
+                '</tr>';
+            }).join('');
+            modal.innerHTML = '<div style="background:linear-gradient(160deg,#0d1420,#080e18);border:1px solid rgba(255,215,0,0.35);border-radius:16px;padding:28px 32px;max-width:520px;width:90%;box-shadow:0 0 40px rgba(255,215,0,0.12);">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">' +
+                    '<div style="font-family:Orbitron,sans-serif;font-size:1rem;color:#ffd700;letter-spacing:.08em;font-weight:700;">🏆 RECOMPENSAS DE TEMPORADA</div>' +
+                    '<button onclick="document.getElementById(\'_rewardsModal\').remove()" style="background:rgba(255,68,102,0.2);border:2px solid #ff4466;color:#ff4466;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:.9rem;line-height:1;">✕</button>' +
+                '</div>' +
+                '<p style="color:#666;font-size:.72rem;margin:0 0 16px;font-style:italic;">Las recompensas se entregan al finalizar cada temporada según tu liga más alta alcanzada.</p>' +
+                '<table style="width:100%;border-collapse:collapse;">' +
+                    '<thead><tr style="border-bottom:1px solid rgba(255,215,0,0.2);">' +
+                        '<th style="padding:6px 14px;color:#555;font-size:.68rem;text-align:center;"></th>' +
+                        '<th style="padding:6px 14px;color:#555;font-size:.68rem;text-align:left;font-family:Orbitron,sans-serif;">LIGA</th>' +
+                        '<th style="padding:6px 14px;color:#555;font-size:.68rem;text-align:left;font-family:Orbitron,sans-serif;">PUNTOS</th>' +
+                        '<th style="padding:6px 14px;color:#555;font-size:.68rem;text-align:left;font-family:Orbitron,sans-serif;">RECOMPENSA</th>' +
+                    '</tr></thead>' +
+                    '<tbody>' + rows + '</tbody>' +
+                '</table>' +
+            '</div>';
+            modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+            document.body.appendChild(modal);
+        };
 
         window.lbShowTab = function(tab) {
             var rankingDiv = document.getElementById('leaderboardContent');
