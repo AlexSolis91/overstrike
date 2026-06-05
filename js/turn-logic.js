@@ -116,34 +116,7 @@
                             // Resetear flags de pasivas de un disparo por turno
                             gameState._izanamiUsedThisTurn = false;
 
-                            // ── SIX PATHS (Pain): si el personaje que acaba de actuar usó especial/over,
-                            //    aplicar Aturdimiento DIRECTO (bypassing applyDebuff to avoid loops) ──
-                            (function() {
-                                const _lastType = gameState._lastAbilityType || '';
-                                if (_lastType !== 'special' && _lastType !== 'over') return;
-                                const _actorName = currentCharName;
-                                const _actor = gameState.characters[_actorName];
-                                if (!_actor || _actor.isDead) return;
-                                // Pain must be on the ENEMY team of the actor
-                                const _actorETeam = _actor.team === 'team1' ? 'team2' : 'team1';
-                                for (const _pn in gameState.characters) {
-                                    const _pain = gameState.characters[_pn];
-                                    if (!_pain || _pain.isDead || _pain.team !== _actorETeam) continue;
-                                    if (!_pain.passive || _pain.passive.name !== 'Six Paths') continue;
-                                    // Direct push to statusEffects — avoids applyDebuff chain reactions
-                                    // (Six Paths, Meliodas mirror, Yoda immunity etc. are bypassed intentionally)
-                                    const _alreadyStunned = (_actor.statusEffects||[]).some(function(e){
-                                        return e && e.name === 'Aturdimiento' && e.stun;
-                                    });
-                                    if (!_alreadyStunned) {
-                                        (_actor.statusEffects = _actor.statusEffects || []).push({
-                                            name: 'Aturdimiento', type: 'debuff', duration: 1, emoji: '⭐', stun: true
-                                        });
-                                        addLog('👁️ Six Paths: ' + _actorName + ' queda Aturdido (usó ataque especial)', 'debuff');
-                                    }
-                                    break;
-                                }
-                            })();
+                            // Six Paths: stun por especial removido — ahora usa Mega Aturdimiento por pérdida de cargas
                             // FLASH — decrementar cooldown Singularidad Escarlata
                             const _flashCd = gameState.characters[currentCharName];
                             if (_flashCd && _flashCd._singularidadCooldown > 0) {

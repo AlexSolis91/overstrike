@@ -8549,6 +8549,7 @@
                 addLog('👁️ Ningendō: ' + finalDamage + ' daño a ' + targetName, 'damage');
                 if (_stolenCharges > 0 && _ngTgt) {
                     _ngTgt.charges = 0;
+                    if (typeof checkSixPathsMegaStun === 'function') checkSixPathsMegaStun(targetName, _stolenCharges);
                     const _bonusDmg = _stolenCharges * 2;
                     applyDamageWithShield(targetName, _bonusDmg, gameState.selectedCharacter);
                     addLog('👁️ Ningendō: elimina ' + _stolenCharges + ' cargas → +' + _bonusDmg + ' daño adicional a ' + targetName, 'damage');
@@ -8604,10 +8605,18 @@
                 const _stETeam = _stTeam === 'team1' ? 'team2' : 'team1';
                 let _totalCharges = 0;
                 // Drain ALL charges from both teams
+                // Six Paths: track per-character charge loss
+                const _szPreCharges = {};
+                Object.keys(gameState.characters).forEach(function(n){ _szPreCharges[n] = gameState.characters[n] ? (gameState.characters[n].charges||0) : 0; });
                 Object.values(gameState.characters).forEach(function(_c) {
                     if (!_c || _c.isDead) return;
                     _totalCharges += (_c.charges||0);
                     _c.charges = 0;
+                });
+                // Trigger Six Paths for enemies that lost 5+ charges
+                Object.keys(_szPreCharges).forEach(function(n) {
+                    var lost = _szPreCharges[n];
+                    if (lost >= 5 && typeof checkSixPathsMegaStun === 'function') checkSixPathsMegaStun(n, lost);
                 });
                 addLog('👁️ Shinra Tensei: elimina ' + _totalCharges + ' cargas totales de ambos equipos', 'damage');
                 if (_totalCharges > 0) {

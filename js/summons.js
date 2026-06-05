@@ -9,10 +9,38 @@
             const stolen = Math.min(target.charges, amount);
             target.charges = Math.max(0, (target.charges||0) - (stolen));
             attacker.charges += stolen;
+            // Six Paths: Mega Aturdimiento if target lost 5+ charges
+            if (stolen >= 5) checkSixPathsMegaStun(targetName, stolen);
             if (stolen > 0) addLog(`⚡ ${attackerName} roba ${stolen} carga${stolen > 1 ? 's' : ''} a ${targetName}`, 'buff');
             else addLog(`⚡ ${targetName} no tiene cargas que robar`, 'info');
             return stolen;
         }
+
+        // ── SIX PATHS: trigger Mega Aturdimiento when enemy loses 5+ charges ──
+        function checkSixPathsMegaStun(targetName, chargesLost) {
+            if (!targetName || chargesLost < 5) return;
+            const target = gameState.characters[targetName];
+            if (!target || target.isDead) return;
+            // Find Pain alive on the enemy team of the target
+            const painTeam = target.team === 'team1' ? 'team2' : 'team1';
+            for (const pn in gameState.characters) {
+                const pain = gameState.characters[pn];
+                if (!pain || pain.isDead || pain.team !== painTeam) continue;
+                if (!pain.passive || pain.passive.name !== 'Six Paths') continue;
+                // Apply Mega Aturdimiento directly (bypass applyDebuff to avoid loops)
+                const already = (target.statusEffects||[]).some(function(e){
+                    return e && e.name === 'Mega Aturdimiento';
+                });
+                if (!already) {
+                    (target.statusEffects = target.statusEffects||[]).push({
+                        name: 'Mega Aturdimiento', type: 'debuff', duration: 2, emoji: '💫', stun: true, mega: true
+                    });
+                    addLog('👁️ Six Paths: ' + targetName + ' recibe Mega Aturdimiento (perdió ' + chargesLost + ' cargas)', 'debuff');
+                }
+                break;
+            }
+        }
+        window.checkSixPathsMegaStun = checkSixPathsMegaStun;
 
         // ==================== SISTEMA DE INVOCACIONES ====================
         function checkAndRemoveStealth(targetTeam) {
