@@ -954,7 +954,7 @@
                 name: 'Pain',
                 hp: 25, maxHp: 25, speed: 85, charges: 0,
                 portrait: 'https://i.ibb.co/LDJkvJxy/Whats-App-Image-2026-06-02-at-4-58-46-PM.jpg',
-                passive: { name: 'Six Paths', description: 'Al recibir un aliado un debuff: 50% de limpiarlo y Pain gana 3 cargas. Al aplicarse un buff a un enemigo: 50% de disipar ese buff y el equipo aliado gana 3 cargas. Al ejecutar un enemigo un ataque especial: aplica Aturdimiento a ese enemigo.' },
+                passive: { name: 'Six Paths', description: 'Al recibir un aliado un debuff: 50% de limpiarlo y Pain gana 3 cargas. Al aplicarse un buff a un enemigo: 50% de disipar ese buff y el equipo aliado gana 3 cargas. Si un enemigo pierde 5 o más cargas: aplica Mega Aturdimiento sobre ese enemigo.' },
                 abilities: [
                     { name: 'Gakidō',                      type: 'basic',   cost: 0,  chargeGain: 1, damage: 0, target: 'aoe',    effect: 'gakido_pain',         description: '50% de probabilidad de aplicar Silenciar a cada enemigo. Limpia 1 buff activo de cada enemigo.' },
                     { name: 'Ningendō',                     type: 'special', cost: 6,  chargeGain: 0, damage: 2, target: 'single', effect: 'ningendo_pain',        description: 'Causa 2 daño. Elimina todas las cargas del objetivo. Por cada carga eliminada causa +2 daño adicional.' },
