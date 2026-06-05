@@ -1845,6 +1845,29 @@
                 passiveExecuting = false;
             })();
 
+            // ── EXPLOSIÓN DE SANGRE (Nezuko): al recibir daño → cura 3 HP al aliado con menos HP ──
+            (function() {
+                if (passiveExecuting) return;
+                const _nezC = gameState.characters[targetName];
+                if (!_nezC || !_nezC.passive || _nezC.passive.name !== 'Explosión de Sangre') return;
+                const _realDmg2 = oldHp - _nezC.hp;
+                if (_realDmg2 <= 0) return;
+                const _nezTeam = _nezC.team;
+                let _lowestName = null, _lowestHpPct = 2;
+                for (const _an in gameState.characters) {
+                    const _ac = gameState.characters[_an];
+                    if (!_ac || _ac.team !== _nezTeam || _ac.isDead || _ac.hp <= 0) continue;
+                    const _pct = _ac.hp / (_ac.maxHp || 1);
+                    if (_pct < _lowestHpPct) { _lowestHpPct = _pct; _lowestName = _an; }
+                }
+                if (_lowestName && typeof applyHeal === 'function') {
+                    passiveExecuting = true;
+                    applyHeal(_lowestName, 3, 'Explosión de Sangre');
+                    passiveExecuting = false;
+                    addLog('🌸 Explosión de Sangre: ' + _lowestName + ' recupera 3 HP (Nezuko recibió daño)', 'heal');
+                }
+            })();
+
             // ── PIEL DE NANOOK (Bjorn): inmune a Congelación y MegaCongelación ──
             // (handled in applyFreeze/applyDebuff)
 

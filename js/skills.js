@@ -8911,6 +8911,96 @@
 
             } // end Baran handlers
 
+            // ══════════════════════════════════════════════════════
+            // NEZUKO KAMADO — handlers
+            // ══════════════════════════════════════════════════════
+
+            else if (ability.effect === 'flor_sangre_nezuko') {
+                // Flor de Sangre: cura 2 HP a aliado objetivo + Furia
+                const _fbNez = gameState.characters[gameState.selectedCharacter];
+                const _fbTgt = gameState.characters[targetName];
+                if (_fbTgt) {
+                    if (typeof applyHeal === 'function') {
+                        applyHeal(targetName, 2, 'Flor de Sangre');
+                    } else {
+                        _fbTgt.hp = Math.min(_fbTgt.maxHp, (_fbTgt.hp||0) + 2);
+                        addLog('🌸 Flor de Sangre: ' + targetName + ' recupera 2 HP', 'heal');
+                    }
+                    if (typeof applyBuff === 'function') {
+                        applyBuff(targetName, { name:'Furia', type:'buff', duration:2, emoji:'⚡', furia:true });
+                    } else {
+                        (_fbTgt.statusEffects = _fbTgt.statusEffects||[]).push({ name:'Furia', type:'buff', duration:2, emoji:'⚡', furia:true });
+                    }
+                    addLog('🌸 Flor de Sangre: ' + targetName + ' gana Furia', 'buff');
+                }
+
+            } else if (ability.effect === 'regeneracion_sol_nezuko') {
+                // Regeneración del Sol: Aura de Luz a todo el equipo aliado
+                const _rsNez = gameState.characters[gameState.selectedCharacter];
+                const _rsTeam = _rsNez ? _rsNez.team : 'team1';
+                Object.keys(gameState.characters).forEach(function(n) {
+                    const _ac = gameState.characters[n];
+                    if (!_ac || _ac.team !== _rsTeam || _ac.isDead || _ac.hp <= 0) return;
+                    _ac.statusEffects = (_ac.statusEffects||[]).filter(function(e){ return !e || e.name !== 'Aura de Luz'; });
+                    _ac.statusEffects.push({ name:'Aura de Luz', type:'buff', duration:3, emoji:'✨', auraLuz:true });
+                });
+                addLog('☀️ Regeneración del Sol: Aura de Luz aplicada a todo el equipo aliado', 'buff');
+
+            } else if (ability.effect === 'lluvia_carmesi_nezuko') {
+                // Lluvia Carmesí: disipa buffs del equipo enemigo + 1 HP a cada aliado por buff disipado
+                const _lcNez = gameState.characters[gameState.selectedCharacter];
+                const _lcTeam = _lcNez ? _lcNez.team : 'team1';
+                const _lcETeam = _lcTeam === 'team1' ? 'team2' : 'team1';
+                let _lcTotalDissipated = 0;
+                Object.keys(gameState.characters).forEach(function(n) {
+                    const _ec = gameState.characters[n];
+                    if (!_ec || _ec.team !== _lcETeam || _ec.isDead) return;
+                    const _buffs = (_ec.statusEffects||[]).filter(function(e){ return e && e.type === 'buff' && !e.permanent; });
+                    _lcTotalDissipated += _buffs.length;
+                    _ec.statusEffects = (_ec.statusEffects||[]).filter(function(e){ return !e || e.type !== 'buff' || e.permanent; });
+                    if (_buffs.length > 0) addLog('🩸 Lluvia Carmesí: ' + _buffs.length + ' buffs disipados de ' + n, 'debuff');
+                });
+                if (_lcTotalDissipated > 0) {
+                    Object.keys(gameState.characters).forEach(function(n) {
+                        const _ac = gameState.characters[n];
+                        if (!_ac || _ac.team !== _lcTeam || _ac.isDead || _ac.hp <= 0) return;
+                        if (typeof applyHeal === 'function') {
+                            applyHeal(n, _lcTotalDissipated, 'Lluvia Carmesí');
+                        } else {
+                            _ac.hp = Math.min(_ac.maxHp, (_ac.hp||0) + _lcTotalDissipated);
+                        }
+                    });
+                    addLog('🩸 Lluvia Carmesí: cada aliado cura ' + _lcTotalDissipated + ' HP (' + _lcTotalDissipated + ' buffs disipados)', 'heal');
+                } else {
+                    addLog('🩸 Lluvia Carmesí: no había buffs enemigos para disipar', 'info');
+                }
+
+            } else if (ability.effect === 'sangre_arde_nezuko') {
+                // Sangre que Arde: 5 AOE + cura 5 HP a todos los aliados + 7 cargas a cada aliado
+                const _saNez = gameState.characters[gameState.selectedCharacter];
+                const _saTeam = _saNez ? _saNez.team : 'team1';
+                const _saETeam = _saTeam === 'team1' ? 'team2' : 'team1';
+                // AOE damage
+                const _saEnemies = Object.keys(gameState.characters).filter(function(n){
+                    const _c = gameState.characters[n]; return _c && _c.team === _saETeam && !_c.isDead && _c.hp > 0;
+                });
+                _saEnemies.forEach(function(n){ applyDamageWithShield(n, finalDamage, gameState.selectedCharacter); });
+                addLog('🔥 Sangre que Arde: ' + finalDamage + ' AOE a ' + _saEnemies.length + ' enemigos', 'damage');
+                // Heal + charges to all allies
+                Object.keys(gameState.characters).forEach(function(n) {
+                    const _ac = gameState.characters[n];
+                    if (!_ac || _ac.team !== _saTeam || _ac.isDead || _ac.hp <= 0) return;
+                    if (typeof applyHeal === 'function') {
+                        applyHeal(n, 5, 'Sangre que Arde');
+                    } else {
+                        _ac.hp = Math.min(_ac.maxHp, (_ac.hp||0) + 5);
+                    }
+                    _ac.charges = Math.min(20, (_ac.charges||0) + 7);
+                });
+                addLog('🔥 Sangre que Arde: 5 HP + 7 cargas a todo el equipo aliado', 'heal');
+
+            } // end Nezuko handlers
+
             // Actualizar UI
             renderCharacters();
             renderSummons();

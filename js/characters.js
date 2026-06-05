@@ -897,6 +897,19 @@
                 ]
             },
 
+            'Nezuko Kamado': {
+                name: 'Nezuko Kamado',
+                hp: 20, maxHp: 20, speed: 78, charges: 0,
+                portrait: 'https://i.ibb.co/qLDXZTqM/Whats-App-Image-2026-06-04-at-2-39-12-PM.jpg',
+                passive: { name: 'Explosión de Sangre', description: 'Al recibir daño: cura 3 HP al aliado con menos HP. Cada vez que un aliado cura HP: inflige 5 daño repartido aleatoriamente en el equipo enemigo.' },
+                abilities: [
+                    { name: 'Flor de Sangre',    type: 'basic',   cost: 0,  chargeGain: 2, damage: 0, target: 'ally_single', effect: 'flor_sangre_nezuko',      description: 'Cura 2 HP a un aliado. Aplica Furia al objetivo.' },
+                    { name: 'Regeneración del Sol', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'self',      effect: 'regeneracion_sol_nezuko',  description: 'Aplica Aura de Luz a todo el equipo aliado.' },
+                    { name: 'Lluvia Carmesí',    type: 'special', cost: 7,  chargeGain: 0, damage: 0, target: 'self',       effect: 'lluvia_carmesi_nezuko',    description: 'Disipa todos los buffs del equipo enemigo. Por cada buff disipado cura 1 HP a cada aliado.' },
+                    { name: 'Sangre que Arde',   type: 'over',    cost: 12, chargeGain: 0, damage: 5, target: 'aoe',        effect: 'sangre_arde_nezuko',       description: 'Causa 5 AOE. Cura 5 HP a todo el equipo aliado. Genera 7 cargas a cada aliado.' },
+                ]
+            },
+
             'Baran': {
                 name: 'Baran',
                 hp: 25, maxHp: 25, speed: 90, charges: 0,

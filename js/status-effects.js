@@ -495,5 +495,44 @@ function processBurnEffects(charName) {
                 const _healedChar = gameState.characters[charName];
                 if (_healedChar) triggerBendicionSagrada(_healedChar.team, _actual);
             }
+            // EXPLOSIÓN DE SANGRE (Nezuko): cada vez que un aliado cura HP → 5 daño aleatorio al equipo enemigo
+            if (_actual > 0 && !passiveExecuting) {
+                const _nezHealedChar = gameState.characters[charName];
+                if (_nezHealedChar) {
+                    const _nezTeam2 = _nezHealedChar.team;
+                    const _nezETeam = _nezTeam2 === 'team1' ? 'team2' : 'team1';
+                    // Find Nezuko alive on the same team
+                    let _nezFound = false;
+                    for (const _nn in gameState.characters) {
+                        const _nc = gameState.characters[_nn];
+                        if (_nc && !_nc.isDead && _nc.team === _nezTeam2 && _nc.passive && _nc.passive.name === 'Explosión de Sangre') {
+                            _nezFound = true; break;
+                        }
+                    }
+                    if (_nezFound) {
+                        // Deal 5 damage distributed randomly among enemies
+                        const _nezEnemies = Object.keys(gameState.characters).filter(function(n){
+                            const _c = gameState.characters[n];
+                            return _c && _c.team === _nezETeam && !_c.isDead && _c.hp > 0;
+                        });
+                        if (_nezEnemies.length > 0) {
+                            passiveExecuting = true;
+                            for (var _ni = 0; _ni < 5; _ni++) {
+                                const _alive = _nezEnemies.filter(function(n){ const _c=gameState.characters[n]; return _c&&!_c.isDead&&_c.hp>0; });
+                                if (!_alive.length) break;
+                                const _rnd = _alive[Math.floor(Math.random()*_alive.length)];
+                                if (typeof applyDamageWithShield === 'function') {
+                                    applyDamageWithShield(_rnd, 1, _nn || charName);
+                                } else {
+                                    const _ec = gameState.characters[_rnd];
+                                    if (_ec) { _ec.hp = Math.max(0, _ec.hp - 1); if (_ec.hp<=0&&!_ec.isDead){_ec.isDead=true;} }
+                                }
+                            }
+                            passiveExecuting = false;
+                            addLog('🌸 Explosión de Sangre: 5 daño al equipo enemigo (' + charName + ' curó HP)', 'damage');
+                        }
+                    }
+                }
+            }
             return _actual;
         }
