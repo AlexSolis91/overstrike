@@ -13,8 +13,26 @@
             if ((char.equippedRelics||[]).some(function(r){ return r === 'Anillo de la Vida'; })) {
                 const _anilloOld = char.hp;
                 char.hp = Math.min(char.maxHp, (char.hp||0) + 2);
-                if (char.hp > _anilloOld && typeof showHpTick === 'function') showHpTick(charName, char.hp - _anilloOld);
+                const _anilloGained = char.hp - _anilloOld;
+                if (_anilloGained > 0 && typeof showHpTick === 'function') showHpTick(charName, _anilloGained);
                 addLog('💍 Anillo de la Vida: ' + charName + ' recupera 2HP', 'heal');
+                // Trigger heal-based passives (Bendición Sagrada, Explosión de Sangre)
+                if (_anilloGained > 0 && !passiveExecuting) {
+                    if (typeof triggerBendicionSagrada === 'function') triggerBendicionSagrada(char.team, _anilloGained);
+                    // Nezuko passive: 5 dmg to enemies
+                    (function() {
+                        var _nzTeam = char.team, _nzETeam = _nzTeam === 'team1' ? 'team2' : 'team1';
+                        var _nzFound = false;
+                        for (var _nk in gameState.characters) { var _nc = gameState.characters[_nk]; if (_nc && !_nc.isDead && _nc.team === _nzTeam && _nc.passive && _nc.passive.name === 'Explosión de Sangre') { _nzFound = true; break; } }
+                        if (!_nzFound) return;
+                        var _nzEnemies = Object.keys(gameState.characters).filter(function(n){ var _c=gameState.characters[n]; return _c&&_c.team===_nzETeam&&!_c.isDead&&_c.hp>0; });
+                        if (!_nzEnemies.length) return;
+                        passiveExecuting = true;
+                        for (var _ni=0; _ni<5; _ni++) { var _al=_nzEnemies.filter(function(n){var _c=gameState.characters[n];return _c&&!_c.isDead&&_c.hp>0;}); if(!_al.length)break; var _r=_al[Math.floor(Math.random()*_al.length)]; applyDamageWithShield(_r,1,charName); }
+                        passiveExecuting = false;
+                        addLog('🌸 Explosión de Sangre: 5 daño al equipo enemigo (' + charName + ' curó HP por Anillo)', 'damage');
+                    })();
+                }
             }
 
             const regenEffects = char.statusEffects.filter(e => e && e.name === 'Regeneracion');
