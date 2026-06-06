@@ -1903,7 +1903,7 @@
                     if (_icEnemies.length && typeof applyDebuff === 'function') {
                         passiveExecuting = true;
                         const _rndE = _icEnemies[Math.floor(Math.random()*_icEnemies.length)];
-                        applyDebuff(_rndE, { name:'Megacongelación', type:'debuff', duration:2, emoji:'🧊', freeze:true, mega:true });
+                        applyDebuff(_rndE, { name:'Mega Congelacion', type:'debuff', duration:2, emoji:'🧊', freeze:true, mega:true });
                         passiveExecuting = false;
                         addLog('🧊 ICE CLON: Megacongelación aplicada a ' + _rndE, 'debuff');
                     }

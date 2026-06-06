@@ -659,7 +659,12 @@
             }
 
             // ── MEGA CONGELACIÓN: pierde turno siempre ─────────────────────
-            if (hasStatusEffect(charName, 'Mega Congelacion')) {
+            // Check both 'Mega Congelacion' (with space) and 'Megacongelacion' (no space)
+            const _isMegaFrozen = hasStatusEffect(charName, 'Mega Congelacion') ||
+                                  hasStatusEffect(charName, 'Megacongelacion') ||
+                                  hasStatusEffect(charName, 'Megacongelación') ||
+                                  hasStatusEffect(charName, 'Mega Congelación');
+            if (_isMegaFrozen) {
                 addLog(`🧊 ${charName} está Mega Congelado y pierde su turno`, 'damage');
                 if (typeof _animCard === 'function') _animCard(charName, 'anim-pulse-blue', 750);
                 renderCharacters();
@@ -1634,7 +1639,7 @@
                         if (!_szEnemies.length) continue;
                         const _szRnd = _szEnemies[Math.floor(Math.random() * _szEnemies.length)];
                         if (typeof applyDebuff === 'function') {
-                            applyDebuff(_szRnd, { name:'Megacongelación', type:'debuff', duration:2, emoji:'🧊', freeze:true, mega:true });
+                            applyDebuff(_szRnd, { name:'Mega Congelacion', type:'debuff', duration:2, emoji:'🧊', freeze:true, mega:true });
                         }
                         addLog('❄️ Absolute Zero: ' + _szRnd + ' recibe Megacongelación (inicio de ronda)', 'debuff');
                     }

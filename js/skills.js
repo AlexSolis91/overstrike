@@ -9027,7 +9027,7 @@
                 });
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 if (typeof applyDebuff === 'function') {
-                    applyDebuff(targetName, { name:'Megacongelación', type:'debuff', duration:2, emoji:'🧊', freeze:true, mega:true });
+                    applyDebuff(targetName, { name:'Mega Congelacion', type:'debuff', duration:2, emoji:'🧊', freeze:true, mega:true });
                 }
                 addLog('🧊 Golpe Gélido: ' + finalDamage + ' daño + Megacongelación a ' + targetName, 'damage');
                 // Absolute Zero: steal 3 charges from each enemy if target was frozen
@@ -9132,7 +9132,7 @@
                 });
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 if (typeof applyDebuff === 'function') {
-                    applyDebuff(targetName, { name:'Megacongelación', type:'debuff', duration:2, emoji:'🧊', freeze:true, mega:true });
+                    applyDebuff(targetName, { name:'Mega Congelacion', type:'debuff', duration:2, emoji:'🧊', freeze:true, mega:true });
                 }
                 addLog('🧊 Ejecución de la Tundra: ' + finalDamage + ' daño + Megacongelación a ' + targetName, 'damage');
                 // Absolute Zero charge steal
