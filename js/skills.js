@@ -9176,6 +9176,108 @@
 
             } // end Sub-Zero handlers
 
+            else if (ability.effect === 'batarang_tactico_batman') {
+                // Batarang Táctico: 2 ST + 50% Aturdimiento + Asistir 2T en Batman
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('🦇 Batarang Táctico: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (Math.random() < 0.5 && typeof applyDebuff === 'function') {
+                    applyDebuff(targetName, { name:'Aturdimiento', type:'debuff', duration:1, emoji:'⭐', stun:true });
+                    addLog('🦇 Batarang Táctico: Aturdimiento aplicado a ' + targetName, 'debuff');
+                }
+                // Asistir 2T en Batman
+                const _btBat = gameState.characters[gameState.selectedCharacter];
+                if (_btBat) {
+                    (_btBat.statusEffects = _btBat.statusEffects||[]).push({ name:'Asistir', type:'buff', duration:2, emoji:'🤝', asistir:true });
+                    addLog('🦇 Batarang Táctico: Asistir 2T aplicado a Batman', 'buff');
+                }
+
+            } else if (ability.effect === 'bomba_humo_batman') {
+                // Bomba de Humo: Esquiva Área 2T a todos los aliados + 50% Sigilo + cargas
+                const _bhBat = gameState.characters[gameState.selectedCharacter];
+                const _bhTeam = _bhBat ? _bhBat.team : 'team1';
+                let _bhEsquivaCount = 0, _bhSigiloCount = 0;
+                Object.keys(gameState.characters).forEach(function(n) {
+                    const _ac = gameState.characters[n];
+                    if (!_ac || _ac.team !== _bhTeam || _ac.isDead || _ac.hp <= 0) return;
+                    // Esquiva Área 2T
+                    _ac.statusEffects = (_ac.statusEffects||[]).filter(function(e){ return !e || e.name !== 'Esquiva Área'; });
+                    _ac.statusEffects.push({ name:'Esquiva Área', type:'buff', duration:2, emoji:'💨', esquivaArea:true });
+                    _bhEsquivaCount++;
+                    // Generar 2 cargas por Esquiva Área
+                    _ac.charges = Math.min(20, (_ac.charges||0) + 2);
+                    // 50% Sigilo
+                    if (Math.random() < 0.5) {
+                        _ac.statusEffects = _ac.statusEffects.filter(function(e){ return !e || e.name !== 'Sigilo'; });
+                        _ac.statusEffects.push({ name:'Sigilo', type:'buff', duration:2, emoji:'👁️', sigilo:true });
+                        _bhSigiloCount++;
+                        // Generar 3 cargas extra por Sigilo
+                        _ac.charges = Math.min(20, (_ac.charges||0) + 3);
+                    }
+                });
+                addLog('🦇 Bomba de Humo: Esquiva Área 2T a ' + _bhEsquivaCount + ' aliados (+2 cargas c/u). Sigilo a ' + _bhSigiloCount + ' aliados (+3 cargas c/u)', 'buff');
+
+            } else if (ability.effect === 'analisis_debiles_batman') {
+                // Análisis de Puntos Débiles: 3 AOE + bloquea Básicos y Over 1T
+                const _adBat = gameState.characters[gameState.selectedCharacter];
+                const _adETeam = _adBat ? (_adBat.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _adEnemies = Object.keys(gameState.characters).filter(function(n){
+                    const _c = gameState.characters[n]; return _c && _c.team === _adETeam && !_c.isDead && _c.hp > 0;
+                });
+                _adEnemies.forEach(function(n) {
+                    applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
+                    const _ec = gameState.characters[n];
+                    if (_ec && !_ec.isDead) {
+                        // Block basic + over for 1 turn via statusEffect
+                        (_ec.statusEffects = _ec.statusEffects||[]).push({ name:'Análisis', type:'debuff', duration:1, emoji:'🔍', blockBasic:true, blockOver:true });
+                    }
+                });
+                addLog('🦇 Análisis de Puntos Débiles: 3 AOE + Básicos/Over bloqueados 1T a ' + _adEnemies.length + ' enemigos', 'damage');
+
+            } else if (ability.effect === 'planes_contingencia_batman') {
+                // Planes de Contingencia: elimina 5 cargas/enemigo + reparte total entre aliados + daño a enemigos con 0 cargas
+                const _pcBat = gameState.characters[gameState.selectedCharacter];
+                const _pcTeam = _pcBat ? _pcBat.team : 'team1';
+                const _pcETeam = _pcTeam === 'team1' ? 'team2' : 'team1';
+                const _pcEnemies = Object.keys(gameState.characters).filter(function(n){
+                    const _c = gameState.characters[n]; return _c && _c.team === _pcETeam && !_c.isDead && _c.hp > 0;
+                });
+                let _pcTotalStolen = 0;
+                const _pcZeroCargas = [];
+                _pcEnemies.forEach(function(n) {
+                    const _ec = gameState.characters[n];
+                    if (!_ec) return;
+                    const _steal = Math.min(5, _ec.charges||0);
+                    _ec.charges = Math.max(0, (_ec.charges||0) - _steal);
+                    _pcTotalStolen += _steal;
+                    if (_ec.charges <= 0) _pcZeroCargas.push(n);
+                });
+                // Distribute total stolen evenly among allies
+                const _pcAllies = Object.keys(gameState.characters).filter(function(n){
+                    const _c = gameState.characters[n]; return _c && _c.team === _pcTeam && !_c.isDead && _c.hp > 0;
+                });
+                if (_pcAllies.length > 0 && _pcTotalStolen > 0) {
+                    const _shareEach = Math.floor(_pcTotalStolen / _pcAllies.length);
+                    const _remainder = _pcTotalStolen % _pcAllies.length;
+                    _pcAllies.forEach(function(n, i) {
+                        const _ac = gameState.characters[n];
+                        if (_ac) _ac.charges = Math.min(20, (_ac.charges||0) + _shareEach + (i === 0 ? _remainder : 0));
+                    });
+                    addLog('🦇 Planes de Contingencia: ' + _pcTotalStolen + ' cargas robadas, distribuidas entre ' + _pcAllies.length + ' aliados', 'buff');
+                }
+                // Damage enemies with 0 charges: 40 / alive enemies
+                if (_pcZeroCargas.length > 0) {
+                    const _pcAliveCnt = _pcEnemies.filter(function(n){ const _c=gameState.characters[n]; return _c&&!_c.isDead&&_c.hp>0; }).length;
+                    const _pcDmg = Math.floor(40 / Math.max(1, _pcAliveCnt));
+                    _pcZeroCargas.forEach(function(n) {
+                        const _ec = gameState.characters[n];
+                        if (!_ec || _ec.isDead) return;
+                        applyDamageWithShield(n, _pcDmg, gameState.selectedCharacter);
+                        addLog('🦇 Planes de Contingencia: ' + n + ' recibe ' + _pcDmg + ' daño (0 cargas)', 'damage');
+                    });
+                }
+
+            } // end Batman handlers
+
             // Actualizar UI
             renderCharacters();
             renderSummons();

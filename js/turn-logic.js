@@ -117,6 +117,77 @@
                             gameState._izanamiUsedThisTurn = false;
 
                             // Six Paths: stun por especial removido — ahora usa Mega Aturdimiento por pérdida de cargas
+
+                            // ── CABALLERO DE LA NOCHE (Batman): si el actor usó especial, Batman gana 3 cargas ──
+                            (function() {
+                                const _lType = gameState._lastAbilityType || '';
+                                if (_lType !== 'special') return;
+                                const _actorC = gameState.characters[currentCharName];
+                                if (!_actorC) return;
+                                const _actorETeam = _actorC.team === 'team1' ? 'team2' : 'team1';
+                                for (const _bn in gameState.characters) {
+                                    const _bc = gameState.characters[_bn];
+                                    if (!_bc || _bc.isDead || _bc.team !== _actorETeam) continue;
+                                    if (!_bc.passive || _bc.passive.name !== 'Caballero de la Noche') continue;
+                                    _bc.charges = Math.min(20, (_bc.charges||0) + 3);
+                                    addLog('🦇 Caballero de la Noche: Batman gana 3 cargas (enemigo usó especial)', 'buff');
+                                    break;
+                                }
+                            })();
+
+                            // ── ASISTIR: cuando un ALIADO usa especial, cada aliado con Asistir ejecuta su básico ──
+                            (function() {
+                                const _lTypeA = gameState._lastAbilityType || '';
+                                if (_lTypeA !== 'special') return;
+                                const _actorA = gameState.characters[currentCharName];
+                                if (!_actorA || _actorA.isDead) return;
+                                const _actorTeamA = _actorA.team;
+                                for (const _an in gameState.characters) {
+                                    const _ac = gameState.characters[_an];
+                                    if (!_ac || _ac.isDead || _ac.hp <= 0 || _ac.team !== _actorTeamA) continue;
+                                    if (_an === currentCharName) continue; // Not the actor themselves
+                                    const _hasAsistir = (_ac.statusEffects||[]).some(function(e){
+                                        return e && e.name === 'Asistir' && e.asistir;
+                                    });
+                                    if (!_hasAsistir) continue;
+                                    // Find basic ability
+                                    const _basic = (_ac.abilities||[]).find(function(a){ return a && a.type === 'basic'; });
+                                    if (!_basic) continue;
+                                    addLog('🤝 Asistir: ' + _an + ' ejecuta ' + _basic.name + ' automáticamente', 'buff');
+                                    // Save state
+                                    const _prevChar = gameState.selectedCharacter;
+                                    const _prevAb   = gameState.selectedAbility;
+                                    const _prevTgt  = gameState.selectedTarget;
+                                    gameState.selectedCharacter = _an;
+                                    gameState.selectedAbility   = _basic;
+                                    gameState._guiaMaestroActive = true;
+                                    gameState._abilityExecuting  = false;
+                                    gameState._gmOverrideFinalDamage = _basic.damage || 1;
+                                    if (_basic.target === 'aoe' || _basic.target === 'ally_team') {
+                                        // AOE — execute without target
+                                        try { _executeAbilityCore(null); } catch(e) { console.error('[Asistir AOE]', e); }
+                                    } else {
+                                        // ST — pick random enemy
+                                        const _eTeamA = _actorTeamA === 'team1' ? 'team2' : 'team1';
+                                        const _enemies = Object.keys(gameState.characters).filter(function(n){
+                                            const _c = gameState.characters[n]; return _c && _c.team === _eTeamA && !_c.isDead && _c.hp > 0;
+                                        });
+                                        if (_enemies.length > 0) {
+                                            // Check provocation
+                                            let _tgt = _enemies[Math.floor(Math.random()*_enemies.length)];
+                                            const _taunt = _enemies.find(function(n){ return typeof hasProvocation === 'function' && hasProvocation(n); });
+                                            if (_taunt) _tgt = _taunt;
+                                            try { _executeAbilityCore(_tgt); } catch(e) { console.error('[Asistir ST]', e); }
+                                        }
+                                    }
+                                    gameState._guiaMaestroActive = false;
+                                    gameState._abilityExecuting  = false;
+                                    gameState.selectedCharacter  = _prevChar;
+                                    gameState.selectedAbility    = _prevAb;
+                                    gameState.selectedTarget     = _prevTgt;
+                                    if (checkGameOver()) break;
+                                }
+                            })();
                             // FLASH — decrementar cooldown Singularidad Escarlata
                             const _flashCd = gameState.characters[currentCharName];
                             if (_flashCd && _flashCd._singularidadCooldown > 0) {

@@ -508,18 +508,17 @@
                 ]
             },
             'Batman': {
-                hp: 25, maxHp: 25, speed: 84, charges: 0, team: 'team1',
-                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                name: 'Batman',
+                hp: 25, maxHp: 25, speed: 84, charges: 0,
                 portrait: 'https://i.ibb.co/xKm24r5T/Captura-de-pantalla-2026-03-20-235244.png',
-                passive: { name: 'Caballero de la Noche', description: 'Batman es inmune a daño y efectos de movimientos especiales del enemigo. Cada vez que un enemigo usa un ataque especial, Batman genera 3 cargas.' },
+                passive: { name: 'Caballero de la Noche', description: 'Inmune a daño y efectos de movimientos especiales enemigos. Cada vez que un enemigo usa un especial: Batman gana 3 cargas. Cada vez que Batman recibe daño: aplica Ceguera 2T a un enemigo aleatorio (sin Ceguera activa).' },
                 abilities: [
-                    { name: 'Batarang Táctico', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'batarang_batman', description: 'Causa 2 daño. 50% de aturdir al enemigo. 50% de robar 2 cargas del enemigo.' },
-                    { name: 'Bomba de Humo', type: 'special', cost: 3, chargeGain: 1, damage: 0, target: 'self', effect: 'bomba_humo_batman', description: 'Aplica Buff Esquiva Área a todos los aliados por 2 turnos. 50% de aplicar Sigilo a cada aliado.' },
-                    { name: 'Análisis de Puntos Débiles', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'aoe', effect: 'analisis_batman', description: 'Causa 3 AOE. Bloquea 1 movimiento de cada enemigo por 2 turnos.' },
-                    { name: 'Planes de Contingencia', type: 'over', cost: 10, chargeGain: 0, damage: 5, target: 'single', effect: 'contingencia_batman', description: 'Causa 5 daño + 1 adicional por cada carga eliminada del objetivo. El objetivo no puede generar cargas por 3 turnos.' }
+                    { name: 'Batarang Táctico',           type: 'basic',   cost: 0,  chargeGain: 1, damage: 2, target: 'single', effect: 'batarang_tactico_batman',   description: 'Causa 2 daño. 50% de aturdir al objetivo 1T. Batman gana buff Asistir 2T.' },
+                    { name: 'Bomba de Humo',              type: 'special', cost: 4,  chargeGain: 1, damage: 0, target: 'self',   effect: 'bomba_humo_batman',         description: 'Aplica Esquiva Área 2T a todos los aliados. 50% de aplicar Sigilo a cada aliado. Aliados con Esquiva Área generan 2 cargas. Aliados con Sigilo generan 3 cargas.' },
+                    { name: 'Análisis de Puntos Débiles', type: 'special', cost: 6,  chargeGain: 0, damage: 3, target: 'aoe',    effect: 'analisis_debiles_batman',   description: 'Causa 3 AOE. Bloquea los movimientos Básicos y Over de los enemigos golpeados durante 1 turno.' },
+                    { name: 'Planes de Contingencia',    type: 'over',    cost: 10, chargeGain: 0, damage: 0, target: 'self',   effect: 'planes_contingencia_batman', description: 'Elimina 5 cargas de cada enemigo y reparte el total entre los aliados. Enemigos con 0 cargas reciben daño = 40 / enemigos vivos.' },
                 ]
-            },
-            'Superman': {
+            },            'Superman': {
                 hp: 25, maxHp: 25, speed: 98, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 supermanPrimeMode: false,

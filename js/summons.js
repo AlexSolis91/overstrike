@@ -714,6 +714,26 @@
         }
 
         function applyDamageWithShield(targetName, damage, attackerName = null) {
+            // ── CABALLERO DE LA NOCHE (Batman): inmune a daño de movimientos especiales ──
+            if (!passiveExecuting && gameState.selectedAbility && gameState.selectedAbility.type === 'special') {
+                const _batTarget = gameState.characters[targetName];
+                if (_batTarget && _batTarget.passive && _batTarget.passive.name === 'Caballero de la Noche') {
+                    addLog('🦇 Caballero de la Noche: Batman es inmune al especial de ' + (attackerName||'enemigo'), 'buff');
+                    return;
+                }
+            }
+            // ── CEGUERA: 50% de fallar el ataque ──
+            if (!passiveExecuting && attackerName && damage > 0) {
+                const _blindAtk = gameState.characters[attackerName];
+                if (_blindAtk && (_blindAtk.statusEffects||[]).some(function(e){
+                    return e && e.name === 'Ceguera' && e.type === 'debuff';
+                })) {
+                    if (Math.random() < 0.5) {
+                        addLog('👁️ Ceguera: ' + attackerName + ' falla el ataque (50%)', 'debuff');
+                        return; // Miss — no damage applied
+                    }
+                }
+            }
             // Si el targetName es un summon especial (__summon__:id), redirigir a applySummonDamage
             if (typeof targetName === 'string' && targetName.startsWith('__summon__:')) {
                 const _sumId = targetName.slice(11);
@@ -1916,6 +1936,32 @@
                 }
                 // Block original damage to Sub-Zero
                 remainingDamage = 0;
+            })();
+
+            // ── CABALLERO DE LA NOCHE (Batman): al recibir daño → Ceguera 2T a enemigo aleatorio sin Ceguera ──
+            (function() {
+                if (passiveExecuting) return;
+                const _batC = gameState.characters[targetName];
+                if (!_batC || !_batC.passive || _batC.passive.name !== 'Caballero de la Noche') return;
+                const _batDmg = oldHp - _batC.hp;
+                if (_batDmg <= 0) return;
+                const _batETeam = _batC.team === 'team1' ? 'team2' : 'team1';
+                // Find random enemy without Ceguera
+                const _batTargets = Object.keys(gameState.characters).filter(function(n){
+                    const _c = gameState.characters[n];
+                    if (!_c || _c.team !== _batETeam || _c.isDead || _c.hp <= 0) return false;
+                    return !(_c.statusEffects||[]).some(function(e){ return e && e.name === 'Ceguera'; });
+                });
+                if (!_batTargets.length) return;
+                const _rnd = _batTargets[Math.floor(Math.random() * _batTargets.length)];
+                passiveExecuting = true;
+                if (typeof applyDebuff === 'function') {
+                    applyDebuff(_rnd, { name:'Ceguera', type:'debuff', duration:2, emoji:'👁️', blind:true });
+                } else {
+                    (gameState.characters[_rnd].statusEffects = gameState.characters[_rnd].statusEffects||[]).push({ name:'Ceguera', type:'debuff', duration:2, emoji:'👁️', blind:true });
+                }
+                passiveExecuting = false;
+                addLog('🦇 Caballero de la Noche: ' + _rnd + ' recibe Ceguera 2T (Batman recibió daño)', 'debuff');
             })();
 
             // ── EXPLOSIÓN DE SANGRE (Nezuko): al recibir daño → cura 3 HP al aliado con menos HP ──

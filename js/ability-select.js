@@ -41,6 +41,16 @@
                 addLog('👑 El Rey Demonio: Meliodas ya se ha transformado', 'info');
                 return;
             }
+            // ANÁLISIS DE PUNTOS DÉBILES (Batman): bloquea Básicos y Over 1T
+            if (ability.type === 'basic' || ability.type === 'over') {
+                const _hasAnalisis = (char.statusEffects||[]).some(function(e){
+                    return e && e.name === 'Análisis' && (e.blockBasic || e.blockOver);
+                });
+                if (_hasAnalisis) {
+                    addLog('🔍 Análisis de Puntos Débiles: ' + char.name + ' no puede usar movimientos Básicos/Over este turno', 'info');
+                    return;
+                }
+            }
             
             gameState.selectedAbility = ability;
             gameState.adjustedCost = adjustedCost;
