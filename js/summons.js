@@ -1,5 +1,6 @@
 // ── GLOBAL FLAG: prevents infinite passive cascade loops ──
         let passiveExecuting = false;
+        let passiveHealExecuting = false; // Prevents Bendición Sagrada ↔ Explosión de Sangre loops
 
         // ==================== ROBO DE CARGAS ====================
         function stealCharges(attackerName, targetName, amount) {

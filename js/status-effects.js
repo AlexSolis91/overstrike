@@ -509,12 +509,18 @@ function processBurnEffects(charName) {
                 triggerAdaptacionReactivaHeal(charName);
             }
             // BENDICIÓN SAGRADA (Min Byung): cualquier curación activa la pasiva
-            if (_actual > 0 && !passiveExecuting && typeof triggerBendicionSagrada === 'function') {
+            // Uses passiveHealExecuting to block secondary chains (Bendición→Explosión→Bendición)
+            // but still fires when passiveExecuting is true (e.g. Tesoro del Cielo)
+            if (_actual > 0 && !passiveHealExecuting && typeof triggerBendicionSagrada === 'function') {
                 const _healedChar = gameState.characters[charName];
-                if (_healedChar) triggerBendicionSagrada(_healedChar.team, _actual);
+                if (_healedChar) {
+                    passiveHealExecuting = true;
+                    triggerBendicionSagrada(_healedChar.team, _actual);
+                    passiveHealExecuting = false;
+                }
             }
             // EXPLOSIÓN DE SANGRE (Nezuko): cada vez que un aliado cura HP → 5 daño aleatorio al equipo enemigo
-            if (_actual > 0 && !passiveExecuting) {
+            if (_actual > 0 && !passiveHealExecuting) {
                 const _nezHealedChar = gameState.characters[charName];
                 if (_nezHealedChar) {
                     const _nezTeam2 = _nezHealedChar.team;
@@ -534,6 +540,7 @@ function processBurnEffects(charName) {
                             return _c && _c.team === _nezETeam && !_c.isDead && _c.hp > 0;
                         });
                         if (_nezEnemies.length > 0) {
+                            passiveHealExecuting = true;
                             passiveExecuting = true;
                             for (var _ni = 0; _ni < 5; _ni++) {
                                 const _alive = _nezEnemies.filter(function(n){ const _c=gameState.characters[n]; return _c&&!_c.isDead&&_c.hp>0; });
@@ -546,6 +553,7 @@ function processBurnEffects(charName) {
                                     if (_ec) { _ec.hp = Math.max(0, _ec.hp - 1); if (_ec.hp<=0&&!_ec.isDead){_ec.isDead=true;} }
                                 }
                             }
+                            passiveHealExecuting = false;
                             passiveExecuting = false;
                             addLog('🌸 Explosión de Sangre: 5 daño al equipo enemigo (' + charName + ' curó HP)', 'damage');
                         }
