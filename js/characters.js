@@ -32,7 +32,7 @@
             'Aldebaran': {
                 name: 'Aldebaran',
                 hp: 30, maxHp: 30, speed: 83, charges: 0,
-                portrait: 'https://i.postimg.cc/PJr0LB6N/Captura-de-pantalla-2026-02-21-230603.png',
+                portrait: 'https://i.postimg.cc/GtScpb3q/image.png',
                 passive: { name: 'Fortaleza de Tauro', description: 'Efecto pasivo Provocación. Cada vez que un Buff Escudo (en cualquier aliado o en Aldebaran) pierde HP: Aldebaran ejecuta Great Horn automáticamente. Al final de cada ronda, si Aldebaran tiene Escudo activo: recupera 2 HP.' },
                 abilities: [
                     { name: 'Great Horn',        type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'great_horn_ald',        description: 'Causa 1 daño ST. Recupera 3 HP. Aplica Buff Escudo 2 HP sobre Aldebaran.' },
@@ -515,7 +515,7 @@
                     { name: 'Ráfagas de Energía',          type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'rafagas_energia_a17',     description: 'Golpea 1-5 veces a enemigos aleatorios (puede repetir). 50% de robar 1 carga del enemigo golpeado.' },
                     { name: 'Barrera de Fotones Dinámica', type: 'special', cost: 3,  chargeGain: 0, damage: 0, target: 'self',   effect: 'barrera_fotones_a17',    description: 'Elimina 1-5 debuffs del equipo aliado. Por cada debuff eliminado el equipo aliado genera 1 carga.' },
                     { name: 'Destello de Fotones',         type: 'special', cost: 8,  chargeGain: 0, damage: 4, target: 'single', effect: 'destello_fotones_a17',   description: 'Causa 4 daño ST. Elimina 1-10 Buffs del equipo enemigo. Por cada Buff eliminado multiplica el daño de este ataque.' },
-                    { name: 'Barrera de Impacto Total',    type: 'over',    cost: 0,  chargeGain: 8, damage: 0, target: 'self',   effect: 'barrera_impacto_a17',    description: 'Aplica Escudo 10 HP a todo el equipo aliado. Genera 5 cargas a todo el equipo aliado. Genera 8 cargas para Androide 17.' },
+                    { name: 'Barrera de Impacto Total',    type: 'over',    cost: 8,  chargeGain: 0, damage: 0, target: 'self',   effect: 'barrera_impacto_a17',    description: 'Aplica Escudo 10 HP a todo el equipo aliado (incluido Androide 17). Genera 5 cargas a todos los aliados excepto Androide 17.' },
                 ]
             },
 

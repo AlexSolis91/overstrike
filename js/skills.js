@@ -9363,19 +9363,22 @@
                 addLog('⚡ Destello de Fotones: ' + _dfDmg + ' daño (' + finalDamage + ' × ' + Math.max(1, _dfBufsRemoved) + ' buffs eliminados)', 'damage');
 
             } else if (ability.effect === 'barrera_impacto_a17') {
-                // Barrera de Impacto Total: Escudo 10 HP equipo aliado + 5 cargas equipo + 8 cargas Androide 17
+                // Barrera de Impacto Total: Escudo 10 HP a TODO el equipo aliado (incluido A17)
+                // 5 cargas a aliados EXCEPTO Androide 17. A17 NO gana cargas.
                 const _biA17 = gameState.characters[gameState.selectedCharacter];
                 const _biTeam = _biA17 ? _biA17.team : 'team1';
                 Object.keys(gameState.characters).forEach(function(n) {
                     const _ac = gameState.characters[n];
                     if (!_ac || _ac.team !== _biTeam || _ac.isDead || _ac.hp <= 0) return;
+                    // Escudo 10 HP a todos (incluyendo A17)
                     _ac.shield = (_ac.shield||0) + 10;
-                    _ac.charges = Math.min(20, (_ac.charges||0) + 5);
+                    // 5 cargas solo a aliados que NO sean Androide 17
+                    if (n !== gameState.selectedCharacter) {
+                        _ac.charges = Math.min(20, (_ac.charges||0) + 5);
+                    }
                 });
-                addLog('⚡ Barrera de Impacto Total: Escudo 10 HP + 5 cargas a todo el equipo aliado', 'buff');
-                // +8 cargas extra para Androide 17 (chargeGain en ability ya da 8)
-                if (_biA17) _biA17.charges = Math.min(20, (_biA17.charges||0) + 8);
-                addLog('⚡ Barrera de Impacto Total: Androide 17 gana 8 cargas adicionales', 'buff');
+                addLog('⚡ Barrera de Impacto Total: Escudo 10 HP a todo el equipo aliado', 'buff');
+                addLog('⚡ Barrera de Impacto Total: +5 cargas al equipo aliado (excepto Androide 17)', 'buff');
 
             } // end Androide 17 handlers
 
