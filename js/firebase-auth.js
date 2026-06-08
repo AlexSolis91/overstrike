@@ -231,6 +231,14 @@
             var bossBtn  = document.getElementById('bossActivationBtn');
             if (adminBtn) adminBtn.style.display = _isAdmin ? 'block' : 'none';
             if (bossBtn)  bossBtn.style.display  = _isAdmin ? 'block' : 'none';
+
+            // Check for pending boss event reward (runs once per session)
+            if (!window._bossRewardChecked && currentUser) {
+                window._bossRewardChecked = true;
+                if (typeof checkPendingBossReward === 'function') {
+                    checkPendingBossReward(currentUser.uid);
+                }
+            }
         }
 
         function goToLocalMode(mode) {
@@ -3599,6 +3607,146 @@
         // Exponer globalmente para jefe-de-sala.js
         window.getBossData = getBossData;
 
+        // ── Check if boss event has expired (7 days) and auto-distribute rewards ──
+        async function checkBossEventExpiry() {
+            try {
+                const snap = await db.ref('weekly_boss/current').once('value');
+                const boss = snap.val();
+                if (!boss || boss.status !== 'active') return;
+                if (boss.rewardsDistributed) return;
+                const sevenDays = 7 * 24 * 60 * 60 * 1000;
+                const activatedAt = boss.activatedAt || 0;
+                if (Date.now() - activatedAt >= sevenDays) {
+                    await db.ref('weekly_boss/current/status').set('expired');
+                    await distributeEndEventRewards(false);
+                    console.log('[BOSS] Evento expiró después de 7 días — recompensas distribuidas');
+                }
+            } catch(e) { console.error('[BOSS] checkBossEventExpiry:', e); }
+        }
+        window.checkBossEventExpiry = checkBossEventExpiry;
+
+        // ── Show boss reward notification modal (unclosable until claimed) ──
+        async function showBossRewardModal(uid, reward) {
+            // Don't show if already claimed
+            if (reward.claimed) return;
+
+            const bossFelled = reward.bossFelled;
+            const bossName   = reward.bossName || 'Jefe de Sala';
+            const bossHpLeft = reward.bossHpLeft || 0;
+            const ranking    = reward.ranking || [];
+            const myRank     = reward.rank || 1;
+            const multiplier = reward.multiplier || 1;
+
+            // Build ranking rows
+            const rankIcons = ['👑','🥈','🥉','4️⃣','5️⃣','6️⃣'];
+            const rankRows = ranking.map(function(r) {
+                var isMe = r.rank === myRank && r.playerName === (reward.playerName || '');
+                var style = isMe ? 'background:rgba(255,170,0,0.15);border-radius:6px;' : '';
+                return '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);' + style + '">' +
+                    '<td style="padding:7px 12px;font-size:1rem;">' + (rankIcons[r.rank-1]||r.rank) + '</td>' +
+                    '<td style="padding:7px 12px;color:' + (isMe?'#ffaa00':'#ccc') + ';font-weight:' + (isMe?'700':'400') + ';">' + r.playerName + (isMe?' (tú)':'') + '</td>' +
+                    '<td style="padding:7px 12px;color:#aaa;font-size:.8rem;">' + (r.totalDamage||0).toLocaleString() + ' HP</td>' +
+                    '<td style="padding:7px 12px;color:#ffd700;font-size:.8rem;">🪙 ' + (r.gold||0).toLocaleString() + (r.keys>0?' + '+r.keys+' 🗝️':'') + '</td>' +
+                '</tr>';
+            }).join('');
+
+            var bossStatusHtml = bossFelled
+                ? '<div style="color:#00ff99;font-size:.9rem;margin-bottom:4px;">💀 ¡' + bossName + ' fue derrotado!</div><div style="color:#aaa;font-size:.75rem;">Las recompensas se duplicaron (×2)</div>'
+                : '<div style="color:#ff6644;font-size:.9rem;margin-bottom:4px;">⏰ El evento terminó (7 días)</div><div style="color:#aaa;font-size:.75rem;">' + bossName + ' sobrevivió con ' + bossHpLeft.toLocaleString() + ' HP</div>';
+
+            var myRewardHtml = '<div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:12px;">' +
+                '<div style="background:rgba(255,215,0,0.1);border:1px solid #ffd700;border-radius:10px;padding:12px 20px;text-align:center;">' +
+                    '<div style="font-size:1.5rem;">🪙</div>' +
+                    '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:#ffd700;font-weight:700;">' + reward.gold.toLocaleString() + '</div>' +
+                    '<div style="color:#888;font-size:.7rem;">Oro</div>' +
+                '</div>' +
+                (reward.keys > 0 ? '<div style="background:rgba(100,200,255,0.1);border:1px solid #64c8ff;border-radius:10px;padding:12px 20px;text-align:center;">' +
+                    '<div style="font-size:1.5rem;">🗝️</div>' +
+                    '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:#64c8ff;font-weight:700;">' + reward.keys + '</div>' +
+                    '<div style="color:#888;font-size:.7rem;">Llaves Arcanas</div>' +
+                '</div>' : '') +
+                '<div style="background:rgba(255,100,100,0.1);border:1px solid #ff6464;border-radius:10px;padding:12px 20px;text-align:center;">' +
+                    '<div style="font-size:1.5rem;">' + (rankIcons[myRank-1]||myRank) + '</div>' +
+                    '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:#ff6464;font-weight:700;">#' + myRank + '</div>' +
+                    '<div style="color:#888;font-size:.7rem;">Posición</div>' +
+                '</div>' +
+            '</div>';
+
+            var modal = document.createElement('div');
+            modal.id = '_bossRewardModal';
+            modal.style.cssText = 'position:fixed;inset:0;z-index:999999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.88);';
+
+            modal.innerHTML =
+                '<div style="background:linear-gradient(160deg,#0d1420,#080e18);border:2px solid rgba(255,170,0,0.4);border-radius:20px;padding:28px 28px 24px;max-width:560px;width:92%;max-height:90vh;overflow-y:auto;box-shadow:0 0 60px rgba(255,170,0,0.2);">' +
+                    // Header
+                    '<div style="text-align:center;margin-bottom:16px;">' +
+                        '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:#ffaa00;letter-spacing:.08em;font-weight:700;margin-bottom:8px;">🏆 EVENTO FINALIZADO — ' + bossName.toUpperCase() + '</div>' +
+                        bossStatusHtml +
+                    '</div>' +
+                    // My reward
+                    '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;margin-bottom:16px;">' +
+                        '<div style="font-family:Orbitron,sans-serif;font-size:.75rem;color:#888;margin-bottom:8px;letter-spacing:.08em;">TU RECOMPENSA</div>' +
+                        myRewardHtml +
+                    '</div>' +
+                    // Ranking table
+                    '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px;margin-bottom:20px;">' +
+                        '<div style="font-family:Orbitron,sans-serif;font-size:.75rem;color:#888;margin-bottom:8px;letter-spacing:.08em;">TABLA DE DAÑO</div>' +
+                        '<table style="width:100%;border-collapse:collapse;">' +
+                            '<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.1);">' +
+                                '<th style="padding:5px 12px;color:#555;font-size:.65rem;text-align:left;">#</th>' +
+                                '<th style="padding:5px 12px;color:#555;font-size:.65rem;text-align:left;font-family:Orbitron,sans-serif;">JUGADOR</th>' +
+                                '<th style="padding:5px 12px;color:#555;font-size:.65rem;text-align:left;font-family:Orbitron,sans-serif;">DAÑO</th>' +
+                                '<th style="padding:5px 12px;color:#555;font-size:.65rem;text-align:left;font-family:Orbitron,sans-serif;">RECOMPENSA</th>' +
+                            '</tr></thead>' +
+                            '<tbody>' + rankRows + '</tbody>' +
+                        '</table>' +
+                    '</div>' +
+                    // Claim button (CANNOT close without clicking)
+                    '<button id="_bossClaimBtn" onclick="window._handleBossClaimReward()" style="width:100%;background:linear-gradient(135deg,#ffaa00,#ff6600);border:none;color:#000;font-family:Orbitron,sans-serif;font-size:.9rem;font-weight:700;padding:14px;border-radius:12px;cursor:pointer;letter-spacing:.06em;">🎁 RECLAMAR RECOMPENSA</button>' +
+                    '<div style="text-align:center;color:#444;font-size:.68rem;margin-top:8px;">Debes reclamar tu recompensa para continuar</div>' +
+                '</div>';
+
+            document.body.appendChild(modal);
+
+            // Handler for claim button
+            window._handleBossClaimReward = async function() {
+                var btn = document.getElementById('_bossClaimBtn');
+                if (btn) { btn.textContent = 'Reclamando...'; btn.disabled = true; btn.style.opacity = '0.6'; }
+                try {
+                    var ok = await claimBossReward(uid);
+                    if (ok) {
+                        modal.remove();
+                        delete window._handleBossClaimReward;
+                        // Show brief success toast
+                        var toast = document.createElement('div');
+                        toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,200,100,0.9);color:#000;padding:12px 24px;border-radius:10px;font-family:Orbitron,sans-serif;font-size:.85rem;font-weight:700;z-index:999999;';
+                        toast.textContent = '✅ ¡Recompensa reclamada!';
+                        document.body.appendChild(toast);
+                        setTimeout(function(){ toast.remove(); }, 3000);
+                    }
+                } catch(e) {
+                    console.error('[BOSS] claim error:', e);
+                    if (btn) { btn.textContent = '🎁 RECLAMAR RECOMPENSA'; btn.disabled = false; btn.style.opacity = '1'; }
+                }
+            };
+        }
+        window.showBossRewardModal = showBossRewardModal;
+
+        // ── Check on login if player has a pending unclaimed boss reward ──
+        async function checkPendingBossReward(uid) {
+            try {
+                // First check if event expired and distribute if needed
+                await checkBossEventExpiry();
+                // Then check if this player has a pending reward
+                const snap = await db.ref('weekly_boss/pending_rewards/' + uid).once('value');
+                const reward = snap.val();
+                if (reward && !reward.claimed) {
+                    await showBossRewardModal(uid, reward);
+                }
+            } catch(e) { console.error('[BOSS] checkPendingBossReward:', e); }
+        }
+        window.checkPendingBossReward = checkPendingBossReward;
+
         async function attackBoss(uid, playerName, playerTeam) {
             const boss = await getBossData();
             if (!boss || boss.status !== 'active') { alert('No hay Jefe de Sala activo.'); return; }
@@ -3829,6 +3977,12 @@
         // ── Distribución de recompensas al final del evento ──────────────────────
         // bossFelled = true si el jefe fue derrotado antes de que terminara el evento (×1.5)
         async function distributeEndEventRewards(bossFelled) {
+            const bossSnap = await db.ref('weekly_boss/current').once('value');
+            const bossInfo = bossSnap.val() || {};
+            const bossHpLeft = bossInfo.hp || 0;
+            const bossName   = bossInfo.name || 'Jefe de Sala';
+            const eventId    = bossInfo.id || ('boss_' + Date.now());
+
             const snap = await db.ref('weekly_boss/damage_log').once('value');
             const data = snap.val() || {};
             const ranking = Object.entries(data)
@@ -3837,7 +3991,7 @@
 
             if (ranking.length === 0) return;
 
-            const multiplier = bossFelled ? 1.5 : 1.0;
+            const multiplier = bossFelled ? 2.0 : 1.0;
 
             const rewardsByRank = [
                 { gold: 100000, keys: 2, extra: 'chest_arcana',  extraCount: 2 },  // 1st
@@ -3845,6 +3999,14 @@
                 { gold: 20000,  keys: 0, extra: 'chest_epic',    extraCount: 1 },  // 3rd
                 { gold: 10000,  keys: 0, extra: 'chest_special', extraCount: 1 },  // 4th
             ];
+
+            // Build full ranking snapshot for each player's notification
+            const rankingSnapshot = ranking.map(function(e, idx) {
+                var rk = idx + 1;
+                var rw2 = rk <= 4 ? rewardsByRank[rk-1] : { gold: 5000, keys: 0 };
+                return { rank: rk, playerName: e.playerName, totalDamage: e.totalDamage,
+                         gold: Math.round(rw2.gold * multiplier), keys: Math.round((rw2.keys||0) * multiplier) };
+            });
 
             for (var i = 0; i < ranking.length; i++) {
                 var entry = ranking[i];
@@ -3854,41 +4016,65 @@
                 var finalGold = Math.round(rw.gold * multiplier);
                 var finalKeys = Math.round((rw.keys||0) * multiplier);
 
-                await addGold(entry.uid, finalGold);
-
-                // Llaves Arcanas — ruta correcta: users/{uid}/arcane_keys
-                if (finalKeys > 0) {
-                    const keyRef = db.ref('users/' + entry.uid + '/arcane_keys');
-                    const ks = await keyRef.once('value');
-                    await keyRef.set((ks.val()||0) + finalKeys);
-                }
-
-                if (rw.extra) {
-                    var extraCount = Math.ceil((rw.extraCount||1) * multiplier);
-                    for (var k = 0; k < extraCount; k++) {
-                        if (rw.extra === 'chest_arcana') {
-                            // Llave Arcana adicional como recompensa de cofre
-                            const keyRef2 = db.ref('users/' + entry.uid + '/arcane_keys');
-                            const ks2 = await keyRef2.once('value');
-                            await keyRef2.set((ks2.val()||0) + 1);
-                        } else {
-                            const chestRef = db.ref('players/' + entry.uid + '/chests/' + rw.extra);
-                            const cs = await chestRef.once('value');
-                            await chestRef.set((cs.val()||0) + 1);
-                        }
-                    }
-                }
-
-                // Notificación en Firebase para el jugador
-                var notifMsg = '🏆 Fin del evento Jefe de Sala — Posición #' + rank +
-                    ': +' + finalGold.toLocaleString() + ' 🥇' +
-                    (finalKeys > 0 ? ' +' + finalKeys + ' 🗝️' : '') +
-                    (bossFelled ? ' (×1.5 Jefe derrotado!)' : '');
-                await db.ref('players/' + entry.uid + '/notifications').push({
-                    msg: notifMsg, ts: Date.now(), read: false
+                // Store claimable reward in Firebase (player must claim it from the notification modal)
+                await db.ref('weekly_boss/pending_rewards/' + entry.uid).set({
+                    eventId:       eventId,
+                    bossName:      bossName,
+                    bossFelled:    bossFelled,
+                    bossHpLeft:    bossHpLeft,
+                    rank:          rank,
+                    totalDamage:   entry.totalDamage,
+                    gold:          finalGold,
+                    keys:          finalKeys,
+                    extra:         rw.extra || null,
+                    extraCount:    rw.extra ? Math.ceil((rw.extraCount||1) * multiplier) : 0,
+                    multiplier:    multiplier,
+                    ranking:       rankingSnapshot,
+                    claimed:       false,
+                    createdAt:     Date.now()
                 });
             }
+
+            // Mark event as rewards-distributed
+            await db.ref('weekly_boss/current/rewardsDistributed').set(true);
         }
+
+        // ── Claim pending boss reward ──
+        async function claimBossReward(uid) {
+            const ref = db.ref('weekly_boss/pending_rewards/' + uid);
+            const snap = await ref.once('value');
+            const reward = snap.val();
+            if (!reward || reward.claimed) return false;
+
+            // Apply rewards
+            await addGold(uid, reward.gold || 0);
+
+            if ((reward.keys || 0) > 0) {
+                const keyRef = db.ref('users/' + uid + '/arcane_keys');
+                const ks = await keyRef.once('value');
+                await keyRef.set((ks.val()||0) + reward.keys);
+            }
+
+            if (reward.extra && reward.extraCount > 0) {
+                for (var k = 0; k < reward.extraCount; k++) {
+                    if (reward.extra === 'chest_arcana') {
+                        const kr = db.ref('users/' + uid + '/arcane_keys');
+                        const kv = await kr.once('value');
+                        await kr.set((kv.val()||0) + 1);
+                    } else {
+                        const cr = db.ref('players/' + uid + '/chests/' + reward.extra);
+                        const cv = await cr.once('value');
+                        await cr.set((cv.val()||0) + 1);
+                    }
+                }
+            }
+
+            // Mark as claimed
+            await ref.update({ claimed: true, claimedAt: Date.now() });
+            await updateLobbyHUD();
+            return true;
+        }
+        window.claimBossReward = claimBossReward;
 
         async function adminGetRanking() {
             if (!isAdmin()) return [];
