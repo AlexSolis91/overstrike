@@ -1723,25 +1723,7 @@
                 addLog(`⚔️ ${gameState.selectedCharacter} activa Leyenda Nórdica: Escudo 6 HP + Regeneración 10% (2 turnos)`, 'buff');
 
             // ── DOUBLE GREAT HORN (Aldebaran): MT 2 objetivos, 60% x2 / 40% x3, escudo = daño total ──
-            } else if (ability.effect === 'double_great_horn') {
-                // Seleccionar hasta 2 objetivos del equipo enemigo
-                const enemyTeamDGH = attacker.team === 'team1' ? 'team2' : 'team1';
-                const aliveEnemiesDGH = Object.keys(gameState.characters).filter(n => {
-                    const c = gameState.characters[n];
-                    return c && c.team === enemyTeamDGH && !c.isDead && c.hp > 0;
-                });
-                // Si fue llamado con targetName, ese es el primer objetivo
-                // Segundo objetivo: aleatorio entre los demás enemigos vivos (o el mismo si solo hay 1)
-                const targets = [];
-                if (targetName && aliveEnemiesDGH.includes(targetName)) {
-                    targets.push(targetName);
-                    const others = aliveEnemiesDGH.filter(n => n !== targetName);
-                    if (others.length > 0) {
-                        targets.push(others[Math.floor(Math.random() * others.length)]);
-                    } else {
-                        targets.push(targetName); // golpea 2 veces al mismo
-                    }
-                } else if (aliveEnemiesDGH.length > 0) {
+            } else if (aliveEnemiesDGH.length > 0) {
                     targets.push(aliveEnemiesDGH[Math.floor(Math.random() * aliveEnemiesDGH.length)]);
                     targets.push(aliveEnemiesDGH[Math.floor(Math.random() * aliveEnemiesDGH.length)]);
                 }
@@ -1753,19 +1735,6 @@
                     if (Math.random() < 0.60) {
                         dmg = finalDamage * 2;
                         addLog(`💥 Double Great Horn: ¡Daño doble (${dmg}) contra ${tgt}!`, 'damage');
-                    } else {
-                        dmg = finalDamage * 3;
-                        addLog(`💥💥 Double Great Horn: ¡Daño TRIPLE (${dmg}) contra ${tgt}!`, 'damage');
-                    }
-                    applyDamageWithShield(tgt, dmg, gameState.selectedCharacter);
-                    totalDamageDGH += dmg;
-                });
-                
-                // Ganar escudo = daño total causado
-                attacker.shield = (attacker.shield || 0) + totalDamageDGH;
-                attacker.shieldEffect = 'golden_shield';
-                addLog(`🛡️ ${gameState.selectedCharacter} gana Escudo de ${totalDamageDGH} HP (= daño total causado)`, 'buff');
-
             } else if (ability.effect === 'embate_escudo') {
                 // RAGNAR - Embate con Escudo: 2 daño, 50% aturdimiento, si no aturde genera 2 cargas
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
@@ -2891,10 +2860,6 @@
                     triggerBendicionSagrada(attacker.team, lifesteal);
                 }
 
-            } else if (ability.effect === 'golden_shield') {
-                // Golden Shield - Escudo con efecto especial
-                applyShield(gameState.selectedCharacter, ability.shieldAmount, 'golden_shield');
-                
             } else if (ability.effect === 'double_if_shield') {
                 // Huge Collision - Daño doble si tiene escudo
                 let damage = finalDamage;
@@ -3112,15 +3077,6 @@
                 applyFlatBurn(targetName, 2, 1);
                 generateChargesInline(charName, ability.chargeGain);
 
-            } else if (ability.effect === 'great_horn') {
-                // Aldebaran básico: daño + cura 3 HP + Escudo 2 HP a sí mismo
-                applyDamageWithShield(targetName, finalDamage, charName);
-                const ghOldHp = attacker.hp;
-                attacker.hp = Math.min(attacker.maxHp, attacker.hp + (ability.heal || 3));
-                if (attacker.hp > ghOldHp) addLog('🐂 Great Horn: ' + charName + ' recupera ' + (attacker.hp - ghOldHp) + ' HP', 'heal');
-                applyShield(charName, ability.shieldAmount || 2);
-                generateChargesInline(charName, ability.chargeGain);
-
             } else if (ability.effect === 'proteccion_astro_rey' || ability.effect === 'proteccion_astro_rey_thes') {
                 // Protección del Astro Rey: Armadura 2T a todo el equipo aliado
                 const _patTeam = attacker ? attacker.team : 'team1';
@@ -3131,7 +3087,7 @@
                     // Remove existing Armadura then push fresh
                     _ac.statusEffects = (_ac.statusEffects||[]).filter(function(e){
                         if (!e||!e.name) return true;
-                        return e.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') !== 'armadura';
+                        return e.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'') !== 'armadura';
                     });
                     _ac.statusEffects.push({ name:'Armadura', type:'buff', duration:2, emoji:'🛡️' });
                     _patCount++;
@@ -9022,7 +8978,7 @@
                 const _ggTgtC = gameState.characters[targetName];
                 const _ggWasFrozen = _ggTgtC && (_ggTgtC.statusEffects||[]).some(function(e){
                     if(!e||!e.name) return false;
-                    const _l = e.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+                    const _l = e.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
                     return _l === 'congelacion' || _l === 'megacongelacion';
                 });
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
@@ -9062,7 +9018,7 @@
                     const _rhTgtC = gameState.characters[_rhTgt];
                     const _rhWasFrozen = _rhTgtC && (_rhTgtC.statusEffects||[]).some(function(e){
                         if(!e||!e.name) return false;
-                        const _l = e.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+                        const _l = e.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
                         return _l === 'congelacion' || _l === 'megacongelacion';
                     });
                     applyDamageWithShield(_rhTgt, finalDamage, gameState.selectedCharacter);
@@ -9127,7 +9083,7 @@
                 const _etTgtC = gameState.characters[targetName];
                 const _etWasFrozen = _etTgtC && (_etTgtC.statusEffects||[]).some(function(e){
                     if(!e||!e.name) return false;
-                    const _l = e.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+                    const _l = e.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
                     return _l === 'congelacion' || _l === 'megacongelacion';
                 });
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
@@ -9155,7 +9111,7 @@
                     if (!_c || _c.team !== _etETeam || _c.isDead || _c.hp <= 0) return false;
                     return (_c.statusEffects||[]).some(function(e){
                         if(!e||!e.name) return false;
-                        const _l = e.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+                        const _l = e.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
                         return _l === 'megacongelacion';
                     });
                 });
@@ -9276,7 +9232,167 @@
                     });
                 }
 
-            } // end Batman handlers
+            } // end Batman handlers — chain continues below
+
+            // ══════════════════════════════════════════════════════
+            // ALDEBARÁN — handlers (nuevos)
+            // ══════════════════════════════════════════════════════
+
+            else if (ability.effect === 'great_horn_ald') {
+                // Great Horn: 1 ST + recupera 3 HP + Escudo 2 HP en Aldebaran
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('🐂 Great Horn: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (typeof applyHeal === 'function') applyHeal(gameState.selectedCharacter, 3, 'Great Horn');
+                const _ghAld = gameState.characters[gameState.selectedCharacter];
+                if (_ghAld) { _ghAld.shield = (_ghAld.shield||0) + 2; addLog('🐂 Great Horn: Escudo 2 HP en Aldebaran', 'buff'); }
+
+            } else if (ability.effect === 'golden_shield_ald') {
+                // Golden Shield: limpia debuffs + Protección Sagrada 2T + 50% Escudo Sagrado
+                const _gsAld = gameState.characters[gameState.selectedCharacter];
+                if (_gsAld) {
+                    const _removed = (_gsAld.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff'; }).length;
+                    _gsAld.statusEffects = (_gsAld.statusEffects||[]).filter(function(e){ return !e || e.type !== 'debuff'; });
+                    if (_removed > 0) addLog('🐂 Golden Shield: ' + _removed + ' debuffs eliminados de Aldebaran', 'buff');
+                    (_gsAld.statusEffects = _gsAld.statusEffects||[]).push({ name:'Protección Sagrada', type:'buff', duration:2, emoji:'🛡️', protSagrada:true });
+                    addLog('🐂 Golden Shield: Protección Sagrada 2T', 'buff');
+                    if (Math.random() < 0.5) {
+                        if (typeof applyBuff === 'function') {
+                            applyBuff(gameState.selectedCharacter, { name:'Escudo Sagrado', type:'buff', duration:3, emoji:'✝️' });
+                        } else {
+                            _gsAld.statusEffects.push({ name:'Escudo Sagrado', type:'buff', duration:3, emoji:'✝️' });
+                        }
+                        addLog('🐂 Golden Shield: Escudo Sagrado 2T (50%)', 'buff');
+                    }
+                }
+
+            } else if (ability.effect === 'double_great_horn_ald') {
+                // Double Great Horn: 2 objetivos, 60% doble, 40% triple. Escudo = daño total
+                const _dghAld = gameState.characters[gameState.selectedCharacter];
+                const _dghETeam = _dghAld ? (_dghAld.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                let _dghTotalDmg = 0;
+                for (var _di = 0; _di < 2; _di++) {
+                    const _dghEnemies = Object.keys(gameState.characters).filter(function(n){
+                        const _c = gameState.characters[n]; return _c && _c.team === _dghETeam && !_c.isDead && _c.hp > 0;
+                    });
+                    if (!_dghEnemies.length) break;
+                    const _dghTgt = _dghEnemies[Math.floor(Math.random() * _dghEnemies.length)];
+                    const _roll = Math.random();
+                    const _dghDmg = _roll < 0.6 ? finalDamage * 2 : finalDamage * 3;
+                    applyDamageWithShield(_dghTgt, _dghDmg, gameState.selectedCharacter);
+                    _dghTotalDmg += _dghDmg;
+                    addLog('🐂 Double Great Horn: ' + _dghDmg + ' daño a ' + _dghTgt + (_roll < 0.6 ? ' (doble)' : ' (triple)'), 'damage');
+                    if (checkGameOver()) break;
+                }
+                if (_dghTotalDmg > 0 && _dghAld) {
+                    _dghAld.shield = (_dghAld.shield||0) + _dghTotalDmg;
+                    addLog('🐂 Double Great Horn: Escudo +' + _dghTotalDmg + ' HP (= daño total)', 'buff');
+                }
+
+            } else if (ability.effect === 'great_supernova_ald') {
+                // Great Supernova: 5 ST + bonus daño por HP de escudo + Escudo aleatorio 1-20
+                const _gsn = gameState.characters[gameState.selectedCharacter];
+                const _gsnShield = _gsn ? (_gsn.shield||0) : 0;
+                const _gsnDmg = finalDamage + _gsnShield;
+                applyDamageWithShield(targetName, _gsnDmg, gameState.selectedCharacter);
+                addLog('🐂 Great Supernova: ' + _gsnDmg + ' daño (' + finalDamage + ' base + ' + _gsnShield + ' por Escudo)', 'damage');
+                const _newShield = 1 + Math.floor(Math.random() * 20);
+                if (_gsn) { _gsn.shield = (_gsn.shield||0) + _newShield; }
+                addLog('🐂 Great Supernova: Escudo ' + _newShield + ' HP en Aldebaran (aleatorio 1-20)', 'buff');
+
+            } // end Aldebaran handlers — chain continues below
+
+            // ══════════════════════════════════════════════════════
+            // ANDROIDE 17 — handlers
+            // ══════════════════════════════════════════════════════
+
+            else if (ability.effect === 'rafagas_energia_a17') {
+                // Ráfagas de Energía: 1-5 golpes MT, 50% roba 1 carga por golpe
+                const _reA17 = gameState.characters[gameState.selectedCharacter];
+                const _reETeam = _reA17 ? (_reA17.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _numHits = 1 + Math.floor(Math.random() * 5);
+                addLog('⚡ Ráfagas de Energía: ' + _numHits + ' golpes', 'damage');
+                for (var _ri = 0; _ri < _numHits; _ri++) {
+                    const _reEnemies = Object.keys(gameState.characters).filter(function(n){
+                        const _c = gameState.characters[n]; return _c && _c.team === _reETeam && !_c.isDead && _c.hp > 0;
+                    });
+                    if (!_reEnemies.length) break;
+                    const _reTgt = _reEnemies[Math.floor(Math.random() * _reEnemies.length)];
+                    applyDamageWithShield(_reTgt, finalDamage, gameState.selectedCharacter);
+                    addLog('⚡ Ráfaga: ' + finalDamage + ' daño a ' + _reTgt, 'damage');
+                    if (Math.random() < 0.5) {
+                        const _ec = gameState.characters[_reTgt];
+                        if (_ec && (_ec.charges||0) > 0) {
+                            _ec.charges = Math.max(0, _ec.charges - 1);
+                            if (_reA17) _reA17.charges = Math.min(20, (_reA17.charges||0) + 1);
+                            addLog('⚡ Ráfaga: roba 1 carga de ' + _reTgt, 'buff');
+                        }
+                    }
+                    if (checkGameOver()) break;
+                }
+
+            } else if (ability.effect === 'barrera_fotones_a17') {
+                // Barrera de Fotones Dinámica: elimina 1-5 debuffs del equipo aliado, +1 carga/debuff
+                const _bfA17 = gameState.characters[gameState.selectedCharacter];
+                const _bfTeam = _bfA17 ? _bfA17.team : 'team1';
+                const _maxRemove = 1 + Math.floor(Math.random() * 5);
+                let _totalRemoved = 0;
+                Object.keys(gameState.characters).forEach(function(n) {
+                    const _ac = gameState.characters[n];
+                    if (!_ac || _ac.team !== _bfTeam || _ac.isDead) return;
+                    const _debuffs = (_ac.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff' && !e.permanent; });
+                    const _toRemove = Math.min(_debuffs.length, Math.max(0, _maxRemove - _totalRemoved));
+                    if (_toRemove <= 0) return;
+                    const _removed = _debuffs.slice(0, _toRemove).map(function(e){ return e.name; });
+                    _ac.statusEffects = (_ac.statusEffects||[]).filter(function(e){ return !_removed.includes(e && e.name); });
+                    _totalRemoved += _toRemove;
+                });
+                if (_totalRemoved > 0) {
+                    Object.keys(gameState.characters).forEach(function(n) {
+                        const _ac = gameState.characters[n];
+                        if (!_ac || _ac.team !== _bfTeam || _ac.isDead || _ac.hp <= 0) return;
+                        _ac.charges = Math.min(20, (_ac.charges||0) + _totalRemoved);
+                    });
+                    addLog('⚡ Barrera de Fotones: ' + _totalRemoved + ' debuffs eliminados del equipo aliado (+' + _totalRemoved + ' cargas c/u)', 'buff');
+                } else {
+                    addLog('⚡ Barrera de Fotones: no había debuffs que eliminar', 'info');
+                }
+
+            } else if (ability.effect === 'destello_fotones_a17') {
+                // Destello de Fotones: 4 ST + elimina 1-10 buffs enemigos + daño × buffs eliminados
+                const _dfA17 = gameState.characters[gameState.selectedCharacter];
+                const _dfETeam = _dfA17 ? (_dfA17.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _maxBufRem = 1 + Math.floor(Math.random() * 10);
+                let _dfBufsRemoved = 0;
+                Object.keys(gameState.characters).forEach(function(n) {
+                    const _ec = gameState.characters[n];
+                    if (!_ec || _ec.team !== _dfETeam || _ec.isDead) return;
+                    const _buffs = (_ec.statusEffects||[]).filter(function(e){ return e && e.type === 'buff' && !e.permanent; });
+                    const _toRem = Math.min(_buffs.length, Math.max(0, _maxBufRem - _dfBufsRemoved));
+                    if (_toRem <= 0) return;
+                    const _remNames = _buffs.slice(0, _toRem).map(function(e){ return e.name; });
+                    _ec.statusEffects = (_ec.statusEffects||[]).filter(function(e){ return !_remNames.includes(e && e.name); });
+                    _dfBufsRemoved += _toRem;
+                });
+                const _dfDmg = Math.max(finalDamage, finalDamage * Math.max(1, _dfBufsRemoved));
+                applyDamageWithShield(targetName, _dfDmg, gameState.selectedCharacter);
+                addLog('⚡ Destello de Fotones: ' + _dfDmg + ' daño (' + finalDamage + ' × ' + Math.max(1, _dfBufsRemoved) + ' buffs eliminados)', 'damage');
+
+            } else if (ability.effect === 'barrera_impacto_a17') {
+                // Barrera de Impacto Total: Escudo 10 HP equipo aliado + 5 cargas equipo + 8 cargas Androide 17
+                const _biA17 = gameState.characters[gameState.selectedCharacter];
+                const _biTeam = _biA17 ? _biA17.team : 'team1';
+                Object.keys(gameState.characters).forEach(function(n) {
+                    const _ac = gameState.characters[n];
+                    if (!_ac || _ac.team !== _biTeam || _ac.isDead || _ac.hp <= 0) return;
+                    _ac.shield = (_ac.shield||0) + 10;
+                    _ac.charges = Math.min(20, (_ac.charges||0) + 5);
+                });
+                addLog('⚡ Barrera de Impacto Total: Escudo 10 HP + 5 cargas a todo el equipo aliado', 'buff');
+                // +8 cargas extra para Androide 17 (chargeGain en ability ya da 8)
+                if (_biA17) _biA17.charges = Math.min(20, (_biA17.charges||0) + 8);
+                addLog('⚡ Barrera de Impacto Total: Androide 17 gana 8 cargas adicionales', 'buff');
+
+            } // end Androide 17 handlers
 
             // Actualizar UI
             renderCharacters();
@@ -9303,7 +9419,7 @@
             if (!gameState._guiaMaestroActive) {
                 endTurn();
             }
-        } catch (error) {
+            } catch (error) {
             const errMsg = error && error.message ? error.message : String(error);
             const errAbility = (gameState.selectedAbility && gameState.selectedAbility.name) || 'desconocida';
             console.error('Error en executeAbility [' + errAbility + ']:', error);

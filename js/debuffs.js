@@ -444,6 +444,13 @@ function applyDebuff(targetName, effectObj) {
                 addLog('🟢 Sabiduría Antigua: ' + targetName + ' es inmune a debuffs', 'buff');
                 return;
             }
+            // CABALLERO DE LA NOCHE (Batman): inmune a efectos de movimientos especiales
+            if (!passiveExecuting && gameState.selectedAbility && gameState.selectedAbility.type === 'special') {
+                if (target.passive && target.passive.name === 'Caballero de la Noche') {
+                    addLog('🦇 Caballero de la Noche: Batman es inmune a efectos del especial de ' + (gameState.selectedCharacter||'enemigo'), 'buff');
+                    return;
+                }
+            }
             // ABSOLUTE ZERO (Sub-Zero): inmune a Congelación y Megacongelación (siempre)
             if (target.passive && target.passive.name === 'Absolute Zero') {
                 if (effectObj) {
