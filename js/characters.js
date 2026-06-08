@@ -30,18 +30,17 @@
                 ]
             },
             'Aldebaran': {
-                hp: 30, maxHp: 30, speed: 83, charges: 0, team: 'team1',
-                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/PJr0LB6N/Captura_de_pantalla_2026_02_21_230603.png',
-                passive: { name: 'Fortaleza de Tauro', description: 'Efecto pasivo Provocación. Cada vez que un Buff Escudo en Aldebaran absorbe un golpe, genera 2 cargas. Al final de su turno con Escudo activo, recupera 2 HP.' },
+                name: 'Aldebaran',
+                hp: 30, maxHp: 30, speed: 83, charges: 0,
+                portrait: 'https://i.postimg.cc/GtScpb3q/image.png',
+                passive: { name: 'Fortaleza de Tauro', description: 'Efecto pasivo Provocación. Cada vez que un Buff Escudo (en cualquier aliado o en Aldebaran) pierde HP: Aldebaran ejecuta Great Horn automáticamente. Al final de cada ronda, si Aldebaran tiene Escudo activo: recupera 2 HP.' },
                 abilities: [
-                    { name: 'Great Horn', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'great_horn', heal: 3, shieldAmount: 2, description: 'Causa 1 de daño. Recupera 3 HP. Se aplica Buff Escudo 2 HP.' },
-                    { name: 'Golden Shield', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'self', effect: 'golden_shield', shieldAmount: 3, description: 'Limpia los debuffs activos en Aldebaran. Se aplica un Buff Escudo de 3 HP.' },
-                    { name: 'Double Great Horn', type: 'special', cost: 7, chargeGain: 0, damage: 3, target: 'multi', effect: 'double_great_horn', description: 'Ataca 2 objetivos causando 3 de daño. 60% de probabilidad de causar daño doble. 40% de probabilidad de causar daño triple. Se aplica Buff Escudo con HP equivalente a la suma del daño total causado en los enemigos.' },
-                    { name: 'Great Supernova', type: 'over', cost: 10, chargeGain: 0, damage: 10, target: 'single', effect: 'great_supernova', description: 'Causa 10 de daño. Causa daño doble si Aldebaran tiene 20% o menos de HP.' }
+                    { name: 'Great Horn',        type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'great_horn_ald',        description: 'Causa 1 daño ST. Recupera 3 HP. Aplica Buff Escudo 2 HP sobre Aldebaran.' },
+                    { name: 'Golden Shield',     type: 'special', cost: 3,  chargeGain: 0, damage: 0, target: 'self',   effect: 'golden_shield_ald',     description: 'Limpia todos los debuffs de Aldebaran. Aplica Buff Protección Sagrada 2T. 50% de aplicar Buff Escudo Sagrado 2T.' },
+                    { name: 'Double Great Horn', type: 'special', cost: 7,  chargeGain: 0, damage: 3, target: 'single', effect: 'double_great_horn_ald', description: 'Causa 3 daño a 2 objetivos aleatorios. 60% doble daño, 40% triple daño. Aplica Buff Escudo con HP = daño total causado.' },
+                    { name: 'Great Supernova',   type: 'over',    cost: 10, chargeGain: 0, damage: 5, target: 'single', effect: 'great_supernova_ald',   description: 'Causa 5 ST. Aplica Escudo 1-20 HP (aleatorio) sobre Aldebaran. +1 daño adicional por cada HP de Escudo que Aldebaran tenga.' },
                 ]
             },
-
             'Leonidas': {
                 hp: 20, maxHp: 20, speed: 79, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
@@ -507,6 +506,19 @@
                     { name: '¿Por qué tan serio?', type: 'over', cost: 8, chargeGain: 0, damage: 2, target: 'single', effect: 'por_que_serio_joker', description: 'Causa 2 daño. Si tiene Veneno: -60% HP actual. Vs Jefe de Sala: daño igual al número de stacks de Veneno del jefe.' }
                 ]
             },
+'Androide 17': {
+                name: 'Androide 17',
+                hp: 20, maxHp: 20, speed: 89, charges: 0,
+                portrait: 'https://i.ibb.co/7Jv6kYdg/Android-17.jpg',
+                passive: { name: 'Protección de la Naturaleza', description: 'Cuando un enemigo usa un Over: antes de su daño, aplica Escudo a cada aliado con HP = cargas gastadas por ese Over. Cuando Androide 17 recibe un debuff: lo elimina y genera 2 cargas para el equipo aliado.' },
+                abilities: [
+                    { name: 'Ráfagas de Energía',          type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'rafagas_energia_a17',     description: 'Golpea 1-5 veces a enemigos aleatorios (puede repetir). 50% de robar 1 carga del enemigo golpeado.' },
+                    { name: 'Barrera de Fotones Dinámica', type: 'special', cost: 3,  chargeGain: 0, damage: 0, target: 'self',   effect: 'barrera_fotones_a17',    description: 'Elimina 1-5 debuffs del equipo aliado. Por cada debuff eliminado el equipo aliado genera 1 carga.' },
+                    { name: 'Destello de Fotones',         type: 'special', cost: 8,  chargeGain: 0, damage: 4, target: 'single', effect: 'destello_fotones_a17',   description: 'Causa 4 daño ST. Elimina 1-10 Buffs del equipo enemigo. Por cada Buff eliminado multiplica el daño de este ataque.' },
+                    { name: 'Barrera de Impacto Total',    type: 'over',    cost: 0,  chargeGain: 8, damage: 0, target: 'self',   effect: 'barrera_impacto_a17',    description: 'Aplica Escudo 10 HP a todo el equipo aliado. Genera 5 cargas a todo el equipo aliado. Genera 8 cargas para Androide 17.' },
+                ]
+            },
+
             'Batman': {
                 name: 'Batman',
                 hp: 25, maxHp: 25, speed: 84, charges: 0,
