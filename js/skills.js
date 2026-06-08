@@ -1722,19 +1722,6 @@
                 attacker.statusEffects.push({ name: 'Regeneracion', type: 'buff', duration: 3, emoji: '💖', amount: Math.ceil(attacker.maxHp * 0.10) });
                 addLog(`⚔️ ${gameState.selectedCharacter} activa Leyenda Nórdica: Escudo 6 HP + Regeneración 10% (2 turnos)`, 'buff');
 
-            // ── DOUBLE GREAT HORN (Aldebaran): MT 2 objetivos, 60% x2 / 40% x3, escudo = daño total ──
-            } else if (aliveEnemiesDGH.length > 0) {
-                    targets.push(aliveEnemiesDGH[Math.floor(Math.random() * aliveEnemiesDGH.length)]);
-                    targets.push(aliveEnemiesDGH[Math.floor(Math.random() * aliveEnemiesDGH.length)]);
-                }
-                
-                let totalDamageDGH = 0;
-                targets.forEach(function(tgt) {
-                    let dmg = finalDamage;
-                    // 60% doble, 40% triple
-                    if (Math.random() < 0.60) {
-                        dmg = finalDamage * 2;
-                        addLog(`💥 Double Great Horn: ¡Daño doble (${dmg}) contra ${tgt}!`, 'damage');
             } else if (ability.effect === 'embate_escudo') {
                 // RAGNAR - Embate con Escudo: 2 daño, 50% aturdimiento, si no aturde genera 2 cargas
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
@@ -9299,13 +9286,11 @@
                 if (_gsn) { _gsn.shield = (_gsn.shield||0) + _newShield; }
                 addLog('🐂 Great Supernova: Escudo ' + _newShield + ' HP en Aldebaran (aleatorio 1-20)', 'buff');
 
-            } // end Aldebaran handlers — chain continues below
-
             // ══════════════════════════════════════════════════════
             // ANDROIDE 17 — handlers
             // ══════════════════════════════════════════════════════
 
-            else if (ability.effect === 'rafagas_energia_a17') {
+            } else if (ability.effect === 'rafagas_energia_a17') {
                 // Ráfagas de Energía: 1-5 golpes MT, 50% roba 1 carga por golpe
                 const _reA17 = gameState.characters[gameState.selectedCharacter];
                 const _reETeam = _reA17 ? (_reA17.team === 'team1' ? 'team2' : 'team1') : 'team2';
