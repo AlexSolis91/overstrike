@@ -1182,6 +1182,19 @@
             
             let remainingDamage = damage;
 
+            // ── REGLA DE ORO (Gilgamesh): no recibe daño de atacantes con debuffs activos ──
+            if (remainingDamage > 0 && attackerName && attackerName !== targetName) {
+                const _gilTgt = gameState.characters[targetName];
+                const _gilAtk = gameState.characters[attackerName];
+                if (_gilTgt && _gilTgt.passive && _gilTgt.passive.name === 'Regla de Oro' && _gilAtk) {
+                    const _gilAtkDebuffs = (_gilAtk.statusEffects||[]).filter(e => e && e.type === 'debuff').length;
+                    if (_gilAtkDebuffs > 0) {
+                        addLog('👑 Regla de Oro: ' + attackerName + ' tiene ' + _gilAtkDebuffs + ' debuff(s) — Gilgamesh no recibe daño', 'buff');
+                        return;
+                    }
+                }
+            }
+
             // ── ZENIT: reduce 50% el daño recibido ───────────────────────────
             if (remainingDamage > 0 && attackerName !== null) {
                 const _zenTgt = gameState.characters[targetName];

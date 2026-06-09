@@ -614,9 +614,6 @@
                         const _gc = gameState.characters[_gn];
                         if (!_gc || _gc.team !== _gobTeam || _gc.isDead || _gc.hp <= 0) continue;
                         if (checkAsprosAOEImmunity(_gn, true) || checkMinatoAOEImmunity(_gn)) { addLog('🌟 ' + _gn + ' es inmune (Esquiva Área)', 'buff'); continue; }
-                        // Pasiva Regla de Oro: Gilgamesh no causa daño a enemigos con debuffs activos
-                        const _gcDebuffs = (_gc.statusEffects||[]).filter(e => e && e.type === 'debuff').length;
-                        if (_gcDebuffs > 0) { addLog('👑 Regla de Oro: ' + _gn + ' no puede ser dañado por Gilgamesh (tiene ' + _gcDebuffs + ' debuff(s))', 'buff'); continue; }
                         const _gobIsCrit = Math.random() < Math.min(1, 0.50 + _gobCritBonus);
                         let _gobDmg = finalDamage;
                         if (_gobIsCrit) {
@@ -1386,9 +1383,6 @@
                     for (let _h = 0; _h < _emHitCount; _h++) {
                         const _emC = gameState.characters[_emN];
                         if (!_emC || _emC.isDead || _emC.hp <= 0) break;
-                        // Pasiva Regla de Oro: Gilgamesh no causa daño a enemigos con debuffs activos
-                        const _emDebuffs = (_emC.statusEffects||[]).filter(e => e && e.type === 'debuff').length;
-                        if (_emDebuffs > 0) { addLog('👑 Regla de Oro: ' + _emN + ' no puede ser dañado por Gilgamesh (debuffs activos)', 'buff'); continue; }
                         const _emIsCrit = Math.random() < _emCritChance;
                         let _emDmg = finalDamage;
                         if (_emIsCrit) {
@@ -1416,16 +1410,11 @@
                 // GILGAMESH — Enkidu: Cadenas del Cielo: 4 daño ST. Cancela invocaciones enemigas.
                 // Por cada invocación cancelada: Mega Aturdimiento a un enemigo aleatorio sin Mega Aturdimiento.
                 const _enkTeam = attacker.team === 'team1' ? 'team2' : 'team1';
-                // 4 daño ST (respeta pasiva Regla de Oro)
+                // 4 daño ST
                 const _enkTgt = gameState.characters[targetName];
                 if (_enkTgt) {
-                    const _enkDebuffs = (_enkTgt.statusEffects||[]).filter(e => e && e.type === 'debuff').length;
-                    if (_enkDebuffs > 0) {
-                        addLog('👑 Regla de Oro: ' + targetName + ' no puede ser dañado por Gilgamesh (debuffs activos)', 'buff');
-                    } else {
-                        applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                        addLog('⛓️ Enkidu: ' + finalDamage + ' daño a ' + targetName, 'damage');
-                    }
+                    applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                    addLog('⛓️ Enkidu: ' + finalDamage + ' daño a ' + targetName, 'damage');
                 }
                 // Cancelar invocaciones enemigas
                 const _enkSummons = Object.keys(gameState.summons).filter(id => gameState.summons[id] && gameState.summons[id].team === _enkTeam);
@@ -3259,8 +3248,7 @@
                         if (!_ec || _ec.team !== _eeuTeam || _ec.isDead || _ec.hp <= 0) continue;
                         if (checkAsprosAOEImmunity(_en, true) || checkMinatoAOEImmunity(_en)) { addLog('🌟 ' + _en + ' es inmune (Esquiva Área)', 'buff'); continue; }
                         // Pasiva Regla de Oro: Gilgamesh no causa daño a enemigos con debuffs activos
-                        const _eeuDebuffsNow = (_ec.statusEffects||[]).filter(e => e && e.type === 'debuff').length;
-                        if (_eeuDebuffsNow > 0) { addLog('👑 Regla de Oro: ' + _en + ' no puede ser dañado por Gilgamesh (debuffs activos)', 'buff'); continue; }
+                        // (no hay restricción de Regla de Oro en el ataque — la pasiva protege a Gilgamesh)
                         // Crit / triple
                         let _eeuDmg = _eeuBaseDmg;
                         const _eeuIsCrit = Math.random() < Math.min(1, 0.50 + _eeuCritBonus);
