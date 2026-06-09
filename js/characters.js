@@ -32,7 +32,7 @@
             'Aldebaran': {
                 name: 'Aldebaran',
                 hp: 30, maxHp: 30, speed: 83, charges: 0,
-                portrait: 'https://i.postimg.cc/GtScpb3q/image.png',
+                portrait: 'https://i.ibb.co/dsDcyH2n/Aldebaran-de-Touro-Saint-Seiya-Lendas-da-Justi-a.jpg',
                 passive: { name: 'Fortaleza de Tauro', description: 'Efecto pasivo Provocación. Cada vez que un Buff Escudo (en cualquier aliado o en Aldebaran) pierde HP: Aldebaran ejecuta Great Horn automáticamente. Al final de cada ronda, si Aldebaran tiene Escudo activo: recupera 2 HP.' },
                 abilities: [
                     { name: 'Great Horn',        type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'great_horn_ald',        description: 'Causa 1 daño ST. Recupera 3 HP. Aplica Buff Escudo 2 HP sobre Aldebaran.' },
