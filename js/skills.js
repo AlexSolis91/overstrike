@@ -614,9 +614,9 @@
                         const _gc = gameState.characters[_gn];
                         if (!_gc || _gc.team !== _gobTeam || _gc.isDead || _gc.hp <= 0) continue;
                         if (checkAsprosAOEImmunity(_gn, true) || checkMinatoAOEImmunity(_gn)) { addLog('🌟 ' + _gn + ' es inmune (Esquiva Área)', 'buff'); continue; }
-                        // Pasiva Regla de Oro: no recibe daño si tiene debuffs activos
+                        // Pasiva Regla de Oro: Gilgamesh no causa daño a enemigos con debuffs activos
                         const _gcDebuffs = (_gc.statusEffects||[]).filter(e => e && e.type === 'debuff').length;
-                        if (_gcDebuffs > 0) { addLog('👑 Regla de Oro: ' + _gn + ' no recibe daño (tiene ' + _gcDebuffs + ' debuff(s))', 'buff'); continue; }
+                        if (_gcDebuffs > 0) { addLog('👑 Regla de Oro: ' + _gn + ' no puede ser dañado por Gilgamesh (tiene ' + _gcDebuffs + ' debuff(s))', 'buff'); continue; }
                         const _gobIsCrit = Math.random() < Math.min(1, 0.50 + _gobCritBonus);
                         let _gobDmg = finalDamage;
                         if (_gobIsCrit) {
@@ -1386,9 +1386,9 @@
                     for (let _h = 0; _h < _emHitCount; _h++) {
                         const _emC = gameState.characters[_emN];
                         if (!_emC || _emC.isDead || _emC.hp <= 0) break;
-                        // Pasiva Regla de Oro: no daño si tiene debuffs
+                        // Pasiva Regla de Oro: Gilgamesh no causa daño a enemigos con debuffs activos
                         const _emDebuffs = (_emC.statusEffects||[]).filter(e => e && e.type === 'debuff').length;
-                        if (_emDebuffs > 0) { addLog('👑 Regla de Oro: ' + _emN + ' no recibe daño (debuffs activos)', 'buff'); continue; }
+                        if (_emDebuffs > 0) { addLog('👑 Regla de Oro: ' + _emN + ' no puede ser dañado por Gilgamesh (debuffs activos)', 'buff'); continue; }
                         const _emIsCrit = Math.random() < _emCritChance;
                         let _emDmg = finalDamage;
                         if (_emIsCrit) {
@@ -1421,7 +1421,7 @@
                 if (_enkTgt) {
                     const _enkDebuffs = (_enkTgt.statusEffects||[]).filter(e => e && e.type === 'debuff').length;
                     if (_enkDebuffs > 0) {
-                        addLog('👑 Regla de Oro: ' + targetName + ' no recibe daño (debuffs activos)', 'buff');
+                        addLog('👑 Regla de Oro: ' + targetName + ' no puede ser dañado por Gilgamesh (debuffs activos)', 'buff');
                     } else {
                         applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                         addLog('⛓️ Enkidu: ' + finalDamage + ' daño a ' + targetName, 'damage');
@@ -3258,9 +3258,9 @@
                         const _ec = gameState.characters[_en];
                         if (!_ec || _ec.team !== _eeuTeam || _ec.isDead || _ec.hp <= 0) continue;
                         if (checkAsprosAOEImmunity(_en, true) || checkMinatoAOEImmunity(_en)) { addLog('🌟 ' + _en + ' es inmune (Esquiva Área)', 'buff'); continue; }
-                        // Pasiva Regla de Oro: si tiene debuffs → no recibe daño
+                        // Pasiva Regla de Oro: Gilgamesh no causa daño a enemigos con debuffs activos
                         const _eeuDebuffsNow = (_ec.statusEffects||[]).filter(e => e && e.type === 'debuff').length;
-                        if (_eeuDebuffsNow > 0) { addLog('👑 Regla de Oro: ' + _en + ' no recibe daño (debuffs activos)', 'buff'); continue; }
+                        if (_eeuDebuffsNow > 0) { addLog('👑 Regla de Oro: ' + _en + ' no puede ser dañado por Gilgamesh (debuffs activos)', 'buff'); continue; }
                         // Crit / triple
                         let _eeuDmg = _eeuBaseDmg;
                         const _eeuIsCrit = Math.random() < Math.min(1, 0.50 + _eeuCritBonus);
@@ -7623,17 +7623,16 @@
                 addLog('✨ Vínculo de Atena: Buff Esquivar 2T al equipo aliado', 'buff');
 
             } else if (ability.effect === 'pegasus_ryuseiken') {
-                // Pegasus Ryu Sei Ken: 5 daño ST + 5-30 adicional. Si mata al objetivo: 5-20 AOE a cada enemigo.
+                // Pegasus Ryu Sei Ken: daño base 0 + 5-30 adicional ST. Si mata al objetivo: 5-15 AOE.
                 const _prsAtk = gameState.characters[gameState.selectedCharacter];
                 const _prsET = _prsAtk ? (_prsAtk.team==='team1'?'team2':'team1') : 'team2';
                 const _prsBonusDmg = Math.floor(Math.random() * 26) + 5; // 5-30
-                const _prsTotal = finalDamage + _prsBonusDmg;
                 const _prsWasAlive = gameState.characters[targetName] && !gameState.characters[targetName].isDead && gameState.characters[targetName].hp > 0;
-                applyDamageWithShield(targetName, _prsTotal, gameState.selectedCharacter);
-                addLog('🌟 Pegasus Ryu Sei Ken: ' + _prsTotal + ' daño a ' + targetName + ' (' + finalDamage + ' base + ' + _prsBonusDmg + ' adicional)', 'damage');
+                applyDamageWithShield(targetName, _prsBonusDmg, gameState.selectedCharacter);
+                addLog('🌟 Pegasus Ryu Sei Ken: ' + _prsBonusDmg + ' daño a ' + targetName, 'damage');
                 const _prsTgtDied = _prsWasAlive && (!gameState.characters[targetName] || gameState.characters[targetName].isDead || gameState.characters[targetName].hp <= 0);
                 if (_prsTgtDied) {
-                    const _prsAOEDmg = Math.floor(Math.random() * 16) + 5; // 5-20
+                    const _prsAOEDmg = Math.floor(Math.random() * 11) + 5; // 5-15
                     addLog('🌟 Pegasus Ryu Sei Ken: ¡' + targetName + ' derrotado! ' + _prsAOEDmg + ' daño AOE al resto', 'damage');
                     for (const _en in gameState.characters) {
                         const _ec = gameState.characters[_en];
