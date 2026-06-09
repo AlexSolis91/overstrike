@@ -365,7 +365,22 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 }
             }
             target.statusEffects.push(effectObj);
-            // Animación buff en el portador
+            // ── CELERIDAD: aplicar aumento de velocidad inmediatamente ──
+            if (effectObj && normAccent(effectObj.name||'') === 'celeridad') {
+                let _celBonus = 0;
+                if (effectObj.speedBonus && effectObj.speedBonus < 1) {
+                    // Es porcentaje decimal (ej. 0.15 = 15%) → calcular valor absoluto
+                    _celBonus = Math.round((target.speed||80) * effectObj.speedBonus);
+                } else if (effectObj.speedBonus && effectObj.speedBonus >= 1) {
+                    // Ya es valor absoluto
+                    _celBonus = effectObj.speedBonus;
+                }
+                if (_celBonus > 0) {
+                    // Guardar siempre como valor absoluto para el expiry
+                    effectObj.speedBonus = _celBonus;
+                    target.speed = (target.speed||80) + _celBonus;
+                }
+            }
             if (typeof _animCard === 'function' && !effectObj.passiveHidden) {
                 _animCard(targetName, 'anim-charge', 550);
             }

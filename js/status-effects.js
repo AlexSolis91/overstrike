@@ -399,8 +399,10 @@ function processBurnEffects(charName) {
                     }
                     // Restaurar velocidad si era celeridad
                     if (nname === 'celeridad' && effect.speedBonus) {
-                        char.speed = Math.max(1, char.speed - effect.speedBonus);
-                        addLog(`💨 Celeridad de ${charName} expira (velocidad restaurada)`, 'info');
+                        // speedBonus ya es valor absoluto (normalizado al aplicar en applyBuff)
+                        const _celRestore = effect.speedBonus >= 1 ? effect.speedBonus : Math.round((char.speed||80) * effect.speedBonus);
+                        char.speed = Math.max(1, char.speed - _celRestore);
+                        addLog('💨 Celeridad de ' + charName + ' expira (velocidad restaurada)', 'info');
                     }
                     // Restaurar velocidad si era Arena_VelDebuff (Gaara - Arenas Movedizas)
                     if (nname === 'arena_veldebuff' && effect._velRestored) {

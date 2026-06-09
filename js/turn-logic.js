@@ -2823,9 +2823,8 @@
                         } else if (_chosen === 'Contraataque') {
                             applyBuff(allyName, { name: 'Contraataque', type: 'buff', duration: 1, emoji: '🔄' });
                         } else if (_chosen === 'Celeridad') {
-                            // Celeridad: aumenta velocidad real +10% del speed base
+                            // Celeridad: applyBuff maneja el aumento de velocidad automáticamente
                             const _speedBonus = _a ? Math.ceil((_a.speed||80) * 0.10) : 8;
-                            if (_a) _a.speed = (_a.speed||80) + _speedBonus;
                             applyBuff(allyName, { name: 'Celeridad', type: 'buff', duration: 1, emoji: '💨', speedBonus: _speedBonus });
                         }
                         return _chosen;

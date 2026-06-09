@@ -1797,7 +1797,7 @@
                 // Kiiroi Senkō (nuevo): 1 daño + Celeridad 10% 2t + Buff aleatorio 2t
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 const celerityBonus = Math.round(attacker.speed * 0.10);
-                attacker.speed += celerityBonus;
+                // No sumamos attacker.speed manualmente — applyBuff lo hace ahora
                 applyBuff(gameState.selectedCharacter, { name: 'Celeridad', type: 'buff', percent: 10, duration: 2, emoji: '⚡', speedBonus: celerityBonus });
                 const randomBuffs = ['Esquivar','Furia','Frenesi','Contraataque','Proteccion Sagrada'];
                 const rBuff = randomBuffs[Math.floor(Math.random() * randomBuffs.length)];
@@ -1906,10 +1906,9 @@
 
 
             } else if (ability.effect === 'celeridad_buff') {
-                // Celeridad: +15% velocidad por N turnos
+                // Celeridad: +15% velocidad por N turnos — applyBuff maneja el speed
                 const speedIncrease = Math.round(attacker.speed * (ability.speedBoost || 0.15));
-                attacker.speed += speedIncrease;
-                attacker.statusEffects.push({ name: 'Celeridad', type: 'buff', duration: ability.buffDuration || 2, emoji: '💨', speedBonus: speedIncrease });
+                applyBuff(gameState.selectedCharacter, { name: 'Celeridad', type: 'buff', duration: ability.buffDuration || 2, emoji: '💨', speedBonus: speedIncrease });
                 addLog(`💨 ${gameState.selectedCharacter} gana Celeridad +${speedIncrease} velocidad por ${ability.buffDuration || 2} turnos`, 'buff');
 
             } else if (ability.effect === 'kurama_mode') {
