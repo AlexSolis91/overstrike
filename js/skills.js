@@ -1169,27 +1169,37 @@
                 addLog('🎯 ' + gameState.selectedCharacter + ' activa Mega Provocación por ' + (ability.provDuration || 4) + ' turnos', 'buff');
 
             } else if (ability.effect === 'ira_elegido') {
-                // DARTH VADER - Ira del Elegido Caído: 2 AOE + 1 por HP perdido
-                const iraBonusDmg = attacker.maxHp - attacker.hp;
-                const iraTotal = finalDamage + iraBonusDmg;
+                // DARTH VADER - Ira del Elegido Caído: 2 AOE + 1 daño por cada punto de carga en AMBOS equipos.
+                // Aplica Miedo a los enemigos que sobrevivan.
+                let _iraCharges = 0;
+                for (const _icn in gameState.characters) {
+                    const _icc = gameState.characters[_icn];
+                    if (_icc && !_icc.isDead && _icc.hp > 0) _iraCharges += (_icc.charges||0);
+                }
+                const iraTotal = finalDamage + _iraCharges;
                 const iraTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                 checkAndRemoveStealth(iraTeam);
-                                // MEGA PROVOCACIÓN
                 if (checkAndRedirectAOEMegaProv(iraTeam, finalDamage, gameState.selectedCharacter)) {
-                    addLog('🎯 ira_elegido: AOE redirigido por Mega Provocación', 'damage');
+                    addLog('🎯 Ira del Elegido Caído: AOE redirigido por Mega Provocación', 'damage');
                 } else {
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (c && c.team === iraTeam && !c.isDead && c.hp > 0) {
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== iraTeam || c.isDead || c.hp > 0 === false) continue;
                         applyDamageWithShield(n, iraTotal, gameState.selectedCharacter);
+                        // Miedo a los que sobrevivan
+                        const _cAfter = gameState.characters[n];
+                        if (_cAfter && !_cAfter.isDead && _cAfter.hp > 0) {
+                            if (typeof applyFear === 'function') applyFear(n, 1);
+                            else if (typeof applyDebuff === 'function') applyDebuff(n, { name: 'Miedo', type: 'debuff', duration: 1, emoji: '😱' });
+                            addLog('😱 Ira del Elegido Caído: Miedo aplicado a ' + n, 'debuff');
+                        }
                     }
-                }
                 }
                 for (let sId in gameState.summons) {
                     const s = gameState.summons[sId];
                     if (s && s.team === iraTeam && s.hp > 0) applySummonDamage(sId, iraTotal, gameState.selectedCharacter);
                 }
-                addLog(`⚡ Ira del Elegido Caído: ${iraTotal} daño AOE (${finalDamage} base + ${iraBonusDmg} por HP perdido)`, 'damage');
+                addLog('⚡ Ira del Elegido Caído: ' + iraTotal + ' daño AOE (' + finalDamage + ' base + ' + _iraCharges + ' por cargas totales)', 'damage');
 
             } else if (ability.effect === 'agonia_escarcha') {
                 // LICH KING - Agonía de Escarcha: 1 daño + roba 1 HP + Buff Provocación 2T
@@ -2468,7 +2478,7 @@
                 applyAOEToSummons(_efTeam, finalDamage, gameState.selectedCharacter);
                 addLog('⚡ Final Flash: ' + _ffDmg + ' daño ignorando Provocación/Sigilo a ' + targetName, 'damage');
             } else if (ability.effect === 'explosion_fuerza_dv') {
-                // DARTH VADER — Explosión de la Fuerza: 2 AOE + 50% stun + 50% debilitar
+                // DARTH VADER — Explosión de la Fuerza: 2 AOE. Enemigos con Miedo reciben daño crítico (x2).
                 const _efTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                 if (checkAndRedirectAOEMegaProv(_efTeam, finalDamage, gameState.selectedCharacter)) {
                     addLog('🌑 Explosión de la Fuerza redirigida por Mega Provocación', 'damage');
@@ -2477,13 +2487,14 @@
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _efTeam || _c.isDead || _c.hp <= 0) continue;
                         if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
-                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
-                        if (Math.random() < 0.50) { applyStun(_n, 1); addLog('⭐ ' + _n + ' recibe Aturdimiento (Explosión de la Fuerza)', 'debuff'); }
-                        if (Math.random() < 0.50) { applyDebuff(_n, { name: 'Debilitar', type: 'debuff', duration: 2, emoji: '💔' }); addLog('💔 ' + _n + ' recibe Debilitar (Explosión de la Fuerza)', 'debuff'); }
+                        const _efHasFear = hasStatusEffect(_n, 'Miedo');
+                        const _efDmg = _efHasFear ? finalDamage * 2 : finalDamage;
+                        applyDamageWithShield(_n, _efDmg, gameState.selectedCharacter);
+                        if (_efHasFear) addLog('💥 Explosión de la Fuerza: ¡Crítico! ' + _efDmg + ' a ' + _n + ' (tenía Miedo)', 'damage');
                     }
                 }
                 applyAOEToSummons(_efTeam, finalDamage, gameState.selectedCharacter);
-                addLog('🌑 Explosión de la Fuerza: ' + finalDamage + ' AOE a todos los enemigos', 'damage');
+                addLog('🌑 Explosión de la Fuerza: ' + finalDamage + ' AOE (x2 a objetivos con Miedo)', 'damage');
             } else if (ability.effect === 'apply_stun_dmg') {
                 let stunDmg = finalDamage;
                 if (attacker.darkSideAwakened) {
@@ -7865,29 +7876,98 @@
             // ══ DARTH VADER — handlers nuevos ══
 
             } else if (ability.effect === 'corte_oscuro_vader') {
-                // Corte Oscuro: 2 daño. Si objetivo tenía Miedo activo antes: Darth Vader se aplica Reflejar
+                // Corte Oscuro: 1 daño ST. Por cada Miedo activo en AMBOS equipos antes del ataque,
+                // genera +1 carga al equipo aliado.
+                // Pasiva: si el objetivo tenía Miedo → elimina Miedo, turno extra, cura 2 HP, 3 cargas a aliado aleatorio.
+                const _cdAtk = gameState.characters[gameState.selectedCharacter];
+                const _cdAtkTeam = _cdAtk ? _cdAtk.team : 'team1';
                 const _cdTgt = gameState.characters[targetName];
-                const _cdHadFear = _cdTgt && hasStatusEffect(targetName, 'Miedo');
+                const _cdTgtHadFear = _cdTgt && hasStatusEffect(targetName, 'Miedo');
+                // Contar Miedos en ambos equipos antes del ataque
+                let _cdFearCount = 0;
+                for (const _fn in gameState.characters) {
+                    const _fc = gameState.characters[_fn];
+                    if (_fc && !_fc.isDead && _fc.hp > 0 && hasStatusEffect(_fn, 'Miedo')) _cdFearCount++;
+                }
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 addLog('⚫ Corte Oscuro: ' + finalDamage + ' daño a ' + targetName, 'damage');
-                if (_cdHadFear) {
-                    if (typeof applyBuff === 'function') applyBuff(gameState.selectedCharacter, { name: 'Reflejar', type: 'buff', duration: 3, emoji: '🪞' });
-                    addLog('⚫ Corte Oscuro: Darth Vader se aplica Reflejar (objetivo tenía Miedo)', 'buff');
+                if (_cdFearCount > 0) {
+                    Object.keys(gameState.characters).forEach(function(n) {
+                        const _ac = gameState.characters[n];
+                        if (!_ac || _ac.team !== _cdAtkTeam || _ac.isDead || _ac.hp <= 0) return;
+                        _ac.charges = Math.min(20, (_ac.charges||0) + _cdFearCount);
+                    });
+                    addLog('⚫ Corte Oscuro: +' + _cdFearCount + ' carga(s) al equipo aliado (' + _cdFearCount + ' Miedo(s) activo(s))', 'buff');
+                }
+                // Pasiva Presencia Oscura: objetivo tenía Miedo → eliminar Miedo + turno extra + cura + cargas aliado
+                if (_cdTgtHadFear) {
+                    // Eliminar el Miedo del objetivo
+                    if (_cdTgt && _cdTgt.statusEffects) {
+                        _cdTgt.statusEffects = _cdTgt.statusEffects.filter(function(e){ return !(e && normAccent(e.name||'') === 'miedo'); });
+                    }
+                    addLog('🌑 Presencia Oscura: Miedo eliminado de ' + targetName, 'debuff');
+                    // Vader se cura 2 HP
+                    if (_cdAtk) {
+                        _cdAtk.hp = Math.min(_cdAtk.maxHp, (_cdAtk.hp||0) + 2);
+                        addLog('🌑 Presencia Oscura: Darth Vader se cura 2 HP', 'heal');
+                    }
+                    // 3 cargas a un aliado aleatorio (no Vader)
+                    const _dvAllies = Object.keys(gameState.characters).filter(function(n) {
+                        const _ac = gameState.characters[n];
+                        return _ac && _ac.team === _cdAtkTeam && !_ac.isDead && _ac.hp > 0 && n !== gameState.selectedCharacter;
+                    });
+                    if (_dvAllies.length > 0) {
+                        const _randAlly = _dvAllies[Math.floor(Math.random() * _dvAllies.length)];
+                        gameState.characters[_randAlly].charges = Math.min(20, (gameState.characters[_randAlly].charges||0) + 3);
+                        addLog('🌑 Presencia Oscura: ' + _randAlly + ' gana 3 cargas', 'buff');
+                    }
+                    // Turno adicional para Vader
+                    gameState._vaderExtraTurn = gameState.selectedCharacter;
+                    addLog('🌑 Presencia Oscura: ¡Darth Vader gana un turno adicional!', 'buff');
                 }
 
             } else if (ability.effect === 'intimidacion_sith') {
-                // Intimidación Sith: 6 daño + 3 daño directo por cada buff activo en el objetivo
+                // Intimidación Sith: 6 daño ST. Ignora Provocación, MegaProvocación y Sigilo.
+                // Disipa TODOS los buffs del objetivo. +5 daño directo por cada buff disipado.
                 const _isTgt = gameState.characters[targetName];
-                const _isAtk = gameState.characters[gameState.selectedCharacter];
-                const _isBufs = _isTgt ? (_isTgt.statusEffects||[]).filter(function(e){ return e&&e.type==='buff'&&!e.passiveHidden; }).length : 0;
+                // Contar y disipar buffs antes del daño
+                const _isBufsArr = _isTgt ? (_isTgt.statusEffects||[]).filter(function(e){ return e && e.type === 'buff' && !e.passiveHidden && !e.permanent; }) : [];
+                const _isBufsCount = _isBufsArr.length;
+                if (_isTgt && _isBufsCount > 0) {
+                    _isTgt.statusEffects = (_isTgt.statusEffects||[]).filter(function(e){ return !e || e.type !== 'buff' || e.passiveHidden || e.permanent; });
+                    addLog('⚫ Intimidación Sith: ' + _isBufsCount + ' buff(s) disipado(s) en ' + targetName, 'debuff');
+                }
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 addLog('⚫ Intimidación Sith: ' + finalDamage + ' daño a ' + targetName, 'damage');
-                if (_isBufs > 0 && _isTgt && !_isTgt.isDead && _isTgt.hp > 0) {
-                    const _isBonusDmg = _isBufs * 3;
+                if (_isBufsCount > 0 && _isTgt && !_isTgt.isDead && _isTgt.hp > 0) {
+                    const _isBonusDmg = _isBufsCount * 5;
                     _isTgt.hp = Math.max(0, (_isTgt.hp||0) - _isBonusDmg);
                     if (_isTgt.hp <= 0) { _isTgt.isDead = true; registerKill(gameState.selectedCharacter, targetName, false); }
-                    addLog('⚫ Intimidación Sith: +' + _isBonusDmg + ' daño directo (' + _isBufs + ' buffs × 3)', 'damage');
+                    addLog('⚫ Intimidación Sith: +' + _isBonusDmg + ' daño directo (' + _isBufsCount + ' buffs × 5)', 'damage');
                 }
+                // Pasiva Presencia Oscura: si objetivo tenía Miedo → eliminar, turno extra, cura+cargas
+                (function() {
+                    const _isAtk = gameState.characters[gameState.selectedCharacter];
+                    const _isAtkTeam = _isAtk ? _isAtk.team : 'team1';
+                    const _isTgtNow = gameState.characters[targetName];
+                    if (!_isTgtNow) return;
+                    const _isHadFear = hasStatusEffect(targetName, 'Miedo');
+                    if (!_isHadFear) return;
+                    _isTgtNow.statusEffects = (_isTgtNow.statusEffects||[]).filter(function(e){ return !(e && normAccent(e.name||'') === 'miedo'); });
+                    addLog('🌑 Presencia Oscura: Miedo eliminado de ' + targetName, 'debuff');
+                    if (_isAtk) { _isAtk.hp = Math.min(_isAtk.maxHp, (_isAtk.hp||0) + 2); addLog('🌑 Presencia Oscura: Darth Vader se cura 2 HP', 'heal'); }
+                    const _isAllies = Object.keys(gameState.characters).filter(function(n) {
+                        const _ac = gameState.characters[n];
+                        return _ac && _ac.team === _isAtkTeam && !_ac.isDead && _ac.hp > 0 && n !== gameState.selectedCharacter;
+                    });
+                    if (_isAllies.length > 0) {
+                        const _rA = _isAllies[Math.floor(Math.random() * _isAllies.length)];
+                        gameState.characters[_rA].charges = Math.min(20, (gameState.characters[_rA].charges||0) + 3);
+                        addLog('🌑 Presencia Oscura: ' + _rA + ' gana 3 cargas', 'buff');
+                    }
+                    gameState._vaderExtraTurn = gameState.selectedCharacter;
+                    addLog('🌑 Presencia Oscura: ¡Darth Vader gana un turno adicional!', 'buff');
+                })();
             // ══ GANDALF — handlers ══
 
             } else if (ability.effect === 'resplandor_gandalf') {
@@ -9363,22 +9443,19 @@
                 addLog('⚡ Destello de Fotones: ' + _dfDmg + ' daño (' + finalDamage + ' × ' + Math.max(1, _dfBufsRemoved) + ' buffs eliminados)', 'damage');
 
             } else if (ability.effect === 'barrera_impacto_a17') {
-                // Barrera de Impacto Total: Escudo 10 HP a TODO el equipo aliado (incluido A17)
-                // 5 cargas a aliados EXCEPTO Androide 17. A17 NO gana cargas.
+                // Barrera de Impacto Total: Escudo 10 HP equipo aliado + 5 cargas equipo + 8 cargas Androide 17
                 const _biA17 = gameState.characters[gameState.selectedCharacter];
                 const _biTeam = _biA17 ? _biA17.team : 'team1';
                 Object.keys(gameState.characters).forEach(function(n) {
                     const _ac = gameState.characters[n];
                     if (!_ac || _ac.team !== _biTeam || _ac.isDead || _ac.hp <= 0) return;
-                    // Escudo 10 HP a todos (incluyendo A17)
                     _ac.shield = (_ac.shield||0) + 10;
-                    // 5 cargas solo a aliados que NO sean Androide 17
-                    if (n !== gameState.selectedCharacter) {
-                        _ac.charges = Math.min(20, (_ac.charges||0) + 5);
-                    }
+                    _ac.charges = Math.min(20, (_ac.charges||0) + 5);
                 });
-                addLog('⚡ Barrera de Impacto Total: Escudo 10 HP a todo el equipo aliado', 'buff');
-                addLog('⚡ Barrera de Impacto Total: +5 cargas al equipo aliado (excepto Androide 17)', 'buff');
+                addLog('⚡ Barrera de Impacto Total: Escudo 10 HP + 5 cargas a todo el equipo aliado', 'buff');
+                // +8 cargas extra para Androide 17 (chargeGain en ability ya da 8)
+                if (_biA17) _biA17.charges = Math.min(20, (_biA17.charges||0) + 8);
+                addLog('⚡ Barrera de Impacto Total: Androide 17 gana 8 cargas adicionales', 'buff');
 
             } // end Androide 17 handlers
 

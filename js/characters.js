@@ -32,7 +32,7 @@
             'Aldebaran': {
                 name: 'Aldebaran',
                 hp: 30, maxHp: 30, speed: 83, charges: 0,
-                portrait: 'https://i.ibb.co/dsDcyH2n/Aldebaran-de-Touro-Saint-Seiya-Lendas-da-Justi-a.jpg',
+                portrait: 'https://i.postimg.cc/PJr0LB6N/Captura-de-pantalla-2026-02-21-230603.png',
                 passive: { name: 'Fortaleza de Tauro', description: 'Efecto pasivo Provocación. Cada vez que un Buff Escudo (en cualquier aliado o en Aldebaran) pierde HP: Aldebaran ejecuta Great Horn automáticamente. Al final de cada ronda, si Aldebaran tiene Escudo activo: recupera 2 HP.' },
                 abilities: [
                     { name: 'Great Horn',        type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'great_horn_ald',        description: 'Causa 1 daño ST. Recupera 3 HP. Aplica Buff Escudo 2 HP sobre Aldebaran.' },
@@ -305,12 +305,12 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 hpLost: 0,
                 portrait: 'https://i.postimg.cc/63sFfc1F/Captura_de_pantalla_2026_02_28_015421.png',
-                passive: { name: 'Presencia Oscura', description: 'Aura Oscura permanente. Al inicio de cada ronda, 50% de aplicar Miedo a cada enemigo.' },
+                passive: { name: 'Presencia Oscura', description: 'Al inicio de cada ronda: 50% de aplicar Miedo a cada enemigo y 70% de aplicarse Buff Reflejar. Al atacar a un enemigo con Miedo: elimina el Miedo y gana 1 turno adicional. Cada vez que se elimina un Miedo enemigo: Vader se cura 2 HP y un aliado aleatorio gana 3 cargas.' },
                 abilities: [
-                    { name: 'Corte Oscuro', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'corte_oscuro_vader', description: 'Causa 2 daño. Si el objetivo tenía Miedo activo antes del ataque, Darth Vader se aplica Buff Reflejar.' },
-                    { name: 'Explosión de la Fuerza', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'aoe', effect: 'explosion_fuerza_dv', description: 'Causa 2 AOE. 50% de Aturdimiento. 50% de Debilitar a los objetivos.' },
-                    { name: 'Intimidación Sith', type: 'special', cost: 7, chargeGain: 0, damage: 6, target: 'single', effect: 'intimidacion_sith', description: 'Causa 6 daño + 3 daño directo adicional por cada buff activo en el objetivo al ejecutar este ataque.' },
-                    { name: 'Ira del Elegido Caído', type: 'over', cost: 10, chargeGain: 0, damage: 2, target: 'aoe', effect: 'ira_elegido', description: 'Causa 2 AOE + 1 daño adicional por cada punto de HP que Darth Vader ha perdido en el combate.' }
+                    { name: 'Corte Oscuro', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'corte_oscuro_vader', description: 'Causa 1 daño. Por cada debuff Miedo activo en ambos equipos antes del ataque, genera +1 carga al equipo aliado.' },
+                    { name: 'Explosión de la Fuerza', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'aoe', effect: 'explosion_fuerza_dv', description: 'Causa 2 AOE. Los enemigos con debuff Miedo activo golpeados por este ataque reciben daño crítico.' },
+                    { name: 'Intimidación Sith', type: 'special', cost: 7, chargeGain: 0, damage: 6, target: 'single', effect: 'intimidacion_sith', description: 'Causa 6 daño. Ignora Provocación, MegaProvocación y Sigilo. Disipa todos los buffs del objetivo y causa +5 daño directo por cada buff disipado.' },
+                    { name: 'Ira del Elegido Caído', type: 'over', cost: 8, chargeGain: 0, damage: 2, target: 'aoe', effect: 'ira_elegido', description: 'Causa 2 AOE + 1 daño adicional por cada punto de carga que tengan ambos equipos. Aplica Miedo a los enemigos golpeados que sobrevivan.' }
                 ]
             },
 
@@ -515,7 +515,7 @@
                     { name: 'Ráfagas de Energía',          type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'rafagas_energia_a17',     description: 'Golpea 1-5 veces a enemigos aleatorios (puede repetir). 50% de robar 1 carga del enemigo golpeado.' },
                     { name: 'Barrera de Fotones Dinámica', type: 'special', cost: 3,  chargeGain: 0, damage: 0, target: 'self',   effect: 'barrera_fotones_a17',    description: 'Elimina 1-5 debuffs del equipo aliado. Por cada debuff eliminado el equipo aliado genera 1 carga.' },
                     { name: 'Destello de Fotones',         type: 'special', cost: 8,  chargeGain: 0, damage: 4, target: 'single', effect: 'destello_fotones_a17',   description: 'Causa 4 daño ST. Elimina 1-10 Buffs del equipo enemigo. Por cada Buff eliminado multiplica el daño de este ataque.' },
-                    { name: 'Barrera de Impacto Total',    type: 'over',    cost: 8,  chargeGain: 0, damage: 0, target: 'self',   effect: 'barrera_impacto_a17',    description: 'Aplica Escudo 10 HP a todo el equipo aliado (incluido Androide 17). Genera 5 cargas a todos los aliados excepto Androide 17.' },
+                    { name: 'Barrera de Impacto Total',    type: 'over',    cost: 0,  chargeGain: 8, damage: 0, target: 'self',   effect: 'barrera_impacto_a17',    description: 'Aplica Escudo 10 HP a todo el equipo aliado. Genera 5 cargas a todo el equipo aliado. Genera 8 cargas para Androide 17.' },
                 ]
             },
 

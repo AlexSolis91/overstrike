@@ -1516,6 +1516,25 @@
                 setTimeout(function() { startTurn(); }, 700);
                 return;
             }
+
+            // ── DARTH VADER (Presencia Oscura): turno adicional pendiente ──
+            if (gameState._vaderExtraTurn) {
+                const _vkChar = gameState._vaderExtraTurn;
+                gameState._vaderExtraTurn = null;
+                const _vkCurIdx = (gameState.currentTurnIndex || 0);
+                if (gameState.turnOrder) {
+                    const _vkOldIdx = gameState.turnOrder.indexOf(_vkChar);
+                    if (_vkOldIdx >= 0) gameState.turnOrder.splice(_vkOldIdx, 1);
+                    const _vkInsertAt = Math.min(_vkCurIdx, gameState.turnOrder.length);
+                    gameState.turnOrder.splice(_vkInsertAt, 0, _vkChar);
+                    gameState.currentTurnIndex = _vkInsertAt;
+                }
+                addLog('🌑 Presencia Oscura: ¡' + _vkChar + ' gana turno adicional!', 'buff');
+                gameState._wasExtraTurn = true;
+                if (onlineMode && typeof pushGameState === 'function') pushGameState();
+                setTimeout(function() { startTurn(); }, 700);
+                return;
+            }
             // Cap all character charges at 20 and HP at maxHp
             for (let n in gameState.characters) {
                 const _c = gameState.characters[n];
@@ -2254,13 +2273,14 @@
                         }
                     })();
 
-                    // ── PRESENCIA OSCURA (Darth Vader): inicio de ronda → 50% Miedo a cada enemigo ──
+                    // ── PRESENCIA OSCURA (Darth Vader): inicio de ronda → 50% Miedo a cada enemigo + 70% Reflejar a Vader ──
                     (function() {
                         for (const _dvN in gameState.characters) {
                             const _dvC = gameState.characters[_dvN];
                             if (!_dvC || _dvC.isDead || !_dvC.passive) continue;
                             if (_dvC.passive.name !== 'Presencia Oscura') continue;
                             const _dvET = _dvC.team === 'team1' ? 'team2' : 'team1';
+                            // 50% Miedo a cada enemigo
                             for (const _n in gameState.characters) {
                                 const _ec = gameState.characters[_n];
                                 if (!_ec || _ec.team !== _dvET || _ec.isDead || _ec.hp <= 0) continue;
@@ -2269,6 +2289,11 @@
                                     else if (typeof applyDebuff === 'function') applyDebuff(_n, { name: 'Miedo', type: 'debuff', duration: 1, emoji: '😱' });
                                     addLog('🌑 Presencia Oscura: Miedo aplicado a ' + _n, 'debuff');
                                 }
+                            }
+                            // 70% Reflejar a Darth Vader
+                            if (Math.random() < 0.70) {
+                                if (typeof applyBuff === 'function') applyBuff(_dvN, { name: 'Reflejar', type: 'buff', duration: 1, emoji: '🪞' });
+                                addLog('🌑 Presencia Oscura: Darth Vader se aplica Reflejar', 'buff');
                             }
                             break;
                         }
