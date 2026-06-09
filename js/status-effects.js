@@ -343,6 +343,21 @@ function processBurnEffects(charName) {
                             triggerPalpatinePassive(charName);
                         }
                     }
+                    // DESTELLO DE PEGASO (Seiya): cuando expira un buff en un aliado, Seiya gana 1 carga
+                    if (effect.type === 'buff') {
+                        const _seChar = gameState.characters[charName];
+                        if (_seChar) {
+                            const _seTeam = _seChar.team;
+                            for (const _sn in gameState.characters) {
+                                const _sc = gameState.characters[_sn];
+                                if (!_sc || _sc.isDead || _sc.hp <= 0 || _sc.team !== _seTeam) continue;
+                                if (!_sc.passive || _sc.passive.name !== 'Destello de Pegaso') continue;
+                                _sc.charges = Math.min(20, (_sc.charges||0) + 1);
+                                addLog('🌟 Destello de Pegaso: Seiya +1 carga (buff expiró en ' + charName + ')', 'buff');
+                                break;
+                            }
+                        }
+                    }
                     const nname = normAccent(effect.name || '');
                     // Limpiar Forma Dragón de Alexstrasza cuando Escudo Sagrado expira
                     if (nname === 'escudo sagrado' && (charName === 'Alexstrasza' || charName === 'Alexstrasza v2')) {

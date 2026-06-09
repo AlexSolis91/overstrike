@@ -1304,6 +1304,19 @@
 
             target.hp = Math.max(0, target.hp - remainingDamage);
 
+            // ── DESTELLO DE PEGASO (Seiya): trackear daño recibido en la ronda → Escudo Sagrado si ≥5 HP perdidos ──
+            if (remainingDamage > 0 && attackerName && attackerName !== targetName) {
+                const _seiyaChar = gameState.characters[targetName];
+                if (_seiyaChar && _seiyaChar.passive && _seiyaChar.passive.name === 'Destello de Pegaso') {
+                    _seiyaChar._hpLostThisRound = (_seiyaChar._hpLostThisRound || 0) + remainingDamage;
+                    if (_seiyaChar._hpLostThisRound >= 5 && !_seiyaChar._seiyaShieldApplied) {
+                        _seiyaChar._seiyaShieldApplied = true;
+                        if (typeof applyBuff === 'function') applyBuff(targetName, { name: 'Escudo Sagrado', type: 'buff', duration: 1, emoji: '✝️' });
+                        addLog('🌟 Destello de Pegaso: Seiya recibe Escudo Sagrado (perdió ≥5 HP esta ronda)', 'buff');
+                    }
+                }
+            }
+
             // ── TORMENTA ROJA: al recibir daño de DOT (Quemadura/Veneno) → 3 daño AOE al equipo enemigo ──
             if (remainingDamage > 0 && attackerName === null && !passiveExecuting) {
                 var _trChar = gameState.characters[targetName];

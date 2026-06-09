@@ -1492,25 +1492,17 @@
             if (gameState._skeggoxExtraTurn) {
                 const _skChar = gameState._skeggoxExtraTurn;
                 gameState._skeggoxExtraTurn = null;
-                // Insertar al personaje en la SIGUIENTE posición del turno actual
-                // (no remover de turnOrder para evitar corrupción de índices — simplemente insertar)
                 const _skCurIdx = (gameState.currentTurnIndex || 0);
                 if (gameState.turnOrder) {
-                    // Limpiar cualquier duplicado previo
                     const _skOldIdx = gameState.turnOrder.indexOf(_skChar);
                     if (_skOldIdx >= 0) gameState.turnOrder.splice(_skOldIdx, 1);
-                    // Recalcular índice de inserción (puede haber cambiado tras el splice)
                     const _skInsertAt = Math.min(_skCurIdx, gameState.turnOrder.length);
                     gameState.turnOrder.splice(_skInsertAt, 0, _skChar);
-                    // Ajustar el índice actual si la inserción fue antes del índice actual
-                    // Para que startTurn() apunte al personaje recién insertado
                     gameState.currentTurnIndex = _skInsertAt;
                 }
                 addLog('🪓 Skeggöx: ¡' + _skChar + ' gana turno adicional!', 'buff');
-                gameState._wasExtraTurn = true; // marcar para que no cuente en turnsInRound
+                gameState._wasExtraTurn = true;
                 if (onlineMode) {
-                    // En modo online: push state para que el rival sepa que el turno extra
-                    // es del mismo equipo (no le habilita controles al rival)
                     if (typeof pushGameState === 'function') pushGameState();
                 }
                 setTimeout(function() { startTurn(); }, 700);
@@ -1530,6 +1522,25 @@
                     gameState.currentTurnIndex = _vkInsertAt;
                 }
                 addLog('🌑 Presencia Oscura: ¡' + _vkChar + ' gana turno adicional!', 'buff');
+                gameState._wasExtraTurn = true;
+                if (onlineMode && typeof pushGameState === 'function') pushGameState();
+                setTimeout(function() { startTurn(); }, 700);
+                return;
+            }
+
+            // ── SEIYA (¡Arde, cosmos!): turno adicional pendiente ──
+            if (gameState._seiyaExtraTurn) {
+                const _seChar = gameState._seiyaExtraTurn;
+                gameState._seiyaExtraTurn = null;
+                const _seCurIdx = (gameState.currentTurnIndex || 0);
+                if (gameState.turnOrder) {
+                    const _seOldIdx = gameState.turnOrder.indexOf(_seChar);
+                    if (_seOldIdx >= 0) gameState.turnOrder.splice(_seOldIdx, 1);
+                    const _seInsertAt = Math.min(_seCurIdx, gameState.turnOrder.length);
+                    gameState.turnOrder.splice(_seInsertAt, 0, _seChar);
+                    gameState.currentTurnIndex = _seInsertAt;
+                }
+                addLog('🔥 ¡Arde, cosmos!: ¡' + _seChar + ' gana turno adicional!', 'buff');
                 gameState._wasExtraTurn = true;
                 if (onlineMode && typeof pushGameState === 'function') pushGameState();
                 setTimeout(function() { startTurn(); }, 700);
@@ -1623,6 +1634,15 @@
                     
                     gameState.currentRound++;
                     gameState.turnsInRound = 0;
+
+                    // Reset Seiya per-round HP tracking
+                    for (const _sn in gameState.characters) {
+                        const _sc = gameState.characters[_sn];
+                        if (_sc && _sc.passive && _sc.passive.name === 'Destello de Pegaso') {
+                            _sc._hpLostThisRound = 0;
+                            _sc._seiyaShieldApplied = false;
+                        }
+                    }
 
                     // ── EMPATE / BOSS WINS: límite de rondas ──
                     // Boss: máximo 10 rondas. Normal: máximo 30 rondas.
@@ -2273,7 +2293,7 @@
                         }
                     })();
 
-                    // ── PRESENCIA OSCURA (Darth Vader): inicio de ronda → 50% Miedo a cada enemigo + 70% Reflejar a Vader ──
+                    // ── PRESENCIA OSCURA (Darth Vader): inicio de ronda → 50% Miedo + 70% Reflejar ──
                     (function() {
                         for (const _dvN in gameState.characters) {
                             const _dvC = gameState.characters[_dvN];
@@ -2294,6 +2314,23 @@
                             if (Math.random() < 0.70) {
                                 if (typeof applyBuff === 'function') applyBuff(_dvN, { name: 'Reflejar', type: 'buff', duration: 1, emoji: '🪞' });
                                 addLog('🌑 Presencia Oscura: Darth Vader se aplica Reflejar', 'buff');
+                            }
+                            break;
+                        }
+                    })();
+
+                    // ── DESTELLO DE PEGASO (Seiya): inicio de ronda → Celeridad 15% a aliados ──
+                    (function() {
+                        for (const _seN in gameState.characters) {
+                            const _seC = gameState.characters[_seN];
+                            if (!_seC || _seC.isDead || !_seC.passive) continue;
+                            if (_seC.passive.name !== 'Destello de Pegaso') continue;
+                            const _seTeam = _seC.team;
+                            for (const _n in gameState.characters) {
+                                const _ac = gameState.characters[_n];
+                                if (!_ac || _ac.team !== _seTeam || _ac.isDead || _ac.hp <= 0) continue;
+                                if (typeof applyBuff === 'function') applyBuff(_n, { name: 'Celeridad', type: 'buff', duration: 1, emoji: '⚡', speedBonus: 0.15 });
+                                addLog('🌟 Destello de Pegaso: ' + _n + ' recibe Celeridad 15% (1T)', 'buff');
                             }
                             break;
                         }

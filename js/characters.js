@@ -32,7 +32,7 @@
             'Aldebaran': {
                 name: 'Aldebaran',
                 hp: 30, maxHp: 30, speed: 83, charges: 0,
-                portrait: 'https://i.postimg.cc/PJr0LB6N/Captura-de-pantalla-2026-02-21-230603.png',
+                portrait: 'https://i.postimg.cc/GtScpb3q/image.png',
                 passive: { name: 'Fortaleza de Tauro', description: 'Efecto pasivo Provocación. Cada vez que un Buff Escudo (en cualquier aliado o en Aldebaran) pierde HP: Aldebaran ejecuta Great Horn automáticamente. Al final de cada ronda, si Aldebaran tiene Escudo activo: recupera 2 HP.' },
                 abilities: [
                     { name: 'Great Horn',        type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'great_horn_ald',        description: 'Causa 1 daño ST. Recupera 3 HP. Aplica Buff Escudo 2 HP sobre Aldebaran.' },
@@ -210,13 +210,13 @@
             'Gilgamesh': {
                 hp: 20, maxHp: 20, speed: 89, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/nzNJp8K7/Captura_de_pantalla_2026_02_27_201309.png',
-                passive: { name: 'Regla de Oro', description: 'Aumenta 25% la probabilidad de golpe crítico. Cada golpe crítico genera 1 carga (100% de probabilidad).' },
+                portrait: 'https://i.ibb.co/qMnfxHyt/Rey-de-los-H-roes-Gilgamesh.jpg',
+                passive: { name: 'Regla de Oro', description: 'Por cada golpe crítico: Gilgamesh genera 1 carga, se cura 1 HP y aplica 2 debuffs aleatorios al enemigo golpeado. Gilgamesh no recibe daño de enemigos con debuffs activos.' },
                 abilities: [
-                    { name: 'Gate of Babylon', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'aoe', effect: 'crit_chance_basic', critChance: 0.50, description: 'Causa 1 AOE. 50% de probabilidad de golpe crítico.' },
-                    { name: 'Espada Merodach', type: 'special', cost: 5, chargeGain: 0, damage: 3, target: 'aoe', effect: 'espada_merodach', description: 'Causa 3 AOE. Elimina 3 cargas del enemigo golpeado por un golpe crítico.' },
-                    { name: 'Enkidu: Cadenas del Cielo', type: 'special', cost: 7, chargeGain: 0, damage: 0, target: 'aoe', effect: 'enkidu_cadenas', description: 'Cancela todas las invocaciones activas del enemigo. Aplica debuff Mega Aturdimiento en todos los enemigos que actualmente tengan más de 5 cargas.' },
-                    { name: 'Enuma Elish', type: 'over', cost: 10, chargeGain: 0, damage: 5, target: 'single', effect: 'gilgamesh_enuma', description: 'Causa 5 de daño. Roba todas las cargas del Enemigo golpeado.' }
+                    { name: 'Gate of Babylon', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'aoe', effect: 'gate_of_babylon_gil', description: 'Causa 2 AOE. Cada enemigo tiene 50% de probabilidad de recibir golpe crítico.' },
+                    { name: 'Espada Merodach', type: 'special', cost: 5, chargeGain: 0, damage: 3, target: 'mt', effect: 'espada_merodach', description: 'Golpea hasta 2 veces a hasta 2 enemigos (MT). Cada golpe tiene 50% de crítico. Por cada crítico elimina 3 cargas del equipo rival.' },
+                    { name: 'Enkidu: Cadenas del Cielo', type: 'special', cost: 6, chargeGain: 0, damage: 4, target: 'single', effect: 'enkidu_cadenas', description: 'Causa 4 daño ST. Cancela todas las invocaciones del enemigo. Por cada invocación cancelada, aplica Mega Aturdimiento a un enemigo aleatorio sin Mega Aturdimiento activo.' },
+                    { name: 'Enuma Elish', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'mt', effect: 'gilgamesh_enuma', description: 'MT: ataca 1 vez a cada enemigo. El daño base es igual a los debuffs activos en el equipo enemigo. Cada golpe: 50% crítico, 25% daño triple. Aplica 1 debuff aleatorio a cada enemigo antes del ataque.' }
                 ]
             },
 
@@ -305,12 +305,12 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 hpLost: 0,
                 portrait: 'https://i.postimg.cc/63sFfc1F/Captura_de_pantalla_2026_02_28_015421.png',
-                passive: { name: 'Presencia Oscura', description: 'Al inicio de cada ronda: 50% de aplicar Miedo a cada enemigo y 70% de aplicarse Buff Reflejar. Al atacar a un enemigo con Miedo: elimina el Miedo y gana 1 turno adicional. Cada vez que se elimina un Miedo enemigo: Vader se cura 2 HP y un aliado aleatorio gana 3 cargas.' },
+                passive: { name: 'Presencia Oscura', description: 'Al inicio de cada ronda: 50% de aplicar Miedo a cada enemigo y 70% de aplicarse Buff Reflejar. Al atacar a un enemigo con Miedo: elimina el Miedo, Vader se cura 2 HP, un aliado aleatorio gana 3 cargas y Vader gana 1 turno adicional. Gilgamesh no recibe daño de enemigos con debuffs activos.' },
                 abilities: [
-                    { name: 'Corte Oscuro', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'corte_oscuro_vader', description: 'Causa 1 daño. Por cada debuff Miedo activo en ambos equipos antes del ataque, genera +1 carga al equipo aliado.' },
-                    { name: 'Explosión de la Fuerza', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'aoe', effect: 'explosion_fuerza_dv', description: 'Causa 2 AOE. Los enemigos con debuff Miedo activo golpeados por este ataque reciben daño crítico.' },
-                    { name: 'Intimidación Sith', type: 'special', cost: 7, chargeGain: 0, damage: 6, target: 'single', effect: 'intimidacion_sith', description: 'Causa 6 daño. Ignora Provocación, MegaProvocación y Sigilo. Disipa todos los buffs del objetivo y causa +5 daño directo por cada buff disipado.' },
-                    { name: 'Ira del Elegido Caído', type: 'over', cost: 8, chargeGain: 0, damage: 2, target: 'aoe', effect: 'ira_elegido', description: 'Causa 2 AOE + 1 daño adicional por cada punto de carga que tengan ambos equipos. Aplica Miedo a los enemigos golpeados que sobrevivan.' }
+                    { name: 'Corte Oscuro',        type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'corte_oscuro_vader',   description: 'Causa 1 daño ST. Por cada Miedo activo en ambos equipos, genera +1 carga al equipo aliado. Si el objetivo tenía Miedo: lo elimina, Vader +2 HP, aliado aleatorio +3 cargas, Vader gana turno extra.' },
+                    { name: 'Explosión de la Fuerza', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'aoe', effect: 'explosion_fuerza_dv', description: 'Causa 2 AOE. Los enemigos con Miedo activo reciben daño crítico (x2).' },
+                    { name: 'Intimidación Sith',   type: 'special', cost: 7,  chargeGain: 0, damage: 6, target: 'single', effect: 'intimidacion_sith',   description: 'Causa 6 daño. Ignora Provocación, MegaProvocación y Sigilo. Disipa todos los buffs del objetivo y causa +5 daño directo por cada buff disipado.' },
+                    { name: 'Ira del Elegido Caído', type: 'over',  cost: 8,  chargeGain: 0, damage: 2, target: 'aoe',    effect: 'ira_elegido',          description: 'Causa 2 AOE + 1 daño adicional por cada punto de carga que tengan ambos equipos. Aplica Miedo a los enemigos que sobrevivan.' }
                 ]
             },
 
@@ -417,6 +417,20 @@
                     { name: 'El Despertar del Fénix Inmortal', type: 'over', cost: 10, chargeGain: 0, damage: 10, target: 'single', effect: 'despertar_fenix_ikki', description: 'Causa 10 daño. Ignora Provocacion y Mega Provocacion. Si elimina al objetivo, el equipo aliado genera 10 cargas.' }
                 ]
             },
+
+            'Seiya': {
+                hp: 20, maxHp: 20, speed: 87, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                hpLostThisRound: 0,
+                portrait: 'https://i.ibb.co/4ZmLWKKt/descarga-2.jpg',
+                passive: { name: 'Destello de Pegaso', description: 'Al inicio de cada ronda aplica Celeridad 15% por 1 turno a todos los aliados. Cada vez que un Buff expira en un aliado, Seiya genera 1 carga. Si Seiya pierde 5 o más HP en la ronda, se aplica Buff Escudo Sagrado 1 turno.' },
+                abilities: [
+                    { name: 'Puño de Pegaso',   type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'puno_pegaso_seiya',    description: 'Causa 1 daño. Genera de 1 a 3 cargas a un aliado aleatorio.' },
+                    { name: '¡Arde, cosmos!',   type: 'special', cost: 3,  chargeGain: 0, damage: 0, target: 'self',   effect: 'arde_cosmos_seiya',    description: 'Seiya genera de 2 a 10 cargas y gana 1 turno adicional.' },
+                    { name: 'Vínculo de Atena', type: 'special', cost: 0,  chargeGain: 0, damage: 0, target: 'self',   effect: 'vinculo_atena_seiya',  description: 'Seiya sacrifica el 50% de su HP. Reparte sus cargas actuales entre los aliados aleatoriamente. Aplica Buff Esquivar 2 turnos al equipo aliado.' },
+                    { name: 'Pegasus Ryu Sei Ken', type: 'over', cost: 10, chargeGain: 0, damage: 5, target: 'single', effect: 'pegasus_ryuseiken',    description: 'Causa 5 + 5 a 30 daño adicional. Si elimina al objetivo, causa 5 a 20 daño adicional a cada enemigo.' }
+                ]
+            },
             'Linterna Verde': {
                 hp: 20, maxHp: 20, speed: 96, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
@@ -515,7 +529,7 @@
                     { name: 'Ráfagas de Energía',          type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'rafagas_energia_a17',     description: 'Golpea 1-5 veces a enemigos aleatorios (puede repetir). 50% de robar 1 carga del enemigo golpeado.' },
                     { name: 'Barrera de Fotones Dinámica', type: 'special', cost: 3,  chargeGain: 0, damage: 0, target: 'self',   effect: 'barrera_fotones_a17',    description: 'Elimina 1-5 debuffs del equipo aliado. Por cada debuff eliminado el equipo aliado genera 1 carga.' },
                     { name: 'Destello de Fotones',         type: 'special', cost: 8,  chargeGain: 0, damage: 4, target: 'single', effect: 'destello_fotones_a17',   description: 'Causa 4 daño ST. Elimina 1-10 Buffs del equipo enemigo. Por cada Buff eliminado multiplica el daño de este ataque.' },
-                    { name: 'Barrera de Impacto Total',    type: 'over',    cost: 0,  chargeGain: 8, damage: 0, target: 'self',   effect: 'barrera_impacto_a17',    description: 'Aplica Escudo 10 HP a todo el equipo aliado. Genera 5 cargas a todo el equipo aliado. Genera 8 cargas para Androide 17.' },
+                    { name: 'Barrera de Impacto Total',    type: 'over',    cost: 8,  chargeGain: 0, damage: 0, target: 'self',   effect: 'barrera_impacto_a17',    description: 'Aplica Escudo 10 HP a todo el equipo aliado (incluido Androide 17). Genera 5 cargas a todos los aliados excepto Androide 17.' },
                 ]
             },
 
