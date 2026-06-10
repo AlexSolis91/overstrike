@@ -210,13 +210,13 @@
             'Gilgamesh': {
                 hp: 20, maxHp: 20, speed: 89, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/nzNJp8K7/Captura_de_pantalla_2026_02_27_201309.png',
-                passive: { name: 'Regla de Oro', description: 'Aumenta 25% la probabilidad de golpe crítico. Cada golpe crítico genera 1 carga (100% de probabilidad).' },
+                portrait: 'https://i.ibb.co/qMnfxHyt/Rey-de-los-H-roes-Gilgamesh.jpg',
+                passive: { name: 'Regla de Oro', description: 'Por cada golpe crítico: Gilgamesh genera 1 carga, se cura 1 HP y aplica 2 debuffs aleatorios al enemigo golpeado. Gilgamesh no causa daño a enemigos que tengan debuffs activos.' },
                 abilities: [
-                    { name: 'Gate of Babylon', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'aoe', effect: 'crit_chance_basic', critChance: 0.50, description: 'Causa 1 AOE. 50% de probabilidad de golpe crítico.' },
-                    { name: 'Espada Merodach', type: 'special', cost: 5, chargeGain: 0, damage: 3, target: 'aoe', effect: 'espada_merodach', description: 'Causa 3 AOE. Elimina 3 cargas del enemigo golpeado por un golpe crítico.' },
-                    { name: 'Enkidu: Cadenas del Cielo', type: 'special', cost: 7, chargeGain: 0, damage: 0, target: 'aoe', effect: 'enkidu_cadenas', description: 'Cancela todas las invocaciones activas del enemigo. Aplica debuff Mega Aturdimiento en todos los enemigos que actualmente tengan más de 5 cargas.' },
-                    { name: 'Enuma Elish', type: 'over', cost: 10, chargeGain: 0, damage: 5, target: 'single', effect: 'gilgamesh_enuma', description: 'Causa 5 de daño. Roba todas las cargas del Enemigo golpeado.' }
+                    { name: 'Gate of Babylon',          type: 'basic',   cost: 0,  chargeGain: 1, damage: 2, target: 'aoe',    effect: 'gate_of_babylon_gil', description: 'Causa 2 AOE. Cada enemigo tiene 50% de probabilidad de recibir golpe crítico.' },
+                    { name: 'Espada Merodach',           type: 'special', cost: 5,  chargeGain: 0, damage: 3, target: 'mt',     effect: 'espada_merodach',     description: 'Golpea hasta 2 veces a hasta 2 enemigos (MT). Cada golpe tiene 50% de crítico. Por cada crítico elimina 3 cargas del equipo rival.' },
+                    { name: 'Enkidu: Cadenas del Cielo', type: 'special', cost: 6,  chargeGain: 0, damage: 4, target: 'single', effect: 'enkidu_cadenas',      description: 'Causa 4 daño ST. Cancela todas las invocaciones del enemigo. Por cada invocación cancelada, aplica Mega Aturdimiento a un enemigo aleatorio sin Mega Aturdimiento activo.' },
+                    { name: 'Enuma Elish',               type: 'over',    cost: 10, chargeGain: 0, damage: 0, target: 'mt',     effect: 'gilgamesh_enuma',     description: 'MT: ataca 1 vez a cada enemigo. El daño base es igual a los debuffs activos en el equipo enemigo. Cada golpe: 50% crítico, 25% daño triple. Aplica 1 debuff aleatorio a cada enemigo antes del ataque.' }
                 ]
             },
 
@@ -305,12 +305,12 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 hpLost: 0,
                 portrait: 'https://i.postimg.cc/63sFfc1F/Captura_de_pantalla_2026_02_28_015421.png',
-                passive: { name: 'Presencia Oscura', description: 'Aura Oscura permanente. Al inicio de cada ronda, 50% de aplicar Miedo a cada enemigo.' },
+                passive: { name: 'Presencia Oscura', description: 'Al inicio de cada ronda: 50% de aplicar Miedo a cada enemigo y 70% de aplicarse Buff Reflejar. Al atacar a un enemigo con Miedo: elimina el Miedo, Vader se cura 2 HP, un aliado aleatorio gana 3 cargas y Vader gana 1 turno adicional.' },
                 abilities: [
-                    { name: 'Corte Oscuro', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'corte_oscuro_vader', description: 'Causa 2 daño. Si el objetivo tenía Miedo activo antes del ataque, Darth Vader se aplica Buff Reflejar.' },
-                    { name: 'Explosión de la Fuerza', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'aoe', effect: 'explosion_fuerza_dv', description: 'Causa 2 AOE. 50% de Aturdimiento. 50% de Debilitar a los objetivos.' },
-                    { name: 'Intimidación Sith', type: 'special', cost: 7, chargeGain: 0, damage: 6, target: 'single', effect: 'intimidacion_sith', description: 'Causa 6 daño + 3 daño directo adicional por cada buff activo en el objetivo al ejecutar este ataque.' },
-                    { name: 'Ira del Elegido Caído', type: 'over', cost: 10, chargeGain: 0, damage: 2, target: 'aoe', effect: 'ira_elegido', description: 'Causa 2 AOE + 1 daño adicional por cada punto de HP que Darth Vader ha perdido en el combate.' }
+                    { name: 'Corte Oscuro',           type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'corte_oscuro_vader',   description: 'Causa 1 daño ST. Por cada Miedo activo en ambos equipos, genera +1 carga al equipo aliado. Si el objetivo tenía Miedo: lo elimina, Vader +2 HP, aliado aleatorio +3 cargas, Vader gana turno extra.' },
+                    { name: 'Explosión de la Fuerza', type: 'special', cost: 4,  chargeGain: 0, damage: 2, target: 'aoe',    effect: 'explosion_fuerza_dv', description: 'Causa 2 AOE. Los enemigos con Miedo activo reciben daño crítico (x2).' },
+                    { name: 'Intimidación Sith',      type: 'special', cost: 7,  chargeGain: 0, damage: 6, target: 'single', effect: 'intimidacion_sith',   description: 'Causa 6 daño. Ignora Provocación, MegaProvocación y Sigilo. Disipa todos los buffs del objetivo y causa +5 daño directo por cada buff disipado.' },
+                    { name: 'Ira del Elegido Caído',  type: 'over',    cost: 20, chargeGain: 0, damage: 2, target: 'aoe',    effect: 'ira_elegido',         description: 'Causa 2 AOE + 1 daño adicional por cada punto de carga que tengan ambos equipos. Aplica Miedo a los enemigos que sobrevivan.' }
                 ]
             },
 
