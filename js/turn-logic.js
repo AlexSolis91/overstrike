@@ -2217,24 +2217,8 @@
                         const c = gameState.characters[n];
                         if (c && !c.isDead && c.hp > 0) c.hpAtRoundStart = c.hp;
                     }
-                    // ── RECALCULAR ORDEN DE TURNOS por velocidad actual (incluye revividos) ──
-                    const _lastActed = gameState.turnOrder[gameState.currentTurnIndex]; // quién actuó último
-                    const _aliveNamesNew = Object.keys(gameState.characters).filter(function(n) {
-                        const c = gameState.characters[n]; return c && !c.isDead && c.hp > 0;
-                    });
-                    _aliveNamesNew.sort(function(a, b) {
-                        return (gameState.characters[b].speed || 0) - (gameState.characters[a].speed || 0);
-                    });
-                    gameState.turnOrder = _aliveNamesNew;
-                    gameState.aliveCountAtRoundStart = _aliveNamesNew.length;
-                    gameState.turnsInRound = 0;
-                    // Iniciar desde -1; el +1 posterior lo lleva a 0 (primer personaje)
-                    gameState.currentTurnIndex = -1;
-                    // Si el más rápido es el mismo que acaba de actuar, empezar desde el índice 1
-                    // para que no repita turno de inmediato
-                    if (_aliveNamesNew[0] === _lastActed && _aliveNamesNew.length > 1) {
-                        gameState.currentTurnIndex = 0; // el +1 posterior lo llevará a índice 1
-                    }
+                    // Guardar quién actuó último para usarlo al recalcular turnOrder más abajo
+                    const _lastActed = gameState.turnOrder[gameState.currentTurnIndex];
 
                     // ── IRON (Sun Jin Woo): inicio de ronda → 3 cargas al equipo aliado ──
                     (function() {
@@ -2358,6 +2342,28 @@
                                 }
                             });
                             break;
+                        }
+                    })();
+
+                    // ── RECALCULAR ORDEN DE TURNOS por velocidad actual ──
+                    // Se hace DESPUÉS de todos los buffs/debuffs de inicio de ronda
+                    // para que cambios de velocidad (Celeridad, Congelación, etc.) ya estén aplicados
+                    (function() {
+                        const _aliveNamesNew = Object.keys(gameState.characters).filter(function(n) {
+                            const c = gameState.characters[n]; return c && !c.isDead && c.hp > 0;
+                        });
+                        _aliveNamesNew.sort(function(a, b) {
+                            return (gameState.characters[b].speed || 0) - (gameState.characters[a].speed || 0);
+                        });
+                        gameState.turnOrder = _aliveNamesNew;
+                        gameState.aliveCountAtRoundStart = _aliveNamesNew.length;
+                        gameState.turnsInRound = 0;
+                        // Iniciar desde -1; el +1 posterior lo lleva a 0 (primer personaje)
+                        gameState.currentTurnIndex = -1;
+                        // Si el más rápido es el mismo que acaba de actuar, empezar desde el índice 1
+                        // para que no repita turno de inmediato
+                        if (_aliveNamesNew[0] === _lastActed && _aliveNamesNew.length > 1) {
+                            gameState.currentTurnIndex = 0; // el +1 posterior lo llevará a índice 1
                         }
                     })();
                 }
