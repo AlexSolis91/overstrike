@@ -9487,7 +9487,122 @@
                 if (_biA17) _biA17.charges = Math.min(20, (_biA17.charges||0) + 8);
                 addLog('⚡ Barrera de Impacto Total: Androide 17 gana 8 cargas adicionales', 'buff');
 
-            } // end Androide 17 handlers
+            // ── SEIYA (Saint Seiya) ──
+            } else if (ability.effect === 'puno_pegaso_seiya') {
+                // Puño de Pegaso: 1 daño ST (aplicado por el sistema base) + genera 1-3 cargas a 1 aliado aleatorio
+                const _ppUser = gameState.characters[gameState.selectedCharacter];
+                const _ppTeam = _ppUser ? _ppUser.team : 'team1';
+                const _ppAllies = Object.keys(gameState.characters).filter(function(n) {
+                    const _c = gameState.characters[n];
+                    return _c && _c.team === _ppTeam && !_c.isDead && _c.hp > 0;
+                });
+                if (_ppAllies.length > 0) {
+                    const _ppTarget = _ppAllies[Math.floor(Math.random() * _ppAllies.length)];
+                    const _ppGain = 1 + Math.floor(Math.random() * 3); // 1-3
+                    gameState.characters[_ppTarget].charges = Math.min(20, (gameState.characters[_ppTarget].charges || 0) + _ppGain);
+                    addLog('👊 Puño de Pegaso: ' + _ppTarget + ' gana ' + _ppGain + ' carga' + (_ppGain > 1 ? 's' : ''), 'buff');
+                }
+
+            } else if (ability.effect === 'arde_cosmos_seiya') {
+                // ¡Arde, cosmos!: Genera 2-10 cargas a Seiya + gana 1 turno adicional
+                const _acUser = gameState.characters[gameState.selectedCharacter];
+                if (_acUser) {
+                    const _acGain = 2 + Math.floor(Math.random() * 9); // 2-10
+                    _acUser.charges = Math.min(20, (_acUser.charges || 0) + _acGain);
+                    addLog('🔥 ¡Arde, cosmos!: ' + gameState.selectedCharacter + ' gana ' + _acGain + ' cargas', 'buff');
+                    gameState._seiyaExtraTurn = gameState.selectedCharacter;
+                    addLog('🔥 ¡Arde, cosmos!: ' + gameState.selectedCharacter + ' gana 1 turno adicional', 'buff');
+                }
+
+            } else if (ability.effect === 'vinculo_atena_seiya') {
+                // Vínculo de Atena: Seiya pierde 50% HP, reparte cargas entre aliados, Esquivar 2T al equipo
+                const _vaUser = gameState.characters[gameState.selectedCharacter];
+                const _vaTeam = _vaUser ? _vaUser.team : 'team1';
+                if (_vaUser) {
+                    // Sacrificar 50% HP (mínimo 1 HP para no morir)
+                    const _vaSacrifice = Math.floor((_vaUser.hp || 0) * 0.5);
+                    _vaUser.hp = Math.max(1, (_vaUser.hp || 0) - _vaSacrifice);
+                    addLog('✝️ Vínculo de Atena: ' + gameState.selectedCharacter + ' sacrifica ' + _vaSacrifice + ' HP (queda en ' + _vaUser.hp + ')', 'damage');
+
+                    // Repartir cargas actuales entre aliados (excluyendo a Seiya), cada carga va a un aliado random
+                    const _vaAllies = Object.keys(gameState.characters).filter(function(n) {
+                        const _c = gameState.characters[n];
+                        return _c && _c.team === _vaTeam && !_c.isDead && _c.hp > 0 && n !== gameState.selectedCharacter;
+                    });
+                    const _vaCharges = _vaUser.charges || 0;
+                    if (_vaCharges > 0 && _vaAllies.length > 0) {
+                        const _vaDistrib = {};
+                        for (let _vi = 0; _vi < _vaCharges; _vi++) {
+                            const _vaRnd = _vaAllies[Math.floor(Math.random() * _vaAllies.length)];
+                            _vaDistrib[_vaRnd] = (_vaDistrib[_vaRnd] || 0) + 1;
+                        }
+                        for (const _vn in _vaDistrib) {
+                            gameState.characters[_vn].charges = Math.min(20, (gameState.characters[_vn].charges || 0) + _vaDistrib[_vn]);
+                            addLog('✝️ Vínculo de Atena: ' + _vn + ' recibe ' + _vaDistrib[_vn] + ' cargas', 'buff');
+                        }
+                        _vaUser.charges = 0;
+                        addLog('✝️ Vínculo de Atena: Seiya reparte ' + _vaCharges + ' cargas entre aliados', 'buff');
+                    } else if (_vaCharges === 0) {
+                        addLog('✝️ Vínculo de Atena: Seiya no tenía cargas que repartir', 'info');
+                    }
+
+                    // Aplicar Buff Esquivar 2T a todo el equipo aliado (incluyendo a Seiya)
+                    for (const _vn in gameState.characters) {
+                        const _vc = gameState.characters[_vn];
+                        if (!_vc || _vc.team !== _vaTeam || _vc.isDead || _vc.hp <= 0) continue;
+                        if (typeof applyBuff === 'function') applyBuff(_vn, { name: 'Esquivar', type: 'buff', duration: 2, emoji: '💨' });
+                    }
+                    addLog('✝️ Vínculo de Atena: equipo aliado recibe Esquivar 2T', 'buff');
+                }
+
+            } else if (ability.effect === 'pegasus_ryuseiken') {
+                // Pegasus Ryu Sei Ken: 5 daño base + 5-30 adicional al objetivo.
+                // Si elimina al objetivo → 5-20 daño a cada enemigo restante.
+                const _prskUser = gameState.characters[gameState.selectedCharacter];
+                const _prskTeam = _prskUser ? _prskUser.team : 'team1';
+                const _prskETeam = _prskTeam === 'team1' ? 'team2' : 'team1';
+                const _prskTargetName = gameState.currentTarget || gameState.selectedTarget;
+                const _prskTarget = _prskTargetName ? gameState.characters[_prskTargetName] : null;
+
+                if (_prskTarget && !_prskTarget.isDead) {
+                    // El daño base (5) ya fue aplicado por executeAbility (damage:5 en characters.js)
+                    // Daño adicional aleatorio 5-30
+                    const _prskBonus = 5 + Math.floor(Math.random() * 26); // 5-30
+                    if (typeof applyDamageWithShield === 'function') {
+                        applyDamageWithShield(_prskTargetName, _prskBonus, gameState.selectedCharacter);
+                    } else {
+                        _prskTarget.hp = Math.max(0, (_prskTarget.hp || 0) - _prskBonus);
+                        if (_prskTarget.hp <= 0) { _prskTarget.isDead = true; if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, _prskTargetName, false); }
+                    }
+                    addLog('🌠 Pegasus Ryu Sei Ken: ' + _prskBonus + ' daño adicional a ' + _prskTargetName, 'damage');
+
+                    // Si el objetivo fue eliminado → 5-20 daño a cada enemigo restante
+                    if (_prskTarget.isDead || _prskTarget.hp <= 0) {
+                        const _prskRemaining = Object.keys(gameState.characters).filter(function(n) {
+                            const _c = gameState.characters[n];
+                            return _c && _c.team === _prskETeam && !_c.isDead && _c.hp > 0 && n !== _prskTargetName;
+                        });
+                        if (_prskRemaining.length > 0) {
+                            const _prskSplash = 5 + Math.floor(Math.random() * 16); // 5-20
+                            _prskRemaining.forEach(function(n) {
+                                if (typeof applyDamageWithShield === 'function') {
+                                    applyDamageWithShield(n, _prskSplash, gameState.selectedCharacter);
+                                } else {
+                                    const _ec = gameState.characters[n];
+                                    if (_ec) {
+                                        _ec.hp = Math.max(0, (_ec.hp || 0) - _prskSplash);
+                                        if (_ec.hp <= 0) { _ec.isDead = true; if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, n, false); }
+                                    }
+                                }
+                            });
+                            addLog('🌠 Pegasus Ryu Sei Ken: ¡' + _prskTargetName + ' eliminado! ' + _prskSplash + ' daño a cada enemigo', 'damage');
+                        }
+                    }
+                } else {
+                    addLog('🌠 Pegasus Ryu Sei Ken: objetivo inválido o ya derrotado', 'info');
+                }
+
+            } // end Seiya handlers
 
             // Actualizar UI
             renderCharacters();

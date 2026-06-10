@@ -428,7 +428,7 @@
                     { name: 'Puño de Pegaso',      type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'puno_pegaso_seiya',    description: 'Causa 1 daño. Genera de 1 a 3 cargas a un aliado aleatorio.' },
                     { name: '¡Arde, cosmos!',      type: 'special', cost: 3,  chargeGain: 0, damage: 0, target: 'self',   effect: 'arde_cosmos_seiya',    description: 'Seiya genera de 2 a 10 cargas y gana 1 turno adicional.' },
                     { name: 'Vínculo de Atena',    type: 'special', cost: 0,  chargeGain: 0, damage: 0, target: 'self',   effect: 'vinculo_atena_seiya',  description: 'Seiya sacrifica el 50% de su HP. Reparte sus cargas actuales entre los aliados aleatoriamente. Aplica Buff Esquivar 2 turnos al equipo aliado.' },
-                    { name: 'Pegasus Ryu Sei Ken', type: 'over',    cost: 12, chargeGain: 0, damage: 0, target: 'single', effect: 'pegasus_ryuseiken',    description: 'Causa 5 a 30 daño adicional al objetivo. Si elimina al objetivo, causa 5 a 15 daño adicional a cada enemigo.' }
+                    { name: 'Pegasus Ryu Sei Ken', type: 'over',    cost: 10, chargeGain: 0, damage: 5, target: 'single', effect: 'pegasus_ryuseiken',    description: 'Causa 5 daño + 5 a 30 daño adicional al objetivo. Si elimina al objetivo, causa 5 a 20 daño adicional a cada enemigo.' }
                 ]
             },
             'Linterna Verde': {
