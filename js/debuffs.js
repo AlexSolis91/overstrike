@@ -384,6 +384,21 @@ function triggerMaboroshi(targetTeam, debuffName) {
             if (typeof _animCard === 'function' && !effectObj.passiveHidden) {
                 _animCard(targetName, 'anim-charge', 550);
             }
+            // ── ORGULLO VILTRUMITA (Omni-Man): si buff aplicado al equipo enemigo → +3 cargas ──
+            if (!effectObj.passiveHidden) {
+                const _ovBuffTgt = gameState.characters[targetName];
+                if (_ovBuffTgt) {
+                    for (const _omN in gameState.characters) {
+                        const _omC = gameState.characters[_omN];
+                        if (!_omC || _omC.isDead || _omC.hp <= 0 || !_omC.passive) continue;
+                        if (_omC.passive.name !== 'Orgullo Viltrumita') continue;
+                        if (_omC.team === _ovBuffTgt.team) continue; // solo si el buff fue al equipo ENEMIGO de Omni-Man
+                        _omC.charges = Math.min(20, (_omC.charges||0) + 3);
+                        addLog('🦸 Orgullo Viltrumita: Omni-Man +3 cargas (buff aplicado a enemigo)', 'buff');
+                        break;
+                    }
+                }
+            }
             // MVP: registrar buff aplicado (buffs visibles en aliados aplicados activamente)
             if (!effectObj.passiveHidden && gameState.selectedCharacter) {
                 const _caster = gameState.characters[gameState.selectedCharacter];
@@ -623,7 +638,47 @@ function applyDebuff(targetName, effectObj) {
                 }
             }
             target.statusEffects.push(effectObj);
-            // MVP: registrar debuff aplicado sobre enemigo (solo con habilidad activa)
+            // ── ORGULLO VILTRUMITA (Omni-Man): si un aliado recibe un debuff → Arremetida Planetaria ──
+            if (!effectObj.passiveHidden) {
+                const _ovDebuffTgt = gameState.characters[targetName];
+                if (_ovDebuffTgt) {
+                    for (const _omN in gameState.characters) {
+                        const _omC = gameState.characters[_omN];
+                        if (!_omC || _omC.isDead || _omC.hp <= 0 || !_omC.passive) continue;
+                        if (_omC.passive.name !== 'Orgullo Viltrumita') continue;
+                        if (_omC.team !== _ovDebuffTgt.team) continue; // solo si el debuff fue al equipo de Omni-Man
+                        if (_omN === (gameState.selectedCharacter)) continue; // no trigger si Omni-Man se lo aplica a sí mismo
+                        // Ejecutar Arremetida Planetaria automáticamente
+                        if (!gameState._omniManPassiveExecuting) {
+                            gameState._omniManPassiveExecuting = true;
+                            try {
+                                const _omET = _omC.team === 'team1' ? 'team2' : 'team1';
+                                const _omAliveEnemies = Object.keys(gameState.characters).filter(function(n) {
+                                    const _c = gameState.characters[n];
+                                    return _c && _c.team === _omET && !_c.isDead && _c.hp > 0;
+                                });
+                                if (_omAliveEnemies.length > 0) {
+                                    addLog('🦸 Orgullo Viltrumita: Omni-Man ejecuta Arremetida Planetaria (debuff aplicado a aliado)', 'buff');
+                                    const _omArrDmg = 1;
+                                    for (const _en in gameState.characters) {
+                                        const _ec = gameState.characters[_en];
+                                        if (!_ec || _ec.team !== _omET || _ec.isDead || _ec.hp <= 0) continue;
+                                        if (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(_en, true)) continue;
+                                        let _omD = _omArrDmg;
+                                        if (Math.random() < 0.10) { _omD += 6; addLog('💥 Arremetida Planetaria (pasiva): +6 en ' + _en, 'damage'); }
+                                        if (typeof applyDamageWithShield === 'function') applyDamageWithShield(_en, _omD, _omN);
+                                        if (Math.random() < 0.50) { if (typeof applyStun === 'function') applyStun(_en, 1); addLog('⭐ Arremetida Planetaria (pasiva): Aturdimiento en ' + _en, 'debuff'); }
+                                    }
+                                    // +1 carga a Omni-Man (chargeGain de Arremetida)
+                                    _omC.charges = Math.min(20, (_omC.charges||0) + 1);
+                                }
+                            } catch(e) { console.error('[Orgullo Viltrumita]', e); }
+                            gameState._omniManPassiveExecuting = false;
+                        }
+                        break;
+                    }
+                }
+            }
             if (gameState.selectedCharacter && gameState.selectedAbility) {
                 const _caster = gameState.characters[gameState.selectedCharacter];
                 const _tgt = gameState.characters[targetName];

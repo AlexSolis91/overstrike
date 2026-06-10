@@ -600,33 +600,6 @@
                 applyDamageWithShield(targetName, dmgArc, gameState.selectedCharacter);
                 addLog(`🌌 ${gameState.selectedCharacter} usa Arc Geminga en ${targetName} causando ${dmgArc} daño`, 'damage');
 
-            } else if (ability.effect === 'gate_of_babylon_gil') {
-                // GILGAMESH — Gate of Babylon: 2 AOE, 50% crítico por enemigo. Pasiva Regla de Oro.
-                const _gobTeam = attacker.team === 'team1' ? 'team2' : 'team1';
-                if (typeof triggerElReyPrometido === 'function') triggerElReyPrometido(gameState.selectedCharacter);
-                checkAndRemoveStealth(_gobTeam);
-                const _gobDarion = Object.values(gameState.summons).find(s => s && s.name === 'Valkyr' && s.team === attacker.team);
-                const _gobCritBonus = _gobDarion ? 0.50 : 0;
-                if (checkAndRedirectAOEMegaProv(_gobTeam, finalDamage, gameState.selectedCharacter)) {
-                    addLog('👑 Gate of Babylon redirigido por Mega Provocación', 'damage');
-                } else {
-                    for (let _gn in gameState.characters) {
-                        const _gc = gameState.characters[_gn];
-                        if (!_gc || _gc.team !== _gobTeam || _gc.isDead || _gc.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_gn, true) || checkMinatoAOEImmunity(_gn)) { addLog('🌟 ' + _gn + ' es inmune (Esquiva Área)', 'buff'); continue; }
-                        const _gobIsCrit = Math.random() < Math.min(1, 0.50 + _gobCritBonus);
-                        let _gobDmg = finalDamage;
-                        if (_gobIsCrit) {
-                            _gobDmg *= 2;
-                            addLog('💥 Gate of Babylon: ¡CRÍTICO en ' + _gn + '!', 'damage');
-                            triggerGilgameshCrit(gameState.selectedCharacter);
-                        }
-                        applyDamageWithShield(_gn, _gobDmg, gameState.selectedCharacter);
-                    }
-                }
-                applyAOEToSummons(_gobTeam, finalDamage, gameState.selectedCharacter);
-                addLog('👑 Gate of Babylon: ' + finalDamage + ' AOE (50% crítico por objetivo)', 'damage');
-
             } else if (ability.effect === 'crit_chance_basic') {
                 // Ataque con probabilidad de crítico (Goku Kamehameha, Golpe Serio Saitama, etc.)
                 let baseDmgCrit = finalDamage;
@@ -1196,36 +1169,27 @@
                 addLog('🎯 ' + gameState.selectedCharacter + ' activa Mega Provocación por ' + (ability.provDuration || 4) + ' turnos', 'buff');
 
             } else if (ability.effect === 'ira_elegido') {
-                // DARTH VADER — Ira del Elegido Caído: 2 AOE + 1 daño por cada punto de carga en AMBOS equipos.
-                // Aplica Miedo a enemigos que sobrevivan.
-                let _iraCharges = 0;
-                for (const _icn in gameState.characters) {
-                    const _icc = gameState.characters[_icn];
-                    if (_icc && !_icc.isDead && _icc.hp > 0) _iraCharges += (_icc.charges||0);
-                }
-                const iraTotal = finalDamage + _iraCharges;
+                // DARTH VADER - Ira del Elegido Caído: 2 AOE + 1 por HP perdido
+                const iraBonusDmg = attacker.maxHp - attacker.hp;
+                const iraTotal = finalDamage + iraBonusDmg;
                 const iraTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                 checkAndRemoveStealth(iraTeam);
+                                // MEGA PROVOCACIÓN
                 if (checkAndRedirectAOEMegaProv(iraTeam, finalDamage, gameState.selectedCharacter)) {
-                    addLog('🎯 Ira del Elegido Caído: AOE redirigido por Mega Provocación', 'damage');
+                    addLog('🎯 ira_elegido: AOE redirigido por Mega Provocación', 'damage');
                 } else {
-                    for (let n in gameState.characters) {
-                        const c = gameState.characters[n];
-                        if (!c || c.team !== iraTeam || c.isDead || c.hp <= 0) continue;
+                for (let n in gameState.characters) {
+                    const c = gameState.characters[n];
+                    if (c && c.team === iraTeam && !c.isDead && c.hp > 0) {
                         applyDamageWithShield(n, iraTotal, gameState.selectedCharacter);
-                        const _cAfter = gameState.characters[n];
-                        if (_cAfter && !_cAfter.isDead && _cAfter.hp > 0) {
-                            if (typeof applyFear === 'function') applyFear(n, 1);
-                            else if (typeof applyDebuff === 'function') applyDebuff(n, { name: 'Miedo', type: 'debuff', duration: 1, emoji: '😱' });
-                            addLog('😱 Ira del Elegido Caído: Miedo aplicado a ' + n, 'debuff');
-                        }
                     }
+                }
                 }
                 for (let sId in gameState.summons) {
                     const s = gameState.summons[sId];
                     if (s && s.team === iraTeam && s.hp > 0) applySummonDamage(sId, iraTotal, gameState.selectedCharacter);
                 }
-                addLog('⚡ Ira del Elegido Caído: ' + iraTotal + ' daño AOE (' + finalDamage + ' base + ' + _iraCharges + ' por cargas totales)', 'damage');
+                addLog(`⚡ Ira del Elegido Caído: ${iraTotal} daño AOE (${finalDamage} base + ${iraBonusDmg} por HP perdido)`, 'damage');
 
             } else if (ability.effect === 'agonia_escarcha') {
                 // LICH KING - Agonía de Escarcha: 1 daño + roba 1 HP + Buff Provocación 2T
@@ -1362,84 +1326,87 @@
                 }
 
             } else if (ability.effect === 'espada_merodach') {
-                // GILGAMESH — Espada Merodach: MT hasta 2 enemigos x hasta 2 golpes, 50% crit.
-                // Por cada crítico: elimina 3 cargas a TODO el equipo rival.
-                const _emTeam = attacker.team === 'team1' ? 'team2' : 'team1';
-                checkAndRemoveStealth(_emTeam);
-                const _emDarion = Object.values(gameState.summons).find(s => s && s.name === 'Valkyr' && s.team === attacker.team);
-                const _emCritChance = Math.min(1, 0.50 + (_emDarion ? 0.50 : 0));
-                // Pick up to 2 alive enemies
-                const _emTargets = Object.keys(gameState.characters).filter(n => {
-                    const _c = gameState.characters[n];
-                    return _c && _c.team === _emTeam && !_c.isDead && _c.hp > 0;
-                });
-                // Shuffle and take 2
-                _emTargets.sort(() => Math.random() - 0.5);
-                const _emHits = _emTargets.slice(0, 2);
-                let _emTotalCrits = 0;
-                _emHits.forEach(function(_emN) {
-                    // Up to 2 hits on this target
-                    const _emHitCount = Math.floor(Math.random() * 2) + 1;
-                    for (let _h = 0; _h < _emHitCount; _h++) {
-                        const _emC = gameState.characters[_emN];
-                        if (!_emC || _emC.isDead || _emC.hp <= 0) break;
-                        const _emIsCrit = Math.random() < _emCritChance;
-                        let _emDmg = finalDamage;
-                        if (_emIsCrit) {
-                            _emDmg *= 2;
-                            _emTotalCrits++;
-                            addLog('💥 Espada Merodach: ¡CRÍTICO en ' + _emN + ' (golpe ' + (_h+1) + ')!', 'damage');
+                // GILGAMESH - Espada Merodach: AOE daño + elimina 3 cargas
+                const emTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                checkAndRemoveStealth(emTeam);
+                const darionEM = Object.values(gameState.summons).find(s => s && s.name === 'Valkyr' && s.team === attacker.team);
+                const muzanEM = ((gameState.selectedCharacter === 'Muzan Kibutsuji' || gameState.selectedCharacter === 'Muzan Kibutsuji v2')) ? (attacker.muzanCritBonus || 0) : 0;
+                const critBonusEM = (darionEM ? 0.50 : 0) + 0.10 + muzanEM;
+
+                // ── MEGA PROVOCACIÓN: redirige todo el daño al portador ──
+                const emKamish = checkKamishMegaProvocation(emTeam);
+                if (emKamish) {
+                    // Count alive targets for damage multiplication
+                    let emTargetCount = 0;
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (c && c.team === emTeam && !c.isDead && c.hp > 0) emTargetCount++;
+                    }
+                    for (let sId in gameState.summons) {
+                        const s = gameState.summons[sId];
+                        if (s && s.team === emTeam && s.hp > 0 && sId !== emKamish.id) emTargetCount++;
+                    }
+                    const emTotalDmg = finalDamage * Math.max(1, emTargetCount);
+                    if (emKamish.isCharacter) {
+                        applyDamageWithShield(emKamish.characterName, emTotalDmg, gameState.selectedCharacter);
+                        addLog('🌑 ' + emKamish.characterName + ' (Mega Provocación) absorbe ' + emTotalDmg + ' daño de Espada Merodach', 'damage');
+                    } else {
+                        applySummonDamage(emKamish.id, emTotalDmg, gameState.selectedCharacter);
+                        addLog('🐉 ' + (emKamish.kamish ? emKamish.kamish.name : 'Invocación') + ' (Mega Provocación) absorbe ' + emTotalDmg + ' daño de Espada Merodach', 'damage');
+                    }
+                    addLog('⚔️ Espada Merodach (Mega Prov): ' + emTotalDmg + ' daño total redirigido', 'damage');
+                } else {
+                    // Sin Mega Provocación — AOE normal
+                    for (let n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== emTeam || c.isDead || c.hp <= 0) continue;
+                        // ESQUIVA ÁREA: inmune a todo efecto AOE
+                        if (checkAsprosAOEImmunity(n, true) || checkMinatoAOEImmunity(n)) {
+                            addLog('🌟 ' + n + ' es inmune a Espada Merodach (Esquiva Área)', 'buff');
+                            continue; // skip damage AND charge drain
+                        }
+                        const isCritEM = Math.random() < ((ability.critChance || 0.10) + critBonusEM);
+                        let dmgEM = finalDamage;
+                        if (isCritEM) {
+                            dmgEM *= 2;
+                            addLog('💥 ¡CRÍTICO! Espada Merodach en ' + n, 'damage');
                             triggerGilgameshCrit(gameState.selectedCharacter);
                         }
-                        applyDamageWithShield(_emN, _emDmg, gameState.selectedCharacter);
-                        addLog('⚔️ Espada Merodach: ' + _emDmg + ' a ' + _emN, 'damage');
+                        applyDamageWithShield(n, dmgEM, gameState.selectedCharacter);
+                        // Only drain charges if NOT Esquiva Area (already skipped above via continue)
+                        c.charges = Math.max(0, c.charges - 3);
+                        addLog('👑 ' + n + ' pierde 3 cargas (Espada Merodach)', 'damage');
                     }
-                });
-                // Por cada crítico: -3 cargas a TODO el equipo rival
-                if (_emTotalCrits > 0) {
-                    const _emDrain = _emTotalCrits * 3;
-                    for (const _dn in gameState.characters) {
-                        const _dc = gameState.characters[_dn];
-                        if (_dc && _dc.team === _emTeam && !_dc.isDead && _dc.hp > 0) {
-                            _dc.charges = Math.max(0, (_dc.charges||0) - _emDrain);
-                        }
+                    for (let sId in gameState.summons) {
+                        const s = gameState.summons[sId];
+                        if (s && s.team === emTeam && s.hp > 0) applySummonDamage(sId, finalDamage, gameState.selectedCharacter);
                     }
-                    addLog('👑 Espada Merodach: equipo rival pierde ' + _emDrain + ' cargas (' + _emTotalCrits + ' crítico(s))', 'damage');
+                    addLog('⚔️ Espada Merodach: ' + finalDamage + ' daño AOE a todos los enemigos', 'damage');
                 }
             } else if (ability.effect === 'enkidu' || ability.effect === 'enkidu_cadenas') {
-                // GILGAMESH — Enkidu: Cadenas del Cielo: 4 daño ST. Cancela invocaciones enemigas.
-                // Por cada invocación cancelada: Mega Aturdimiento a un enemigo aleatorio sin Mega Aturdimiento.
-                const _enkTeam = attacker.team === 'team1' ? 'team2' : 'team1';
-                // 4 daño ST
-                const _enkTgt = gameState.characters[targetName];
-                if (_enkTgt) {
-                    applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                    addLog('⛓️ Enkidu: ' + finalDamage + ' daño a ' + targetName, 'damage');
-                }
-                // Cancelar invocaciones enemigas
-                const _enkSummons = Object.keys(gameState.summons).filter(id => gameState.summons[id] && gameState.summons[id].team === _enkTeam);
-                if (_enkSummons.length === 0) {
+                // GILGAMESH - Enkidu Cadenas del Cielo: cancela invocaciones + Mega Stun a >5 cargas
+                const enkTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                // Cancelar todas las invocaciones enemigas
+                const enemySummons = Object.keys(gameState.summons).filter(id => gameState.summons[id] && gameState.summons[id].team === enkTeam);
+                if (enemySummons.length === 0) {
                     addLog('⛓️ Enkidu: No hay invocaciones enemigas que cancelar', 'info');
                 } else {
-                    _enkSummons.forEach(function(id) {
-                        const _sn = gameState.summons[id] ? gameState.summons[id].name : '?';
-                        addLog('⛓️ Enkidu cancela invocación: ' + _sn, 'damage');
+                    enemySummons.forEach(id => {
+                        const sName = gameState.summons[id] ? gameState.summons[id].name : '?';
+                        addLog('⛓️ Enkidu cancela la invocación de ' + sName, 'damage');
                         delete gameState.summons[id];
-                        // Por cada invocación cancelada: Mega Aturdimiento a enemigo aleatorio sin Mega Aturdimiento
-                        const _enkCandidates = Object.keys(gameState.characters).filter(function(n) {
-                            const _c = gameState.characters[n];
-                            return _c && _c.team === _enkTeam && !_c.isDead && _c.hp > 0 &&
-                                   !(_c.statusEffects||[]).some(e => e && (e.name === 'MegaAturdimiento' || e.name === 'Mega Aturdimiento'));
-                        });
-                        if (_enkCandidates.length > 0) {
-                            const _enkStunTarget = _enkCandidates[Math.floor(Math.random() * _enkCandidates.length)];
-                            applyStun(_enkStunTarget, 2);
-                            addLog('⛓️ Enkidu: ¡Mega Aturdimiento en ' + _enkStunTarget + '!', 'debuff');
-                        }
                     });
-                    if (typeof renderSummons === 'function') renderSummons();
+                    renderSummons();
                 }
-                addLog('⛓️ ¡Enkidu: Cadenas del Cielo!', 'damage');
+                // Mega Aturdimiento a enemigos con >5 cargas
+                for (let n in gameState.characters) {
+                    const c = gameState.characters[n];
+                    if (c && c.team === enkTeam && !c.isDead && c.hp > 0 && c.charges > 5) {
+                        applyStun(n);
+                        addLog('⛓️ Enkidu: ' + n + ' queda Mega Aturdido (tenía ' + c.charges + ' cargas)', 'damage');
+                    }
+                }
+                addLog(`⛓️ ¡Enkidu: Cadenas del Cielo! Invocaciones canceladas`, 'damage');
 
             } else if (ability.effect === 'enuma_elish') {
                 // GILGAMESH - Enuma Elish: 10 daño, doble si el objetivo tiene Escudo HP
@@ -1786,7 +1753,7 @@
                 // Kiiroi Senkō (nuevo): 1 daño + Celeridad 10% 2t + Buff aleatorio 2t
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 const celerityBonus = Math.round(attacker.speed * 0.10);
-                // No sumamos attacker.speed manualmente — applyBuff lo hace ahora
+                attacker.speed += celerityBonus;
                 applyBuff(gameState.selectedCharacter, { name: 'Celeridad', type: 'buff', percent: 10, duration: 2, emoji: '⚡', speedBonus: celerityBonus });
                 const randomBuffs = ['Esquivar','Furia','Frenesi','Contraataque','Proteccion Sagrada'];
                 const rBuff = randomBuffs[Math.floor(Math.random() * randomBuffs.length)];
@@ -1895,9 +1862,10 @@
 
 
             } else if (ability.effect === 'celeridad_buff') {
-                // Celeridad: +15% velocidad por N turnos — applyBuff maneja el speed
+                // Celeridad: +15% velocidad por N turnos
                 const speedIncrease = Math.round(attacker.speed * (ability.speedBoost || 0.15));
-                applyBuff(gameState.selectedCharacter, { name: 'Celeridad', type: 'buff', duration: ability.buffDuration || 2, emoji: '💨', speedBonus: speedIncrease });
+                attacker.speed += speedIncrease;
+                attacker.statusEffects.push({ name: 'Celeridad', type: 'buff', duration: ability.buffDuration || 2, emoji: '💨', speedBonus: speedIncrease });
                 addLog(`💨 ${gameState.selectedCharacter} gana Celeridad +${speedIncrease} velocidad por ${ability.buffDuration || 2} turnos`, 'buff');
 
             } else if (ability.effect === 'kurama_mode') {
@@ -2500,7 +2468,7 @@
                 applyAOEToSummons(_efTeam, finalDamage, gameState.selectedCharacter);
                 addLog('⚡ Final Flash: ' + _ffDmg + ' daño ignorando Provocación/Sigilo a ' + targetName, 'damage');
             } else if (ability.effect === 'explosion_fuerza_dv') {
-                // DARTH VADER — Explosión de la Fuerza: 2 AOE. Enemigos con Miedo reciben daño crítico (x2).
+                // DARTH VADER — Explosión de la Fuerza: 2 AOE + 50% stun + 50% debilitar
                 const _efTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                 if (checkAndRedirectAOEMegaProv(_efTeam, finalDamage, gameState.selectedCharacter)) {
                     addLog('🌑 Explosión de la Fuerza redirigida por Mega Provocación', 'damage');
@@ -2509,14 +2477,13 @@
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _efTeam || _c.isDead || _c.hp <= 0) continue;
                         if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
-                        const _efHasFear = hasStatusEffect(_n, 'Miedo');
-                        const _efDmg = _efHasFear ? finalDamage * 2 : finalDamage;
-                        applyDamageWithShield(_n, _efDmg, gameState.selectedCharacter);
-                        if (_efHasFear) addLog('💥 Explosión de la Fuerza: ¡Crítico! ' + _efDmg + ' a ' + _n + ' (tenía Miedo)', 'damage');
+                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        if (Math.random() < 0.50) { applyStun(_n, 1); addLog('⭐ ' + _n + ' recibe Aturdimiento (Explosión de la Fuerza)', 'debuff'); }
+                        if (Math.random() < 0.50) { applyDebuff(_n, { name: 'Debilitar', type: 'debuff', duration: 2, emoji: '💔' }); addLog('💔 ' + _n + ' recibe Debilitar (Explosión de la Fuerza)', 'debuff'); }
                     }
                 }
                 applyAOEToSummons(_efTeam, finalDamage, gameState.selectedCharacter);
-                addLog('🌑 Explosión de la Fuerza: ' + finalDamage + ' AOE (x2 a objetivos con Miedo)', 'damage');
+                addLog('🌑 Explosión de la Fuerza: ' + finalDamage + ' AOE a todos los enemigos', 'damage');
             } else if (ability.effect === 'apply_stun_dmg') {
                 let stunDmg = finalDamage;
                 if (attacker.darkSideAwakened) {
@@ -3204,69 +3171,17 @@
                 }
 
             } else if (ability.effect === 'gilgamesh_enuma') {
-                // GILGAMESH — Enuma Elish: MT a cada enemigo.
-                // Daño base = nº debuffs activos en equipo enemigo.
-                // Aplica 1 debuff aleatorio a cada enemigo ANTES del ataque.
-                // Cada golpe: 50% crítico, 25% daño triple. Pasiva: no daño si tiene debuffs.
-                const _eeuTeam = attacker.team === 'team1' ? 'team2' : 'team1';
-                checkAndRemoveStealth(_eeuTeam);
-                const _eeuDarion = Object.values(gameState.summons).find(s => s && s.name === 'Valkyr' && s.team === attacker.team);
-                const _eeuCritBonus = _eeuDarion ? 0.50 : 0;
-                // Random debuffs pool
-                const _eeuDebuffPool = [
-                    { name: 'Miedo', type: 'debuff', duration: 1, emoji: '😱' },
-                    { name: 'Debilitar', type: 'debuff', duration: 2, emoji: '💔' },
-                    { name: 'Veneno', type: 'debuff', duration: 2, emoji: '☠️' },
-                    { name: 'Quemadura', type: 'debuff', duration: 2, emoji: '🔥', amount: 2 },
-                    { name: 'Congelacion', type: 'debuff', duration: 1, emoji: '🧊' },
-                    { name: 'Agotamiento', type: 'debuff', duration: 2, emoji: '😩' },
-                ];
-                // Step 1: aplicar 1 debuff aleatorio a cada enemigo
-                for (const _en in gameState.characters) {
-                    const _ec = gameState.characters[_en];
-                    if (!_ec || _ec.team !== _eeuTeam || _ec.isDead || _ec.hp <= 0) continue;
-                    const _rd = _eeuDebuffPool[Math.floor(Math.random() * _eeuDebuffPool.length)];
-                    if (typeof applyDebuff === 'function') applyDebuff(_en, Object.assign({}, _rd));
-                    addLog('👑 Enuma Elish: ' + _en + ' recibe ' + _rd.emoji + ' ' + _rd.name, 'debuff');
-                }
-                // Step 2: calcular daño base = nº debuffs en equipo enemigo (tras aplicar los anteriores)
-                let _eeuBaseDmg = 0;
-                for (const _en in gameState.characters) {
-                    const _ec = gameState.characters[_en];
-                    if (_ec && _ec.team === _eeuTeam && !_ec.isDead && _ec.hp > 0) {
-                        _eeuBaseDmg += (_ec.statusEffects||[]).filter(e => e && e.type === 'debuff').length;
+                // Gilgamesh OVER: daño + roba TODAS las cargas del objetivo
+                applyDamageWithShield(targetName, finalDamage, charName);
+                const enTgt = gameState.characters[targetName];
+                if (enTgt) {
+                    const enStolen = enTgt.charges || 0;
+                    if (enStolen > 0) {
+                        enTgt.charges = 0;
+                        attacker.charges = Math.min(20, (attacker.charges || 0) + enStolen);
+                        addLog('✨ Enuma Elish: ' + charName + ' roba ' + enStolen + ' cargas de ' + targetName, 'buff');
                     }
                 }
-                _eeuBaseDmg = Math.max(1, _eeuBaseDmg);
-                addLog('👑 Enuma Elish: Daño base = ' + _eeuBaseDmg + ' (debuffs activos en equipo enemigo)', 'damage');
-                // Step 3: atacar a cada enemigo
-                if (checkAndRedirectAOEMegaProv(_eeuTeam, _eeuBaseDmg, gameState.selectedCharacter)) {
-                    addLog('👑 Enuma Elish redirigido por Mega Provocación', 'damage');
-                } else {
-                    for (const _en in gameState.characters) {
-                        const _ec = gameState.characters[_en];
-                        if (!_ec || _ec.team !== _eeuTeam || _ec.isDead || _ec.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_en, true) || checkMinatoAOEImmunity(_en)) { addLog('🌟 ' + _en + ' es inmune (Esquiva Área)', 'buff'); continue; }
-                        // Pasiva Regla de Oro: Gilgamesh no causa daño a enemigos con debuffs activos
-                        // (no hay restricción de Regla de Oro en el ataque — la pasiva protege a Gilgamesh)
-                        // Crit / triple
-                        let _eeuDmg = _eeuBaseDmg;
-                        const _eeuIsCrit = Math.random() < Math.min(1, 0.50 + _eeuCritBonus);
-                        const _eeuIsTriple = Math.random() < 0.25;
-                        if (_eeuIsTriple) {
-                            _eeuDmg *= 3;
-                            addLog('💥 Enuma Elish: ¡DAÑO TRIPLE en ' + _en + '!', 'damage');
-                            triggerGilgameshCrit(gameState.selectedCharacter);
-                        } else if (_eeuIsCrit) {
-                            _eeuDmg *= 2;
-                            addLog('💥 Enuma Elish: ¡CRÍTICO en ' + _en + '!', 'damage');
-                            triggerGilgameshCrit(gameState.selectedCharacter);
-                        }
-                        applyDamageWithShield(_en, _eeuDmg, gameState.selectedCharacter);
-                        addLog('👑 Enuma Elish: ' + _eeuDmg + ' daño a ' + _en, 'damage');
-                    }
-                }
-                applyAOEToSummons(_eeuTeam, _eeuBaseDmg, gameState.selectedCharacter);
 
             } else if (ability.effect === 'sangre_esparta') {
                 // Leonidas: Sacrifica 10 HP y genera 10 cargas
@@ -6088,6 +6003,116 @@
                 addLog('🐍 Furia de la Serpiente: ' + finalDamage + ' AOE completado', 'damage');
 
             // ══════════════════════════════════════════════════════
+            // OMNI-MAN — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'impacto_supersonico_om') {
+                // Impacto Supersónico: daño base acumulativo (+1 por cada uso previo), 50% crit, 10% triple.
+                const _omAtk = gameState.characters[gameState.selectedCharacter];
+                // Incrementar daño base permanentemente en _impactoBaseDmg
+                if (_omAtk) {
+                    _omAtk._impactoBaseDmg = (_omAtk._impactoBaseDmg || 1) + 1;
+                }
+                const _omBaseDmg = _omAtk ? _omAtk._impactoBaseDmg : finalDamage;
+                const _omRoll = Math.random();
+                let _omDmg = _omBaseDmg;
+                if (_omRoll < 0.10) {
+                    _omDmg = _omBaseDmg * 3;
+                    addLog('💥 Impacto Supersónico: ¡DAÑO TRIPLE! (' + _omDmg + ')', 'damage');
+                } else if (_omRoll < 0.60) { // 10% triple + 50% crit = 60% total roll
+                    _omDmg = _omBaseDmg * 2;
+                    addLog('💥 Impacto Supersónico: ¡CRÍTICO! (' + _omDmg + ')', 'damage');
+                }
+                applyDamageWithShield(targetName, _omDmg, gameState.selectedCharacter);
+                addLog('🦸 Impacto Supersónico: ' + _omDmg + ' daño a ' + targetName + ' (base actual: ' + _omBaseDmg + ')', 'damage');
+
+            } else if (ability.effect === 'arremetida_planetaria_om') {
+                // Arremetida Planetaria: 1 AOE. 50% aturdimiento/enemigo. 10% +6 daño adicional/enemigo.
+                const _apAtk = gameState.characters[gameState.selectedCharacter];
+                const _apET = _apAtk ? (_apAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                if (checkAndRedirectAOEMegaProv(_apET, finalDamage, gameState.selectedCharacter)) {
+                    addLog('🌍 Arremetida Planetaria redirigida por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _apET || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        let _apDmg = finalDamage;
+                        if (Math.random() < 0.10) {
+                            _apDmg += 6;
+                            addLog('💥 Arremetida Planetaria: +6 daño adicional en ' + _n + '!', 'damage');
+                        }
+                        applyDamageWithShield(_n, _apDmg, gameState.selectedCharacter);
+                        if (Math.random() < 0.50) {
+                            applyStun(_n, 1);
+                            addLog('⭐ Arremetida Planetaria: Aturdimiento en ' + _n, 'debuff');
+                        }
+                    }
+                }
+                applyAOEToSummons(_apET, finalDamage, gameState.selectedCharacter);
+                addLog('🌍 Arremetida Planetaria: ' + finalDamage + ' AOE completado', 'damage');
+
+            } else if (ability.effect === 'presion_absoluta_om') {
+                // Presión Absoluta: 8 daño ST + Mega Aturdimiento. Si mata: Omni-Man +10 HP.
+                const _paAtk = gameState.characters[gameState.selectedCharacter];
+                const _paWasAlive = gameState.characters[targetName] && !gameState.characters[targetName].isDead;
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('💪 Presión Absoluta: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                applyStun(targetName, 2);
+                addLog('⭐ Presión Absoluta: Mega Aturdimiento en ' + targetName, 'debuff');
+                const _paTgtDied = _paWasAlive && gameState.characters[targetName] && (gameState.characters[targetName].isDead || gameState.characters[targetName].hp <= 0);
+                if (_paTgtDied && _paAtk) {
+                    _paAtk.hp = Math.min(_paAtk.maxHp, (_paAtk.hp||0) + 10);
+                    addLog('💪 Presión Absoluta: Omni-Man se cura 10 HP', 'heal');
+                }
+
+            } else if (ability.effect === 'orden_viltrumita_om') {
+                // Orden Viltrumita: 10 daño ST. Si mata: se repite sobre enemigo aleatorio (en cadena).
+                // Por cada eliminación: aliado aleatorio gana 10 cargas.
+                const _ovAtk = gameState.characters[gameState.selectedCharacter];
+                const _ovMyTeam = _ovAtk ? _ovAtk.team : 'team2';
+                const _ovET = _ovMyTeam === 'team1' ? 'team2' : 'team1';
+                let _ovTarget = targetName;
+                let _ovKills = 0;
+                let _ovSafety = 0;
+                while (_ovTarget && _ovSafety < 10) {
+                    _ovSafety++;
+                    const _ovTgt = gameState.characters[_ovTarget];
+                    if (!_ovTgt || _ovTgt.isDead || _ovTgt.hp <= 0) break;
+                    applyDamageWithShield(_ovTarget, finalDamage, gameState.selectedCharacter);
+                    addLog('⚡ Orden Viltrumita: ' + finalDamage + ' daño a ' + _ovTarget, 'damage');
+                    const _ovTgtAfter = gameState.characters[_ovTarget];
+                    const _ovKilled = !_ovTgtAfter || _ovTgtAfter.isDead || _ovTgtAfter.hp <= 0;
+                    if (_ovKilled) {
+                        _ovKills++;
+                        // Aliado aleatorio gana 10 cargas
+                        const _ovAllies = Object.keys(gameState.characters).filter(function(n) {
+                            const _a = gameState.characters[n];
+                            return _a && _a.team === _ovMyTeam && !_a.isDead && _a.hp > 0;
+                        });
+                        if (_ovAllies.length > 0) {
+                            const _ovRandAlly = _ovAllies[Math.floor(Math.random() * _ovAllies.length)];
+                            gameState.characters[_ovRandAlly].charges = Math.min(20, (gameState.characters[_ovRandAlly].charges||0) + 10);
+                            addLog('⚡ Orden Viltrumita: ' + _ovRandAlly + ' gana 10 cargas', 'buff');
+                        }
+                        // Buscar siguiente objetivo enemigo aleatorio vivo
+                        const _ovNext = Object.keys(gameState.characters).filter(function(n) {
+                            const _c = gameState.characters[n];
+                            return _c && _c.team === _ovET && !_c.isDead && _c.hp > 0 && n !== _ovTarget;
+                        });
+                        if (_ovNext.length > 0) {
+                            _ovTarget = _ovNext[Math.floor(Math.random() * _ovNext.length)];
+                            addLog('⚡ Orden Viltrumita: ¡Continúa hacia ' + _ovTarget + '!', 'damage');
+                        } else {
+                            _ovTarget = null;
+                        }
+                    } else {
+                        _ovTarget = null; // No mató, se detiene
+                    }
+                }
+                addLog('⚡ Orden Viltrumita: ' + _ovKills + ' eliminacion(es) en cadena', 'damage');
+
+            // ══════════════════════════════════════════════════════
             // LAGERTHA
             // ══════════════════════════════════════════════════════
 
@@ -7544,92 +7569,6 @@
                         addLog('🔥 El Despertar del Fénix: ' + _dfAOE + ' AOE a ' + _n + ' (objetivo eliminado)', 'damage');
                     }
                 }
-
-            // ══ SEIYA — handlers ══
-
-            } else if (ability.effect === 'puno_pegaso_seiya') {
-                // Puño de Pegaso: 1 daño ST + 1-3 cargas a un aliado aleatorio
-                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                addLog('🌟 Puño de Pegaso: ' + finalDamage + ' daño a ' + targetName, 'damage');
-                const _ppAtk = gameState.characters[gameState.selectedCharacter];
-                const _ppTeam = _ppAtk ? _ppAtk.team : 'team1';
-                const _ppAllies = Object.keys(gameState.characters).filter(function(n) {
-                    const _ac = gameState.characters[n];
-                    return _ac && _ac.team === _ppTeam && !_ac.isDead && _ac.hp > 0 && n !== gameState.selectedCharacter;
-                });
-                if (_ppAllies.length > 0) {
-                    const _ppTarget = _ppAllies[Math.floor(Math.random() * _ppAllies.length)];
-                    const _ppCharges = Math.floor(Math.random() * 3) + 1;
-                    gameState.characters[_ppTarget].charges = Math.min(20, (gameState.characters[_ppTarget].charges||0) + _ppCharges);
-                    addLog('🌟 Puño de Pegaso: ' + _ppTarget + ' gana ' + _ppCharges + ' carga(s)', 'buff');
-                }
-
-            } else if (ability.effect === 'arde_cosmos_seiya') {
-                // ¡Arde, cosmos!: Genera 2-10 cargas a Seiya + 1 turno adicional
-                const _acAtk = gameState.characters[gameState.selectedCharacter];
-                const _acCharges = Math.floor(Math.random() * 9) + 2; // 2-10
-                if (_acAtk) {
-                    _acAtk.charges = Math.min(20, (_acAtk.charges||0) + _acCharges);
-                }
-                gameState._seiyaExtraTurn = gameState.selectedCharacter;
-                addLog('🔥 ¡Arde, cosmos!: Seiya genera ' + _acCharges + ' cargas y gana un turno adicional', 'buff');
-
-            } else if (ability.effect === 'vinculo_atena_seiya') {
-                // Vínculo de Atena: Seiya sacrifica 50% HP. Reparte sus cargas entre aliados. Equipo aliado → Buff Esquivar 2T.
-                const _vaAtk = gameState.characters[gameState.selectedCharacter];
-                const _vaTeam = _vaAtk ? _vaAtk.team : 'team1';
-                if (!_vaAtk || _vaAtk.hp <= 1) {
-                    addLog('⚠️ Vínculo de Atena: HP insuficiente para sacrificar', 'info');
-                    endTurn(); return;
-                }
-                const _vaSac = Math.floor(_vaAtk.hp * 0.50);
-                _vaAtk.hp = Math.max(1, _vaAtk.hp - _vaSac);
-                addLog('✨ Vínculo de Atena: Seiya sacrifica ' + _vaSac + ' HP', 'damage');
-                // Repartir cargas actuales entre aliados aleatoriamente
-                const _vaChargesPool = _vaAtk.charges || 0;
-                _vaAtk.charges = 0;
-                const _vaAllies = Object.keys(gameState.characters).filter(function(n) {
-                    const _ac = gameState.characters[n];
-                    return _ac && _ac.team === _vaTeam && !_ac.isDead && _ac.hp > 0 && n !== gameState.selectedCharacter;
-                });
-                if (_vaChargesPool > 0 && _vaAllies.length > 0) {
-                    let _vaPool = _vaChargesPool;
-                    while (_vaPool > 0) {
-                        const _rIdx = Math.floor(Math.random() * _vaAllies.length);
-                        const _rName = _vaAllies[_rIdx];
-                        gameState.characters[_rName].charges = Math.min(20, (gameState.characters[_rName].charges||0) + 1);
-                        _vaPool--;
-                    }
-                    addLog('✨ Vínculo de Atena: ' + _vaChargesPool + ' cargas repartidas entre aliados', 'buff');
-                }
-                // Buff Esquivar 2T a todo el equipo aliado (incluyendo Seiya)
-                Object.keys(gameState.characters).forEach(function(n) {
-                    const _ac = gameState.characters[n];
-                    if (!_ac || _ac.team !== _vaTeam || _ac.isDead || _ac.hp <= 0) return;
-                    if (typeof applyBuff === 'function') applyBuff(n, { name: 'Esquivar', type: 'buff', duration: 2, emoji: '💨' });
-                });
-                addLog('✨ Vínculo de Atena: Buff Esquivar 2T al equipo aliado', 'buff');
-
-            } else if (ability.effect === 'pegasus_ryuseiken') {
-                // Pegasus Ryu Sei Ken: daño base 0 + 5-30 adicional ST. Si mata al objetivo: 5-15 AOE.
-                const _prsAtk = gameState.characters[gameState.selectedCharacter];
-                const _prsET = _prsAtk ? (_prsAtk.team==='team1'?'team2':'team1') : 'team2';
-                const _prsBonusDmg = Math.floor(Math.random() * 26) + 5; // 5-30
-                const _prsWasAlive = gameState.characters[targetName] && !gameState.characters[targetName].isDead && gameState.characters[targetName].hp > 0;
-                applyDamageWithShield(targetName, _prsBonusDmg, gameState.selectedCharacter);
-                addLog('🌟 Pegasus Ryu Sei Ken: ' + _prsBonusDmg + ' daño a ' + targetName, 'damage');
-                const _prsTgtDied = _prsWasAlive && (!gameState.characters[targetName] || gameState.characters[targetName].isDead || gameState.characters[targetName].hp <= 0);
-                if (_prsTgtDied) {
-                    const _prsAOEDmg = Math.floor(Math.random() * 11) + 5; // 5-15
-                    addLog('🌟 Pegasus Ryu Sei Ken: ¡' + targetName + ' derrotado! ' + _prsAOEDmg + ' daño AOE al resto', 'damage');
-                    for (const _en in gameState.characters) {
-                        const _ec = gameState.characters[_en];
-                        if (!_ec || _ec.team !== _prsET || _ec.isDead || _ec.hp <= 0 || _en === targetName) continue;
-                        applyDamageWithShield(_en, _prsAOEDmg, gameState.selectedCharacter);
-                        addLog('🌟 Pegasus Ryu Sei Ken AOE: ' + _prsAOEDmg + ' a ' + _en, 'damage');
-                    }
-                    applyAOEToSummons(_prsET, _prsAOEDmg, gameState.selectedCharacter);
-                }
             }
             
             // ASISTIR (Anakin): when ally uses Special/Over ST, execute basic on same target
@@ -8036,87 +7975,28 @@
             // ══ DARTH VADER — handlers nuevos ══
 
             } else if (ability.effect === 'corte_oscuro_vader') {
-                // Corte Oscuro: 1 daño ST. +1 carga al equipo aliado por cada Miedo activo en ambos equipos.
-                // Pasiva: si objetivo tenía Miedo → elimina Miedo, Vader +2 HP, aliado random +3 cargas, turno extra.
-                const _cdAtk = gameState.characters[gameState.selectedCharacter];
-                const _cdAtkTeam = _cdAtk ? _cdAtk.team : 'team1';
+                // Corte Oscuro: 2 daño. Si objetivo tenía Miedo activo antes: Darth Vader se aplica Reflejar
                 const _cdTgt = gameState.characters[targetName];
-                const _cdTgtHadFear = _cdTgt && hasStatusEffect(targetName, 'Miedo');
-                // Contar Miedos en ambos equipos antes del ataque
-                let _cdFearCount = 0;
-                for (const _fn in gameState.characters) {
-                    const _fc = gameState.characters[_fn];
-                    if (_fc && !_fc.isDead && _fc.hp > 0 && hasStatusEffect(_fn, 'Miedo')) _cdFearCount++;
-                }
+                const _cdHadFear = _cdTgt && hasStatusEffect(targetName, 'Miedo');
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 addLog('⚫ Corte Oscuro: ' + finalDamage + ' daño a ' + targetName, 'damage');
-                if (_cdFearCount > 0) {
-                    Object.keys(gameState.characters).forEach(function(n) {
-                        const _ac = gameState.characters[n];
-                        if (!_ac || _ac.team !== _cdAtkTeam || _ac.isDead || _ac.hp <= 0) return;
-                        _ac.charges = Math.min(20, (_ac.charges||0) + _cdFearCount);
-                    });
-                    addLog('⚫ Corte Oscuro: +' + _cdFearCount + ' carga(s) al equipo aliado (' + _cdFearCount + ' Miedo(s) activo(s))', 'buff');
-                }
-                if (_cdTgtHadFear) {
-                    if (_cdTgt && _cdTgt.statusEffects) {
-                        _cdTgt.statusEffects = _cdTgt.statusEffects.filter(function(e){ return !(e && normAccent(e.name||'') === 'miedo'); });
-                    }
-                    addLog('🌑 Presencia Oscura: Miedo eliminado de ' + targetName, 'debuff');
-                    if (_cdAtk) { _cdAtk.hp = Math.min(_cdAtk.maxHp, (_cdAtk.hp||0) + 2); addLog('🌑 Presencia Oscura: Darth Vader +2 HP', 'heal'); }
-                    const _dvAllies = Object.keys(gameState.characters).filter(function(n) {
-                        const _ac = gameState.characters[n];
-                        return _ac && _ac.team === _cdAtkTeam && !_ac.isDead && _ac.hp > 0 && n !== gameState.selectedCharacter;
-                    });
-                    if (_dvAllies.length > 0) {
-                        const _ra = _dvAllies[Math.floor(Math.random() * _dvAllies.length)];
-                        gameState.characters[_ra].charges = Math.min(20, (gameState.characters[_ra].charges||0) + 3);
-                        addLog('🌑 Presencia Oscura: ' + _ra + ' +3 cargas', 'buff');
-                    }
-                    gameState._vaderExtraTurn = gameState.selectedCharacter;
-                    addLog('🌑 Presencia Oscura: ¡Darth Vader gana turno adicional!', 'buff');
+                if (_cdHadFear) {
+                    if (typeof applyBuff === 'function') applyBuff(gameState.selectedCharacter, { name: 'Reflejar', type: 'buff', duration: 3, emoji: '🪞' });
+                    addLog('⚫ Corte Oscuro: Darth Vader se aplica Reflejar (objetivo tenía Miedo)', 'buff');
                 }
 
             } else if (ability.effect === 'intimidacion_sith') {
-                // Intimidación Sith: 6 daño ST. Ignora Provocación/MegaProvocación/Sigilo.
-                // Disipa TODOS los buffs del objetivo. +5 daño directo por cada buff disipado.
-                // Pasiva: si objetivo tenía Miedo → trigger Presencia Oscura.
+                // Intimidación Sith: 6 daño + 3 daño directo por cada buff activo en el objetivo
                 const _isTgt = gameState.characters[targetName];
                 const _isAtk = gameState.characters[gameState.selectedCharacter];
-                const _isAtkTeam = _isAtk ? _isAtk.team : 'team1';
-                const _isTgtHadFear = _isTgt && hasStatusEffect(targetName, 'Miedo');
-                // Disipar buffs
-                const _isBufsArr = _isTgt ? (_isTgt.statusEffects||[]).filter(function(e){ return e && e.type === 'buff' && !e.passiveHidden && !e.permanent; }) : [];
-                const _isBufsCount = _isBufsArr.length;
-                if (_isTgt && _isBufsCount > 0) {
-                    _isTgt.statusEffects = (_isTgt.statusEffects||[]).filter(function(e){ return !e || e.type !== 'buff' || e.passiveHidden || e.permanent; });
-                    addLog('⚫ Intimidación Sith: ' + _isBufsCount + ' buff(s) disipado(s) en ' + targetName, 'debuff');
-                }
+                const _isBufs = _isTgt ? (_isTgt.statusEffects||[]).filter(function(e){ return e&&e.type==='buff'&&!e.passiveHidden; }).length : 0;
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 addLog('⚫ Intimidación Sith: ' + finalDamage + ' daño a ' + targetName, 'damage');
-                if (_isBufsCount > 0 && _isTgt && !_isTgt.isDead && _isTgt.hp > 0) {
-                    const _isBonusDmg = _isBufsCount * 5;
+                if (_isBufs > 0 && _isTgt && !_isTgt.isDead && _isTgt.hp > 0) {
+                    const _isBonusDmg = _isBufs * 3;
                     _isTgt.hp = Math.max(0, (_isTgt.hp||0) - _isBonusDmg);
                     if (_isTgt.hp <= 0) { _isTgt.isDead = true; registerKill(gameState.selectedCharacter, targetName, false); }
-                    addLog('⚫ Intimidación Sith: +' + _isBonusDmg + ' daño directo (' + _isBufsCount + ' buffs × 5)', 'damage');
-                }
-                // Pasiva Presencia Oscura
-                if (_isTgtHadFear) {
-                    const _isTgtNow = gameState.characters[targetName];
-                    if (_isTgtNow) _isTgtNow.statusEffects = (_isTgtNow.statusEffects||[]).filter(function(e){ return !(e && normAccent(e.name||'') === 'miedo'); });
-                    addLog('🌑 Presencia Oscura: Miedo eliminado de ' + targetName, 'debuff');
-                    if (_isAtk) { _isAtk.hp = Math.min(_isAtk.maxHp, (_isAtk.hp||0) + 2); addLog('🌑 Presencia Oscura: Darth Vader +2 HP', 'heal'); }
-                    const _isAllies = Object.keys(gameState.characters).filter(function(n) {
-                        const _ac = gameState.characters[n];
-                        return _ac && _ac.team === _isAtkTeam && !_ac.isDead && _ac.hp > 0 && n !== gameState.selectedCharacter;
-                    });
-                    if (_isAllies.length > 0) {
-                        const _rA = _isAllies[Math.floor(Math.random() * _isAllies.length)];
-                        gameState.characters[_rA].charges = Math.min(20, (gameState.characters[_rA].charges||0) + 3);
-                        addLog('🌑 Presencia Oscura: ' + _rA + ' +3 cargas', 'buff');
-                    }
-                    gameState._vaderExtraTurn = gameState.selectedCharacter;
-                    addLog('🌑 Presencia Oscura: ¡Darth Vader gana turno adicional!', 'buff');
+                    addLog('⚫ Intimidación Sith: +' + _isBonusDmg + ' daño directo (' + _isBufs + ' buffs × 3)', 'damage');
                 }
             // ══ GANDALF — handlers ══
 
@@ -9516,13 +9396,11 @@
                 if (_gsn) { _gsn.shield = (_gsn.shield||0) + _newShield; }
                 addLog('🐂 Great Supernova: Escudo ' + _newShield + ' HP en Aldebaran (aleatorio 1-20)', 'buff');
 
-            } // end Aldebaran handlers — chain continues below
-
             // ══════════════════════════════════════════════════════
             // ANDROIDE 17 — handlers
             // ══════════════════════════════════════════════════════
 
-            else if (ability.effect === 'rafagas_energia_a17') {
+            } else if (ability.effect === 'rafagas_energia_a17') {
                 // Ráfagas de Energía: 1-5 golpes MT, 50% roba 1 carga por golpe
                 const _reA17 = gameState.characters[gameState.selectedCharacter];
                 const _reETeam = _reA17 ? (_reA17.team === 'team1' ? 'team2' : 'team1') : 'team2';
@@ -9595,20 +9473,19 @@
                 addLog('⚡ Destello de Fotones: ' + _dfDmg + ' daño (' + finalDamage + ' × ' + Math.max(1, _dfBufsRemoved) + ' buffs eliminados)', 'damage');
 
             } else if (ability.effect === 'barrera_impacto_a17') {
-                // Barrera de Impacto Total: Escudo 10 HP a TODO el equipo aliado (incluido A17).
-                // 5 cargas a aliados EXCEPTO Androide 17. A17 NO gana cargas.
+                // Barrera de Impacto Total: Escudo 10 HP equipo aliado + 5 cargas equipo + 8 cargas Androide 17
                 const _biA17 = gameState.characters[gameState.selectedCharacter];
                 const _biTeam = _biA17 ? _biA17.team : 'team1';
                 Object.keys(gameState.characters).forEach(function(n) {
                     const _ac = gameState.characters[n];
                     if (!_ac || _ac.team !== _biTeam || _ac.isDead || _ac.hp <= 0) return;
                     _ac.shield = (_ac.shield||0) + 10;
-                    if (n !== gameState.selectedCharacter) {
-                        _ac.charges = Math.min(20, (_ac.charges||0) + 5);
-                    }
+                    _ac.charges = Math.min(20, (_ac.charges||0) + 5);
                 });
-                addLog('⚡ Barrera de Impacto Total: Escudo 10 HP a todo el equipo aliado', 'buff');
-                addLog('⚡ Barrera de Impacto Total: +5 cargas al equipo aliado (excepto Androide 17)', 'buff');
+                addLog('⚡ Barrera de Impacto Total: Escudo 10 HP + 5 cargas a todo el equipo aliado', 'buff');
+                // +8 cargas extra para Androide 17 (chargeGain en ability ya da 8)
+                if (_biA17) _biA17.charges = Math.min(20, (_biA17.charges||0) + 8);
+                addLog('⚡ Barrera de Impacto Total: Androide 17 gana 8 cargas adicionales', 'buff');
 
             } // end Androide 17 handlers
 
