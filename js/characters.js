@@ -417,6 +417,20 @@
                     { name: 'El Despertar del Fénix Inmortal', type: 'over', cost: 10, chargeGain: 0, damage: 10, target: 'single', effect: 'despertar_fenix_ikki', description: 'Causa 10 daño. Ignora Provocacion y Mega Provocacion. Si elimina al objetivo, el equipo aliado genera 10 cargas.' }
                 ]
             },
+
+            'Seiya': {
+                hp: 20, maxHp: 20, speed: 87, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                _hpLostThisRound: 0, _seiyaShieldApplied: false,
+                portrait: 'https://i.ibb.co/4ZmLWKKt/descarga-2.jpg',
+                passive: { name: 'Destello de Pegaso', description: 'Al inicio de cada ronda aplica Celeridad 15% por 1 turno a todos los aliados. Cada vez que un Buff expira en un aliado, Seiya genera 1 carga. Si Seiya pierde 5 o más HP en la ronda, se aplica Buff Escudo Sagrado 1 turno.' },
+                abilities: [
+                    { name: 'Puño de Pegaso',      type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'puno_pegaso_seiya',    description: 'Causa 1 daño. Genera de 1 a 3 cargas a un aliado aleatorio.' },
+                    { name: '¡Arde, cosmos!',      type: 'special', cost: 3,  chargeGain: 0, damage: 0, target: 'self',   effect: 'arde_cosmos_seiya',    description: 'Seiya genera de 2 a 10 cargas y gana 1 turno adicional.' },
+                    { name: 'Vínculo de Atena',    type: 'special', cost: 0,  chargeGain: 0, damage: 0, target: 'self',   effect: 'vinculo_atena_seiya',  description: 'Seiya sacrifica el 50% de su HP. Reparte sus cargas actuales entre los aliados aleatoriamente. Aplica Buff Esquivar 2 turnos al equipo aliado.' },
+                    { name: 'Pegasus Ryu Sei Ken', type: 'over',    cost: 12, chargeGain: 0, damage: 0, target: 'single', effect: 'pegasus_ryuseiken',    description: 'Causa 5 a 30 daño adicional al objetivo. Si elimina al objetivo, causa 5 a 15 daño adicional a cada enemigo.' }
+                ]
+            },
             'Linterna Verde': {
                 hp: 20, maxHp: 20, speed: 96, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
