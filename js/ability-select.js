@@ -36,6 +36,11 @@
                 addLog(`❌ Another Dimension en cooldown (${ability.cooldown} turno${ability.cooldown > 1 ? 's' : ''} restante${ability.cooldown > 1 ? 's' : ''})`, 'info');
                 return;
             }
+            // ¡ARDE, COSMOS! cooldown check
+            if (ability.effect === 'arde_cosmos_seiya' && ability.cooldown > 0) {
+                addLog(`❌ ¡Arde, cosmos! en cooldown (${ability.cooldown} turno${ability.cooldown > 1 ? 's' : ''} restante${ability.cooldown > 1 ? 's' : ''})`, 'info');
+                return;
+            }
             // EL REY DEMONIO: bloqueado tras transformación
             if (ability.effect === 'rey_demonio_meliodas' && char._reyDemonioActive) {
                 addLog('👑 El Rey Demonio: Meliodas ya se ha transformado', 'info');
@@ -574,6 +579,12 @@ function triggerMaboroshi(targetTeam, debuffName) {
             if (c.passive && c.passive.name === 'Aceleración Constante') {
                 c.charges = Math.min(20, (c.charges || 0) + 2);
                 addLog('⚡ Aceleración Constante: Flash esquiva y gana 2 cargas', 'buff');
+            }
+            // HIRAISHIN NO JUTSU (Minato): al esquivar → turno adicional + 3 cargas
+            if (c.passive && c.passive.name === 'Hiraishin no Jutsu') {
+                c.charges = Math.min(20, (c.charges || 0) + 3);
+                gameState._seiyaExtraTurn = charName; // reutilizamos el mismo mecanismo de turno extra
+                addLog('⚡ Hiraishin no Jutsu: ' + charName + ' esquiva y gana 3 cargas + 1 turno adicional', 'buff');
             }
         }
 

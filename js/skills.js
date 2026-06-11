@@ -251,6 +251,11 @@
                 finalChargeGain += 1;
             }
 
+            // SAITAMA MODE (Garou): +50% daño en todos los ataques
+            if (attacker.garouSaitamaMode && (gameState.selectedCharacter === 'Garou' || gameState.selectedCharacter === 'Garou v2') && finalDamage > 0) {
+                finalDamage = Math.ceil(finalDamage * 1.5);
+            }
+
             // ARMADURA DIVINA DEL FÉNIX (Ikki): daño triple en enemigos con Quemadura
             if (attacker.fenixArmorActive && (gameState.selectedCharacter === 'Ikki de Fenix' || gameState.selectedCharacter === 'Ikki de Fenix v2') && finalDamage > 0) {
                 const tgtIkki = gameState.characters[targetName];
@@ -1750,15 +1755,29 @@
                 addLog(`🐉 Dragón de la Vida: Burn 30% en enemigos, Regen 30% en aliados, Escudo Sagrado en ${gameState.selectedCharacter}`, 'buff');
 
             } else if (ability.effect === 'kiiroi_senko' || ability.effect === 'kiiroi_senko_v2') {
-                // Kiiroi Senkō (nuevo): 1 daño + Celeridad 10% 2t + Buff aleatorio 2t
-                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                const celerityBonus = Math.round(attacker.speed * 0.10);
-                attacker.speed += celerityBonus;
-                applyBuff(gameState.selectedCharacter, { name: 'Celeridad', type: 'buff', percent: 10, duration: 2, emoji: '⚡', speedBonus: celerityBonus });
-                const randomBuffs = ['Esquivar','Furia','Frenesi','Contraataque','Proteccion Sagrada'];
-                const rBuff = randomBuffs[Math.floor(Math.random() * randomBuffs.length)];
-                applyBuff(gameState.selectedCharacter, { name: rBuff, type: 'buff', duration: 2, emoji: '✨' });
-                addLog(`⚡ ${gameState.selectedCharacter} usa Kiiroi Senkō: +Celeridad ${celerityBonus} vel + ${rBuff}`, 'buff');
+                // Hirō Senkō: 1 daño (sistema base) + Celeridad 10% 2T + Esquivar 2T en Minato
+                // 50% de generar 2 cargas para Minato, 25% de generar 2 cargas al equipo aliado
+                const _ksChar = gameState.characters[gameState.selectedCharacter];
+                if (_ksChar) {
+                    const _ksSpeedBonus = Math.round((_ksChar.speed || 0) * 0.10);
+                    _ksChar.speed += _ksSpeedBonus;
+                    applyBuff(gameState.selectedCharacter, { name: 'Celeridad', type: 'buff', percent: 10, duration: 2, emoji: '⚡', speedBonus: _ksSpeedBonus });
+                    applyBuff(gameState.selectedCharacter, { name: 'Esquivar', type: 'buff', duration: 2, emoji: '💨' });
+                    addLog('⚡ Hirō Senkō: ' + gameState.selectedCharacter + ' gana Celeridad 10% (2T) y Esquivar (2T)', 'buff');
+                    if (Math.random() < 0.5) {
+                        _ksChar.charges = Math.min(20, (_ksChar.charges || 0) + 2);
+                        addLog('⚡ Hirō Senkō: ' + gameState.selectedCharacter + ' genera 2 cargas (50%)', 'buff');
+                    }
+                    if (Math.random() < 0.25) {
+                        const _ksTeam = _ksChar.team;
+                        for (const _kn in gameState.characters) {
+                            const _kc = gameState.characters[_kn];
+                            if (!_kc || _kc.team !== _ksTeam || _kc.isDead || _kc.hp <= 0) continue;
+                            _kc.charges = Math.min(20, (_kc.charges || 0) + 2);
+                        }
+                        addLog('⚡ Hirō Senkō: equipo aliado genera 2 cargas (25%)', 'buff');
+                    }
+                }
 
             } else if (ability.effect === 'legado_hokage') {
                 // Legado del Cuarto Hokage: intercambia buffs y cargas con aliado seleccionado
@@ -1849,7 +1868,7 @@
                 applyAOEDamageToSummons(attacker.team, finalDamage, gameState.selectedCharacter);
                 addLog(`🌀 Rasen Senkō Chō Rinbu: ${finalDamage} daño AOE`, 'damage');
 
-            // ── LEGADO DEL CUARTO HOKAGE V2 (Minato nuevo Over: 8 cargas a aliados) ──
+            // ── LEGADO DEL CUARTO HOKAGE V2 (Minato nuevo Over: 8 cargas a aliados + 50% Escudo Sagrado) ──
             } else if (ability.effect === 'legado_hokage_v2') {
                 const allyTeamLH = attacker.team;
                 for (let n in gameState.characters) {
@@ -1857,8 +1876,13 @@
                     if (!c || c.team !== allyTeamLH || c.isDead || c.hp <= 0 || n === gameState.selectedCharacter) continue;
                     c.charges = Math.min(20, (c.charges || 0) + 8);
                     addLog(`⚡ Legado del Cuarto Hokage: ${n} recibe 8 cargas`, 'buff');
+                    // 50% de probabilidad de aplicar Escudo Sagrado 1T por aliado
+                    if (Math.random() < 0.5) {
+                        if (typeof applyBuff === 'function') applyBuff(n, { name: 'Escudo Sagrado', type: 'buff', duration: 1, emoji: '✝️' });
+                        addLog(`✝️ Legado del Cuarto Hokage: ${n} recibe Escudo Sagrado 1T`, 'buff');
+                    }
                 }
-                addLog(`⚡ ${gameState.selectedCharacter} usa Legado del Cuarto Hokage: +8 cargas a todo el equipo`, 'buff');
+                addLog(`⚡ ${gameState.selectedCharacter} usa Legado del Cuarto Hokage`, 'buff');
 
 
             } else if (ability.effect === 'celeridad_buff') {
@@ -6535,17 +6559,26 @@
                 }
 
             } else if (ability.effect === 'saitama_mode_garou') {
-                // GAROU — Saitama Mode: inmunidad a debuffs + 50% reducción de daño recibido
-                const _smAtk = gameState.characters[gameState.selectedCharacter];
-                if (_smAtk) {
-                    _smAtk.garouSaitamaMode = true;
-                    _smAtk.immuneToDebuffs = true; // used by isImmuneToDebuff
-                    // Apply a permanent damage reduction buff (checked in applyDamageWithShield)
+                // GAROU — Saitama Mode: transformación permanente
+                // 50% reducción de daño recibido + 50% más de daño en ataques + cambio de imagen
+                const _smChar = gameState.characters[gameState.selectedCharacter];
+                if (_smChar) {
+                    _smChar.garouSaitamaMode = true;
+                    _smChar.immuneToDebuffs = true;
+                    // Cambiar retrato a imagen de transformación
+                    if (_smChar.transformPortrait) {
+                        _smChar.portrait = _smChar.transformPortrait;
+                    }
+                    // Marcar transformación para la UI (tarjeta)
+                    _smChar.isTransformed = true;
+                    _smChar.transformName = 'Saitama Mode';
+                    // Buff permanente de reducción de daño 50%
                     applyBuff(gameState.selectedCharacter, {
                         name: 'Saitama Mode', type: 'buff', duration: 999, permanent: true, emoji: '💀',
-                        damageReduction: 0.50, description: 'Inmune a debuffs. Recibe 50% menos daño.'
+                        damageReduction: 0.50, description: 'Transformación activa. Recibe 50% menos daño. Causa 50% más daño.'
                     });
-                    addLog('💀 Saitama Mode: Garou activa inmunidad y reducción de daño 50%', 'buff');
+                    addLog('💀 ¡Saitama Mode! Garou se transforma — 50% menos daño recibido y 50% más daño en ataques', 'buff');
+                    renderCharacters();
                 }
             } else if (ability.effect === 'campo_atraccion') {
                 // LINTERNA VERDE — Campo de Atracción: Provocación + Esquivar, 1 turno cada uno
@@ -6563,20 +6596,24 @@
                 addLog('💚 Campo de Atracción: ' + _lgName + ' activa Provocación + Esquivar (hasta el próximo turno)', 'buff');
 
             } else if (ability.effect === 'sincronia_esmeralda') {
-                // LINTERNA VERDE — Sincronía Esmeralda: limpia 1 debuff del aliado + 3 cargas
+                // LINTERNA VERDE — Sincronía Esmeralda: limpia 1-3 debuffs del aliado objetivo + 3 cargas por debuff limpiado
                 const _seChar = gameState.characters[targetName];
                 if (_seChar) {
-                    const _seDebuffs = (_seChar.statusEffects || []).filter(e => e && e.type === 'debuff');
-                    if (_seDebuffs.length > 0) {
-                        // Remove oldest debuff (first in array)
-                        const _seRemoved = _seDebuffs[0];
-                        _seChar.statusEffects = (_seChar.statusEffects || []).filter(e => e !== _seRemoved);
-                        addLog('💚 Sincronía Esmeralda: Debuff ' + _seRemoved.name + ' eliminado de ' + targetName, 'buff');
+                    const _seDebuffs = (_seChar.statusEffects || []).filter(e => e && e.type === 'debuff' && !e.permanent);
+                    const _seMaxClean = Math.min(3, _seDebuffs.length);
+                    const _seToClean = _seMaxClean > 0 ? 1 + Math.floor(Math.random() * _seMaxClean) : 0; // 1 a min(3, debuffs activos)
+                    if (_seToClean > 0) {
+                        for (let _si = 0; _si < _seToClean; _si++) {
+                            const _seRemDebuffs = (_seChar.statusEffects || []).filter(e => e && e.type === 'debuff' && !e.permanent);
+                            if (_seRemDebuffs.length === 0) break;
+                            const _seRem = _seRemDebuffs[0];
+                            _seChar.statusEffects = (_seChar.statusEffects || []).filter(e => e !== _seRem);
+                            _seChar.charges = Math.min(20, (_seChar.charges || 0) + 3);
+                            addLog('💚 Sincronía Esmeralda: ' + _seRem.name + ' limpiado de ' + targetName + ' (+3 cargas)', 'buff');
+                        }
                     } else {
                         addLog('💚 Sincronía Esmeralda: ' + targetName + ' no tiene debuffs activos', 'info');
                     }
-                    _seChar.charges = Math.min(20, (_seChar.charges || 0) + 3);
-                    addLog('💚 ' + targetName + ' genera 3 cargas (Sincronía Esmeralda)', 'buff');
                 }
 
             } else if (ability.effect === 'soporte_vital') {
@@ -6808,34 +6845,7 @@
                         addLog(`🔥 Entrenamiento de los Dioses: Goku genera +2 cargas (Furia+Frenesí)`, 'buff');
                     }
                 }
-                // ── MINATO PASIVA: +1 carga por enemigo golpeado más lento ──
-                if ((gameState.selectedCharacter === 'Minato Namikaze' || gameState.selectedCharacter === 'Minato Namikaze v2') && !hasFear && finalDamage > 0 && targetName) {
-                    const tgtMinato = gameState.characters[targetName];
-                    if (tgtMinato && !tgtMinato.isDead && tgtMinato.speed < attacker.speed) {
-                        attacker.charges = Math.min(20, attacker.charges + 2);
-                        addLog(`⚡ Hiraishin no Jutsu: Minato genera +2 cargas (enemigo más lento: ${tgtMinato.speed} vs ${attacker.speed})`, 'buff');
-                    }
-                }
-            }
-            
-            // ── MINATO PASIVA (AOE): +1 carga por CADA enemigo golpeado más lento ──
-            if ((gameState.selectedCharacter === 'Minato Namikaze' || gameState.selectedCharacter === 'Minato Namikaze v2') && ability.target === 'aoe') {
-                const hasFearM = hasStatusEffect('Minato Namikaze', 'Miedo');
-                if (!hasFearM) {
-                    const enemyTeamM = attacker.team === 'team1' ? 'team2' : 'team1';
-                    let bonusChargesM = 0;
-                    for (let n in gameState.characters) {
-                        const c = gameState.characters[n];
-                        if (c && c.team === enemyTeamM && !c.isDead && c.hp > 0 && c.speed < attacker.speed) {
-                            bonusChargesM += 2;
-                        }
-                    }
-                    if (bonusChargesM > 0) {
-                        attacker.charges = Math.min(20, attacker.charges + bonusChargesM);
-                        addLog(`⚡ Hiraishin no Jutsu: Minato genera +${bonusChargesM} cargas (enemigos más lentos)`, 'buff');
-                    }
-                }
-} else if (ability.effect === 'fuego_fatuo_manigoldo') {
+            } else if (ability.effect === 'fuego_fatuo_manigoldo') {
                 const _ffA=gameState.characters[gameState.selectedCharacter],_ffT=gameState.characters[targetName];
                 applyDamageWithShield(targetName,finalDamage,gameState.selectedCharacter);
                 if(_ffA&&_ffT&&!_ffT.isDead&&_ffT.hp>0){const _ffL=_ffA.hp<=Math.floor(_ffA.maxHp*0.50);if(_ffL||Math.random()<0.25){const _s=Math.min(2,_ffT.hp);_ffT.hp=Math.max(0,_ffT.hp-_s);if(_ffT.hp<=0)_ffT.isDead=true;if(typeof applyHeal==='function')applyHeal(gameState.selectedCharacter,_s,'Fuego Fatuo');else _ffA.hp=Math.min(_ffA.maxHp,(_ffA.hp||0)+_s);addLog('☠️ Fuego Fatuo: roba '+_s+' HP','heal');}if(_ffL||Math.random()<0.25){const _sc=Math.min(2,_ffT.charges||0);if(_sc>0){_ffT.charges-=_sc;_ffA.charges=Math.min(20,(_ffA.charges||0)+_sc);addLog('☠️ Fuego Fatuo: roba '+_sc+' cargas','buff');}}}
@@ -7648,8 +7658,37 @@
                 }
             }
 
-
-            // ══ RENGOKU AOE — manejados ANTES del bloque Kyo para evitar que target=aoe los bloquee ══
+            // VISIÓN ESMERALDA (Linterna Verde): cuando un ENEMIGO usa especial, LV se cura 3HP y limpia 1 debuff de cada aliado
+            if (ability && ability.type === 'special' && !passiveExecuting) {
+                const _veSpAtk = gameState.characters[gameState.selectedCharacter];
+                if (_veSpAtk) {
+                    const _veSpDefTeam = _veSpAtk.team === 'team1' ? 'team2' : 'team1';
+                    for (const _veSpN in gameState.characters) {
+                        const _veSpC = gameState.characters[_veSpN];
+                        if (!_veSpC || _veSpC.isDead || _veSpC.hp <= 0 || _veSpC.team !== _veSpDefTeam) continue;
+                        if (!_veSpC.passive || _veSpC.passive.name !== 'Visión Esmeralda') continue;
+                        passiveExecuting = true;
+                        // Curar 3 HP a Linterna Verde
+                        if (typeof canHeal === 'function' && canHeal(_veSpN)) {
+                            _veSpC.hp = Math.min(_veSpC.maxHp, (_veSpC.hp || 0) + 3);
+                            addLog('💚 Visión Esmeralda: ' + _veSpN + ' recupera 3 HP (especial enemigo)', 'heal');
+                        }
+                        // Limpiar 1 debuff de cada aliado del equipo
+                        for (const _veAlN in gameState.characters) {
+                            const _veAlC = gameState.characters[_veAlN];
+                            if (!_veAlC || _veAlC.isDead || _veAlC.hp <= 0 || _veAlC.team !== _veSpDefTeam) continue;
+                            const _veAlDebuffs = (_veAlC.statusEffects || []).filter(function(e) { return e && e.type === 'debuff' && !e.permanent; });
+                            if (_veAlDebuffs.length > 0) {
+                                const _veRem = _veAlDebuffs[0];
+                                _veAlC.statusEffects = (_veAlC.statusEffects || []).filter(function(e) { return e !== _veRem; });
+                                addLog('💚 Visión Esmeralda: ' + _veRem.name + ' limpiado de ' + _veAlN, 'buff');
+                            }
+                        }
+                        passiveExecuting = false;
+                        break;
+                    }
+                }
+            }
             if (typeof ability !== 'undefined' && ability && ability.effect === 'mar_fuego_rengoku') {
                 // Mar de Fuego: 4 AOE. Ignora Esquiva Área. Disipa buffs. Quemadura 1HP. Si ya tenían Quemadura: 100% crítico
                 const _mfAtk2 = gameState.characters[gameState.selectedCharacter];
@@ -9489,7 +9528,7 @@
 
             // ── SEIYA (Saint Seiya) ──
             } else if (ability.effect === 'puno_pegaso_seiya') {
-                // Puño de Pegaso: 1 daño ST (aplicado por el sistema base) + genera 1-3 cargas a 1 aliado aleatorio
+                // Puño de Pegaso: 1 daño ST (sistema base) + genera 1-3 cargas a 1 aliado aleatorio
                 const _ppUser = gameState.characters[gameState.selectedCharacter];
                 const _ppTeam = _ppUser ? _ppUser.team : 'team1';
                 const _ppAllies = Object.keys(gameState.characters).filter(function(n) {
@@ -9497,14 +9536,15 @@
                     return _c && _c.team === _ppTeam && !_c.isDead && _c.hp > 0;
                 });
                 if (_ppAllies.length > 0) {
-                    const _ppTarget = _ppAllies[Math.floor(Math.random() * _ppAllies.length)];
+                    const _ppTgt = _ppAllies[Math.floor(Math.random() * _ppAllies.length)];
                     const _ppGain = 1 + Math.floor(Math.random() * 3); // 1-3
-                    gameState.characters[_ppTarget].charges = Math.min(20, (gameState.characters[_ppTarget].charges || 0) + _ppGain);
-                    addLog('👊 Puño de Pegaso: ' + _ppTarget + ' gana ' + _ppGain + ' carga' + (_ppGain > 1 ? 's' : ''), 'buff');
+                    gameState.characters[_ppTgt].charges = Math.min(20, (gameState.characters[_ppTgt].charges || 0) + _ppGain);
+                    addLog('👊 Puño de Pegaso: ' + _ppTgt + ' gana ' + _ppGain + ' carga' + (_ppGain > 1 ? 's' : ''), 'buff');
                 }
 
             } else if (ability.effect === 'arde_cosmos_seiya') {
-                // ¡Arde, cosmos!: Genera 2-10 cargas a Seiya + gana 1 turno adicional
+                // ¡Arde, cosmos!: 2-10 cargas a Seiya + turno adicional
+                // Cooldown: 2 turnos (bloqueado el turno en que se usa + el siguiente)
                 const _acUser = gameState.characters[gameState.selectedCharacter];
                 if (_acUser) {
                     const _acGain = 2 + Math.floor(Math.random() * 9); // 2-10
@@ -9512,19 +9552,19 @@
                     addLog('🔥 ¡Arde, cosmos!: ' + gameState.selectedCharacter + ' gana ' + _acGain + ' cargas', 'buff');
                     gameState._seiyaExtraTurn = gameState.selectedCharacter;
                     addLog('🔥 ¡Arde, cosmos!: ' + gameState.selectedCharacter + ' gana 1 turno adicional', 'buff');
+                    // Aplicar cooldown de 2 turnos al ability
+                    const _acAbility = (_acUser.abilities || []).find(function(ab) { return ab.effect === 'arde_cosmos_seiya'; });
+                    if (_acAbility) { _acAbility.cooldown = 2; _acAbility.cooldownRemaining = 2; }
                 }
 
             } else if (ability.effect === 'vinculo_atena_seiya') {
-                // Vínculo de Atena: Seiya pierde 50% HP, reparte cargas entre aliados, Esquivar 2T al equipo
+                // Vínculo de Atena: sacrifica 50% HP, reparte cargas, Esquivar 2T al equipo
                 const _vaUser = gameState.characters[gameState.selectedCharacter];
                 const _vaTeam = _vaUser ? _vaUser.team : 'team1';
                 if (_vaUser) {
-                    // Sacrificar 50% HP (mínimo 1 HP para no morir)
                     const _vaSacrifice = Math.floor((_vaUser.hp || 0) * 0.5);
                     _vaUser.hp = Math.max(1, (_vaUser.hp || 0) - _vaSacrifice);
                     addLog('✝️ Vínculo de Atena: ' + gameState.selectedCharacter + ' sacrifica ' + _vaSacrifice + ' HP (queda en ' + _vaUser.hp + ')', 'damage');
-
-                    // Repartir cargas actuales entre aliados (excluyendo a Seiya), cada carga va a un aliado random
                     const _vaAllies = Object.keys(gameState.characters).filter(function(n) {
                         const _c = gameState.characters[n];
                         return _c && _c.team === _vaTeam && !_c.isDead && _c.hp > 0 && n !== gameState.selectedCharacter;
@@ -9541,12 +9581,8 @@
                             addLog('✝️ Vínculo de Atena: ' + _vn + ' recibe ' + _vaDistrib[_vn] + ' cargas', 'buff');
                         }
                         _vaUser.charges = 0;
-                        addLog('✝️ Vínculo de Atena: Seiya reparte ' + _vaCharges + ' cargas entre aliados', 'buff');
-                    } else if (_vaCharges === 0) {
-                        addLog('✝️ Vínculo de Atena: Seiya no tenía cargas que repartir', 'info');
+                        addLog('✝️ Vínculo de Atena: ' + gameState.selectedCharacter + ' reparte ' + _vaCharges + ' cargas', 'buff');
                     }
-
-                    // Aplicar Buff Esquivar 2T a todo el equipo aliado (incluyendo a Seiya)
                     for (const _vn in gameState.characters) {
                         const _vc = gameState.characters[_vn];
                         if (!_vc || _vc.team !== _vaTeam || _vc.isDead || _vc.hp <= 0) continue;
@@ -9556,27 +9592,16 @@
                 }
 
             } else if (ability.effect === 'pegasus_ryuseiken') {
-                // Pegasus Ryu Sei Ken: 5 daño base + 5-30 adicional al objetivo.
-                // Si elimina al objetivo → 5-20 daño a cada enemigo restante.
+                // Pegasus Ryu Sei Ken: 5 daño base + 5-30 adicional; si elimina → 5-20 a cada enemigo
                 const _prskUser = gameState.characters[gameState.selectedCharacter];
                 const _prskTeam = _prskUser ? _prskUser.team : 'team1';
                 const _prskETeam = _prskTeam === 'team1' ? 'team2' : 'team1';
-                const _prskTargetName = gameState.currentTarget || gameState.selectedTarget;
+                const _prskTargetName = gameState.currentTarget || gameState.selectedTarget || targetName;
                 const _prskTarget = _prskTargetName ? gameState.characters[_prskTargetName] : null;
-
                 if (_prskTarget && !_prskTarget.isDead) {
-                    // El daño base (5) ya fue aplicado por executeAbility (damage:5 en characters.js)
-                    // Daño adicional aleatorio 5-30
                     const _prskBonus = 5 + Math.floor(Math.random() * 26); // 5-30
-                    if (typeof applyDamageWithShield === 'function') {
-                        applyDamageWithShield(_prskTargetName, _prskBonus, gameState.selectedCharacter);
-                    } else {
-                        _prskTarget.hp = Math.max(0, (_prskTarget.hp || 0) - _prskBonus);
-                        if (_prskTarget.hp <= 0) { _prskTarget.isDead = true; if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, _prskTargetName, false); }
-                    }
+                    applyDamageWithShield(_prskTargetName, _prskBonus, gameState.selectedCharacter);
                     addLog('🌠 Pegasus Ryu Sei Ken: ' + _prskBonus + ' daño adicional a ' + _prskTargetName, 'damage');
-
-                    // Si el objetivo fue eliminado → 5-20 daño a cada enemigo restante
                     if (_prskTarget.isDead || _prskTarget.hp <= 0) {
                         const _prskRemaining = Object.keys(gameState.characters).filter(function(n) {
                             const _c = gameState.characters[n];
@@ -9584,17 +9609,7 @@
                         });
                         if (_prskRemaining.length > 0) {
                             const _prskSplash = 5 + Math.floor(Math.random() * 16); // 5-20
-                            _prskRemaining.forEach(function(n) {
-                                if (typeof applyDamageWithShield === 'function') {
-                                    applyDamageWithShield(n, _prskSplash, gameState.selectedCharacter);
-                                } else {
-                                    const _ec = gameState.characters[n];
-                                    if (_ec) {
-                                        _ec.hp = Math.max(0, (_ec.hp || 0) - _prskSplash);
-                                        if (_ec.hp <= 0) { _ec.isDead = true; if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, n, false); }
-                                    }
-                                }
-                            });
+                            _prskRemaining.forEach(function(n) { applyDamageWithShield(n, _prskSplash, gameState.selectedCharacter); });
                             addLog('🌠 Pegasus Ryu Sei Ken: ¡' + _prskTargetName + ' eliminado! ' + _prskSplash + ' daño a cada enemigo', 'damage');
                         }
                     }
