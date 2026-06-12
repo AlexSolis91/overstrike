@@ -689,6 +689,36 @@
                     return enemies[Math.floor(Math.random() * enemies.length)];
                 }
 
+                // ── SEIYA: nunca usa Vínculo de Atena salvo con ≥10 cargas (y prioriza Over si puede matar) ──
+                if (charName === 'Seiya' || charName === 'Seiya v2') {
+                    const _seOver   = usable.find(ab => ab.effect === 'pegasus_ryuseiken');
+                    const _seVinculo = usable.find(ab => ab.effect === 'vinculo_atena_seiya');
+                    const _seArde   = usable.find(ab => ab.effect === 'arde_cosmos_seiya');
+                    const _seBasic  = usable.find(ab => ab.type === 'basic');
+                    const _seChar   = gameState.characters[charName];
+                    const _seCharges = _seChar ? (_seChar.charges || 0) : 0;
+
+                    // Prioridad 1: Over si puede eliminar a algún enemigo
+                    if (_seOver) {
+                        const _seKillTarget = enemies.find(n => {
+                            const c = gameState.characters[n];
+                            return c && c.hp > 0 && c.hp <= (_seOver.damage + 30); // 5 base + hasta 30 adicional
+                        });
+                        if (_seKillTarget) { chosen = _seOver; }
+                    }
+                    // Prioridad 2: Vínculo de Atena solo si ≥10 cargas Y no se eligió Over
+                    if (chosen !== _seOver) {
+                        if (_seVinculo && _seCharges < 10) {
+                            // Bloquear Vínculo — elegir otra cosa
+                            usable = usable.filter(ab => ab.effect !== 'vinculo_atena_seiya');
+                        }
+                        // Prioridad 3: Arde cosmos si disponible
+                        if (!chosen || chosen.effect === 'vinculo_atena_seiya') {
+                            chosen = _seArde || _seBasic || usable[0] || chosen;
+                        }
+                    }
+                }
+
                 const target = pickTarget(chosen);
 
                 // ── SAITAMA Over: si tiene 20 cargas, apuntar al enemigo más peligroso ──

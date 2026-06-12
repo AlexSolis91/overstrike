@@ -251,6 +251,11 @@
                 finalChargeGain += 1;
             }
 
+            // SAITAMA MODE (Garou): +50% daño en todos los ataques
+            if (attacker.garouSaitamaMode && (gameState.selectedCharacter === 'Garou' || gameState.selectedCharacter === 'Garou v2') && finalDamage > 0) {
+                finalDamage = Math.ceil(finalDamage * 1.5);
+            }
+
             // ARMADURA DIVINA DEL FÉNIX (Ikki): daño triple en enemigos con Quemadura
             if (attacker.fenixArmorActive && (gameState.selectedCharacter === 'Ikki de Fenix' || gameState.selectedCharacter === 'Ikki de Fenix v2') && finalDamage > 0) {
                 const tgtIkki = gameState.characters[targetName];
@@ -6535,17 +6540,20 @@
                 }
 
             } else if (ability.effect === 'saitama_mode_garou') {
-                // GAROU — Saitama Mode: inmunidad a debuffs + 50% reducción de daño recibido
+                // GAROU — Saitama Mode: transformación permanente (NO es un buff)
+                // Los efectos (50% menos daño recibido, 50% más daño causado) se manejan
+                // directamente en summons.js y skills.js via el flag garouSaitamaMode
                 const _smAtk = gameState.characters[gameState.selectedCharacter];
                 if (_smAtk) {
                     _smAtk.garouSaitamaMode = true;
-                    _smAtk.immuneToDebuffs = true; // used by isImmuneToDebuff
-                    // Apply a permanent damage reduction buff (checked in applyDamageWithShield)
-                    applyBuff(gameState.selectedCharacter, {
-                        name: 'Saitama Mode', type: 'buff', duration: 999, permanent: true, emoji: '💀',
-                        damageReduction: 0.50, description: 'Inmune a debuffs. Recibe 50% menos daño.'
-                    });
-                    addLog('💀 Saitama Mode: Garou activa inmunidad y reducción de daño 50%', 'buff');
+                    _smAtk.immuneToDebuffs = true;
+                    // Cambiar retrato a transformación
+                    if (_smAtk.transformPortrait) {
+                        _smAtk.portrait = _smAtk.transformPortrait;
+                    }
+                    _smAtk.isTransformed = true;
+                    addLog('💀 ¡Saitama Mode! Garou se transforma — 50% menos daño recibido, 50% más daño causado', 'buff');
+                    renderCharacters();
                 }
             } else if (ability.effect === 'campo_atraccion') {
                 // LINTERNA VERDE — Campo de Atracción: Provocación + Esquivar, 1 turno cada uno
@@ -7975,58 +7983,14 @@
             // ══ DARTH VADER — handlers nuevos ══
 
             } else if (ability.effect === 'corte_oscuro_vader') {
-                // Corte Oscuro: 1 daño ST.
-                // Por cada Miedo activo en ambos equipos → +1 carga al equipo aliado.
-                // Si el objetivo tenía Miedo: elimínalo, Vader +2 HP, aliado aleatorio +3 cargas, Vader turno extra.
-                const _cdUser = gameState.characters[gameState.selectedCharacter];
-                const _cdTeam = _cdUser ? _cdUser.team : 'team1';
-                const _cdETeam = _cdTeam === 'team1' ? 'team2' : 'team1';
+                // Corte Oscuro: 2 daño. Si objetivo tenía Miedo activo antes: Darth Vader se aplica Reflejar
                 const _cdTgt = gameState.characters[targetName];
                 const _cdHadFear = _cdTgt && hasStatusEffect(targetName, 'Miedo');
-
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 addLog('⚫ Corte Oscuro: ' + finalDamage + ' daño a ' + targetName, 'damage');
-
-                // +1 carga al equipo aliado por cada Miedo activo en AMBOS equipos
-                let _cdFearCount = 0;
-                for (const _n in gameState.characters) {
-                    const _c = gameState.characters[_n];
-                    if (!_c || _c.isDead) continue;
-                    _cdFearCount += (_c.statusEffects || []).filter(function(e) { return e && e.name === 'Miedo'; }).length;
-                }
-                if (_cdFearCount > 0) {
-                    for (const _n in gameState.characters) {
-                        const _c = gameState.characters[_n];
-                        if (!_c || _c.team !== _cdTeam || _c.isDead || _c.hp <= 0) continue;
-                        _c.charges = Math.min(20, (_c.charges || 0) + _cdFearCount);
-                    }
-                    addLog('⚫ Corte Oscuro: equipo aliado +' + _cdFearCount + ' cargas (' + _cdFearCount + ' Miedos activos)', 'buff');
-                }
-
-                // Si el objetivo tenía Miedo: efectos bonus
-                if (_cdHadFear && _cdTgt) {
-                    // Eliminar el Miedo del objetivo
-                    _cdTgt.statusEffects = (_cdTgt.statusEffects || []).filter(function(e) { return !(e && e.name === 'Miedo'); });
-                    addLog('⚫ Corte Oscuro: Miedo eliminado de ' + targetName, 'buff');
-                    // Vader +2 HP
-                    if (_cdUser) {
-                        if (typeof applyHeal === 'function') applyHeal(gameState.selectedCharacter, 2, 'Corte Oscuro');
-                        else _cdUser.hp = Math.min(_cdUser.maxHp, (_cdUser.hp || 0) + 2);
-                        addLog('⚫ Corte Oscuro: Darth Vader recupera 2 HP', 'heal');
-                    }
-                    // Aliado aleatorio +3 cargas
-                    const _cdAllies = Object.keys(gameState.characters).filter(function(n) {
-                        const _c = gameState.characters[n];
-                        return _c && _c.team === _cdTeam && !_c.isDead && _c.hp > 0 && n !== gameState.selectedCharacter;
-                    });
-                    if (_cdAllies.length > 0) {
-                        const _cdAlly = _cdAllies[Math.floor(Math.random() * _cdAllies.length)];
-                        gameState.characters[_cdAlly].charges = Math.min(20, (gameState.characters[_cdAlly].charges || 0) + 3);
-                        addLog('⚫ Corte Oscuro: ' + _cdAlly + ' gana 3 cargas', 'buff');
-                    }
-                    // Vader gana turno extra
-                    gameState._vaderExtraTurn = gameState.selectedCharacter;
-                    addLog('⚫ Corte Oscuro: ¡' + gameState.selectedCharacter + ' gana turno adicional!', 'buff');
+                if (_cdHadFear) {
+                    if (typeof applyBuff === 'function') applyBuff(gameState.selectedCharacter, { name: 'Reflejar', type: 'buff', duration: 3, emoji: '🪞' });
+                    addLog('⚫ Corte Oscuro: Darth Vader se aplica Reflejar (objetivo tenía Miedo)', 'buff');
                 }
 
             } else if (ability.effect === 'intimidacion_sith') {
