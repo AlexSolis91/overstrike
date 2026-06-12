@@ -210,12 +210,12 @@
                 hp: 20, maxHp: 20, speed: 89, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/nzNJp8K7/Captura_de_pantalla_2026_02_27_201309.png',
-                passive: { name: 'Regla de Oro', description: 'Por cada golpe crítico: Gilgamesh genera 1 carga, se cura 1 HP y aplica 2 debuffs aleatorios al enemigo golpeado. Gilgamesh no puede ser dañado por enemigos que tengan debuffs activos (cualquier tipo de ataque).' },
+                passive: { name: 'Regla de Oro', description: 'Por cada golpe crítico: Gilgamesh genera 1 carga, se cura 1 HP y aplica 2 debuffs aleatorios al enemigo golpeado. Gilgamesh no puede ser dañado por enemigos que tengan debuffs activos.' },
                 abilities: [
-                    { name: 'Gate of Babylon', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'aoe', effect: 'crit_chance_basic', critChance: 0.15, description: 'Causa 1 AOE. 15% de probabilidad de golpe crítico.' },
-                    { name: 'Espada Merodach', type: 'special', cost: 5, chargeGain: 0, damage: 3, target: 'aoe', effect: 'espada_merodach', description: 'Causa 3 AOE. Elimina 3 cargas del enemigo golpeado por un golpe crítico.' },
-                    { name: 'Enkidu: Cadenas del Cielo', type: 'special', cost: 7, chargeGain: 0, damage: 0, target: 'aoe', effect: 'enkidu_cadenas', description: 'Cancela todas las invocaciones activas del enemigo. Aplica debuff Mega Aturdimiento en todos los enemigos que actualmente tengan más de 5 cargas.' },
-                    { name: 'Enuma Elish', type: 'over', cost: 10, chargeGain: 0, damage: 5, target: 'single', effect: 'gilgamesh_enuma', description: 'Causa 5 de daño. Roba todas las cargas del Enemigo golpeado.' }
+                    { name: 'Gate of Babylon',          type: 'basic',   cost: 0,  chargeGain: 1, damage: 2, target: 'aoe',    effect: 'gate_of_babylon_gil', description: 'Causa 2 AOE. Cada enemigo tiene 50% de probabilidad de recibir golpe crítico.' },
+                    { name: 'Espada Merodach',           type: 'special', cost: 5,  chargeGain: 0, damage: 3, target: 'mt',     effect: 'espada_merodach',     description: 'MT: golpea hasta 2 veces a hasta 2 enemigos. Cada golpe tiene 50% de crítico. Por cada golpe elimina 3 cargas del objetivo.' },
+                    { name: 'Enkidu: Cadenas del Cielo', type: 'special', cost: 6,  chargeGain: 0, damage: 4, target: 'single', effect: 'enkidu_cadenas',      description: 'Causa 4 daño ST. Cancela todas las invocaciones del enemigo. Por cada invocación cancelada, aplica Mega Aturdimiento a un enemigo aleatorio sin Mega Aturdimiento activo.' },
+                    { name: 'Enuma Elish',               type: 'over',    cost: 10, chargeGain: 0, damage: 0, target: 'mt',     effect: 'gilgamesh_enuma',     description: 'MT: ataca a cada enemigo. El daño base es igual a los debuffs activos en el equipo enemigo. Cada golpe: 50% crítico, 25% daño triple. Aplica 1 debuff aleatorio a cada enemigo antes del ataque.' }
                 ]
             },
 
@@ -248,12 +248,12 @@
                 hp: 20, maxHp: 20, speed: 89, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/qvNv9NQN/Captura_de_pantalla_2026_03_11_215715.png',
-                passive: { name: 'Hiraishin no Jutsu', description: 'Esquiva area (no es afectado por ataques AOE del enemigo). Cada vez que Minato esquiva un ataque (Buff Esquivar, Esquiva Área, o el atacante falla por Ceguera), Minato gana 1 turno adicional y genera 3 cargas.' },
+                passive: { name: 'Hiraishin no Jutsu', description: 'Esquiva area (no es afectado por ataques AOE del enemigo). Minato genera +1 cargas adicionales por cada enemigo golpeado que tenga menos velocidad que Minato.' },
                 abilities: [
-                    { name: 'Kiiroi Senkō', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'kiiroi_senko', description: 'Causa 1 de daño. Minato gana Celeridad 10% y Esquivar por 2 turnos. 50% de generar 2 cargas para sí mismo. 25% de generar 2 cargas para todo el equipo aliado.' },
+                    { name: 'Kiiroi Senkō', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'kiiroi_senko', description: 'Causa 1 de daño. Se aplica Buff Celeridad 10% por 2 turnos. Se aplica un Buff aleatorio por 2 turnos.' },
                     { name: 'Destello de la Danza Aullante', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'aoe', effect: 'destello_danza', description: 'Causa 2 AOE. Si el enemigo golpeado tiene menos velocidad que Minato, aplica un debuff aleatorio (Aturdimiento, Congelación, Posesión, Quemadura Solar, Sangrado, Miedo, Confusión, Debilitar, Silenciar, Agotamiento) por 1 turno.' },
                     { name: 'Rasen Senkō Chō Rinbu Kō Sanshiki', type: 'special', cost: 6, chargeGain: 0, damage: 4, target: 'aoe', effect: 'rasen_senko_v2', description: 'Causa 4 AOE. 50% de probabilidad de robar 2 cargas del enemigo golpeado.' },
-                    { name: 'Legado del Cuarto Hokage', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'ally_team', effect: 'legado_hokage_v2', description: 'Genera 8 cargas para el resto de tu equipo. 50% de probabilidad de aplicar Escudo Sagrado 1T a cada aliado.' }
+                    { name: 'Legado del Cuarto Hokage', type: 'over', cost: 9, chargeGain: 0, damage: 0, target: 'ally_team', effect: 'legado_hokage_v2', description: 'Genera 5 cargas para el resto de tu equipo (excepto Minato Namikaze).' }
                 ]
             },
 
@@ -304,12 +304,12 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 hpLost: 0,
                 portrait: 'https://i.postimg.cc/63sFfc1F/Captura_de_pantalla_2026_02_28_015421.png',
-                passive: { name: 'Presencia Oscura', description: 'Darth Vader tiene Buff Aura Oscura permanente. Genera 1 carga cada vez que un enemigo recupera HP.' },
+                passive: { name: 'Presencia Oscura', description: 'Al inicio de cada ronda: 50% de aplicar Miedo a cada enemigo y 70% de aplicarse Buff Reflejar. Al atacar a un enemigo con Miedo: elimina el Miedo, Vader se cura 2 HP, un aliado aleatorio gana 3 cargas y Vader gana 1 turno adicional.' },
                 abilities: [
-                    { name: 'Corte Oscuro', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'djem_so', fearChance: 0.50, description: 'Causa 2 daño. 50% de probabilidad de aplicar Debuff Miedo al objetivo.' },
-                    { name: 'Explosión de la Fuerza', type: 'special', cost: 5, chargeGain: 0, damage: 2, target: 'aoe', effect: 'explosion_fuerza_dv', description: 'Causa 2 AOE. 50% de probabilidad de aplicar Aturdimiento. 50% de probabilidad de aplicar Debilitar.' },
-                    { name: 'Intimidación Sith', type: 'special', cost: 7, chargeGain: 0, damage: 4, target: 'single', effect: 'intimidacion_sith', description: 'Causa 4 daño + 3 daño adicional por cada buff activo en el objetivo.' },
-                    { name: 'Ira del Elegido Caído', type: 'over', cost: 10, chargeGain: 0, damage: 2, target: 'aoe', effect: 'ira_elegido', description: 'Causa 2 AOE + 1 daño adicional por cada HP que Darth Vader ha perdido en el combate.' }
+                    { name: 'Corte Oscuro',           type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'corte_oscuro_vader',   description: 'Causa 1 daño ST. Por cada Miedo activo en ambos equipos, genera +1 carga al equipo aliado. Si el objetivo tenía Miedo: lo elimina, Vader +2 HP, aliado aleatorio +3 cargas, Vader gana turno extra.' },
+                    { name: 'Explosión de la Fuerza', type: 'special', cost: 4,  chargeGain: 0, damage: 2, target: 'aoe',    effect: 'explosion_fuerza_dv', description: 'Causa 2 AOE. Los enemigos con Miedo activo reciben daño crítico (×2).' },
+                    { name: 'Intimidación Sith',      type: 'special', cost: 7,  chargeGain: 0, damage: 6, target: 'single', effect: 'intimidacion_sith',   description: 'Causa 6 daño. Ignora Provocación, MegaProvocación y Sigilo. Disipa todos los buffs del objetivo y causa +5 daño directo por cada buff disipado.' },
+                    { name: 'Ira del Elegido Caído',  type: 'over',    cost: 20, chargeGain: 0, damage: 2, target: 'aoe',    effect: 'ira_elegido',         description: 'Causa 2 AOE + 1 daño adicional por cada punto de carga que tengan ambos equipos. Aplica Miedo a los enemigos que sobrevivan.' }
                 ]
             },
 
@@ -421,10 +421,10 @@
                 hp: 20, maxHp: 20, speed: 96, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/bRMTVQVr/Captura-de-pantalla-2026-03-18-131918.png',
-                passive: { name: 'Visión Esmeralda', description: 'Cada vez que recibe un golpe, genera 2 cargas para un aliado aleatorio. Cada vez que un enemigo ejecuta un ataque especial, Linterna Verde se cura 3 HP y limpia 1 debuff de cada aliado del equipo.' },
+                passive: { name: 'Visión Esmeralda', description: 'Cada vez que recibe un golpe, genera 2 cargas.' },
                 abilities: [
                     { name: 'Campo de Atracción', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'campo_atraccion', description: 'Se aplica Buff Provocación. Se aplica Buff Esquivar.' },
-                    { name: 'Sincronía Esmeralda', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'sincronia_esmeralda', description: 'Limpia de 1 a 3 debuffs activos del aliado seleccionado. Por cada debuff limpiado, el aliado genera 3 cargas.' },
+                    { name: 'Sincronía Esmeralda', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'sincronia_esmeralda', description: 'Limpia 1 debuff sobre el aliado objetivo y el aliado genera 3 cargas.' },
                     { name: 'Soporte Vital Autónomo', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'soporte_vital', description: 'Selecciona un aliado: ambos (Linterna Verde y el aliado) recuperan 5 HP y disipan todos los debuffs.' },
                     { name: 'La Lanza de Oa', type: 'over', cost: 10, chargeGain: 0, damage: 2, target: 'single', effect: 'lanza_de_oa', description: 'Causa 2 + 5 a 10 daño adicional aleatorio. Aplica debuff Mega Aturdimiento. Linterna Verde recupera HP equivalente al daño total causado.' }
                 ]
@@ -457,7 +457,7 @@
                 hp: 20, maxHp: 20, speed: 88, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/HDhTPLvR/91a611f2e00a9c83e9a8dd1607a2c50a.jpg',
-                passive: { name: 'Izanami', description: 'La primera vez por ronda que Itachi fuera a recibir un golpe de 3+ daño, esquiva ese ataque y tiene 50% de probabilidad de robar 2 cargas a cada enemigo, además de 50% de probabilidad de aplicar Posesión a cada enemigo. Cada vez que un debuff (Posesión, Veneno, Quemaduras, Confusión) es aplicado sobre un aliado, limpia 1 debuff activo de un aliado aleatorio y genera 2 cargas por debuff limpiado.' },
+                passive: { name: 'Izanami', description: 'La primera vez por ronda que Itachi fuera a recibir un golpe de 3+ daño, esquiva y roba hasta 2 cargas del atacante. Cada vez que un debuff (Posesion, Veneno, Quemaduras, Confusion) es aplicado sobre un aliado, limpia hasta 1 debuff activo del equipo aliado y genera 2 cargas por debuff limpiado.' },
                 abilities: [
                     { name: 'Genjutsu', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'single', effect: 'genjutsu_itachi', description: '50% de Agotamiento. 50% de Posesión. Genera 1 carga por cada debuff aplicado.' },
                     { name: 'Tsukuyomi', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'single', effect: 'tsukuyomi_itachi', description: 'Disipa todos los debuffs de ambos equipos. Causa +1 daño adicional por cada debuff disipado.' },
@@ -476,7 +476,7 @@
                     { name: 'Ryusui Gansai-ken', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'ryusui_garou', description: 'Garou se aplica debuff Veneno 2 turnos. Garou se aplica Buff Infectar por 2 turnos.' },
                     { name: 'Cross Fang Dragon Slayer Fist', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'single', effect: 'cross_fang_garou', description: 'Causa +2 de daño adicional por cada aliado y enemigo derrotado.' },
                     { name: 'Gamma Ray Burst', type: 'special', cost: 7, chargeGain: 0, damage: 2, target: 'aoe', effect: 'gamma_ray_garou', description: 'Causa +1 de daño adicional por cada punto de carga que tenga del objetivo golpeado.' },
-                    { name: 'Saitama Mode', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'saitama_mode_garou', description: 'Transformación permanente. Garou recibe un 50% menos de daño. Todos los ataques de Garou causan 50% más de daño.' }
+                    { name: 'Saitama Mode', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'saitama_mode_garou', description: 'Reduce -2 puntos el daño por golpe recibido por los enemigos. Todos los Ataques de Garou causan +2 de daño adicional.' }
                 ]
             },
             'Tanjiro Kamado': {

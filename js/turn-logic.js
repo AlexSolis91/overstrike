@@ -1528,7 +1528,7 @@
                 return;
             }
 
-            // ── SEIYA (¡Arde, cosmos!): turno adicional pendiente ──
+            // ── TURNO ADICIONAL PENDIENTE (Seiya, Vader, Minato, etc.) ──
             if (gameState._seiyaExtraTurn) {
                 const _seChar = gameState._seiyaExtraTurn;
                 gameState._seiyaExtraTurn = null;

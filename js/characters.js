@@ -211,7 +211,7 @@
                 hp: 20, maxHp: 20, speed: 89, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/qMnfxHyt/Rey-de-los-H-roes-Gilgamesh.jpg',
-                passive: { name: 'Regla de Oro', description: 'Por cada golpe crítico: Gilgamesh genera 1 carga, se cura 1 HP y aplica 2 debuffs aleatorios al enemigo golpeado. Gilgamesh no puede ser dañado por enemigos que tengan debuffs activos (cualquier tipo de ataque).' },
+                passive: { name: 'Regla de Oro', description: 'Por cada golpe crítico: Gilgamesh genera 1 carga, se cura 1 HP y aplica 2 debuffs aleatorios al enemigo golpeado. Gilgamesh no puede ser dañado por enemigos que tengan debuffs activos.' },
                 abilities: [
                     { name: 'Gate of Babylon',          type: 'basic',   cost: 0,  chargeGain: 1, damage: 2, target: 'aoe',    effect: 'gate_of_babylon_gil', description: 'Causa 2 AOE. Cada enemigo tiene 50% de probabilidad de recibir golpe crítico.' },
                     { name: 'Espada Merodach',           type: 'special', cost: 5,  chargeGain: 0, damage: 3, target: 'mt',     effect: 'espada_merodach',     description: 'Golpea hasta 2 veces a hasta 2 enemigos (MT). Cada golpe tiene 50% de crítico. Por cada crítico elimina 3 cargas del equipo rival.' },
@@ -249,12 +249,12 @@
                 hp: 20, maxHp: 20, speed: 89, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/qvNv9NQN/Captura_de_pantalla_2026_03_11_215715.png',
-                passive: { name: 'Hiraishin no Jutsu', description: 'Esquiva area (no es afectado por ataques AOE del enemigo). Cada vez que Minato esquiva un ataque (Buff Esquivar, Esquiva Área, o el atacante falla por Ceguera), Minato gana 1 turno adicional y genera 3 cargas.' },
+                passive: { name: 'Hiraishin no Jutsu', description: 'Esquiva area (no es afectado por ataques AOE del enemigo). Minato genera +1 cargas adicionales por cada enemigo golpeado que tenga menos velocidad que Minato.' },
                 abilities: [
-                    { name: 'Kiiroi Senkō', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'kiiroi_senko', description: 'Causa 1 de daño. Minato gana Celeridad 10% y Esquivar por 2 turnos. 50% de generar 2 cargas para sí mismo. 25% de generar 2 cargas para todo el equipo aliado.' },
+                    { name: 'Kiiroi Senkō', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'kiiroi_senko', description: 'Causa 1 de daño. Se aplica Buff Celeridad 10% por 2 turnos. Se aplica un Buff aleatorio por 2 turnos.' },
                     { name: 'Destello de la Danza Aullante', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'aoe', effect: 'destello_danza', description: 'Causa 2 AOE. Si el enemigo golpeado tiene menos velocidad que Minato, aplica un debuff aleatorio (Aturdimiento, Congelación, Posesión, Quemadura Solar, Sangrado, Miedo, Confusión, Debilitar, Silenciar, Agotamiento) por 1 turno.' },
                     { name: 'Rasen Senkō Chō Rinbu Kō Sanshiki', type: 'special', cost: 6, chargeGain: 0, damage: 4, target: 'aoe', effect: 'rasen_senko_v2', description: 'Causa 4 AOE. 50% de probabilidad de robar 2 cargas del enemigo golpeado.' },
-                    { name: 'Legado del Cuarto Hokage', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'ally_team', effect: 'legado_hokage_v2', description: 'Genera 8 cargas para el resto de tu equipo. 50% de probabilidad de aplicar Escudo Sagrado 1T a cada aliado.' }
+                    { name: 'Legado del Cuarto Hokage', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'ally_team', effect: 'legado_hokage_v2', description: 'Genera 8 cargas para el resto de tu equipo (excepto Minato Namikaze). Requiere 10 cargas.' }
                 ]
             },
 
@@ -426,19 +426,19 @@
                 passive: { name: 'Destello de Pegaso', description: 'Al inicio de cada ronda aplica Celeridad 15% por 1 turno a todos los aliados. Cada vez que un Buff expira en un aliado, Seiya genera 1 carga. Si Seiya pierde 5 o más HP en la ronda, se aplica Buff Escudo Sagrado 1 turno.' },
                 abilities: [
                     { name: 'Puño de Pegaso',      type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'puno_pegaso_seiya',    description: 'Causa 1 daño. Genera de 1 a 3 cargas a un aliado aleatorio.' },
-                    { name: '¡Arde, cosmos!',      type: 'special', cost: 3,  chargeGain: 0, damage: 0, target: 'self',   effect: 'arde_cosmos_seiya',    description: 'Seiya genera de 2 a 10 cargas y gana 1 turno adicional.' },
+                    { name: '¡Arde, cosmos!',      type: 'special', cost: 3,  chargeGain: 0, damage: 0, target: 'self',   effect: 'arde_cosmos_seiya',    description: 'Seiya genera de 2 a 10 cargas y gana 1 turno adicional. Cooldown: 2 turnos.' },
                     { name: 'Vínculo de Atena',    type: 'special', cost: 0,  chargeGain: 0, damage: 0, target: 'self',   effect: 'vinculo_atena_seiya',  description: 'Seiya sacrifica el 50% de su HP. Reparte sus cargas actuales entre los aliados aleatoriamente. Aplica Buff Esquivar 2 turnos al equipo aliado.' },
-                    { name: 'Pegasus Ryu Sei Ken', type: 'over',    cost: 12, chargeGain: 0, damage: 0, target: 'single', effect: 'pegasus_ryuseiken',    description: 'Causa 5 a 30 daño adicional al objetivo. Si elimina al objetivo, causa 5 a 15 daño adicional a cada enemigo.' }
+                    { name: 'Pegasus Ryu Sei Ken', type: 'over',    cost: 10, chargeGain: 0, damage: 5, target: 'single', effect: 'pegasus_ryuseiken',    description: 'Causa 5 daño base + 5 a 30 daño adicional al objetivo. Si elimina al objetivo, causa 5 a 20 daño adicional a cada enemigo.' }
                 ]
             },
             'Linterna Verde': {
                 hp: 20, maxHp: 20, speed: 96, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/bRMTVQVr/Captura-de-pantalla-2026-03-18-131918.png',
-                passive: { name: 'Visión Esmeralda', description: 'Cada vez que recibe un golpe, genera 2 cargas para un aliado aleatorio. Cada vez que un enemigo ejecuta un ataque especial, Linterna Verde se cura 3 HP y limpia 1 debuff de cada aliado del equipo.' },
+                passive: { name: 'Visión Esmeralda', description: 'Cada vez que recibe un golpe, genera 2 cargas.' },
                 abilities: [
                     { name: 'Campo de Atracción', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'campo_atraccion', description: 'Se aplica Buff Provocación. Se aplica Buff Esquivar.' },
-                    { name: 'Sincronía Esmeralda', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'sincronia_esmeralda', description: 'Limpia de 1 a 3 debuffs activos del aliado. Por cada debuff limpiado, el aliado genera 3 cargas.' },
+                    { name: 'Sincronía Esmeralda', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'sincronia_esmeralda', description: 'Limpia 1 debuff sobre el aliado objetivo y el aliado genera 3 cargas.' },
                     { name: 'Soporte Vital Autónomo', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'soporte_vital', description: 'Selecciona un aliado: ambos (Linterna Verde y el aliado) recuperan 5 HP y disipan todos los debuffs.' },
                     { name: 'La Lanza de Oa', type: 'over', cost: 10, chargeGain: 0, damage: 2, target: 'single', effect: 'lanza_de_oa', description: 'Causa 2 + 5 a 10 daño adicional aleatorio. Aplica debuff Mega Aturdimiento. Linterna Verde recupera HP equivalente al daño total causado.' }
                 ]
@@ -474,7 +474,7 @@
                 hp: 20, maxHp: 20, speed: 88, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/6VGGF0Q/Whats-App-Image-2026-06-02-at-4-50-41-PM-1.jpg',
-                passive: { name: 'Izanami', description: 'La primera vez por ronda que Itachi fuera a recibir un golpe de 3+ daño, esquiva ese ataque y tiene 50% de probabilidad de robar 2 cargas a cada enemigo, además de 50% de probabilidad de aplicar Posesión a cada enemigo. Cada vez que un debuff (Posesión, Veneno, Quemaduras, Confusión) es aplicado sobre un aliado, limpia 1 debuff activo de un aliado aleatorio y genera 2 cargas por debuff limpiado.' },
+                passive: { name: 'Izanami', description: 'La primera vez por ronda que Itachi fuera a recibir un golpe de 3+ daño, esquiva y roba hasta 2 cargas del atacante. Cada vez que un debuff (Posesion, Veneno, Quemaduras, Confusion) es aplicado sobre un aliado, limpia hasta 1 debuff activo del equipo aliado y genera 2 cargas por debuff limpiado.' },
                 abilities: [
                     { name: 'Genjutsu', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'genjutsu_itachi', description: 'Causa 1 daño. Aplica Posesión al objetivo. Genera 1 carga por cada Buff activo del objetivo golpeado.' },
                     { name: 'Tsukuyomi', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'single', effect: 'tsukuyomi_itachi', description: 'Disipa todos los debuffs de ambos equipos. Causa +1 daño adicional por cada debuff disipado.' },
@@ -493,7 +493,7 @@
                     { name: 'Ryusui Gansai-ken', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'ryusui_garou', description: 'Garou se aplica debuff Veneno 2 turnos. Garou se aplica Buff Infectar por 2 turnos.' },
                     { name: 'Cross Fang Dragon Slayer Fist', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'single', effect: 'cross_fang_garou', description: 'Causa +2 de daño adicional por cada aliado y enemigo derrotado.' },
                     { name: 'Gamma Ray Burst', type: 'special', cost: 7, chargeGain: 0, damage: 2, target: 'aoe', effect: 'gamma_ray_garou', description: 'Causa +1 de daño adicional por cada punto de carga que tenga del objetivo golpeado.' },
-                    { name: 'Saitama Mode', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'saitama_mode_garou', description: 'Transformación permanente. Garou recibe un 50% menos de daño. Todos los ataques de Garou causan 50% más de daño.' }
+                    { name: 'Saitama Mode', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'saitama_mode_garou', description: 'Reduce -2 puntos el daño por golpe recibido por los enemigos. Todos los Ataques de Garou causan +2 de daño adicional.' }
                 ]
             },
             'Tanjiro Kamado': {
