@@ -211,7 +211,7 @@
                 hp: 20, maxHp: 20, speed: 89, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/qMnfxHyt/Rey-de-los-H-roes-Gilgamesh.jpg',
-                passive: { name: 'Regla de Oro', description: 'Por cada golpe crítico: Gilgamesh genera 1 carga, se cura 1 HP y aplica 2 debuffs aleatorios al enemigo golpeado. Gilgamesh no puede ser dañado por enemigos que tengan debuffs activos.' },
+                passive: { name: 'Regla de Oro', description: 'Por cada golpe crítico: Gilgamesh genera 1 carga, se cura 1 HP y aplica 2 debuffs aleatorios al enemigo golpeado. Gilgamesh no causa daño a enemigos que tengan debuffs activos.' },
                 abilities: [
                     { name: 'Gate of Babylon',          type: 'basic',   cost: 0,  chargeGain: 1, damage: 2, target: 'aoe',    effect: 'gate_of_babylon_gil', description: 'Causa 2 AOE. Cada enemigo tiene 50% de probabilidad de recibir golpe crítico.' },
                     { name: 'Espada Merodach',           type: 'special', cost: 5,  chargeGain: 0, damage: 3, target: 'mt',     effect: 'espada_merodach',     description: 'Golpea hasta 2 veces a hasta 2 enemigos (MT). Cada golpe tiene 50% de crítico. Por cada crítico elimina 3 cargas del equipo rival.' },
@@ -425,10 +425,10 @@
                 portrait: 'https://i.ibb.co/4ZmLWKKt/descarga-2.jpg',
                 passive: { name: 'Destello de Pegaso', description: 'Al inicio de cada ronda aplica Celeridad 15% por 1 turno a todos los aliados. Cada vez que un Buff expira en un aliado, Seiya genera 1 carga. Si Seiya pierde 5 o más HP en la ronda, se aplica Buff Escudo Sagrado 1 turno.' },
                 abilities: [
-                    { name: 'Puño de Pegaso',      type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'puno_pegaso_seiya',    description: 'Causa 1 daño. Genera de 1 a 3 cargas a un aliado aleatorio.' },
-                    { name: '¡Arde, cosmos!',      type: 'special', cost: 3,  chargeGain: 0, damage: 0, target: 'self',   effect: 'arde_cosmos_seiya',    description: 'Seiya genera de 2 a 10 cargas y gana 1 turno adicional. Cooldown: 2 turnos.' },
-                    { name: 'Vínculo de Atena',    type: 'special', cost: 0,  chargeGain: 0, damage: 0, target: 'self',   effect: 'vinculo_atena_seiya',  description: 'Seiya sacrifica el 50% de su HP. Reparte sus cargas actuales entre los aliados aleatoriamente. Aplica Buff Esquivar 2 turnos al equipo aliado.' },
-                    { name: 'Pegasus Ryu Sei Ken', type: 'over',    cost: 10, chargeGain: 0, damage: 5, target: 'single', effect: 'pegasus_ryuseiken',    description: 'Causa 5 daño base + 5 a 30 daño adicional al objetivo. Si elimina al objetivo, causa 5 a 20 daño adicional a cada enemigo.' }
+                    { name: 'Puño de Pegaso',      type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'puno_pegaso_seiya',   description: 'Causa 1 daño. Genera de 1 a 3 cargas a un aliado aleatorio.' },
+                    { name: '¡Arde, cosmos!',      type: 'special', cost: 3,  chargeGain: 0, damage: 0, target: 'self',   effect: 'arde_cosmos_seiya',   description: 'Seiya genera de 2 a 10 cargas y gana 1 turno adicional. Cooldown: 2 turnos.' },
+                    { name: 'Vínculo de Atena',    type: 'special', cost: 0,  chargeGain: 0, damage: 0, target: 'self',   effect: 'vinculo_atena_seiya', description: 'Seiya sacrifica el 50% de su HP. Reparte sus cargas actuales entre los aliados aleatoriamente. Aplica Buff Esquivar 2 turnos al equipo aliado.' },
+                    { name: 'Pegasus Ryu Sei Ken', type: 'over',    cost: 10, chargeGain: 0, damage: 5, target: 'single', effect: 'pegasus_ryuseiken',   description: 'Causa 5 daño base + 5 a 30 daño adicional. Si elimina al objetivo, causa 5 a 20 daño adicional a cada enemigo.' }
                 ]
             },
             'Linterna Verde': {
@@ -493,7 +493,7 @@
                     { name: 'Ryusui Gansai-ken', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'ryusui_garou', description: 'Garou se aplica debuff Veneno 2 turnos. Garou se aplica Buff Infectar por 2 turnos.' },
                     { name: 'Cross Fang Dragon Slayer Fist', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'single', effect: 'cross_fang_garou', description: 'Causa +2 de daño adicional por cada aliado y enemigo derrotado.' },
                     { name: 'Gamma Ray Burst', type: 'special', cost: 7, chargeGain: 0, damage: 2, target: 'aoe', effect: 'gamma_ray_garou', description: 'Causa +1 de daño adicional por cada punto de carga que tenga del objetivo golpeado.' },
-                    { name: 'Saitama Mode', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'saitama_mode_garou', description: 'Reduce -2 puntos el daño por golpe recibido por los enemigos. Todos los Ataques de Garou causan +2 de daño adicional.' }
+                    { name: 'Saitama Mode', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'saitama_mode_garou', description: 'Transformación permanente. Garou recibe 50% menos daño. Todos los ataques de Garou causan 50% más de daño.' }
                 ]
             },
             'Tanjiro Kamado': {

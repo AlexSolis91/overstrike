@@ -36,7 +36,7 @@
                 addLog(`❌ Another Dimension en cooldown (${ability.cooldown} turno${ability.cooldown > 1 ? 's' : ''} restante${ability.cooldown > 1 ? 's' : ''})`, 'info');
                 return;
             }
-            // ¡ARDE, COSMOS! cooldown check
+            // ¡ARDE, COSMOS! cooldown check (bloqueo adicional en selección)
             if (ability.effect === 'arde_cosmos_seiya' && ability.cooldown > 0) {
                 addLog(`❌ ¡Arde, cosmos! en cooldown (${ability.cooldown} turno${ability.cooldown > 1 ? 's' : ''} restante${ability.cooldown > 1 ? 's' : ''})`, 'info');
                 return;
@@ -614,26 +614,14 @@ function triggerMaboroshi(targetTeam, debuffName) {
         }
 
         // ── PASIVA REGLA DE ORO (Gilgamesh): +2 cargas en crítico ──
-        function triggerGilgameshCrit(attackerName, hitTargetName) {
+        function triggerGilgameshCrit(attackerName) {
             const _gilN = (attackerName === 'Gilgamesh' || attackerName === 'Gilgamesh v2') ? attackerName : null;
             if (!_gilN) return;
             const gil = gameState.characters[_gilN];
             if (!gil || gil.isDead || gil.hp <= 0) return;
-            // +1 carga
+            // 100% de probabilidad de generar 1 carga por crítico (actualizado)
             gil.charges = Math.min(20, (gil.charges || 0) + 1);
-            // Curar 1 HP
-            if (typeof applyHeal === 'function') applyHeal(_gilN, 1, 'Regla de Oro');
-            else gil.hp = Math.min(gil.maxHp, (gil.hp || 0) + 1);
-            addLog('👑 Regla de Oro: Gilgamesh +1 carga y +1 HP por golpe crítico', 'buff');
-            // Aplicar 2 debuffs aleatorios al objetivo golpeado
-            if (hitTargetName && gameState.characters[hitTargetName] && !gameState.characters[hitTargetName].isDead) {
-                const _gilDebuffPool = ['Veneno', 'Sangrado', 'Debilitar', 'Confusión', 'Miedo', 'Agotamiento', 'Quemadura', 'Ceguera'];
-                for (let _di = 0; _di < 2; _di++) {
-                    const _db = _gilDebuffPool[Math.floor(Math.random() * _gilDebuffPool.length)];
-                    if (typeof applyDebuff === 'function') applyDebuff(hitTargetName, { name: _db, type: 'debuff', duration: 1, emoji: '🔴' });
-                    addLog('👑 Regla de Oro: ' + hitTargetName + ' recibe ' + _db, 'debuff');
-                }
-            }
+            addLog('👑 Regla de Oro: Gilgamesh gana 1 carga por golpe crítico', 'buff');
         }
 
         // ── PASIVA ENTRENAMIENTO DE LOS DIOSES (Goku): +1 vel y +1 daño en crítico ──

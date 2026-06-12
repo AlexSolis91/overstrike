@@ -1400,6 +1400,11 @@
                         cooldownLabel = '⏳ Cooldown: ' + _cdChar._singularidadCooldown + 'T';
                     }
                 }
+                // ¡Arde, cosmos! cooldown
+                if (ability.effect === 'arde_cosmos_seiya' && ability.cooldown > 0) {
+                    blockedByCooldown = true;
+                    cooldownLabel = '⏳ Cooldown: ' + ability.cooldown + 'T';
+                }
                 const disabled = !canUse || !canRevive || !canSacrifice || !canSummon || !canSummonKamish || blockedByFreeze || blockedBySigilo || blockedByTransform || blockedByCooldown || blockedByDragon || blockedByNoRa || blockedBySummonCap || blockedByTirionCondition;
                 
                 // Bloquear invocación única si ya está activa en campo
@@ -1528,7 +1533,7 @@
                 return;
             }
 
-            // ── TURNO ADICIONAL PENDIENTE (Seiya, Vader, Minato, etc.) ──
+            // ── SEIYA (¡Arde, cosmos!): turno adicional pendiente ──
             if (gameState._seiyaExtraTurn) {
                 const _seChar = gameState._seiyaExtraTurn;
                 gameState._seiyaExtraTurn = null;

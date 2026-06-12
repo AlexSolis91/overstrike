@@ -731,14 +731,6 @@
                 })) {
                     if (Math.random() < 0.5) {
                         addLog('👁️ Ceguera: ' + attackerName + ' falla el ataque (50%)', 'debuff');
-                        // HIRAISHIN NO JUTSU (Minato): turno extra + 3 cargas al ser esquivado por Ceguera
-                        const _blindDef = gameState.characters[targetName];
-                        if (_blindDef && !_blindDef.isDead && _blindDef.hp > 0 &&
-                            _blindDef.passive && _blindDef.passive.name === 'Hiraishin no Jutsu') {
-                            _blindDef.charges = Math.min(20, (_blindDef.charges || 0) + 3);
-                            gameState._seiyaExtraTurn = targetName;
-                            addLog('⚡ Hiraishin no Jutsu: ' + targetName + ' gana 3 cargas + 1 turno adicional (Ceguera)', 'buff');
-                        }
                         return; // Miss — no damage applied
                     }
                 }
@@ -800,35 +792,14 @@
                     target.passive && target.passive.name === 'Izanami' &&
                     !target.izanamiUsedThisRound) {
                     target.izanamiUsedThisRound = true;
-                    const _izTeam = target.team;
-                    const _izETeam = _izTeam === 'team1' ? 'team2' : 'team1';
-                    addLog('👁️ Izanami: ' + targetName + ' esquiva el golpe de ' + damage + ' daño', 'buff');
-                    // 50% de probabilidad de robar 2 cargas a CADA enemigo
-                    for (const _izEn in gameState.characters) {
-                        const _izE = gameState.characters[_izEn];
-                        if (!_izE || _izE.team !== _izETeam || _izE.isDead || _izE.hp <= 0) continue;
-                        if (Math.random() < 0.5 && (_izE.charges || 0) >= 2) {
-                            _izE.charges = Math.max(0, (_izE.charges || 0) - 2);
-                            target.charges = Math.min(20, (target.charges || 0) + 2);
-                            addLog('👁️ Izanami: ' + targetName + ' roba 2 cargas de ' + _izEn, 'buff');
-                        }
+                    const _izAtk = gameState.characters[attackerName];
+                    const _izStolen = _izAtk ? Math.min(5, _izAtk.charges || 0) : 0;
+                    if (_izAtk && _izStolen > 0) {
+                        _izAtk.charges = Math.max(0, (_izAtk.charges || 0) - _izStolen);
+                        target.charges = Math.min(20, (target.charges || 0) + _izStolen);
                     }
-                    // 50% de probabilidad de aplicar Posesion a CADA enemigo
-                    for (const _izEn2 in gameState.characters) {
-                        const _izE2 = gameState.characters[_izEn2];
-                        if (!_izE2 || _izE2.team !== _izETeam || _izE2.isDead || _izE2.hp <= 0) continue;
-                        if (Math.random() < 0.5) {
-                            passiveExecuting = true;
-                            if (typeof applyPossession === 'function') {
-                                applyPossession(_izEn2, 1);
-                            } else {
-                                const _posNorm = (_izE2.statusEffects||[]).some(function(e){ return e && (e.name==='Posesion'||e.name==='Posesión'); });
-                                if (!_posNorm) _izE2.statusEffects.push({ name: 'Posesion', type: 'debuff', duration: 1, emoji: '👁️' });
-                            }
-                            passiveExecuting = false;
-                            addLog('👁️ Izanami: ' + _izEn2 + ' recibe Posesión', 'debuff');
-                        }
-                    }
+                    addLog('👁️ Izanami: ' + targetName + ' esquiva el golpe de ' + damage + ' daño' +
+                        (_izStolen > 0 ? ' y roba ' + _izStolen + ' cargas de ' + attackerName : ''), 'buff');
                     return 0; // Golpe esquivado completamente
                 }
             }
@@ -2388,18 +2359,10 @@
 
             // Disparar pasivas post-golpe si el objetivo sigue vivo
             if (target.hp > 0 && !target.isDead && attackerName) {
-                // VISIÓN ESMERALDA (Linterna Verde): genera 2 cargas a un aliado aleatorio al recibir golpe
+                // VISIÓN ESMERALDA (Linterna Verde): genera 2 cargas al recibir un golpe
                 if (!passiveExecuting && target.passive && target.passive.name === 'Visión Esmeralda') {
-                    const _veTeam = target.team;
-                    const _veAllies = Object.keys(gameState.characters).filter(function(n) {
-                        const _c = gameState.characters[n];
-                        return _c && _c.team === _veTeam && !_c.isDead && _c.hp > 0;
-                    });
-                    if (_veAllies.length > 0) {
-                        const _veRnd = _veAllies[Math.floor(Math.random() * _veAllies.length)];
-                        gameState.characters[_veRnd].charges = Math.min(20, (gameState.characters[_veRnd].charges || 0) + 2);
-                        addLog('💚 Visión Esmeralda: ' + _veRnd + ' genera 2 cargas (golpe recibido por ' + targetName + ')', 'buff');
-                    }
+                    target.charges = Math.min(20, (target.charges || 0) + 2);
+                    addLog('💚 Visión Esmeralda: ' + targetName + ' genera 2 cargas al recibir golpe', 'buff');
                 }
                 triggerOnHitPassives(targetName, attackerName, null);
                 // AURA DE HIELO (Lich King): congela al atacante
