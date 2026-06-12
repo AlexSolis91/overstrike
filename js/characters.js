@@ -435,7 +435,7 @@
                 hp: 20, maxHp: 20, speed: 96, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/bRMTVQVr/Captura-de-pantalla-2026-03-18-131918.png',
-                passive: { name: 'Visión Esmeralda', description: 'Cada vez que recibe un golpe, genera 2 cargas.' },
+                passive: { name: 'Visión Esmeralda', description: 'Cada vez que recibe un golpe, genera 2 cargas para un aliado aleatorio. Cada vez que un enemigo ejecuta un ataque especial, Linterna Verde se cura 3 HP y limpia 1 debuff de cada aliado del equipo.' },
                 abilities: [
                     { name: 'Campo de Atracción', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'campo_atraccion', description: 'Se aplica Buff Provocación. Se aplica Buff Esquivar.' },
                     { name: 'Sincronía Esmeralda', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'sincronia_esmeralda', description: 'Limpia 1 debuff sobre el aliado objetivo y el aliado genera 3 cargas.' },

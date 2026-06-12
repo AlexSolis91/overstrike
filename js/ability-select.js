@@ -36,8 +36,8 @@
                 addLog(`❌ Another Dimension en cooldown (${ability.cooldown} turno${ability.cooldown > 1 ? 's' : ''} restante${ability.cooldown > 1 ? 's' : ''})`, 'info');
                 return;
             }
-            // ¡ARDE, COSMOS! cooldown check (bloqueo adicional en selección)
-            if (ability.effect === 'arde_cosmos_seiya' && ability.cooldown > 0) {
+            // ¡ARDE, COSMOS! cooldown check
+            if (ability.effect === 'arde_cosmos_seiya' && (ability.cooldown || 0) > 0) {
                 addLog(`❌ ¡Arde, cosmos! en cooldown (${ability.cooldown} turno${ability.cooldown > 1 ? 's' : ''} restante${ability.cooldown > 1 ? 's' : ''})`, 'info');
                 return;
             }

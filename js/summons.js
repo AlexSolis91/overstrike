@@ -851,7 +851,7 @@
                 addLog('🦸 Forma Prime: ' + targetName + ' reduce daño a ' + damage + ' (-50%)', 'buff');
             }
 
-            // ── SAITAMA MODE (Garou): transformación permanente — reduce 50% el daño recibido ──
+            // ── SAITAMA MODE (Garou): transformación permanente — 50% menos daño recibido ──
             if (target.garouSaitamaMode && damage > 0) {
                 damage = Math.max(1, Math.ceil(damage * 0.5));
                 addLog('💀 Saitama Mode: ' + targetName + ' reduce daño a ' + damage + ' (-50%)', 'buff');

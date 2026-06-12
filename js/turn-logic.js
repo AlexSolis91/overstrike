@@ -1400,8 +1400,7 @@
                         cooldownLabel = '⏳ Cooldown: ' + _cdChar._singularidadCooldown + 'T';
                     }
                 }
-                // ¡Arde, cosmos! cooldown
-                if (ability.effect === 'arde_cosmos_seiya' && ability.cooldown > 0) {
+                if (ability.effect === 'arde_cosmos_seiya' && (ability.cooldown || 0) > 0) {
                     blockedByCooldown = true;
                     cooldownLabel = '⏳ Cooldown: ' + ability.cooldown + 'T';
                 }
@@ -1533,7 +1532,7 @@
                 return;
             }
 
-            // ── SEIYA (¡Arde, cosmos!): turno adicional pendiente ──
+            // ── TURNO ADICIONAL PENDIENTE (Seiya, Vader, Minato...) ──
             if (gameState._seiyaExtraTurn) {
                 const _seChar = gameState._seiyaExtraTurn;
                 gameState._seiyaExtraTurn = null;

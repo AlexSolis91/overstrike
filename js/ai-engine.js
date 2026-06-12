@@ -689,30 +689,25 @@
                     return enemies[Math.floor(Math.random() * enemies.length)];
                 }
 
-                // ── SEIYA: nunca usa Vínculo de Atena salvo con ≥10 cargas (y prioriza Over si puede matar) ──
+                // ── SEIYA: nunca usa Vínculo de Atena con <10 cargas; prioriza Over si puede matar ──
                 if (charName === 'Seiya' || charName === 'Seiya v2') {
-                    const _seOver   = usable.find(ab => ab.effect === 'pegasus_ryuseiken');
-                    const _seVinculo = usable.find(ab => ab.effect === 'vinculo_atena_seiya');
-                    const _seArde   = usable.find(ab => ab.effect === 'arde_cosmos_seiya');
-                    const _seBasic  = usable.find(ab => ab.type === 'basic');
-                    const _seChar   = gameState.characters[charName];
-                    const _seCharges = _seChar ? (_seChar.charges || 0) : 0;
+                    const _seOver    = usable.find(ab => ab.effect === 'pegasus_ryuseiken');
+                    const _seArde    = usable.find(ab => ab.effect === 'arde_cosmos_seiya');
+                    const _seBasic   = usable.find(ab => ab.type === 'basic');
+                    const _seCharges = char.charges || 0;
 
-                    // Prioridad 1: Over si puede eliminar a algún enemigo
+                    // Prioridad 1: Over si puede eliminar a algún enemigo (5 base + hasta 30 adicional)
                     if (_seOver) {
-                        const _seKillTarget = enemies.find(n => {
+                        const _seKillTgt = enemies.find(n => {
                             const c = gameState.characters[n];
-                            return c && c.hp > 0 && c.hp <= (_seOver.damage + 30); // 5 base + hasta 30 adicional
+                            return c && c.hp > 0 && c.hp <= 35;
                         });
-                        if (_seKillTarget) { chosen = _seOver; }
+                        if (_seKillTgt) { chosen = _seOver; }
                     }
-                    // Prioridad 2: Vínculo de Atena solo si ≥10 cargas Y no se eligió Over
+                    // Prioridad 2: bloquear Vínculo de Atena si cargas < 10
                     if (chosen !== _seOver) {
-                        if (_seVinculo && _seCharges < 10) {
-                            // Bloquear Vínculo — elegir otra cosa
-                            usable = usable.filter(ab => ab.effect !== 'vinculo_atena_seiya');
-                        }
-                        // Prioridad 3: Arde cosmos si disponible
+                        usable = usable.filter(ab => ab.effect !== 'vinculo_atena_seiya' || _seCharges >= 10);
+                        // Prioridad 3: Arde cosmos si disponible, sino básico
                         if (!chosen || chosen.effect === 'vinculo_atena_seiya') {
                             chosen = _seArde || _seBasic || usable[0] || chosen;
                         }

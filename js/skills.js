@@ -251,7 +251,7 @@
                 finalChargeGain += 1;
             }
 
-            // SAITAMA MODE (Garou): +50% daño en todos los ataques
+            // SAITAMA MODE (Garou): +50% daño en todos sus ataques
             if (attacker.garouSaitamaMode && (gameState.selectedCharacter === 'Garou' || gameState.selectedCharacter === 'Garou v2') && finalDamage > 0) {
                 finalDamage = Math.ceil(finalDamage * 1.5);
             }
@@ -6541,13 +6541,11 @@
 
             } else if (ability.effect === 'saitama_mode_garou') {
                 // GAROU — Saitama Mode: transformación permanente (NO es un buff)
-                // Los efectos (50% menos daño recibido, 50% más daño causado) se manejan
-                // directamente en summons.js y skills.js via el flag garouSaitamaMode
+                // 50% menos daño recibido (summons.js) + 50% más daño causado (finalDamage arriba)
                 const _smAtk = gameState.characters[gameState.selectedCharacter];
                 if (_smAtk) {
                     _smAtk.garouSaitamaMode = true;
                     _smAtk.immuneToDebuffs = true;
-                    // Cambiar retrato a transformación
                     if (_smAtk.transformPortrait) {
                         _smAtk.portrait = _smAtk.transformPortrait;
                     }
@@ -6843,7 +6841,9 @@
                         addLog(`⚡ Hiraishin no Jutsu: Minato genera +${bonusChargesM} cargas (enemigos más lentos)`, 'buff');
                     }
                 }
-} else if (ability.effect === 'fuego_fatuo_manigoldo') {
+            } // end if(ability.effect !== 'multi_hit')
+
+            if (ability.effect === 'fuego_fatuo_manigoldo') {
                 const _ffA=gameState.characters[gameState.selectedCharacter],_ffT=gameState.characters[targetName];
                 applyDamageWithShield(targetName,finalDamage,gameState.selectedCharacter);
                 if(_ffA&&_ffT&&!_ffT.isDead&&_ffT.hp>0){const _ffL=_ffA.hp<=Math.floor(_ffA.maxHp*0.50);if(_ffL||Math.random()<0.25){const _s=Math.min(2,_ffT.hp);_ffT.hp=Math.max(0,_ffT.hp-_s);if(_ffT.hp<=0)_ffT.isDead=true;if(typeof applyHeal==='function')applyHeal(gameState.selectedCharacter,_s,'Fuego Fatuo');else _ffA.hp=Math.min(_ffA.maxHp,(_ffA.hp||0)+_s);addLog('☠️ Fuego Fatuo: roba '+_s+' HP','heal');}if(_ffL||Math.random()<0.25){const _sc=Math.min(2,_ffT.charges||0);if(_sc>0){_ffT.charges-=_sc;_ffA.charges=Math.min(20,(_ffA.charges||0)+_sc);addLog('☠️ Fuego Fatuo: roba '+_sc+' cargas','buff');}}}
@@ -7983,14 +7983,57 @@
             // ══ DARTH VADER — handlers nuevos ══
 
             } else if (ability.effect === 'corte_oscuro_vader') {
-                // Corte Oscuro: 2 daño. Si objetivo tenía Miedo activo antes: Darth Vader se aplica Reflejar
+                // Corte Oscuro: 1 daño ST.
+                // +1 carga al equipo aliado por cada Miedo activo en AMBOS equipos.
+                // Si el objetivo tenía Miedo: elimínalo, Vader +2 HP, aliado aleatorio +3 cargas, Vader turno extra.
+                const _cdUser = gameState.characters[gameState.selectedCharacter];
+                const _cdTeam = _cdUser ? _cdUser.team : 'team1';
                 const _cdTgt = gameState.characters[targetName];
                 const _cdHadFear = _cdTgt && hasStatusEffect(targetName, 'Miedo');
+
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 addLog('⚫ Corte Oscuro: ' + finalDamage + ' daño a ' + targetName, 'damage');
-                if (_cdHadFear) {
-                    if (typeof applyBuff === 'function') applyBuff(gameState.selectedCharacter, { name: 'Reflejar', type: 'buff', duration: 3, emoji: '🪞' });
-                    addLog('⚫ Corte Oscuro: Darth Vader se aplica Reflejar (objetivo tenía Miedo)', 'buff');
+
+                // +1 carga al equipo aliado por cada Miedo activo en ambos equipos
+                let _cdFearCount = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.isDead) continue;
+                    _cdFearCount += (_c.statusEffects || []).filter(function(e) { return e && e.name === 'Miedo'; }).length;
+                }
+                if (_cdFearCount > 0) {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _cdTeam || _c.isDead || _c.hp <= 0) continue;
+                        _c.charges = Math.min(20, (_c.charges || 0) + _cdFearCount);
+                    }
+                    addLog('⚫ Corte Oscuro: equipo aliado +' + _cdFearCount + ' cargas (' + _cdFearCount + ' Miedos activos)', 'buff');
+                }
+
+                // Si el objetivo tenía Miedo: efectos bonus
+                if (_cdHadFear && _cdTgt) {
+                    // Eliminar el Miedo del objetivo
+                    _cdTgt.statusEffects = (_cdTgt.statusEffects || []).filter(function(e) { return !(e && e.name === 'Miedo'); });
+                    addLog('⚫ Corte Oscuro: Miedo eliminado de ' + targetName, 'buff');
+                    // Vader +2 HP
+                    if (_cdUser) {
+                        if (typeof applyHeal === 'function') applyHeal(gameState.selectedCharacter, 2, 'Corte Oscuro');
+                        else _cdUser.hp = Math.min(_cdUser.maxHp, (_cdUser.hp || 0) + 2);
+                        addLog('⚫ Corte Oscuro: Darth Vader recupera 2 HP', 'heal');
+                    }
+                    // Aliado aleatorio +3 cargas
+                    const _cdAllies = Object.keys(gameState.characters).filter(function(n) {
+                        const _c = gameState.characters[n];
+                        return _c && _c.team === _cdTeam && !_c.isDead && _c.hp > 0 && n !== gameState.selectedCharacter;
+                    });
+                    if (_cdAllies.length > 0) {
+                        const _cdAlly = _cdAllies[Math.floor(Math.random() * _cdAllies.length)];
+                        gameState.characters[_cdAlly].charges = Math.min(20, (gameState.characters[_cdAlly].charges || 0) + 3);
+                        addLog('⚫ Corte Oscuro: ' + _cdAlly + ' gana 3 cargas', 'buff');
+                    }
+                    // Vader gana turno extra
+                    gameState._vaderExtraTurn = gameState.selectedCharacter;
+                    addLog('⚫ Corte Oscuro: ¡' + gameState.selectedCharacter + ' gana turno adicional!', 'buff');
                 }
 
             } else if (ability.effect === 'intimidacion_sith') {
@@ -9495,7 +9538,94 @@
                 if (_biA17) _biA17.charges = Math.min(20, (_biA17.charges||0) + 8);
                 addLog('⚡ Barrera de Impacto Total: Androide 17 gana 8 cargas adicionales', 'buff');
 
-            } // end Androide 17 handlers
+            // ── SEIYA ──────────────────────────────────────────────────────
+            } else if (ability.effect === 'puno_pegaso_seiya') {
+                // Puño de Pegaso: 1 daño ST (sistema base) + 1-3 cargas a aliado aleatorio
+                const _ppU = gameState.characters[gameState.selectedCharacter];
+                const _ppT = _ppU ? _ppU.team : 'team1';
+                const _ppAll = Object.keys(gameState.characters).filter(function(n) {
+                    const c = gameState.characters[n]; return c && c.team === _ppT && !c.isDead && c.hp > 0;
+                });
+                if (_ppAll.length > 0) {
+                    const _ppTgt = _ppAll[Math.floor(Math.random() * _ppAll.length)];
+                    const _ppG = 1 + Math.floor(Math.random() * 3);
+                    gameState.characters[_ppTgt].charges = Math.min(20, (gameState.characters[_ppTgt].charges || 0) + _ppG);
+                    addLog('👊 Puño de Pegaso: ' + _ppTgt + ' gana ' + _ppG + ' carga' + (_ppG > 1 ? 's' : ''), 'buff');
+                }
+
+            } else if (ability.effect === 'arde_cosmos_seiya') {
+                // ¡Arde, cosmos!: 2-10 cargas + turno adicional. Cooldown real = 3 (tras decremento queda 2T bloqueado)
+                const _acU = gameState.characters[gameState.selectedCharacter];
+                if (_acU) {
+                    const _acG = 2 + Math.floor(Math.random() * 9);
+                    _acU.charges = Math.min(20, (_acU.charges || 0) + _acG);
+                    addLog('🔥 ¡Arde, cosmos!: ' + gameState.selectedCharacter + ' gana ' + _acG + ' cargas', 'buff');
+                    gameState._seiyaExtraTurn = gameState.selectedCharacter;
+                    addLog('🔥 ¡Arde, cosmos!: ' + gameState.selectedCharacter + ' gana 1 turno adicional', 'buff');
+                    const _acAb = (_acU.abilities || []).find(function(ab) { return ab.effect === 'arde_cosmos_seiya'; });
+                    if (_acAb) _acAb.cooldown = 3;
+                }
+
+            } else if (ability.effect === 'vinculo_atena_seiya') {
+                // Vínculo de Atena: -50% HP propio, reparte cargas entre aliados, Esquivar 2T al equipo
+                const _vaU = gameState.characters[gameState.selectedCharacter];
+                const _vaT = _vaU ? _vaU.team : 'team1';
+                if (_vaU) {
+                    const _vaS = Math.floor((_vaU.hp || 0) * 0.5);
+                    _vaU.hp = Math.max(1, (_vaU.hp || 0) - _vaS);
+                    addLog('✝️ Vínculo de Atena: ' + gameState.selectedCharacter + ' sacrifica ' + _vaS + ' HP (queda en ' + _vaU.hp + ')', 'damage');
+                    const _vaAll = Object.keys(gameState.characters).filter(function(n) {
+                        const c = gameState.characters[n];
+                        return c && c.team === _vaT && !c.isDead && c.hp > 0 && n !== gameState.selectedCharacter;
+                    });
+                    const _vaC = _vaU.charges || 0;
+                    if (_vaC > 0 && _vaAll.length > 0) {
+                        const _vaD = {};
+                        for (let i = 0; i < _vaC; i++) {
+                            const r = _vaAll[Math.floor(Math.random() * _vaAll.length)];
+                            _vaD[r] = (_vaD[r] || 0) + 1;
+                        }
+                        for (const n in _vaD) {
+                            gameState.characters[n].charges = Math.min(20, (gameState.characters[n].charges || 0) + _vaD[n]);
+                            addLog('✝️ Vínculo de Atena: ' + n + ' recibe ' + _vaD[n] + ' cargas', 'buff');
+                        }
+                        _vaU.charges = 0;
+                        addLog('✝️ Vínculo de Atena: ' + gameState.selectedCharacter + ' reparte ' + _vaC + ' cargas entre aliados', 'buff');
+                    }
+                    for (const n in gameState.characters) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== _vaT || c.isDead || c.hp <= 0) continue;
+                        applyBuff(n, { name: 'Esquivar', type: 'buff', duration: 2, emoji: '💨' });
+                    }
+                    addLog('✝️ Vínculo de Atena: equipo aliado recibe Esquivar 2T', 'buff');
+                }
+
+            } else if (ability.effect === 'pegasus_ryuseiken') {
+                // Pegasus Ryu Sei Ken: 5 daño base (sistema) + 5-30 adicional. Si elimina → 5-20 a cada enemigo.
+                const _prU = gameState.characters[gameState.selectedCharacter];
+                const _prET = _prU ? (_prU.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _prTN = gameState.currentTarget || gameState.selectedTarget || targetName;
+                const _prT = _prTN ? gameState.characters[_prTN] : null;
+                if (_prT && !_prT.isDead) {
+                    const _prB = 5 + Math.floor(Math.random() * 26);
+                    applyDamageWithShield(_prTN, _prB, gameState.selectedCharacter);
+                    addLog('🌠 Pegasus Ryu Sei Ken: ' + _prB + ' daño adicional a ' + _prTN, 'damage');
+                    if (_prT.isDead || _prT.hp <= 0) {
+                        const _prR = Object.keys(gameState.characters).filter(function(n) {
+                            const c = gameState.characters[n];
+                            return c && c.team === _prET && !c.isDead && c.hp > 0 && n !== _prTN;
+                        });
+                        if (_prR.length > 0) {
+                            const _prS = 5 + Math.floor(Math.random() * 16);
+                            _prR.forEach(function(n) { applyDamageWithShield(n, _prS, gameState.selectedCharacter); });
+                            addLog('🌠 Pegasus Ryu Sei Ken: ¡' + _prTN + ' eliminado! ' + _prS + ' daño a cada enemigo', 'damage');
+                        }
+                    }
+                } else {
+                    addLog('🌠 Pegasus Ryu Sei Ken: objetivo inválido', 'info');
+                }
+
+            } // end Seiya handlers
 
             // Actualizar UI
             renderCharacters();
