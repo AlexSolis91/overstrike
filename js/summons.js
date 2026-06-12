@@ -851,10 +851,11 @@
                 addLog('🦸 Forma Prime: ' + targetName + ' reduce daño a ' + damage + ' (-50%)', 'buff');
             }
 
-            // ── SAITAMA MODE (Garou): transformación permanente — 50% menos daño recibido ──
+            // ── SAITAMA MODE (Garou): reduce -2 daño recibido ──
             if (target.garouSaitamaMode && damage > 0) {
-                damage = Math.max(1, Math.ceil(damage * 0.5));
-                addLog('💀 Saitama Mode: ' + targetName + ' reduce daño a ' + damage + ' (-50%)', 'buff');
+                damage = Math.max(0, damage - 2);
+                if (damage === 0) { addLog('💪 Saitama Mode: ' + targetName + ' bloquea el golpe (-2)', 'buff'); return 0; }
+                addLog('💪 Saitama Mode: ' + targetName + ' reduce daño a ' + damage + ' (-2)', 'buff');
             }
 
             // CASTILLO INFINITO (Nakime): redirigir primer ataque ST de la ronda al equipo atacante
@@ -913,14 +914,8 @@
                 return 0; // golpe esquivado
             }
 
-            // SANGRADO STACKEABLE: +1 daño por cada stack activo
-            if (attackerName !== null) {
-                const sangradoStacks = (target.statusEffects || []).filter(e => e && normAccent(e.name || '') === 'sangrado').length;
-                if (sangradoStacks > 0) {
-                    damage += sangradoStacks;
-                    addLog(`🩸 Sangrado x${sangradoStacks}: ${targetName} recibe +${sangradoStacks} daño`, 'damage');
-                }
-            }
+            // SANGRADO: daño aplicado al final de ronda (ver processEndOfRoundDebuffs en status-effects.js)
+            // Ya no suma daño adicional cuando el personaje recibe un golpe
 
             // DEBILITAR STACKEABLE: +50% daño por cada stack activo
             if (attackerName !== null) {

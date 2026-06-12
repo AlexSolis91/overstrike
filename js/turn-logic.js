@@ -1400,10 +1400,6 @@
                         cooldownLabel = '⏳ Cooldown: ' + _cdChar._singularidadCooldown + 'T';
                     }
                 }
-                if (ability.effect === 'arde_cosmos_seiya' && (ability.cooldown || 0) > 0) {
-                    blockedByCooldown = true;
-                    cooldownLabel = '⏳ Cooldown: ' + ability.cooldown + 'T';
-                }
                 const disabled = !canUse || !canRevive || !canSacrifice || !canSummon || !canSummonKamish || blockedByFreeze || blockedBySigilo || blockedByTransform || blockedByCooldown || blockedByDragon || blockedByNoRa || blockedBySummonCap || blockedByTirionCondition;
                 
                 // Bloquear invocación única si ya está activa en campo
@@ -1532,7 +1528,7 @@
                 return;
             }
 
-            // ── TURNO ADICIONAL PENDIENTE (Seiya, Vader, Minato...) ──
+            // ── SEIYA (¡Arde, cosmos!): turno adicional pendiente ──
             if (gameState._seiyaExtraTurn) {
                 const _seChar = gameState._seiyaExtraTurn;
                 gameState._seiyaExtraTurn = null;
@@ -1544,7 +1540,7 @@
                     gameState.turnOrder.splice(_seInsertAt, 0, _seChar);
                     gameState.currentTurnIndex = _seInsertAt;
                 }
-                addLog('⚡ ¡' + _seChar + ' gana un turno adicional!', 'buff');
+                addLog('🔥 ¡Arde, cosmos!: ¡' + _seChar + ' gana turno adicional!', 'buff');
                 gameState._wasExtraTurn = true;
                 if (onlineMode && typeof pushGameState === 'function') pushGameState();
                 setTimeout(function() { startTurn(); }, 700);
@@ -1635,6 +1631,8 @@
                 if (_roundComplete) {
                     // Procesar efectos de final de ronda ANTES de incrementar la ronda
                     processEndOfRoundEffects();
+                    // Procesar Veneno (stacks), Sangrado y Hemorragia al final de ronda
+                    if (typeof processEndOfRoundDebuffs === 'function') processEndOfRoundDebuffs();
                     
                     gameState.currentRound++;
                     gameState.turnsInRound = 0;

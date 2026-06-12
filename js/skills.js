@@ -2090,20 +2090,17 @@
                 }
                 
             } else if (ability.effect === 'heal_ally') {
-                // Curación Mágica — usa applyHeal para disparar todas las pasivas (Explosión de Sangre, Bendición Sagrada, etc.)
-                if (typeof applyHeal === 'function') {
-                    applyHeal(targetName, ability.heal || 3, ability.name || 'Curación Mágica');
-                } else {
-                    const _haT = gameState.characters[targetName];
-                    if (_haT) {
-                        const _haOld = _haT.hp;
-                        _haT.hp = Math.min(_haT.maxHp, _haT.hp + (ability.heal || 3));
-                        const _haActual = _haT.hp - _haOld;
-                        if (_haActual > 0) {
-                            addLog('💚 ' + targetName + ' recupera ' + _haActual + ' HP (' + (ability.name || 'Curación Mágica') + ')', 'heal');
-                            triggerBendicionSagrada(attacker.team, _haActual);
-                        }
-                    }
+                // Curación Mágica
+                const target = gameState.characters[targetName];
+                const oldHp = target.hp;
+                target.hp = Math.min(target.maxHp, target.hp + ability.heal);
+                const actualHeal = target.hp - oldHp;
+                
+                addLog(`💚 ${gameState.selectedCharacter} usa ${ability.name} en ${targetName} recuperando ${actualHeal} HP`, 'heal');
+                
+                // Activar pasiva de Min Byung
+                if (actualHeal > 0) {
+                    triggerBendicionSagrada(attacker.team, actualHeal);
                 }
                 
             } else if (ability.effect === 'shield_ally') {
@@ -2778,7 +2775,7 @@
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 addLog('⚡ Relámpago Sith: ' + finalDamage + ' daño a ' + targetName, 'damage');
                 const _rSpDebuffs = [
-                    function(n){ if(typeof applyPoison==='function') applyPoison(n, 2); addLog('⚡ Relámpago Sith: Veneno 2T a '+n,'debuff'); },
+                    function(n){ if(typeof applyPoison==='function') applyPoison(n, 2); addLog('⚡ Relámpago Sith: Veneno 2S a '+n,'debuff'); },
                     function(n){ if(typeof applyFear==='function') applyFear(n,1); else if(typeof applyDebuff==='function') applyDebuff(n,{name:'Miedo',type:'debuff',duration:1,emoji:'😱'}); addLog('⚡ Relámpago Sith: Miedo 1T a '+n,'debuff'); },
                     function(n){ if(typeof applyStun==='function') applyStun(n,1); addLog('⚡ Relámpago Sith: Aturdimiento 1T a '+n,'debuff'); },
                     function(n){ if(typeof applyDebuff==='function') applyDebuff(n,{name:'Debilitar',type:'debuff',duration:2,emoji:'💔'}); addLog('⚡ Relámpago Sith: Debilitar 2T a '+n,'debuff'); },
@@ -6336,21 +6333,18 @@
                 }
 
             } else if (ability.effect === 'mano_sauron_rba') {
-                // AOE — limpia todos los Venenos enemigos y causa daño = turnos restantes de cada Veneno
+                // AOE — limpia todos los Venenos enemigos y causa daño = stacks de cada Veneno
                 const _msAtk = gameState.characters[gameState.selectedCharacter];
                 const _msEnemyTeam = _msAtk ? (_msAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
                 for (const _n in gameState.characters) {
                     const _c = gameState.characters[_n];
                     if (!_c || _c.team !== _msEnemyTeam || _c.isDead || _c.hp <= 0) continue;
-                    const _venEffects = (_c.statusEffects||[]).filter(e => e && normAccent(e.name||'') === 'veneno');
-                    if (_venEffects.length > 0) {
-                        let _msDmg = 0;
-                        _venEffects.forEach(e => { _msDmg += (e.duration || 0); });
+                    const _venEffect = (_c.statusEffects||[]).find(e => e && normAccent(e.name||'') === 'veneno');
+                    if (_venEffect) {
+                        const _msDmg = _venEffect.poisonStacks || 1;
                         _c.statusEffects = (_c.statusEffects||[]).filter(e => !e || normAccent(e.name||'') !== 'veneno');
-                        if (_msDmg > 0) {
-                            applyDamageWithShield(_n, _msDmg, gameState.selectedCharacter);
-                            addLog('🖐️ Mano de Sauron: ' + _n + ' recibe ' + _msDmg + ' daño (turnos de Veneno restantes) y Veneno limpiado', 'damage');
-                        }
+                        applyDamageWithShield(_n, _msDmg, gameState.selectedCharacter);
+                        addLog('🖐️ Mano de Sauron: ' + _n + ' recibe ' + _msDmg + ' daño (stacks de Veneno) y Veneno limpiado', 'damage');
                     }
                 }
                 addLog('🖐️ Mano de Sauron: Todos los Venenos enemigos eliminados', 'debuff');
@@ -9655,14 +9649,15 @@
             { type: 'buff', name: '❄️ Aura Gélida', effect: 'Cuando el portador es golpeado por un enemigo, aplica Congelación de 1 turno al atacante.' },
             { type: 'buff', name: '🌑 Aura Oscura', effect: 'Cuando el portador es golpeado por un enemigo, elimina 1 carga del atacante. 30% de probabilidad de eliminar 2 cargas adicionales.' },
             { type: 'buff', name: '✨ Aura de Luz', effect: 'Duplica la cantidad de recuperación de HP del portador.' },
-            { type: 'buff', name: '🦠 Infectar', effect: 'Cuando el portador es golpeado, aplica el debuff Veneno de 2 turnos sobre el atacante.' },
+            { type: 'buff', name: '🦠 Infectar', effect: 'Cuando el portador es golpeado, aplica el debuff Veneno 2S (2 stacks) sobre el atacante.' },
             { type: 'buff', name: '🤝 Asistir', effect: 'Cuando un aliado realiza un ataque Especial u Over (Single Target), ejecuta un ataque básico sobre el enemigo atacado. El ataque básico causa el daño, efecto y cargas correspondientes.' },
             { type: 'buff', name: '🪞 Reflejar', effect: 'Cuando el portador recibe un ataque básico, especial u over, el atacante recibe el mismo daño que causó.' },
             // ── DEBUFFS ────────────────────────────────────────────────────────
             { type: 'debuff', name: '🔥 Quemadura', effect: 'Causa daño directo a los HP del portador cada turno. No es absorbido por el escudo.' },
             { type: 'debuff', name: '☀️ Quemadura Solar', effect: 'El portador no puede recuperar HP de ninguna fuente (curación, regeneración, robo de vida, etc.) mientras esté activo.' },
-            { type: 'debuff', name: '☠️ Veneno', effect: 'Causa daño por tick. El daño incrementa +1 cada turno que el veneno permanezca activo (tick 1 = 1 dmg, tick 2 = 2 dmg, etc.). No es absorbido por el escudo.' },
-            { type: 'debuff', name: '🩸 Sangrado', effect: 'El portador recibe +1 o +2 (aleatorio) de daño adicional por cada golpe recibido. No es absorbido por el escudo.' },
+            { type: 'debuff', name: '☠️ Veneno', effect: 'Se acumula en stacks (ej: Veneno 4S). Al final de cada ronda, causa daño igual al número de stacks acumulados y luego expira. Los stacks de diferentes fuentes se suman. No es absorbido por el escudo.' },
+            { type: 'debuff', name: '🩸 Sangrado', effect: 'Dura los turnos especificados por la habilidad (mínimo 1T). Al final de cada ronda causa 1-2 de daño aleatorio. Si el portador recibe un segundo Sangrado mientras ya tiene uno activo, ambos se fusionan en Hemorragia.' },
+            { type: 'debuff', name: '💀 Hemorragia', effect: 'Debuff permanente — no expira por turnos ni rondas. Solo puede ser eliminado por habilidades que limpien o disipen debuffs. Al final de cada ronda causa 3-6 de daño aleatorio y el portador pierde cargas equivalentes al daño recibido. No se puede aplicar Sangrado sobre un personaje con Hemorragia activa.' },
             { type: 'debuff', name: '⭐ Aturdimiento', effect: 'El portador pierde su próximo turno.' },
             { type: 'debuff', name: '💫 Mega Aturdimiento', effect: 'El portador pierde sus próximos 2 turnos.' },
             { type: 'debuff', name: '❄️ Congelación', effect: '50% de probabilidad de perder su próximo turno. Reduce la velocidad del portador un 10%.' },
@@ -9674,6 +9669,7 @@
             { type: 'debuff', name: '💔 Debilitar', effect: 'Recibe un 50% más de daño de todos los golpes recibidos.' },
             { type: 'debuff', name: '🔇 Silenciar', effect: 'Bloquea una categoría de movimientos (Básico, Especial u Over) del portador de manera aleatoria.' },
             { type: 'debuff', name: '😴 Agotamiento', effect: 'Reduce de 1 a 3 cargas del portador de manera aleatoria.' },
+            { type: 'debuff', name: '👁️ Ceguera', effect: '50% de probabilidad de que el ataque del portador falle completamente (sin daño ni efectos).' },
         ];
 
         function showBuffDebuffGuide() {

@@ -266,12 +266,13 @@
             const display = [];
             let burnPct = 0, burnFlat = 0, burnDur = 0, burnAdded = false;
             let solarPct = 0, solarAdded = false;
-            let bleedStack = 0, bleedAdded = false;
-            let poisonMaxDur = 0, poisonStacks = 0, poisonAdded = false;
+            let bleedDur = 0, bleedAdded = false;
+            let poisonTotalStacks = 0, poisonAdded = false;
+            let hemorAdded = false;
 
             statusEffects.forEach(function(e) {
                 if (!e || !e.name) return;
-                if (e.passiveHidden) return; // Pasivas permanentes no muestran icono
+                if (e.passiveHidden) return;
                 const nn = normAccent(e.name);
 
                 if (nn === 'quemadura') {
@@ -280,24 +281,26 @@
                     if (e.duration !== undefined) burnDur = Math.max(burnDur, e.duration);
                     burnAdded = true;
                 } else if (nn === 'quemadura solar') {
-                    solarPct += (e.duration || 1); // acumular turnos en lugar de %
+                    solarPct += (e.duration || 1);
                     solarAdded = true;
                 } else if (nn === 'sangrado') {
-                    bleedStack += 1;
+                    // Mostrar duración en turnos
+                    bleedDur = Math.max(bleedDur, e.duration || 1);
                     bleedAdded = true;
+                } else if (nn === 'hemorragia') {
+                    hemorAdded = true;
                 } else if (nn === 'veneno') {
-                    poisonStacks++;
-                    poisonMaxDur = Math.max(poisonMaxDur, e.duration || 0);
+                    // Mostrar stacks acumulados
+                    poisonTotalStacks += (e.poisonStacks || 1);
                     poisonAdded = true;
                 } else {
-                    // Normal single display — use official emoji from _EFFECT_MAP if available
                     var _dispEmoji = e.emoji || '✨';
                     var _dispName = e.name;
                     if (typeof _EFFECT_MAP !== 'undefined' && _EFFECT_MAP[e.name]) {
                         _dispEmoji = _EFFECT_MAP[e.name].emoji;
                         if (_EFFECT_MAP[e.name].canonical) _dispName = _EFFECT_MAP[e.name].canonical;
                     }
-                    display.push({ emoji: _dispEmoji, label: _dispName, sub: e.duration !== undefined ? e.duration : '', type: e.type });
+                    display.push({ emoji: _dispEmoji, label: _dispName, sub: e.duration !== undefined && e.duration < 9999 ? e.duration + 'T' : '', type: e.type });
                 }
             });
 
@@ -306,9 +309,10 @@
                 else if (burnPct > 0) display.push({ emoji: '🔥', label: 'Quemadura ' + burnPct + '%', sub: '', type: 'debuff' });
                 else display.push({ emoji: '🔥', label: 'Quemadura', sub: '', type: 'debuff' });
             }
-            if (solarAdded)  display.push({ emoji: '☀️', label: 'QS',  sub: solarPct + 'T', type: 'debuff' });
-            if (bleedAdded)  display.push({ emoji: '🩸', label: 'Sangrado ' + bleedStack,        sub: '', type: 'debuff' });
-            if (poisonAdded) display.push({ emoji: '☠️', label: 'Veneno',                        sub: poisonMaxDur + 'T', type: 'debuff' });
+            if (solarAdded)  display.push({ emoji: '☀️', label: 'QS',          sub: solarPct + 'T',                type: 'debuff' });
+            if (bleedAdded)  display.push({ emoji: '🩸', label: 'Sangrado',     sub: bleedDur + 'T',                type: 'debuff' });
+            if (hemorAdded)  display.push({ emoji: '💀', label: 'Hemorragia',   sub: '∞',                          type: 'debuff' });
+            if (poisonAdded) display.push({ emoji: '☠️', label: 'Veneno',       sub: poisonTotalStacks + 'S',       type: 'debuff' });
 
             return display;
         }
