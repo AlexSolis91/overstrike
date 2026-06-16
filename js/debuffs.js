@@ -106,6 +106,7 @@ function triggerMaboroshi(targetTeam, debuffName) {
         }
 
         function applySilenciar(targetName, duration) {
+            if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }
             if (hasStatusEffect(targetName, 'Silenciar')) {
                 addLog(`🔇 ${targetName} ya tiene Silenciar activo`, 'info'); return;
             }
@@ -455,6 +456,8 @@ function triggerMaboroshi(targetTeam, debuffName) {
             // LIMBO (Madara Uchiha): Divinidad = inmune a debuffs en Modo Rikudō
             const limboChar = gameState.characters[targetName];
             if (limboChar && limboChar.passive && limboChar.passive.name === 'Limbo' && limboChar.rikudoMode) return true;
+            // MAESTRÍA DE LA VARITA DE SAÚCO (Albus Dumbledore): inmune a todos los debuffs
+            if (limboChar && limboChar.passive && limboChar.passive.name === 'Maestría de la Varita de Saúco') return true;
             return false;
         }
         function isImmuneToBurn(targetName) {
@@ -927,6 +930,7 @@ function applyDebuff(targetName, effectObj) {
         function applyPoison(targetName, duration) {
             const target = gameState.characters[targetName];
             if (!target) return;
+            if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }
             // MVP: registrar quién aplica veneno
             if (gameState.battleStats && gameState.selectedCharacter) {
                 if (!gameState.battleStats.poisonAppliers) gameState.battleStats.poisonAppliers = new Set();

@@ -113,6 +113,10 @@
             // Apply a burn that does flat HP damage (not percent)
             const target = gameState.characters[targetName];
             if (!target) return;
+            if (target.passive && target.passive.name === 'Maestría de la Varita de Saúco') {
+                addLog('✨ Maestría de la Varita de Saúco: ' + targetName + ' es inmune a Quemadura', 'buff');
+                return;
+            }
             if ((targetName === 'Saitama' || targetName === 'Saitama v2')) {
                 addLog('🦸 Saitama es inmune a Quemadura (Espíritu del Héroe)', 'buff');
                 return;
