@@ -418,7 +418,10 @@
             document.getElementById('marketScreen').style.display = 'block';
             showMarketTab('daily');
         }
-        window.hideMarketScreen = function hideMarketScreen() { document.getElementById('marketScreen').style.display = 'none'; }
+        window.hideMarketScreen = function hideMarketScreen() {
+            document.getElementById('marketScreen').style.display = 'none';
+            if (typeof _arcanePityIntervalId !== 'undefined' && _arcanePityIntervalId) { clearInterval(_arcanePityIntervalId); _arcanePityIntervalId = null; }
+        }
 
         window.showBossScreen = function showBossScreen() {
             document.getElementById('bossScreen').style.display = 'block';
@@ -822,15 +825,40 @@
                 var _chImg = ch.img.replace(/'/g,"\\'");
                 var _chLabel = ch.label.replace(/'/g,"\\'");
                 var _chColor = ch.color;
+                var _pityIndicator = ch.id === 'chest_arcana' ? '<span id="arcanePityIndicator" style="display:none;margin-left:6px;font-size:.68rem;color:#ffd700;font-weight:700;vertical-align:middle;"></span>' : '';
                 grid.innerHTML += '<div style="background:rgba(255,255,255,0.03);' + ch.border + ';border-radius:12px;padding:14px;text-align:center;">' +
                     '<img src="' + ch.img + '" style="width:72px;height:72px;object-fit:contain;margin-bottom:8px;display:block;margin-left:auto;margin-right:auto;cursor:pointer;" ' +
                     'onclick="showItemTooltip(\'' + _chLabel + '\',\'' + _chImg + '\',\'' + _chColor + '\',\'Cofre\',\'' + _chDesc + '\',this)" ' +
                     'onerror="this.style.display=\'none\'"> ' +
                     '<div style="font-size:.75rem;color:#fff;font-weight:700;margin-bottom:4px;">' + ch.label + '</div>' +
-                    '<div style="font-size:.75rem;color:#ffaa00;margin-bottom:8px;">' + ch.price + '</div>' +
+                    '<div style="font-size:.75rem;color:#ffaa00;margin-bottom:8px;">' + ch.price + _pityIndicator + '</div>' +
                     '<button onclick="buyDailyItem(\'' + user.uid + '\',\'' + ch.id + '\')" style="width:100%;padding:6px;background:rgba(255,255,255,0.05);border:1px solid ' + ch.color + ';color:' + ch.color + ';border-radius:8px;font-size:.7rem;cursor:pointer;">Comprar</button>' +
                     '</div>';
             });
+            if (typeof initArcanePityIndicator === 'function') initArcanePityIndicator(user.uid);
+        }
+
+        // ── Indicador visual de racha del Cofre Arcano (temporizador + bonus acumulado) ──
+        var _arcanePityIntervalId = null;
+        async function initArcanePityIndicator(uid) {
+            if (_arcanePityIntervalId) { clearInterval(_arcanePityIntervalId); _arcanePityIntervalId = null; }
+            async function tick() {
+                const el = document.getElementById('arcanePityIndicator');
+                if (!el) { if (_arcanePityIntervalId) clearInterval(_arcanePityIntervalId); return; }
+                const pity = typeof getArcanePityData === 'function' ? await getArcanePityData(uid) : null;
+                if (!pity) {
+                    el.style.display = 'none';
+                    el.textContent = '';
+                    return;
+                }
+                const mins = Math.floor(pity.secondsLeft / 60);
+                const secs = pity.secondsLeft % 60;
+                const timeLabel = mins + ':' + String(secs).padStart(2,'0');
+                el.style.display = 'inline';
+                el.innerHTML = '🔥' + pity.streak + ' · ⏱️' + timeLabel;
+            }
+            await tick();
+            _arcanePityIntervalId = setInterval(tick, 1000);
         }
 
         async function loadListings() {
@@ -1064,12 +1092,6 @@
                 portrait: 'https://i.ibb.co/q365QSyQ/PS.jpg',
                 hp: 15000, maxHp: 15000, speed: 80,
                 passive: { name: 'Rey de la Muerte', description: 'Cada debuff aplicado al equipo enemigo genera 5 cargas. Inicio de ronda: 40% congelación, miedo y posesión al equipo enemigo. Al matar un enemigo, revive como aliado con 50% HP y 10 cargas.' }
-            },
-            'albus_dumbledore': {
-                name: 'Albus Dumbledore',
-                portrait: 'https://i.ibb.co/LX4h03vQ/image.png',
-                hp: 10000, maxHp: 10000, speed: 80,
-                passive: { name: 'Maestría de la Varita de Saúco', description: 'Albus Dumbledore es inmune a debuffs. Cada vez que un enemigo realiza un ataque especial, Albus Dumbledore se cura 20 HP y genera 3 cargas. Cada vez que un enemigo recibe daño por debuff Quemaduras, Albus Dumbledore genera 5 cargas. Al inicio de cada ronda, Albus Dumbledore genera 3 cargas por cada enemigo derrotado.' }
             }
         };
         window.BOSS_DATA = BOSS_DATA;
@@ -2009,13 +2031,6 @@
                         <div style="font-family:Orbitron,sans-serif;font-size:.7rem;color:#a855f7;font-weight:700;">LICH KING</div>
                         <div style="font-size:.6rem;color:#666;margin-top:2px;">15,000 HP</div>
                         <div style="font-size:.58rem;color:#555;margin-top:1px;">Rey de la Muerte</div>
-                    </div>
-                    <div onclick="adminSelectBoss('albus_dumbledore',this)" id="bosscard-albus_dumbledore"
-                        style="background:rgba(0,150,80,0.08);border:2px solid rgba(0,150,80,0.3);border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:all .2s;">
-                        <img src="https://i.ibb.co/LX4h03vQ/image.png" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #00aa55;margin-bottom:6px;" onerror="this.style.display='none'">
-                        <div style="font-family:Orbitron,sans-serif;font-size:.7rem;color:#4ade80;font-weight:700;">DUMBLEDORE</div>
-                        <div style="font-size:.6rem;color:#666;margin-top:2px;">10,000 HP</div>
-                        <div style="font-size:.58rem;color:#555;margin-top:1px;">Varita de Saúco</div>
                     </div>
                 </div>
 
