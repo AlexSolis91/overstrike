@@ -3531,16 +3531,17 @@
             // Pity counter
             const now = Date.now();
             const pitySnap = await db.ref('users/' + uid + '/arcane_pity').once('value');
-            let pityData = pitySnap.val() || { bonus: 0, lastOpenAt: 0 };
-            if (now - (pityData.lastOpenAt||0) > 120000) pityData.bonus = 0;
+            let pityData = pitySnap.val() || { bonus: 0, lastOpenAt: 0, streak: 0 };
+            if (now - (pityData.lastOpenAt||0) > 240000) { pityData.bonus = 0; pityData.streak = 0; }
 
             const bossData = typeof getBossData === 'function' ? await getBossData() : null;
             const bossIsLichKing = bossData && bossData.status === 'active' && bossData.name === 'Lich King';
             const perOpenBonus = bossIsLichKing ? 0.015 : 0.01;
             const baseLegPct   = bossIsLichKing ? 0.010 : 0.005;
             const totalLegPct  = Math.min(0.50, baseLegPct + pityData.bonus);
-            // Update pity
-            await db.ref('users/' + uid + '/arcane_pity').set({ bonus: pityData.bonus + perOpenBonus, lastOpenAt: now });
+            // Update pity (incrementa racha y reinicia el temporizador a 240s)
+            const newStreak = (pityData.streak || 0) + 1;
+            await db.ref('users/' + uid + '/arcane_pity').set({ bonus: pityData.bonus + perOpenBonus, lastOpenAt: now, streak: newStreak });
 
             const rv = Math.random();
             let tier;
@@ -3551,17 +3552,37 @@
             if (tier === 'Legendario' && bossIsLichKing && (eventRelicsByBoss['Lich King']||[]).length > 0) {
                 const evPool = eventRelicsByBoss['Lich King'];
                 name = evPool[Math.floor(Math.random() * evPool.length)];
-                await db.ref('users/' + uid + '/arcane_pity').set({ bonus: 0, lastOpenAt: now }); // reset pity on legendary
+                await db.ref('users/' + uid + '/arcane_pity').set({ bonus: 0, lastOpenAt: now, streak: 0 }); // reset pity on legendary
             } else if (tier === 'Legendario') {
                 const pool = relicsByTier['Legendario']||[];
                 name = pool.length ? pool[Math.floor(Math.random() * pool.length)] : (relicsByTier['Epico'][0]||'Anillo de la Vida');
-                await db.ref('users/' + uid + '/arcane_pity').set({ bonus: 0, lastOpenAt: now }); // reset pity
+                await db.ref('users/' + uid + '/arcane_pity').set({ bonus: 0, lastOpenAt: now, streak: 0 }); // reset pity
             } else {
                 const pool = relicsByTier[tier]||[];
                 name = pool.length ? pool[Math.floor(Math.random() * pool.length)] : 'Anillo de la Vida';
             }
             return typeof RELICS_DATA !== 'undefined' && RELICS_DATA[name] ? { name, ...RELICS_DATA[name] } : { name, tier };
         }
+
+        // ── Lee el estado de pity del Cofre Arcano para mostrar en la UI ──
+        // Devuelve null si no hay racha activa (expirada o nunca abierto)
+        const ARCANE_PITY_WINDOW_MS = 240000; // 240 segundos
+        async function getArcanePityData(uid) {
+            const pitySnap = await db.ref('users/' + uid + '/arcane_pity').once('value');
+            const pityData = pitySnap.val();
+            if (!pityData || !pityData.lastOpenAt) return null;
+            const elapsed = Date.now() - pityData.lastOpenAt;
+            if (elapsed > ARCANE_PITY_WINDOW_MS || pityData.bonus <= 0) return null;
+            const msLeft = ARCANE_PITY_WINDOW_MS - elapsed;
+            return {
+                bonus: pityData.bonus,
+                streak: pityData.streak || 0,
+                msLeft: msLeft,
+                secondsLeft: Math.ceil(msLeft / 1000)
+            };
+        }
+        window.getArcanePityData = getArcanePityData;
+        window.ARCANE_PITY_WINDOW_MS = ARCANE_PITY_WINDOW_MS;
 
         function rollChestRelic(chestType) {
             const relicsByTier = { Raro:[], Especial:[], Epico:[], Legendario:[] };
@@ -3847,6 +3868,7 @@
             } else if (itemType.startsWith('chest_')) {
                 const type = itemType.replace('chest_','');
                 await openChest(uid, type);
+                if (type === 'arcana' && typeof initArcanePityIndicator === 'function') initArcanePityIndicator(uid);
             }
         }
 
