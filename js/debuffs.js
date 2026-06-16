@@ -455,8 +455,6 @@ function triggerMaboroshi(targetTeam, debuffName) {
             // LIMBO (Madara Uchiha): Divinidad = inmune a debuffs en Modo Rikudō
             const limboChar = gameState.characters[targetName];
             if (limboChar && limboChar.passive && limboChar.passive.name === 'Limbo' && limboChar.rikudoMode) return true;
-            // MAESTRÍA DE LA VARITA DE SAÚCO (Albus Dumbledore): inmune a todos los debuffs
-            if (limboChar && limboChar.passive && limboChar.passive.name === 'Maestría de la Varita de Saúco') return true;
             return false;
         }
         function isImmuneToBurn(targetName) {
@@ -474,6 +472,11 @@ function applyDebuff(targetName, effectObj) {
             // SABIDURÍA ANTIGUA (Yoda): inmune a todos los debuffs
             if (target.passive && target.passive.name === 'Sabiduría Antigua') {
                 addLog('🟢 Sabiduría Antigua: ' + targetName + ' es inmune a debuffs', 'buff');
+                return;
+            }
+            // MAESTRÍA DE LA VARITA DE SAÚCO (Albus Dumbledore): inmune a TODOS los debuffs
+            if (target.passive && target.passive.name === 'Maestría de la Varita de Saúco') {
+                addLog('✨ Maestría de la Varita de Saúco: ' + targetName + ' es inmune a debuffs', 'buff');
                 return;
             }
             // CABALLERO DE LA NOCHE (Batman): inmune a efectos de movimientos especiales
