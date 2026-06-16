@@ -106,7 +106,6 @@ function triggerMaboroshi(targetTeam, debuffName) {
         }
 
         function applySilenciar(targetName, duration) {
-            if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }
             if (hasStatusEffect(targetName, 'Silenciar')) {
                 addLog(`🔇 ${targetName} ya tiene Silenciar activo`, 'info'); return;
             }
@@ -456,8 +455,6 @@ function triggerMaboroshi(targetTeam, debuffName) {
             // LIMBO (Madara Uchiha): Divinidad = inmune a debuffs en Modo Rikudō
             const limboChar = gameState.characters[targetName];
             if (limboChar && limboChar.passive && limboChar.passive.name === 'Limbo' && limboChar.rikudoMode) return true;
-            // MAESTRÍA DE LA VARITA DE SAÚCO (Albus Dumbledore): inmune a todos los debuffs
-            if (limboChar && limboChar.passive && limboChar.passive.name === 'Maestría de la Varita de Saúco') return true;
             return false;
         }
         function isImmuneToBurn(targetName) {
@@ -475,11 +472,6 @@ function applyDebuff(targetName, effectObj) {
             // SABIDURÍA ANTIGUA (Yoda): inmune a todos los debuffs
             if (target.passive && target.passive.name === 'Sabiduría Antigua') {
                 addLog('🟢 Sabiduría Antigua: ' + targetName + ' es inmune a debuffs', 'buff');
-                return;
-            }
-            // MAESTRÍA DE LA VARITA DE SAÚCO (Albus Dumbledore): inmune a TODOS los debuffs
-            if (target.passive && target.passive.name === 'Maestría de la Varita de Saúco') {
-                addLog('✨ Maestría de la Varita de Saúco: ' + targetName + ' es inmune a debuffs', 'buff');
                 return;
             }
             // CABALLERO DE LA NOCHE (Batman): inmune a efectos de movimientos especiales
@@ -682,6 +674,43 @@ function applyDebuff(targetName, effectObj) {
                                 }
                             } catch(e) { console.error('[Orgullo Viltrumita]', e); }
                             gameState._omniManPassiveExecuting = false;
+                        }
+                        break;
+                    }
+                }
+            }
+            // ── EL ELEGIDO (Anakin): si un enemigo aplica un debuff sobre un aliado → Anakin ejecuta su básico sobre ese enemigo ──
+            if (!effectObj.passiveHidden && gameState.selectedCharacter) {
+                const _akAttacker = gameState.characters[gameState.selectedCharacter];
+                const _akDebuffTgt = gameState.characters[targetName];
+                if (_akAttacker && _akDebuffTgt && _akAttacker.team !== _akDebuffTgt.team) {
+                    for (const _akN in gameState.characters) {
+                        const _akC = gameState.characters[_akN];
+                        if (!_akC || _akC.isDead || _akC.hp <= 0 || !_akC.passive) continue;
+                        if (_akC.passive.name !== 'El Elegido') continue;
+                        if (_akC.team !== _akDebuffTgt.team) continue; // Anakin debe ser aliado del objetivo del debuff
+                        if (_akN === gameState.selectedCharacter) continue; // el propio Anakin no se cuenta
+                        if (!gameState._anakinPassiveExecuting) {
+                            gameState._anakinPassiveExecuting = true;
+                            try {
+                                const _akBasic = _akC.abilities && _akC.abilities.find(function(a) { return a.type === 'basic'; });
+                                if (_akBasic && _akAttacker.hp > 0 && !_akAttacker.isDead) {
+                                    const _akDmg = _akBasic.damage || 2;
+                                    if (typeof applyDamageWithShield === 'function') applyDamageWithShield(gameState.selectedCharacter, _akDmg, _akN);
+                                    _akC.charges = Math.min(20, (_akC.charges||0) + (_akBasic.chargeGain || 2));
+                                    addLog('⚡ El Elegido: ' + _akN + ' ejecuta Djem So sobre ' + gameState.selectedCharacter + ' (' + _akDmg + ' dmg) por aplicar debuff a un aliado', 'buff');
+                                    // Djem So: elimina 1 carga del objetivo
+                                    if (!_akAttacker.isDead && _akAttacker.hp > 0) {
+                                        _akAttacker.charges = Math.max(0, (_akAttacker.charges||0) - 1);
+                                        addLog('⚡ El Elegido: ' + gameState.selectedCharacter + ' pierde 1 carga (Djem So)', 'buff');
+                                        if (_akC.darkSideAwakened && typeof applyFear === 'function') {
+                                            applyFear(gameState.selectedCharacter, 1);
+                                            addLog('🌑 El Elegido: ' + gameState.selectedCharacter + ' recibe Miedo (Lado Oscuro)', 'debuff');
+                                        }
+                                    }
+                                }
+                            } catch(e) { console.error('[El Elegido]', e); }
+                            gameState._anakinPassiveExecuting = false;
                         }
                         break;
                     }
@@ -930,7 +959,6 @@ function applyDebuff(targetName, effectObj) {
         function applyPoison(targetName, duration) {
             const target = gameState.characters[targetName];
             if (!target) return;
-            if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }
             // MVP: registrar quién aplica veneno
             if (gameState.battleStats && gameState.selectedCharacter) {
                 if (!gameState.battleStats.poisonAppliers) gameState.battleStats.poisonAppliers = new Set();
