@@ -133,17 +133,17 @@
             },
 
             'Anakin Skywalker': {
-                hp: 20, maxHp: 20, speed: 86, charges: 0, team: 'team1',
+                hp: 25, maxHp: 25, speed: 86, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 darkSideAwakened: false,
-                portrait: 'https://i.postimg.cc/7hYjCpBh/Captura_de_pantalla_2026_02_21_231859.png',
-                transformPortrait: 'https://i.postimg.cc/Vk6t5wFQ/Whats_App_Image_2026_03_03_at_12_16_07_PM.jpg',
-                passive: { name: 'El Elegido', description: 'Efecto pasivo Asistir. 50% de probabilidad de que Anakin se aplique Buff Frenesi y Furia 2 turnos cuando un aliado recibe un ataque especial.' },
+                portrait: 'https://i.ibb.co/xSrfM8Sw/Whats-App-Image-2026-06-10-at-5-14-13-PM.jpg',
+                transformPortrait: 'https://i.ibb.co/V0qvG1Bw/Whats-App-Image-2026-06-10-at-5-10-21-PM.jpg',
+                passive: { name: 'El Elegido', description: 'Efecto pasivo Asistir. Efecto pasivo Contraataque. 50% de probabilidad de que Anakin se aplique Buff Frenesi y Furia por 2 turnos al inicio de cada ronda. Cada vez que un enemigo aplica un debuff sobre un aliado, Anakin ejecuta un ataque básico sobre ese enemigo aplicando los efectos y generando las cargas correspondientes.' },
                 abilities: [
-                    { name: 'Djem So', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'djem_so', description: 'Causa 2 daño. 50% de probabilidad de crítico.' },
-                    { name: 'Estrangular', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'aoe', effect: 'estrangular', description: 'Causa 3 AOE. Elimina 1 carga del equipo enemigo. 50% de Aturdimiento por enemigo.' },
-                    { name: 'General de la 501', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'multi', effect: 'general_501', description: 'Ataca 4 veces con su básico a objetivos aleatorios. 50% de Miedo por golpe.' },
-                    { name: 'Despertar del Lado Oscuro', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'dark_side_anakin', lockedWhenTransformed: true, description: 'TRANSFORMACIÓN: +10 velocidad. Efecto pasivo Concentración permanente. Al inicio de cada ronda 50% de buff Reflejar 2 turnos.' }
+                    { name: 'Djem So', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'djem_so', description: 'Causa 2 daño. Elimina 1 punto de carga del objetivo.' },
+                    { name: 'Estrangular', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'aoe', effect: 'estrangular', description: 'Causa 3 daño AOE. Elimina 1 punto de carga del equipo enemigo. 50% de probabilidad de aplicar Aturdimiento por enemigo.' },
+                    { name: 'General de la 501', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'self', effect: 'general_501', description: 'Aplica Buff Provocación 2 turnos sobre Anakin. Aplica Buff Armadura 2 turnos sobre Anakin. Aplica Buff Reflejar sobre Anakin.' },
+                    { name: 'Despertar del Lado Oscuro', type: 'over', cost: 12, chargeGain: 0, damage: 0, target: 'self', effect: 'dark_side_anakin', lockedWhenTransformed: true, description: 'TRANSFORMACIÓN PERMANENTE: +10 velocidad. Todos los ataques de Anakin causan +3 daño adicional y aplican debuff Miedo. Mientras esté transformado, cada vez que recibe daño se cura 3 HP.' }
                 ]
             },
             // ═══ TEAM REAPERS ══════════════════════════════════════
@@ -1060,7 +1060,6 @@
 
             // ── NUEVAS RELIQUIAS ─────────────────────────────────────────
             'Frostmourne':          { tier:'Legendario',  slot:'Arma',    img:'https://i.ibb.co/60ncwCBX/image-67ce0467.png',   effect:'frostmourne',        desc:'Duplica el daño del portador. Roba cargas del objetivo equivalente al daño causado. Si el objetivo muere, revive como aliado con 100% HP y 20 cargas.', isEventRelic:true, eventBoss:'Lich King' },
-            'Varita de Saúco':      { tier:'Legendario',  slot:'Arma',    img:'https://i.ibb.co/cKZ40jX9/image-1f459301.png',   effect:'varita_de_sauco',    desc:'Todos los movimientos del portador requieren la mitad de cargas. Cada vez que el portador ejecuta un movimiento AOE, causa el doble de daño pero pierde 3 HP. 30% de probabilidad de reflejar cualquier ataque recibido sobre el enemigo (recibe el mismo daño, debuffs y efecto de su propio ataque).', isEventRelic:true, eventBoss:'Albus Dumbledore' },
             'Mascara de Tyrael':    { tier:'Epico',       slot:'Yelmo',   img:'https://i.ibb.co/wFm6QxCs/image-cdf242f6.png',   effect:'tyrael_mask',        desc:'Al final de cada ronda, el portador genera 3 cargas.' },
             'Ignifugoz':            { tier:'Especial',    slot:'Armadura',img:'https://i.ibb.co/XZN4GJ80/image-a7bffce5.png',   effect:'ignifugoz_immunity', desc:'El portador es inmune a debuffs y daño de Quemaduras.' },
         };

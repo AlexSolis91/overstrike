@@ -136,17 +136,17 @@
             },
 
             'Anakin Skywalker': {
-                hp: 20, maxHp: 20, speed: 86, charges: 0, team: 'team1',
+                hp: 25, maxHp: 25, speed: 86, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 darkSideAwakened: false,
-                portrait: 'https://i.ibb.co/KxhjpvTZ/Captura-de-pantalla-2026-03-22-004655.png',
-                transformPortrait: 'https://i.ibb.co/gbGRNhmq/Captura-de-pantalla-2026-03-22-011451.png',
-                passive: { name: 'El Elegido', description: 'Efecto pasivo Asistir. 50% de probabilidad de que Anakin se aplique Buff Frenesi y Furia 2 turnos cuando un aliado recibe un ataque especial.' },
+                portrait: 'https://i.ibb.co/xSrfM8Sw/Whats-App-Image-2026-06-10-at-5-14-13-PM.jpg',
+                transformPortrait: 'https://i.ibb.co/V0qvG1Bw/Whats-App-Image-2026-06-10-at-5-10-21-PM.jpg',
+                passive: { name: 'El Elegido', description: 'Efecto pasivo Asistir. Efecto pasivo Contraataque. 50% de probabilidad de que Anakin se aplique Buff Frenesi y Furia por 2 turnos al inicio de cada ronda. Cada vez que un enemigo aplica un debuff sobre un aliado, Anakin ejecuta un ataque básico sobre ese enemigo aplicando los efectos y generando las cargas correspondientes.' },
                 abilities: [
-                    { name: 'Djem So', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'djem_so', description: 'Causa 2 daño. 50% de probabilidad de crítico.' },
-                    { name: 'Estrangular', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'aoe', effect: 'estrangular', description: 'Causa 3 AOE. Elimina 1 carga del equipo enemigo. 50% de Aturdimiento por enemigo.' },
-                    { name: 'General de la 501', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'multi', effect: 'general_501', description: 'Ataca 4 veces con su básico a objetivos aleatorios. 50% de Miedo por golpe.' },
-                    { name: 'Despertar del Lado Oscuro', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'dark_side_anakin', description: 'TRANSFORMACIÓN: +10 velocidad. Efecto pasivo Concentración permanente. Al inicio de cada ronda 50% de buff Reflejar 2 turnos.' }
+                    { name: 'Djem So', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'djem_so', description: 'Causa 2 daño. Elimina 1 punto de carga del objetivo.' },
+                    { name: 'Estrangular', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'aoe', effect: 'estrangular', description: 'Causa 3 daño AOE. Elimina 1 punto de carga del equipo enemigo. 50% de probabilidad de aplicar Aturdimiento por enemigo.' },
+                    { name: 'General de la 501', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'self', effect: 'general_501', description: 'Aplica Buff Provocación 2 turnos sobre Anakin. Aplica Buff Armadura 2 turnos sobre Anakin. Aplica Buff Reflejar sobre Anakin.' },
+                    { name: 'Despertar del Lado Oscuro', type: 'over', cost: 12, chargeGain: 0, damage: 0, target: 'self', effect: 'dark_side_anakin', description: 'TRANSFORMACIÓN PERMANENTE: +10 velocidad. Todos los ataques de Anakin causan +3 daño adicional y aplican debuff Miedo. Mientras esté transformado, cada vez que recibe daño se cura 3 HP.' }
                 ]
             },
             // ═══ TEAM REAPERS ══════════════════════════════════════

@@ -154,10 +154,6 @@
                     ability.effect !== 'rikudo_mode_madara') {
                     adjustedCost = Math.ceil(adjustedCost / 2);
                 }
-                // VARITA DE SAÚCO: todos los movimientos requieren la mitad de cargas
-                if (attacker && adjustedCost > 0 && (attacker.equippedRelics||[]).includes('Varita de Saúco')) {
-                    adjustedCost = Math.ceil(adjustedCost / 2);
-                }
                 
                 // ── SILENCIAR: bloquea la categoría silenciada ──────────────
                 if (ability && attacker) {
@@ -255,6 +251,11 @@
                 finalChargeGain += 1;
             }
 
+            // DESPERTAR DEL LADO OSCURO (Anakin): +3 daño y Miedo en todos sus ataques mientras está transformado
+            if (attacker.darkSideAwakened && (gameState.selectedCharacter === 'Anakin Skywalker' || gameState.selectedCharacter === 'Anakin Skywalker v2') && finalDamage > 0) {
+                finalDamage += 3;
+            }
+
             // ARMADURA DIVINA DEL FÉNIX (Ikki): daño triple en enemigos con Quemadura
             if (attacker.fenixArmorActive && (gameState.selectedCharacter === 'Ikki de Fenix' || gameState.selectedCharacter === 'Ikki de Fenix v2') && finalDamage > 0) {
                 const tgtIkki = gameState.characters[targetName];
@@ -281,11 +282,6 @@
                     if (_rd.effect === 'frostmourne') {
                         finalDamage = finalDamage * 2;
                         addLog('❄️ Frostmourne: daño duplicado (' + finalDamage + ')', 'buff');
-                    }
-                    if (_rd.effect === 'varita_de_sauco' && ability && ability.target === 'aoe') {
-                        finalDamage = finalDamage * 2;
-                        attacker.hp = Math.max(1, (attacker.hp||0) - 3);
-                        addLog('🪄 Varita de Saúco: daño AOE duplicado (' + finalDamage + ') — ' + gameState.selectedCharacter + ' pierde 3 HP', 'buff');
                     }
                     if (_rd.effect === 'basic_dmg_50pct' && ability && ability.type === 'basic') {
                         finalDamage = Math.ceil(finalDamage * 1.5);
@@ -5480,10 +5476,18 @@
 
             } else if (ability.effect === 'djem_so') {
                 let _djDmg = finalDamage;
-                if (attacker.darkSideAwakened) _djDmg *= 2;
-                if (Math.random() < 0.50) { _djDmg *= 2; addLog('⚡ Djem So: ¡Crítico!', 'buff'); }
                 applyDamageWithShield(targetName, _djDmg, charName);
-                addLog('⚡ Djem So: ' + _djDmg + ' daño a ' + targetName, 'damage');
+                const _djTgt = gameState.characters[targetName];
+                if (_djTgt && !_djTgt.isDead) {
+                    _djTgt.charges = Math.max(0, (_djTgt.charges||0) - 1);
+                    addLog('⚡ Djem So: ' + _djDmg + ' daño a ' + targetName + ' y elimina 1 carga', 'damage');
+                } else {
+                    addLog('⚡ Djem So: ' + _djDmg + ' daño a ' + targetName, 'damage');
+                }
+                if (attacker.darkSideAwakened && _djTgt && !_djTgt.isDead) {
+                    applyFear(targetName, 1);
+                    addLog('🌑 Lado Oscuro: ' + targetName + ' recibe Miedo', 'debuff');
+                }
 
             } else if (ability.effect === 'estrangular') {
                 const _estETeam = attacker.team === 'team1' ? 'team2' : 'team1';
@@ -5497,29 +5501,17 @@
                         applyDamageWithShield(_n, finalDamage, charName);
                         _c.charges = Math.max(0, (_c.charges||0) - 1);
                         if (Math.random() < 0.50) applyStun(_n, 1);
+                        if (attacker.darkSideAwakened && !_c.isDead) applyFear(_n, 1);
                     }
                     for (let _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _estETeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, charName); }
                 }
                 addLog('⚡ Estrangular: ' + finalDamage + ' AOE + -1 carga al equipo enemigo', 'damage');
 
             } else if (ability.effect === 'general_501') {
-                const _g501ETeam = attacker.team === 'team1' ? 'team2' : 'team1';
-                const _g501Enemies = Object.keys(gameState.characters).filter(n => { const c = gameState.characters[n]; return c && c.team === _g501ETeam && !c.isDead && c.hp > 0; });
-                if (_g501Enemies.length === 0) { addLog('⚡ General de la 501: No hay objetivos', 'info'); }
-                else {
-                    for (let _i = 0; _i < 4; _i++) {
-                        const _tn = _g501Enemies[Math.floor(Math.random() * _g501Enemies.length)];
-                        const _tc = gameState.characters[_tn];
-                        if (!_tc || _tc.isDead || _tc.hp <= 0) continue;
-                        let _g501Dmg = attacker.abilities[0] ? attacker.abilities[0].damage : 2;
-                        if (attacker.darkSideAwakened) _g501Dmg *= 2;
-                        if (Math.random() < 0.50) { _g501Dmg *= 2; }
-                        applyDamageWithShield(_tn, _g501Dmg, charName);
-                        attacker.charges = Math.min(20, (attacker.charges||0) + (attacker.abilities[0] ? attacker.abilities[0].chargeGain : 2));
-                        if (Math.random() < 0.50) applyFear(_tn, 1);
-                        addLog('⚡ General de la 501: ' + _g501Dmg + ' daño a ' + _tn, 'damage');
-                    }
-                }
+                applyBuff(charName, { name: 'Provocacion', type: 'buff', duration: 2, emoji: '🛡️' });
+                applyBuff(charName, { name: 'Armadura', type: 'buff', duration: 2, emoji: '🦾' });
+                applyBuff(charName, { name: 'Reflejar', type: 'buff', duration: 999, emoji: '🪞' });
+                addLog('⚡ General de la 501: Anakin se aplica Provocación 2T, Armadura 2T y Reflejar', 'buff');
 
             } else if (ability.effect === 'dark_side_anakin') {
                 const _dsAtk = gameState.characters[charName];
@@ -5528,12 +5520,9 @@
                     const _dsTP = _dsAtk.transformPortrait || _dsAtk.transformationPortrait;
                     if (_dsTP) _dsAtk.portrait = _dsTP;
                     _dsAtk.speed = (_dsAtk.speed||0) + 10;
-                    // Concentración permanente
-                    if (!(_dsAtk.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'concentracion')) {
-                        _dsAtk.statusEffects = (_dsAtk.statusEffects||[]);
-                        _dsAtk.statusEffects.push({ name: 'Concentracion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🎯' });
-                    }
-                    addLog('🌑 Despertar del Lado Oscuro: Anakin transformado. +10 vel, Concentración permanente', 'buff');
+                    _dsAtk.isTransformed = true;
+                    addLog('🌑 ¡Despertar del Lado Oscuro! Anakin se transforma permanentemente — +10 velocidad. Sus ataques causan +3 daño y aplican Miedo. Se cura 3 HP al recibir daño.', 'buff');
+                    renderCharacters();
                 }
 
             // ══════════════════════════════════════════════════════
@@ -6844,9 +6833,7 @@
                         addLog(`⚡ Hiraishin no Jutsu: Minato genera +${bonusChargesM} cargas (enemigos más lentos)`, 'buff');
                     }
                 }
-            } // end if(ability.effect !== 'multi_hit') / Minato AOE block
-
-            if (ability.effect === 'fuego_fatuo_manigoldo') {
+} else if (ability.effect === 'fuego_fatuo_manigoldo') {
                 const _ffA=gameState.characters[gameState.selectedCharacter],_ffT=gameState.characters[targetName];
                 applyDamageWithShield(targetName,finalDamage,gameState.selectedCharacter);
                 if(_ffA&&_ffT&&!_ffT.isDead&&_ffT.hp>0){const _ffL=_ffA.hp<=Math.floor(_ffA.maxHp*0.50);if(_ffL||Math.random()<0.25){const _s=Math.min(2,_ffT.hp);_ffT.hp=Math.max(0,_ffT.hp-_s);if(_ffT.hp<=0)_ffT.isDead=true;if(typeof applyHeal==='function')applyHeal(gameState.selectedCharacter,_s,'Fuego Fatuo');else _ffA.hp=Math.min(_ffA.maxHp,(_ffA.hp||0)+_s);addLog('☠️ Fuego Fatuo: roba '+_s+' HP','heal');}if(_ffL||Math.random()<0.25){const _sc=Math.min(2,_ffT.charges||0);if(_sc>0){_ffT.charges-=_sc;_ffA.charges=Math.min(20,(_ffA.charges||0)+_sc);addLog('☠️ Fuego Fatuo: roba '+_sc+' cargas','buff');}}}
@@ -7586,52 +7573,6 @@
             if (ability && (ability.type === 'special' || ability.type === 'over') && 
                 ability.target === 'single' && targetName) {
                 triggerAsistir(gameState.selectedCharacter, targetName, ability.type);
-            }
-
-            // EL ELEGIDO (Anakin): 50% Frenesi + Furia 2T cuando un enemigo usa especial/over sobre un aliado
-            if (ability && (ability.type === 'special' || ability.type === 'over') && !passiveExecuting) {
-                const _elAtk = gameState.characters[gameState.selectedCharacter];
-                if (_elAtk) {
-                    const _elEnemyTeam = _elAtk.team;
-                    // Buscar Anakin en el equipo que recibe el ataque
-                    for (const _an in gameState.characters) {
-                        const _ac = gameState.characters[_an];
-                        if (!_ac || _ac.isDead || _ac.hp <= 0) continue;
-                        if (_ac.team === _elEnemyTeam) continue; // Anakin debe estar en el equipo que recibe
-                        if (!_ac.passive || _ac.passive.name !== 'El Elegido') continue;
-                        // Solo activar si Anakin no tiene ya Frenesi Y Furia activos
-                        const _hasFrenesi = (_ac.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'frenesi');
-                        const _hasFuria = (_ac.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'furia');
-                        if (!(_hasFrenesi && _hasFuria) && Math.random() < 0.50) {
-                            passiveExecuting = true;
-                            applyFrenesi(_an, 2);
-                            applyFuria(_an, 2);
-                            addLog('El Elegido: Anakin gana Frenesi + Furia 2T', 'buff');
-                            passiveExecuting = false;
-                        }
-                        break;
-                    }
-                }
-            }
-
-            // MAESTRÍA DE LA VARITA DE SAÚCO (Albus Dumbledore): cuando un enemigo usa ESPECIAL → +20 HP y +3 cargas
-            if (ability && ability.type === 'special' && !passiveExecuting) {
-                const _adAtk = gameState.characters[gameState.selectedCharacter];
-                if (_adAtk) {
-                    const _adDefTeam = _adAtk.team === 'team1' ? 'team2' : 'team1';
-                    for (const _adn in gameState.characters) {
-                        const _adc = gameState.characters[_adn];
-                        if (!_adc || _adc.isDead || _adc.hp <= 0 || _adc.team !== _adDefTeam) continue;
-                        if (!_adc.passive || _adc.passive.name !== 'Maestría de la Varita de Saúco') continue;
-                        passiveExecuting = true;
-                        if (typeof applyHeal === 'function') applyHeal(_adn, 20, 'Maestría de la Varita de Saúco');
-                        else _adc.hp = Math.min(_adc.maxHp, (_adc.hp||0) + 20);
-                        _adc.charges = Math.min(20, (_adc.charges||0) + 3);
-                        addLog('✨ Maestría de la Varita de Saúco: ' + _adn + ' recupera 20 HP y gana 3 cargas (especial enemigo)', 'heal');
-                        passiveExecuting = false;
-                        break;
-                    }
-                }
             }
 
             // PALADÍN DE LA MANO DE PLATA (Tirion): cuando enemigo usa Over → +5 HP y +5 cargas al equipo aliado
@@ -9518,84 +9459,7 @@
                 if (_biA17) _biA17.charges = Math.min(20, (_biA17.charges||0) + 8);
                 addLog('⚡ Barrera de Impacto Total: Androide 17 gana 8 cargas adicionales', 'buff');
 
-            // ── ALBUS DUMBLEDORE (Jefe de Sala) ──
-            } else if (ability.effect === 'chispa_de_sauco_dumbledore') {
-                // Chispa de Saúco: 2 daño ST (sistema base). Silenciar 2T a 3 enemigos aleatorios.
-                // Si el objetivo golpeado tenía algún debuff activo ANTES del ataque, Dumbledore +3 cargas.
-                const _csUser = gameState.characters[gameState.selectedCharacter];
-                const _csTeam = _csUser ? _csUser.team : 'team2';
-                const _csETeam = _csTeam === 'team1' ? 'team2' : 'team1';
-                const _csTgt = gameState.characters[targetName];
-                const _csHadDebuff = _csTgt && (_csTgt.statusEffects||[]).some(function(e){ return e && e.type === 'debuff'; });
-
-                if (_csUser && _csHadDebuff) {
-                    _csUser.charges = Math.min(20, (_csUser.charges||0) + 3);
-                    addLog('✨ Chispa de Saúco: Dumbledore genera 3 cargas (objetivo tenía debuff activo)', 'buff');
-                }
-
-                const _csEnemies = Object.keys(gameState.characters).filter(function(n) {
-                    const c = gameState.characters[n]; return c && c.team === _csETeam && !c.isDead && c.hp > 0;
-                });
-                const _csShuffled = _csEnemies.sort(function(){ return Math.random()-0.5; }).slice(0, 3);
-                _csShuffled.forEach(function(n) {
-                    if (typeof applySilenciar === 'function') applySilenciar(n, 2);
-                });
-                if (_csShuffled.length > 0) addLog('✨ Chispa de Saúco: ' + _csShuffled.join(', ') + ' reciben Silenciar 2T', 'debuff');
-
-            } else if (ability.effect === 'lamento_de_fawkes_dumbledore') {
-                // Invoca a Fawkes (bloqueado mientras esté activo)
-                const _fwExisting = Object.values(gameState.summons).find(function(s) { return s && s.name === 'Fawkes' && s.hp > 0; });
-                if (_fwExisting) {
-                    addLog('❌ Fawkes ya está en el campo — Lamento de Fawkes bloqueado', 'info');
-                } else {
-                    if (typeof summonShadow === 'function') summonShadow('Fawkes', gameState.selectedCharacter);
-                    addLog('🔥 Albus Dumbledore invoca a Fawkes', 'buff');
-                }
-
-            } else if (ability.effect === 'partis_temporus_dumbledore') {
-                // Partis Temporus: 3 daño AOE + Quemadura 3HP 3T a los golpeados
-                const _ptUser = gameState.characters[gameState.selectedCharacter];
-                const _ptTeam = _ptUser ? _ptUser.team : 'team2';
-                const _ptETeam = _ptTeam === 'team1' ? 'team2' : 'team1';
-                checkAndRemoveStealth(_ptETeam);
-                if (checkAndRedirectAOEMegaProv(_ptETeam, finalDamage, gameState.selectedCharacter)) {
-                    addLog('✨ Partis Temporus redirigido por Mega Provocación', 'damage');
-                } else {
-                    for (const _n in gameState.characters) {
-                        const _c = gameState.characters[_n];
-                        if (!_c || _c.team !== _ptETeam || _c.isDead || _c.hp <= 0) continue;
-                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune a Partis Temporus (Esquiva Área)', 'buff'); continue; }
-                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
-                        if (typeof applyFlatBurn === 'function') applyFlatBurn(_n, 3, 3);
-                    }
-                    if (typeof applyAOEToSummons === 'function') applyAOEToSummons(_ptETeam, finalDamage, gameState.selectedCharacter);
-                }
-                addLog('✨ Partis Temporus: ' + finalDamage + ' daño AOE + Quemadura 3HP 3T', 'damage');
-
-            } else if (ability.effect === 'prision_agua_fuego_dumbledore') {
-                // Prisión de Agua y Fuego: 5 daño ST (sistema) + 45 daño adicional repartido aleatoriamente en TODOS los enemigos
-                const _pafUser = gameState.characters[gameState.selectedCharacter];
-                const _pafTeam = _pafUser ? _pafUser.team : 'team2';
-                const _pafETeam = _pafTeam === 'team1' ? 'team2' : 'team1';
-                const _pafEnemies = Object.keys(gameState.characters).filter(function(n) {
-                    const c = gameState.characters[n]; return c && c.team === _pafETeam && !c.isDead && c.hp > 0;
-                });
-                let _pafRemaining = 45;
-                if (_pafEnemies.length > 0) {
-                    const _pafDistrib = {};
-                    while (_pafRemaining > 0) {
-                        const _pafN = _pafEnemies[Math.floor(Math.random() * _pafEnemies.length)];
-                        _pafDistrib[_pafN] = (_pafDistrib[_pafN] || 0) + 1;
-                        _pafRemaining--;
-                    }
-                    for (const _n in _pafDistrib) {
-                        applyDamageWithShield(_n, _pafDistrib[_n], gameState.selectedCharacter);
-                        addLog('🔥💧 Prisión de Agua y Fuego: ' + _n + ' recibe ' + _pafDistrib[_n] + ' daño adicional', 'damage');
-                    }
-                }
-                addLog('🔥💧 Prisión de Agua y Fuego: 45 daño repartido entre los enemigos', 'damage');
-
-            } // end Albus Dumbledore handlers
+            } // end Androide 17 handlers
 
             // Actualizar UI
             renderCharacters();

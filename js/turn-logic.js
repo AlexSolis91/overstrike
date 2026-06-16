@@ -2133,21 +2133,6 @@
                         }
                     }
 
-                    // ── FAWKES (Destello de Fawkes): inicio de ronda → 80% Ceguera 1T a cada enemigo ──
-                    const _fawkes = Object.values(gameState.summons).find(function(s){ return s && s.name === 'Fawkes' && s.hp > 0; });
-                    if (_fawkes) {
-                        const _fwETeam = _fawkes.team === 'team1' ? 'team2' : 'team1';
-                        const _fwEnemies = Object.keys(gameState.characters).filter(function(n){
-                            const _c = gameState.characters[n]; return _c && _c.team === _fwETeam && !_c.isDead && _c.hp > 0;
-                        });
-                        _fwEnemies.forEach(function(n) {
-                            if (Math.random() < 0.80) {
-                                if (typeof applyDebuff === 'function') applyDebuff(n, { name: 'Ceguera', type: 'debuff', duration: 1, emoji: '👁️' });
-                                addLog('🔥 Destello de Fawkes: ' + n + ' recibe Ceguera 1T', 'debuff');
-                            }
-                        });
-                    }
-
                     // ── CABALLERO DE LA MUERTE (Espada de Ébano): inicio de ronda → +4 cargas al equipo aliado ──
                     const _caballero = Object.values(gameState.summons).find(function(s){ return s && s.name === 'Caballero de la Muerte' && s.hp > 0; });
                     if (_caballero) {
@@ -2231,21 +2216,6 @@
                     for (let n in gameState.characters) {
                         const c = gameState.characters[n];
                         if (c && !c.isDead && c.hp > 0) c.hpAtRoundStart = c.hp;
-                    }
-                    // ── MAESTRÍA DE LA VARITA DE SAÚCO (Albus Dumbledore): inicio de ronda → +3 cargas por enemigo derrotado ──
-                    for (const _adn in gameState.characters) {
-                        const _adc = gameState.characters[_adn];
-                        if (!_adc || _adc.isDead || _adc.hp <= 0 || !_adc.passive || _adc.passive.name !== 'Maestría de la Varita de Saúco') continue;
-                        const _adETeam = _adc.team === 'team1' ? 'team2' : 'team1';
-                        const _adDefeated = Object.keys(gameState.characters).filter(function(n) {
-                            const c = gameState.characters[n]; return c && c.team === _adETeam && c.isDead;
-                        }).length;
-                        if (_adDefeated > 0) {
-                            const _adGain = _adDefeated * 3;
-                            _adc.charges = Math.min(20, (_adc.charges||0) + _adGain);
-                            addLog('✨ Maestría de la Varita de Saúco: ' + _adn + ' genera ' + _adGain + ' cargas (' + _adDefeated + ' enemigo(s) derrotado(s))', 'buff');
-                        }
-                        break;
                     }
                     // ── RECALCULAR ORDEN DE TURNOS por velocidad actual (incluye revividos) ──
                     const _lastActed = gameState.turnOrder[gameState.currentTurnIndex]; // quién actuó último
@@ -2366,6 +2336,21 @@
                         }
                     })();
 
+                    // ── EL ELEGIDO (Anakin): inicio de ronda → 50% de Frenesi + Furia 2T ──
+                    (function() {
+                        for (const _akN in gameState.characters) {
+                            const _akC = gameState.characters[_akN];
+                            if (!_akC || _akC.isDead || _akC.hp <= 0) continue;
+                            if (!_akC.passive || _akC.passive.name !== 'El Elegido') continue;
+                            if (Math.random() < 0.50) {
+                                applyFrenesi(_akN, 2);
+                                applyFuria(_akN, 2);
+                                addLog('⚡ El Elegido: ' + _akN + ' gana Frenesi + Furia 2T (inicio de ronda)', 'buff');
+                            }
+                            break;
+                        }
+                    })();
+
                     // ── LLAMARADA KUSANAGI (Kyo): inicio de ronda → Aura de Fuego a 2 aliados aleatorios ──
                     (function() {
                         for (const _kyoN in gameState.characters) {
@@ -2451,17 +2436,8 @@
                             _pc.statusEffects.push({ name: 'Asistir', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '⚡' });
                             _pc.anakinAsistir = true;
                         }
-                    }
-                    // Anakin transformado: Concentración permanente + 50% Reflejar cada ronda
-                    if (_pname === 'El Elegido' && _pc.darkSideAwakened) {
-                        if (!hasStatusEffect(_pn, 'Concentracion')) {
-                            _pc.statusEffects = (_pc.statusEffects || []);
-                            _pc.statusEffects.push({ name: 'Concentracion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🎯' });
-                        }
-                        if (Math.random() < 0.50) {
-                            _pc.statusEffects = (_pc.statusEffects||[]).filter(e => !e || normAccent(e.name||'') !== 'reflejar');
-                            _pc.statusEffects.push({ name: 'Reflejar', type: 'buff', duration: 2, emoji: '🪞' });
-                            addLog('🌑 Despertar del Lado Oscuro: Anakin gana Reflejar 2T (50%)', 'buff');
+                        if (!(_pc.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'contraataque')) {
+                            _pc.statusEffects.push({ name: 'Contraataque', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '⚔️' });
                         }
                     }
                     // Giyu Tomioka: Armadura permanente

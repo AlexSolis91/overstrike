@@ -36,11 +36,6 @@
                 addLog(`❌ Another Dimension en cooldown (${ability.cooldown} turno${ability.cooldown > 1 ? 's' : ''} restante${ability.cooldown > 1 ? 's' : ''})`, 'info');
                 return;
             }
-            // ¡ARDE, COSMOS! cooldown check
-            if (ability.effect === 'arde_cosmos_seiya' && (ability.cooldown || 0) > 0) {
-                addLog(`❌ ¡Arde, cosmos! en cooldown (${ability.cooldown} turno${ability.cooldown > 1 ? 's' : ''} restante${ability.cooldown > 1 ? 's' : ''})`, 'info');
-                return;
-            }
             // EL REY DEMONIO: bloqueado tras transformación
             if (ability.effect === 'rey_demonio_meliodas' && char._reyDemonioActive) {
                 addLog('👑 El Rey Demonio: Meliodas ya se ha transformado', 'info');
@@ -519,6 +514,16 @@
             applyDamageWithShield(targetName, basicDmg, 'Anakin Skywalker');
             anakin.charges = Math.min(20, (anakin.charges || 0) + (basic.chargeGain || 2));
             addLog('⚔️ El Elegido (Asistir): Anakin ejecuta ataque básico sobre ' + targetName + ' (' + basicDmg + ' dmg)', 'buff');
+            // Djem So: elimina 1 carga del objetivo
+            const _asTgt = gameState.characters[targetName];
+            if (_asTgt && !_asTgt.isDead) {
+                _asTgt.charges = Math.max(0, (_asTgt.charges||0) - 1);
+                addLog('⚔️ El Elegido (Asistir): ' + targetName + ' pierde 1 carga (Djem So)', 'buff');
+                if (anakin.darkSideAwakened) {
+                    applyFear(targetName, 1);
+                    addLog('🌑 El Elegido (Asistir): ' + targetName + ' recibe Miedo (Lado Oscuro)', 'debuff');
+                }
+            }
             passiveExecuting = false;
         }
 function triggerMaboroshi(targetTeam, debuffName) {
@@ -734,6 +739,15 @@ function triggerMaboroshi(targetTeam, debuffName) {
             if ((targetName === 'Ragnar Lothbrok' || targetName === 'Ragnar Lothbrok v2')) {
                 applyBleed(attackerName, 2);
                 addLog('  🩸 [CONTRAATAQUE] ' + attackerName + ' recibe Sangrado (Ragnar)', 'damage');
+            }
+            // El Elegido (Anakin) — Djem So elimina 1 carga del atacante
+            if ((targetName === 'Anakin Skywalker' || targetName === 'Anakin Skywalker v2')) {
+                attacker.charges = Math.max(0, (attacker.charges||0) - 1);
+                addLog('  ⚡ [CONTRAATAQUE] ' + attackerName + ' pierde 1 carga (Djem So)', 'damage');
+                if (target.darkSideAwakened) {
+                    applyFear(attackerName, 1);
+                    addLog('  🌑 [CONTRAATAQUE] ' + attackerName + ' recibe Miedo (Lado Oscuro)', 'damage');
+                }
             }
             // Goku UI — básico (Kamehameha base, sin efectos extra por contraataque)
 
