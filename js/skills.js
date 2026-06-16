@@ -154,6 +154,10 @@
                     ability.effect !== 'rikudo_mode_madara') {
                     adjustedCost = Math.ceil(adjustedCost / 2);
                 }
+                // VARITA DE SAÚCO: todos los movimientos requieren la mitad de cargas
+                if (attacker && adjustedCost > 0 && (attacker.equippedRelics||[]).includes('Varita de Saúco')) {
+                    adjustedCost = Math.ceil(adjustedCost / 2);
+                }
                 
                 // ── SILENCIAR: bloquea la categoría silenciada ──────────────
                 if (ability && attacker) {
@@ -277,6 +281,11 @@
                     if (_rd.effect === 'frostmourne') {
                         finalDamage = finalDamage * 2;
                         addLog('❄️ Frostmourne: daño duplicado (' + finalDamage + ')', 'buff');
+                    }
+                    if (_rd.effect === 'varita_de_sauco' && ability && ability.target === 'aoe') {
+                        finalDamage = finalDamage * 2;
+                        attacker.hp = Math.max(1, (attacker.hp||0) - 3);
+                        addLog('🪄 Varita de Saúco: daño AOE duplicado (' + finalDamage + ') — ' + gameState.selectedCharacter + ' pierde 3 HP', 'buff');
                     }
                     if (_rd.effect === 'basic_dmg_50pct' && ability && ability.type === 'basic') {
                         finalDamage = Math.ceil(finalDamage * 1.5);
@@ -2775,7 +2784,7 @@
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 addLog('⚡ Relámpago Sith: ' + finalDamage + ' daño a ' + targetName, 'damage');
                 const _rSpDebuffs = [
-                    function(n){ if(typeof applyPoison==='function') applyPoison(n, 2); addLog('⚡ Relámpago Sith: Veneno 2S a '+n,'debuff'); },
+                    function(n){ if(typeof applyPoison==='function') applyPoison(n, 2); addLog('⚡ Relámpago Sith: Veneno 2T a '+n,'debuff'); },
                     function(n){ if(typeof applyFear==='function') applyFear(n,1); else if(typeof applyDebuff==='function') applyDebuff(n,{name:'Miedo',type:'debuff',duration:1,emoji:'😱'}); addLog('⚡ Relámpago Sith: Miedo 1T a '+n,'debuff'); },
                     function(n){ if(typeof applyStun==='function') applyStun(n,1); addLog('⚡ Relámpago Sith: Aturdimiento 1T a '+n,'debuff'); },
                     function(n){ if(typeof applyDebuff==='function') applyDebuff(n,{name:'Debilitar',type:'debuff',duration:2,emoji:'💔'}); addLog('⚡ Relámpago Sith: Debilitar 2T a '+n,'debuff'); },
@@ -6333,18 +6342,21 @@
                 }
 
             } else if (ability.effect === 'mano_sauron_rba') {
-                // AOE — limpia todos los Venenos enemigos y causa daño = stacks de cada Veneno
+                // AOE — limpia todos los Venenos enemigos y causa daño = turnos restantes de cada Veneno
                 const _msAtk = gameState.characters[gameState.selectedCharacter];
                 const _msEnemyTeam = _msAtk ? (_msAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
                 for (const _n in gameState.characters) {
                     const _c = gameState.characters[_n];
                     if (!_c || _c.team !== _msEnemyTeam || _c.isDead || _c.hp <= 0) continue;
-                    const _venEffect = (_c.statusEffects||[]).find(e => e && normAccent(e.name||'') === 'veneno');
-                    if (_venEffect) {
-                        const _msDmg = _venEffect.poisonStacks || 1;
+                    const _venEffects = (_c.statusEffects||[]).filter(e => e && normAccent(e.name||'') === 'veneno');
+                    if (_venEffects.length > 0) {
+                        let _msDmg = 0;
+                        _venEffects.forEach(e => { _msDmg += (e.duration || 0); });
                         _c.statusEffects = (_c.statusEffects||[]).filter(e => !e || normAccent(e.name||'') !== 'veneno');
-                        applyDamageWithShield(_n, _msDmg, gameState.selectedCharacter);
-                        addLog('🖐️ Mano de Sauron: ' + _n + ' recibe ' + _msDmg + ' daño (stacks de Veneno) y Veneno limpiado', 'damage');
+                        if (_msDmg > 0) {
+                            applyDamageWithShield(_n, _msDmg, gameState.selectedCharacter);
+                            addLog('🖐️ Mano de Sauron: ' + _n + ' recibe ' + _msDmg + ' daño (turnos de Veneno restantes) y Veneno limpiado', 'damage');
+                        }
                     }
                 }
                 addLog('🖐️ Mano de Sauron: Todos los Venenos enemigos eliminados', 'debuff');
@@ -7601,6 +7613,27 @@
             }
 
             // PALADÍN DE LA MANO DE PLATA (Tirion): cuando enemigo usa Over → +5 HP y +5 cargas al equipo aliado
+
+            // MAESTRÍA DE LA VARITA DE SAÚCO (Albus Dumbledore): cuando un enemigo usa ESPECIAL → +20 HP y +3 cargas
+            if (ability && ability.type === 'special' && !passiveExecuting) {
+                const _adAtk = gameState.characters[gameState.selectedCharacter];
+                if (_adAtk) {
+                    const _adDefTeam = _adAtk.team === 'team1' ? 'team2' : 'team1';
+                    for (const _adn in gameState.characters) {
+                        const _adc = gameState.characters[_adn];
+                        if (!_adc || _adc.isDead || _adc.hp <= 0 || _adc.team !== _adDefTeam) continue;
+                        if (!_adc.passive || _adc.passive.name !== 'Maestría de la Varita de Saúco') continue;
+                        passiveExecuting = true;
+                        if (typeof applyHeal === 'function') applyHeal(_adn, 20, 'Maestría de la Varita de Saúco');
+                        else _adc.hp = Math.min(_adc.maxHp, (_adc.hp||0) + 20);
+                        _adc.charges = Math.min(20, (_adc.charges||0) + 3);
+                        addLog('✨ Maestría de la Varita de Saúco: ' + _adn + ' recupera 20 HP y gana 3 cargas (especial enemigo)', 'heal');
+                        passiveExecuting = false;
+                        break;
+                    }
+                }
+            }
+
             if (ability && ability.type === 'over' && !passiveExecuting) {
                 const _tirOvAtk = gameState.characters[gameState.selectedCharacter];
                 if (_tirOvAtk) {
@@ -9484,7 +9517,84 @@
                 if (_biA17) _biA17.charges = Math.min(20, (_biA17.charges||0) + 8);
                 addLog('⚡ Barrera de Impacto Total: Androide 17 gana 8 cargas adicionales', 'buff');
 
-            } // end Androide 17 handlers
+            // ── ALBUS DUMBLEDORE (Jefe de Sala) ──
+            } else if (ability.effect === 'chispa_de_sauco_dumbledore') {
+                // Chispa de Saúco: 2 daño ST (sistema base). Aplica Silenciar 2T a 3 enemigos aleatorios.
+                // Si el objetivo golpeado tenía algún debuff activo ANTES del ataque, Dumbledore +3 cargas.
+                const _csUser = gameState.characters[gameState.selectedCharacter];
+                const _csTeam = _csUser ? _csUser.team : 'team2';
+                const _csETeam = _csTeam === 'team1' ? 'team2' : 'team1';
+                const _csTgt = gameState.characters[targetName];
+                const _csHadDebuff = _csTgt && (_csTgt.statusEffects||[]).some(function(e){ return e && e.type === 'debuff'; });
+
+                if (_csUser && _csHadDebuff) {
+                    _csUser.charges = Math.min(20, (_csUser.charges||0) + 3);
+                    addLog('✨ Chispa de Saúco: Dumbledore genera 3 cargas (objetivo tenía debuff activo)', 'buff');
+                }
+
+                const _csEnemies = Object.keys(gameState.characters).filter(function(n) {
+                    const c = gameState.characters[n]; return c && c.team === _csETeam && !c.isDead && c.hp > 0;
+                });
+                const _csShuffled = _csEnemies.sort(function(){ return Math.random()-0.5; }).slice(0, 3);
+                _csShuffled.forEach(function(n) {
+                    if (typeof applySilenciar === 'function') applySilenciar(n, 2);
+                });
+                addLog('✨ Chispa de Saúco: ' + _csShuffled.join(', ') + ' reciben Silenciar 2T', 'debuff');
+
+            } else if (ability.effect === 'lamento_de_fawkes_dumbledore') {
+                // Invoca a Fawkes (bloqueado mientras esté activo — summonShadow ya bloquea duplicados)
+                const _fwExisting = Object.values(gameState.summons).find(function(s) { return s && s.name === 'Fawkes' && s.hp > 0; });
+                if (_fwExisting) {
+                    addLog('❌ Fawkes ya está en el campo — Lamento de Fawkes bloqueado', 'info');
+                } else {
+                    summonShadow('Fawkes', gameState.selectedCharacter);
+                    addLog('🔥 Albus Dumbledore invoca a Fawkes', 'buff');
+                }
+
+            } else if (ability.effect === 'partis_temporus_dumbledore') {
+                // Partis Temporus: 3 daño AOE + Quemadura 3HP 3T a los golpeados
+                const _ptUser = gameState.characters[gameState.selectedCharacter];
+                const _ptTeam = _ptUser ? _ptUser.team : 'team2';
+                const _ptETeam = _ptTeam === 'team1' ? 'team2' : 'team1';
+                checkAndRemoveStealth(_ptETeam);
+                if (checkAndRedirectAOEMegaProv(_ptETeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('✨ Partis Temporus redirigido por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _ptETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune a Partis Temporus (Esquiva Área)', 'buff'); continue; }
+                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        if (typeof applyFlatBurn === 'function') applyFlatBurn(_n, 3, 3);
+                    }
+                    applyAOEToSummons(_ptETeam, finalDamage, gameState.selectedCharacter);
+                }
+                addLog('✨ Partis Temporus: ' + finalDamage + ' daño AOE + Quemadura 3HP 3T', 'damage');
+
+            } else if (ability.effect === 'prision_agua_fuego_dumbledore') {
+                // Prisión de Agua y Fuego: 5 daño ST (sistema) + 45 daño adicional repartido aleatoriamente en TODOS los enemigos
+                const _pafUser = gameState.characters[gameState.selectedCharacter];
+                const _pafTeam = _pafUser ? _pafUser.team : 'team2';
+                const _pafETeam = _pafTeam === 'team1' ? 'team2' : 'team1';
+                const _pafEnemies = Object.keys(gameState.characters).filter(function(n) {
+                    const c = gameState.characters[n]; return c && c.team === _pafETeam && !c.isDead && c.hp > 0;
+                });
+                let _pafRemaining = 45;
+                if (_pafEnemies.length > 0) {
+                    const _pafDistrib = {};
+                    while (_pafRemaining > 0) {
+                        const _pafN = _pafEnemies[Math.floor(Math.random() * _pafEnemies.length)];
+                        _pafDistrib[_pafN] = (_pafDistrib[_pafN] || 0) + 1;
+                        _pafRemaining--;
+                    }
+                    for (const _n in _pafDistrib) {
+                        applyDamageWithShield(_n, _pafDistrib[_n], gameState.selectedCharacter);
+                        addLog('🔥💧 Prisión de Agua y Fuego: ' + _n + ' recibe ' + _pafDistrib[_n] + ' daño adicional', 'damage');
+                    }
+                }
+                addLog('🔥💧 Prisión de Agua y Fuego: 45 daño repartido entre los enemigos', 'damage');
+
+            } // end Albus Dumbledore handlers
 
             // Actualizar UI
             renderCharacters();
@@ -9649,15 +9759,14 @@
             { type: 'buff', name: '❄️ Aura Gélida', effect: 'Cuando el portador es golpeado por un enemigo, aplica Congelación de 1 turno al atacante.' },
             { type: 'buff', name: '🌑 Aura Oscura', effect: 'Cuando el portador es golpeado por un enemigo, elimina 1 carga del atacante. 30% de probabilidad de eliminar 2 cargas adicionales.' },
             { type: 'buff', name: '✨ Aura de Luz', effect: 'Duplica la cantidad de recuperación de HP del portador.' },
-            { type: 'buff', name: '🦠 Infectar', effect: 'Cuando el portador es golpeado, aplica el debuff Veneno 2S (2 stacks) sobre el atacante.' },
+            { type: 'buff', name: '🦠 Infectar', effect: 'Cuando el portador es golpeado, aplica el debuff Veneno de 2 turnos sobre el atacante.' },
             { type: 'buff', name: '🤝 Asistir', effect: 'Cuando un aliado realiza un ataque Especial u Over (Single Target), ejecuta un ataque básico sobre el enemigo atacado. El ataque básico causa el daño, efecto y cargas correspondientes.' },
             { type: 'buff', name: '🪞 Reflejar', effect: 'Cuando el portador recibe un ataque básico, especial u over, el atacante recibe el mismo daño que causó.' },
             // ── DEBUFFS ────────────────────────────────────────────────────────
             { type: 'debuff', name: '🔥 Quemadura', effect: 'Causa daño directo a los HP del portador cada turno. No es absorbido por el escudo.' },
             { type: 'debuff', name: '☀️ Quemadura Solar', effect: 'El portador no puede recuperar HP de ninguna fuente (curación, regeneración, robo de vida, etc.) mientras esté activo.' },
-            { type: 'debuff', name: '☠️ Veneno', effect: 'Se acumula en stacks (ej: Veneno 4S). Al final de cada ronda, causa daño igual al número de stacks acumulados y luego expira. Los stacks de diferentes fuentes se suman. No es absorbido por el escudo.' },
-            { type: 'debuff', name: '🩸 Sangrado', effect: 'Dura los turnos especificados por la habilidad (mínimo 1T). Al final de cada ronda causa 1-2 de daño aleatorio. Si el portador recibe un segundo Sangrado mientras ya tiene uno activo, ambos se fusionan en Hemorragia.' },
-            { type: 'debuff', name: '💀 Hemorragia', effect: 'Debuff permanente — no expira por turnos ni rondas. Solo puede ser eliminado por habilidades que limpien o disipen debuffs. Al final de cada ronda causa 3-6 de daño aleatorio y el portador pierde cargas equivalentes al daño recibido. No se puede aplicar Sangrado sobre un personaje con Hemorragia activa.' },
+            { type: 'debuff', name: '☠️ Veneno', effect: 'Causa daño por tick. El daño incrementa +1 cada turno que el veneno permanezca activo (tick 1 = 1 dmg, tick 2 = 2 dmg, etc.). No es absorbido por el escudo.' },
+            { type: 'debuff', name: '🩸 Sangrado', effect: 'El portador recibe +1 o +2 (aleatorio) de daño adicional por cada golpe recibido. No es absorbido por el escudo.' },
             { type: 'debuff', name: '⭐ Aturdimiento', effect: 'El portador pierde su próximo turno.' },
             { type: 'debuff', name: '💫 Mega Aturdimiento', effect: 'El portador pierde sus próximos 2 turnos.' },
             { type: 'debuff', name: '❄️ Congelación', effect: '50% de probabilidad de perder su próximo turno. Reduce la velocidad del portador un 10%.' },
@@ -9669,7 +9778,6 @@
             { type: 'debuff', name: '💔 Debilitar', effect: 'Recibe un 50% más de daño de todos los golpes recibidos.' },
             { type: 'debuff', name: '🔇 Silenciar', effect: 'Bloquea una categoría de movimientos (Básico, Especial u Over) del portador de manera aleatoria.' },
             { type: 'debuff', name: '😴 Agotamiento', effect: 'Reduce de 1 a 3 cargas del portador de manera aleatoria.' },
-            { type: 'debuff', name: '👁️ Ceguera', effect: '50% de probabilidad de que el ataque del portador falle completamente (sin daño ni efectos).' },
         ];
 
         function showBuffDebuffGuide() {

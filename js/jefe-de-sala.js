@@ -47,9 +47,26 @@
             { name:'Invierno sin Remordimiento', type:'special', cost:8, chargeGain:0, damage:7, target:'aoe',    effect:'invierno_sin_remordimiento_lich',    description:'7 daño AOE + Congelación. Si el objetivo ya estaba congelado: daño doble.' },
             { name:'Apocalipsis',              type:'special', cost:10, chargeGain:0, damage:10, target:'aoe',    effect:'apocalipsis_lich',                   description:'10 daño AOE. 50% de probabilidad de aplicar Mega Congelación.' },
             { name:'Muerte y Descomposición',  type:'over',    cost:20, chargeGain:0, damage:10, target:'aoe',   effect:'muerte_descomposicion_lich',          description:'10 daño AOE + Mega Posesión. +3 daño por cada debuff activo en el objetivo.' }
+        ],
+        'Albus Dumbledore': [
+            { name:'Chispa de Saúco',          type:'basic',   cost:0,  chargeGain:2, damage:2,  target:'single', effect:'chispa_de_sauco_dumbledore',          description:'2 daño ST. Aplica Silenciar 2T a 3 enemigos aleatorios. Si el objetivo golpeado tenía algún debuff activo antes del ataque, Dumbledore genera 3 cargas.' },
+            { name:'Lamento de Fawkes',        type:'special', cost:5,  chargeGain:0, damage:0,  target:'self',   effect:'lamento_de_fawkes_dumbledore',        description:'Invoca a Fawkes. Bloqueado mientras Fawkes esté en el campo.' },
+            { name:'Partis Temporus',          type:'special', cost:8,  chargeGain:0, damage:3,  target:'aoe',    effect:'partis_temporus_dumbledore',          description:'3 daño AOE. Aplica Quemadura 3HP por 3 turnos a los enemigos golpeados.' },
+            { name:'Prisión de Agua y Fuego',  type:'over',    cost:15, chargeGain:0, damage:5,  target:'single', effect:'prision_agua_fuego_dumbledore',       description:'5 daño ST + 45 daño adicional repartido aleatoriamente entre todos los enemigos.' }
         ]
     };
     window.BOSS_ABILITIES = BOSS_ABILITIES;
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // BOSS_DEFAULT_PASSIVES — pasiva por defecto si Firebase no envía boss.passive
+    // ─────────────────────────────────────────────────────────────────────────
+    var BOSS_DEFAULT_PASSIVES = {
+        'Albus Dumbledore': {
+            name: 'Maestría de la Varita de Saúco',
+            description: 'Albus Dumbledore es inmune a debuffs. Cada vez que un enemigo realiza un ataque especial, Albus Dumbledore se cura 20 HP y genera 3 cargas. Cada vez que un enemigo recibe daño por debuff Quemaduras, Albus Dumbledore genera 5 cargas. Al inicio de cada ronda, Albus Dumbledore genera 3 cargas por cada enemigo derrotado.'
+        }
+    };
+    window.BOSS_DEFAULT_PASSIVES = BOSS_DEFAULT_PASSIVES;
 
     function getBossRewardForRank(rank) {
         if (!rank || rank <= 0) return { gold: 5000, keys: 0, extra: null, color: '#888', bg: 'transparent' };
@@ -177,7 +194,7 @@
                 shieldEffect: null,
                 isDead:       false,
                 portrait:     boss.portrait || '',
-                passive:      boss.passive  || {
+                passive:      boss.passive  || BOSS_DEFAULT_PASSIVES[bossKey] || {
                     name: 'Legendario Super Sayajin',
                     description: 'Cada vez que recibe daño, genera 3 cargas. Genera N cargas al inicio de la ronda N. 25% de probabilidad de esquivar Debuffs.'
                 },

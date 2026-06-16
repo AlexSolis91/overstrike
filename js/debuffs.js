@@ -68,7 +68,7 @@ function triggerMaboroshi(targetTeam, debuffName) {
         }        // ==================== APLICADORES DE DEBUFFS ====================
 
         // Debuffs that cannot stack on the same target (must expire first)
-        const NON_STACKABLE_DEBUFFS = ['aturdimiento', 'mega aturdimiento', 'congelacion', 'mega congelacion', 'posesion', 'mega posesion', 'silenciar', 'concentracion', 'esquivar', 'esquiva area', 'contraataque', 'espinas', 'armadura', 'escudo sagrado', 'proteccion sagrada', 'anticipacion', 'hemorragia'];
+        const NON_STACKABLE_DEBUFFS = ['aturdimiento', 'mega aturdimiento', 'congelacion', 'mega congelacion', 'posesion', 'mega posesion', 'silenciar', 'concentracion', 'esquivar', 'esquiva area', 'contraataque', 'espinas', 'armadura', 'escudo sagrado', 'proteccion sagrada', 'anticipacion'];
 
         
         // ═══════════════════════════════════════════════════════════
@@ -195,8 +195,7 @@ function triggerMaboroshi(targetTeam, debuffName) {
             'quemadura':          { emoji:'🔥',      stackable:true,  canonical:'Quemadura' },
             'Quemadura Solar':    { emoji:'☀️',      stackable:false },
             'Veneno':             { emoji:'☠️',      stackable:true  },
-            'Sangrado':           { emoji:'🩸',      stackable:false },
-            'Hemorragia':         { emoji:'💀',      stackable:false },
+            'Sangrado':           { emoji:'🩸',      stackable:true  },
             'Aturdimiento':       { emoji:'⭐',      stackable:false },
             'Mega Aturdimiento':  { emoji:'💫',      stackable:false },
             'Congelacion':        { emoji:'❄️',      stackable:false, canonical:'Congelación' },
@@ -456,6 +455,8 @@ function triggerMaboroshi(targetTeam, debuffName) {
             // LIMBO (Madara Uchiha): Divinidad = inmune a debuffs en Modo Rikudō
             const limboChar = gameState.characters[targetName];
             if (limboChar && limboChar.passive && limboChar.passive.name === 'Limbo' && limboChar.rikudoMode) return true;
+            // MAESTRÍA DE LA VARITA DE SAÚCO (Albus Dumbledore): inmune a todos los debuffs
+            if (limboChar && limboChar.passive && limboChar.passive.name === 'Maestría de la Varita de Saúco') return true;
             return false;
         }
         function isImmuneToBurn(targetName) {
@@ -824,28 +825,12 @@ function applyDebuff(targetName, effectObj) {
         }
 
         function applyBleed(targetName, duration) {
+
             if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }
             const _bleedTgt = gameState.characters[targetName];
-            if (!_bleedTgt) return;
-            if (_bleedTgt.passive && _bleedTgt.passive.name === 'Invierno Eterno') { addLog('☠️ Invierno Eterno: Rey de la Noche es inmune a Sangrado', 'buff'); return; }
-
-            // No se puede aplicar Sangrado a personajes con Hemorragia activa
-            const _hasHemor = (_bleedTgt.statusEffects || []).some(function(e) { return e && (e.name === 'Hemorragia'); });
-            if (_hasHemor) { addLog('🩸 ' + targetName + ' ya tiene Hemorragia — Sangrado bloqueado', 'info'); return; }
-
-            // Si ya tiene Sangrado activo → eliminar ambos y aplicar Hemorragia
-            const _existingBleed = (_bleedTgt.statusEffects || []).find(function(e) { return e && e.name === 'Sangrado'; });
-            if (_existingBleed) {
-                _bleedTgt.statusEffects = (_bleedTgt.statusEffects || []).filter(function(e) { return !e || e.name !== 'Sangrado'; });
-                // Hemorragia: permanente (solo se limpia con habilidades)
-                _bleedTgt.statusEffects.push({ name: 'Hemorragia', type: 'debuff', duration: 9999, permanent: false, emoji: '💀' });
-                addLog('💀 ' + targetName + ' — ¡HEMORRAGIA! (Sangrado x2 → Hemorragia permanente)', 'damage');
-            } else {
-                // Primer Sangrado — duración especificada (mínimo 1T)
-                const _dur = Math.max(1, duration || 1);
-                applyDebuff(targetName, { name: 'Sangrado', type: 'debuff', duration: _dur, emoji: '🩸' });
-                addLog('🩸 ' + targetName + ' sufre Sangrado (' + _dur + 'T)', 'damage');
-            }
+            if (_bleedTgt && _bleedTgt.passive && _bleedTgt.passive.name === 'Invierno Eterno') { addLog('☠️ Invierno Eterno: Rey de la Noche es inmune a Sangrado', 'buff'); return; }
+            applyDebuff(targetName, { name: 'Sangrado', type: 'debuff', duration, emoji: '🩸' });
+            addLog(`🩸 ${targetName} sufre Sangrado por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
         }
 
         function applyFear(targetName, duration) {
@@ -936,10 +921,9 @@ function applyDebuff(targetName, effectObj) {
             }
         }
 
-        function applyPoison(targetName, stacks) {
+        function applyPoison(targetName, duration) {
             const target = gameState.characters[targetName];
             if (!target) return;
-            if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }
             // MVP: registrar quién aplica veneno
             if (gameState.battleStats && gameState.selectedCharacter) {
                 if (!gameState.battleStats.poisonAppliers) gameState.battleStats.poisonAppliers = new Set();
@@ -947,19 +931,20 @@ function applyDebuff(targetName, effectObj) {
             }
             // DONCELLA ESCUDERA (Lagertha): 50% de esquivar Veneno
             if (target.passive && target.passive.name === 'Doncella Escudera') {
-                if (Math.random() < 0.50) { addLog('🛡️ Doncella Escudera: Lagertha esquiva Veneno (50%)', 'buff'); return; }
+                if (Math.random() < 0.50) {
+                    addLog('🛡️ Doncella Escudera: Lagertha esquiva Veneno (50%)', 'buff');
+                    return;
+                }
             }
-            // Veneno por stacks: se acumulan en un único debuff
-            // Al final de la ronda se aplica daño = stacks totales y expira
-            const _stacksToAdd = Math.max(1, stacks || 1);
-            const existing = (target.statusEffects || []).find(function(e) { return e && normAccent(e.name||'') === 'veneno'; });
+            // Veneno acumulable por duración: si ya existe un stack activo, solo suma turnos
+            // El poisonTick NO se reinicia para mantener el daño progresivo continuo
+            const existing = (target.statusEffects || []).find(e => e && normAccent(e.name||'') === 'veneno');
             if (existing) {
-                existing.poisonStacks = (existing.poisonStacks || 0) + _stacksToAdd;
-                addLog('☠️ ' + targetName + ' acumula Veneno ' + existing.poisonStacks + 'S (+' + _stacksToAdd + ' stacks)', 'damage');
+                existing.duration = (existing.duration || 0) + duration;
+                addLog(`☠️ ${targetName} acumula +${duration} turnos de Veneno (total: ${existing.duration}t, tick actual: ${existing.poisonTick || 0})`, 'damage');
             } else {
-                target.statusEffects = target.statusEffects || [];
-                target.statusEffects.push({ name: 'Veneno', type: 'debuff', duration: 9999, permanent: false, emoji: '☠️', poisonStacks: _stacksToAdd });
-                addLog('☠️ ' + targetName + ' es envenenado — Veneno ' + _stacksToAdd + 'S', 'damage');
+                applyDebuff(targetName, { name: 'Veneno', type: 'debuff', duration, emoji: '☠️', poisonTick: 0 });
+                addLog(`☠️ ${targetName} es envenenado por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
             }
             if (typeof triggerIzanamiPartB === 'function') triggerIzanamiPartB(targetName);
             // SEÑOR DE LOS NAZGUL (Rey Brujo): cura 2 HP al aplicar Veneno en un enemigo
@@ -968,6 +953,7 @@ function applyDebuff(targetName, effectObj) {
                     const _rbC = gameState.characters[_rbN];
                     if (!_rbC || _rbC.isDead || !_rbC.passive) continue;
                     if (_rbC.passive.name !== 'Señor de los Nazgul') continue;
+                    // Verificar que el objetivo es enemigo del Rey Brujo
                     const _rbTarget = gameState.characters[targetName];
                     if (!_rbTarget || _rbTarget.team === _rbC.team) continue;
                     passiveExecuting = true;

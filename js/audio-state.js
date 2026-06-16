@@ -217,6 +217,12 @@
                 img: 'https://i.ibb.co/1fJqBYgz/Whats-App-Image-2026-04-16-at-12-10-35-PM.jpg',
                 passive: 'Espada de Ébano: Al inicio de cada ronda genera 4 puntos de cargas al equipo aliado.'
             },
+            'Fawkes': {
+                name: 'Fawkes',
+                hp: 10, maxHp: 10, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.ibb.co/wFzRWMB1/descarga-2.jpg',
+                passive: 'Destello de Fawkes: Al inicio de cada ronda 80% de probabilidad de aplicar debuff Ceguera durante 1 turno sobre los enemigos. Cada vez que un enemigo falla su ataque debido a la Ceguera, Fawkes recupera 3 HP y causa 1 de daño a cada enemigo.'
+            },
             'Señuelo': {
                 name: 'Señuelo',
                 hp: 5, maxHp: 5, summoner: null, team: null, statusEffects: [],

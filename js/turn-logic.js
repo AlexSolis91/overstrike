@@ -1631,8 +1631,6 @@
                 if (_roundComplete) {
                     // Procesar efectos de final de ronda ANTES de incrementar la ronda
                     processEndOfRoundEffects();
-                    // Procesar Veneno (stacks), Sangrado y Hemorragia al final de ronda
-                    if (typeof processEndOfRoundDebuffs === 'function') processEndOfRoundDebuffs();
                     
                     gameState.currentRound++;
                     gameState.turnsInRound = 0;
@@ -2135,6 +2133,21 @@
                         }
                     }
 
+                    // ── FAWKES (Destello de Fawkes): inicio de ronda → 80% Ceguera 1T a cada enemigo ──
+                    const _fawkes = Object.values(gameState.summons).find(function(s){ return s && s.name === 'Fawkes' && s.hp > 0; });
+                    if (_fawkes) {
+                        const _fwETeam = _fawkes.team === 'team1' ? 'team2' : 'team1';
+                        const _fwEnemies = Object.keys(gameState.characters).filter(function(n){
+                            const _c = gameState.characters[n]; return _c && _c.team === _fwETeam && !_c.isDead && _c.hp > 0;
+                        });
+                        _fwEnemies.forEach(function(n) {
+                            if (Math.random() < 0.80) {
+                                if (typeof applyDebuff === 'function') applyDebuff(n, { name: 'Ceguera', type: 'debuff', duration: 1, emoji: '👁️' });
+                                addLog('🔥 Destello de Fawkes: ' + n + ' recibe Ceguera 1T', 'debuff');
+                            }
+                        });
+                    }
+
                     // ── CABALLERO DE LA MUERTE (Espada de Ébano): inicio de ronda → +4 cargas al equipo aliado ──
                     const _caballero = Object.values(gameState.summons).find(function(s){ return s && s.name === 'Caballero de la Muerte' && s.hp > 0; });
                     if (_caballero) {
@@ -2218,6 +2231,21 @@
                     for (let n in gameState.characters) {
                         const c = gameState.characters[n];
                         if (c && !c.isDead && c.hp > 0) c.hpAtRoundStart = c.hp;
+                    }
+                    // ── MAESTRÍA DE LA VARITA DE SAÚCO (Albus Dumbledore): inicio de ronda → +3 cargas por enemigo derrotado ──
+                    for (const _adn in gameState.characters) {
+                        const _adc = gameState.characters[_adn];
+                        if (!_adc || _adc.isDead || _adc.hp <= 0 || !_adc.passive || _adc.passive.name !== 'Maestría de la Varita de Saúco') continue;
+                        const _adETeam = _adc.team === 'team1' ? 'team2' : 'team1';
+                        const _adDefeated = Object.keys(gameState.characters).filter(function(n) {
+                            const c = gameState.characters[n]; return c && c.team === _adETeam && c.isDead;
+                        }).length;
+                        if (_adDefeated > 0) {
+                            const _adGain = _adDefeated * 3;
+                            _adc.charges = Math.min(20, (_adc.charges||0) + _adGain);
+                            addLog('✨ Maestría de la Varita de Saúco: ' + _adn + ' genera ' + _adGain + ' cargas (' + _adDefeated + ' enemigo(s) derrotado(s))', 'buff');
+                        }
+                        break;
                     }
                     // ── RECALCULAR ORDEN DE TURNOS por velocidad actual (incluye revividos) ──
                     const _lastActed = gameState.turnOrder[gameState.currentTurnIndex]; // quién actuó último

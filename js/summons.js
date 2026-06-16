@@ -731,6 +731,21 @@
                 })) {
                     if (Math.random() < 0.5) {
                         addLog('👁️ Ceguera: ' + attackerName + ' falla el ataque (50%)', 'debuff');
+                        // FAWKES (Destello de Fawkes): el atacante falló por Ceguera → Fawkes +3HP + 1 daño a cada enemigo
+                        const _fwSummon = Object.values(gameState.summons).find(function(s){ return s && s.name === 'Fawkes' && s.hp > 0; });
+                        if (_fwSummon && _blindAtk.team !== _fwSummon.team) {
+                            passiveExecuting = true;
+                            _fwSummon.hp = Math.min(_fwSummon.maxHp, (_fwSummon.hp||0) + 3);
+                            addLog('🔥 Destello de Fawkes: Fawkes recupera 3 HP (ataque fallido por Ceguera)', 'heal');
+                            const _fwETeam = _fwSummon.team === 'team1' ? 'team2' : 'team1';
+                            for (const _fwn in gameState.characters) {
+                                const _fwc = gameState.characters[_fwn];
+                                if (!_fwc || _fwc.isDead || _fwc.hp <= 0 || _fwc.team !== _fwETeam) continue;
+                                applyDamageWithShield(_fwn, 1, null);
+                            }
+                            addLog('🔥 Destello de Fawkes: 1 daño a cada enemigo', 'damage');
+                            passiveExecuting = false;
+                        }
                         return; // Miss — no damage applied
                     }
                 }
@@ -914,8 +929,14 @@
                 return 0; // golpe esquivado
             }
 
-            // SANGRADO: daño aplicado al final de ronda (ver processEndOfRoundDebuffs en status-effects.js)
-            // Ya no suma daño adicional cuando el personaje recibe un golpe
+            // SANGRADO STACKEABLE: +1 daño por cada stack activo
+            if (attackerName !== null) {
+                const sangradoStacks = (target.statusEffects || []).filter(e => e && normAccent(e.name || '') === 'sangrado').length;
+                if (sangradoStacks > 0) {
+                    damage += sangradoStacks;
+                    addLog(`🩸 Sangrado x${sangradoStacks}: ${targetName} recibe +${sangradoStacks} daño`, 'damage');
+                }
+            }
 
             // DEBILITAR STACKEABLE: +50% daño por cada stack activo
             if (attackerName !== null) {
@@ -1306,6 +1327,28 @@
                     }
                     passiveExecuting = false;
                     return 0; // Portador NO recibe daño
+                }
+            }
+
+            // ── VARITA DE SAÚCO: 30% de reflejar CUALQUIER ataque recibido (daño, debuffs y efecto) ──
+            {
+                if (!passiveExecuting && remainingDamage > 0 &&
+                    (target.equippedRelics||[]).includes('Varita de Saúco') &&
+                    attackerName && attackerName !== targetName &&
+                    Math.random() < 0.30) {
+                    passiveExecuting = true;
+                    applyDamageWithShield(attackerName, remainingDamage, targetName);
+                    addLog('🪄 Varita de Saúco: ' + targetName + ' refleja ' + remainingDamage + ' daño a ' + attackerName, 'buff');
+                    if (gameState.selectedAbility) {
+                        const _wandDesc = ((gameState.selectedAbility.description)||'').toLowerCase();
+                        if (_wandDesc.includes('veneno') || _wandDesc.includes('poison')) { applyPoison(attackerName, 1); addLog('🪄 Varita de Saúco: Veneno reflejado a ' + attackerName, 'debuff'); }
+                        if (_wandDesc.includes('quemadura')) { applyFlatBurn(attackerName, 2, 1); addLog('🪄 Varita de Saúco: Quemadura reflejada a ' + attackerName, 'debuff'); }
+                        if (_wandDesc.includes('aturdimiento') || _wandDesc.includes('stun')) { if (typeof applyStun === 'function') applyStun(attackerName, 1); addLog('🪄 Varita de Saúco: Aturdimiento reflejado a ' + attackerName, 'debuff'); }
+                        if (_wandDesc.includes('sangrado')) { if (typeof applyBleed === 'function') applyBleed(attackerName, 1); addLog('🪄 Varita de Saúco: Sangrado reflejado a ' + attackerName, 'debuff'); }
+                        if (_wandDesc.includes('congelaci')) { if (typeof applyFreeze === 'function') applyFreeze(attackerName, 1); addLog('🪄 Varita de Saúco: Congelación reflejada a ' + attackerName, 'debuff'); }
+                    }
+                    passiveExecuting = false;
+                    return 0; // Portador NO recibe daño — reflejado completamente
                 }
             }
 

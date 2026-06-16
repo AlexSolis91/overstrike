@@ -202,106 +202,104 @@ function processBurnEffects(charName) {
                     rengoku.charges = Math.min(20, (rengoku.charges || 0) + 1);
                     addLog('🔥 Corazón Ardiente: Rengoku genera 1 carga', 'buff');
                 }
+                // MAESTRÍA DE LA VARITA DE SAÚCO (Albus Dumbledore): +5 cargas cuando un enemigo recibe daño por Quemadura
+                for (const _adn in gameState.characters) {
+                    const _adc = gameState.characters[_adn];
+                    if (!_adc || _adc.isDead || _adc.hp <= 0 || _adc.team === char.team) continue;
+                    if (!_adc.passive || _adc.passive.name !== 'Maestría de la Varita de Saúco') continue;
+                    _adc.charges = Math.min(20, (_adc.charges||0) + 5);
+                    addLog('✨ Maestría de la Varita de Saúco: ' + _adn + ' genera 5 cargas (Quemadura en ' + charName + ')', 'buff');
+                    break;
+                }
             }
         }
 
         function processNewDebuffEffects(charName) {
-            // Solo efectos que ocurren al inicio del turno del personaje afectado
-            // Veneno, Sangrado y Hemorragia se procesan al FINAL DE RONDA en processEndOfRoundDebuffs
             const char = gameState.characters[charName];
             if (!char || !char.statusEffects) return;
-            // (reserved for future per-turn debuff effects)
-        }
 
-        // Procesa Veneno, Sangrado y Hemorragia al final de cada ronda para todos los personajes
-        function processEndOfRoundDebuffs() {
-            for (const charName in gameState.characters) {
-                const char = gameState.characters[charName];
-                if (!char || char.isDead || char.hp <= 0 || !char.statusEffects) continue;
+            // VENENO: un solo stack consolidado con daño progresivo por continuidad
+            const poisonEffect = char.statusEffects.find(e => e && normAccent(e.name||'') === 'veneno');
+            if (poisonEffect) {
+                poisonEffect.poisonTick = (poisonEffect.poisonTick || 0) + 1;
+                let totalVenenoDmg = poisonEffect.poisonTick;
+                const hasChargeDrain = !!poisonEffect.poisonChargeDrain;
 
-                // ── VENENO: daño = stacks acumulados, luego expira ──
-                const _venenoDeb = char.statusEffects.find(function(e) { return e && normAccent(e.name||'') === 'veneno'; });
-                if (_venenoDeb) {
-                    const _stacks = _venenoDeb.poisonStacks || 1;
-                    let _venenoDmg = _stacks;
-
-                    // PILAR DEL INSECTO (Shinobu): daño doble
-                    if (!passiveExecuting) {
-                        const _eTeam = char.team === 'team1' ? 'team2' : 'team1';
-                        for (const _sn in gameState.characters) {
-                            const _sc = gameState.characters[_sn];
-                            if (!_sc || _sc.isDead || _sc.team !== _eTeam) continue;
-                            if (_sc.passive && _sc.passive.name === 'Pilar del Insecto') {
-                                _venenoDmg *= 2;
-                                addLog('🦋 Pilar del Insecto: Veneno daño doble (' + _venenoDmg + ')', 'damage');
-                                break;
-                            }
-                        }
-                    }
-
-                    applyDamageWithShield(charName, _venenoDmg, null);
-                    addLog('☠️ ' + charName + ' recibe ' + _venenoDmg + ' daño por Veneno ' + _stacks + 'S (expira)', 'damage');
-
-                    // Pasivas reactivas al daño de veneno
-                    if (!passiveExecuting) {
-                        // ANARQUÍA (Joker): 50% stun por daño veneno
-                        const _eTeam2 = char.team === 'team1' ? 'team2' : 'team1';
-                        for (const _jn in gameState.characters) {
-                            const _jc = gameState.characters[_jn];
-                            if (!_jc || _jc.isDead || _jc.team !== _eTeam2 || !_jc.passive || _jc.passive.name !== 'Anarquía') continue;
-                            if (Math.random() < 0.50) { applyStun(charName, 1); addLog('🃏 Anarquía: ' + charName + ' queda Aturdido por daño de Veneno', 'debuff'); }
+                // PILAR DEL INSECTO (Shinobu Kocho): Veneno activo en enemigos causa daño doble
+                if (!passiveExecuting) {
+                    const _shinTeam = char.team === 'team1' ? 'team2' : 'team1';
+                    for (const _sn in gameState.characters) {
+                        const _sc = gameState.characters[_sn];
+                        if (!_sc || _sc.isDead || _sc.hp <= 0 || _sc.team !== _shinTeam) continue;
+                        if (_sc.passive && _sc.passive.name === 'Pilar del Insecto') {
+                            totalVenenoDmg *= 2;
+                            addLog('🦋 Pilar del Insecto: Veneno daño doble (' + totalVenenoDmg + ')', 'damage');
                             break;
                         }
-                        // PILAR DEL INSECTO (Shinobu): +1 carga al equipo aliado cuando Shinobu recibe veneno
-                        if (char.passive && char.passive.name === 'Pilar del Insecto') {
-                            for (const _an in gameState.characters) {
-                                const _a = gameState.characters[_an];
-                                if (!_a || _a.isDead || _a.team !== char.team) continue;
-                                _a.charges = Math.min(20, (_a.charges||0) + 1);
+                    }
+                }
+
+                applyDamageWithShield(charName, totalVenenoDmg, null);
+
+                // ANARQUÍA (Joker): 50% stun when a character takes poison damage
+                if (!passiveExecuting) {
+                    const _jkrChar = gameState.characters[charName];
+                    if (_jkrChar) {
+                        const _jkrEnemyTeam = _jkrChar.team === 'team1' ? 'team2' : 'team1';
+                        for (const _jkn in gameState.characters) {
+                            const _jkc = gameState.characters[_jkn];
+                            if (!_jkc || _jkc.isDead || _jkc.hp <= 0 || _jkc.team !== _jkrEnemyTeam) continue;
+                            if (!_jkc.passive || _jkc.passive.name !== 'Anarquía') continue;
+                            if (Math.random() < 0.50) {
+                                applyStun(charName, 1);
+                                addLog('🃏 Anarquía: ' + charName + ' queda Aturdido por daño de Veneno', 'debuff');
                             }
-                            addLog('🦋 Pilar del Insecto: equipo aliado +1 carga (Shinobu recibió veneno)', 'buff');
-                        }
-                        // PROGENITOR DEMONIACO (Muzan): +1 carga cuando veneno hace daño
-                        for (const _mn in gameState.characters) {
-                            const _mc = gameState.characters[_mn];
-                            if (!_mc || _mc.isDead || _mc.team === char.team || !_mc.passive || _mc.passive.name !== 'Progenitor Demoniaco') continue;
-                            _mc.charges = Math.min(20, (_mc.charges||0) + 1);
-                            addLog('🧛 Progenitor Demoniaco: Muzan +1 carga (veneno activo)', 'buff');
                             break;
                         }
-                        // LAZO DIVINO (Goku Black): drenar cargas
-                        if (_venenoDeb.poisonChargeDrain && Math.random() < 0.5 && char.charges > 0) {
-                            char.charges = Math.max(0, char.charges - 2);
-                            addLog('🌀 Lazo Divino: ' + charName + ' pierde 2 cargas por veneno', 'damage');
-                        }
-                        // MVP
-                        if (typeof registerPoisonDamage === 'function') registerPoisonDamage(_venenoDmg);
                     }
-
-                    // Veneno expira tras el daño
-                    char.statusEffects = char.statusEffects.filter(function(e) { return e !== _venenoDeb; });
+                }
+                addLog('☠️ ' + charName + ' recibe ' + totalVenenoDmg + ' de daño por Veneno (tick ' + poisonEffect.poisonTick + ')', 'damage');
+                if (typeof _animCard === 'function') _animCard(charName, 'anim-pulse-green', 600);
+                // MVP: registrar daño por veneno + daño causado al aplicador
+                if (typeof registerPoisonDamage === 'function') registerPoisonDamage(totalVenenoDmg);
+                if (gameState.battleStats && gameState.battleStats.poisonAppliers) {
+                    const _pApp = Array.from(gameState.battleStats.poisonAppliers);
+                    if (_pApp.length > 0 && typeof _mvp === 'function') {
+                        const _share = totalVenenoDmg / _pApp.length;
+                        _pApp.forEach(function(n){ _mvp('damageDone', n, _share); });
+                    }
                 }
 
-                // ── SANGRADO: 1-2 daño al final de ronda, dura los turnos especificados ──
-                const _sangradoDeb = char.statusEffects.find(function(e) { return e && normAccent(e.name||'') === 'sangrado'; });
-                if (_sangradoDeb) {
-                    const _bleedDmg = 1 + Math.floor(Math.random() * 2); // 1-2
-                    applyDamageWithShield(charName, _bleedDmg, null);
-                    addLog('🩸 ' + charName + ' recibe ' + _bleedDmg + ' daño por Sangrado (fin de ronda)', 'damage');
-                    // El debuff expira por turnos (se decrementa en updateStatusEffectDurations)
+                // PILAR DEL INSECTO (Shinobu): genera 1 carga al equipo aliado cuando Shinobu recibe daño de Veneno
+                if (!passiveExecuting) {
+                    const _shinSelf = gameState.characters[charName];
+                    if (_shinSelf && (_shinSelf.passive && _shinSelf.passive.name === 'Pilar del Insecto')) {
+                        for (const _an in gameState.characters) {
+                            const _a = gameState.characters[_an];
+                            if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _shinSelf.team) continue;
+                            _a.charges = Math.min(20, (_a.charges||0) + 1);
+                        }
+                        addLog('🦋 Pilar del Insecto: Equipo aliado genera 1 carga (Shinobu recibió daño de Veneno)', 'buff');
+                    }
                 }
 
-                // ── HEMORRAGIA: 3-6 daño al final de ronda + pierde cargas equivalentes ──
-                const _hemorDeb = char.statusEffects.find(function(e) { return e && normAccent(e.name||'') === 'hemorragia'; });
-                if (_hemorDeb) {
-                    const _hemorDmg = 3 + Math.floor(Math.random() * 4); // 3-6
-                    applyDamageWithShield(charName, _hemorDmg, null);
-                    char.charges = Math.max(0, (char.charges||0) - _hemorDmg);
-                    addLog('💀 ' + charName + ' recibe ' + _hemorDmg + ' daño por Hemorragia y pierde ' + _hemorDmg + ' cargas (fin de ronda)', 'damage');
-                    // Hemorragia NO expira — es permanente hasta ser limpiada
+                // PROGENITOR DEMONIACO (Muzan): genera 1 carga cuando veneno hace daño
+                const muzanP = gameState.characters['Muzan Kibutsuji'];
+                if (muzanP && !muzanP.isDead && muzanP.hp > 0 && muzanP.team !== (gameState.characters[charName] && gameState.characters[charName].team)) {
+                    muzanP.charges = Math.min(20, (muzanP.charges || 0) + 1);
+                    addLog('🧛‍♂️ Progenitor Demoniaco: Muzan genera 1 carga (veneno activo)', 'buff');
+                }
+                // LAZO DIVINO (Goku Black): 50% chance de drenar 2 cargas por tick
+                if (hasChargeDrain && Math.random() < 0.5) {
+                    const victim = gameState.characters[charName];
+                    if (victim && victim.charges > 0) {
+                        victim.charges = Math.max(0, victim.charges - 2);
+                        addLog('🌀 Lazo Divino: ' + charName + ' pierde 2 cargas por el veneno', 'damage');
+                    }
                 }
             }
         }
+
         function processSolarBurnEffects(charName) {
             if (charName === 'Antares' || charName === 'Antares v2') {
                 const _antC = gameState.characters[charName];
