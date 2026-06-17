@@ -1798,6 +1798,58 @@
                 }
 
             // ── DESTELLO DE LA DANZA AULLANTE (Minato nuevo special 1) ──
+            } else if (ability.effect === 'gate_of_babylon_gil') {
+                // Gate of Babylon: 2 daño AOE. Cada enemigo golpeado tiene 50% INDEPENDIENTE de recibir crítico.
+                const _gobAtk = gameState.characters[gameState.selectedCharacter];
+                const _gobTeam = _gobAtk ? _gobAtk.team : 'team2';
+                const _gobETeam = _gobTeam === 'team1' ? 'team2' : 'team1';
+                checkAndRemoveStealth(_gobETeam);
+                const _gobBaseDmg = (ability.damage !== undefined ? ability.damage : 2);
+                if (checkAndRedirectAOEMegaProv(_gobETeam, _gobBaseDmg, gameState.selectedCharacter)) {
+                    addLog('👑 Gate of Babylon redirigido por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _gobETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune a Gate of Babylon (Esquiva Área)', 'buff'); continue; }
+                        let _gobDmg = _gobBaseDmg;
+                        let _gobIsCrit = false;
+                        if (Math.random() < 0.50) {
+                            _gobDmg *= 2;
+                            _gobIsCrit = true;
+                        }
+                        applyDamageWithShield(_n, _gobDmg, gameState.selectedCharacter);
+                        addLog('👑 Gate of Babylon: ' + _gobDmg + ' daño a ' + _n + (_gobIsCrit ? ' (¡Crítico!)' : ''), 'damage');
+                        // REGLA DE ORO: por cada golpe crítico → Gilgamesh +1 carga, +1 HP, 2 debuffs aleatorios al golpeado
+                        if (_gobIsCrit && _gobAtk && !_gobAtk.isDead && _gobAtk.hp > 0) {
+                            _gobAtk.charges = Math.min(20, (_gobAtk.charges||0) + 1);
+                            _gobAtk.hp = Math.min(_gobAtk.maxHp, (_gobAtk.hp||0) + 1);
+                            addLog('👑 Regla de Oro: Gilgamesh genera 1 carga y se cura 1 HP', 'buff');
+                            const _gobDebuffPool = ['Quemadura','Veneno','Sangrado','Confusion','Debilitar','Congelacion','Silenciar','Miedo','Agotamiento','Aturdimiento'];
+                            for (let _gi = 0; _gi < 2; _gi++) {
+                                const _gobChosen = _gobDebuffPool[Math.floor(Math.random() * _gobDebuffPool.length)];
+                                if (_gobChosen === 'Quemadura') applyFlatBurn(_n, 2, 1);
+                                else if (_gobChosen === 'Veneno') { if (typeof applyPoison === 'function') applyPoison(_n, 1); }
+                                else if (_gobChosen === 'Sangrado') applyBleed(_n, 1);
+                                else if (_gobChosen === 'Confusion') applyConfusion(_n, 1);
+                                else if (_gobChosen === 'Debilitar') applyWeaken(_n, 2);
+                                else if (_gobChosen === 'Miedo') applyFear(_n, 1);
+                                else if (_gobChosen === 'Aturdimiento') applyStun(_n, 1);
+                                else if (_gobChosen === 'Congelacion') applyFreeze(_n, 1);
+                                else if (_gobChosen === 'Silenciar') { if (typeof applySilenciar === 'function') applySilenciar(_n, 2); }
+                                else if (_gobChosen === 'Agotamiento') {
+                                    const _gobRedAgt = Math.floor(Math.random() * 3) + 1;
+                                    const _gobAgtTgt = gameState.characters[_n];
+                                    if (_gobAgtTgt) _gobAgtTgt.charges = Math.max(0, (_gobAgtTgt.charges||0) - _gobRedAgt);
+                                    addLog('💨 ' + _n + ' sufre Agotamiento: pierde ' + _gobRedAgt + ' carga(s)', 'debuff');
+                                }
+                                addLog('👑 Regla de Oro: ' + _n + ' recibe ' + _gobChosen, 'debuff');
+                            }
+                        }
+                    }
+                    if (typeof applyAOEToSummons === 'function') applyAOEToSummons(_gobETeam, _gobBaseDmg, gameState.selectedCharacter);
+                }
+
             } else if (ability.effect === 'destello_danza') {
                 const enemyTeamDD = attacker.team === 'team1' ? 'team2' : 'team1';
                 checkAndRemoveStealth(enemyTeamDD);

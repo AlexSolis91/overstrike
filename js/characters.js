@@ -211,7 +211,7 @@
                 hp: 20, maxHp: 20, speed: 89, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/qMnfxHyt/Rey-de-los-H-roes-Gilgamesh.jpg',
-                passive: { name: 'Regla de Oro', description: 'Por cada golpe crítico: Gilgamesh genera 1 carga, se cura 1 HP y aplica 2 debuffs aleatorios al enemigo golpeado. Gilgamesh no causa daño a enemigos que tengan debuffs activos.' },
+                passive: { name: 'Regla de Oro', description: 'Por cada golpe crítico: Gilgamesh genera 1 carga, se cura 1 HP y aplica 2 debuffs aleatorios al enemigo golpeado. Gilgamesh no recibe daño de enemigos que tengan debuffs activos.' },
                 abilities: [
                     { name: 'Gate of Babylon',          type: 'basic',   cost: 0,  chargeGain: 1, damage: 2, target: 'aoe',    effect: 'gate_of_babylon_gil', description: 'Causa 2 AOE. Cada enemigo tiene 50% de probabilidad de recibir golpe crítico.' },
                     { name: 'Espada Merodach',           type: 'special', cost: 5,  chargeGain: 0, damage: 3, target: 'mt',     effect: 'espada_merodach',     description: 'Golpea hasta 2 veces a hasta 2 enemigos (MT). Cada golpe tiene 50% de crítico. Por cada crítico elimina 3 cargas del equipo rival.' },
