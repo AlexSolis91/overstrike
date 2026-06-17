@@ -8329,6 +8329,33 @@
                 });
 
             // ══════════════════════════════════════════════════════
+            // ALBUS DUMBLEDORE — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'chispa_de_sauco_dumbledore') {
+                // Chispa de Saúco: 2 daño ST. Silenciar 2T a 3 enemigos aleatorios. Dumbledore genera 1-8 cargas adicionales.
+                const _csAtk = gameState.characters[gameState.selectedCharacter];
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('✨ Chispa de Saúco: ' + finalDamage + ' daño a ' + targetName, 'damage');
+
+                const _csTeam = _csAtk ? _csAtk.team : 'team2';
+                const _csETeam = _csTeam === 'team1' ? 'team2' : 'team1';
+                const _csEnemies = Object.keys(gameState.characters).filter(function(n) {
+                    const c = gameState.characters[n]; return c && c.team === _csETeam && !c.isDead && c.hp > 0;
+                });
+                const _csShuffled = _csEnemies.sort(function(){ return Math.random()-0.5; }).slice(0, 3);
+                _csShuffled.forEach(function(n) {
+                    if (typeof applySilenciar === 'function') applySilenciar(n, 2);
+                });
+                if (_csShuffled.length > 0) addLog('✨ Chispa de Saúco: ' + _csShuffled.join(', ') + ' reciben Silenciar 2T', 'debuff');
+
+                if (_csAtk) {
+                    const _csBonusCharges = Math.floor(Math.random() * 8) + 1; // 1 a 8
+                    _csAtk.charges = Math.min(20, (_csAtk.charges||0) + _csBonusCharges);
+                    addLog('✨ Chispa de Saúco: Dumbledore genera ' + _csBonusCharges + ' cargas adicionales', 'buff');
+                }
+
+            // ══════════════════════════════════════════════════════
             // BJORN IRONSIDE — handlers
             // ══════════════════════════════════════════════════════
 

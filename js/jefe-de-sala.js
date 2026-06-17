@@ -49,7 +49,7 @@
             { name:'Muerte y Descomposición',  type:'over',    cost:20, chargeGain:0, damage:10, target:'aoe',   effect:'muerte_descomposicion_lich',          description:'10 daño AOE + Mega Posesión. +3 daño por cada debuff activo en el objetivo.' }
         ],
         'Albus Dumbledore': [
-            { name:'Chispa de Saúco',          type:'basic',   cost:0,  chargeGain:2, damage:2,  target:'single', effect:'chispa_de_sauco_dumbledore',          description:'2 daño ST. Aplica Silenciar 2T a 3 enemigos aleatorios. Si el objetivo golpeado tenía algún debuff activo antes del ataque, Dumbledore genera 3 cargas.' },
+            { name:'Chispa de Saúco',          type:'basic',   cost:0,  chargeGain:2, damage:2,  target:'single', effect:'chispa_de_sauco_dumbledore',          description:'2 daño ST. Aplica debuff Silenciar sobre 3 enemigos aleatorios durante 2 turnos. Albus Dumbledore genera de 1 a 8 cargas adicionales.' },
             { name:'Lamento de Fawkes',        type:'special', cost:5,  chargeGain:0, damage:0,  target:'self',   effect:'lamento_de_fawkes_dumbledore',        description:'Invoca a Fawkes. Bloqueado mientras Fawkes esté en el campo.' },
             { name:'Partis Temporus',          type:'special', cost:8,  chargeGain:0, damage:3,  target:'aoe',    effect:'partis_temporus_dumbledore',          description:'3 daño AOE. Aplica Quemadura 3HP por 3 turnos a los enemigos golpeados.' },
             { name:'Prisión de Agua y Fuego',  type:'over',    cost:15, chargeGain:0, damage:5,  target:'single', effect:'prision_agua_fuego_dumbledore',       description:'5 daño ST + 45 daño adicional repartido aleatoriamente entre todos los enemigos.' }

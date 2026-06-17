@@ -410,6 +410,65 @@
                 let chosen = usable[0];
 
                 // ═══════════════════════════════════════════════════════════════════
+                // ALBUS DUMBLEDORE — Prioridad específica:
+                // Over > Partis Temporus > Lamento de Fawkes (si Fawkes no invocado) > cualquier otro disponible
+                // Este bloque hace return inmediato para que nada más cambie chosen
+                // ═══════════════════════════════════════════════════════════════════
+                if (window._bossMode && char.isBoss && charName === 'Albus Dumbledore') {
+                    let _adChosen = null;
+                    const _adOver = usable.find(function(ab){ return ab.type === 'over'; });
+                    if (_adOver) {
+                        _adChosen = _adOver;
+                    } else {
+                        const _adPartis = usable.find(function(ab){ return ab.effect === 'partis_temporus_dumbledore'; });
+                        if (_adPartis) {
+                            _adChosen = _adPartis;
+                        } else {
+                            const _adFawkesAlive = Object.values(gameState.summons||{}).some(function(s){ return s && s.name === 'Fawkes' && s.hp > 0; });
+                            const _adLamento = usable.find(function(ab){ return ab.effect === 'lamento_de_fawkes_dumbledore'; });
+                            if (_adLamento && !_adFawkesAlive) {
+                                _adChosen = _adLamento;
+                            } else {
+                                // Fawkes ya invocado (o Lamento no disponible) → cualquier otro movimiento disponible
+                                const _adOthers = usable.filter(function(ab){
+                                    return ab.effect !== 'lamento_de_fawkes_dumbledore' && ab.effect !== 'partis_temporus_dumbledore' && ab.type !== 'over';
+                                });
+                                if (_adOthers.length > 0) {
+                                    _adOthers.sort(function(a, b){ return (b.damage||0) - (a.damage||0); });
+                                    _adChosen = _adOthers[0];
+                                } else {
+                                    _adChosen = usable[0];
+                                }
+                            }
+                        }
+                    }
+                    chosen = _adChosen || chosen;
+                    // ── Seleccionar objetivo: más peligroso (cargas) o más débil (HP) ──
+                    let _adFinalTarget = enemies.length > 0 ? enemies.reduce(function(best, n) {
+                        const cb = gameState.characters[best];
+                        const cn = gameState.characters[n];
+                        if (!cn) return best;
+                        const scoreB = (cb ? cb.charges : 0) * 3 + (cb ? (1 - cb.hp / (cb.maxHp||1)) * 2 : 0);
+                        const scoreN = (cn.charges||0) * 3 + (1 - (cn.hp||0) / (cn.maxHp||1)) * 2;
+                        return scoreN > scoreB ? n : best;
+                    }, enemies[0]) : null;
+
+                    addLog('✨ ' + charName + ' decide usar ' + chosen.name + (_adFinalTarget ? ' sobre ' + _adFinalTarget : ''), 'info');
+                    gameState.selectedAbility = chosen;
+                    gameState.adjustedCost = chosen.cost;
+                    setTimeout(function() {
+                        if (chosen.target === 'aoe' || chosen.target === 'self') {
+                            executeAbility(charName);
+                        } else if (_adFinalTarget) {
+                            executeAbility(_adFinalTarget);
+                        } else {
+                            endTurn();
+                        }
+                    }, chosen.type === 'over' ? 200 : 400);
+                    return; // ← Salida temprana — nada sobreescribe la decisión de Dumbledore
+                }
+
+                // ═══════════════════════════════════════════════════════════════════
                 // JEFE DE SALA — Prioridad ABSOLUTA: Over > Mayor Daño
                 // Este bloque hace return inmediato para que nada más cambie chosen
                 // ═══════════════════════════════════════════════════════════════════
