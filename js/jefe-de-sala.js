@@ -63,7 +63,7 @@
     var BOSS_DEFAULT_PASSIVES = {
         'Albus Dumbledore': {
             name: 'Maestría de la Varita de Saúco',
-            description: 'Albus Dumbledore es inmune a debuffs. Cada vez que un enemigo realiza un ataque especial, Albus Dumbledore se cura 20 HP y genera 3 cargas. Cada vez que un enemigo recibe daño por debuff Quemaduras, Albus Dumbledore genera 5 cargas. Al inicio de cada ronda, Albus Dumbledore genera 3 cargas por cada enemigo derrotado.'
+            description: 'Albus Dumbledore es inmune a debuffs. Cada vez que un enemigo realiza un ataque especial u Over, Albus Dumbledore se cura 30 HP y genera 3 cargas. Cada vez que un enemigo recibe daño por debuff Quemaduras, Albus Dumbledore genera 5 cargas. Al inicio de cada ronda, Albus Dumbledore genera 3 cargas por cada enemigo derrotado.'
         }
     };
     window.BOSS_DEFAULT_PASSIVES = BOSS_DEFAULT_PASSIVES;

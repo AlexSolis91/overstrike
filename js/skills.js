@@ -7636,6 +7636,26 @@
                 }
             }
 
+            // MAESTRÍA DE LA VARITA DE SAÚCO (Albus Dumbledore): cuando un enemigo usa Especial u Over → +30 HP y +3 cargas
+            if (ability && (ability.type === 'special' || ability.type === 'over') && !passiveExecuting) {
+                const _adAtk = gameState.characters[gameState.selectedCharacter];
+                if (_adAtk) {
+                    const _adDefTeam = _adAtk.team === 'team1' ? 'team2' : 'team1';
+                    for (const _adn in gameState.characters) {
+                        const _adc = gameState.characters[_adn];
+                        if (!_adc || _adc.isDead || _adc.hp <= 0 || _adc.team !== _adDefTeam) continue;
+                        if (!_adc.passive || _adc.passive.name !== 'Maestría de la Varita de Saúco') continue;
+                        passiveExecuting = true;
+                        if (typeof applyHeal === 'function') applyHeal(_adn, 30, 'Maestría de la Varita de Saúco');
+                        else _adc.hp = Math.min(_adc.maxHp, (_adc.hp||0) + 30);
+                        _adc.charges = Math.min(20, (_adc.charges||0) + 3);
+                        addLog('✨ Maestría de la Varita de Saúco: ' + _adn + ' recupera 30 HP y gana 3 cargas (especial/over enemigo)', 'heal');
+                        passiveExecuting = false;
+                        break;
+                    }
+                }
+            }
+
             // PHALANX (Leonidas): recupera 3 HP cuando un enemigo usa especial/over
             if (ability && (ability.type === 'special' || ability.type === 'over') && !passiveExecuting) {
                 const _plAtk = gameState.characters[gameState.selectedCharacter];
@@ -8812,8 +8832,15 @@
                 // Get current damage/burn multiplier (doubles each use, starts at 1)
                 if (!_jarAtk._juicioUses) _jarAtk._juicioUses = 0;
                 const _jarMult = Math.pow(2, _jarAtk._juicioUses);
-                const _jarDmg = 4 * _jarMult;
+                let _jarDmg = 4 * _jarMult;
                 const _jarBurn = 4 * _jarMult;
+                // TOPE contra Jefe de Sala: el daño base de este movimiento nunca supera 150
+                const _jarTgt = gameState.characters[targetName];
+                const _jarTgtIsBoss = window._bossMode && _jarTgt && _jarTgt.isBoss;
+                if (_jarTgtIsBoss && _jarDmg > 150) {
+                    _jarDmg = 150;
+                    addLog('☀️ Juicio del Astro Rey: daño limitado a 150 (máximo contra Jefe de Sala)', 'info');
+                }
                 // Apply damage to target
                 applyDamageWithShield(targetName, _jarDmg, gameState.selectedCharacter);
                 addLog('☀️ Juicio del Astro Rey: ' + _jarDmg + ' daño a ' + targetName + ' (×' + _jarMult + ')', 'damage');
