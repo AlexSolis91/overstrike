@@ -861,7 +861,6 @@
             _arcanePityIntervalId = setInterval(tick, 1000);
         }
 
-        async function loadListings() {
             const list = document.getElementById('market-listings-list');
             list.innerHTML = '<div style="color:#555;text-align:center;padding:20px;font-size:.8rem;">Cargando...</div>';
             const snap = await db.ref('market/listings').once('value');
@@ -1092,6 +1091,12 @@
                 portrait: 'https://i.ibb.co/q365QSyQ/PS.jpg',
                 hp: 15000, maxHp: 15000, speed: 80,
                 passive: { name: 'Rey de la Muerte', description: 'Cada debuff aplicado al equipo enemigo genera 5 cargas. Inicio de ronda: 40% congelación, miedo y posesión al equipo enemigo. Al matar un enemigo, revive como aliado con 50% HP y 10 cargas.' }
+            },
+            'albus_dumbledore': {
+                name: 'Albus Dumbledore',
+                portrait: 'https://i.ibb.co/LX4h03vQ/image.png',
+                hp: 10000, maxHp: 10000, speed: 80,
+                passive: { name: 'Maestría de la Varita de Saúco', description: 'Albus Dumbledore es inmune a debuffs. Cada vez que un enemigo realiza un ataque especial, Albus Dumbledore se cura 20 HP y genera 3 cargas. Cada vez que un enemigo recibe daño por debuff Quemaduras, Albus Dumbledore genera 5 cargas. Al inicio de cada ronda, Albus Dumbledore genera 3 cargas por cada enemigo derrotado.' }
             }
         };
         window.BOSS_DATA = BOSS_DATA;
@@ -2031,6 +2036,13 @@
                         <div style="font-family:Orbitron,sans-serif;font-size:.7rem;color:#a855f7;font-weight:700;">LICH KING</div>
                         <div style="font-size:.6rem;color:#666;margin-top:2px;">15,000 HP</div>
                         <div style="font-size:.58rem;color:#555;margin-top:1px;">Rey de la Muerte</div>
+                    </div>
+                    <div onclick="adminSelectBoss('albus_dumbledore',this)" id="bosscard-albus_dumbledore"
+                        style="background:rgba(0,150,80,0.08);border:2px solid rgba(0,150,80,0.3);border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:all .2s;">
+                        <img src="https://i.ibb.co/LX4h03vQ/image.png" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #00aa55;margin-bottom:6px;" onerror="this.style.display='none'">
+                        <div style="font-family:Orbitron,sans-serif;font-size:.7rem;color:#4ade80;font-weight:700;">DUMBLEDORE</div>
+                        <div style="font-size:.6rem;color:#666;margin-top:2px;">10,000 HP</div>
+                        <div style="font-size:.58rem;color:#555;margin-top:1px;">Varita de Saúco</div>
                     </div>
                 </div>
 
