@@ -715,6 +715,10 @@
         }
 
         function applyDamageWithShield(targetName, damage, attackerName = null) {
+            // Capturar y consumir el flag de fuente de daño por debuff (Visión Esmeralda) — se setea antes
+            // de la llamada desde los procesadores de fin de ronda de Quemadura/Veneno/Sangrado/Hemorragia
+            const _debuffDamageSource = gameState._currentDamageSource || null;
+            gameState._currentDamageSource = null;
             // ── CABALLERO DE LA NOCHE (Batman): inmune a daño de movimientos especiales ──
             if (!passiveExecuting && gameState.selectedAbility && gameState.selectedAbility.type === 'special') {
                 const _batTarget = gameState.characters[targetName];
@@ -1347,8 +1351,8 @@
 
             target.hp = Math.max(0, target.hp - remainingDamage);
 
-            // ── VISIÓN ESMERALDA (Linterna Verde): un aliado recibe daño directo → cura 3 HP a todo el equipo aliado ──
-            if (remainingDamage > 0 && !passiveExecuting) {
+            // ── VISIÓN ESMERALDA (Linterna Verde): un aliado recibe daño por Quemadura/Veneno/Sangrado/Hemorragia → cura 3 HP a todo el equipo aliado ──
+            if (remainingDamage > 0 && !passiveExecuting && _debuffDamageSource) {
                 for (const _lvn in gameState.characters) {
                     const _lvc = gameState.characters[_lvn];
                     if (!_lvc || _lvc.isDead || _lvc.hp <= 0 || !_lvc.passive) continue;
@@ -1361,7 +1365,7 @@
                         if (typeof applyHeal === 'function') applyHeal(_ln, 3, 'Visión Esmeralda');
                         else _lc.hp = Math.min(_lc.maxHp, (_lc.hp||0) + 3);
                     }
-                    addLog('💚 Visión Esmeralda: el equipo aliado recupera 3 HP (' + targetName + ' recibió daño)', 'heal');
+                    addLog('💚 Visión Esmeralda: el equipo aliado recupera 3 HP (' + targetName + ' recibió daño por ' + _debuffDamageSource + ')', 'heal');
                     passiveExecuting = false;
                     break;
                 }

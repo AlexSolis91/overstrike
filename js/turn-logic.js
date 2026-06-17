@@ -2466,6 +2466,7 @@
                                     }
                                 }
                             }
+                            gameState._currentDamageSource = 'Veneno'; // Visión Esmeralda
                             applyDamageWithShield(_eorN, _eorPoisonDmg, null);
                             addLog('☠️ ' + _eorN + ' recibe ' + _eorPoisonDmg + ' de daño por Veneno (' + (_eorPoison.poisonStacks||0) + 'S) — el debuff expira', 'damage');
                             if (typeof _animCard === 'function') _animCard(_eorN, 'anim-pulse-green', 600);
@@ -2492,6 +2493,7 @@
                     const _eorHemo = (gameState.characters[_eorN] && gameState.characters[_eorN].statusEffects || []).find(function(e){ return e && normAccent(e.name||'') === 'hemorragia'; });
                     if (_eorHemo && !_eorC.isDead && _eorC.hp > 0) {
                         const _eorHemoDmg = Math.floor(Math.random() * 4) + 3; // 3 a 6
+                        gameState._currentDamageSource = 'Hemorragia'; // Visión Esmeralda
                         applyDamageWithShield(_eorN, _eorHemoDmg, null);
                         const _eorHemoChar = gameState.characters[_eorN];
                         if (_eorHemoChar) {
@@ -2505,6 +2507,7 @@
                     const _eorBleed = (gameState.characters[_eorN] && gameState.characters[_eorN].statusEffects || []).find(function(e){ return e && normAccent(e.name||'') === 'sangrado'; });
                     if (_eorBleed && !_eorC.isDead && _eorC.hp > 0) {
                         const _eorBleedDmg = Math.floor(Math.random() * 2) + 1; // 1 a 2
+                        gameState._currentDamageSource = 'Sangrado'; // Visión Esmeralda
                         applyDamageWithShield(_eorN, _eorBleedDmg, null);
                         addLog('🩸 ' + _eorN + ' recibe ' + _eorBleedDmg + ' de daño por Sangrado', 'damage');
                         if (typeof _animCard === 'function') _animCard(_eorN, 'anim-pulse-red', 600);
