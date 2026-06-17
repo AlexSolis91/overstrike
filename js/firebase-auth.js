@@ -3565,7 +3565,6 @@
         }
 
         // ── Lee el estado de pity del Cofre Arcano para mostrar en la UI ──
-        // Devuelve null si no hay racha activa (expirada o nunca abierto)
         const ARCANE_PITY_WINDOW_MS = 240000; // 240 segundos
         async function getArcanePityData(uid) {
             const pitySnap = await db.ref('users/' + uid + '/arcane_pity').once('value');
