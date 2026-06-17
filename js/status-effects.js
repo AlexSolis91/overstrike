@@ -113,10 +113,6 @@
             // Apply a burn that does flat HP damage (not percent)
             const target = gameState.characters[targetName];
             if (!target) return;
-            if (target.passive && target.passive.name === 'Maestría de la Varita de Saúco') {
-                addLog('✨ Maestría de la Varita de Saúco: ' + targetName + ' es inmune a Quemadura', 'buff');
-                return;
-            }
             if ((targetName === 'Saitama' || targetName === 'Saitama v2')) {
                 addLog('🦸 Saitama es inmune a Quemadura (Espíritu del Héroe)', 'buff');
                 return;
@@ -141,6 +137,11 @@
             }
             if (hasStatusEffect(targetName, 'Proteccion Sagrada') || hasStatusEffect(targetName, 'Protección Sagrada')) {
                 addLog('🛡️ ' + targetName + ' es inmune a Quemadura (Protección Sagrada)', 'buff');
+                return;
+            }
+            // IGNIFUGOZ (Armadura): inmune a Quemadura y Quemadura Solar
+            if ((target.equippedRelics||[]).some(function(r){ return r === 'Ignifugoz'; })) {
+                addLog('🔥 Ignifugoz: ' + targetName + ' es inmune a Quemadura', 'buff');
                 return;
             }
             if (!target.statusEffects) target.statusEffects = [];
@@ -205,15 +206,6 @@ function processBurnEffects(charName) {
                 if (rengoku && !rengoku.isDead && rengoku.hp > 0 && rengoku.team !== char.team) {
                     rengoku.charges = Math.min(20, (rengoku.charges || 0) + 1);
                     addLog('🔥 Corazón Ardiente: Rengoku genera 1 carga', 'buff');
-                }
-                // MAESTRÍA DE LA VARITA DE SAÚCO (Albus Dumbledore): +5 cargas cuando un enemigo recibe daño por Quemadura
-                for (const _adn in gameState.characters) {
-                    const _adc = gameState.characters[_adn];
-                    if (!_adc || _adc.isDead || _adc.hp <= 0 || _adc.team === char.team) continue;
-                    if (!_adc.passive || _adc.passive.name !== 'Maestría de la Varita de Saúco') continue;
-                    _adc.charges = Math.min(20, (_adc.charges||0) + 5);
-                    addLog('✨ Maestría de la Varita de Saúco: ' + _adn + ' genera 5 cargas (Quemadura en ' + charName + ')', 'buff');
-                    break;
                 }
             }
         }
@@ -442,6 +434,11 @@ function processBurnEffects(charName) {
             // INVIERNO ETERNO (Rey de la Noche): inmune a Quemaduras
             if (target.passive && target.passive.name === 'Invierno Eterno') {
                 addLog('☠️ Invierno Eterno: Rey de la Noche es inmune a Quemadura', 'buff');
+                return;
+            }
+            // IGNIFUGOZ (Armadura): inmune a Quemadura y Quemadura Solar
+            if ((target.equippedRelics||[]).some(function(r){ return r === 'Ignifugoz'; })) {
+                addLog('🔥 Ignifugoz: ' + targetName + ' es inmune a Quemadura', 'buff');
                 return;
             }
             // Guard: never apply burns with 0% or undefined percent
