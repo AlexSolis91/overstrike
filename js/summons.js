@@ -731,6 +731,21 @@
                 })) {
                     if (Math.random() < 0.5) {
                         addLog('👁️ Ceguera: ' + attackerName + ' falla el ataque (50%)', 'debuff');
+                        // DESTELLO DE FAWKES: el atacante falló por Ceguera → Fawkes +3HP + 1 daño a cada enemigo
+                        const _fwSummon = Object.values(gameState.summons).find(function(s){ return s && s.name === 'Fawkes' && s.hp > 0; });
+                        if (_fwSummon && _blindAtk.team !== _fwSummon.team) {
+                            passiveExecuting = true;
+                            _fwSummon.hp = Math.min(_fwSummon.maxHp, (_fwSummon.hp||0) + 3);
+                            addLog('🔥 Destello de Fawkes: Fawkes recupera 3 HP (ataque fallido por Ceguera)', 'heal');
+                            const _fwETeam = _fwSummon.team === 'team1' ? 'team2' : 'team1';
+                            for (const _fwn in gameState.characters) {
+                                const _fwc = gameState.characters[_fwn];
+                                if (!_fwc || _fwc.isDead || _fwc.hp <= 0 || _fwc.team !== _fwETeam) continue;
+                                applyDamageWithShield(_fwn, 1, null);
+                            }
+                            addLog('🔥 Destello de Fawkes: 1 daño a cada enemigo', 'damage');
+                            passiveExecuting = false;
+                        }
                         return; // Miss — no damage applied
                     }
                 }

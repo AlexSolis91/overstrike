@@ -2080,6 +2080,22 @@
                         addLog('🐍 Parsel: Veneno 1T aplicado a todo el equipo enemigo', 'debuff');
                     }
 
+                    // ── DESTELLO DE FAWKES (Fawkes): inicio de ronda → 80% Ceguera 1T a cada enemigo ──
+                    for (const _fwId in (gameState.summons||{})) {
+                        const _fwS = gameState.summons[_fwId];
+                        if (!_fwS || _fwS.name !== 'Fawkes' || _fwS.isDead || _fwS.hp <= 0) continue;
+                        const _fwETeam = _fwS.team === 'team1' ? 'team2' : 'team1';
+                        const _fwEnemies = Object.keys(gameState.characters).filter(function(n){
+                            const _c = gameState.characters[n]; return _c && _c.team === _fwETeam && !_c.isDead && _c.hp > 0;
+                        });
+                        _fwEnemies.forEach(function(n) {
+                            if (Math.random() < 0.80) {
+                                if (typeof applyDebuff === 'function') applyDebuff(n, { name: 'Ceguera', type: 'debuff', duration: 1, emoji: '👁️' });
+                                addLog('🔥 Destello de Fawkes: ' + n + ' recibe Ceguera 1T', 'debuff');
+                            }
+                        });
+                    }
+
                     // ── REINO DE LAS SOMBRAS (Marik Ishtar): inicio de ronda → 50% Aura Oscura a cada aliado ──
                     for (const _mkN in gameState.characters) {
                         const _mkC = gameState.characters[_mkN];

@@ -8355,6 +8355,61 @@
                     addLog('✨ Chispa de Saúco: Dumbledore genera ' + _csBonusCharges + ' cargas adicionales', 'buff');
                 }
 
+            } else if (ability.effect === 'lamento_de_fawkes_dumbledore') {
+                // Invoca a Fawkes (bloqueado mientras esté activo)
+                const _fwExisting = Object.values(gameState.summons).find(function(s) { return s && s.name === 'Fawkes' && s.hp > 0; });
+                if (_fwExisting) {
+                    addLog('❌ Fawkes ya está en el campo — Lamento de Fawkes bloqueado', 'info');
+                } else {
+                    if (typeof summonShadow === 'function') summonShadow('Fawkes', gameState.selectedCharacter);
+                    addLog('🔥 Albus Dumbledore invoca a Fawkes', 'buff');
+                }
+
+            } else if (ability.effect === 'partis_temporus_dumbledore') {
+                // Partis Temporus: 3 daño AOE + Quemadura 3HP 3T a los golpeados
+                const _ptUser = gameState.characters[gameState.selectedCharacter];
+                const _ptTeam = _ptUser ? _ptUser.team : 'team2';
+                const _ptETeam = _ptTeam === 'team1' ? 'team2' : 'team1';
+                checkAndRemoveStealth(_ptETeam);
+                if (checkAndRedirectAOEMegaProv(_ptETeam, finalDamage, gameState.selectedCharacter)) {
+                    addLog('✨ Partis Temporus redirigido por Mega Provocación', 'damage');
+                } else {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _ptETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune a Partis Temporus (Esquiva Área)', 'buff'); continue; }
+                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        if (typeof applyFlatBurn === 'function') applyFlatBurn(_n, 3, 3);
+                    }
+                    if (typeof applyAOEToSummons === 'function') applyAOEToSummons(_ptETeam, finalDamage, gameState.selectedCharacter);
+                }
+                addLog('✨ Partis Temporus: ' + finalDamage + ' daño AOE + Quemadura 3HP 3T', 'damage');
+
+            } else if (ability.effect === 'prision_agua_fuego_dumbledore') {
+                // Prisión de Agua y Fuego: 5 daño ST (sistema) + 45 daño adicional repartido aleatoriamente en TODOS los enemigos
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('🔥💧 Prisión de Agua y Fuego: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                const _pafUser = gameState.characters[gameState.selectedCharacter];
+                const _pafTeam = _pafUser ? _pafUser.team : 'team2';
+                const _pafETeam = _pafTeam === 'team1' ? 'team2' : 'team1';
+                const _pafEnemies = Object.keys(gameState.characters).filter(function(n) {
+                    const c = gameState.characters[n]; return c && c.team === _pafETeam && !c.isDead && c.hp > 0;
+                });
+                let _pafRemaining = 45;
+                if (_pafEnemies.length > 0) {
+                    const _pafDistrib = {};
+                    while (_pafRemaining > 0) {
+                        const _pafN = _pafEnemies[Math.floor(Math.random() * _pafEnemies.length)];
+                        _pafDistrib[_pafN] = (_pafDistrib[_pafN] || 0) + 1;
+                        _pafRemaining--;
+                    }
+                    for (const _n in _pafDistrib) {
+                        applyDamageWithShield(_n, _pafDistrib[_n], gameState.selectedCharacter);
+                        addLog('🔥💧 Prisión de Agua y Fuego: ' + _n + ' recibe ' + _pafDistrib[_n] + ' daño adicional', 'damage');
+                    }
+                }
+                addLog('🔥💧 Prisión de Agua y Fuego: 45 daño repartido entre los enemigos', 'damage');
+
             // ══════════════════════════════════════════════════════
             // BJORN IRONSIDE — handlers
             // ══════════════════════════════════════════════════════
