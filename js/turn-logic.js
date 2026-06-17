@@ -2096,6 +2096,23 @@
                         });
                     }
 
+                    // ── VISIÓN ESMERALDA (Linterna Verde): inicio de ronda → 1 buff aleatorio (2T) a cada aliado ──
+                    for (const _lvN in gameState.characters) {
+                        const _lvC = gameState.characters[_lvN];
+                        if (!_lvC || _lvC.isDead || _lvC.hp <= 0 || !_lvC.passive || _lvC.passive.name !== 'Visión Esmeralda') continue;
+                        const _lvPool = ['Esquivar', 'Esquiva Area', 'Armadura', 'Regeneracion', 'Sigilo', 'Escudo Sagrado', 'Proteccion Sagrada', 'Reflejar'];
+                        const _lvChosen = _lvPool[Math.floor(Math.random() * _lvPool.length)];
+                        const _lvAllies = Object.keys(gameState.characters).filter(function(n) {
+                            const _c = gameState.characters[n]; return _c && _c.team === _lvC.team && !_c.isDead && _c.hp > 0;
+                        });
+                        _lvAllies.forEach(function(n) {
+                            const _lvBuffObj = { name: _lvChosen, type: 'buff', duration: 2, emoji: '💚' };
+                            if (_lvChosen === 'Regeneracion') _lvBuffObj.percent = 20;
+                            if (typeof applyBuff === 'function') applyBuff(n, _lvBuffObj);
+                        });
+                        addLog('💚 Visión Esmeralda: el equipo aliado recibe ' + _lvChosen + ' 2T (inicio de ronda)', 'buff');
+                    }
+
                     // ── REINO DE LAS SOMBRAS (Marik Ishtar): inicio de ronda → 50% Aura Oscura a cada aliado ──
                     for (const _mkN in gameState.characters) {
                         const _mkC = gameState.characters[_mkN];

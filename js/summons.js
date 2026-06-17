@@ -1354,6 +1354,26 @@
 
             target.hp = Math.max(0, target.hp - remainingDamage);
 
+            // ── VISIÓN ESMERALDA (Linterna Verde): un aliado recibe daño directo → cura 3 HP a todo el equipo aliado ──
+            if (remainingDamage > 0 && !passiveExecuting) {
+                for (const _lvn in gameState.characters) {
+                    const _lvc = gameState.characters[_lvn];
+                    if (!_lvc || _lvc.isDead || _lvc.hp <= 0 || !_lvc.passive) continue;
+                    if (_lvc.passive.name !== 'Visión Esmeralda') continue;
+                    if (_lvc.team !== target.team) continue; // el objetivo dañado debe ser aliado de Linterna Verde
+                    passiveExecuting = true;
+                    for (const _ln in gameState.characters) {
+                        const _lc = gameState.characters[_ln];
+                        if (!_lc || _lc.isDead || _lc.hp <= 0 || _lc.team !== _lvc.team) continue;
+                        if (typeof applyHeal === 'function') applyHeal(_ln, 3, 'Visión Esmeralda');
+                        else _lc.hp = Math.min(_lc.maxHp, (_lc.hp||0) + 3);
+                    }
+                    addLog('💚 Visión Esmeralda: el equipo aliado recupera 3 HP (' + targetName + ' recibió daño)', 'heal');
+                    passiveExecuting = false;
+                    break;
+                }
+            }
+
             // ── DESTELLO DE PEGASO (Seiya): trackear daño recibido en la ronda → Escudo Sagrado si ≥5 HP perdidos ──
             if (remainingDamage > 0 && attackerName && attackerName !== targetName) {
                 const _seiyaChar = gameState.characters[targetName];

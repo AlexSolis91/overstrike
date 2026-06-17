@@ -169,6 +169,16 @@
                     }
                 }
 
+                // ── LA LANZA DE OA (Linterna Verde): bloquea movimientos ST y AOE del objetivo ──
+                if (ability && attacker) {
+                    const _loaBlockEffect = (attacker.statusEffects || []).find(e => e && e.name === 'Bloqueo de Oa');
+                    if (_loaBlockEffect && (ability.target === 'single' || ability.target === 'aoe')) {
+                        addLog('💚 ' + charName + ' está bloqueado por La Lanza de Oa — no puede usar movimientos ST/AOE', 'damage');
+                        endTurn();
+                        return;
+                    }
+                }
+
                 if (!attacker || !ability) {
                     console.error('executeAbility: Missing attacker or ability');
                     return;
@@ -6608,36 +6618,45 @@
                     });
                     addLog('💀 Saitama Mode: Garou activa inmunidad y reducción de daño 50%', 'buff');
                 }
-            } else if (ability.effect === 'campo_atraccion') {
-                // LINTERNA VERDE — Campo de Atracción: Provocación + Esquivar, 1 turno cada uno
-                // Ambos buffs expiran al inicio del siguiente turno del personaje (duration:1)
-                const _lgName = gameState.selectedCharacter;
-                // Remove existing copies first to avoid stacking
-                const _lgChar = gameState.characters[_lgName];
-                if (_lgChar) {
-                    _lgChar.statusEffects = (_lgChar.statusEffects || []).filter(function(e){
-                        return e && e.name !== 'Provocacion' && e.name !== 'Esquivar';
-                    });
+            } else if (ability.effect === 'energy_fists_lv') {
+                // LINTERNA VERDE — Energy Fists: +1 daño y +1 carga por cada Buff activo en Linterna Verde (cualquier procedencia)
+                const _efAtk = gameState.characters[gameState.selectedCharacter];
+                const _efBuffCount = _efAtk ? (_efAtk.statusEffects||[]).filter(function(e){ return e && e.type === 'buff'; }).length : 0;
+                let _efDmg = finalDamage + _efBuffCount;
+                applyDamageWithShield(targetName, _efDmg, gameState.selectedCharacter);
+                addLog('💚 Energy Fists: ' + _efDmg + ' daño a ' + targetName + ' (+' + _efBuffCount + ' por buffs activos)', 'damage');
+                if (_efAtk && _efBuffCount > 0) {
+                    _efAtk.charges = Math.min(20, (_efAtk.charges||0) + _efBuffCount);
+                    addLog('💚 Energy Fists: ' + gameState.selectedCharacter + ' genera +' + _efBuffCount + ' cargas adicionales (por buffs activos)', 'buff');
                 }
-                applyBuff(_lgName, { name: 'Provocacion', type: 'buff', duration: 2, emoji: '⚠️', description: 'Provocación: enemigos deben atacarte (expira en el próximo turno de Linterna Verde)' });
-                applyBuff(_lgName, { name: 'Esquivar', type: 'buff', duration: 2, emoji: '💨', description: 'Esquivar: 50% de esquivar cualquier ataque (expira en el próximo turno de Linterna Verde)' });
-                addLog('💚 Campo de Atracción: ' + _lgName + ' activa Provocación + Esquivar (hasta el próximo turno)', 'buff');
 
             } else if (ability.effect === 'sincronia_esmeralda') {
-                // LINTERNA VERDE — Sincronía Esmeralda: limpia 1 debuff del aliado + 3 cargas
-                const _seChar = gameState.characters[targetName];
-                if (_seChar) {
-                    const _seDebuffs = (_seChar.statusEffects || []).filter(e => e && e.type === 'debuff');
-                    if (_seDebuffs.length > 0) {
-                        // Remove oldest debuff (first in array)
-                        const _seRemoved = _seDebuffs[0];
-                        _seChar.statusEffects = (_seChar.statusEffects || []).filter(e => e !== _seRemoved);
-                        addLog('💚 Sincronía Esmeralda: Debuff ' + _seRemoved.name + ' eliminado de ' + targetName, 'buff');
-                    } else {
-                        addLog('💚 Sincronía Esmeralda: ' + targetName + ' no tiene debuffs activos', 'info');
+                // LINTERNA VERDE — Sincronía Esmeralda: suma todos los Buffs activos en el equipo aliado,
+                // y reparte 1 carga por cada buff a un personaje aleatorio del equipo aliado (puede repetir destinatario)
+                const _seAtk = gameState.characters[gameState.selectedCharacter];
+                const _seTeam = _seAtk ? _seAtk.team : 'team1';
+                const _seAllies = Object.keys(gameState.characters).filter(function(n) {
+                    const c = gameState.characters[n]; return c && c.team === _seTeam && !c.isDead && c.hp > 0;
+                });
+                let _seBuffTotal = 0;
+                _seAllies.forEach(function(n) {
+                    const c = gameState.characters[n];
+                    _seBuffTotal += (c.statusEffects||[]).filter(function(e){ return e && e.type === 'buff'; }).length;
+                });
+                if (_seBuffTotal === 0 || _seAllies.length === 0) {
+                    addLog('💚 Sincronía Esmeralda: no hay buffs activos en el equipo aliado', 'info');
+                } else {
+                    const _seDistrib = {};
+                    for (let _si = 0; _si < _seBuffTotal; _si++) {
+                        const _seN = _seAllies[Math.floor(Math.random() * _seAllies.length)];
+                        _seDistrib[_seN] = (_seDistrib[_seN] || 0) + 1;
                     }
-                    _seChar.charges = Math.min(20, (_seChar.charges || 0) + 3);
-                    addLog('💚 ' + targetName + ' genera 3 cargas (Sincronía Esmeralda)', 'buff');
+                    for (const _n in _seDistrib) {
+                        const _sc = gameState.characters[_n];
+                        _sc.charges = Math.min(20, (_sc.charges||0) + _seDistrib[_n]);
+                        addLog('💚 Sincronía Esmeralda: ' + _n + ' recibe ' + _seDistrib[_n] + ' carga(s)', 'buff');
+                    }
+                    addLog('💚 Sincronía Esmeralda: ' + _seBuffTotal + ' buffs activos repartidos como cargas', 'buff');
                 }
 
             } else if (ability.effect === 'soporte_vital') {
@@ -6660,24 +6679,19 @@
                 });
 
             } else if (ability.effect === 'lanza_de_oa') {
-                // LINTERNA VERDE — La Lanza de Oa: 2 + 5~10 daño + Mega Aturdimiento + lifesteal total
-                const _loaBase = finalDamage; // 2
-                const _loaBonus = Math.floor(Math.random() * 6) + 5; // 5-10
-                const _loaTotal = _loaBase + _loaBonus;
-                applyDamageWithShield(targetName, _loaTotal, gameState.selectedCharacter);
-                applyStun(gameState.selectedCharacter === targetName ? targetName : targetName, 2); // Mega Aturdimiento
-                // Lifesteal: Linterna Verde recovers HP equal to total damage dealt
-                const _lgLoa = gameState.characters[gameState.selectedCharacter];
-                if (_lgLoa) {
-                    const _loaHealOld = _lgLoa.hp;
-                    _lgLoa.hp = Math.min(_lgLoa.maxHp, _lgLoa.hp + _loaTotal);
-                    const _loaHeal = _lgLoa.hp - _loaHealOld;
-                    if (_loaHeal > 0) {
-                        addLog('💚 Linterna Verde recupera ' + _loaHeal + ' HP (Lanza de Oa)', 'heal');
-                        triggerBendicionSagrada(_lgLoa.team, _loaHeal);
+                // LINTERNA VERDE — La Lanza de Oa: 10 daño fijo. Bloquea movimientos ST y AOE del objetivo por 2 turnos.
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                const _loaTgt = gameState.characters[targetName];
+                if (_loaTgt && !_loaTgt.isDead && _loaTgt.hp > 0) {
+                    _loaTgt.statusEffects = (_loaTgt.statusEffects||[]).filter(function(e){ return !e || e.name !== 'Bloqueo de Oa'; });
+                    if (typeof applyDebuff === 'function') {
+                        applyDebuff(targetName, { name: 'Bloqueo de Oa', type: 'debuff', duration: 2, emoji: '💚' });
+                    } else {
+                        _loaTgt.statusEffects.push({ name: 'Bloqueo de Oa', type: 'debuff', duration: 2, emoji: '💚' });
                     }
+                    addLog('💚 La Lanza de Oa: ' + targetName + ' queda bloqueado para movimientos ST/AOE por 2 turnos', 'debuff');
                 }
-                addLog('💚 La Lanza de Oa: ' + _loaTotal + ' daño (' + _loaBase + '+' + _loaBonus + ') + Mega Aturdimiento a ' + targetName, 'damage');
+                addLog('💚 La Lanza de Oa: ' + finalDamage + ' daño a ' + targetName, 'damage');
             } else if (ability.effect === 'heal_cleanse') {
                 // Tamayo básico Aguja Medicinal: cura 1 HP + limpia 1 debuff del aliado objetivo
                 const hcC = gameState.characters[targetName];

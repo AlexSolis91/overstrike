@@ -435,12 +435,12 @@
                 hp: 20, maxHp: 20, speed: 96, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/bRMTVQVr/Captura-de-pantalla-2026-03-18-131918.png',
-                passive: { name: 'Visión Esmeralda', description: 'Cada vez que recibe un golpe, genera 2 cargas.' },
+                passive: { name: 'Visión Esmeralda', description: 'Cada vez que un personaje del equipo aliado recibe daño directo, realiza una curación de 3 HP a todos los personajes del equipo aliado. Al inicio de cada ronda aplica 1 buff aleatorio (Esquivar, Esquiva Área, Armadura, Regeneración 20%, Sigilo, Escudo Sagrado, Protección Sagrada, Reflejar) por 2 turnos a todo el equipo aliado.' },
                 abilities: [
-                    { name: 'Campo de Atracción', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'campo_atraccion', description: 'Se aplica Buff Provocación. Se aplica Buff Esquivar.' },
-                    { name: 'Sincronía Esmeralda', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'sincronia_esmeralda', description: 'Limpia 1 debuff sobre el aliado objetivo y el aliado genera 3 cargas.' },
-                    { name: 'Soporte Vital Autónomo', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'soporte_vital', description: 'Selecciona un aliado: ambos (Linterna Verde y el aliado) recuperan 5 HP y disipan todos los debuffs.' },
-                    { name: 'La Lanza de Oa', type: 'over', cost: 10, chargeGain: 0, damage: 2, target: 'single', effect: 'lanza_de_oa', description: 'Causa 2 + 5 a 10 daño adicional aleatorio. Aplica debuff Mega Aturdimiento. Linterna Verde recupera HP equivalente al daño total causado.' }
+                    { name: 'Energy Fists', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'energy_fists_lv', description: 'Aumenta en +1 el daño de este ataque por cada Buff activo en Linterna Verde. Aumenta en +1 las cargas generadas por este ataque por cada Buff activo en Linterna Verde.' },
+                    { name: 'Sincronía Esmeralda', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'self', effect: 'sincronia_esmeralda', description: 'Suma todos los Buffs activos en el equipo aliado y después por cada buff reparte 1 carga a un personaje aleatorio del equipo aliado.' },
+                    { name: 'Soporte Vital Autónomo', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'soporte_vital', description: 'Selecciona un Aliado y ambos (Linterna Verde y el Aliado seleccionado) recuperan 5 HP y disipan todos los debuffs en ambos.' },
+                    { name: 'La Lanza de Oa', type: 'over', cost: 10, chargeGain: 0, damage: 10, target: 'single', effect: 'lanza_de_oa', description: 'Causa 10 daño ST. Bloquea los movimientos ST y AOE del objetivo durante 2 turnos.' }
                 ]
             },
             'Vegeta': {
