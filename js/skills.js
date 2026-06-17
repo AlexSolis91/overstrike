@@ -154,6 +154,10 @@
                     ability.effect !== 'rikudo_mode_madara') {
                     adjustedCost = Math.ceil(adjustedCost / 2);
                 }
+                // VARITA DE SAÚCO: todos los movimientos requieren la mitad de cargas
+                if (attacker && adjustedCost > 0 && (attacker.equippedRelics||[]).includes('Varita de Saúco')) {
+                    adjustedCost = Math.ceil(adjustedCost / 2);
+                }
                 
                 // ── SILENCIAR: bloquea la categoría silenciada ──────────────
                 if (ability && attacker) {
@@ -277,6 +281,11 @@
                     if (_rd.effect === 'frostmourne') {
                         finalDamage = finalDamage * 2;
                         addLog('❄️ Frostmourne: daño duplicado (' + finalDamage + ')', 'buff');
+                    }
+                    if (_rd.effect === 'varita_de_sauco' && ability && ability.target === 'aoe') {
+                        finalDamage = finalDamage * 2;
+                        attacker.hp = Math.max(1, (attacker.hp||0) - 3);
+                        addLog('🪄 Varita de Saúco: daño AOE duplicado (' + finalDamage + ') — ' + gameState.selectedCharacter + ' pierde 3 HP', 'buff');
                     }
                     if (_rd.effect === 'basic_dmg_50pct' && ability && ability.type === 'basic') {
                         finalDamage = Math.ceil(finalDamage * 1.5);

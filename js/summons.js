@@ -1315,6 +1315,28 @@
                 }
             }
 
+            // ── VARITA DE SAÚCO: 30% de reflejar CUALQUIER ataque recibido (daño, debuffs y efecto) ──
+            {
+                if (!passiveExecuting && remainingDamage > 0 &&
+                    (target.equippedRelics||[]).includes('Varita de Saúco') &&
+                    attackerName && attackerName !== targetName &&
+                    Math.random() < 0.30) {
+                    passiveExecuting = true;
+                    applyDamageWithShield(attackerName, remainingDamage, targetName);
+                    addLog('🪄 Varita de Saúco: ' + targetName + ' refleja ' + remainingDamage + ' daño a ' + attackerName, 'buff');
+                    if (gameState.selectedAbility) {
+                        const _wandDesc = ((gameState.selectedAbility.description)||'').toLowerCase();
+                        if (_wandDesc.includes('veneno') || _wandDesc.includes('poison')) { applyPoison(attackerName, 1); addLog('🪄 Varita de Saúco: Veneno reflejado a ' + attackerName, 'debuff'); }
+                        if (_wandDesc.includes('quemadura')) { applyFlatBurn(attackerName, 2, 1); addLog('🪄 Varita de Saúco: Quemadura reflejada a ' + attackerName, 'debuff'); }
+                        if (_wandDesc.includes('aturdimiento') || _wandDesc.includes('stun')) { if (typeof applyStun === 'function') applyStun(attackerName, 1); addLog('🪄 Varita de Saúco: Aturdimiento reflejado a ' + attackerName, 'debuff'); }
+                        if (_wandDesc.includes('sangrado')) { if (typeof applyBleed === 'function') applyBleed(attackerName, 1); addLog('🪄 Varita de Saúco: Sangrado reflejado a ' + attackerName, 'debuff'); }
+                        if (_wandDesc.includes('congelaci')) { if (typeof applyFreeze === 'function') applyFreeze(attackerName, 1); addLog('🪄 Varita de Saúco: Congelación reflejada a ' + attackerName, 'debuff'); }
+                    }
+                    passiveExecuting = false;
+                    return 0; // Portador NO recibe daño — reflejado completamente
+                }
+            }
+
             target.hp = Math.max(0, target.hp - remainingDamage);
 
             // ── DESTELLO DE PEGASO (Seiya): trackear daño recibido en la ronda → Escudo Sagrado si ≥5 HP perdidos ──

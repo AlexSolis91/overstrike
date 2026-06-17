@@ -1060,6 +1060,7 @@
 
             // ── NUEVAS RELIQUIAS ─────────────────────────────────────────
             'Frostmourne':          { tier:'Legendario',  slot:'Arma',    img:'https://i.ibb.co/60ncwCBX/image-67ce0467.png',   effect:'frostmourne',        desc:'Duplica el daño del portador. Roba cargas del objetivo equivalente al daño causado. Si el objetivo muere, revive como aliado con 100% HP y 20 cargas.', isEventRelic:true, eventBoss:'Lich King' },
+            'Varita de Saúco':      { tier:'Legendario',  slot:'Arma',    img:'https://i.ibb.co/cKZ40jX9/image-1f459301.png',   effect:'varita_de_sauco',    desc:'Todos los movimientos del portador requieren la mitad de cargas. Cada vez que el portador ejecuta un movimiento AOE, causa el doble de daño pero pierde 3 HP. 30% de probabilidad de reflejar cualquier ataque recibido sobre el enemigo (recibe el mismo daño, debuffs y efecto de su propio ataque).', isEventRelic:true, eventBoss:'Albus Dumbledore' },
             'Mascara de Tyrael':    { tier:'Epico',       slot:'Yelmo',   img:'https://i.ibb.co/wFm6QxCs/image-cdf242f6.png',   effect:'tyrael_mask',        desc:'Al final de cada ronda, el portador genera 3 cargas.' },
             'Ignifugoz':            { tier:'Especial',    slot:'Armadura',img:'https://i.ibb.co/XZN4GJ80/image-a7bffce5.png',   effect:'ignifugoz_immunity', desc:'El portador es inmune a debuffs y daño de Quemaduras.' },
         };
