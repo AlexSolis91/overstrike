@@ -251,11 +251,6 @@
                 finalChargeGain += 1;
             }
 
-            // DESPERTAR DEL LADO OSCURO (Anakin): +3 daño y Miedo en todos sus ataques mientras está transformado
-            if (attacker.darkSideAwakened && (gameState.selectedCharacter === 'Anakin Skywalker' || gameState.selectedCharacter === 'Anakin Skywalker v2') && finalDamage > 0) {
-                finalDamage += 3;
-            }
-
             // ARMADURA DIVINA DEL FÉNIX (Ikki): daño triple en enemigos con Quemadura
             if (attacker.fenixArmorActive && (gameState.selectedCharacter === 'Ikki de Fenix' || gameState.selectedCharacter === 'Ikki de Fenix v2') && finalDamage > 0) {
                 const tgtIkki = gameState.characters[targetName];
@@ -5476,18 +5471,10 @@
 
             } else if (ability.effect === 'djem_so') {
                 let _djDmg = finalDamage;
+                if (attacker.darkSideAwakened) _djDmg *= 2;
+                if (Math.random() < 0.50) { _djDmg *= 2; addLog('⚡ Djem So: ¡Crítico!', 'buff'); }
                 applyDamageWithShield(targetName, _djDmg, charName);
-                const _djTgt = gameState.characters[targetName];
-                if (_djTgt && !_djTgt.isDead) {
-                    _djTgt.charges = Math.max(0, (_djTgt.charges||0) - 1);
-                    addLog('⚡ Djem So: ' + _djDmg + ' daño a ' + targetName + ' y elimina 1 carga', 'damage');
-                } else {
-                    addLog('⚡ Djem So: ' + _djDmg + ' daño a ' + targetName, 'damage');
-                }
-                if (attacker.darkSideAwakened && _djTgt && !_djTgt.isDead) {
-                    applyFear(targetName, 1);
-                    addLog('🌑 Lado Oscuro: ' + targetName + ' recibe Miedo', 'debuff');
-                }
+                addLog('⚡ Djem So: ' + _djDmg + ' daño a ' + targetName, 'damage');
 
             } else if (ability.effect === 'estrangular') {
                 const _estETeam = attacker.team === 'team1' ? 'team2' : 'team1';
@@ -5501,17 +5488,29 @@
                         applyDamageWithShield(_n, finalDamage, charName);
                         _c.charges = Math.max(0, (_c.charges||0) - 1);
                         if (Math.random() < 0.50) applyStun(_n, 1);
-                        if (attacker.darkSideAwakened && !_c.isDead) applyFear(_n, 1);
                     }
                     for (let _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _estETeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, charName); }
                 }
                 addLog('⚡ Estrangular: ' + finalDamage + ' AOE + -1 carga al equipo enemigo', 'damage');
 
             } else if (ability.effect === 'general_501') {
-                applyBuff(charName, { name: 'Provocacion', type: 'buff', duration: 2, emoji: '🛡️' });
-                applyBuff(charName, { name: 'Armadura', type: 'buff', duration: 2, emoji: '🦾' });
-                applyBuff(charName, { name: 'Reflejar', type: 'buff', duration: 999, emoji: '🪞' });
-                addLog('⚡ General de la 501: Anakin se aplica Provocación 2T, Armadura 2T y Reflejar', 'buff');
+                const _g501ETeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                const _g501Enemies = Object.keys(gameState.characters).filter(n => { const c = gameState.characters[n]; return c && c.team === _g501ETeam && !c.isDead && c.hp > 0; });
+                if (_g501Enemies.length === 0) { addLog('⚡ General de la 501: No hay objetivos', 'info'); }
+                else {
+                    for (let _i = 0; _i < 4; _i++) {
+                        const _tn = _g501Enemies[Math.floor(Math.random() * _g501Enemies.length)];
+                        const _tc = gameState.characters[_tn];
+                        if (!_tc || _tc.isDead || _tc.hp <= 0) continue;
+                        let _g501Dmg = attacker.abilities[0] ? attacker.abilities[0].damage : 2;
+                        if (attacker.darkSideAwakened) _g501Dmg *= 2;
+                        if (Math.random() < 0.50) { _g501Dmg *= 2; }
+                        applyDamageWithShield(_tn, _g501Dmg, charName);
+                        attacker.charges = Math.min(20, (attacker.charges||0) + (attacker.abilities[0] ? attacker.abilities[0].chargeGain : 2));
+                        if (Math.random() < 0.50) applyFear(_tn, 1);
+                        addLog('⚡ General de la 501: ' + _g501Dmg + ' daño a ' + _tn, 'damage');
+                    }
+                }
 
             } else if (ability.effect === 'dark_side_anakin') {
                 const _dsAtk = gameState.characters[charName];
@@ -5520,9 +5519,12 @@
                     const _dsTP = _dsAtk.transformPortrait || _dsAtk.transformationPortrait;
                     if (_dsTP) _dsAtk.portrait = _dsTP;
                     _dsAtk.speed = (_dsAtk.speed||0) + 10;
-                    _dsAtk.isTransformed = true;
-                    addLog('🌑 ¡Despertar del Lado Oscuro! Anakin se transforma permanentemente — +10 velocidad. Sus ataques causan +3 daño y aplican Miedo. Se cura 3 HP al recibir daño.', 'buff');
-                    renderCharacters();
+                    // Concentración permanente
+                    if (!(_dsAtk.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'concentracion')) {
+                        _dsAtk.statusEffects = (_dsAtk.statusEffects||[]);
+                        _dsAtk.statusEffects.push({ name: 'Concentracion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🎯' });
+                    }
+                    addLog('🌑 Despertar del Lado Oscuro: Anakin transformado. +10 vel, Concentración permanente', 'buff');
                 }
 
             // ══════════════════════════════════════════════════════
@@ -7040,7 +7042,7 @@
                 const _randomDebuffs = ['Aturdimiento', 'Quemadura', 'Veneno', 'Miedo', 'Congelacion', 'Debilidad', 'Reduccion Velocidad'];
                 const _debuffDefs = {
                     'Aturdimiento':       { type:'debuff', duration:1, emoji:'⭐', stun:true },
-                    'Quemadura':          { type:'debuff', duration:2, emoji:'🔥', dotDamage:2 },
+                    'Quemadura':          { type:'debuff', duration:2, emoji:'🔥', flatHp:2 },
                     'Veneno':             { type:'debuff', duration:2, emoji:'☠️', dotDamage:1 },
                     'Miedo':              { type:'debuff', duration:2, emoji:'😨' },
                     'Congelacion':        { type:'debuff', duration:1, emoji:'❄️' },
@@ -7573,6 +7575,32 @@
             if (ability && (ability.type === 'special' || ability.type === 'over') && 
                 ability.target === 'single' && targetName) {
                 triggerAsistir(gameState.selectedCharacter, targetName, ability.type);
+            }
+
+            // EL ELEGIDO (Anakin): 50% Frenesi + Furia 2T cuando un enemigo usa especial/over sobre un aliado
+            if (ability && (ability.type === 'special' || ability.type === 'over') && !passiveExecuting) {
+                const _elAtk = gameState.characters[gameState.selectedCharacter];
+                if (_elAtk) {
+                    const _elEnemyTeam = _elAtk.team;
+                    // Buscar Anakin en el equipo que recibe el ataque
+                    for (const _an in gameState.characters) {
+                        const _ac = gameState.characters[_an];
+                        if (!_ac || _ac.isDead || _ac.hp <= 0) continue;
+                        if (_ac.team === _elEnemyTeam) continue; // Anakin debe estar en el equipo que recibe
+                        if (!_ac.passive || _ac.passive.name !== 'El Elegido') continue;
+                        // Solo activar si Anakin no tiene ya Frenesi Y Furia activos
+                        const _hasFrenesi = (_ac.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'frenesi');
+                        const _hasFuria = (_ac.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'furia');
+                        if (!(_hasFrenesi && _hasFuria) && Math.random() < 0.50) {
+                            passiveExecuting = true;
+                            applyFrenesi(_an, 2);
+                            applyFuria(_an, 2);
+                            addLog('El Elegido: Anakin gana Frenesi + Furia 2T', 'buff');
+                            passiveExecuting = false;
+                        }
+                        break;
+                    }
+                }
             }
 
             // PALADÍN DE LA MANO DE PLATA (Tirion): cuando enemigo usa Over → +5 HP y +5 cargas al equipo aliado

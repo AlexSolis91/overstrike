@@ -113,6 +113,15 @@
             // Apply a burn that does flat HP damage (not percent)
             const target = gameState.characters[targetName];
             if (!target) return;
+            // MAESTRÍA DE LA VARITA DE SAÚCO (Dumbledore) / IGNIFUGOZ: inmune a Quemadura
+            if (target.passive && target.passive.name === 'Maestría de la Varita de Saúco') {
+                addLog('✨ Maestría de la Varita de Saúco: ' + targetName + ' es inmune a Quemadura', 'buff');
+                return;
+            }
+            if ((target.equippedRelics||[]).includes('Ignifugoz')) {
+                addLog('🔥 Ignifugoz: ' + targetName + ' es inmune a Quemadura', 'buff');
+                return;
+            }
             if ((targetName === 'Saitama' || targetName === 'Saitama v2')) {
                 addLog('🦸 Saitama es inmune a Quemadura (Espíritu del Héroe)', 'buff');
                 return;
@@ -137,11 +146,6 @@
             }
             if (hasStatusEffect(targetName, 'Proteccion Sagrada') || hasStatusEffect(targetName, 'Protección Sagrada')) {
                 addLog('🛡️ ' + targetName + ' es inmune a Quemadura (Protección Sagrada)', 'buff');
-                return;
-            }
-            // IGNIFUGOZ (Armadura): inmune a Quemadura y Quemadura Solar
-            if ((target.equippedRelics||[]).some(function(r){ return r === 'Ignifugoz'; })) {
-                addLog('🔥 Ignifugoz: ' + targetName + ' es inmune a Quemadura', 'buff');
                 return;
             }
             if (!target.statusEffects) target.statusEffects = [];
@@ -426,6 +430,15 @@ function processBurnEffects(charName) {
                 console.error(`applyBurn: Target ${targetName} no encontrado`);
                 return;
             }
+            // MAESTRÍA DE LA VARITA DE SAÚCO (Dumbledore) / IGNIFUGOZ: inmune a Quemadura
+            if (target.passive && target.passive.name === 'Maestría de la Varita de Saúco') {
+                addLog('✨ Maestría de la Varita de Saúco: ' + targetName + ' es inmune a Quemadura', 'buff');
+                return;
+            }
+            if ((target.equippedRelics||[]).includes('Ignifugoz')) {
+                addLog('🔥 Ignifugoz: ' + targetName + ' es inmune a Quemadura', 'buff');
+                return;
+            }
             // SAITAMA: inmune a todos los debuffs incluyendo Quemadura
             if ((targetName === 'Saitama' || targetName === 'Saitama v2')) {
                 addLog('🦸 Saitama es inmune a Quemadura (Espíritu del Héroe)', 'buff');
@@ -434,11 +447,6 @@ function processBurnEffects(charName) {
             // INVIERNO ETERNO (Rey de la Noche): inmune a Quemaduras
             if (target.passive && target.passive.name === 'Invierno Eterno') {
                 addLog('☠️ Invierno Eterno: Rey de la Noche es inmune a Quemadura', 'buff');
-                return;
-            }
-            // IGNIFUGOZ (Armadura): inmune a Quemadura y Quemadura Solar
-            if ((target.equippedRelics||[]).some(function(r){ return r === 'Ignifugoz'; })) {
-                addLog('🔥 Ignifugoz: ' + targetName + ' es inmune a Quemadura', 'buff');
                 return;
             }
             // Guard: never apply burns with 0% or undefined percent

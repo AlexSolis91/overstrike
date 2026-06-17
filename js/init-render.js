@@ -58,6 +58,17 @@
                 burnAppliers: new Set(),
             };
 
+            // ── HELPER: ¿este personaje es totalmente inmune a debuffs? (Dumbledore, Saitama, etc.) ──
+            function _isCharTotallyDebuffImmune(charName) {
+                const _c = gameState.characters[charName];
+                if (!_c) return false;
+                if (_c.passive && _c.passive.name === 'Maestría de la Varita de Saúco') return true;
+                if (_c.passive && _c.passive.name === 'Sabiduría Antigua') return true;
+                if (charName === 'Saitama' || charName === 'Saitama v2') return true;
+                if (_c.supermanPrimeMode) return true;
+                return false;
+            }
+
             // ── PROXY: interceptar statusEffects.push para activar Monarca de la Destruccion ──
             // Esto garantiza que CUALQUIER buff aplicado (con push directo) active la pasiva
             function _wrapStatusEffects(charName) {
@@ -69,6 +80,21 @@
                         if (prop === '__isProxied') return true;
                         if (prop === 'push') {
                             return function(...items) {
+                                // BLOQUEO TOTAL DE DEBUFFS: si el personaje es inmune, filtrar cualquier
+                                // item con type === 'debuff' ANTES de que entre al array — cubre cualquier
+                                // vía (push directo, applyDebuff, helpers específicos, reliquias, etc.)
+                                if (_isCharTotallyDebuffImmune(charName)) {
+                                    items = items.filter(function(item) {
+                                        if (item && item.type === 'debuff') {
+                                            if (typeof addLog === 'function') {
+                                                addLog('✨ ' + charName + ' es inmune a debuffs (' + (item.name||'efecto') + ' bloqueado)', 'buff');
+                                            }
+                                            return false;
+                                        }
+                                        return true;
+                                    });
+                                    if (items.length === 0) return target.length;
+                                }
                                 const result = Array.prototype.push.apply(target, items);
                                 // Activar Monarca si se agrega un buff a un personaje enemigo de Antares
                                 items.forEach(function(item) {
@@ -108,6 +134,19 @@
                                         if (prop2 === '__isProxied') return true;
                                         if (prop2 === 'push') {
                                             return function(...items2) {
+                                                // BLOQUEO TOTAL DE DEBUFFS para personajes inmunes (Dumbledore, etc.)
+                                                if (_isCharTotallyDebuffImmune(_name)) {
+                                                    items2 = items2.filter(function(item2) {
+                                                        if (item2 && item2.type === 'debuff') {
+                                                            if (typeof addLog === 'function') {
+                                                                addLog('✨ ' + _name + ' es inmune a debuffs (' + (item2.name||'efecto') + ' bloqueado)', 'buff');
+                                                            }
+                                                            return false;
+                                                        }
+                                                        return true;
+                                                    });
+                                                    if (items2.length === 0) return target2.length;
+                                                }
                                                 const r = Array.prototype.push.apply(target2, items2);
                                                 items2.forEach(function(item2) {
                                                     if (item2 && item2.type === 'buff' && !item2.passiveHidden &&
@@ -163,8 +202,6 @@
                 // Anakin Skywalker: Contraataque permanente
                 if (baseName === 'Anakin Skywalker') {
                     ch.anakinAsistir = true; // Asistir: fires basic when ally uses Special/Over ST
-                    ch.statusEffects = ch.statusEffects || [];
-                    ch.statusEffects.push({ name: 'Contraataque', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '⚔️' });
                 }
                 // Aspros de Gemini: Esquiva Área permanente
                 if (baseName === 'Aspros de Gemini') {

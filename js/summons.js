@@ -1317,12 +1317,6 @@
 
             target.hp = Math.max(0, target.hp - remainingDamage);
 
-            // ── DESPERTAR DEL LADO OSCURO (Anakin): se cura 3 HP al recibir daño mientras está transformado ──
-            if (remainingDamage > 0 && target.darkSideAwakened && (targetName === 'Anakin Skywalker' || targetName === 'Anakin Skywalker v2') && target.hp > 0) {
-                target.hp = Math.min(target.maxHp, target.hp + 3);
-                addLog('🌑 Despertar del Lado Oscuro: Anakin se cura 3 HP al recibir daño', 'heal');
-            }
-
             // ── DESTELLO DE PEGASO (Seiya): trackear daño recibido en la ronda → Escudo Sagrado si ≥5 HP perdidos ──
             if (remainingDamage > 0 && attackerName && attackerName !== targetName) {
                 const _seiyaChar = gameState.characters[targetName];
@@ -1492,8 +1486,8 @@
                         // Básico aplica Quemadura 2HP
                         case 'basic_burn_2hp':
                             if (gameState._lastAbilityType === 'basic') {
-                                if (typeof applyDebuff === 'function')
-                                    applyDebuff(targetName, { name:'Quemadura', type:'debuff', duration:2, emoji:'🔥', dotDamage:2 });
+                                if (typeof applyFlatBurn === 'function') applyFlatBurn(targetName, 2, 2);
+                                else if (typeof applyDebuff === 'function') applyDebuff(targetName, { name:'Quemadura', type:'debuff', duration:2, emoji:'🔥', flatHp:2 });
                                 addLog('🔥 Maza Ignea: Quemadura 2HP a ' + targetName, 'debuff');
                             }
                             break;

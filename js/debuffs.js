@@ -455,6 +455,8 @@ function triggerMaboroshi(targetTeam, debuffName) {
             // LIMBO (Madara Uchiha): Divinidad = inmune a debuffs en Modo Rikudō
             const limboChar = gameState.characters[targetName];
             if (limboChar && limboChar.passive && limboChar.passive.name === 'Limbo' && limboChar.rikudoMode) return true;
+            // MAESTRÍA DE LA VARITA DE SAÚCO (Albus Dumbledore): inmune a todos los debuffs
+            if (limboChar && limboChar.passive && limboChar.passive.name === 'Maestría de la Varita de Saúco') return true;
             return false;
         }
         function isImmuneToBurn(targetName) {
@@ -463,7 +465,10 @@ function triggerMaboroshi(targetTeam, debuffName) {
             if ((targetName === 'Saitama' || targetName === 'Saitama v2')) return true;
             if (hasStatusEffect(targetName, 'Proteccion Sagrada') || hasStatusEffect(targetName, 'Protección Sagrada')) return true;
             { const _aC = gameState.characters[targetName];
-              if (_aC && _aC.passive && _aC.passive.name === 'Monarca de la Destruccion') return true; }
+              if (_aC && _aC.passive && _aC.passive.name === 'Monarca de la Destruccion') return true;
+              if (_aC && _aC.passive && _aC.passive.name === 'Invierno Eterno') return true;
+              if (_aC && _aC.passive && _aC.passive.name === 'Maestría de la Varita de Saúco') return true;
+              if (_aC && (_aC.equippedRelics||[]).includes('Ignifugoz')) return true; }
             return false;
         }
 function applyDebuff(targetName, effectObj) {
@@ -472,6 +477,11 @@ function applyDebuff(targetName, effectObj) {
             // SABIDURÍA ANTIGUA (Yoda): inmune a todos los debuffs
             if (target.passive && target.passive.name === 'Sabiduría Antigua') {
                 addLog('🟢 Sabiduría Antigua: ' + targetName + ' es inmune a debuffs', 'buff');
+                return;
+            }
+            // MAESTRÍA DE LA VARITA DE SAÚCO (Albus Dumbledore): inmune a TODOS los debuffs
+            if (target.passive && target.passive.name === 'Maestría de la Varita de Saúco') {
+                addLog('✨ Maestría de la Varita de Saúco: ' + targetName + ' es inmune a debuffs', 'buff');
                 return;
             }
             // CABALLERO DE LA NOCHE (Batman): inmune a efectos de movimientos especiales
@@ -992,6 +1002,15 @@ function applyDebuff(targetName, effectObj) {
             // Para compatibilidad backward: si se llama con (name, percent, duration), usar duration
             const target = gameState.characters[targetName];
             if (!target || !target.statusEffects) return;
+            // MAESTRÍA DE LA VARITA DE SAÚCO (Dumbledore) / IGNIFUGOZ: inmune a Quemadura Solar
+            if (target.passive && target.passive.name === 'Maestría de la Varita de Saúco') {
+                addLog('✨ Maestría de la Varita de Saúco: ' + targetName + ' es inmune a Quemadura Solar', 'buff');
+                return;
+            }
+            if ((target.equippedRelics||[]).includes('Ignifugoz')) {
+                addLog('🔥 Ignifugoz: ' + targetName + ' es inmune a Quemadura Solar', 'buff');
+                return;
+            }
             if (hasStatusEffect(targetName, 'Proteccion Sagrada') || hasStatusEffect(targetName, 'Protección Sagrada')) {
                 addLog(`🛡️ ${targetName} es inmune a Quemadura Solar (Protección Sagrada)`, 'buff');
                 return;
@@ -1009,11 +1028,6 @@ function applyDebuff(targetName, effectObj) {
             { const _antC = gameState.characters[targetName];
               if (_antC && _antC.passive && _antC.passive.name === 'Monarca de la Destruccion') {
                 addLog('🐉 Monarca de la Destruccion: Antares es inmune a Quemadura Solar', 'buff'); return; } }
-            // IGNIFUGOZ (Armadura): inmune a Quemadura y Quemadura Solar
-            if ((target.equippedRelics||[]).some(function(r){ return r === 'Ignifugoz'; })) {
-                addLog('🔥 Ignifugoz: ' + targetName + ' es inmune a Quemadura Solar', 'buff');
-                return;
-            }
             // QS: debuff por TURNOS. Solo bloquea curación, no hace daño por %
             // Si ya tiene QS activa, reemplazar
             target.statusEffects = (target.statusEffects || []).filter(e => !e || e.name !== 'Quemadura Solar');
