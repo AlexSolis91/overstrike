@@ -861,6 +861,7 @@
             _arcanePityIntervalId = setInterval(tick, 1000);
         }
 
+        async function loadListings() {
             const list = document.getElementById('market-listings-list');
             list.innerHTML = '<div style="color:#555;text-align:center;padding:20px;font-size:.8rem;">Cargando...</div>';
             const snap = await db.ref('market/listings').once('value');
