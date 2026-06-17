@@ -1873,7 +1873,7 @@
                         const debuffPool = ['Quemadura','Veneno','Sangrado','Confusion','Debilitar','Congelacion','Silenciar','Miedo','Agotamiento','Aturdimiento'];
                         const chosen = debuffPool[Math.floor(Math.random() * debuffPool.length)];
                         if (chosen === 'Quemadura') applyFlatBurn(n, 2, 1);  // 1T, valor 2HP (10% de 20HP)
-                        else if (chosen === 'Veneno') { c.statusEffects.push({ name: 'Veneno', type: 'debuff', duration: 1, emoji: '🐍', poisonTick: 0 }); }
+                        else if (chosen === 'Veneno') { if (typeof applyPoison === 'function') applyPoison(n, 1); }
                         else if (chosen === 'Sangrado') applyBleed(n, 1);
                         else if (chosen === 'Confusion') applyConfusion(n, 1);
                         else if (chosen === 'Debilitar') applyWeaken(n, 2);  // 2T per table
@@ -9825,7 +9825,7 @@
             { type: 'buff', name: '💨 Esquivar', effect: 'Gana un 50% de probabilidad de esquivar cualquier ataque del enemigo.' },
             { type: 'buff', name: '🌟 Esquiva Área', effect: 'No es afectado por ataques AOE del enemigo.' },
             { type: 'buff', name: '🔄 Contraataque', effect: 'Cada vez que recibe un golpe de un ataque del enemigo, ejecuta su ataque básico sobre el atacante. El ataque básico genera el daño, efecto y cargas correspondientes.' },
-            { type: 'buff', name: '🌵 Espinas', effect: 'Cada vez que recibe un golpe de un ataque del enemigo, causa 1 de daño al atacante. Si el enemigo tiene el debuff Sangrado, causa +2 de daño adicional.' },
+            { type: 'buff', name: '🌵 Espinas', effect: 'Cada vez que recibe un golpe de un ataque del enemigo, causa 1 de daño al atacante. Si el atacante tiene el debuff Sangrado, causa 2 de daño en total en lugar de 1.' },
             { type: 'buff', name: '🛡️ Armadura', effect: 'Reduce un 50% el daño recibido por golpe.' },
             { type: 'buff', name: '⚡ Celeridad', effect: 'Incrementa un 10% la velocidad del portador.' },
             { type: 'buff', name: '👁️‍🗨️ Anticipación', effect: 'Cuando un enemigo gana un turno adicional, realiza 3 golpes básicos sobre ese enemigo. Cada ataque básico genera el daño, efecto y cargas correspondientes.' },
@@ -9836,14 +9836,15 @@
             { type: 'buff', name: '❄️ Aura Gélida', effect: 'Cuando el portador es golpeado por un enemigo, aplica Congelación de 1 turno al atacante.' },
             { type: 'buff', name: '🌑 Aura Oscura', effect: 'Cuando el portador es golpeado por un enemigo, elimina 1 carga del atacante. 30% de probabilidad de eliminar 2 cargas adicionales.' },
             { type: 'buff', name: '✨ Aura de Luz', effect: 'Duplica la cantidad de recuperación de HP del portador.' },
-            { type: 'buff', name: '🦠 Infectar', effect: 'Cuando el portador es golpeado, aplica el debuff Veneno de 2 turnos sobre el atacante.' },
+            { type: 'buff', name: '🦠 Infectar', effect: 'Cuando el portador es golpeado, aplica 2 stacks del debuff Veneno sobre el atacante.' },
             { type: 'buff', name: '🤝 Asistir', effect: 'Cuando un aliado realiza un ataque Especial u Over (Single Target), ejecuta un ataque básico sobre el enemigo atacado. El ataque básico causa el daño, efecto y cargas correspondientes.' },
             { type: 'buff', name: '🪞 Reflejar', effect: 'Cuando el portador recibe un ataque básico, especial u over, el atacante recibe el mismo daño que causó.' },
             // ── DEBUFFS ────────────────────────────────────────────────────────
             { type: 'debuff', name: '🔥 Quemadura', effect: 'Causa daño directo a los HP del portador cada turno. No es absorbido por el escudo.' },
             { type: 'debuff', name: '☀️ Quemadura Solar', effect: 'El portador no puede recuperar HP de ninguna fuente (curación, regeneración, robo de vida, etc.) mientras esté activo.' },
-            { type: 'debuff', name: '☠️ Veneno', effect: 'Causa daño por tick. El daño incrementa +1 cada turno que el veneno permanezca activo (tick 1 = 1 dmg, tick 2 = 2 dmg, etc.). No es absorbido por el escudo.' },
-            { type: 'debuff', name: '🩸 Sangrado', effect: 'El portador recibe +1 o +2 (aleatorio) de daño adicional por cada golpe recibido. No es absorbido por el escudo.' },
+            { type: 'debuff', name: '☠️ Veneno', effect: 'Se acumula en stacks (ej. Veneno 3S). Al final de la ronda causa daño igual al total de stacks acumulados, y luego el debuff expira por completo. No es absorbido por el escudo.' },
+            { type: 'debuff', name: '🩸 Sangrado', effect: 'Dura la cantidad de turnos que indique la habilidad que lo aplicó (1 turno si no se especifica). Al final de cada ronda causa 1 o 2 de daño (aleatorio) y reduce su duración en 1. Si el portador ya tiene Sangrado activo y recibe otro, ambos se eliminan y se convierte en Hemorragia. No es absorbido por el escudo.' },
+            { type: 'debuff', name: '🩸💀 Hemorragia', effect: 'No expira por turnos ni rondas — solo se elimina con un efecto que limpie o disipe debuffs. Al final de cada ronda causa de 3 a 6 de daño (aleatorio) y el portador pierde esa misma cantidad de cargas. No se puede aplicar Sangrado sobre un personaje con Hemorragia activa. No es absorbido por el escudo.' },
             { type: 'debuff', name: '⭐ Aturdimiento', effect: 'El portador pierde su próximo turno.' },
             { type: 'debuff', name: '💫 Mega Aturdimiento', effect: 'El portador pierde sus próximos 2 turnos.' },
             { type: 'debuff', name: '❄️ Congelación', effect: '50% de probabilidad de perder su próximo turno. Reduce la velocidad del portador un 10%.' },

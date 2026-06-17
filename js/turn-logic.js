@@ -2440,6 +2440,85 @@
 
         function processEndOfRoundEffects() {
             try {
+                // ══════════════════════════════════════════════════════════════
+                // VENENO (stackeable) / SANGRADO (por turnos) / HEMORRAGIA (permanente)
+                // Todos se calculan y aplican AQUÍ, una sola vez al final de la ronda.
+                // ══════════════════════════════════════════════════════════════
+                for (const _eorN in gameState.characters) {
+                    const _eorC = gameState.characters[_eorN];
+                    if (!_eorC || _eorC.isDead || _eorC.hp <= 0 || !_eorC.statusEffects) continue;
+
+                    // ── VENENO: daño = total de stacks acumulados, luego el debuff expira por completo ──
+                    const _eorPoison = _eorC.statusEffects.find(function(e){ return e && normAccent(e.name||'') === 'veneno'; });
+                    if (_eorPoison) {
+                        let _eorPoisonDmg = _eorPoison.poisonStacks || 0;
+                        if (_eorPoisonDmg > 0) {
+                            // PILAR DEL INSECTO (Shinobu Kocho): Veneno activo en enemigos causa daño doble
+                            if (!passiveExecuting) {
+                                const _shinTeam = _eorC.team === 'team1' ? 'team2' : 'team1';
+                                for (const _sn in gameState.characters) {
+                                    const _sc = gameState.characters[_sn];
+                                    if (!_sc || _sc.isDead || _sc.hp <= 0 || _sc.team !== _shinTeam) continue;
+                                    if (_sc.passive && _sc.passive.name === 'Pilar del Insecto') {
+                                        _eorPoisonDmg *= 2;
+                                        addLog('🦋 Pilar del Insecto: Veneno daño doble (' + _eorPoisonDmg + ')', 'damage');
+                                        break;
+                                    }
+                                }
+                            }
+                            applyDamageWithShield(_eorN, _eorPoisonDmg, null);
+                            addLog('☠️ ' + _eorN + ' recibe ' + _eorPoisonDmg + ' de daño por Veneno (' + (_eorPoison.poisonStacks||0) + 'S) — el debuff expira', 'damage');
+                            if (typeof _animCard === 'function') _animCard(_eorN, 'anim-pulse-green', 600);
+                            if (typeof registerPoisonDamage === 'function') registerPoisonDamage(_eorPoisonDmg);
+                            if (gameState.battleStats && gameState.battleStats.poisonAppliers) {
+                                const _pApp = Array.from(gameState.battleStats.poisonAppliers);
+                                if (_pApp.length > 0 && typeof _mvp === 'function') {
+                                    const _share = _eorPoisonDmg / _pApp.length;
+                                    _pApp.forEach(function(n){ _mvp('damageDone', n, _share); });
+                                }
+                            }
+                            // PROGENITOR DEMONIACO (Muzan): genera 1 carga cuando veneno hace daño
+                            const _muzanP = gameState.characters['Muzan Kibutsuji'];
+                            if (_muzanP && !_muzanP.isDead && _muzanP.hp > 0 && _muzanP.team !== _eorC.team) {
+                                _muzanP.charges = Math.min(20, (_muzanP.charges||0) + 1);
+                                addLog('🧛‍♂️ Progenitor Demoniaco: Muzan genera 1 carga (veneno activo)', 'buff');
+                            }
+                        }
+                        // El debuff Veneno expira por completo tras aplicarse, sin importar si hizo daño o no
+                        _eorC.statusEffects = (_eorC.statusEffects||[]).filter(function(e){ return e !== _eorPoison; });
+                    }
+
+                    // ── HEMORRAGIA: 3-6 daño + pierde esa misma cantidad de cargas, cada ronda, NO expira por turnos ──
+                    const _eorHemo = (gameState.characters[_eorN] && gameState.characters[_eorN].statusEffects || []).find(function(e){ return e && normAccent(e.name||'') === 'hemorragia'; });
+                    if (_eorHemo && !_eorC.isDead && _eorC.hp > 0) {
+                        const _eorHemoDmg = Math.floor(Math.random() * 4) + 3; // 3 a 6
+                        applyDamageWithShield(_eorN, _eorHemoDmg, null);
+                        const _eorHemoChar = gameState.characters[_eorN];
+                        if (_eorHemoChar) {
+                            _eorHemoChar.charges = Math.max(0, (_eorHemoChar.charges||0) - _eorHemoDmg);
+                        }
+                        addLog('🩸💀 ' + _eorN + ' recibe ' + _eorHemoDmg + ' de daño por Hemorragia y pierde ' + _eorHemoDmg + ' cargas', 'damage');
+                        if (typeof _animCard === 'function') _animCard(_eorN, 'anim-pulse-red', 600);
+                    }
+
+                    // ── SANGRADO: 1-2 daño al final de ronda, decrementa duración, expira al llegar a 0 ──
+                    const _eorBleed = (gameState.characters[_eorN] && gameState.characters[_eorN].statusEffects || []).find(function(e){ return e && normAccent(e.name||'') === 'sangrado'; });
+                    if (_eorBleed && !_eorC.isDead && _eorC.hp > 0) {
+                        const _eorBleedDmg = Math.floor(Math.random() * 2) + 1; // 1 a 2
+                        applyDamageWithShield(_eorN, _eorBleedDmg, null);
+                        addLog('🩸 ' + _eorN + ' recibe ' + _eorBleedDmg + ' de daño por Sangrado', 'damage');
+                        if (typeof _animCard === 'function') _animCard(_eorN, 'anim-pulse-red', 600);
+                        _eorBleed.duration = (_eorBleed.duration || 1) - 1;
+                        if (_eorBleed.duration <= 0) {
+                            const _eorCharNow = gameState.characters[_eorN];
+                            if (_eorCharNow) {
+                                _eorCharNow.statusEffects = (_eorCharNow.statusEffects||[]).filter(function(e){ return e !== _eorBleed; });
+                            }
+                            addLog('🩸 Sangrado de ' + _eorN + ' ha expirado', 'info');
+                        }
+                    }
+                }
+
                 // ── ENFORCE PERMANENT PASSIVES (run at start of each round) ──
                 for (const _pn in gameState.characters) {
                     const _pc = gameState.characters[_pn];

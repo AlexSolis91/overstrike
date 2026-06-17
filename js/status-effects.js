@@ -215,89 +215,10 @@ function processBurnEffects(charName) {
         }
 
         function processNewDebuffEffects(charName) {
-            const char = gameState.characters[charName];
-            if (!char || !char.statusEffects) return;
-
-            // VENENO: un solo stack consolidado con daño progresivo por continuidad
-            const poisonEffect = char.statusEffects.find(e => e && normAccent(e.name||'') === 'veneno');
-            if (poisonEffect) {
-                poisonEffect.poisonTick = (poisonEffect.poisonTick || 0) + 1;
-                let totalVenenoDmg = poisonEffect.poisonTick;
-                const hasChargeDrain = !!poisonEffect.poisonChargeDrain;
-
-                // PILAR DEL INSECTO (Shinobu Kocho): Veneno activo en enemigos causa daño doble
-                if (!passiveExecuting) {
-                    const _shinTeam = char.team === 'team1' ? 'team2' : 'team1';
-                    for (const _sn in gameState.characters) {
-                        const _sc = gameState.characters[_sn];
-                        if (!_sc || _sc.isDead || _sc.hp <= 0 || _sc.team !== _shinTeam) continue;
-                        if (_sc.passive && _sc.passive.name === 'Pilar del Insecto') {
-                            totalVenenoDmg *= 2;
-                            addLog('🦋 Pilar del Insecto: Veneno daño doble (' + totalVenenoDmg + ')', 'damage');
-                            break;
-                        }
-                    }
-                }
-
-                applyDamageWithShield(charName, totalVenenoDmg, null);
-
-                // ANARQUÍA (Joker): 50% stun when a character takes poison damage
-                if (!passiveExecuting) {
-                    const _jkrChar = gameState.characters[charName];
-                    if (_jkrChar) {
-                        const _jkrEnemyTeam = _jkrChar.team === 'team1' ? 'team2' : 'team1';
-                        for (const _jkn in gameState.characters) {
-                            const _jkc = gameState.characters[_jkn];
-                            if (!_jkc || _jkc.isDead || _jkc.hp <= 0 || _jkc.team !== _jkrEnemyTeam) continue;
-                            if (!_jkc.passive || _jkc.passive.name !== 'Anarquía') continue;
-                            if (Math.random() < 0.50) {
-                                applyStun(charName, 1);
-                                addLog('🃏 Anarquía: ' + charName + ' queda Aturdido por daño de Veneno', 'debuff');
-                            }
-                            break;
-                        }
-                    }
-                }
-                addLog('☠️ ' + charName + ' recibe ' + totalVenenoDmg + ' de daño por Veneno (tick ' + poisonEffect.poisonTick + ')', 'damage');
-                if (typeof _animCard === 'function') _animCard(charName, 'anim-pulse-green', 600);
-                // MVP: registrar daño por veneno + daño causado al aplicador
-                if (typeof registerPoisonDamage === 'function') registerPoisonDamage(totalVenenoDmg);
-                if (gameState.battleStats && gameState.battleStats.poisonAppliers) {
-                    const _pApp = Array.from(gameState.battleStats.poisonAppliers);
-                    if (_pApp.length > 0 && typeof _mvp === 'function') {
-                        const _share = totalVenenoDmg / _pApp.length;
-                        _pApp.forEach(function(n){ _mvp('damageDone', n, _share); });
-                    }
-                }
-
-                // PILAR DEL INSECTO (Shinobu): genera 1 carga al equipo aliado cuando Shinobu recibe daño de Veneno
-                if (!passiveExecuting) {
-                    const _shinSelf = gameState.characters[charName];
-                    if (_shinSelf && (_shinSelf.passive && _shinSelf.passive.name === 'Pilar del Insecto')) {
-                        for (const _an in gameState.characters) {
-                            const _a = gameState.characters[_an];
-                            if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _shinSelf.team) continue;
-                            _a.charges = Math.min(20, (_a.charges||0) + 1);
-                        }
-                        addLog('🦋 Pilar del Insecto: Equipo aliado genera 1 carga (Shinobu recibió daño de Veneno)', 'buff');
-                    }
-                }
-
-                // PROGENITOR DEMONIACO (Muzan): genera 1 carga cuando veneno hace daño
-                const muzanP = gameState.characters['Muzan Kibutsuji'];
-                if (muzanP && !muzanP.isDead && muzanP.hp > 0 && muzanP.team !== (gameState.characters[charName] && gameState.characters[charName].team)) {
-                    muzanP.charges = Math.min(20, (muzanP.charges || 0) + 1);
-                    addLog('🧛‍♂️ Progenitor Demoniaco: Muzan genera 1 carga (veneno activo)', 'buff');
-                }
-                // LAZO DIVINO (Goku Black): 50% chance de drenar 2 cargas por tick
-                if (hasChargeDrain && Math.random() < 0.5) {
-                    const victim = gameState.characters[charName];
-                    if (victim && victim.charges > 0) {
-                        victim.charges = Math.max(0, victim.charges - 2);
-                        addLog('🌀 Lazo Divino: ' + charName + ' pierde 2 cargas por el veneno', 'damage');
-                    }
-                }
-            }
+            // El procesamiento de Veneno ahora ocurre UNA VEZ al final de la ronda
+            // (ver processEndOfRoundEffects en turn-logic.js), no por personaje al inicio de su turno.
+            // Esta función se mantiene como no-op para no romper la llamada existente.
+            return;
         }
 
         function processSolarBurnEffects(charName) {
@@ -333,7 +254,7 @@ function processBurnEffects(charName) {
             if (!char || !char.statusEffects) return;
             
             char.statusEffects = char.statusEffects.map(effect => {
-                if (effect && effect.duration !== undefined && !effect.untilRoundEnd && !effect.permanent) effect.duration--;
+                if (effect && effect.duration !== undefined && !effect.untilRoundEnd && !effect.permanent && normAccent(effect.name||'') !== 'sangrado') effect.duration--;
                 return effect;
             }).filter(effect => {
                 if (!effect) return false;

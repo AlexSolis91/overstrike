@@ -929,14 +929,7 @@
                 return 0; // golpe esquivado
             }
 
-            // SANGRADO STACKEABLE: +1 daño por cada stack activo
-            if (attackerName !== null) {
-                const sangradoStacks = (target.statusEffects || []).filter(e => e && normAccent(e.name || '') === 'sangrado').length;
-                if (sangradoStacks > 0) {
-                    damage += sangradoStacks;
-                    addLog(`🩸 Sangrado x${sangradoStacks}: ${targetName} recibe +${sangradoStacks} daño`, 'damage');
-                }
-            }
+            // (Sangrado ahora se procesa al final de ronda — ver processEndOfRoundEffects en turn-logic.js. Ya no se suma al golpe en curso.)
 
             // DEBILITAR STACKEABLE: +50% daño por cada stack activo
             if (attackerName !== null) {
@@ -1857,13 +1850,13 @@
                 }
             }
 
-            // ── SEÑOR DE LOS NAZGUL (Rey Brujo): Infectar — veneno 2T al atacante al recibir daño ──
+            // ── SEÑOR DE LOS NAZGUL (Rey Brujo): Infectar — 2 stacks de Veneno al atacante al recibir daño ──
             if (remainingDamage > 0 && attackerName && !passiveExecuting && !_yorichiPassiveBlocked &&
                 target.passive && target.passive.name === 'Señor de los Nazgul' &&
                 target.hp > 0 && !target.isDead) {
                 passiveExecuting = true;
                 if (typeof applyPoison === 'function') applyPoison(attackerName, 2);
-                addLog('🦠 Infectar: ' + attackerName + ' recibe Veneno 2T al atacar al Rey Brujo', 'debuff');
+                addLog('🦠 Infectar: ' + attackerName + ' recibe Veneno 2S al atacar al Rey Brujo', 'debuff');
                 passiveExecuting = false;
             }
 
@@ -2480,11 +2473,11 @@
                     }
                     passiveExecuting = false;
                 }
-                // BUFF INFECTAR: cuando el portador recibe un golpe, aplica Veneno 2T al atacante
+                // BUFF INFECTAR: cuando el portador recibe un golpe, aplica 2 stacks de Veneno al atacante
                 if (!passiveExecuting && hasStatusEffect(targetName, 'Infectar') && attackerName) {
                     passiveExecuting = true;
-                    applyDebuff(attackerName, { name: 'Veneno', type: 'debuff', duration: 2, emoji: '☠️', poisonPercent: 10 });
-                    addLog('🦠 Infectar: ' + attackerName + ' recibe Veneno 2T por atacar a ' + targetName, 'debuff');
+                    if (typeof applyPoison === 'function') applyPoison(attackerName, 2);
+                    addLog('🦠 Infectar: ' + attackerName + ' recibe Veneno 2S por atacar a ' + targetName, 'debuff');
                     passiveExecuting = false;
                 }
                 // BUFF ESPINAS: al recibir un golpe, causa 1 daño al atacante (+1 si atacante tiene Sangrado)

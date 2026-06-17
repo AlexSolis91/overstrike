@@ -837,8 +837,24 @@ function applyDebuff(targetName, effectObj) {
             if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }
             const _bleedTgt = gameState.characters[targetName];
             if (_bleedTgt && _bleedTgt.passive && _bleedTgt.passive.name === 'Invierno Eterno') { addLog('☠️ Invierno Eterno: Rey de la Noche es inmune a Sangrado', 'buff'); return; }
-            applyDebuff(targetName, { name: 'Sangrado', type: 'debuff', duration, emoji: '🩸' });
-            addLog(`🩸 ${targetName} sufre Sangrado por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
+            const _bleedDuration = duration || 1; // Por defecto Sangrado 1T si la habilidad no especifica
+            if (!_bleedTgt) return;
+            // No se puede aplicar Sangrado sobre un personaje con Hemorragia activa
+            const _hasHemorragia = (_bleedTgt.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'hemorragia'; });
+            if (_hasHemorragia) {
+                addLog(`🩸 ${targetName} ya tiene Hemorragia activa — no se puede aplicar Sangrado`, 'info');
+                return;
+            }
+            // Si ya tiene Sangrado activo → ambos se eliminan y se aplica Hemorragia (permanente)
+            const _existingBleed = (_bleedTgt.statusEffects||[]).find(function(e){ return e && normAccent(e.name||'') === 'sangrado'; });
+            if (_existingBleed) {
+                _bleedTgt.statusEffects = (_bleedTgt.statusEffects||[]).filter(function(e){ return !e || normAccent(e.name||'') !== 'sangrado'; });
+                applyDebuff(targetName, { name: 'Hemorragia', type: 'debuff', duration: 999, permanent: true, emoji: '🩸💀' });
+                addLog(`🩸💀 ${targetName} ya tenía Sangrado activo — ambos se eliminan y se aplica Hemorragia (permanente)`, 'damage');
+                return;
+            }
+            applyDebuff(targetName, { name: 'Sangrado', type: 'debuff', duration: _bleedDuration, emoji: '🩸' });
+            addLog(`🩸 ${targetName} sufre Sangrado por ${_bleedDuration} turno${_bleedDuration > 1 ? 's' : ''}`, 'damage');
         }
 
         function applyFear(targetName, duration) {
@@ -929,9 +945,10 @@ function applyDebuff(targetName, effectObj) {
             }
         }
 
-        function applyPoison(targetName, duration) {
+        function applyPoison(targetName, stacks) {
             const target = gameState.characters[targetName];
             if (!target) return;
+            if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }
             // MVP: registrar quién aplica veneno
             if (gameState.battleStats && gameState.selectedCharacter) {
                 if (!gameState.battleStats.poisonAppliers) gameState.battleStats.poisonAppliers = new Set();
@@ -944,15 +961,15 @@ function applyDebuff(targetName, effectObj) {
                     return;
                 }
             }
-            // Veneno acumulable por duración: si ya existe un stack activo, solo suma turnos
-            // El poisonTick NO se reinicia para mantener el daño progresivo continuo
+            const _poisonStacks = stacks || 1;
+            // VENENO STACKEABLE: un solo debuff que acumula stacks. Daño = total de stacks, calculado UNA VEZ al final de ronda.
             const existing = (target.statusEffects || []).find(e => e && normAccent(e.name||'') === 'veneno');
             if (existing) {
-                existing.duration = (existing.duration || 0) + duration;
-                addLog(`☠️ ${targetName} acumula +${duration} turnos de Veneno (total: ${existing.duration}t, tick actual: ${existing.poisonTick || 0})`, 'damage');
+                existing.poisonStacks = (existing.poisonStacks || 0) + _poisonStacks;
+                addLog(`☠️ ${targetName} acumula +${_poisonStacks} stack(s) de Veneno (total: ${existing.poisonStacks}S)`, 'damage');
             } else {
-                applyDebuff(targetName, { name: 'Veneno', type: 'debuff', duration, emoji: '☠️', poisonTick: 0 });
-                addLog(`☠️ ${targetName} es envenenado por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
+                applyDebuff(targetName, { name: 'Veneno', type: 'debuff', duration: 999, permanent: true, emoji: '☠️', poisonStacks: _poisonStacks });
+                addLog(`☠️ ${targetName} es envenenado (Veneno ${_poisonStacks}S)`, 'damage');
             }
             if (typeof triggerIzanamiPartB === 'function') triggerIzanamiPartB(targetName);
             // SEÑOR DE LOS NAZGUL (Rey Brujo): cura 2 HP al aplicar Veneno en un enemigo
