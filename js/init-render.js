@@ -305,8 +305,9 @@
             const display = [];
             let burnPct = 0, burnFlat = 0, burnDur = 0, burnAdded = false;
             let solarPct = 0, solarAdded = false;
-            let bleedStack = 0, bleedAdded = false;
-            let poisonMaxDur = 0, poisonStacks = 0, poisonAdded = false;
+            let bleedDur = 0, bleedAdded = false;
+            let poisonTotalStacks = 0, poisonAdded = false;
+            let hemoAdded = false;
 
             statusEffects.forEach(function(e) {
                 if (!e || !e.name) return;
@@ -319,15 +320,17 @@
                     if (e.duration !== undefined) burnDur = Math.max(burnDur, e.duration);
                     burnAdded = true;
                 } else if (nn === 'quemadura solar') {
-                    solarPct += (e.duration || 1); // acumular turnos en lugar de %
+                    solarPct += (e.duration || 1);
                     solarAdded = true;
                 } else if (nn === 'sangrado') {
-                    bleedStack += 1;
+                    bleedDur = Math.max(bleedDur, e.duration || 1);
                     bleedAdded = true;
                 } else if (nn === 'veneno') {
-                    poisonStacks++;
-                    poisonMaxDur = Math.max(poisonMaxDur, e.duration || 0);
+                    // Nuevo sistema: acumula stacks del campo poisonStacks
+                    poisonTotalStacks += (e.poisonStacks || 0);
                     poisonAdded = true;
+                } else if (nn === 'hemorragia') {
+                    hemoAdded = true;
                 } else {
                     // Normal single display — use official emoji from _EFFECT_MAP if available
                     var _dispEmoji = e.emoji || '✨';
@@ -345,9 +348,10 @@
                 else if (burnPct > 0) display.push({ emoji: '🔥', label: 'Quemadura ' + burnPct + '%', sub: '', type: 'debuff' });
                 else display.push({ emoji: '🔥', label: 'Quemadura', sub: '', type: 'debuff' });
             }
-            if (solarAdded)  display.push({ emoji: '☀️', label: 'QS',  sub: solarPct + 'T', type: 'debuff' });
-            if (bleedAdded)  display.push({ emoji: '🩸', label: 'Sangrado ' + bleedStack,        sub: '', type: 'debuff' });
-            if (poisonAdded) display.push({ emoji: '☠️', label: 'Veneno',                        sub: poisonMaxDur + 'T', type: 'debuff' });
+            if (solarAdded)  display.push({ emoji: '☀️', label: 'QS', sub: solarPct + 'T', type: 'debuff' });
+            if (poisonAdded) display.push({ emoji: '☠️', label: 'Veneno ' + poisonTotalStacks + 'S', sub: '', type: 'debuff' });
+            if (bleedAdded)  display.push({ emoji: '🩸', label: 'Sangrado', sub: bleedDur + 'T', type: 'debuff' });
+            if (hemoAdded)   display.push({ emoji: '🩸💀', label: 'Hemorragia', sub: '∞', type: 'debuff' });
 
             return display;
         }
