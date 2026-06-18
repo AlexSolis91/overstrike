@@ -439,8 +439,9 @@ function processBurnEffects(charName) {
             // AURA DE LUZ: duplica la curación
             const _hasAuraLuz = (typeof hasStatusEffect === 'function') &&
                 (hasStatusEffect(charName, 'Aura de Luz') || hasStatusEffect(charName, 'Aura de luz'));
-            // ECO SANADOR (Reliquia): duplica la curación recibida
-            const _hasEcoSanador = _ch._doubleHeal;
+            // ECO SANADOR (Reliquia): duplica la curación — flag seteado por skills.js al inicio del turno,
+            // limpiado en endTurn() para cubrir curaciones AOE (múltiples llamadas a applyHeal en mismo turno)
+            const _hasEcoSanador = !!_ch._doubleHeal;
             const _healMult = (_hasAuraLuz ? 2 : 1) * (_hasEcoSanador ? 2 : 1);
             const _healAmt = Math.ceil(amount * _healMult);
             const _oldHp = _ch.hp;

@@ -1487,6 +1487,11 @@
             gameState._relicEffectsActive = false;
             gameState._isCritHit = false;
             gameState._abilityExecuting = false; // Limpiar guard de ejecución
+            // Limpiar flag de Eco Sanador (doble curación) al final del turno
+            if (gameState.selectedCharacter) {
+                const _esTurnChar = gameState.characters[gameState.selectedCharacter];
+                if (_esTurnChar) _esTurnChar._doubleHeal = false;
+            }
 
             // ── SKEGGÖX: turno adicional pendiente ──
             if (gameState._skeggoxExtraTurn) {
