@@ -103,6 +103,17 @@
                 }
                 
                 addLog(`👻 ${summonerName} invoca a ${shadowName}!`, 'buff');
+                // ── EL CARCELERO DE LOS MALDITOS (Bolvar PERSONAJE): +5 cargas al invocarse cualquier invocación ──
+                if (!passiveExecuting) {
+                    for (const _bpIN in gameState.characters) {
+                        const _bpIC = gameState.characters[_bpIN];
+                        if (!_bpIC || _bpIC.isDead || _bpIC.hp <= 0 || !_bpIC.passive) continue;
+                        if (_bpIC.passive.name !== 'El Carcelero de los Malditos') continue;
+                        _bpIC.charges = Math.min(20, (_bpIC.charges||0) + 5);
+                        addLog('⚔️ El Carcelero de los Malditos: ' + _bpIN + ' genera 5 cargas (invocación realizada)', 'buff');
+                        break;
+                    }
+                }
                 // NO llamar renderSummons aquí - se llama al final del turno
             } catch (error) {
                 console.error('Error en summonShadow:', error);
@@ -1237,6 +1248,13 @@
                         addLog('🐂 Fortaleza de Tauro: Aldebaran genera 2 cargas (escudo absorbió golpe)', 'buff');
                     }
 
+                    // ÚLTIMO REY DE LOS MUERTOS (Bolvar BOSS): genera 3 cargas por cada punto de escudo HP perdido
+                    if (target.passive && target.passive.name === 'Último Rey de los Muertos') {
+                        const _brvCharges = damage * 3; // 3 cargas por cada HP de escudo absorbido
+                        target.charges = Math.min(20, (target.charges||0) + _brvCharges);
+                        addLog('💀 Último Rey de los Muertos: Bolvar genera ' + _brvCharges + ' cargas (' + damage + ' HP escudo absorbido)', 'buff');
+                    }
+
                     // SUSANOO (Madara): contraataca con básico cada vez que el escudo pierde HP
                     if (target.shieldEffect === 'susanoo_counter_madara' && !passiveExecuting && attackerName && damage > 0) {
                         passiveExecuting = true;
@@ -1273,6 +1291,13 @@
 
                     // HIJO DE ODIN (Ragnar): escudo se rompe → NO genera cargas (escudo no sigue activo)
                     // fire_charge_regen: escudo se rompe → NO genera cargas (escudo no sigue activo)
+
+                    // ÚLTIMO REY DE LOS MUERTOS (Bolvar BOSS): genera 3 cargas por HP de escudo absorbido incluso al romperse
+                    if (target.passive && target.passive.name === 'Último Rey de los Muertos') {
+                        const _brvC2 = shieldHP * 3;
+                        target.charges = Math.min(20, (target.charges||0) + _brvC2);
+                        addLog('💀 Último Rey de los Muertos: Bolvar genera ' + _brvC2 + ' cargas (' + shieldHP + ' HP escudo roto)', 'buff');
+                    }
 
                     target.shield = 0;
                     target.shieldEffect = null;
@@ -2925,6 +2950,16 @@ function applyRegeneration(targetName, amount, duration) {
                 Object.values(gameState.characters).filter(c => c && !c.isDead && c.hp > 0).length);
             
             addLog(`✨ ${targetName} ha sido revivido con ${target.maxHp} HP y 10 cargas!`, 'heal');
+
+            // ── EL CARCELERO DE LOS MALDITOS (Bolvar PERSONAJE): +5 cargas al revivir cualquier personaje ──
+            for (const _bpRN in gameState.characters) {
+                const _bpRC = gameState.characters[_bpRN];
+                if (!_bpRC || _bpRC.isDead || _bpRC.hp <= 0 || !_bpRC.passive) continue;
+                if (_bpRC.passive.name !== 'El Carcelero de los Malditos') continue;
+                _bpRC.charges = Math.min(20, (_bpRC.charges||0) + 5);
+                addLog('⚔️ El Carcelero de los Malditos: ' + _bpRN + ' genera 5 cargas (personaje revivido)', 'buff');
+                break;
+            }
         }
 
         // ── SANGRE DE YMIR: aplica efectos cuando Espinas causa daño ──
