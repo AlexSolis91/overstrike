@@ -469,6 +469,57 @@
                 }
 
                 // ═══════════════════════════════════════════════════════════════════
+                // BOLVAR FORDRAGON — Prioridad específica:
+                // Luz Corrupta (Over, si tiene 10+ buffs activos) > Choque de Almas > Almas de los Malditos > Corte de Sombras
+                // ═══════════════════════════════════════════════════════════════════
+                if (window._bossMode && char.isBoss && charName === 'Bolvar Fordragon') {
+                    let _bolvChosen = null;
+                    const _bolvOver = usable.find(function(ab){ return ab.type === 'over'; });
+                    const _bolvBuffCount = (char.statusEffects||[]).filter(function(e){ return e && e.type === 'buff' && !e.passiveHidden; }).length;
+                    // Use Over when available (it's more powerful with more buffs)
+                    if (_bolvOver) {
+                        _bolvChosen = _bolvOver;
+                    } else {
+                        const _bolvChoque = usable.find(function(ab){ return ab.effect === 'choque_almas_bolvar'; });
+                        if (_bolvChoque) {
+                            _bolvChosen = _bolvChoque;
+                        } else {
+                            const _bolvAlmas = usable.find(function(ab){ return ab.effect === 'almas_malditos_bolvar'; });
+                            if (_bolvAlmas) {
+                                _bolvChosen = _bolvAlmas;
+                            } else {
+                                _bolvChosen = usable[0];
+                            }
+                        }
+                    }
+                    chosen = _bolvChosen || chosen;
+                    // Pick target with most debuffs (for Almas) or most charges (for Over)
+                    let _bolvTarget = enemies.length > 0 ? enemies.reduce(function(best, n) {
+                        const cb = gameState.characters[best];
+                        const cn = gameState.characters[n];
+                        if (!cn) return best;
+                        const _debuffs = ['Congelacion','Congelación','Mega Congelacion','Megacongelacion','Quemadura','Quemadura Solar'];
+                        const scoreB = _debuffs.filter(d => typeof hasStatusEffect === 'function' && hasStatusEffect(best, d)).length * 3 + (cb ? cb.charges||0 : 0);
+                        const scoreN = _debuffs.filter(d => typeof hasStatusEffect === 'function' && hasStatusEffect(n, d)).length * 3 + (cn.charges||0);
+                        return scoreN > scoreB ? n : best;
+                    }, enemies[0]) : null;
+
+                    addLog('💀 ' + charName + ' decide usar ' + chosen.name + (_bolvTarget ? ' sobre ' + _bolvTarget : ''), 'info');
+                    gameState.selectedAbility = chosen;
+                    gameState.adjustedCost = chosen.cost;
+                    setTimeout(function() {
+                        if (chosen.target === 'aoe' || chosen.target === 'mt' || chosen.target === 'self') {
+                            executeAbility(charName);
+                        } else if (_bolvTarget) {
+                            executeAbility(_bolvTarget);
+                        } else {
+                            endTurn();
+                        }
+                    }, chosen.type === 'over' ? 200 : 400);
+                    return; // ← Salida temprana — nada sobreescribe la decisión de Bolvar
+                }
+
+                // ═══════════════════════════════════════════════════════════════════
                 // JEFE DE SALA — Prioridad ABSOLUTA: Over > Mayor Daño
                 // Este bloque hace return inmediato para que nada más cambie chosen
                 // ═══════════════════════════════════════════════════════════════════
