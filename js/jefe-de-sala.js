@@ -53,6 +53,12 @@
             { name:'Lamento de Fawkes',        type:'special', cost:5,  chargeGain:0, damage:0,  target:'self',   effect:'lamento_de_fawkes_dumbledore',        description:'Invoca a Fawkes. Bloqueado mientras Fawkes esté en el campo.' },
             { name:'Partis Temporus',          type:'special', cost:8,  chargeGain:0, damage:3,  target:'aoe',    effect:'partis_temporus_dumbledore',          description:'3 daño AOE. Aplica Quemadura 3HP por 3 turnos a los enemigos golpeados.' },
             { name:'Prisión de Agua y Fuego',  type:'over',    cost:15, chargeGain:0, damage:5,  target:'single', effect:'prision_agua_fuego_dumbledore',       description:'5 daño ST + 45 daño adicional repartido aleatoriamente entre todos los enemigos.' }
+        ],
+        'Bolvar Fordragon': [
+            { name:'Corte de Sombras',          type:'basic',   cost:0,  chargeGain:2, damage:1,  target:'single', effect:'corte_sombras_bolvar',                description:'1 daño ST. 20% probabilidad de aplicar Congelación. 20% de Megacongelación. 20% de Quemaduras. 20% de Quemadura Solar.' },
+            { name:'Almas de los Malditos',     type:'special', cost:5,  chargeGain:0, damage:5,  target:'single', effect:'almas_malditos_bolvar',               description:'5 daño ST. Si el objetivo tiene Congelación: Bolvar recibe Protección Sagrada. Si tiene Megacongelación: Escudo Sagrado. Si tiene Quemaduras: Armadura. Si tiene Quemadura Solar: Esquivar.' },
+            { name:'Choque de Almas',           type:'special', cost:12, chargeGain:0, damage:3,  target:'mt',     effect:'choque_almas_bolvar',                 description:'3 daño a todos los enemigos con Congelación, Megacongelación, Quemaduras o Quemadura Solar activos (hasta 4 golpes si tienen 2+ debuffs de la lista). +1 daño directo por cada debuff de la lista activo en el equipo enemigo.' },
+            { name:'Luz Corrupta',              type:'over',    cost:20, chargeGain:0, damage:5,  target:'aoe',    effect:'luz_corrupta_bolvar',                 description:'5 daño AOE. Disipa todos los buffs activos de Bolvar y causa +5 daño adicional por cada buff disipado.' }
         ]
     };
     window.BOSS_ABILITIES = BOSS_ABILITIES;
@@ -64,6 +70,10 @@
         'Albus Dumbledore': {
             name: 'Maestría de la Varita de Saúco',
             description: 'Albus Dumbledore es inmune a debuffs. Cada vez que un enemigo realiza un ataque especial u Over, Albus Dumbledore se cura 30 HP y genera 3 cargas. Cada vez que un enemigo recibe daño por debuff Quemaduras, Albus Dumbledore genera 5 cargas. Al inicio de cada ronda, Albus Dumbledore genera 3 cargas por cada enemigo derrotado.'
+        },
+        'Bolvar Fordragon': {
+            name: 'Último Rey de los Muertos',
+            description: 'Al inicio de cada ronda, Bolvar se aplica 3 buffs aleatorios. Genera 3 cargas por cada punto de escudo HP que pierde. Cada vez que se aplica Congelación y/o Quemaduras a cualquier personaje, Bolvar se aplica escudo de 3 HP. Cada vez que se aplica Quemadura Solar y/o Megacongelación a cualquier personaje, Bolvar se aplica escudo de 10 HP.'
         }
     };
     window.BOSS_DEFAULT_PASSIVES = BOSS_DEFAULT_PASSIVES;
