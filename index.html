@@ -1098,6 +1098,12 @@
                 portrait: 'https://i.ibb.co/LX4h03vQ/image.png',
                 hp: 10000, maxHp: 10000, speed: 80,
                 passive: { name: 'Maestría de la Varita de Saúco', description: 'Albus Dumbledore es inmune a debuffs. Cada vez que un enemigo realiza un ataque especial u Over, Albus Dumbledore se cura 30 HP y genera 3 cargas. Cada vez que un enemigo recibe daño por debuff Quemaduras, Albus Dumbledore genera 5 cargas. Al inicio de cada ronda, Albus Dumbledore genera 3 cargas por cada enemigo derrotado.' }
+            },
+            'bolvar_fordragon': {
+                name: 'Bolvar Fordragon',
+                portrait: 'https://i.ibb.co/prMkQpBk/Whats-App-Image-2026-06-22-at-2-24-27-PM.jpg',
+                hp: 20000, maxHp: 20000, speed: 80,
+                passive: { name: 'Último Rey de los Muertos', description: 'Al inicio de cada ronda, Bolvar se aplica 3 buffs aleatorios. Genera 3 cargas por cada punto de escudo HP que pierde. Cada vez que se aplica Congelación y/o Quemaduras a cualquier personaje, Bolvar se aplica escudo de 3 HP. Cada vez que se aplica Quemadura Solar y/o Megacongelación a cualquier personaje, Bolvar se aplica escudo de 10 HP.' }
             }
         };
         window.BOSS_DATA = BOSS_DATA;
@@ -2044,6 +2050,13 @@
                         <div style="font-family:Orbitron,sans-serif;font-size:.7rem;color:#4ade80;font-weight:700;">DUMBLEDORE</div>
                         <div style="font-size:.6rem;color:#666;margin-top:2px;">10,000 HP</div>
                         <div style="font-size:.58rem;color:#555;margin-top:1px;">Varita de Saúco</div>
+                    </div>
+                    <div onclick="adminSelectBoss('bolvar_fordragon',this)" id="bosscard-bolvar_fordragon"
+                        style="background:rgba(200,100,0,0.08);border:2px solid rgba(200,100,0,0.3);border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:all .2s;">
+                        <img src="https://i.ibb.co/prMkQpBk/Whats-App-Image-2026-06-22-at-2-24-27-PM.jpg" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #c86400;margin-bottom:6px;" onerror="this.style.display='none'">
+                        <div style="font-family:Orbitron,sans-serif;font-size:.7rem;color:#fb923c;font-weight:700;">BOLVAR</div>
+                        <div style="font-size:.6rem;color:#666;margin-top:2px;">20,000 HP</div>
+                        <div style="font-size:.58rem;color:#555;margin-top:1px;">Rey de los Muertos</div>
                     </div>
                 </div>
 
