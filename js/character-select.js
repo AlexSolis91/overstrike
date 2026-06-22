@@ -614,5 +614,18 @@
                     { name: 'Corona de Hierro', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'self', effect: 'corona_hierro_rba', description: 'Cura al Rey Brujo y a un aliado aleatorio 2 HP por cada Veneno activo en ambos equipos.' },
                     { name: 'Mano de Sauron', type: 'over', cost: 17, chargeGain: 0, damage: 0, target: 'aoe', effect: 'mano_sauron_rba', description: 'Limpia todos los debuffs Veneno del equipo enemigo y causa daño equivalente a los turnos restantes de cada Veneno eliminado.' }
                 ]
+            },
+
+            'Bolvar Fordragon': {
+                hp: 30, maxHp: 30, speed: 80, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/jkysx2NZ/Whats-App-Image-2026-06-22-at-2-25-18-PM.jpg',
+                passive: { name: 'El Carcelero de los Malditos', description: 'Cada vez que se realiza una invocación, un personaje se transforma o un personaje revive, Bolvar genera 5 cargas. Cada vez que se aplica Congelación y/o Quemaduras a cualquier personaje, el equipo aliado se cura 3 HP. Cada vez que se aplica Quemadura Solar y/o Megacongelación a cualquier personaje, el equipo aliado aumenta sus HP máximos en +3 (permanente).' },
+                abilities: [
+                    { name: 'Martillo Bendito',           type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single',     effect: 'martillo_bendito_bolvar',         description: 'Causa 1 daño ST. Aplica buff Mega Provocación en Bolvar.' },
+                    { name: 'Consagración de Pyroescarcha', type: 'special', cost: 3, chargeGain: 0, damage: 1, target: 'single',   effect: 'consagracion_pyroescarcha_bolvar', description: 'Causa 1 daño ST. Si el objetivo tiene Congelación activa: Bolvar recibe Protección Sagrada. Si tiene Megacongelación: Escudo Sagrado. Si tiene Quemaduras: Armadura. Si tiene Quemadura Solar: Esquiva Área.' },
+                    { name: 'Ira del Nuevo Rey',          type: 'special', cost: 8,  chargeGain: 0, damage: 1, target: 'aoe',        effect: 'ira_nuevo_rey_bolvar',            description: 'Elimina (reduce a 0 HP) a todos los personajes del equipo enemigo con transformación activa, que hayan revivido, e invocaciones enemigas. Causa +2 de daño directo por cada personaje e invocación eliminada.' },
+                    { name: 'Voluntad del Nuevo Lich King', type: 'over',  cost: 15, chargeGain: 0, damage: 1, target: 'mt',         effect: 'voluntad_nuevo_lich_bolvar',      description: 'Ataca a todos los enemigos con Congelación, Megacongelación, Quemaduras o Quemadura Solar activos (hasta 4 golpes si el objetivo tiene 2+ debuffs de la lista). +1 daño directo a cada enemigo golpeado por cada debuff de la lista activo en el equipo enemigo.' }
+                ]
             }
         };
