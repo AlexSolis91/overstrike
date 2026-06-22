@@ -943,6 +943,50 @@ function applyDebuff(targetName, effectObj) {
                     }
                 }
             }
+
+            // ── ÚLTIMO REY DE LOS MUERTOS (Bolvar BOSS): escudo al aplicar Congelación (3 HP) o Megacongelación (10 HP) ──
+            if (!passiveExecuting) {
+                for (const _brvN in gameState.characters) {
+                    const _brvC = gameState.characters[_brvN];
+                    if (!_brvC || _brvC.isDead || _brvC.hp <= 0 || !_brvC.passive) continue;
+                    if (_brvC.passive.name !== 'Último Rey de los Muertos') continue;
+                    const _brvShield = mega ? 10 : 3;
+                    if (typeof applyShield === 'function') applyShield(_brvN, _brvShield, 'bolvar_boss_shield');
+                    else _brvC.shield = (_brvC.shield||0) + _brvShield;
+                    addLog('💀 Último Rey de los Muertos: Bolvar recibe escudo +' + _brvShield + ' HP (' + (mega ? 'Megacongelación' : 'Congelación') + ' aplicada)', 'buff');
+                    break;
+                }
+            }
+
+            // ── EL CARCELERO DE LOS MALDITOS (Bolvar PERSONAJE): team heal o maxHp al aplicar Congelación/Megacongelación ──
+            if (!passiveExecuting) {
+                for (const _bpN in gameState.characters) {
+                    const _bpC = gameState.characters[_bpN];
+                    if (!_bpC || _bpC.isDead || _bpC.hp <= 0 || !_bpC.passive) continue;
+                    if (_bpC.passive.name !== 'El Carcelero de los Malditos') continue;
+                    passiveExecuting = true;
+                    if (mega) {
+                        // Megacongelación: equipo aliado +3 HP máximo permanente
+                        for (const _aln in gameState.characters) {
+                            const _alc = gameState.characters[_aln];
+                            if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== _bpC.team) continue;
+                            _alc.maxHp = (_alc.maxHp||0) + 3;
+                            addLog('🧊 El Carcelero de los Malditos: ' + _aln + ' HP máximo +3 (Megacongelación)', 'buff');
+                        }
+                    } else {
+                        // Congelación: equipo aliado se cura 3 HP
+                        for (const _aln in gameState.characters) {
+                            const _alc = gameState.characters[_aln];
+                            if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== _bpC.team) continue;
+                            if (typeof applyHeal === 'function') applyHeal(_aln, 3, 'El Carcelero de los Malditos');
+                            else _alc.hp = Math.min(_alc.maxHp, (_alc.hp||0) + 3);
+                        }
+                        addLog('❄️ El Carcelero de los Malditos: equipo aliado +3 HP (Congelación aplicada)', 'heal');
+                    }
+                    passiveExecuting = false;
+                    break;
+                }
+            }
         }
 
         function applyPoison(targetName, stacks) {
@@ -1099,6 +1143,37 @@ function applyDebuff(targetName, effectObj) {
                     if (_hs.hp <= 0 && typeof removeSummon === 'function') {
                         removeSummon(_hsid, 'derrotado');
                     }
+                    break;
+                }
+            }
+
+            // ── ÚLTIMO REY DE LOS MUERTOS (Bolvar BOSS): escudo +10 HP al aplicar Quemadura Solar ──
+            if (!passiveExecuting) {
+                for (const _brvSN in gameState.characters) {
+                    const _brvSC = gameState.characters[_brvSN];
+                    if (!_brvSC || _brvSC.isDead || _brvSC.hp <= 0 || !_brvSC.passive) continue;
+                    if (_brvSC.passive.name !== 'Último Rey de los Muertos') continue;
+                    if (typeof applyShield === 'function') applyShield(_brvSN, 10, 'bolvar_boss_shield');
+                    else _brvSC.shield = (_brvSC.shield||0) + 10;
+                    addLog('💀 Último Rey de los Muertos: Bolvar recibe escudo +10 HP (Quemadura Solar aplicada)', 'buff');
+                    break;
+                }
+            }
+
+            // ── EL CARCELERO DE LOS MALDITOS (Bolvar PERSONAJE): equipo aliado +3 HP máximo al aplicar Quemadura Solar ──
+            if (!passiveExecuting) {
+                for (const _bpSN in gameState.characters) {
+                    const _bpSC = gameState.characters[_bpSN];
+                    if (!_bpSC || _bpSC.isDead || _bpSC.hp <= 0 || !_bpSC.passive) continue;
+                    if (_bpSC.passive.name !== 'El Carcelero de los Malditos') continue;
+                    passiveExecuting = true;
+                    for (const _aln in gameState.characters) {
+                        const _alc = gameState.characters[_aln];
+                        if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== _bpSC.team) continue;
+                        _alc.maxHp = (_alc.maxHp||0) + 3;
+                        addLog('☀️ El Carcelero de los Malditos: ' + _aln + ' HP máximo +3 (Quemadura Solar aplicada)', 'buff');
+                    }
+                    passiveExecuting = false;
                     break;
                 }
             }
