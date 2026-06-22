@@ -2118,6 +2118,22 @@
                         addLog('💚 Visión Esmeralda: el equipo aliado recibe ' + _lvChosen + ' 2T (inicio de ronda)', 'buff');
                     }
 
+                    // ── ÚLTIMO REY DE LOS MUERTOS (Bolvar BOSS): inicio de ronda → 3 buffs aleatorios en Bolvar ──
+                    for (const _brvRN in gameState.characters) {
+                        const _brvRC = gameState.characters[_brvRN];
+                        if (!_brvRC || _brvRC.isDead || _brvRC.hp <= 0 || !_brvRC.passive) continue;
+                        if (_brvRC.passive.name !== 'Último Rey de los Muertos') continue;
+                        const _brvPool = ['Esquivar', 'Esquiva Area', 'Armadura', 'Regeneracion', 'Sigilo', 'Escudo Sagrado', 'Proteccion Sagrada', 'Reflejar', 'Furia', 'Frenesi', 'Concentracion'];
+                        for (let _bi = 0; _bi < 3; _bi++) {
+                            const _brvChosen = _brvPool[Math.floor(Math.random() * _brvPool.length)];
+                            const _brvBuffObj = { name: _brvChosen, type: 'buff', duration: 2, emoji: '💀' };
+                            if (_brvChosen === 'Regeneracion') _brvBuffObj.percent = 20;
+                            if (typeof applyBuff === 'function') applyBuff(_brvRN, _brvBuffObj);
+                            addLog('💀 Último Rey de los Muertos: Bolvar recibe buff ' + _brvChosen + ' (inicio de ronda)', 'buff');
+                        }
+                        break;
+                    }
+
                     // ── REINO DE LAS SOMBRAS (Marik Ishtar): inicio de ronda → 50% Aura Oscura a cada aliado ──
                     for (const _mkN in gameState.characters) {
                         const _mkC = gameState.characters[_mkN];
@@ -3244,6 +3260,15 @@
 
         // ── 7. Power Up: flash blanco + partículas ──
         function _triggerPowerUp(charName, team) {
+            // ── EL CARCELERO DE LOS MALDITOS (Bolvar PERSONAJE): +5 cargas al transformarse cualquier personaje ──
+            for (const _bpTN in gameState.characters) {
+                const _bpTC = gameState.characters[_bpTN];
+                if (!_bpTC || _bpTC.isDead || _bpTC.hp <= 0 || !_bpTC.passive) continue;
+                if (_bpTC.passive.name !== 'El Carcelero de los Malditos') continue;
+                _bpTC.charges = Math.min(20, (_bpTC.charges||0) + 5);
+                addLog('⚔️ El Carcelero de los Malditos: ' + _bpTN + ' genera 5 cargas (transformación realizada)', 'buff');
+                break;
+            }
             // Flash blanco en pantalla
             const fl = document.createElement('div');
             fl.id = 'powerUpFlash';
