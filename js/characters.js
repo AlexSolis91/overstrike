@@ -1015,6 +1015,19 @@
                 ]
             },
 
+            'Bolvar Fordragon': {
+                hp: 30, maxHp: 30, speed: 80, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/jkysx2NZ/Whats-App-Image-2026-06-22-at-2-25-18-PM.jpg',
+                passive: { name: 'El Carcelero de los Malditos', description: 'Cada vez que se realiza una invocación, un personaje se transforma o un personaje revive, Bolvar genera 5 cargas. Cada vez que se aplica Congelación y/o Quemaduras a cualquier personaje, el equipo aliado se cura 3 HP. Cada vez que se aplica Quemadura Solar y/o Megacongelación a cualquier personaje, el equipo aliado aumenta sus HP máximos en +3 (permanente).' },
+                abilities: [
+                    { name: 'Martillo Bendito',           type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single',     effect: 'martillo_bendito_bolvar',         description: 'Causa 1 daño ST. Aplica buff Mega Provocación en Bolvar.' },
+                    { name: 'Consagración de Pyroescarcha', type: 'special', cost: 3, chargeGain: 0, damage: 1, target: 'single',   effect: 'consagracion_pyroescarcha_bolvar', description: 'Causa 1 daño ST. Si el objetivo tiene Congelación activa: Bolvar recibe Protección Sagrada. Si tiene Megacongelación: Escudo Sagrado. Si tiene Quemaduras: Armadura. Si tiene Quemadura Solar: Esquiva Área.' },
+                    { name: 'Ira del Nuevo Rey',          type: 'special', cost: 8,  chargeGain: 0, damage: 1, target: 'aoe',        effect: 'ira_nuevo_rey_bolvar',            description: 'Elimina (reduce a 0 HP) a todos los personajes del equipo enemigo con transformación activa, que hayan revivido, e invocaciones enemigas. Causa +2 de daño directo por cada personaje e invocación eliminada.' },
+                    { name: 'Voluntad del Nuevo Lich King', type: 'over',  cost: 15, chargeGain: 0, damage: 1, target: 'mt',         effect: 'voluntad_nuevo_lich_bolvar',      description: 'Ataca a todos los enemigos con Congelación, Megacongelación, Quemaduras o Quemadura Solar activos (hasta 4 golpes si el objetivo tiene 2+ debuffs de la lista). +1 daño directo a cada enemigo golpeado por cada debuff de la lista activo en el equipo enemigo.' }
+                ]
+            },
+
         };
         // ==================== RELIQUIAS ====================
         const RELICS_DATA = {
@@ -1061,6 +1074,7 @@
             // ── NUEVAS RELIQUIAS ─────────────────────────────────────────
             'Frostmourne':          { tier:'Legendario',  slot:'Arma',    img:'https://i.ibb.co/60ncwCBX/image-67ce0467.png',   effect:'frostmourne',        desc:'Duplica el daño del portador. Roba cargas del objetivo equivalente al daño causado. Si el objetivo muere, revive como aliado con 100% HP y 20 cargas.', isEventRelic:true, eventBoss:'Lich King' },
             'Varita de Saúco':      { tier:'Legendario',  slot:'Arma',    img:'https://i.ibb.co/cKZ40jX9/image-1f459301.png',   effect:'varita_de_sauco',    desc:'Todos los movimientos del portador requieren la mitad de cargas. Cada vez que el portador ejecuta un movimiento AOE, causa el doble de daño pero pierde 3 HP. 30% de probabilidad de reflejar cualquier ataque recibido sobre el enemigo (recibe el mismo daño, debuffs y efecto de su propio ataque).', isEventRelic:true, eventBoss:'Albus Dumbledore' },
+            'Shadowmourne':         { tier:'Legendario',  slot:'Arma',    img:'https://i.ibb.co/G3v2nk4w/Whats-App-Image-2026-06-19-at-12-08-09-PM.jpg', effect:'shadowmourne', desc:'Todos los ataques del portador causan +3 de daño adicional. Por cada ataque, la Shadowmourne genera 1 contador acumulado. Por cada contador: +1 de daño y +1 carga generada en ese ataque. Al llegar a 10 contadores, todos los ataques AOE y MT del portador causan daño doble (permanente, los contadores siguen acumulándose).', isEventRelic:true, eventBoss:'Bolvar Fordragon' },
             'Mascara de Tyrael':    { tier:'Epico',       slot:'Yelmo',   img:'https://i.ibb.co/wFm6QxCs/image-cdf242f6.png',   effect:'tyrael_mask',        desc:'Al final de cada ronda, el portador genera 3 cargas.' },
             'Ignifugoz':            { tier:'Especial',    slot:'Armadura',img:'https://i.ibb.co/XZN4GJ80/image-a7bffce5.png',   effect:'ignifugoz_immunity', desc:'El portador es inmune a debuffs y daño de Quemaduras.' },
         };
