@@ -309,6 +309,23 @@
                         finalDamage += 2;
                         addLog('📋 Tabla de Elementos: especial +2 daño', 'buff');
                     }
+                    if (_rd.effect === 'double_heal') {
+                        attacker._doubleHeal = true;
+                    }
+                    if (_rd.effect === 'shadowmourne' && finalDamage > 0) {
+                        // SHADOWMOURNE: +3 daño fijo + +N daño por contadores + +N cargas. AOE/MT x2 a 10+ contadores (permanente)
+                        if (!attacker._shadowmourneCounters) attacker._shadowmourneCounters = 0;
+                        attacker._shadowmourneCounters++;
+                        const _smC = attacker._shadowmourneCounters;
+                        finalDamage += 3 + _smC; // +3 fijo + +1 por cada contador acumulado
+                        attacker.charges = Math.min(20, (attacker.charges||0) + _smC); // +N cargas = N contadores
+                        if (_smC >= 10 && (ability.target === 'aoe' || ability.target === 'mt')) {
+                            finalDamage *= 2; // daño doble en AOE/MT (permanente desde el contador 10)
+                            addLog('💀 Shadowmourne: ' + _smC + ' contadores — daño AOE/MT DOBLE + ' + (3+_smC) + ' bonus (' + finalDamage + ' total), +' + _smC + ' cargas', 'buff');
+                        } else {
+                            addLog('💀 Shadowmourne: ' + _smC + ' contador(es) — +' + (3+_smC) + ' daño total, +' + _smC + ' cargas', 'buff');
+                        }
+                    }
                 });
             }
             
@@ -8495,6 +8512,162 @@
                     }
                 }
                 addLog('🔥💧 Prisión de Agua y Fuego: 45 daño repartido entre los enemigos', 'damage');
+
+            // ══════════════════════════════════════════════════════
+            // BOLVAR FORDRAGON — handlers (Jefe de Sala + Personaje)
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'corte_sombras_bolvar') {
+                // CORTE DE SOMBRAS: 1 daño ST + 20% cada uno: Congelación, Megacongelación, Quemaduras, Quemadura Solar
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('💀 Corte de Sombras: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (Math.random() < 0.20) { if (typeof applyFreeze === 'function') applyFreeze(targetName, 1, false); addLog('❄️ Corte de Sombras: Congelación a ' + targetName, 'debuff'); }
+                if (Math.random() < 0.20) { if (typeof applyFreeze === 'function') applyFreeze(targetName, 1, true);  addLog('🧊 Corte de Sombras: Megacongelación a ' + targetName, 'debuff'); }
+                if (Math.random() < 0.20) { if (typeof applyFlatBurn === 'function') applyFlatBurn(targetName, 2, 2); addLog('🔥 Corte de Sombras: Quemaduras a ' + targetName, 'debuff'); }
+                if (Math.random() < 0.20) { if (typeof applySolarBurn === 'function') applySolarBurn(targetName, 10, 2); addLog('☀️ Corte de Sombras: Quemadura Solar a ' + targetName, 'debuff'); }
+
+            } else if (ability.effect === 'almas_malditos_bolvar') {
+                // ALMAS DE LOS MALDITOS: 5 daño ST + buffs según debuffs del objetivo ANTES del ataque
+                const _ambTgt = gameState.characters[targetName];
+                const _ambAtk = gameState.characters[gameState.selectedCharacter];
+                const _ambHasFreeze   = _ambTgt && (hasStatusEffect(targetName, 'Congelacion') || hasStatusEffect(targetName, 'Congelación'));
+                const _ambHasMega     = _ambTgt && (hasStatusEffect(targetName, 'Mega Congelacion') || hasStatusEffect(targetName, 'Megacongelacion'));
+                const _ambHasBurn     = _ambTgt && hasStatusEffect(targetName, 'Quemadura');
+                const _ambHasSolar    = _ambTgt && hasStatusEffect(targetName, 'Quemadura Solar');
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('💀 Almas de los Malditos: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                const _ambSelf = gameState.selectedCharacter;
+                if (_ambHasFreeze && _ambAtk) { applyBuff(_ambSelf, { name:'Proteccion Sagrada', type:'buff', duration:2, emoji:'🛡️✨' }); addLog('💀 Almas de los Malditos: Protección Sagrada en ' + _ambSelf + ' (obj tenía Congelación)', 'buff'); }
+                if (_ambHasMega  && _ambAtk) { applyBuff(_ambSelf, { name:'Escudo Sagrado',    type:'buff', duration:2, emoji:'🛡️' });   addLog('💀 Almas de los Malditos: Escudo Sagrado en ' + _ambSelf + ' (obj tenía Megacongelación)', 'buff'); }
+                if (_ambHasBurn  && _ambAtk) { applyBuff(_ambSelf, { name:'Armadura',          type:'buff', duration:2, emoji:'🪖' });   addLog('💀 Almas de los Malditos: Armadura en ' + _ambSelf + ' (obj tenía Quemaduras)', 'buff'); }
+                if (_ambHasSolar && _ambAtk) { applyBuff(_ambSelf, { name:'Esquivar',          type:'buff', duration:2, emoji:'💨' });   addLog('💀 Almas de los Malditos: Esquivar en ' + _ambSelf + ' (obj tenía Quemadura Solar)', 'buff'); }
+
+            } else if (ability.effect === 'choque_almas_bolvar' || ability.effect === 'voluntad_nuevo_lich_bolvar') {
+                // CHOQUE DE ALMAS / VOLUNTAD DEL NUEVO LICH KING:
+                // Ataca hasta 4 veces a cada enemigo con debuffs de fuego/hielo. +1 daño directo por cada debuff total en equipo enemigo.
+                const _csaAtk  = gameState.characters[gameState.selectedCharacter];
+                const _csaTeam = _csaAtk ? _csaAtk.team : 'team2';
+                const _csaETeam = _csaTeam === 'team1' ? 'team2' : 'team1';
+                const _csaDebuffList = ['Congelacion','Congelación','Mega Congelacion','Megacongelacion','Quemadura','Quemadura Solar'];
+                function _csaHasDebuff(n) {
+                    return _csaDebuffList.some(function(d){ return hasStatusEffect(n, d); });
+                }
+                function _csaCountDebuffs(n) {
+                    return _csaDebuffList.filter(function(d){ return hasStatusEffect(n, d); }).length;
+                }
+                // Count total debuffs in enemy team for bonus damage
+                let _csaTotalDebuffs = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _csaETeam || _c.isDead || _c.hp <= 0) continue;
+                    _csaTotalDebuffs += _csaCountDebuffs(_n);
+                }
+                const _csaBonusDmg = _csaTotalDebuffs; // +1 per debuff total (applied once per target hit)
+                let _csaHitCount = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _csaETeam || _c.isDead || _c.hp <= 0) continue;
+                    if (!_csaHasDebuff(_n)) continue;
+                    const _csaHits = Math.min(4, Math.max(1, _csaCountDebuffs(_n)));
+                    for (let _hi = 0; _hi < _csaHits; _hi++) {
+                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        _csaHitCount++;
+                    }
+                    // +1 direct damage bonus per total debuffs in enemy team
+                    if (_csaBonusDmg > 0) {
+                        applyDamageWithShield(_n, _csaBonusDmg, gameState.selectedCharacter);
+                        addLog('💀 Choque de Almas: +' + _csaBonusDmg + ' daño directo a ' + _n + ' (debuffs totales en equipo enemigo: ' + _csaTotalDebuffs + ')', 'damage');
+                    }
+                    addLog('💀 Choque de Almas: ' + _csaHits + ' golpe(s) a ' + _n + ' (' + _csaCountDebuffs(_n) + ' debuff(s))', 'damage');
+                }
+                if (_csaHitCount === 0) addLog('💀 Choque de Almas: ningún enemigo tiene los debuffs requeridos', 'info');
+
+            } else if (ability.effect === 'luz_corrupta_bolvar') {
+                // LUZ CORRUPTA (BOSS): 5 AOE + disipa todos los buffs de Bolvar y +5 daño por cada buff disipado
+                const _lczAtk  = gameState.characters[gameState.selectedCharacter];
+                const _lczTeam = _lczAtk ? _lczAtk.team : 'team2';
+                const _lczETeam = _lczTeam === 'team1' ? 'team2' : 'team1';
+                // Count and remove Bolvar's active buffs (casillas verdes, no passiveHidden)
+                const _lczBuffs = (_lczAtk ? (_lczAtk.statusEffects||[]) : []).filter(function(e){ return e && e.type === 'buff' && !e.passiveHidden; });
+                const _lczBuffCount = _lczBuffs.length;
+                if (_lczAtk) {
+                    _lczAtk.statusEffects = (_lczAtk.statusEffects||[]).filter(function(e){ return !e || e.type !== 'buff' || e.passiveHidden; });
+                    if (_lczBuffCount > 0) addLog('💀 Luz Corrupta: Bolvar disipa ' + _lczBuffCount + ' buff(s) propios', 'info');
+                }
+                const _lczBonusDmg = _lczBuffCount * 5;
+                const _lczTotalDmg = finalDamage + _lczBonusDmg;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _lczETeam || _c.isDead || _c.hp <= 0) continue;
+                    if (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(_n, true)) { addLog('🌟 ' + _n + ' es inmune a Luz Corrupta (Esquiva Área)', 'buff'); continue; }
+                    if (typeof checkMinatoAOEImmunity === 'function' && checkMinatoAOEImmunity(_n)) continue;
+                    applyDamageWithShield(_n, _lczTotalDmg, gameState.selectedCharacter);
+                }
+                addLog('💀 Luz Corrupta: ' + _lczTotalDmg + ' daño AOE (' + finalDamage + ' base + ' + _lczBonusDmg + ' por ' + _lczBuffCount + ' buffs)', 'damage');
+                if (typeof applyAOEToSummons === 'function') applyAOEToSummons(_lczETeam, _lczTotalDmg, gameState.selectedCharacter);
+
+            } else if (ability.effect === 'martillo_bendito_bolvar') {
+                // MARTILLO BENDITO: 1 daño ST + Mega Provocación en Bolvar
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('⚔️ Martillo Bendito: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                applyBuff(gameState.selectedCharacter, { name:'Mega Provocacion', type:'buff', duration:2, emoji:'🛡️⚠️' });
+                addLog('⚔️ Martillo Bendito: Mega Provocación activada en ' + gameState.selectedCharacter, 'buff');
+
+            } else if (ability.effect === 'consagracion_pyroescarcha_bolvar') {
+                // CONSAGRACIÓN DE PYROESCARCHA: 1 daño ST + buffs según debuffs del objetivo ANTES del ataque
+                const _cpTgt = gameState.characters[targetName];
+                const _cpSelf = gameState.selectedCharacter;
+                const _cpHasFreeze = _cpTgt && (hasStatusEffect(targetName, 'Congelacion') || hasStatusEffect(targetName, 'Congelación'));
+                const _cpHasMega   = _cpTgt && (hasStatusEffect(targetName, 'Mega Congelacion') || hasStatusEffect(targetName, 'Megacongelacion'));
+                const _cpHasBurn   = _cpTgt && hasStatusEffect(targetName, 'Quemadura');
+                const _cpHasSolar  = _cpTgt && hasStatusEffect(targetName, 'Quemadura Solar');
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('⚔️ Consagración de Pyroescarcha: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (_cpHasFreeze) { applyBuff(_cpSelf, { name:'Proteccion Sagrada', type:'buff', duration:2, emoji:'🛡️✨' }); addLog('⚔️ Consagración: Protección Sagrada (obj tenía Congelación)', 'buff'); }
+                if (_cpHasMega)   { applyBuff(_cpSelf, { name:'Escudo Sagrado',    type:'buff', duration:2, emoji:'🛡️' });   addLog('⚔️ Consagración: Escudo Sagrado (obj tenía Megacongelación)', 'buff'); }
+                if (_cpHasBurn)   { applyBuff(_cpSelf, { name:'Armadura',          type:'buff', duration:2, emoji:'🪖' });   addLog('⚔️ Consagración: Armadura (obj tenía Quemaduras)', 'buff'); }
+                if (_cpHasSolar)  { applyBuff(_cpSelf, { name:'Esquiva Area',      type:'buff', duration:2, emoji:'✨' });   addLog('⚔️ Consagración: Esquiva Área (obj tenía Quemadura Solar)', 'buff'); }
+
+            } else if (ability.effect === 'ira_nuevo_rey_bolvar') {
+                // IRA DEL NUEVO REY: elimina transformados, revividos e invocaciones enemigas. +2 daño directo por cada eliminado.
+                const _irAtk   = gameState.characters[gameState.selectedCharacter];
+                const _irTeam  = _irAtk ? _irAtk.team : 'team1';
+                const _irETeam = _irTeam === 'team1' ? 'team2' : 'team1';
+                let _irEliminated = 0;
+                // Eliminate transformed/revived characters
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _irETeam || _c.isDead || _c.hp <= 0) continue;
+                    if (_c.isTransformed || _c._wasRevived) {
+                        _c.hp = 0;
+                        _c.isDead = true;
+                        _irEliminated++;
+                        addLog('⚔️ Ira del Nuevo Rey: ' + _n + ' eliminado (' + (_c.isTransformed ? 'transformado' : 'revivido') + ')', 'damage');
+                    }
+                }
+                // Eliminate enemy summons
+                for (const _sid in (gameState.summons||{})) {
+                    const _s = gameState.summons[_sid];
+                    if (!_s || _s.isDead || _s.hp <= 0 || _s.team !== _irETeam) continue;
+                    _s.hp = 0;
+                    _s.isDead = true;
+                    _irEliminated++;
+                    addLog('⚔️ Ira del Nuevo Rey: invocación ' + _s.name + ' eliminada', 'damage');
+                }
+                // +2 direct damage to all living enemies per elimination
+                if (_irEliminated > 0) {
+                    const _irBonusDmg = _irEliminated * 2;
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _irETeam || _c.isDead || _c.hp <= 0) continue;
+                        applyDamageWithShield(_n, _irBonusDmg, gameState.selectedCharacter);
+                        addLog('⚔️ Ira del Nuevo Rey: ' + _irBonusDmg + ' daño directo a ' + _n + ' (' + _irEliminated + ' eliminados)', 'damage');
+                    }
+                } else {
+                    addLog('⚔️ Ira del Nuevo Rey: ningún objetivo válido encontrado', 'info');
+                }
+                if (typeof renderCharacters === 'function') renderCharacters();
+                if (typeof renderSummons    === 'function') renderSummons();
 
             // ══════════════════════════════════════════════════════
             // BJORN IRONSIDE — handlers
