@@ -168,6 +168,38 @@
             addLog('🔥 ' + targetName + ' sufre Quemadura ' + flatHp + ' HP por ' + (duration||1) + ' turno(s)', 'damage');
             // IZANAMI: trigger Part B when Quemadura is applied to an ally
             if (typeof triggerIzanamiPartB === 'function') triggerIzanamiPartB(targetName);
+
+            // ── ÚLTIMO REY DE LOS MUERTOS (Bolvar BOSS): escudo +3 HP al aplicar Quemaduras ──
+            if (!passiveExecuting) {
+                for (const _brvBN in gameState.characters) {
+                    const _brvBC = gameState.characters[_brvBN];
+                    if (!_brvBC || _brvBC.isDead || _brvBC.hp <= 0 || !_brvBC.passive) continue;
+                    if (_brvBC.passive.name !== 'Último Rey de los Muertos') continue;
+                    if (typeof applyShield === 'function') applyShield(_brvBN, 3, 'bolvar_boss_shield');
+                    else _brvBC.shield = (_brvBC.shield||0) + 3;
+                    addLog('💀 Último Rey de los Muertos: Bolvar recibe escudo +3 HP (Quemaduras aplicada)', 'buff');
+                    break;
+                }
+            }
+
+            // ── EL CARCELERO DE LOS MALDITOS (Bolvar PERSONAJE): equipo aliado +3 HP al aplicar Quemaduras ──
+            if (!passiveExecuting) {
+                for (const _bpBN in gameState.characters) {
+                    const _bpBC = gameState.characters[_bpBN];
+                    if (!_bpBC || _bpBC.isDead || _bpBC.hp <= 0 || !_bpBC.passive) continue;
+                    if (_bpBC.passive.name !== 'El Carcelero de los Malditos') continue;
+                    passiveExecuting = true;
+                    for (const _aln in gameState.characters) {
+                        const _alc = gameState.characters[_aln];
+                        if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== _bpBC.team) continue;
+                        if (typeof applyHeal === 'function') applyHeal(_aln, 3, 'El Carcelero de los Malditos');
+                        else _alc.hp = Math.min(_alc.maxHp, (_alc.hp||0) + 3);
+                    }
+                    addLog('🔥 El Carcelero de los Malditos: equipo aliado +3 HP (Quemaduras aplicada)', 'heal');
+                    passiveExecuting = false;
+                    break;
+                }
+            }
         }
 function processBurnEffects(charName) {
             const char = gameState.characters[charName];
