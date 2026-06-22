@@ -305,10 +305,6 @@
                         finalDamage += 2;
                         addLog('⚔️ Puño de Obsidiana: básico +2 daño', 'buff');
                     }
-                    if (_rd.effect === 'double_heal') {
-                        // Setear flag en el atacante — applyHeal lo leerá y lo limpiará tras usarlo
-                        attacker._doubleHeal = true;
-                    }
                     if (_rd.effect === 'special_dmg_plus2' && ability && (ability.type === 'special' || ability.type === 'over')) {
                         finalDamage += 2;
                         addLog('📋 Tabla de Elementos: especial +2 daño', 'buff');
