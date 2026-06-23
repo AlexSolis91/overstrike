@@ -1402,8 +1402,19 @@
                     const inT1 = countT1 > 0;
                     const inT2 = countT2 > 0;
 
+                    // ── PERSONAJES CON DESBLOQUEO (ej. Bolvar Fordragon) ──
+                    const _lockedChars = { 'Bolvar Fordragon': 'bolvar_fordragon' };
+                    const _lockKey = _lockedChars[name];
+                    const _isLocked = _lockKey && !(window._unlockedCharacters && window._unlockedCharacters[_lockKey]);
+
                     const card = document.createElement('div');
                     card.className = 'cs-char-card' + (inT1 && inT2 ? ' selected-both' : inT1 ? ' selected-team1' : inT2 ? ' selected-team2' : '');
+                    if (_isLocked) {
+                        card.style.filter = 'grayscale(100%)';
+                        card.style.opacity = '0.5';
+                        card.style.cursor = 'not-allowed';
+                        card.style.position = 'relative';
+                    }
 
                     if (char.portrait) {
                         const img = imgEl(char.portrait, name, 'cs-char-img');
@@ -1415,20 +1426,43 @@
                         card.appendChild(el('div', 'cs-char-img-placeholder', '⚔️'));
                     }
 
+                    if (_isLocked) {
+                        const lockBadge = document.createElement('div');
+                        lockBadge.style.cssText = 'position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.75);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:.85rem;';
+                        lockBadge.textContent = '🔒';
+                        card.style.position = 'relative';
+                        card.appendChild(lockBadge);
+                    }
+
                     const info = el('div', 'cs-char-info');
                     info.appendChild(el('div', 'cs-char-name', name));
-                    info.appendChild(el('div', 'cs-char-speed', '⚡ ' + (char.speed || '?')));
-                    if (inT1) {
+                    info.appendChild(el('div', 'cs-char-speed', _isLocked ? '🔒 BLOQUEADO' : '⚡ ' + (char.speed || '?')));
+                    if (!_isLocked && inT1) {
                         const badge = el('span', 'cs-team-badge team1', '🔷' + (countT1 > 1 ? ' x' + countT1 : ''));
                         info.appendChild(badge);
                     }
-                    if (inT2) {
+                    if (!_isLocked && inT2) {
                         const badge = el('span', 'cs-team-badge team2', '🔶' + (countT2 > 1 ? ' x' + countT2 : ''));
                         info.appendChild(badge);
                     }
                     card.appendChild(info);
 
-                    card.onclick = (function(n) { return function() { csShowDetail(n); }; })(name);
+                    if (_isLocked) {
+                        card.onclick = function() {
+                            var t = document.getElementById('_lockToast');
+                            if (!t) {
+                                t = document.createElement('div');
+                                t.id = '_lockToast';
+                                t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);color:#fb923c;padding:10px 20px;border-radius:10px;font-family:Orbitron,sans-serif;font-size:.75rem;font-weight:700;z-index:99999;border:1px solid rgba(251,146,60,0.4);';
+                                document.body.appendChild(t);
+                            }
+                            t.textContent = '🔒 ' + name + ' — Vence al Jefe de Sala para desbloquearlo';
+                            clearTimeout(t._hide);
+                            t._hide = setTimeout(function(){ t.remove(); }, 3000);
+                        };
+                    } else {
+                        card.onclick = (function(n) { return function() { csShowDetail(n); }; })(name);
+                    }
                     grid.appendChild(card);
                 } catch (err) {
                     console.error('Error renderizando carta de', name, err);
