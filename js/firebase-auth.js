@@ -3346,6 +3346,9 @@
                     characters: {}
                 });
             }
+            // Cargar personajes desbloqueados (ej. Bolvar Fordragon)
+            const unlockedSnap = await db.ref('users/' + uid + '/unlockedCharacters').once('value');
+            window._unlockedCharacters = unlockedSnap.val() || {};
         }
 
         // ── Leer datos del jugador ──
@@ -3690,6 +3693,11 @@
                     '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:#ff6464;font-weight:700;">#' + myRank + '</div>' +
                     '<div style="color:#888;font-size:.7rem;">Posición</div>' +
                 '</div>' +
+                (reward.bolvarUnlockChance > 0 ? '<div style="background:rgba(200,100,0,0.15);border:1px solid rgba(251,146,60,0.5);border-radius:10px;padding:12px 20px;text-align:center;width:100%;">' +
+                    '<div style="font-size:1.4rem;">' + (reward.bolvarUnlocked ? '🔓' : '🔒') + '</div>' +
+                    '<div style="font-family:Orbitron,sans-serif;font-size:.85rem;color:' + (reward.bolvarUnlocked ? '#fb923c' : '#888') + ';font-weight:700;">' + (reward.bolvarUnlocked ? '¡BOLVAR FORDRAGON DESBLOQUEADO!' : 'Bolvar Fordragon no desbloqueado') + '</div>' +
+                    '<div style="color:#666;font-size:.65rem;">Probabilidad: ' + Math.round(reward.bolvarUnlockChance * 100) + '% (posición #' + myRank + ')</div>' +
+                '</div>' : '') +
             '</div>';
 
             var modal = document.createElement('div');
@@ -4037,6 +4045,18 @@
                 var finalGold = Math.round(rw.gold * multiplier);
                 var finalKeys = Math.round((rw.keys||0) * multiplier);
 
+                // ── BOLVAR FORDRAGON: probabilidad de desbloqueo por posición ──
+                var bolvarUnlockChance = 0;
+                if (bossName === 'Bolvar Fordragon' && bossFelled) {
+                    if      (rank === 1) bolvarUnlockChance = 0.30;
+                    else if (rank === 2) bolvarUnlockChance = 0.20;
+                    else if (rank === 3) bolvarUnlockChance = 0.10;
+                    else if (rank === 4) bolvarUnlockChance = 0.05;
+                    else                bolvarUnlockChance = 0.01;
+                }
+                var bolvarUnlockRoll = bolvarUnlockChance > 0 ? Math.random() : 1; // roll now (stored, not re-rolled on claim)
+                var bolvarUnlocked   = bolvarUnlockRoll < bolvarUnlockChance;
+
                 // Store claimable reward in Firebase (player must claim it from the notification modal)
                 await db.ref('weekly_boss/pending_rewards/' + entry.uid).set({
                     eventId:       eventId,
@@ -4051,6 +4071,8 @@
                     extraCount:    rw.extra ? Math.ceil((rw.extraCount||1) * multiplier) : 0,
                     multiplier:    multiplier,
                     ranking:       rankingSnapshot,
+                    bolvarUnlocked:  bolvarUnlocked,
+                    bolvarUnlockChance: bolvarUnlockChance,
                     claimed:       false,
                     createdAt:     Date.now()
                 });
@@ -4087,6 +4109,24 @@
                         const cv = await cr.once('value');
                         await cr.set((cv.val()||0) + 1);
                     }
+                }
+            }
+
+            // ── BOLVAR FORDRAGON: aplicar desbloqueo si corresponde ──
+            if (reward.bolvarUnlocked) {
+                const unlockedRef = db.ref('users/' + uid + '/unlockedCharacters/bolvar_fordragon');
+                const alreadyUnlocked = await unlockedRef.once('value');
+                if (!alreadyUnlocked.val()) {
+                    await unlockedRef.set(true);
+                    console.log('[BOLVAR] ¡Personaje desbloqueado para ' + uid + '!');
+                    // Show unlock toast after claim
+                    setTimeout(function() {
+                        var t = document.createElement('div');
+                        t.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#c86400,#fb923c);color:#fff;padding:16px 28px;border-radius:14px;font-family:Orbitron,sans-serif;font-size:.9rem;font-weight:700;z-index:9999999;box-shadow:0 0 30px rgba(200,100,0,0.6);text-align:center;';
+                        t.innerHTML = '🔓 ¡BOLVAR FORDRAGON DESBLOQUEADO!<br><span style="font-size:.7rem;font-weight:400;opacity:.8;">Ahora puedes seleccionarlo en partidas</span>';
+                        document.body.appendChild(t);
+                        setTimeout(function(){ t.remove(); }, 5000);
+                    }, 1500);
                 }
             }
 
