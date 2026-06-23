@@ -279,7 +279,20 @@
             gameState._lastAbilityType = ability ? ability.type : null;
             gameState._lastAbilityChargeGain = ability ? (ability.chargeGain || 0) : 0;
 
-            // ── BONOS DE RELIQUIAS al daño (pre-ataque) ──────────────────────
+            // ── HELPER: disparar pasiva El Carcelero de los Malditos (Bolvar PERSONAJE) ──
+        function triggerBolvarCarcelero(reason) {
+            for (const _bpCN in gameState.characters) {
+                const _bpCC = gameState.characters[_bpCN];
+                if (!_bpCC || _bpCC.isDead || _bpCC.hp <= 0 || !_bpCC.passive) continue;
+                if (_bpCC.passive.name !== 'El Carcelero de los Malditos') continue;
+                _bpCC.charges = Math.min(20, (_bpCC.charges||0) + 5);
+                addLog('⚔️ El Carcelero de los Malditos: ' + _bpCN + ' genera 5 cargas (' + reason + ')', 'buff');
+                break;
+            }
+        }
+        window.triggerBolvarCarcelero = triggerBolvarCarcelero;
+
+        // ── BONOS DE RELIQUIAS al daño (pre-ataque) ──────────────────────
             if (finalDamage > 0 && attacker && (attacker.equippedRelics||[]).length > 0) {
                 (attacker.equippedRelics||[]).forEach(function(relicName) {
                     const _rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[relicName] : null;
@@ -9199,6 +9212,7 @@
                     if (typeof calculateTurnOrder === 'function') calculateTurnOrder();
                 }
                 addLog('👑 El Rey Demonio: Meliodas se transforma — +10 velocidad. Sangrado ahora genera cargas a aliados.', 'buff');
+                if (typeof triggerBolvarCarcelero === 'function') triggerBolvarCarcelero('transformación de ' + gameState.selectedCharacter);
 
             } // end Meliodas handlers
 
