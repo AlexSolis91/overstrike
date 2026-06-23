@@ -1490,7 +1490,14 @@
             // Limpiar flag de Eco Sanador (doble curación) al final del turno
             if (gameState.selectedCharacter) {
                 const _esTurnChar = gameState.characters[gameState.selectedCharacter];
-                if (_esTurnChar) _esTurnChar._doubleHeal = false;
+                if (_esTurnChar) {
+                    _esTurnChar._doubleHeal = false;
+                    // Consumir _ignoreTauntNextAttack (Skeggöx) al finalizar el turno
+                    // Esto asegura que el bypass dura exactamente 1 ataque del turno extra
+                    if (_esTurnChar._ignoreTauntNextAttack && !gameState._skeggoxExtraTurn) {
+                        _esTurnChar._ignoreTauntNextAttack = false;
+                    }
+                }
             }
 
             // ── SKEGGÖX: turno adicional pendiente ──
@@ -3261,14 +3268,7 @@
         // ── 7. Power Up: flash blanco + partículas ──
         function _triggerPowerUp(charName, team) {
             // ── EL CARCELERO DE LOS MALDITOS (Bolvar PERSONAJE): +5 cargas al transformarse cualquier personaje ──
-            for (const _bpTN in gameState.characters) {
-                const _bpTC = gameState.characters[_bpTN];
-                if (!_bpTC || _bpTC.isDead || _bpTC.hp <= 0 || !_bpTC.passive) continue;
-                if (_bpTC.passive.name !== 'El Carcelero de los Malditos') continue;
-                _bpTC.charges = Math.min(20, (_bpTC.charges||0) + 5);
-                addLog('⚔️ El Carcelero de los Malditos: ' + _bpTN + ' genera 5 cargas (transformación realizada)', 'buff');
-                break;
-            }
+            if (typeof triggerBolvarCarcelero === 'function') triggerBolvarCarcelero('transformación de ' + (charName||'personaje'));
             // Flash blanco en pantalla
             const fl = document.createElement('div');
             fl.id = 'powerUpFlash';
