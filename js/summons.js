@@ -104,15 +104,14 @@
                 
                 addLog(`👻 ${summonerName} invoca a ${shadowName}!`, 'buff');
                 // ── EL CARCELERO DE LOS MALDITOS (Bolvar PERSONAJE): +5 cargas al invocarse cualquier invocación ──
-                if (!passiveExecuting) {
-                    for (const _bpIN in gameState.characters) {
-                        const _bpIC = gameState.characters[_bpIN];
-                        if (!_bpIC || _bpIC.isDead || _bpIC.hp <= 0 || !_bpIC.passive) continue;
-                        if (_bpIC.passive.name !== 'El Carcelero de los Malditos') continue;
-                        _bpIC.charges = Math.min(20, (_bpIC.charges||0) + 5);
-                        addLog('⚔️ El Carcelero de los Malditos: ' + _bpIN + ' genera 5 cargas (invocación realizada)', 'buff');
-                        break;
-                    }
+                // Sin guardia passiveExecuting — debe dispararse siempre, incluyendo invocaciones del equipo enemigo
+                for (const _bpIN in gameState.characters) {
+                    const _bpIC = gameState.characters[_bpIN];
+                    if (!_bpIC || _bpIC.isDead || _bpIC.hp <= 0 || !_bpIC.passive) continue;
+                    if (_bpIC.passive.name !== 'El Carcelero de los Malditos') continue;
+                    _bpIC.charges = Math.min(20, (_bpIC.charges||0) + 5);
+                    addLog('⚔️ El Carcelero de los Malditos: ' + _bpIN + ' genera 5 cargas (invocación realizada)', 'buff');
+                    break;
                 }
                 // NO llamar renderSummons aquí - se llama al final del turno
             } catch (error) {
@@ -1505,10 +1504,8 @@
                 if (!gameState._relicEffectsActive) {
                     gameState._relicEffectsActive = true;
                     const _atkChar = gameState.characters[attackerName];
-                    // Consumir el bypass de provocación de Skeggöx AHORA
-                    if (_atkChar && _atkChar._ignoreTauntNextAttack) {
-                        _atkChar._ignoreTauntNextAttack = false;
-                    }
+                    // NOTA: _ignoreTauntNextAttack se consume DESPUÉS del primer ataque del turno extra
+                    // (se resetea en endTurn al finalizar el turno extra, no aquí)
                 const _relics  = _atkChar ? (_atkChar.equippedRelics || []) : [];
                 const _tgtChar = gameState.characters[targetName];
 
@@ -1553,11 +1550,15 @@
 
                         // Especial → objetivo pierde 50% cargas
                         case 'special_drain_50':
-                            if (gameState._lastAbilityType === 'special' && _tgtChar) {
+                            if ((gameState._lastAbilityType === 'special' || gameState._lastAbilityType === 'over') && _tgtChar) {
                                 const _drain = Math.floor((_tgtChar.charges||0) * 0.50);
                                 if (_drain > 0) {
                                     _tgtChar.charges = Math.max(0, (_tgtChar.charges||0) - _drain);
-                                    addLog('🌀 Nullum: ' + targetName + ' pierde ' + _drain + ' cargas', 'debuff');
+                                    addLog('🌀 Nullum: ' + targetName + ' pierde ' + _drain + ' cargas (ataque especial)', 'debuff');
+                                } else if ((_tgtChar.charges||0) > 0) {
+                                    // Siempre drena al menos 1 si tiene alguna carga
+                                    _tgtChar.charges = Math.max(0, (_tgtChar.charges||0) - 1);
+                                    addLog('🌀 Nullum: ' + targetName + ' pierde 1 carga', 'debuff');
                                 }
                             }
                             break;
@@ -2952,13 +2953,16 @@ function applyRegeneration(targetName, amount, duration) {
             addLog(`✨ ${targetName} ha sido revivido con ${target.maxHp} HP y 10 cargas!`, 'heal');
 
             // ── EL CARCELERO DE LOS MALDITOS (Bolvar PERSONAJE): +5 cargas al revivir cualquier personaje ──
-            for (const _bpRN in gameState.characters) {
-                const _bpRC = gameState.characters[_bpRN];
-                if (!_bpRC || _bpRC.isDead || _bpRC.hp <= 0 || !_bpRC.passive) continue;
-                if (_bpRC.passive.name !== 'El Carcelero de los Malditos') continue;
-                _bpRC.charges = Math.min(20, (_bpRC.charges||0) + 5);
-                addLog('⚔️ El Carcelero de los Malditos: ' + _bpRN + ' genera 5 cargas (personaje revivido)', 'buff');
-                break;
+            if (typeof triggerBolvarCarcelero === 'function') triggerBolvarCarcelero('revive de ' + targetName);
+            else {
+                for (const _bpRN in gameState.characters) {
+                    const _bpRC = gameState.characters[_bpRN];
+                    if (!_bpRC || _bpRC.isDead || _bpRC.hp <= 0 || !_bpRC.passive) continue;
+                    if (_bpRC.passive.name !== 'El Carcelero de los Malditos') continue;
+                    _bpRC.charges = Math.min(20, (_bpRC.charges||0) + 5);
+                    addLog('⚔️ El Carcelero de los Malditos: ' + _bpRN + ' genera 5 cargas (personaje revivido)', 'buff');
+                    break;
+                }
             }
         }
 
