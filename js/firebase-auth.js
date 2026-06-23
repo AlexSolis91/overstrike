@@ -839,10 +839,17 @@
                 const blocked   = allUsed.has(name);
                 const portrait  = getCharPortrait(name);
 
+                // ── PERSONAJES CON DESBLOQUEO (ej. Bolvar Fordragon) ──
+                const _rtLockedChars = { 'Bolvar Fordragon': 'bolvar_fordragon' };
+                const _rtLockKey = _rtLockedChars[name];
+                const _rtIsLocked = _rtLockKey && !(window._unlockedCharacters && window._unlockedCharacters[_rtLockKey]);
+
                 const card = document.createElement('div');
                 card.title = name;
-                card.style.cssText = 'position:relative;border-radius:10px;overflow:hidden;cursor:' + (blocked ? 'not-allowed' : 'pointer') +
-                    ';opacity:' + (blocked ? '0.35' : '1') + ';transition:all .15s;border:2px solid ' +
+                card.style.cssText = 'position:relative;border-radius:10px;overflow:hidden;cursor:' + (blocked || _rtIsLocked ? 'not-allowed' : 'pointer') +
+                    ';opacity:' + (blocked ? '0.35' : _rtIsLocked ? '0.4' : '1') +
+                    ';filter:' + (_rtIsLocked ? 'grayscale(100%)' : 'none') +
+                    ';transition:all .15s;border:2px solid ' +
                     (inAttack ? '#4fc3f7' : inDefense ? '#c864ff' : 'rgba(255,255,255,0.1)') + ';';
 
                 // Mostrar rol como badge si hay filtro
@@ -858,10 +865,31 @@
                     roleBadge
                 ].join('');
 
-                if (!blocked) {
+                // Add lock badge if locked
+                if (_rtIsLocked) {
+                    const lockBadge = document.createElement('div');
+                    lockBadge.style.cssText = 'position:absolute;top:3px;right:3px;background:rgba(0,0,0,0.8);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:.7rem;';
+                    lockBadge.textContent = '🔒';
+                    card.appendChild(lockBadge);
+                }
+
+                if (!blocked && !_rtIsLocked) {
                     card.onmouseover = function() { this.style.transform = 'scale(1.06)'; this.style.boxShadow = '0 0 12px rgba(79,195,247,0.4)'; };
                     card.onmouseout  = function() { this.style.transform = 'scale(1)'; this.style.boxShadow = 'none'; };
                     card.onclick = (function(n){ return function(){ rtShowConfirm(n); }; })(name);
+                } else if (_rtIsLocked) {
+                    card.onclick = function() {
+                        var t = document.getElementById('_rtLockToast');
+                        if (!t) {
+                            t = document.createElement('div');
+                            t.id = '_rtLockToast';
+                            t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);color:#fb923c;padding:10px 20px;border-radius:10px;font-family:Orbitron,sans-serif;font-size:.75rem;font-weight:700;z-index:99999;border:1px solid rgba(251,146,60,0.4);';
+                            document.body.appendChild(t);
+                        }
+                        t.textContent = '🔒 ' + name + ' — Vence al Jefe de Sala para desbloquearlo';
+                        clearTimeout(t._hide);
+                        t._hide = setTimeout(function(){ if(t.parentNode) t.remove(); }, 3000);
+                    };
                 }
                 grid.appendChild(card);
             });
