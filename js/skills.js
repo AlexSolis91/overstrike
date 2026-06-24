@@ -10460,6 +10460,14 @@
                 logContent.style.maxHeight = logContent.style.maxHeight || '420px';
                 logContent.style.scrollbarWidth = 'thin';
             }
+            // Mantener array en gameState.battleLog para sync online
+            if (!gameState.battleLog) gameState.battleLog = [];
+            gameState.battleLog.unshift({ text: message, type: type });
+            if (gameState.battleLog.length > 50) gameState.battleLog.length = 50;
+            // Sync en tiempo real al oponente online (throttled)
+            if (typeof onlineMode !== 'undefined' && onlineMode && typeof pushLiveLog === 'function') {
+                pushLiveLog();
+            }
         }
 
         // ==================== INICIO DEL JUEGO ====================
