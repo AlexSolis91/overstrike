@@ -648,6 +648,30 @@ function applyDebuff(targetName, effectObj) {
                 }
             }
             target.statusEffects.push(effectObj);
+
+            // ── DAGA DE KAISEL: al recibir un debuff → aplica ese mismo debuff a un enemigo aleatorio y le quita 2 cargas ──
+            if (!passiveExecuting && effectObj && effectObj.type === 'debuff' && !effectObj.passiveHidden) {
+                const _dkChar = gameState.characters[targetName];
+                if (_dkChar && (_dkChar.equippedRelics||[]).includes('Daga de Kaisel')) {
+                    // Buscar enemigos del portador
+                    const _dkETeam = _dkChar.team === 'team1' ? 'team2' : 'team1';
+                    const _dkEnemies = Object.keys(gameState.characters).filter(function(n){
+                        const _c = gameState.characters[n];
+                        return _c && _c.team === _dkETeam && !_c.isDead && _c.hp > 0;
+                    });
+                    if (_dkEnemies.length > 0) {
+                        passiveExecuting = true;
+                        const _dkTarget = _dkEnemies[Math.floor(Math.random() * _dkEnemies.length)];
+                        const _dkDebuffCopy = Object.assign({}, effectObj); // copia del debuff recibido
+                        applyDebuff(_dkTarget, _dkDebuffCopy);
+                        const _dkTgtChar = gameState.characters[_dkTarget];
+                        if (_dkTgtChar) _dkTgtChar.charges = Math.max(0, (_dkTgtChar.charges||0) - 2);
+                        addLog('🗡️ Daga de Kaisel: ' + effectObj.name + ' reflejado a ' + _dkTarget + ' y pierde 2 cargas', 'debuff');
+                        passiveExecuting = false;
+                    }
+                }
+            }
+
             // ── ORGULLO VILTRUMITA (Omni-Man): si un aliado recibe un debuff → Arremetida Planetaria ──
             if (!effectObj.passiveHidden) {
                 const _ovDebuffTgt = gameState.characters[targetName];
