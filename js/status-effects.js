@@ -481,8 +481,9 @@ function processBurnEffects(charName) {
             const _actual = _ch.hp - _oldHp;
             if (_actual > 0) {
                 if (logSource) addLog('💚 ' + charName + ' recupera ' + _actual + ' HP' + (_hasAuraLuz ? ' (x2 Aura de Luz)' : '') + ' (' + logSource + ')', 'heal');
-                // HP heal tick animation
+                // HP heal tick animation — ya animado aquí, marcamos flag para evitar doble en renderCharacters
                 if (typeof showHpTick === 'function') showHpTick(charName, _actual);
+                if (_ch) _ch._healAnimatedThisFrame = true;
                 // MVP: registrar healing dado por el personaje activo
                 if (!passiveExecuting && gameState.selectedCharacter && typeof registerHealing === 'function') {
                     const _healCaster = gameState.selectedCharacter;
