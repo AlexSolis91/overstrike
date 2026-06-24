@@ -227,7 +227,8 @@ function processBurnEffects(charName) {
                 gameState._currentDamageSource = 'Quemadura'; // Visión Esmeralda
                 applyDamageWithShield(charName, damage, null);
                 addLog('🔥 ' + charName + ' recibe ' + damage + ' de daño por Quemadura', 'damage');
-                if (typeof _animCard === 'function') _animCard(charName, 'anim-pulse-red', 600);
+                if (typeof _animCard === 'function') _animCard(charName, 'anim-fire', 700);
+                if (typeof _spawnParticles === 'function') _spawnParticles(charName, '🔥', 3);
                 // MVP: registrar daño por quemadura + daño causado al aplicador
                 if (typeof registerBurnDamage === 'function') registerBurnDamage(damage);
                 // Atribuir daño causado a los aplicadores de quemadura
