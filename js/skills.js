@@ -325,6 +325,10 @@
                     if (_rd.effect === 'double_heal') {
                         attacker._doubleHeal = true;
                     }
+                    // VORTEX: marcar flag antes de AOE para que checkAsprosAOEImmunity lo bypass
+                    if (_rd.effect === 'vortex_pierce' && ability && (ability.target === 'aoe' || ability.target === 'mt')) {
+                        gameState._vortexActive = true;
+                    }
                     if (_rd.effect === 'shadowmourne' && finalDamage > 0) {
                         // SHADOWMOURNE: +3 daño fijo + +N daño por contadores + +N cargas. AOE/MT x2 a 10+ contadores (permanente)
                         if (!attacker._shadowmourneCounters) attacker._shadowmourneCounters = 0;
