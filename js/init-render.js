@@ -442,6 +442,9 @@
             }
         }
 
+        // Snapshot del HP anterior para detectar cambios y disparar animaciones
+        var _prevHpSnapshot = {};
+
         function renderCharacters() {
             const team1Container = document.getElementById('team1Characters');
             const team2Container = document.getElementById('team2Characters');
@@ -451,7 +454,31 @@
                 return;
             }
 
-            // HP tick detection removed - ticks fired directly in applyDamageWithShield and applyHeal
+            // ── DETECCIÓN DE CAMBIOS DE HP: dispara animación +N/-N para cualquier cambio ──
+            // Esto captura heals directos que no pasan por applyHeal() ni applyDamageWithShield()
+            if (gameState && gameState.characters) {
+                for (var _rcN in gameState.characters) {
+                    var _rcC = gameState.characters[_rcN];
+                    if (!_rcC) continue;
+                    var _prevHp = _prevHpSnapshot[_rcN];
+                    var _currHp = _rcC.hp || 0;
+                    if (_prevHp !== undefined && _prevHp !== _currHp && !_rcC.isDead) {
+                        var _delta = _currHp - _prevHp;
+                        // Heals: mostrar +N SOLO si no fue ya animado por applyHeal()
+                        if (_delta > 0 && !_rcC._healAnimatedThisFrame && typeof showHpTick === 'function') {
+                            showHpTick(_rcN, _delta);
+                        }
+                        // Daños directos: mostrar -N SOLO si no fue ya animado por applyDamageWithShield()
+                        if (_delta < 0 && !_rcC._dmgAnimatedThisFrame && typeof showHpTick === 'function') {
+                            showHpTick(_rcN, _delta);
+                        }
+                    }
+                    _prevHpSnapshot[_rcN] = _currHp;
+                    // Reset flags de animación
+                    if (_rcC) { _rcC._dmgAnimatedThisFrame = false; _rcC._healAnimatedThisFrame = false; }
+                }
+            }
+
             var _newHpMap = {};
             
             team1Container.innerHTML = '';
