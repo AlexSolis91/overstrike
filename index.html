@@ -1824,6 +1824,7 @@
                     setTimeout(function() {
                         if (isRoomHost) { pushGameState(); }
                         listenGameState();
+                        if (typeof listenLiveState === 'function') listenLiveState(); // Tiempo real
                     }, 500);
                 }
                 gameState.gameMode = csState.gameMode;
