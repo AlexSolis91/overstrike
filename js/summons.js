@@ -1408,24 +1408,38 @@
                 }
             }
 
-            // ── TORMENTA ROJA: al recibir daño de DOT (Quemadura/Veneno) → 3 daño AOE al equipo enemigo ──
-            if (remainingDamage > 0 && attackerName === null && !passiveExecuting) {
-                var _trChar = gameState.characters[targetName];
-                if (_trChar && (_trChar.equippedRelics||[]).indexOf('Tormenta Roja') >= 0) {
-                    var _trTeam = _trChar.team;
-                    var _trETeam = _trTeam === 'team1' ? 'team2' : 'team1';
-                    var _trHit = false;
-                    passiveExecuting = true;
-                    Object.keys(gameState.characters).forEach(function(n){
-                        var _c = gameState.characters[n];
-                        if (_c && _c.team === _trETeam && !_c.isDead && _c.hp > 0) {
-                            _c.hp = Math.max(0, (_c.hp||0) - 3);
-                            if (_c.hp <= 0) { _c.isDead = true; if(typeof registerKill==='function') registerKill(targetName,n,false); }
-                            _trHit = true;
-                        }
-                    });
-                    if (_trHit) addLog('⚡ Tormenta Roja: ' + targetName + ' recibió DOT → 3 daño AOE al equipo enemigo', 'damage');
-                    passiveExecuting = false;
+            // ── TORMENTA ROJA: al recibir daño por Quemadura o Veneno → 3 daño AOE al equipo enemigo ──
+            // _currentDamageSource fue seteado en status-effects.js/turn-logic.js antes de llamar a esta función
+            if (remainingDamage > 0 && !passiveExecuting) {
+                var _trSrc = gameState._currentDamageSource || null;
+                var _trIsDOT = (_trSrc === 'Quemadura' || _trSrc === 'Veneno');
+                // También detectar por attackerName===null para compatibilidad con otros daños de debuff
+                if (!_trIsDOT && attackerName === null) {
+                    // Si no tiene source marcado pero attackerName es null, verificar debuffs activos
+                    var _trTgt2 = gameState.characters[targetName];
+                    if (_trTgt2) {
+                        _trIsDOT = (_trTgt2.statusEffects||[]).some(function(e){
+                            return e && (normAccent(e.name||'')==='quemadura' || normAccent(e.name||'')==='veneno');
+                        });
+                    }
+                }
+                if (_trIsDOT) {
+                    var _trChar = gameState.characters[targetName];
+                    if (_trChar && (_trChar.equippedRelics||[]).indexOf('Tormenta Roja') >= 0) {
+                        var _trTeam = _trChar.team;
+                        var _trETeam = _trTeam === 'team1' ? 'team2' : 'team1';
+                        var _trHit = false;
+                        passiveExecuting = true;
+                        Object.keys(gameState.characters).forEach(function(n){
+                            var _c = gameState.characters[n];
+                            if (_c && _c.team === _trETeam && !_c.isDead && _c.hp > 0) {
+                                applyDamageWithShield(n, 3, targetName);
+                                _trHit = true;
+                            }
+                        });
+                        if (_trHit) addLog('⚡ Tormenta Roja: ' + targetName + ' recibió daño de ' + (_trSrc||'debuff') + ' → 3 daño a todo el equipo enemigo', 'damage');
+                        passiveExecuting = false;
+                    }
                 }
             }
 
@@ -1663,13 +1677,22 @@
                         // IGNIFUGOZ: inmune a quemaduras y debuffs de quemadura (handled in applyDebuff + DOT)
                         case 'ignifugoz_immunity': break;
 
-                        // Ignora Esquiva Área, daño doble a objetivo con Esquiva Área
+                        // Ignora Esquiva Área, daño doble + 2 cargas por enemigo con Esquiva Área (buff o pasiva)
                         case 'vortex_pierce':
-                            if (_tgtChar && !passiveExecuting && hasStatusEffect && hasStatusEffect(targetName, 'Esquiva Área')) {
-                                passiveExecuting = true;
-                                applyDamageWithShield(targetName, remainingDamage, attackerName);
-                                addLog('🌀 Vortex: daño doble a ' + targetName + ' (tenía Esquiva Área)', 'damage');
-                                passiveExecuting = false;
+                            if (_tgtChar && !passiveExecuting) {
+                                const _vxHasEA = (typeof hasStatusEffect === 'function' &&
+                                    (hasStatusEffect(targetName, 'Esquiva Área') || hasStatusEffect(targetName, 'Esquiva Area'))) ||
+                                    (_tgtChar.esquivaAreaPassive) ||
+                                    (_tgtChar.passive && _tgtChar.passive.description && _tgtChar.passive.description.toLowerCase().includes('esquiva') && _tgtChar.passive.description.toLowerCase().includes('area'));
+                                if (_vxHasEA) {
+                                    passiveExecuting = true;
+                                    // Daño doble adicional (el daño base ya fue aplicado antes de llegar aquí)
+                                    applyDamageWithShield(targetName, remainingDamage, attackerName);
+                                    // +2 cargas al portador por este enemigo
+                                    if (_atkChar) _atkChar.charges = Math.min(20, (_atkChar.charges||0) + 2);
+                                    addLog('🌀 Vortex: daño doble a ' + targetName + ' (Esquiva Área) + 2 cargas al portador', 'damage');
+                                    passiveExecuting = false;
+                                }
                             }
                             break;
 
@@ -1823,24 +1846,7 @@
                             addLog('🛡️ Anillo de la Verdad: ' + targetName + ' limpia un debuff', 'buff');
                         }
                     }
-                    if (_rd2.effect === 'debuff_mirror' && remainingDamage > 0 && _atkChar && !passiveExecuting) {
-                        // Daga de Kaisel: al recibir debuff → aplica ese debuff a enemigo aleatorio y -2 cargas
-                        // Este efecto aplica al recibir DAÑO con debuff activo
-                        var _daDebuffs = (_tgtChar && _tgtChar.statusEffects||[]).filter(function(e){ return e && e.type==='debuff'; });
-                        if (_daDebuffs.length > 0 && Math.random() < 0.40) {
-                            var _daDebuff = _daDebuffs[Math.floor(Math.random()*_daDebuffs.length)];
-                            var _daEnemies = Object.keys(gameState.characters).filter(function(n){
-                                var _c = gameState.characters[n]; return _c && _c.team===_atkChar.team && !_c.isDead && n!==attackerName;
-                            });
-                            if (_daEnemies.length > 0) {
-                                var _daTarget = _daEnemies[Math.floor(Math.random()*_daEnemies.length)];
-                                if (typeof applyDebuff === 'function') applyDebuff(_daTarget, Object.assign({}, _daDebuff));
-                                var _daChar = gameState.characters[attackerName];
-                                if (_daChar) _daChar.charges = Math.max(0, (_daChar.charges||0) - 2);
-                                addLog('🗡️ Daga de Kaisel: ' + _daDebuff.name + ' reflejado a ' + _daTarget + ' -2 cargas al atacante', 'debuff');
-                            }
-                        }
-                    }
+                    // Daga de Kaisel: trigger movido a applyDebuff() en debuffs.js (activación correcta al RECIBIR debuff)
                 });
                 gameState._relicEffectsActive = false;
                 } // end if (!gameState._relicEffectsActive)
