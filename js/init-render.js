@@ -444,6 +444,8 @@
 
         // Snapshot del HP anterior para detectar cambios y disparar animaciones
         var _prevHpSnapshot = {};
+        // Snapshot de cargas anterior para detectar generación de cargas
+        var _prevChargesSnapshot = {};
 
         function renderCharacters() {
             const team1Container = document.getElementById('team1Characters');
@@ -476,6 +478,14 @@
                     _prevHpSnapshot[_rcN] = _currHp;
                     // Reset flags de animación
                     if (_rcC) { _rcC._dmgAnimatedThisFrame = false; _rcC._healAnimatedThisFrame = false; }
+
+                    // ── DETECCIÓN DE CARGAS: brillo dorado cuando el personaje genera cargas ──
+                    var _prevCharges = _prevChargesSnapshot[_rcN];
+                    var _currCharges = _rcC.charges || 0;
+                    if (_prevCharges !== undefined && _currCharges > _prevCharges && !_rcC.isDead) {
+                        if (typeof _animCard === 'function') _animCard(_rcN, 'anim-charge-glow', 750);
+                    }
+                    _prevChargesSnapshot[_rcN] = _currCharges;
                 }
             }
 
