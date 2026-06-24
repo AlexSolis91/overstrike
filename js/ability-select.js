@@ -541,6 +541,8 @@ function triggerMaboroshi(targetTeam, debuffName) {
 
         // ── PASIVA ESQUIVA AREA (Aspros): no recibe daño AOE ──
         function checkAsprosAOEImmunity(targetName, triggerPassive) {
+            // VORTEX: si el atacante tiene Vortex, ignora Esquiva Área completamente
+            if (gameState._vortexActive) return false;
             // Esquiva Area: el personaje ESQUIVA (no es inmune), activa pasivas de esquiva si triggerPassive=true
             const c = gameState.characters[targetName];
             if (!c || c.isDead || c.hp <= 0) return false;
