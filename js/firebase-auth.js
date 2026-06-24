@@ -3086,6 +3086,11 @@
                 }
 
                 // ── NORMAL ONLINE: go to char select as before ──
+                // Set _opponentUid so loadGameRelics can fetch the rival's relics
+                window._opponentUid = asHost
+                    ? (room.guest && room.guest.uid ? room.guest.uid : null)
+                    : (room.host  && room.host.uid  ? room.host.uid  : null);
+                window._rankedPlayerTeam = asHost ? 'team1' : 'team2';
                 csState.team1 = [];
                 csState.team2 = [];
                 csState.phase = 'team1';
@@ -3235,6 +3240,7 @@
                 setTimeout(function() {
                     if (isRoomHost) { pushGameState(); }
                     listenGameState();
+                    if (typeof listenLiveState === 'function') listenLiveState(); // Tiempo real
                 }, 500);
             }
         }
