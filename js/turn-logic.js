@@ -2582,7 +2582,8 @@
                             gameState._currentDamageSource = 'Veneno'; // Visión Esmeralda
                             applyDamageWithShield(_eorN, _eorPoisonDmg, null);
                             addLog('☠️ ' + _eorN + ' recibe ' + _eorPoisonDmg + ' de daño por Veneno (' + (_eorPoison.poisonStacks||0) + 'S) — el debuff expira', 'damage');
-                            if (typeof _animCard === 'function') _animCard(_eorN, 'anim-pulse-green', 600);
+                            if (typeof _animCard === 'function') _animCard(_eorN, 'anim-poison', 700);
+                            if (typeof _spawnParticles === 'function') _spawnParticles(_eorN, '☠️', 3);
                             if (typeof registerPoisonDamage === 'function') registerPoisonDamage(_eorPoisonDmg);
                             if (gameState.battleStats && gameState.battleStats.poisonAppliers) {
                                 const _pApp = Array.from(gameState.battleStats.poisonAppliers);
@@ -2613,7 +2614,8 @@
                             _eorHemoChar.charges = Math.max(0, (_eorHemoChar.charges||0) - _eorHemoDmg);
                         }
                         addLog('🩸💀 ' + _eorN + ' recibe ' + _eorHemoDmg + ' de daño por Hemorragia y pierde ' + _eorHemoDmg + ' cargas', 'damage');
-                        if (typeof _animCard === 'function') _animCard(_eorN, 'anim-pulse-red', 600);
+                        if (typeof _animCard === 'function') _animCard(_eorN, 'anim-bleed', 650);
+                        if (typeof _spawnParticles === 'function') _spawnParticles(_eorN, '🩸', 4);
                     }
 
                     // ── SANGRADO: 1-2 daño al final de ronda, decrementa duración, expira al llegar a 0 ──
@@ -2623,7 +2625,8 @@
                         gameState._currentDamageSource = 'Sangrado'; // Visión Esmeralda
                         applyDamageWithShield(_eorN, _eorBleedDmg, null);
                         addLog('🩸 ' + _eorN + ' recibe ' + _eorBleedDmg + ' de daño por Sangrado', 'damage');
-                        if (typeof _animCard === 'function') _animCard(_eorN, 'anim-pulse-red', 600);
+                        if (typeof _animCard === 'function') _animCard(_eorN, 'anim-bleed', 650);
+                        if (typeof _spawnParticles === 'function') _spawnParticles(_eorN, '🩸', 2);
                         _eorBleed.duration = (_eorBleed.duration || 1) - 1;
                         if (_eorBleed.duration <= 0) {
                             const _eorCharNow = gameState.characters[_eorN];
