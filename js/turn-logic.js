@@ -1487,13 +1487,13 @@
             gameState._relicEffectsActive = false;
             gameState._isCritHit = false;
             gameState._abilityExecuting = false; // Limpiar guard de ejecución
-            // Limpiar flag de Eco Sanador (doble curación) al final del turno
+            // Limpiar flags por turno
+            gameState._vortexActive = false; // Vortex: se limpia al finalizar cada turno
             if (gameState.selectedCharacter) {
                 const _esTurnChar = gameState.characters[gameState.selectedCharacter];
                 if (_esTurnChar) {
                     _esTurnChar._doubleHeal = false;
                     // Consumir _ignoreTauntNextAttack (Skeggöx) al finalizar el turno
-                    // Esto asegura que el bypass dura exactamente 1 ataque del turno extra
                     if (_esTurnChar._ignoreTauntNextAttack && !gameState._skeggoxExtraTurn) {
                         _esTurnChar._ignoreTauntNextAttack = false;
                     }
