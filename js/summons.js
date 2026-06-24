@@ -691,11 +691,38 @@
             const id = 'char-' + (charName || '').replace(/\s+/g, '-');
             const el = document.getElementById(id);
             if (!el) return;
-            el.classList.remove('anim-shake','anim-hit','anim-crit','anim-heal','anim-charge','anim-debuff','anim-over','anim-transform','anim-defeat');
+            el.classList.remove('anim-shake','anim-hit','anim-crit','anim-heal','anim-charge','anim-debuff',
+                'anim-over','anim-transform','anim-defeat','anim-pulse-red','anim-pulse-green','anim-pulse-gold',
+                'anim-pulse-blue','anim-charge-glow','anim-fire','anim-poison','anim-bleed');
             void el.offsetWidth; // reflow para reiniciar
             el.classList.add(animClass);
             setTimeout(function() { el.classList.remove(animClass); }, durationMs || 600);
         }
+
+        // ── Spawner de partículas visuales (fuego 🔥, veneno ☠️, sangre 🩸) ──
+        function _spawnParticles(charName, emoji, count) {
+            const id = 'char-' + (charName || '').replace(/\s+/g, '-');
+            const el = document.getElementById(id);
+            if (!el) return;
+            const rect = el.getBoundingClientRect();
+            count = count || 3;
+            for (var i = 0; i < count; i++) {
+                (function(idx) {
+                    setTimeout(function() {
+                        var p = document.createElement('div');
+                        p.className = 'vfx-particle';
+                        var px = (Math.random() - 0.5) * 30;
+                        p.style.setProperty('--px', px + 'px');
+                        p.style.left = (rect.left + rect.width  * 0.15 + Math.random() * rect.width  * 0.70) + 'px';
+                        p.style.top  = (rect.top  + rect.height * 0.10 + Math.random() * rect.height * 0.60) + 'px';
+                        p.textContent = emoji;
+                        document.body.appendChild(p);
+                        setTimeout(function() { if (p.parentNode) p.remove(); }, 950);
+                    }, idx * 100);
+                })(i);
+            }
+        }
+        window._spawnParticles = _spawnParticles;
 
         function _spawnDmgNumber(charName, text, type) {
             const id = 'char-' + (charName || '').replace(/\s+/g, '-');
