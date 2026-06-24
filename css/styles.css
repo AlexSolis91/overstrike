@@ -1944,6 +1944,68 @@
             100% { opacity: 0; transform: translateY(-48px) scale(0.8); }
         }
 
+        /* ── BRILLO DORADO PULSANTE: generación de cargas ── */
+        @keyframes chargeGlow {
+            0%   { box-shadow: 0 0 0px rgba(255,210,0,0); }
+            20%  { box-shadow: 0 0 0px rgba(255,210,0,0); }
+            35%  { box-shadow: 0 0 28px rgba(255,210,0,1), 0 0 55px rgba(255,180,0,0.6), inset 0 0 14px rgba(255,200,0,0.3); background: rgba(255,200,0,0.10); }
+            55%  { box-shadow: 0 0 18px rgba(255,210,0,0.7), 0 0 35px rgba(255,180,0,0.3); background: rgba(255,200,0,0.05); }
+            75%  { box-shadow: 0 0 28px rgba(255,210,0,1), 0 0 55px rgba(255,180,0,0.5), inset 0 0 10px rgba(255,200,0,0.2); }
+            100% { box-shadow: inherit; background: inherit; }
+        }
+        .anim-charge-glow {
+            animation: chargeGlow 0.75s ease-out;
+        }
+
+        /* ── LLAMAS: daño por Quemadura ── */
+        @keyframes firePulse {
+            0%   { box-shadow: 0 0 0px rgba(255,80,0,0); filter: brightness(1); }
+            20%  { box-shadow: 0 0 30px rgba(255,100,0,1), 0 0 60px rgba(255,50,0,0.5), inset 0 0 18px rgba(255,80,0,0.35); filter: brightness(1.12) saturate(1.3); background: rgba(255,60,0,0.14); }
+            50%  { box-shadow: 0 0 20px rgba(255,120,0,0.7), 0 0 40px rgba(255,80,0,0.3); filter: brightness(1.06); background: rgba(255,50,0,0.07); }
+            75%  { box-shadow: 0 0 28px rgba(255,100,0,0.85), inset 0 0 10px rgba(255,70,0,0.2); }
+            100% { box-shadow: inherit; filter: brightness(1); background: inherit; }
+        }
+        .anim-fire {
+            animation: firePulse 0.7s ease-out;
+        }
+
+        /* ── VENENO: daño por Veneno ── */
+        @keyframes poisonPulse {
+            0%   { box-shadow: 0 0 0px rgba(60,220,60,0); filter: brightness(1); }
+            25%  { box-shadow: 0 0 25px rgba(60,220,60,0.95), 0 0 50px rgba(40,200,40,0.5), inset 0 0 14px rgba(50,210,50,0.3); filter: brightness(1.08) hue-rotate(30deg); background: rgba(30,200,30,0.12); }
+            60%  { box-shadow: 0 0 14px rgba(60,220,60,0.5), 0 0 28px rgba(40,200,40,0.25); filter: brightness(1.03); }
+            100% { box-shadow: inherit; filter: brightness(1); background: inherit; }
+        }
+        .anim-poison {
+            animation: poisonPulse 0.7s ease-out;
+        }
+
+        /* ── SANGRADO / HEMORRAGIA: daño por Sangrado o Hemorragia ── */
+        @keyframes bleedPulse {
+            0%   { box-shadow: 0 0 0px rgba(180,0,0,0); }
+            20%  { box-shadow: 0 0 25px rgba(200,0,0,0.95), 0 0 50px rgba(160,0,0,0.5), inset 0 0 14px rgba(180,0,0,0.35); background: rgba(160,0,0,0.14); }
+            50%  { box-shadow: 0 0 16px rgba(180,0,0,0.6), 0 0 30px rgba(140,0,0,0.25); background: rgba(140,0,0,0.07); }
+            100% { box-shadow: inherit; background: inherit; }
+        }
+        .anim-bleed {
+            animation: bleedPulse 0.65s ease-out;
+        }
+
+        /* ── Partículas flotantes de efecto (fuego, veneno, sangre) ── */
+        @keyframes floatParticle {
+            0%   { opacity: 1; transform: translateY(0) translateX(0) scale(1); }
+            40%  { opacity: 0.9; transform: translateY(-18px) translateX(var(--px,0px)) scale(1.1); }
+            100% { opacity: 0; transform: translateY(-40px) translateX(var(--px,0px)) scale(0.6); }
+        }
+        .vfx-particle {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            font-size: 1.1rem;
+            animation: floatParticle 0.9s ease-out forwards;
+            will-change: transform, opacity;
+        }
+
         /* ==================== END ANIMACIONES ==================== */
 
         /* ==================== PANTALLA ÉPICA DE RESULTADO ==================== */
