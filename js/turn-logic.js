@@ -499,6 +499,46 @@
             }
         }
 
+        // ── pushLiveLog: empuja solo el log de batalla en tiempo real durante el turno ──
+        // Se llama desde addLog() para que el oponente vea cada evento inmediatamente
+        var _liveLogThrottle = null;
+        var _liveLogPending = false;
+        function pushLiveLog() {
+            if (!onlineMode || !currentRoomId || !currentUser) return;
+            if (!gameState.battleLog || !gameState.battleLog.length) return;
+            // Throttle: máximo 1 push por 300ms para no saturar Firebase
+            if (_liveLogThrottle) { _liveLogPending = true; return; }
+            _liveLogPending = false;
+            _liveLogThrottle = setTimeout(function() {
+                _liveLogThrottle = null;
+                if (_liveLogPending) pushLiveLog(); // enviar el que quedó pendiente
+            }, 300);
+            try {
+                // Snapshot ligero: solo log + HP/estado actual de personajes
+                var charSnapshot = {};
+                for (var n in gameState.characters) {
+                    var c = gameState.characters[n];
+                    if (!c) continue;
+                    charSnapshot[n] = {
+                        hp: c.hp,
+                        maxHp: c.maxHp,
+                        charges: c.charges,
+                        shield: c.shield || 0,
+                        isDead: c.isDead || false,
+                        statusEffects: c.statusEffects ? c.statusEffects.slice() : []
+                    };
+                }
+                db.ref('rooms/' + currentRoomId + '/liveState').set({
+                    battleLog: gameState.battleLog ? gameState.battleLog.slice(-50) : [],
+                    chars: charSnapshot,
+                    summons: gameState.summons || {},
+                    pushedBy: currentUser.uid,
+                    ts: Date.now()
+                });
+            } catch(e) {}
+        }
+        window.pushLiveLog = pushLiveLog;
+
         function listenGameState() {
             if (!onlineMode || !currentRoomId) return;
             gameStateListener = db.ref('rooms/' + currentRoomId + '/gameState').on('value', function(snap) {
@@ -596,6 +636,51 @@
                 }
             });
         }
+
+        // ── Escuchar liveState: actualizar log y HP en tiempo real durante turno del rival ──
+        function listenLiveState() {
+            if (!onlineMode || !currentRoomId) return;
+            db.ref('rooms/' + currentRoomId + '/liveState').on('value', function(snap) {
+                const data = snap.val();
+                if (!data) return;
+                // Ignorar mis propios pushes
+                if (data.pushedBy && currentUser && data.pushedBy === currentUser.uid) return;
+                // Actualizar battle log
+                if (data.battleLog && Array.isArray(data.battleLog)) {
+                    const logEl = document.getElementById('battleLogContent');
+                    if (logEl) {
+                        logEl.innerHTML = '';
+                        data.battleLog.forEach(function(entry) {
+                            const div = document.createElement('div');
+                            div.className = 'log-entry ' + (entry.type || '');
+                            div.textContent = entry.text || entry;
+                            logEl.appendChild(div);
+                        });
+                        logEl.scrollTop = logEl.scrollHeight;
+                    }
+                }
+                // Actualizar HP, escudo, cargas y estado de muerte en tiempo real
+                if (data.chars) {
+                    for (var n in data.chars) {
+                        var remote = data.chars[n];
+                        var local = gameState.characters[n];
+                        if (!local || !remote) continue;
+                        local.hp       = remote.hp;
+                        local.maxHp    = remote.maxHp;
+                        local.charges  = remote.charges;
+                        local.shield   = remote.shield || 0;
+                        local.isDead   = remote.isDead || false;
+                        if (Array.isArray(remote.statusEffects)) local.statusEffects = remote.statusEffects;
+                    }
+                    if (typeof renderCharacters === 'function') renderCharacters();
+                }
+                if (data.summons && typeof renderSummons === 'function') {
+                    gameState.summons = data.summons;
+                    renderSummons();
+                }
+            });
+        }
+        window.listenLiveState = listenLiveState;
 
         function createContinueBtn() {
             let btn = document.getElementById('floatingContinueBtn');
