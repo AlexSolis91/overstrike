@@ -1374,6 +1374,7 @@
             }
 
             target.hp = Math.max(0, target.hp - remainingDamage);
+            if (remainingDamage > 0) target._dmgAnimatedThisFrame = true; // evita doble animación en renderCharacters
 
             // ── VISIÓN ESMERALDA (Linterna Verde): un aliado recibe daño por Quemadura/Veneno/Sangrado/Hemorragia → cura 3 HP a todo el equipo aliado ──
             if (remainingDamage > 0 && !passiveExecuting && _debuffDamageSource) {
