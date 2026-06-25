@@ -1494,15 +1494,9 @@
                 addLog(`⛓️ ¡Enkidu: Cadenas del Cielo! Invocaciones canceladas`, 'damage');
 
             } else if (ability.effect === 'enuma_elish') {
-                // GILGAMESH - Enuma Elish: 10 daño, doble si el objetivo tiene Escudo HP
-                const tgtEE = gameState.characters[targetName];
-                let dmgEE = finalDamage;
-                if (tgtEE && tgtEE.shield > 0) {
-                    dmgEE *= 2;
-                    addLog(`💥 Enuma Elish: daño doble (${targetName} tiene Escudo HP activo)`, 'damage');
-                }
-                applyDamageWithShield(targetName, dmgEE, gameState.selectedCharacter);
-                addLog(`⚔️ Enuma Elish: ${dmgEE} daño a ${targetName}`, 'damage');
+                // Alias obsoleto — redirige al handler correcto gilgamesh_enuma
+                ability.effect = 'gilgamesh_enuma';
+                executeAbility(targetName);
 
             } else if (ability.effect === 'self_provocation') {
                 // Doomsday Provocación
@@ -3305,17 +3299,67 @@
                 }
 
             } else if (ability.effect === 'gilgamesh_enuma') {
-                // Gilgamesh OVER: daño + roba TODAS las cargas del objetivo
-                applyDamageWithShield(targetName, finalDamage, charName);
-                const enTgt = gameState.characters[targetName];
-                if (enTgt) {
-                    const enStolen = enTgt.charges || 0;
-                    if (enStolen > 0) {
-                        enTgt.charges = 0;
-                        attacker.charges = Math.min(20, (attacker.charges || 0) + enStolen);
-                        addLog('✨ Enuma Elish: ' + charName + ' roba ' + enStolen + ' cargas de ' + targetName, 'buff');
-                    }
+                // ══════════════════════════════════════════════════════════
+                // ENUMA ELISH (Gilgamesh OVER) — MT
+                // Daño base = debuffs activos en equipo enemigo (mín 1).
+                // Antes del ataque: aplica 1 debuff aleatorio a cada enemigo.
+                // Cada golpe: 25% daño triple, 50% crítico, 25% normal.
+                // ══════════════════════════════════════════════════════════
+                const _eeAtk   = gameState.characters[gameState.selectedCharacter];
+                const _eeTeam  = _eeAtk ? _eeAtk.team : 'team1';
+                const _eeETeam = _eeTeam === 'team1' ? 'team2' : 'team1';
+                const _eeDebuffPool = ['Quemadura','Veneno','Sangrado','Confusion','Debilitar','Congelacion','Silenciar','Miedo','Agotamiento','Aturdimiento'];
+
+                // 1. Contar debuffs activos ANTES de aplicar los nuevos
+                let _eeTotalDebuffs = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _eeETeam || _c.isDead || _c.hp <= 0) continue;
+                    _eeTotalDebuffs += (_c.statusEffects||[]).filter(function(e){ return e && e.type==='debuff'; }).length;
                 }
+                const _eeBaseDmg = Math.max(1, _eeTotalDebuffs);
+                addLog('💎 Enuma Elish: ' + _eeTotalDebuffs + ' debuffs en equipo enemigo → ' + _eeBaseDmg + ' de daño base', 'buff');
+
+                // 2. Aplicar 1 debuff aleatorio a cada enemigo ANTES del ataque
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _eeETeam || _c.isDead || _c.hp <= 0) continue;
+                    const _eeChosen = _eeDebuffPool[Math.floor(Math.random() * _eeDebuffPool.length)];
+                    if      (_eeChosen === 'Quemadura')    { if (typeof applyFlatBurn==='function') applyFlatBurn(_n, 2, 1); }
+                    else if (_eeChosen === 'Veneno')       { if (typeof applyPoison==='function') applyPoison(_n, 1); }
+                    else if (_eeChosen === 'Sangrado')     { if (typeof applyBleed==='function') applyBleed(_n, 1); }
+                    else if (_eeChosen === 'Confusion')    { if (typeof applyConfusion==='function') applyConfusion(_n, 1); }
+                    else if (_eeChosen === 'Debilitar')    { if (typeof applyWeaken==='function') applyWeaken(_n, 2); }
+                    else if (_eeChosen === 'Miedo')        { if (typeof applyFear==='function') applyFear(_n, 1); }
+                    else if (_eeChosen === 'Aturdimiento') { if (typeof applyStun==='function') applyStun(_n, 1); }
+                    else if (_eeChosen === 'Congelacion')  { if (typeof applyFreeze==='function') applyFreeze(_n, 1); }
+                    else if (_eeChosen === 'Silenciar')    { if (typeof applySilenciar==='function') applySilenciar(_n, 2); }
+                    else if (_eeChosen === 'Agotamiento')  {
+                        const _eeAgtC = gameState.characters[_n];
+                        if (_eeAgtC) { _eeAgtC.charges = Math.max(0, (_eeAgtC.charges||0) - 2); }
+                        addLog('💨 Enuma Elish: ' + _n + ' pierde 2 cargas (Agotamiento)', 'debuff');
+                    }
+                    addLog('💎 Enuma Elish: ' + _n + ' recibe ' + _eeChosen + ' (antes del ataque)', 'debuff');
+                }
+
+                // 3. MT: un golpe a cada enemigo vivo con daño base + crítico/triple
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _eeETeam || _c.isDead || _c.hp <= 0) continue;
+                    let _eeDmg = _eeBaseDmg;
+                    const _eeRoll = Math.random();
+                    let _eeLabel = '';
+                    if (_eeRoll < 0.25) {
+                        _eeDmg *= 3; _eeLabel = ' 🌟 DAÑO TRIPLE';
+                        if (typeof triggerGilgameshCrit === 'function') triggerGilgameshCrit(gameState.selectedCharacter);
+                    } else if (_eeRoll < 0.75) {
+                        _eeDmg *= 2; _eeLabel = ' ⚡ CRÍTICO';
+                        if (typeof triggerGilgameshCrit === 'function') triggerGilgameshCrit(gameState.selectedCharacter);
+                    }
+                    applyDamageWithShield(_n, _eeDmg, gameState.selectedCharacter);
+                    addLog('💎 Enuma Elish: ' + _eeDmg + ' daño a ' + _n + _eeLabel, 'damage');
+                }
+                if (typeof applyAOEToSummons === 'function') applyAOEToSummons(_eeETeam, _eeBaseDmg, gameState.selectedCharacter);
 
             } else if (ability.effect === 'sangre_esparta') {
                 // Leonidas: Sacrifica 10 HP y genera 10 cargas
