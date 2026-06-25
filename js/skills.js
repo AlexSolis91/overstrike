@@ -765,7 +765,9 @@
                 }
                 // Recuperar 5 HP (pasiva)
                 if (typeof canHeal === 'function' ? canHeal(gameState.selectedCharacter) : true) {
+                    const _tGOld = _tG.hp;
                     _tG.hp = Math.min(_tG.maxHp, (_tG.hp||0) + 5);
+                    if (typeof notifyHeal === 'function') notifyHeal(gameState.selectedCharacter, _tG.hp - _tGOld, 'Superación de Límites');
                     addLog('💚 Superacion de Limites: Goku recupera 5 HP al transformarse', 'heal');
                 }
                 audioManager.playTransformSfx(); if (typeof _animCard === 'function') _animCard(gameState.selectedCharacter, 'anim-transform', 700); if (typeof _triggerPowerUp === 'function') { const _puChar = gameState.characters[gameState.selectedCharacter]; _triggerPowerUp(gameState.selectedCharacter, _puChar ? _puChar.team : 'team1'); }
@@ -1128,7 +1130,7 @@
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 applyPoison(targetName, 3);
                 const muzanHeal = Math.min(3, attacker.maxHp - attacker.hp);
-                if (muzanHeal > 0) { attacker.hp = Math.min(attacker.maxHp, attacker.hp + muzanHeal); addLog(`🩸 Muzan recupera ${muzanHeal} HP`, 'heal'); }
+                if (muzanHeal > 0) { const _muzOld=attacker.hp; attacker.hp = Math.min(attacker.maxHp, attacker.hp + muzanHeal); if (typeof notifyHeal === 'function') notifyHeal(gameState.selectedCharacter, attacker.hp-_muzOld, 'Muzan'); addLog(`🩸 Muzan recupera ${muzanHeal} HP`, 'heal'); }
                 addLog(`⚔️ Sangre Demoniaca: ${finalDamage} daño + Veneno 3 turnos a ${targetName}`, 'damage');
 
             } else if (ability.effect === 'sombra_noche') {
@@ -1718,7 +1720,7 @@
                     const old = tgt2.hp; tgt2.hp = Math.min(tgt2.maxHp, tgt2.hp + healAmt);
                     const actual = tgt2.hp - old;
                     addLog(`💚 ${targetName} recupera ${actual} HP`, 'heal');
-                    triggerBendicionSagrada(tgt2.team, actual);
+                    if (typeof notifyHeal === 'function') notifyHeal(targetName, actual, 'habilidad');
                 }
 
             } else if (ability.effect === 'fuego_vital') {
@@ -1756,7 +1758,7 @@
                     const oldHpDV = tgtDV.hp;
                     tgtDV.hp = Math.min(tgtDV.maxHp, tgtDV.hp + 4);
                     const _ddvHeal = tgtDV.hp - oldHpDV;
-                    if (_ddvHeal > 0) triggerBendicionSagrada(tgtDV.team, _ddvHeal);
+                    if (_ddvHeal > 0 && typeof notifyHeal === 'function') notifyHeal(targetName, _ddvHeal, 'Don de la Vida');
                     addLog(`💚 ${targetName} recupera ${tgtDV.hp - oldHpDV} HP (Don de la Vida)`, 'heal');
                 }
 
@@ -2200,13 +2202,11 @@
                 const oldHp = target.hp;
                 target.hp = Math.min(target.maxHp, target.hp + ability.heal);
                 const actualHeal = target.hp - oldHp;
-                
+                if (actualHeal > 0 && typeof notifyHeal === 'function') notifyHeal(targetName, actualHeal, ability.name);
                 addLog(`💚 ${gameState.selectedCharacter} usa ${ability.name} en ${targetName} recuperando ${actualHeal} HP`, 'heal');
                 
                 // Activar pasiva de Min Byung
-                if (actualHeal > 0) {
-                    triggerBendicionSagrada(attacker.team, actualHeal);
-                }
+                // notifyHeal already called above for this heal
                 
             } else if (ability.effect === 'shield_ally') {
                 // Escudo Celestial
@@ -2236,12 +2236,12 @@
                 
                 const healAmount = ability.heal || 3; // Great Horn cura 3 HP por defecto
                 const oldHp = attacker.hp;
-                attacker.hp = Math.min(attacker.maxHp, attacker.hp + healAmount);
+                { const _haOld=attacker.hp; attacker.hp = Math.min(attacker.maxHp, attacker.hp + healAmount); if (typeof notifyHeal === 'function') notifyHeal(gameState.selectedCharacter, attacker.hp-_haOld, ability.name); }
                 const actualHeal = attacker.hp - oldHp;
                 
                 if (actualHeal > 0) {
                     addLog(`💚 ${gameState.selectedCharacter} recupera ${actualHeal} HP`, 'heal');
-                    triggerBendicionSagrada(attacker.team, actualHeal);
+                    if (typeof notifyHeal === 'function') notifyHeal(gameState.selectedCharacter, actualHeal, 'habilidad');
                 }
                 
                 addLog(`⚔️ ${gameState.selectedCharacter} usa ${ability.name} en ${targetName} causando ${finalDamage} de daño`, 'damage');
@@ -2949,7 +2949,7 @@
                 if (lifesteal > 0) {
                     gameState.characters[charName].hp = Math.min(gameState.characters[charName].maxHp, gameState.characters[charName].hp + lifesteal);
                     addLog('🔥 Cólera de Thestalos: ' + charName + ' recupera ' + lifesteal + ' HP (50% del daño)', 'heal');
-                    triggerBendicionSagrada(attacker.team, lifesteal);
+                    if (typeof notifyHeal === 'function') notifyHeal(charName, lifesteal, 'Cólera de Thestalos');
                 }
 
             } else if (ability.effect === 'double_if_shield') {
@@ -3149,7 +3149,7 @@
                 const lsActualDmg = applyDamageWithShield(targetName, finalDamage, charName);
                 if (lsActualDmg > 0) {
                     const lsOldHp = attacker.hp;
-                    attacker.hp = Math.min(attacker.maxHp, attacker.hp + lsActualDmg);
+                    const _ls1Old=attacker.hp; attacker.hp = Math.min(attacker.maxHp, attacker.hp + lsActualDmg); if(typeof notifyHeal==="function") notifyHeal(gameState.selectedCharacter,attacker.hp-_ls1Old,"lifesteal");
                     const lsHealed = attacker.hp - lsOldHp;
                     if (lsHealed > 0) addLog('🌀 Gakidō: ' + charName + ' roba ' + lsHealed + ' HP de ' + targetName, 'heal');
                 }
@@ -3162,8 +3162,8 @@
                     applyHeal(charName, 2, 'Purificación Solar');
                 } else {
                     const _psOld = attacker.hp;
-                    attacker.hp = Math.min(attacker.maxHp, attacker.hp + 2);
-                    if (attacker.hp > _psOld && typeof showHpTick === 'function') showHpTick(charName, attacker.hp - _psOld); if (attacker.hp > _psOld && typeof triggerBendicionSagrada === 'function' && !passiveExecuting && attacker) triggerBendicionSagrada(attacker.team, attacker.hp - _psOld);
+                    const _ls2Old=attacker.hp; attacker.hp = Math.min(attacker.maxHp, attacker.hp + 2); if(typeof notifyHeal==="function") notifyHeal(gameState.selectedCharacter,attacker.hp-_ls2Old,"lifesteal");
+                    // showHpTick + bendicion ya cubiertos por notifyHeal del lifesteal de arriba
                     addLog('💛 Purificación Solar: ' + charName + ' recupera ' + (attacker.hp - _psOld) + ' HP', 'heal');
                 }
                 applyFlatBurn(targetName, 2, 1);
@@ -3192,7 +3192,7 @@
                     applyHeal(charName, 8, 'Magma Strength');
                 } else {
                     const _msOld = attacker.hp;
-                    attacker.hp = Math.min(attacker.maxHp, attacker.hp + 8);
+                    const _ls3Old=attacker.hp; attacker.hp = Math.min(attacker.maxHp, attacker.hp + 8); if(typeof notifyHeal==="function") notifyHeal(gameState.selectedCharacter,attacker.hp-_ls3Old,"lifesteal");
                     addLog('🔥 Magma Strength: ' + charName + ' recupera ' + (attacker.hp - _msOld) + ' HP', 'heal');
                 }
                 if (typeof applyBuff === 'function') {
@@ -3237,7 +3237,7 @@
                     const _haActual = haC.hp - haOld;
                     if (_haActual > 0) {
                         addLog('💚 ' + haName + ' recupera ' + _haActual + ' HP (Sanación Heroica)', 'heal');
-                        if (typeof triggerBendicionSagrada === 'function') triggerBendicionSagrada(haTeam, _haActual);
+                        if (typeof notifyHeal === 'function') notifyHeal(haName||targetName, _haActual, 'Sanación Heroica');
                     }
                 }
                 // Buff Regeneracion 25% por 2T a Min Byung
@@ -3434,7 +3434,7 @@
                     const _hspOldHp = hspC.hp;
                 hspC.hp = Math.min(hspC.maxHp, hspC.hp + 5);
                 const _hspHeal = hspC.hp - _hspOldHp;
-                if (_hspHeal > 0) triggerBendicionSagrada(hspC.team, _hspHeal);
+                if (_hspHeal > 0 && typeof notifyHeal === 'function') notifyHeal(targetName, _hspHeal, 'Rayo de Luz');
                     addLog('💫 Rayo de Luz: ' + targetName + ' recupera ' + (hspC.hp - hspOld) + ' HP', 'heal');
                     applyShield(targetName, 5);
                     hspC.statusEffects = (hspC.statusEffects || []).filter(e => e && normAccent(e.name||'') !== 'provocacion');
@@ -3463,7 +3463,7 @@
                         const dhaActualHeal = dhaC.hp - dhaHealOld;
                         if (dhaActualHeal > 0) {
                             addLog('💚 Medicina Demoniaca: ' + dhaName + ' recupera ' + dhaActualHeal + ' HP (' + dhaTotalDebuffs + ' debuffs eliminados)', 'heal');
-                            triggerBendicionSagrada(dhaTeam, dhaActualHeal);
+                            if (typeof notifyHeal === 'function') notifyHeal(dhaName||targetName, dhaActualHeal, 'Medicina Demoniaca');
                         }
                     }
                     addLog('🌿 Medicina Demoniaca: ' + dhaTotalDebuffs + ' debuffs eliminados del equipo aliado', 'buff');
@@ -5310,7 +5310,7 @@
                         if (_pjHealed > 0) {
                             addLog('🦸 Puño de la Justicia: ' + _pjDmg + ' daño + ' + _pjHealed + ' HP recuperados', 'buff');
                             if (typeof triggerPresenciaOscura === 'function') triggerPresenciaOscura(gameState.selectedCharacter);
-                            if (typeof triggerBendicionSagrada === 'function') triggerBendicionSagrada(_pjS.team, _pjHealed);
+                            if (typeof notifyHeal === 'function') notifyHeal(gameState.selectedCharacter, _pjHealed, 'Puño de la Justicia');
                         }
                     }
                 }
@@ -6705,7 +6705,7 @@
                     const _svHeal = obj.char.hp - _svOld;
                     if (_svHeal > 0) {
                         addLog('💚 ' + obj.name + ' recupera ' + _svHeal + ' HP (Soporte Vital)', 'heal');
-                        triggerBendicionSagrada(obj.char.team, _svHeal);
+                        if (typeof notifyHeal === 'function') notifyHeal(obj.name, _svHeal, 'Soporte Vital');
                     }
                     const _svBefore = (obj.char.statusEffects || []).filter(e => e && e.type === 'debuff').length;
                     obj.char.statusEffects = (obj.char.statusEffects || []).filter(e => !e || e.type !== 'debuff');
@@ -6731,14 +6731,14 @@
                 const hcC = gameState.characters[targetName];
                 if (hcC) {
                     const hcOld = hcC.hp;
-                    hcC.hp = Math.min(hcC.maxHp, hcC.hp + (ability.heal || 1));
+                    { const _hcOld=hcC.hp; hcC.hp = Math.min(hcC.maxHp, hcC.hp + (ability.heal || 1)); if(typeof notifyHeal==='function') notifyHeal(gameState.selectedCharacter,hcC.hp-_hcOld,ability.name); }
                     if (hcC.hp > hcOld) addLog('💚 Aguja Medicinal: ' + targetName + ' recupera ' + (hcC.hp - hcOld) + ' HP', 'heal');
                     const hcD = (hcC.statusEffects || []).filter(e => e && e.type === 'debuff' && !e.permanent);
                     if (hcD.length > 0) {
                         hcC.statusEffects = hcC.statusEffects.filter(e => e !== hcD[0]);
                         addLog('💚 Aguja Medicinal: Limpia ' + (hcD[0].name||'debuff') + ' de ' + targetName, 'buff');
                     }
-                    triggerBendicionSagrada(attacker.team, hcC.hp - hcOld);
+                    if (typeof notifyHeal === 'function' && hcC.hp - hcOld > 0) notifyHeal(targetName, hcC.hp - hcOld, 'Aguja Medicinal');
                 }
                 generateChargesInline(charName, ability.chargeGain);
 
@@ -6876,7 +6876,7 @@
                             char.hp = Math.min(char.maxHp, char.hp + 5);
                             const actualHeal = char.hp - oldHp;
                             if (actualHeal > 0) {
-                                triggerBendicionSagrada(team, actualHeal);
+                                if (typeof notifyHeal === 'function') notifyHeal(charName||targetName, actualHeal, 'regeneración');
                             }
                         }
                     }
@@ -8718,7 +8718,7 @@
                                 const _cname = Object.keys(gameState.characters).find(function(k){ return gameState.characters[k] === c; });
                                 if (_cname) {
                                     showHpTick(_cname, _healed);
-                                    if (typeof triggerBendicionSagrada === 'function' && !passiveExecuting) triggerBendicionSagrada(c.team, _healed);
+                                    if (typeof notifyHeal === 'function' && !passiveExecuting) notifyHeal(_cname, _healed, 'curación');
                                 }
                             }
                         });
