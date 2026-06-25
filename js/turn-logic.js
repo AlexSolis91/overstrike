@@ -642,28 +642,36 @@
             if (!onlineMode || !currentRoomId) return;
 
             // ── Escuchar liveOver: recibir animación de Over del rival en tiempo real ──
+            var _liveOverLastTs = 0; // evitar disparar datos viejos de partidas anteriores
             db.ref('rooms/' + currentRoomId + '/liveOver').on('value', function(snapOver) {
-                const ov = snapOver.val();
-                if (!ov) return;
-                // Ignorar mis propios pushes
-                if (ov.pushedBy && currentUser && ov.pushedBy === currentUser.uid) return;
-                // Reproducir animación de Over en la tarjeta del rival
-                if (ov.charName && typeof _animCard === 'function') {
-                    _animCard(ov.charName, 'anim-over', 700);
-                }
-                // Efecto de clima AOE si aplica
-                if (typeof _triggerAOEWeather === 'function' && ov.abilityTarget === 'aoe') {
-                    const _eff = ov.abilityEffect || '';
-                    let _wt = 'generic';
-                    if (_eff.includes('burn')||_eff.includes('fire')||_eff.includes('fuego')||_eff.includes('explosi')) _wt='fire';
-                    else if (_eff.includes('ice')||_eff.includes('hielo')||_eff.includes('freeze')||_eff.includes('congelaci')) _wt='ice';
-                    else if (_eff.includes('shadow')||_eff.includes('dark')||_eff.includes('sombra')||_eff.includes('muerte')) _wt='dark';
-                    _triggerAOEWeather(_wt);
-                }
-                // Reproducir SFX de Over
-                if (typeof audioManager !== 'undefined' && typeof audioManager.playOverSfx === 'function') {
-                    audioManager.playOverSfx();
-                }
+                try {
+                    const ov = snapOver.val();
+                    if (!ov || !ov.ts) return;
+                    // Ignorar datos viejos (de partidas anteriores o del inicio de sesión)
+                    if (ov.ts <= _liveOverLastTs) return;
+                    // Ignorar si fue hace más de 10 segundos (dato obsoleto en Firebase)
+                    if (Date.now() - ov.ts > 10000) return;
+                    _liveOverLastTs = ov.ts;
+                    // Ignorar mis propios pushes
+                    if (ov.pushedBy && currentUser && ov.pushedBy === currentUser.uid) return;
+                    // Reproducir animación de Over en la tarjeta del personaje que lo ejecutó
+                    if (ov.charName && typeof _animCard === 'function') {
+                        _animCard(ov.charName, 'anim-over', 700);
+                    }
+                    // Efecto de clima AOE si aplica
+                    if (typeof _triggerAOEWeather === 'function' && ov.abilityTarget === 'aoe') {
+                        const _eff = ov.abilityEffect || '';
+                        let _wt = 'generic';
+                        if (_eff.includes('burn')||_eff.includes('fire')||_eff.includes('fuego')||_eff.includes('explosi')) _wt='fire';
+                        else if (_eff.includes('ice')||_eff.includes('hielo')||_eff.includes('freeze')||_eff.includes('congelaci')) _wt='ice';
+                        else if (_eff.includes('shadow')||_eff.includes('dark')||_eff.includes('sombra')||_eff.includes('muerte')) _wt='dark';
+                        _triggerAOEWeather(_wt);
+                    }
+                    // SFX de Over
+                    if (typeof audioManager !== 'undefined' && typeof audioManager.playOverSfx === 'function') {
+                        audioManager.playOverSfx();
+                    }
+                } catch(e) { console.warn('[liveOver] error:', e); }
             });
 
             db.ref('rooms/' + currentRoomId + '/liveState').on('value', function(snap) {
@@ -700,9 +708,22 @@
                     }
                     if (typeof renderCharacters === 'function') renderCharacters();
                 }
-                if (data.summons && typeof renderSummons === 'function') {
-                    gameState.summons = data.summons;
-                    renderSummons();
+                // Merge summons carefully — only update if data is valid and non-empty
+                if (data.summons && typeof data.summons === 'object' && Object.keys(data.summons).length > 0) {
+                    // Merge individual summons instead of replacing the whole object
+                    for (var sid in data.summons) {
+                        if (!gameState.summons) gameState.summons = {};
+                        var rs = data.summons[sid];
+                        if (rs && gameState.summons[sid]) {
+                            // Only update combat fields, preserve image/name/passive
+                            gameState.summons[sid].hp = rs.hp;
+                            gameState.summons[sid].isDead = rs.isDead || false;
+                            if (rs.statusEffects) gameState.summons[sid].statusEffects = rs.statusEffects;
+                        } else if (rs) {
+                            gameState.summons[sid] = rs;
+                        }
+                    }
+                    if (typeof renderSummons === 'function') renderSummons();
                 }
             });
         }
