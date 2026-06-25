@@ -98,6 +98,19 @@
             return true;
         }
 
+        // ── HELPER: Regla de Oro de Gilgamesh — se dispara en cada golpe crítico ──
+        function triggerGilgameshCrit(gilName) {
+            const _gil = gameState.characters[gilName];
+            if (!_gil || _gil.isDead || _gil.hp <= 0) return;
+            if (!_gil.passive || _gil.passive.name !== 'Regla de Oro') return;
+            _gil.charges = Math.min(20, (_gil.charges||0) + 1);
+            const _gilOldHp = _gil.hp;
+            _gil.hp = Math.min(_gil.maxHp, (_gil.hp||0) + 1);
+            if (_gil.hp > _gilOldHp && typeof notifyHeal === 'function') notifyHeal(gilName, _gil.hp - _gilOldHp, 'Regla de Oro');
+            addLog('👑 Regla de Oro: ' + gilName + ' genera 1 carga y recupera 1 HP (golpe crítico)', 'buff');
+        }
+        window.triggerGilgameshCrit = triggerGilgameshCrit;
+
         function executeAbility(targetName) {
             // Guard: prevent double execution (can happen with rapid AI timer firing)
             // Exception: Guía del Maestro calls _executeAbilityCore directly, bypasses this guard
@@ -1379,22 +1392,6 @@
                     summonShadow('Ramesseum Tentyris', gameState.selectedCharacter);
                     addLog('🏛️ Ozymandias invoca a Ramesseum Tentyris', 'buff');
                 }
-
-            // ── HELPER: triggerGilgameshCrit(charName) ──
-            // Dispara Regla de Oro al hacer un golpe crítico con Gilgamesh
-            function triggerGilgameshCrit(gilName) {
-                const _gil = gameState.characters[gilName];
-                if (!_gil || _gil.isDead || _gil.hp <= 0) return;
-                if (!_gil.passive || _gil.passive.name !== 'Regla de Oro') return;
-                // +1 carga
-                _gil.charges = Math.min(20, (_gil.charges||0) + 1);
-                // +1 HP via notifyHeal (activa Explosion de Sangre y Bendicion Sagrada)
-                const _gilOldHp = _gil.hp;
-                _gil.hp = Math.min(_gil.maxHp, (_gil.hp||0) + 1);
-                if (_gil.hp > _gilOldHp && typeof notifyHeal === 'function') notifyHeal(gilName, _gil.hp - _gilOldHp, 'Regla de Oro');
-                addLog('👑 Regla de Oro: ' + gilName + ' genera 1 carga y recupera 1 HP (golpe crítico)', 'buff');
-            }
-            window.triggerGilgameshCrit = triggerGilgameshCrit;
 
             } else if (ability.effect === 'espada_merodach') {
                 // ══════════════════════════════════════════════════════════
