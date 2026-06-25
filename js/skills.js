@@ -1380,63 +1380,96 @@
                     addLog('🏛️ Ozymandias invoca a Ramesseum Tentyris', 'buff');
                 }
 
-            } else if (ability.effect === 'espada_merodach') {
-                // GILGAMESH - Espada Merodach: AOE daño + elimina 3 cargas
-                const emTeam = attacker.team === 'team1' ? 'team2' : 'team1';
-                checkAndRemoveStealth(emTeam);
-                const darionEM = Object.values(gameState.summons).find(s => s && s.name === 'Valkyr' && s.team === attacker.team);
-                const muzanEM = ((gameState.selectedCharacter === 'Muzan Kibutsuji' || gameState.selectedCharacter === 'Muzan Kibutsuji v2')) ? (attacker.muzanCritBonus || 0) : 0;
-                const critBonusEM = (darionEM ? 0.50 : 0) + 0.10 + muzanEM;
+            // ── HELPER: triggerGilgameshCrit(charName) ──
+            // Dispara Regla de Oro al hacer un golpe crítico con Gilgamesh
+            function triggerGilgameshCrit(gilName) {
+                const _gil = gameState.characters[gilName];
+                if (!_gil || _gil.isDead || _gil.hp <= 0) return;
+                if (!_gil.passive || _gil.passive.name !== 'Regla de Oro') return;
+                // +1 carga
+                _gil.charges = Math.min(20, (_gil.charges||0) + 1);
+                // +1 HP via notifyHeal (activa Explosion de Sangre y Bendicion Sagrada)
+                const _gilOldHp = _gil.hp;
+                _gil.hp = Math.min(_gil.maxHp, (_gil.hp||0) + 1);
+                if (_gil.hp > _gilOldHp && typeof notifyHeal === 'function') notifyHeal(gilName, _gil.hp - _gilOldHp, 'Regla de Oro');
+                addLog('👑 Regla de Oro: ' + gilName + ' genera 1 carga y recupera 1 HP (golpe crítico)', 'buff');
+            }
+            window.triggerGilgameshCrit = triggerGilgameshCrit;
 
-                // ── MEGA PROVOCACIÓN: redirige todo el daño al portador ──
-                const emKamish = checkKamishMegaProvocation(emTeam);
-                if (emKamish) {
-                    // Count alive targets for damage multiplication
-                    let emTargetCount = 0;
-                    for (let n in gameState.characters) {
-                        const c = gameState.characters[n];
-                        if (c && c.team === emTeam && !c.isDead && c.hp > 0) emTargetCount++;
+            } else if (ability.effect === 'espada_merodach') {
+                // ══════════════════════════════════════════════════════════
+                // ESPADA MERODACH (Gilgamesh SPECIAL)
+                // MT: golpea hasta 2 veces a hasta 2 enemigos aleatorios.
+                // Cada golpe tiene 50% de crítico.
+                // Por cada crítico: -3 cargas a TODO el equipo rival + Regla de Oro.
+                // ══════════════════════════════════════════════════════════
+                const _emTeam  = attacker.team === 'team1' ? 'team2' : 'team1';
+                checkAndRemoveStealth(_emTeam);
+
+                // Candidatos: enemigos vivos sin Esquiva Área
+                const _emCandidates = Object.keys(gameState.characters).filter(function(n) {
+                    const _c = gameState.characters[n];
+                    return _c && _c.team === _emTeam && !_c.isDead && _c.hp > 0 &&
+                           !checkAsprosAOEImmunity(n, false) && !checkMinatoAOEImmunity(n);
+                });
+
+                // Mega Provocación: redirige al portador
+                const _emKamish = typeof checkKamishMegaProvocation === 'function' ? checkKamishMegaProvocation(_emTeam) : null;
+
+                if (_emKamish) {
+                    // 4 golpes totales (2 objetivos x 2 golpes) redirigidos al portador de MegaProv
+                    let _emMPTotalDmg = 0;
+                    for (let _hi = 0; _hi < 4; _hi++) {
+                        let _dmg = finalDamage;
+                        if (Math.random() < 0.50) { _dmg *= 2; triggerGilgameshCrit(gameState.selectedCharacter); addLog('💥 ¡CRÍTICO! Espada Merodach', 'damage'); }
+                        _emMPTotalDmg += _dmg;
                     }
-                    for (let sId in gameState.summons) {
-                        const s = gameState.summons[sId];
-                        if (s && s.team === emTeam && s.hp > 0 && sId !== emKamish.id) emTargetCount++;
-                    }
-                    const emTotalDmg = finalDamage * Math.max(1, emTargetCount);
-                    if (emKamish.isCharacter) {
-                        applyDamageWithShield(emKamish.characterName, emTotalDmg, gameState.selectedCharacter);
-                        addLog('🌑 ' + emKamish.characterName + ' (Mega Provocación) absorbe ' + emTotalDmg + ' daño de Espada Merodach', 'damage');
+                    if (_emKamish.isCharacter) {
+                        applyDamageWithShield(_emKamish.characterName, _emMPTotalDmg, gameState.selectedCharacter);
+                        addLog('🌑 ' + _emKamish.characterName + ' (Mega Provocación) absorbe ' + _emMPTotalDmg + ' daño de Espada Merodach', 'damage');
                     } else {
-                        applySummonDamage(emKamish.id, emTotalDmg, gameState.selectedCharacter);
-                        addLog('🐉 ' + (emKamish.kamish ? emKamish.kamish.name : 'Invocación') + ' (Mega Provocación) absorbe ' + emTotalDmg + ' daño de Espada Merodach', 'damage');
+                        applySummonDamage(_emKamish.id, _emMPTotalDmg, gameState.selectedCharacter);
+                        addLog('🐉 Mega Provocación absorbe ' + _emMPTotalDmg + ' daño de Espada Merodach', 'damage');
                     }
-                    addLog('⚔️ Espada Merodach (Mega Prov): ' + emTotalDmg + ' daño total redirigido', 'damage');
                 } else {
-                    // Sin Mega Provocación — AOE normal
-                    for (let n in gameState.characters) {
-                        const c = gameState.characters[n];
-                        if (!c || c.team !== emTeam || c.isDead || c.hp <= 0) continue;
-                        // ESQUIVA ÁREA: inmune a todo efecto AOE
-                        if (checkAsprosAOEImmunity(n, true) || checkMinatoAOEImmunity(n)) {
-                            addLog('🌟 ' + n + ' es inmune a Espada Merodach (Esquiva Área)', 'buff');
-                            continue; // skip damage AND charge drain
+                    // Elegir hasta 2 objetivos aleatorios
+                    const _emShuffled = _emCandidates.slice().sort(function(){ return Math.random()-0.5; });
+                    const _emTargets = _emShuffled.slice(0, 2);
+
+                    if (_emTargets.length === 0) {
+                        addLog('⚔️ Espada Merodach: sin objetivos válidos', 'info');
+                    } else {
+                        let _emTotalCrits = 0;
+                        for (let _ti = 0; _ti < _emTargets.length; _ti++) {
+                            const _tn = _emTargets[_ti];
+                            const _tc = gameState.characters[_tn];
+                            if (!_tc || _tc.isDead || _tc.hp <= 0) continue;
+                            // 2 golpes por objetivo
+                            for (let _hi = 0; _hi < 2; _hi++) {
+                                let _emDmg = finalDamage;
+                                const _emIsCrit = Math.random() < 0.50;
+                                if (_emIsCrit) {
+                                    _emDmg *= 2;
+                                    _emTotalCrits++;
+                                    triggerGilgameshCrit(gameState.selectedCharacter);
+                                    addLog('💥 ¡CRÍTICO! Espada Merodach golpe ' + (_hi+1) + ' en ' + _tn, 'damage');
+                                }
+                                if (_tc.isDead || _tc.hp <= 0) break;
+                                applyDamageWithShield(_tn, _emDmg, gameState.selectedCharacter);
+                                addLog('⚔️ Espada Merodach golpe ' + (_hi+1) + ': ' + _emDmg + ' daño a ' + _tn, 'damage');
+                            }
                         }
-                        const isCritEM = Math.random() < ((ability.critChance || 0.10) + critBonusEM);
-                        let dmgEM = finalDamage;
-                        if (isCritEM) {
-                            dmgEM *= 2;
-                            addLog('💥 ¡CRÍTICO! Espada Merodach en ' + n, 'damage');
-                            triggerGilgameshCrit(gameState.selectedCharacter);
+                        // Por cada crítico: -3 cargas a TODO el equipo rival
+                        if (_emTotalCrits > 0) {
+                            const _emChargeDrain = _emTotalCrits * 3;
+                            for (const _n in gameState.characters) {
+                                const _c = gameState.characters[_n];
+                                if (!_c || _c.team !== _emTeam || _c.isDead || _c.hp <= 0) continue;
+                                _c.charges = Math.max(0, (_c.charges||0) - _emChargeDrain);
+                            }
+                            addLog('👑 Espada Merodach: ' + _emTotalCrits + ' crítico(s) → equipo rival pierde ' + _emChargeDrain + ' cargas', 'damage');
                         }
-                        applyDamageWithShield(n, dmgEM, gameState.selectedCharacter);
-                        // Only drain charges if NOT Esquiva Area (already skipped above via continue)
-                        c.charges = Math.max(0, c.charges - 3);
-                        addLog('👑 ' + n + ' pierde 3 cargas (Espada Merodach)', 'damage');
                     }
-                    for (let sId in gameState.summons) {
-                        const s = gameState.summons[sId];
-                        if (s && s.team === emTeam && s.hp > 0) applySummonDamage(sId, finalDamage, gameState.selectedCharacter);
-                    }
-                    addLog('⚔️ Espada Merodach: ' + finalDamage + ' daño AOE a todos los enemigos', 'damage');
                 }
             } else if (ability.effect === 'enkidu' || ability.effect === 'enkidu_cadenas') {
                 // GILGAMESH - Enkidu Cadenas del Cielo: cancela invocaciones + Mega Stun a >5 cargas
@@ -1868,9 +1901,8 @@
                         addLog('👑 Gate of Babylon: ' + _gobDmg + ' daño a ' + _n + (_gobIsCrit ? ' (¡Crítico!)' : ''), 'damage');
                         // REGLA DE ORO: por cada golpe crítico → Gilgamesh +1 carga, +1 HP, 2 debuffs aleatorios al golpeado
                         if (_gobIsCrit && _gobAtk && !_gobAtk.isDead && _gobAtk.hp > 0) {
-                            _gobAtk.charges = Math.min(20, (_gobAtk.charges||0) + 1);
-                            _gobAtk.hp = Math.min(_gobAtk.maxHp, (_gobAtk.hp||0) + 1);
-                            addLog('👑 Regla de Oro: Gilgamesh genera 1 carga y se cura 1 HP', 'buff');
+                            // Usa triggerGilgameshCrit para centralizar Regla de Oro (carga + heal + notifyHeal)
+                            if (typeof triggerGilgameshCrit === 'function') triggerGilgameshCrit(gameState.selectedCharacter);
                             const _gobDebuffPool = ['Quemadura','Veneno','Sangrado','Confusion','Debilitar','Congelacion','Silenciar','Miedo','Agotamiento','Aturdimiento'];
                             for (let _gi = 0; _gi < 2; _gi++) {
                                 const _gobChosen = _gobDebuffPool[Math.floor(Math.random() * _gobDebuffPool.length)];
@@ -3276,69 +3308,17 @@
                 }
 
             } else if (ability.effect === 'gilgamesh_enuma') {
-                // ══════════════════════════════════════════════════════════
-                // ENUMA ELISH (Gilgamesh OVER)
-                // MT: ataca 1 vez a cada enemigo.
-                // Daño base = total de debuffs activos en el equipo enemigo.
-                // Antes del ataque: aplica 1 debuff aleatorio a cada enemigo.
-                // Cada golpe: 50% crítico (x2), 25% daño triple (x3).
-                // ══════════════════════════════════════════════════════════
-                const _eeAtk   = gameState.characters[gameState.selectedCharacter];
-                const _eeTeam  = _eeAtk ? _eeAtk.team : 'team1';
-                const _eeETeam = _eeTeam === 'team1' ? 'team2' : 'team1';
-                const _eeDebuffPool = ['Quemadura','Veneno','Sangrado','Confusion','Debilitar','Congelacion','Silenciar','Miedo','Agotamiento','Aturdimiento'];
-
-                // 1. Contar debuffs ANTES de aplicar los nuevos (para no contar los que acabamos de poner)
-                let _eeTotalDebuffs = 0;
-                for (const _n in gameState.characters) {
-                    const _c = gameState.characters[_n];
-                    if (!_c || _c.team !== _eeETeam || _c.isDead || _c.hp <= 0) continue;
-                    _eeTotalDebuffs += (_c.statusEffects || []).filter(function(e){ return e && e.type === 'debuff'; }).length;
-                }
-                const _eeBaseDmg = Math.max(1, _eeTotalDebuffs); // al menos 1 de daño
-                addLog('💎 Enuma Elish: ' + _eeTotalDebuffs + ' debuffs activos en el equipo enemigo → ' + _eeBaseDmg + ' de daño base', 'buff');
-
-                // 2. Aplicar 1 debuff aleatorio a cada enemigo ANTES del ataque
-                for (const _n in gameState.characters) {
-                    const _c = gameState.characters[_n];
-                    if (!_c || _c.team !== _eeETeam || _c.isDead || _c.hp <= 0) continue;
-                    const _eeChosen = _eeDebuffPool[Math.floor(Math.random() * _eeDebuffPool.length)];
-                    if (_eeChosen === 'Quemadura')    { if (typeof applyFlatBurn === 'function') applyFlatBurn(_n, 2, 1); }
-                    else if (_eeChosen === 'Veneno')  { if (typeof applyPoison === 'function') applyPoison(_n, 1); }
-                    else if (_eeChosen === 'Sangrado'){ if (typeof applyBleed === 'function') applyBleed(_n, 1); }
-                    else if (_eeChosen === 'Confusion'){ if (typeof applyConfusion === 'function') applyConfusion(_n, 1); }
-                    else if (_eeChosen === 'Debilitar'){ if (typeof applyWeaken === 'function') applyWeaken(_n, 2); }
-                    else if (_eeChosen === 'Miedo')   { if (typeof applyFear === 'function') applyFear(_n, 1); }
-                    else if (_eeChosen === 'Aturdimiento'){ if (typeof applyStun === 'function') applyStun(_n, 1); }
-                    else if (_eeChosen === 'Congelacion'){ if (typeof applyFreeze === 'function') applyFreeze(_n, 1); }
-                    else if (_eeChosen === 'Silenciar'){ if (typeof applySilenciar === 'function') applySilenciar(_n, 2); }
-                    else if (_eeChosen === 'Agotamiento'){
-                        const _eeAgtTgt = gameState.characters[_n];
-                        if (_eeAgtTgt) { _eeAgtTgt.charges = Math.max(0, (_eeAgtTgt.charges||0) - 2); }
-                        addLog('💨 Enuma Elish: ' + _n + ' sufre Agotamiento (-2 cargas)', 'debuff');
+                // Gilgamesh OVER: daño + roba TODAS las cargas del objetivo
+                applyDamageWithShield(targetName, finalDamage, charName);
+                const enTgt = gameState.characters[targetName];
+                if (enTgt) {
+                    const enStolen = enTgt.charges || 0;
+                    if (enStolen > 0) {
+                        enTgt.charges = 0;
+                        attacker.charges = Math.min(20, (attacker.charges || 0) + enStolen);
+                        addLog('✨ Enuma Elish: ' + charName + ' roba ' + enStolen + ' cargas de ' + targetName, 'buff');
                     }
-                    addLog('💎 Enuma Elish: ' + _n + ' recibe ' + _eeChosen + ' (antes del ataque)', 'debuff');
                 }
-
-                // 3. MT: golpear a cada enemigo vivo con daño base + crítico/triple
-                for (const _n in gameState.characters) {
-                    const _c = gameState.characters[_n];
-                    if (!_c || _c.team !== _eeETeam || _c.isDead || _c.hp <= 0) continue;
-                    let _eeDmg = _eeBaseDmg;
-                    const _eeRoll = Math.random();
-                    let _eeLabel = '';
-                    if (_eeRoll < 0.25) {
-                        _eeDmg *= 3;
-                        _eeLabel = ' 🌟 DAÑO TRIPLE';
-                    } else if (_eeRoll < 0.75) { // 0.25–0.75 = 50% crítico
-                        _eeDmg *= 2;
-                        _eeLabel = ' ⚡ CRÍTICO';
-                    }
-                    applyDamageWithShield(_n, _eeDmg, gameState.selectedCharacter);
-                    addLog('💎 Enuma Elish: ' + _eeDmg + ' daño a ' + _n + _eeLabel, 'damage');
-                }
-                // Afectar invocaciones enemigas también
-                if (typeof applyAOEToSummons === 'function') applyAOEToSummons(_eeETeam, _eeBaseDmg, gameState.selectedCharacter);
 
             } else if (ability.effect === 'sangre_esparta') {
                 // Leonidas: Sacrifica 10 HP y genera 10 cargas
