@@ -1336,7 +1336,7 @@
                             if (_gfC.team !== target.team) continue;
                             target.charges = Math.min(20, (target.charges||0) + 3);
                             if (typeof applyHeal === 'function') applyHeal(targetName, 3, 'Istari');
-                            else target.hp = Math.min(target.maxHp, (target.hp||0) + 3);
+                            else { const _ssOld=target.hp; target.hp = Math.min(target.maxHp, (target.hp||0) + 3); if(typeof notifyHeal==='function') notifyHeal(targetName, target.hp-_ssOld, 'Escudo Sagrado'); }
                             addLog('✨ Istari (Gandalf): ' + targetName + ' +3 cargas y +3 HP (escudo roto)', 'buff');
                             break;
                         }
@@ -1415,7 +1415,7 @@
                         const _lc = gameState.characters[_ln];
                         if (!_lc || _lc.isDead || _lc.hp <= 0 || _lc.team !== _lvc.team) continue;
                         if (typeof applyHeal === 'function') applyHeal(_ln, 3, 'Visión Esmeralda');
-                        else _lc.hp = Math.min(_lc.maxHp, (_lc.hp||0) + 3);
+                        else { const _lcOld=_lc.hp; _lc.hp = Math.min(_lc.maxHp, (_lc.hp||0) + 3); if(typeof notifyHeal==='function') notifyHeal(targetName, _lc.hp-_lcOld, 'El Carcelero'); }
                     }
                     addLog('💚 Visión Esmeralda: el equipo aliado recupera 3 HP (' + targetName + ' recibió daño por ' + _debuffDamageSource + ')', 'heal');
                     passiveExecuting = false;
@@ -1532,7 +1532,7 @@
                     _atkOmega.hp = Math.max(0, (_atkOmega.hp||0) - 1);
                     if (_atkOmega.hp <= 0) { _atkOmega.isDead = true; if (typeof registerKill === 'function') registerKill(targetName, attackerName, false); }
                     const _omOld = target.hp;
-                    target.hp = Math.min(target.maxHp, (target.hp||0) + 1);
+                    { const _esOld=target.hp; target.hp = Math.min(target.maxHp, (target.hp||0) + 1); if(typeof notifyHeal==='function') notifyHeal(targetName, target.hp-_esOld, 'relic heal'); }
                     if (target.hp > _omOld && typeof showHpTick === 'function') showHpTick(targetName, target.hp - _omOld); if (typeof triggerBendicionSagrada === 'function' && !passiveExecuting) { var _bsC = gameState.characters[targetName]; if (_bsC) triggerBendicionSagrada(_bsC.team, 0); }
                     addLog('⚡ Efecto Omega: Darkseid roba 1 HP de ' + attackerName, 'heal');
                 }
@@ -1859,7 +1859,7 @@
                                           (gameState._lastAbilityType === 'basic');
                         if (_isBasicAtk) {
                             const _mtOld = _tgtChar.hp;
-                            _tgtChar.hp = Math.min(_tgtChar.maxHp, (_tgtChar.hp||0) + 2);
+                            { const _veOld=_tgtChar.hp; _tgtChar.hp = Math.min(_tgtChar.maxHp, (_tgtChar.hp||0) + 2); if(typeof notifyHeal==='function') notifyHeal(_ln, _tgtChar.hp-_veOld, 'Visión Esmeralda'); }
                             if (_tgtChar.hp > _mtOld && typeof showHpTick === 'function') showHpTick(targetName, _tgtChar.hp - _mtOld); if (typeof triggerBendicionSagrada === 'function' && !passiveExecuting) { var _bsC = gameState.characters[targetName]; if (_bsC) triggerBendicionSagrada(_bsC.team, 0); }
                             addLog('🪖 Yelmo de Ork: ' + targetName + ' recupera 2HP (recibió básico)', 'heal');
                         }
@@ -2205,7 +2205,7 @@
                 target._doomsdayHealPending = false;
                 if (target.hp > 0 && !target.isDead) {
                     const _tauroOld = target.hp;
-                    target.hp = Math.min(target.maxHp, target.hp + 2);
+                    { const _ph2Old=target.hp; target.hp = Math.min(target.maxHp, target.hp + 2); if(typeof notifyHeal==='function') notifyHeal(targetName, target.hp-_ph2Old, 'passive heal'); }
                     if (target.hp > _tauroOld && typeof showHpTick === 'function') showHpTick(targetName, target.hp - _tauroOld); if (typeof triggerBendicionSagrada === 'function' && !passiveExecuting) { var _bsC = gameState.characters[targetName]; if (_bsC) triggerBendicionSagrada(_bsC.team, 0); }
                     addLog('💪 Adaptación Reactiva: ' + targetName + ' recupera 2 HP tras recibir el golpe', 'heal');
                 }
@@ -2371,7 +2371,7 @@
                     if (typeof canHeal !== 'function' || canHeal(targetName)) {
                         passiveExecuting = true;
                         const _ddOld = _ddChar.hp;
-                        _ddChar.hp = Math.min(_ddChar.maxHp, (_ddChar.hp||0) + 2);
+                        { const _ddOld=_ddChar.hp; _ddChar.hp = Math.min(_ddChar.maxHp, (_ddChar.hp||0) + 2); if(typeof notifyHeal==='function') notifyHeal(targetName, _ddChar.hp-_ddOld, 'passive'); }
                         if (_ddChar.hp > _ddOld && typeof showHpTick === 'function') showHpTick(_ddChar.name||'', _ddChar.hp - _ddOld); if (typeof triggerBendicionSagrada === 'function' && !passiveExecuting && _ddChar) triggerBendicionSagrada(_ddChar.team, 0);
                         const _ddHealed = _ddChar.hp - _ddOld;
                         if (_ddHealed > 0) {
@@ -2458,7 +2458,7 @@
                             if (typeof canHeal === 'function' && !canHeal(_stkAllyName)) { addLog('Tesoro del Cielo: QS bloquea curacion de ' + _stkAllyName, 'debuff'); continue; }
                             const _stkHpBefore = _stkAlly.hp;
                             const _stkOld = _stkAlly.hp;
-                    _stkAlly.hp = Math.min(_stkAlly.maxHp, _stkAlly.hp + 1);
+                    { const _skOld=_stkAlly.hp; _stkAlly.hp = Math.min(_stkAlly.maxHp, _stkAlly.hp + 1); if(typeof notifyHeal==='function') notifyHeal(_stkAllyName||targetName, _stkAlly.hp-_skOld, 'passive'); }
                     if (_stkAlly.hp > _stkOld && typeof showHpTick === 'function') showHpTick(_stkAllyName, _stkAlly.hp - _stkOld); if (typeof triggerBendicionSagrada === 'function' && !passiveExecuting) { var _bsC = gameState.characters[_stkAllyName]; if (_bsC) triggerBendicionSagrada(_bsC.team, 0); }
                             if (_stkAlly.hp > _stkHpBefore) {
                                 addLog('✨ Tesoro del Cielo: ' + _stkAllyName + ' recupera 1 HP', 'heal');
@@ -2925,7 +2925,7 @@
             }
             const before = c.hp;
             const _fhOld = c.hp;
-            c.hp = Math.min(c.maxHp, c.hp + finalHeal);
+            { const _rgOld=c.hp; c.hp = Math.min(c.maxHp, c.hp + finalHeal); if(typeof notifyHeal==='function') notifyHeal(charName, c.hp-_rgOld, 'Regeneración'); }
             if (c.hp > _fhOld && typeof showHpTick === 'function') showHpTick(charName, c.hp - _fhOld); if (typeof triggerBendicionSagrada === 'function' && !passiveExecuting) { var _bsC = gameState.characters[charName]; if (_bsC) triggerBendicionSagrada(_bsC.team, 0); }
             const _hcActual = c.hp - before;
             if (_hcActual > 0) {
