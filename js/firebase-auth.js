@@ -1042,6 +1042,8 @@
             const playerName = currentUser ? (currentUser.displayName || 'Jugador') : 'Jugador';
             // Mark this as a self-test — results must NOT be saved to the leaderboard
             window._rankedSelfTest = true;
+            // El equipo de defensa también es del mismo jugador — usar su propio UID para cargar sus reliquias
+            window._rankedDefenseOwnerUid = currentUser ? currentUser.uid : null;
             hideRankedTeamScreen();
             _launchRankedVsIAWithTeam(attack, defense, playerName + ' (Defensa — Prueba)');
         }
