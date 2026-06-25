@@ -1859,8 +1859,7 @@
                                           (gameState._lastAbilityType === 'basic');
                         if (_isBasicAtk) {
                             const _mtOld = _tgtChar.hp;
-                            { const _veOld=_tgtChar.hp; _tgtChar.hp = Math.min(_tgtChar.maxHp, (_tgtChar.hp||0) + 2); if(typeof notifyHeal==='function') notifyHeal(_ln, _tgtChar.hp-_veOld, 'Visión Esmeralda'); }
-                            if (_tgtChar.hp > _mtOld && typeof showHpTick === 'function') showHpTick(targetName, _tgtChar.hp - _mtOld); if (typeof triggerBendicionSagrada === 'function' && !passiveExecuting) { var _bsC = gameState.characters[targetName]; if (_bsC) triggerBendicionSagrada(_bsC.team, 0); }
+                            { const _veOld=_tgtChar.hp; _tgtChar.hp = Math.min(_tgtChar.maxHp, (_tgtChar.hp||0) + 2); const _veDelta=_tgtChar.hp-_veOld; if(_veDelta>0 && typeof notifyHeal==='function') notifyHeal(targetName, _veDelta, 'Yelmo de Ork'); }
                             addLog('🪖 Yelmo de Ork: ' + targetName + ' recupera 2HP (recibió básico)', 'heal');
                         }
                     }
