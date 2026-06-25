@@ -640,6 +640,32 @@
         // ── Escuchar liveState: actualizar log y HP en tiempo real durante turno del rival ──
         function listenLiveState() {
             if (!onlineMode || !currentRoomId) return;
+
+            // ── Escuchar liveOver: recibir animación de Over del rival en tiempo real ──
+            db.ref('rooms/' + currentRoomId + '/liveOver').on('value', function(snapOver) {
+                const ov = snapOver.val();
+                if (!ov) return;
+                // Ignorar mis propios pushes
+                if (ov.pushedBy && currentUser && ov.pushedBy === currentUser.uid) return;
+                // Reproducir animación de Over en la tarjeta del rival
+                if (ov.charName && typeof _animCard === 'function') {
+                    _animCard(ov.charName, 'anim-over', 700);
+                }
+                // Efecto de clima AOE si aplica
+                if (typeof _triggerAOEWeather === 'function' && ov.abilityTarget === 'aoe') {
+                    const _eff = ov.abilityEffect || '';
+                    let _wt = 'generic';
+                    if (_eff.includes('burn')||_eff.includes('fire')||_eff.includes('fuego')||_eff.includes('explosi')) _wt='fire';
+                    else if (_eff.includes('ice')||_eff.includes('hielo')||_eff.includes('freeze')||_eff.includes('congelaci')) _wt='ice';
+                    else if (_eff.includes('shadow')||_eff.includes('dark')||_eff.includes('sombra')||_eff.includes('muerte')) _wt='dark';
+                    _triggerAOEWeather(_wt);
+                }
+                // Reproducir SFX de Over
+                if (typeof audioManager !== 'undefined' && typeof audioManager.playOverSfx === 'function') {
+                    audioManager.playOverSfx();
+                }
+            });
+
             db.ref('rooms/' + currentRoomId + '/liveState').on('value', function(snap) {
                 const data = snap.val();
                 if (!data) return;
