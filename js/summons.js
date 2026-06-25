@@ -1858,9 +1858,11 @@
                         var _isBasicAtk = (typeof ability !== 'undefined' && ability && ability.type === 'basic') ||
                                           (gameState._lastAbilityType === 'basic');
                         if (_isBasicAtk) {
-                            const _mtOld = _tgtChar.hp;
-                            { const _veOld=_tgtChar.hp; _tgtChar.hp = Math.min(_tgtChar.maxHp, (_tgtChar.hp||0) + 2); const _veDelta=_tgtChar.hp-_veOld; if(_veDelta>0 && typeof notifyHeal==='function') notifyHeal(targetName, _veDelta, 'Yelmo de Ork'); }
-                            addLog('🪖 Yelmo de Ork: ' + targetName + ' recupera 2HP (recibió básico)', 'heal');
+                            // Usar applyHeal para respetar canHeal() — bloquea si QS activa
+                            if (typeof applyHeal === 'function') {
+                                const _ykHealed = applyHeal(targetName, 2, 'Yelmo de Ork');
+                                if (_ykHealed > 0) addLog('🪖 Yelmo de Ork: ' + targetName + ' recupera 2HP (recibió básico)', 'heal');
+                            }
                         }
                     }
                     if (_rd2.effect === 'debuff_resist_15' && Math.random() < 0.15) {
