@@ -139,6 +139,18 @@
             if (gameState.selectedAbility && gameState.selectedAbility.type === 'over') {
                 audioManager.playOverSfx();
                 if (typeof _animCard === 'function') _animCard(gameState.selectedCharacter, 'anim-over', 700);
+                // ── Sync Over animation al oponente online en tiempo real ──
+                if (typeof onlineMode !== 'undefined' && onlineMode && typeof currentRoomId !== 'undefined' && currentRoomId && typeof db !== 'undefined' && currentUser) {
+                    try {
+                        db.ref('rooms/' + currentRoomId + '/liveOver').set({
+                            charName: gameState.selectedCharacter,
+                            abilityEffect: (gameState.selectedAbility && gameState.selectedAbility.effect) || '',
+                            abilityTarget: (gameState.selectedAbility && gameState.selectedAbility.target) || '',
+                            pushedBy: currentUser.uid,
+                            ts: Date.now()
+                        });
+                    } catch(e) {}
+                }
                 if (gameState.battleStats) gameState.battleStats.oversUsed++;
                 // ── CLIMA AOE por tipo de Over ──
                 if (typeof _triggerAOEWeather === 'function') {
