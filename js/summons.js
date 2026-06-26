@@ -151,6 +151,20 @@
                 return; // no eliminar, simplemente revive
             }
 
+            // ── MORDEDURA (Cría de Dragón): al morir → Rhaenyra genera 3 cargas ──
+            if (summon.name === 'Cría de Dragón' && reason === 'derrotado' && summon.summoner) {
+                const _criaRhae = gameState.characters[summon.summoner];
+                if (_criaRhae && !_criaRhae.isDead && _criaRhae.hp > 0) {
+                    _criaRhae.charges = Math.min(20, (_criaRhae.charges||0) + 3);
+                    addLog('🐉 Mordedura: ' + summon.summoner + ' genera 3 cargas (Cría de Dragón eliminada)', 'buff');
+                }
+            }
+
+            // ── VÍNCULO DORADO (Syrax): al morir → retirar buffs de Rhaenyra ──
+            if (summon.name === 'Syrax' && summon.summoner) {
+                addLog('🔥 Syrax ha caído — los buffs de Vínculo Dorado expiran', 'info');
+            }
+
             // ── HUEVO DEL SOL (Marik): al morir invoca Dragon Alado de Ra en el mismo equipo ──
             if (summon.name === 'Huevo del Sol' && reason === 'derrotado' && !passiveExecuting) {
                 delete gameState.summons[summonId];
@@ -1230,6 +1244,16 @@
             }
             
             let remainingDamage = damage;
+
+            // ── VÍNCULO DORADO (Syrax): al recibir ataque, aplica Quemadura Solar al atacante ──
+            if (attackerName && summon && summon.name === 'Syrax' && remainingDamage > 0) {
+                if (!passiveExecuting && typeof applySolarBurn === 'function') {
+                    passiveExecuting = true;
+                    applySolarBurn(attackerName, 10, 2);
+                    addLog('🔥 Vínculo Dorado (Syrax): ' + attackerName + ' recibe Quemadura Solar', 'debuff');
+                    passiveExecuting = false;
+                }
+            }
 
             // ── REGLA DE ORO (Gilgamesh): no recibe daño de atacantes con debuffs activos ──
             if (remainingDamage > 0 && attackerName && attackerName !== targetName) {
@@ -2986,6 +3010,10 @@ function applyRegeneration(targetName, amount, duration) {
                 Object.values(gameState.characters).filter(c => c && !c.isDead && c.hp > 0).length);
             
             addLog(`✨ ${targetName} ha sido revivido con ${target.maxHp} HP y 10 cargas!`, 'heal');
+
+            // ── MORDEDURA (Cría de Dragón): al morir, Rhaenyra genera 3 cargas ──
+            // Note: this fires whenever any summon dies — check inside
+            // (Cría de Dragón death is checked in processEndOfRoundEffects and applySummonDamage)
 
             // ── EL CARCELERO DE LOS MALDITOS (Bolvar PERSONAJE): +5 cargas al revivir cualquier personaje ──
             if (typeof triggerBolvarCarcelero === 'function') triggerBolvarCarcelero('revive de ' + targetName);
