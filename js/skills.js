@@ -304,6 +304,32 @@
             gameState._lastAbilityType = ability ? ability.type : null;
             gameState._lastAbilityChargeGain = ability ? (ability.chargeGain || 0) : 0;
 
+            // ── HEREDERA LEGÍTIMA (Rhaenyra): enemigo con debuff activo usa movimiento → equipo aliado +1 carga ──
+            if (gameState.selectedCharacter) {
+                const _hLChar = gameState.characters[gameState.selectedCharacter];
+                if (_hLChar && !_hLChar.isDead && _hLChar.hp > 0) {
+                    const _hLHasDebuff = (_hLChar.statusEffects||[]).some(function(e){ return e && e.type === 'debuff'; });
+                    if (_hLHasDebuff) {
+                        const _hLETeam = _hLChar.team;
+                        const _hLATeam = _hLETeam === 'team1' ? 'team2' : 'team1';
+                        let _hLFound = false;
+                        for (const _rN in gameState.characters) {
+                            const _rC = gameState.characters[_rN];
+                            if (!_rC || _rC.isDead || !_rC.passive || _rC.passive.name !== 'Heredera Legítima' || _rC.team !== _hLATeam) continue;
+                            _hLFound = true; break;
+                        }
+                        if (_hLFound) {
+                            for (const _aln in gameState.characters) {
+                                const _alc = gameState.characters[_aln];
+                                if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== _hLATeam) continue;
+                                _alc.charges = Math.min(20, (_alc.charges||0) + 1);
+                            }
+                            addLog('🐉 Heredera Legítima: equipo aliado +1 carga (' + gameState.selectedCharacter + ' usó movimiento con debuff activo)', 'buff');
+                        }
+                    }
+                }
+            }
+
             // ── HELPER: disparar pasiva El Carcelero de los Malditos (Bolvar PERSONAJE) ──
         function triggerBolvarCarcelero(reason) {
             for (const _bpCN in gameState.characters) {
@@ -8770,6 +8796,267 @@
                 }
                 if (typeof renderCharacters === 'function') renderCharacters();
                 if (typeof renderSummons    === 'function') renderSummons();
+
+            // ══════════════════════════════════════════════════════
+            // DOCTOR DOOM — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'doom_gauntlet') {
+                // GUANTELETE DE PLASMA: AOE 2 daño
+                // Si golpea a enemigo con Provocación/MegaProvocación → los demás reciben daño extra igual al recibido
+                // 80% prob de +1 HP MAX por enemigo golpeado
+                const _dkAtk   = gameState.characters[gameState.selectedCharacter];
+                const _dkTeam  = _dkAtk ? _dkAtk.team : 'team1';
+                const _dkETeam = _dkTeam === 'team1' ? 'team2' : 'team1';
+                let _dkProvDmg = 0;
+                let _dkProvName = null;
+                // First pass: deal AOE damage and detect Provocación victims
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _dkETeam || _c.isDead || _c.hp <= 0) continue;
+                    if (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(_n, true)) continue;
+                    const _prevHp = _c.hp;
+                    applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                    const _dealt = _prevHp - Math.max(0, _c.hp);
+                    // Check if this enemy had Provocación/MegaProvocación
+                    if ((hasStatusEffect(_n,'Provocacion')||hasStatusEffect(_n,'Mega Provocacion')||
+                         hasStatusEffect(_n,'Provocación')||hasStatusEffect(_n,'Mega Provocación')) && _dealt > 0) {
+                        _dkProvDmg = _dealt;
+                        _dkProvName = _n;
+                    }
+                    // 80% prob +1 HP MAX
+                    if (Math.random() < 0.80 && _dkAtk) {
+                        _dkAtk.maxHp = (_dkAtk.maxHp||0) + 1;
+                        addLog('💪 Guantelete de Plasma: Doctor Doom +1 HP MAX', 'buff');
+                    }
+                }
+                // Second pass: if Provocación hit, deal bonus damage to all OTHER enemies
+                if (_dkProvDmg > 0 && _dkProvName) {
+                    addLog('⚡ Guantelete de Plasma: ' + _dkProvName + ' tenía Provocación — ' + _dkProvDmg + ' daño adicional a los demás enemigos', 'damage');
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _dkETeam || _c.isDead || _c.hp <= 0 || _n === _dkProvName) continue;
+                        if (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(_n, false)) continue;
+                        applyDamageWithShield(_n, _dkProvDmg, gameState.selectedCharacter);
+                    }
+                }
+                addLog('⚡ Guantelete de Plasma: ' + finalDamage + ' daño AOE', 'damage');
+
+            } else if (ability.effect === 'doom_force_field') {
+                // CAMPO DE FUERZA DEL TIRANO: Mega Provocación + Armadura 3T en Doom
+                // +1 carga al equipo aliado por cada buff activo en equipo enemigo
+                const _ffAtk   = gameState.characters[gameState.selectedCharacter];
+                const _ffTeam  = _ffAtk ? _ffAtk.team : 'team1';
+                const _ffETeam = _ffTeam === 'team1' ? 'team2' : 'team1';
+                if (typeof applyBuff === 'function') {
+                    applyBuff(gameState.selectedCharacter, { name: 'Mega Provocacion', type: 'buff', duration: 3, emoji: '🛡️' });
+                    applyBuff(gameState.selectedCharacter, { name: 'Armadura', type: 'buff', duration: 3, emoji: '🪖' });
+                }
+                addLog('🛡️ Campo de Fuerza del Tirano: Doctor Doom activa Mega Provocación + Armadura (3 turnos)', 'buff');
+                // Count buffs in enemy team
+                let _ffBuffCount = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _ffETeam || _c.isDead || _c.hp <= 0) continue;
+                    _ffBuffCount += (_c.statusEffects||[]).filter(function(e){ return e && e.type === 'buff' && !e.passiveHidden; }).length;
+                }
+                if (_ffBuffCount > 0) {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _ffTeam || _c.isDead || _c.hp <= 0) continue;
+                        _c.charges = Math.min(20, (_c.charges||0) + _ffBuffCount);
+                    }
+                    addLog('⚡ Campo de Fuerza del Tirano: equipo aliado +' + _ffBuffCount + ' cargas (' + _ffBuffCount + ' buffs en equipo enemigo)', 'buff');
+                }
+
+            } else if (ability.effect === 'doom_bloodline') {
+                // MAGIA DE LA LÍNEA DE SANGRE: AOE 2 daño + roba HP escalado por rareza de reliquia
+                const _blAtk   = gameState.characters[gameState.selectedCharacter];
+                const _blTeam  = _blAtk ? _blAtk.team : 'team1';
+                const _blETeam = _blTeam === 'team1' ? 'team2' : 'team1';
+                // Calculate steal bonus from equipped relics
+                const _blRelics = _blAtk ? (_blAtk.equippedRelics||[]) : [];
+                let _blRelicBonus = 0;
+                const _blRarityBonus = { 'Raro': 1, 'Especial': 2, 'Épico': 3, 'Epico': 3, 'Legendario': 4 };
+                _blRelics.forEach(function(rName) {
+                    const _rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[rName] : null;
+                    if (_rd && _blRarityBonus[_rd.tier]) _blRelicBonus += _blRarityBonus[_rd.tier];
+                });
+                const _blStealBase = 2 + _blRelicBonus;
+                let _blTotalStolen = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _blETeam || _c.isDead || _c.hp <= 0) continue;
+                    if (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(_n, true)) continue;
+                    applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                    // Steal HP
+                    const _stealActual = Math.min(_blStealBase, _c.hp + _blStealBase); // can steal up to target's remaining HP
+                    _c.hp = Math.max(0, (_c.hp||0) - _blStealBase);
+                    if (_c.hp <= 0 && !_c.isDead) { _c.isDead = true; if(typeof registerKill==='function') registerKill(gameState.selectedCharacter, _n, false); }
+                    _blTotalStolen += _blStealBase;
+                    addLog('🩸 Magia de la Línea de Sangre: roba ' + _blStealBase + ' HP a ' + _n, 'damage');
+                }
+                // Heal Doctor Doom with stolen HP
+                if (_blTotalStolen > 0 && _blAtk && typeof applyHeal === 'function') {
+                    applyHeal(gameState.selectedCharacter, _blTotalStolen, 'Magia de la Línea de Sangre');
+                    addLog('🩸 Magia de la Línea de Sangre: Doctor Doom recupera ' + _blTotalStolen + ' HP robados', 'heal');
+                }
+
+            } else if (ability.effect === 'doom_god_emperor') {
+                // DIOS EMPERADOR DOOM: ST 10 daño + equipo aliado recupera 100% HP
+                // Por cada HP recuperado, 1 daño a enemigo aleatorio
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('👑 Dios Emperador Doom: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                const _deAtk   = gameState.characters[gameState.selectedCharacter];
+                const _deTeam  = _deAtk ? _deAtk.team : 'team1';
+                const _deETeam = _deTeam === 'team1' ? 'team2' : 'team1';
+                let _deTotalHeal = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _deTeam || _c.isDead || _c.hp <= 0) continue;
+                    const _missing = (_c.maxHp||0) - (_c.hp||0);
+                    if (_missing > 0) {
+                        if (typeof applyHeal === 'function') applyHeal(_n, _missing, 'Dios Emperador Doom');
+                        _deTotalHeal += _missing;
+                    }
+                }
+                addLog('👑 Dios Emperador Doom: equipo aliado restaura ' + _deTotalHeal + ' HP total', 'heal');
+                // 1 damage per HP healed to random enemies
+                if (_deTotalHeal > 0) {
+                    const _deEnemies = Object.keys(gameState.characters).filter(function(_n) {
+                        const _c = gameState.characters[_n];
+                        return _c && _c.team === _deETeam && !_c.isDead && _c.hp > 0;
+                    });
+                    if (_deEnemies.length > 0) {
+                        for (let _hi = 0; _hi < _deTotalHeal; _hi++) {
+                            const _alive = _deEnemies.filter(function(_n){ const _c=gameState.characters[_n]; return _c&&!_c.isDead&&_c.hp>0; });
+                            if (!_alive.length) break;
+                            const _rnd = _alive[Math.floor(Math.random()*_alive.length)];
+                            applyDamageWithShield(_rnd, 1, gameState.selectedCharacter);
+                        }
+                        addLog('👑 Dios Emperador Doom: ' + _deTotalHeal + ' daño distribuido al equipo enemigo', 'damage');
+                    }
+                }
+
+            // ══════════════════════════════════════════════════════
+            // RHAENYRA TARGARYEN — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'rhae_birthright') {
+                // DERECHO DE NACIMIENTO: por cada Cría de Dragón activa, Rhaenyra y un aliado aleatorio generan 1 carga
+                const _rbChar  = gameState.characters[gameState.selectedCharacter];
+                const _rbTeam  = _rbChar ? _rbChar.team : 'team1';
+                const _rbCrias = Object.values(gameState.summons).filter(function(s){
+                    return s && s.name === 'Cría de Dragón' && s.team === _rbTeam && s.hp > 0;
+                });
+                if (_rbCrias.length === 0) {
+                    addLog('🐉 Derecho de Nacimiento: no hay Crías de Dragón activas', 'info');
+                } else {
+                    const _rbAllies = Object.keys(gameState.characters).filter(function(_n){
+                        const _c = gameState.characters[_n]; return _c && _c.team === _rbTeam && !_c.isDead && _c.hp > 0 && _n !== gameState.selectedCharacter;
+                    });
+                    for (let _ci = 0; _ci < _rbCrias.length; _ci++) {
+                        // Rhaenyra +1
+                        if (_rbChar) _rbChar.charges = Math.min(20, (_rbChar.charges||0) + 1);
+                        // Random ally +1
+                        if (_rbAllies.length > 0) {
+                            const _rndAlly = _rbAllies[Math.floor(Math.random() * _rbAllies.length)];
+                            const _allyC = gameState.characters[_rndAlly];
+                            if (_allyC) { _allyC.charges = Math.min(20, (_allyC.charges||0) + 1); }
+                            addLog('🐉 Derecho de Nacimiento: Rhaenyra y ' + _rndAlly + ' generan 1 carga (Cría ' + (_ci+1) + ')', 'buff');
+                        } else {
+                            addLog('🐉 Derecho de Nacimiento: Rhaenyra genera 1 carga (Cría ' + (_ci+1) + ')', 'buff');
+                        }
+                    }
+                }
+
+            } else if (ability.effect === 'rhae_black_queen') {
+                // REINA NEGRA: cura 2 HP al equipo aliado por cada Cría de Dragón activa
+                const _bqChar  = gameState.characters[gameState.selectedCharacter];
+                const _bqTeam  = _bqChar ? _bqChar.team : 'team1';
+                const _bqCrias = Object.values(gameState.summons).filter(function(s){
+                    return s && s.name === 'Cría de Dragón' && s.team === _bqTeam && s.hp > 0;
+                });
+                if (_bqCrias.length === 0) {
+                    addLog('🐉 Reina Negra: no hay Crías de Dragón activas', 'info');
+                } else {
+                    const _bqHeal = _bqCrias.length * 2;
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _bqTeam || _c.isDead || _c.hp <= 0) continue;
+                        if (typeof applyHeal === 'function') applyHeal(_n, _bqHeal, 'Reina Negra');
+                    }
+                    addLog('🐉 Reina Negra: equipo aliado +' + _bqHeal + ' HP (' + _bqCrias.length + ' Crías activas)', 'heal');
+                }
+
+            } else if (ability.effect === 'rhae_syrax_summon') {
+                // FUEGO DE SYRAX: invoca a Syrax
+                const _syAtk  = gameState.characters[gameState.selectedCharacter];
+                const _syTeam = _syAtk ? _syAtk.team : 'team1';
+                const _syExists = Object.values(gameState.summons).some(function(s){ return s && s.name === 'Syrax' && s.team === _syTeam && s.hp > 0; });
+                if (_syExists) {
+                    addLog('🔥 Syrax ya está en el campo', 'info');
+                } else {
+                    const _syId = 'Syrax_' + Date.now();
+                    gameState.summons[_syId] = {
+                        id: _syId, name: 'Syrax', summoner: gameState.selectedCharacter, team: _syTeam,
+                        hp: 25, maxHp: 25, isDead: false, statusEffects: [],
+                        img: 'https://i.ibb.co/mFGR0yWs/Whats-App-Image-2026-06-26-at-12-05-29-PM.jpg',
+                        passive: 'Vínculo Dorado: mientras Syrax esté vivo, Rhaenyra tiene Escudo Sagrado y Protección Sagrada. Al recibir ataque: aplica QS al atacante. Inicio de ronda: equipo aliado +7 escudo + Aura de Fuego.'
+                    };
+                    if (typeof triggerBolvarCarcelero === 'function') triggerBolvarCarcelero('invocación de Syrax');
+                    if (typeof renderSummons === 'function') renderSummons();
+                    addLog('🔥 Rhaenyra invoca a Syrax (25 HP)', 'buff');
+                }
+
+            } else if (ability.effect === 'rhae_black_queen_siege') {
+                // ASEDIO DE LA REINA NEGRA: AOE + Protección Sagrada + Escudo 5 HP + cargas por Crías
+                // Si Syrax activo: +10 HP aliados + Quemaduras 5 HP a enemigos
+                const _aqAtk   = gameState.characters[gameState.selectedCharacter];
+                const _aqTeam  = _aqAtk ? _aqAtk.team : 'team1';
+                const _aqETeam = _aqTeam === 'team1' ? 'team2' : 'team1';
+                // AOE damage
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _aqETeam || _c.isDead || _c.hp <= 0) continue;
+                    if (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(_n, true)) continue;
+                    applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                }
+                if (typeof applyAOEToSummons === 'function') applyAOEToSummons(_aqETeam, finalDamage, gameState.selectedCharacter);
+                addLog('🐉 Asedio de la Reina Negra: ' + finalDamage + ' daño AOE', 'damage');
+                // Buffs to allied team
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _aqTeam || _c.isDead || _c.hp <= 0) continue;
+                    if (typeof applyBuff === 'function') applyBuff(_n, { name: 'Proteccion Sagrada', type: 'buff', duration: 2, emoji: '🛡️✨' });
+                    _c.shield = (_c.shield||0) + 5;
+                }
+                addLog('🐉 Asedio de la Reina Negra: equipo aliado recibe Protección Sagrada + Escudo 5 HP', 'buff');
+                // +2 charges per Cría de Dragón
+                const _aqCrias = Object.values(gameState.summons).filter(function(s){ return s && s.name === 'Cría de Dragón' && s.team === _aqTeam && s.hp > 0; });
+                if (_aqCrias.length > 0) {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _aqTeam || _c.isDead || _c.hp <= 0) continue;
+                        _c.charges = Math.min(20, (_c.charges||0) + _aqCrias.length * 2);
+                    }
+                    addLog('🐉 Asedio de la Reina Negra: equipo aliado +' + (_aqCrias.length * 2) + ' cargas (' + _aqCrias.length + ' Crías)', 'buff');
+                }
+                // Syrax bonus
+                const _aqSyrax = Object.values(gameState.summons).some(function(s){ return s && s.name === 'Syrax' && s.team === _aqTeam && s.hp > 0; });
+                if (_aqSyrax) {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _aqTeam || _c.isDead || _c.hp <= 0) continue;
+                        if (typeof applyHeal === 'function') applyHeal(_n, 10, 'Asedio de la Reina Negra (Syrax)');
+                    }
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _aqETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (typeof applyFlatBurn === 'function') applyFlatBurn(_n, 5, 2);
+                    }
+                    addLog('🔥 Syrax potencia el Asedio: equipo aliado +10 HP + Quemaduras 5 HP al equipo enemigo', 'buff');
+                }
 
             // ══════════════════════════════════════════════════════
             // BJORN IRONSIDE — handlers
