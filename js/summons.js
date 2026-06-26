@@ -279,6 +279,16 @@
                     addLog('🔥 Kamish: ' + attackerName + ' recibe Quemadura de 4 HP (1 turno)', 'damage');
                 }
             }
+
+            // ── VÍNCULO DORADO (Syrax): al recibir ataque → aplica Quemadura Solar al atacante ──
+            if (summon.name === 'Syrax' && attackerName && damage > 0 && !passiveExecuting) {
+                if (typeof applySolarBurn === 'function') {
+                    passiveExecuting = true;
+                    applySolarBurn(attackerName, 10, 2);
+                    addLog('🔥 Vínculo Dorado (Syrax): ' + attackerName + ' recibe Quemadura Solar', 'debuff');
+                    passiveExecuting = false;
+                }
+            }
             
             if (summon.hp <= 0 && oldHp > 0) {
                 if (attackerName) {
@@ -1244,16 +1254,6 @@
             }
             
             let remainingDamage = damage;
-
-            // ── VÍNCULO DORADO (Syrax): al recibir ataque, aplica Quemadura Solar al atacante ──
-            if (attackerName && summon && summon.name === 'Syrax' && remainingDamage > 0) {
-                if (!passiveExecuting && typeof applySolarBurn === 'function') {
-                    passiveExecuting = true;
-                    applySolarBurn(attackerName, 10, 2);
-                    addLog('🔥 Vínculo Dorado (Syrax): ' + attackerName + ' recibe Quemadura Solar', 'debuff');
-                    passiveExecuting = false;
-                }
-            }
 
             // ── REGLA DE ORO (Gilgamesh): no recibe daño de atacantes con debuffs activos ──
             if (remainingDamage > 0 && attackerName && attackerName !== targetName) {
