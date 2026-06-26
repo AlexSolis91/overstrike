@@ -1028,6 +1028,32 @@
                 ]
             },
 
+            'Doctor Doom': {
+                hp: 25, maxHp: 25, speed: 92, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/dwGgLj5R/Ai-Generated-Marvels-Characters-Wallpapers.jpg',
+                passive: { name: 'Aura de Latveria', description: 'Cuando un enemigo recupera HP (applyHeal), el equipo aliado recupera la misma cantidad de HP. Cuando se aplica un debuff sobre Doctor Doom, aplica buff Protección Sagrada en Doctor Doom, disipa todos los debuffs activos en el equipo aliado y genera 3 cargas por cada debuff disipado.' },
+                abilities: [
+                    { name: 'Guantelete de Plasma',     type: 'basic',   cost: 0,  chargeGain: 1, damage: 2, target: 'aoe',    effect: 'doom_gauntlet',        description: 'AOE 2 daño. Si golpea a un enemigo con Provocación/MegaProvocación, todos los demás enemigos reciben daño adicional igual al recibido por ese enemigo. 80% de probabilidad por enemigo golpeado de aumentar HP máximo de Doctor Doom en +1.' },
+                    { name: 'Campo de Fuerza del Tirano', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'self',   effect: 'doom_force_field',     description: 'Aplica Mega Provocación y Armadura (3 turnos) en Doctor Doom. Genera 1 carga al equipo aliado por cada buff activo en el equipo enemigo.' },
+                    { name: 'Magia de la Línea de Sangre', type: 'special', cost: 5, chargeGain: 0, damage: 2, target: 'aoe',  effect: 'doom_bloodline',       description: 'AOE 2 daño. Roba HP a cada enemigo golpeado: base 2 HP + bonus por rareza de reliquia equipada (Rara +1, Especial +2, Épico +3, Legendario +4). El HP robado cura a Doctor Doom.' },
+                    { name: 'Dios Emperador Doom',      type: 'over',    cost: 12, chargeGain: 0, damage: 10, target: 'single', effect: 'doom_god_emperor',    description: 'ST 10 daño. El equipo aliado recupera el 100% de su HP. Por cada punto de HP recuperado en el equipo aliado, causa 1 daño a un enemigo aleatorio.' }
+                ]
+            },
+
+            'Rhaenyra Targaryen': {
+                hp: 15, maxHp: 15, speed: 75, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/ZR2H9ZHp/Whats-App-Image-2026-06-26-at-11-53-04-AM.jpg',
+                passive: { name: 'Heredera Legítima', description: 'Cada vez que un enemigo reciba curación de cualquier fuente (applyHeal), 50% de probabilidad de aplicar Quemadura Solar en ese enemigo. Al inicio de cada ronda, invoca una Cría de Dragón. Cada vez que un enemigo con debuff activo utilice un movimiento, el equipo aliado genera 1 carga.' },
+                abilities: [
+                    { name: 'Derecho de Nacimiento',   type: 'basic',   cost: 0,  chargeGain: 0, damage: 0, target: 'self',   effect: 'rhae_birthright',      description: 'Por cada Cría de Dragón activa: Rhaenyra y un aliado aleatorio diferente generan 1 carga.' },
+                    { name: 'Reina Negra',             type: 'special', cost: 0,  chargeGain: 0, damage: 0, target: 'self',   effect: 'rhae_black_queen',     description: 'Cura 2 HP al equipo aliado por cada Cría de Dragón activa.' },
+                    { name: 'Fuego de Syrax',          type: 'special', cost: 10, chargeGain: 0, damage: 0, target: 'self',   effect: 'rhae_syrax_summon',    description: 'Invoca a Syrax.' },
+                    { name: 'Asedio de la Reina Negra', type: 'over',   cost: 14, chargeGain: 0, damage: 2, target: 'aoe',    effect: 'rhae_black_queen_siege', description: 'AOE 2 daño. Aplica Protección Sagrada y Escudo 5 HP al equipo aliado. Genera 2 cargas al equipo aliado por cada Cría de Dragón activa. Si Syrax está en campo: cura 10 HP al equipo aliado y aplica Quemaduras 5 HP al equipo enemigo.' }
+                ]
+            },
+
         };
         // ==================== RELIQUIAS ====================
         const RELICS_DATA = {
