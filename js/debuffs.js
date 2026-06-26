@@ -649,6 +649,34 @@ function applyDebuff(targetName, effectObj) {
             }
             target.statusEffects.push(effectObj);
 
+            // ── AURA DE LATVERIA (Doctor Doom): al recibir debuff → Protección Sagrada + disipa debuffs aliados + 3 cargas por debuff ──
+            if (!passiveExecuting && effectObj && effectObj.type === 'debuff' && !effectObj.passiveHidden) {
+                const _doomDbChar = gameState.characters[targetName];
+                if (_doomDbChar && _doomDbChar.passive && _doomDbChar.passive.name === 'Aura de Latveria') {
+                    passiveExecuting = true;
+                    // Apply Protección Sagrada to Doctor Doom
+                    applyDebuff(targetName, { name: 'Proteccion Sagrada', type: 'buff', duration: 2, emoji: '🛡️✨' });
+                    // Cleanse all debuffs from allied team and count them
+                    let _doomDisipados = 0;
+                    for (const _aln in gameState.characters) {
+                        const _alc = gameState.characters[_aln];
+                        if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== _doomDbChar.team) continue;
+                        const _debuffsBefore = (_alc.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff'; }).length;
+                        if (_debuffsBefore > 0) {
+                            _alc.statusEffects = (_alc.statusEffects||[]).filter(function(e){ return !e || e.type !== 'debuff'; });
+                            _doomDisipados += _debuffsBefore;
+                        }
+                    }
+                    // +3 cargas por debuff disipado
+                    if (_doomDisipados > 0) {
+                        _doomDbChar.charges = Math.min(20, (_doomDbChar.charges||0) + _doomDisipados * 3);
+                        addLog('🌩️ Aura de Latveria: Doctor Doom disipa ' + _doomDisipados + ' debuff(s) aliados y genera ' + (_doomDisipados*3) + ' cargas', 'buff');
+                    }
+                    addLog('🌩️ Aura de Latveria: Doctor Doom recibe Protección Sagrada (recibió debuff)', 'buff');
+                    passiveExecuting = false;
+                }
+            }
+
             // ── DAGA DE KAISEL: al recibir un debuff → aplica ese mismo debuff a un enemigo aleatorio y le quita 2 cargas ──
             if (!passiveExecuting && effectObj && effectObj.type === 'debuff' && !effectObj.passiveHidden) {
                 const _dkChar = gameState.characters[targetName];
