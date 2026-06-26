@@ -2257,6 +2257,58 @@
                         addLog('💚 Visión Esmeralda: el equipo aliado recibe ' + _lvChosen + ' 2T (inicio de ronda)', 'buff');
                     }
 
+                    // ── HEREDERA LEGÍTIMA (Rhaenyra): inicio de ronda → invoca 1 Cría de Dragón (máx 5 invocaciones por equipo) ──
+                    for (const _rhRN in gameState.characters) {
+                        const _rhRC = gameState.characters[_rhRN];
+                        if (!_rhRC || _rhRC.isDead || _rhRC.hp <= 0 || !_rhRC.passive) continue;
+                        if (_rhRC.passive.name !== 'Heredera Legítima') continue;
+                        // Count active summons on Rhaenyra's team
+                        const _rhTeamSummons = Object.values(gameState.summons).filter(function(s){ return s && s.team === _rhRC.team && !s.isDead && s.hp > 0; });
+                        if (_rhTeamSummons.length >= 5) {
+                            addLog('🐉 Heredera Legítima: máximo de 5 invocaciones alcanzado', 'info');
+                            break;
+                        }
+                        // Spawn Cría de Dragón
+                        const _criaId = 'Cria_Dragon_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
+                        gameState.summons[_criaId] = {
+                            id: _criaId, name: 'Cría de Dragón', summoner: _rhRN, team: _rhRC.team,
+                            hp: 10, maxHp: 10, isDead: false, statusEffects: [],
+                            img: 'https://i.ibb.co/fGxPcTNL/Whats-App-Image-2026-06-26-at-12-06-13-PM.jpg',
+                            passive: 'Mordedura: aplica un debuff aleatorio a un enemigo al final de cada ronda. Al morir, Rhaenyra genera 3 cargas.'
+                        };
+                        if (typeof renderSummons === 'function') renderSummons();
+                        addLog('🐉 Heredera Legítima: ' + _rhRN + ' invoca una Cría de Dragón al inicio de la ronda', 'buff');
+                        break;
+                    }
+
+                    // ── VÍNCULO DORADO (Syrax): inicio de ronda → equipo aliado +7 escudo + Aura de Fuego ──
+                    for (const _syraxSumId in gameState.summons) {
+                        const _syraxS = gameState.summons[_syraxSumId];
+                        if (!_syraxS || _syraxS.name !== 'Syrax' || _syraxS.isDead || _syraxS.hp <= 0) continue;
+                        const _syraxTeam = _syraxS.team;
+                        for (const _aln in gameState.characters) {
+                            const _alc = gameState.characters[_aln];
+                            if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== _syraxTeam) continue;
+                            _alc.shield = (_alc.shield||0) + 7;
+                            if (typeof applyBuff === 'function') applyBuff(_aln, { name: 'Aura de Fuego', type: 'buff', duration: 1, emoji: '🔥' });
+                        }
+                        addLog('🔥 Vínculo Dorado (Syrax): equipo aliado recibe +7 escudo + Aura de Fuego', 'buff');
+                        break;
+                    }
+
+                    // ── VÍNCULO DORADO (Syrax): Rhaenyra mantiene Escudo Sagrado + Protección Sagrada mientras Syrax viva ──
+                    for (const _syraxId2 in gameState.summons) {
+                        const _syraxS2 = gameState.summons[_syraxId2];
+                        if (!_syraxS2 || _syraxS2.name !== 'Syrax' || _syraxS2.isDead || _syraxS2.hp <= 0) continue;
+                        const _rhaeChar = gameState.characters[_syraxS2.summoner];
+                        if (!_rhaeChar || _rhaeChar.isDead || _rhaeChar.hp <= 0) break;
+                        const _hasES = (_rhaeChar.statusEffects||[]).some(function(e){ return e && e.name === 'Escudo Sagrado'; });
+                        const _hasPS = (_rhaeChar.statusEffects||[]).some(function(e){ return e && e.name === 'Proteccion Sagrada'; });
+                        if (!_hasES && typeof applyBuff === 'function') applyBuff(_syraxS2.summoner, { name: 'Escudo Sagrado', type: 'buff', duration: 2, emoji: '🛡️', _syrax: true });
+                        if (!_hasPS && typeof applyBuff === 'function') applyBuff(_syraxS2.summoner, { name: 'Proteccion Sagrada', type: 'buff', duration: 2, emoji: '🛡️✨', _syrax: true });
+                        break;
+                    }
+
                     // ── ÚLTIMO REY DE LOS MUERTOS (Bolvar BOSS): inicio de ronda → 3 buffs aleatorios en Bolvar ──
                     for (const _brvRN in gameState.characters) {
                         const _brvRC = gameState.characters[_brvRN];
@@ -2683,6 +2735,27 @@
                             addLog('🩸 Sangrado de ' + _eorN + ' ha expirado', 'info');
                         }
                     }
+                }
+
+                // ── MORDEDURA (Cría de Dragón): fin de ronda → aplica debuff aleatorio a enemigo aleatorio ──
+                for (const _criaSumId in gameState.summons) {
+                    const _criaS = gameState.summons[_criaSumId];
+                    if (!_criaS || _criaS.name !== 'Cría de Dragón' || _criaS.isDead || _criaS.hp <= 0) continue;
+                    const _criaETeam = _criaS.team === 'team1' ? 'team2' : 'team1';
+                    const _criaEnemies = Object.keys(gameState.characters).filter(function(_n){
+                        const _c = gameState.characters[_n]; return _c && _c.team === _criaETeam && !_c.isDead && _c.hp > 0;
+                    });
+                    if (_criaEnemies.length === 0) continue;
+                    const _criaTarget = _criaEnemies[Math.floor(Math.random() * _criaEnemies.length)];
+                    const _criaDbPool = ['Quemadura','Veneno','Sangrado','Congelacion','Silenciar','Miedo'];
+                    const _criaChosen = _criaDbPool[Math.floor(Math.random() * _criaDbPool.length)];
+                    if      (_criaChosen === 'Quemadura')   { if (typeof applyFlatBurn === 'function') applyFlatBurn(_criaTarget, 2, 1); }
+                    else if (_criaChosen === 'Veneno')      { if (typeof applyPoison === 'function') applyPoison(_criaTarget, 1); }
+                    else if (_criaChosen === 'Sangrado')    { if (typeof applyBleed === 'function') applyBleed(_criaTarget, 1); }
+                    else if (_criaChosen === 'Congelacion') { if (typeof applyFreeze === 'function') applyFreeze(_criaTarget, 1); }
+                    else if (_criaChosen === 'Silenciar')   { if (typeof applySilenciar === 'function') applySilenciar(_criaTarget, 1); }
+                    else if (_criaChosen === 'Miedo')       { if (typeof applyFear === 'function') applyFear(_criaTarget, 1); }
+                    addLog('🐉 Mordedura (Cría de Dragón): ' + _criaTarget + ' recibe ' + _criaChosen, 'debuff');
                 }
 
                 // ── ENFORCE PERMANENT PASSIVES (run at start of each round) ──
