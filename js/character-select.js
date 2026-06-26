@@ -616,6 +616,32 @@
                 ]
             },
 
+            'Doctor Doom': {
+                hp: 25, maxHp: 25, speed: 92, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/dwGgLj5R/Ai-Generated-Marvels-Characters-Wallpapers.jpg',
+                passive: { name: 'Aura de Latveria', description: 'Cuando un enemigo recupera HP, el equipo aliado recupera la misma cantidad. Cuando se aplica un debuff sobre Doctor Doom, aplica Protección Sagrada, disipa debuffs aliados y genera 3 cargas por debuff disipado.' },
+                abilities: [
+                    { name: 'Guantelete de Plasma',      type: 'basic',   cost: 0,  chargeGain: 1, damage: 2, target: 'aoe',    effect: 'doom_gauntlet',         description: 'AOE 2 daño. Si golpea a enemigo con Provocación/MegaProvocación, todos los demás reciben daño adicional. 80% de probabilidad de +1 HP MAX por enemigo golpeado.' },
+                    { name: 'Campo de Fuerza del Tirano', type: 'special', cost: 4,  chargeGain: 0, damage: 0, target: 'self',   effect: 'doom_force_field',      description: 'Mega Provocación + Armadura 3T en Doctor Doom. +1 carga al equipo aliado por buff activo en equipo enemigo.' },
+                    { name: 'Magia de la Línea de Sangre', type: 'special', cost: 5, chargeGain: 0, damage: 2, target: 'aoe',   effect: 'doom_bloodline',        description: 'AOE 2 daño. Roba HP a cada enemigo: base 2 HP + bonus por rareza de reliquia (Rara+1, Especial+2, Épico+3, Legendario+4). El HP robado cura a Doctor Doom.' },
+                    { name: 'Dios Emperador Doom',        type: 'over',    cost: 12, chargeGain: 0, damage: 10, target: 'single', effect: 'doom_god_emperor',    description: 'ST 10 daño. Equipo aliado recupera 100% HP. Por cada HP recuperado, 1 daño a enemigo aleatorio.' }
+                ]
+            },
+
+            'Rhaenyra Targaryen': {
+                hp: 15, maxHp: 15, speed: 75, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/ZR2H9ZHp/Whats-App-Image-2026-06-26-at-11-53-04-AM.jpg',
+                passive: { name: 'Heredera Legítima', description: '50% de prob. de aplicar QS a enemigos que reciban curación. Al inicio de ronda invoca Cría de Dragón. Enemigos con debuff activo generan 1 carga al equipo aliado al usar movimiento.' },
+                abilities: [
+                    { name: 'Derecho de Nacimiento',    type: 'basic',   cost: 0,  chargeGain: 0, damage: 0, target: 'self',   effect: 'rhae_birthright',       description: 'Rhaenyra y un aliado aleatorio por Cría de Dragón activa generan 1 carga cada uno.' },
+                    { name: 'Reina Negra',              type: 'special', cost: 0,  chargeGain: 0, damage: 0, target: 'self',   effect: 'rhae_black_queen',      description: 'Cura 2 HP al equipo aliado por cada Cría de Dragón activa.' },
+                    { name: 'Fuego de Syrax',           type: 'special', cost: 10, chargeGain: 0, damage: 0, target: 'self',   effect: 'rhae_syrax_summon',     description: 'Invoca a Syrax.' },
+                    { name: 'Asedio de la Reina Negra', type: 'over',    cost: 14, chargeGain: 0, damage: 2, target: 'aoe',    effect: 'rhae_black_queen_siege', description: 'AOE 2 daño. Protección Sagrada + Escudo 5 HP al equipo aliado. +2 cargas al equipo por Cría activa. Con Syrax: cura 10 HP aliados + Quemaduras 5 HP a enemigos.' }
+                ]
+            },
+
             'Bolvar Fordragon': {
                 hp: 30, maxHp: 30, speed: 80, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
