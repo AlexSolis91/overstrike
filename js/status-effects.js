@@ -548,6 +548,55 @@ function processBurnEffects(charName) {
                 passiveHealExecuting = false;
             }
 
+            // ── AURA DE LATVERIA (Doctor Doom): cuando un ENEMIGO cura HP → equipo aliado cura la misma cantidad ──
+            if (!passiveHealExecuting) {
+                // Find Doctor Doom alive in the OPPOSING team of the healed char
+                const _nhHealedChar2 = gameState.characters[charName];
+                if (_nhHealedChar2) {
+                    const _doomEnemyTeam = _nhHealedChar2.team; // Doctor Doom is on the OTHER team
+                    const _doomAllyTeam  = _doomEnemyTeam === 'team1' ? 'team2' : 'team1';
+                    for (const _doomN in gameState.characters) {
+                        const _doomC = gameState.characters[_doomN];
+                        if (!_doomC || _doomC.isDead || _doomC.hp <= 0 || !_doomC.passive) continue;
+                        if (_doomC.passive.name !== 'Aura de Latveria') continue;
+                        if (_doomC.team !== _doomAllyTeam) continue; // Doom must be on opposite team of healed char
+                        // Enemy char healed → Doom's team (allies of Doom) also heal same amount
+                        passiveHealExecuting = true;
+                        for (const _aln in gameState.characters) {
+                            const _alc = gameState.characters[_aln];
+                            if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== _doomAllyTeam) continue;
+                            _alc.hp = Math.min(_alc.maxHp, (_alc.hp||0) + amount);
+                            if (typeof showHpTick === 'function') showHpTick(_aln, amount);
+                        }
+                        addLog('🌩️ Aura de Latveria: equipo de Doctor Doom recupera ' + amount + ' HP (enemigo curó)', 'heal');
+                        passiveHealExecuting = false;
+                        break;
+                    }
+                }
+            }
+
+            // ── HEREDERA LEGÍTIMA (Rhaenyra): 50% de prob. de aplicar QS al enemigo que recibe curación ──
+            if (!passiveHealExecuting) {
+                const _rhaeHealedChar = gameState.characters[charName];
+                if (_rhaeHealedChar) {
+                    const _rhaeEnemyTeam = _rhaeHealedChar.team; // Rhaenyra is on the OTHER team
+                    const _rhaeAllyTeam  = _rhaeEnemyTeam === 'team1' ? 'team2' : 'team1';
+                    for (const _rhaeN in gameState.characters) {
+                        const _rhaeC = gameState.characters[_rhaeN];
+                        if (!_rhaeC || _rhaeC.isDead || _rhaeC.hp <= 0 || !_rhaeC.passive) continue;
+                        if (_rhaeC.passive.name !== 'Heredera Legítima') continue;
+                        if (_rhaeC.team !== _rhaeAllyTeam) continue;
+                        if (Math.random() < 0.50) {
+                            passiveHealExecuting = true;
+                            if (typeof applySolarBurn === 'function') applySolarBurn(charName, 10, 2);
+                            addLog('🔥 Heredera Legítima: ' + charName + ' recibe Quemadura Solar (curó HP)', 'debuff');
+                            passiveHealExecuting = false;
+                        }
+                        break;
+                    }
+                }
+            }
+
             // 6. EXPLOSIÓN DE SANGRE (Nezuko): aliado cura HP → 5 daño aleatorio al equipo enemigo
             if (!passiveHealExecuting) {
                 const _nhTeam = _nhChar.team;
