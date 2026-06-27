@@ -3356,6 +3356,29 @@
             }).catch(function(e) { alert('Error cargando pendientes: ' + e.message); });
         };
 
+        // ── Aprobar un personaje: mover de pending_characters a approved_characters ──
+        window._ncApprove = function(key) {
+            if (!confirm('¿Aprobar este personaje?')) return;
+            db.ref('pending_characters/' + key).once('value').then(function(snap) {
+                var data = snap.val();
+                if (!data) { alert('❌ Personaje no encontrado'); return; }
+                var approved = Object.assign({}, data, {
+                    approved: true,
+                    approvedAt: Date.now(),
+                    approvedBy: currentUser ? currentUser.email : 'admin'
+                });
+                return db.ref('approved_characters/' + key).set(approved)
+                    .then(function() { return db.ref('pending_characters/' + key).remove(); })
+                    .then(function() {
+                        alert('✅ Personaje aprobado: ' + (data.name||'sin nombre'));
+                        // Refresh the approval panel
+                        var panel = document.getElementById('ncApproval');
+                        if (panel) panel.remove();
+                        window._ncOpenApproval();
+                    });
+            }).catch(function(e) { alert('Error al aprobar: ' + e.message); });
+        };
+
                 // Inject lobby button when lobby is shown
         const _ncOrigShowLobby = window.showLobby;
         window.showLobby = function() {
