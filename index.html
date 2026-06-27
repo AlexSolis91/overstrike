@@ -450,6 +450,35 @@
         }
 
         // ── Cargador de reliquias compartido — todos los modos ──────────────
+        // ── Cargador de personajes dinámicos desde Firestore ──
+        window.loadDynamicCharacters = async function() {
+            try {
+                if (typeof firebase === 'undefined' || !firebase.firestore) return;
+                const db_fs = firebase.firestore();
+                const snap = await db_fs.collection('approved_characters').where('approved','==',true).get();
+                if (snap.empty) return;
+                snap.forEach(function(doc) {
+                    const ch = doc.data();
+                    if (!ch || !ch.name) return;
+                    const charObj = {
+                        hp: ch.hp||20, maxHp: ch.hp||20, speed: ch.speed||80,
+                        charges:0, team:'team1', statusEffects:[], shield:0, shieldEffect:null, isDead:false,
+                        portrait: ch.portrait||'',
+                        transformPortrait: ch.transformPortrait||null,
+                        passive: { name:ch.passiveName||'', description:ch.passiveDesc||'', effects:ch.passiveEffects||[] },
+                        abilities: (ch.abilities||[]).map(function(ab){
+                            return { name:ab.name||'Habilidad', type:ab.type||'basic', cost:ab.cost||0,
+                                chargeGain:ab.chargeGain||0, damage:ab.damage||0, target:ab.target||'single',
+                                effect:'dynamic', effects:ab.effects||[], description:ab.description||'' };
+                        }),
+                        _isDynamic:true, _dynamicId:doc.id
+                    };
+                    if (window.characterData) window.characterData[ch.name] = charObj;
+                    console.log('[Dynamic] Personaje cargado:', ch.name);
+                });
+            } catch(e) { console.warn('[loadDynamicCharacters]', e); }
+        };
+
         window.loadGameRelics = function() {
             setTimeout(function() {
                 var user = firebase.auth().currentUser;
@@ -1871,6 +1900,7 @@
                 }
 
                 // Cargar reliquias para todos los modos
+                if (typeof window.loadDynamicCharacters === 'function') window.loadDynamicCharacters();
                 window.loadGameRelics();
                 audioManager.playRandomBattle();
             } catch(err) {
