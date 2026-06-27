@@ -3273,11 +3273,40 @@
             const msg = document.getElementById('nc_msg');
             if (!data.name) { if(msg){msg.style.color='#f87171';msg.textContent='❌ El nombre es obligatorio.';} return; }
             try {
-                // Usar Realtime Database (db.ref) — no requiere Firestore
-                const newRef = db.ref('pending_characters').push();
-                data._id = newRef.key;
-                await newRef.set(data);
-                if (msg) { msg.style.color='#34d399'; msg.textContent='✅ Personaje guardado como pendiente. Esperando aprobación del admin (ID: ' + newRef.key + ')'; }
+                // Modo edición: actualizar personaje existente en approved_characters
+                if (window._ncEditKey) {
+                    const key = window._ncEditKey;
+                    const origName = window._ncEditOrigName;
+                    data.approved = true;
+                    data.approvedAt = Date.now();
+                    data.updatedAt = Date.now();
+                    await db.ref('approved_characters/' + key).set(data);
+                    // Update local characterData immediately
+                    if (window.characterData) {
+                        if (origName && origName !== data.name && window.characterData[origName]) {
+                            delete window.characterData[origName];
+                        }
+                        const charObj = {
+                            hp: data.hp||20, maxHp: data.hp||20, speed: data.speed||80,
+                            charges:0, team:'team1', statusEffects:[], shield:0, shieldEffect:null, isDead:false,
+                            portrait: data.portrait||'', transformPortrait: data.transformPortrait||null,
+                            passive: { name:data.passiveName||'', description:data.passiveDesc||'', effects:data.passiveEffects||[] },
+                            abilities: (data.abilities||[]).map(function(ab){ return Object.assign({}, ab, {effect:'dynamic', effects:ab.effects||[]}); }),
+                            _isDynamic:true, _dynamicId:key
+                        };
+                        window.characterData[data.name] = charObj;
+                    }
+                    if (typeof csRenderGrid === 'function') csRenderGrid();
+                    window._ncEditKey = null;
+                    window._ncEditOrigName = null;
+                    if (msg) { msg.style.color='#34d399'; msg.textContent='✅ Personaje "' + data.name + '" actualizado correctamente.'; }
+                } else {
+                    // Modo creación: guardar como pendiente
+                    const newRef = db.ref('pending_characters').push();
+                    data._id = newRef.key;
+                    await newRef.set(data);
+                    if (msg) { msg.style.color='#34d399'; msg.textContent='✅ Personaje guardado como pendiente. Esperando aprobación del admin (ID: ' + newRef.key + ')'; }
+                }
             } catch(e) {
                 if (msg) { msg.style.color='#f87171'; msg.textContent='❌ Error al guardar: ' + e.message; }
             }
@@ -3364,6 +3393,68 @@
 
                 document.body.appendChild(overlay);
             }).catch(function(e) { alert('Error cargando pendientes: ' + e.message); });
+        };
+
+        // ── Helper: super admin check (solo solisalex8291) ──
+        window._ncIsSuperAdmin = function() {
+            return currentUser && (currentUser.email||'').toLowerCase().includes('solisalex8291');
+        };
+
+        // ── Eliminar un personaje aprobado ──
+        window._ncDeleteChar = function(charName, charObj) {
+            const key = charObj && charObj._dynamicId;
+            if (!key) { alert('❌ No se encontró el ID del personaje.'); return; }
+            db.ref('approved_characters/' + key).remove().then(function() {
+                // Remove from local characterData so it disappears from the grid immediately
+                if (window.characterData && window.characterData[charName]) {
+                    delete window.characterData[charName];
+                }
+                if (typeof csRenderGrid === 'function') csRenderGrid();
+                alert('✅ Personaje "' + charName + '" eliminado.');
+            }).catch(function(e) { alert('❌ Error al eliminar: ' + e.message); });
+        };
+
+        // ── Editar un personaje dinámico: abrir el formulario pre-relleno ──
+        window._ncOpenEdit = function(charName, charObj) {
+            // Open the panel
+            if (typeof window._ncOpenPanel === 'function') window._ncOpenPanel();
+            // Wait for the panel DOM to render, then populate fields
+            setTimeout(function() {
+                try {
+                    // Basic fields
+                    const key = charObj._dynamicId;
+                    const set = function(id, val) { const el = document.getElementById(id); if (el) el.value = val || ''; };
+                    set('nc_name',         charName);
+                    set('nc_hp',           charObj.hp || 20);
+                    set('nc_speed',        charObj.speed || 80);
+                    set('nc_portrait',     charObj.portrait || '');
+                    set('nc_transform',    charObj.transformPortrait || '');
+                    set('nc_passive_name', charObj.passive && charObj.passive.name || '');
+                    set('nc_passive_desc', charObj.passive && charObj.passive.description || '');
+                    // Type
+                    const typeEl = document.getElementById('nc_type');
+                    if (typeEl) { typeEl.value = charObj._type || 'Personaje'; if (typeof _ncTypeChange === 'function') _ncTypeChange(); }
+                    // Abilities
+                    (charObj.abilities || []).forEach(function(ab, i) {
+                        const idx = i + 1;
+                        set('ab_name_'  + idx, ab.name);
+                        set('ab_desc_'  + idx, ab.description || '');
+                        set('ab_dmg_'   + idx, ab.damage || 0);
+                        set('ab_cost_'  + idx, ab.cost || 0);
+                        set('ab_gain_'  + idx, ab.chargeGain || 0);
+                        const typeEl2 = document.getElementById('ab_type_' + idx);
+                        if (typeEl2) typeEl2.value = ab.type || 'basic';
+                        const tgtEl = document.getElementById('ab_target_' + idx);
+                        if (tgtEl) tgtEl.value = ab.target || 'single';
+                    });
+                    // Mark as edit mode so _ncSave updates instead of creating new
+                    window._ncEditKey = key;
+                    window._ncEditOrigName = charName;
+                    // Change save button label
+                    const saveBtn = Array.from(document.querySelectorAll('#ncPanel button')).find(b => b.textContent.includes('Guardar registro'));
+                    if (saveBtn) saveBtn.textContent = '💾 Actualizar personaje';
+                } catch(e) { console.warn('[_ncOpenEdit]', e); }
+            }, 300);
         };
 
         // ── Aprobar un personaje: mover de pending_characters a approved_characters ──
