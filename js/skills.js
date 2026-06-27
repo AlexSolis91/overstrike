@@ -98,6 +98,515 @@
             return true;
         }
 
+
+        // ══════════════════════════════════════════════════════════════════════════
+        // MOTOR DE EFECTOS GENÉRICO — ejecuta personajes creados desde el panel admin
+        // ══════════════════════════════════════════════════════════════════════════
+
+        // Catálogo de buffs disponibles (para el formulario y el motor)
+        window.BUFF_CATALOGUE = [
+            'Furia','Frenesí','Armadura','Esquivar','Esquiva Area','Sigilo','Proteccion Sagrada',
+            'Escudo Sagrado','Mega Provocacion','Provocacion','Regeneracion','Reflejar',
+            'Concentracion','Contraataque','Espinas','Aura de Fuego','Aura de Luz',
+            'Aura Oscura','Anticipación','Celeridad','Cuerpo Perfecto'
+        ];
+
+        // Catálogo de debuffs disponibles
+        window.DEBUFF_CATALOGUE = [
+            'Quemadura','Quemadura Solar','Veneno','Sangrado','Hemorragia',
+            'Congelacion','Mega Congelacion','Aturdimiento','Mega Aturdimiento',
+            'Silenciar','Miedo','Confusion','Debilitar','Ceguera','Agotamiento',
+            'Bloqueo de Oa','Posesion','Mega Posesion'
+        ];
+
+        // Catálogo de gatillos
+        window.TRIGGER_CATALOGUE = [
+            { id:'SIN_GATILLO',            label:'Sin gatillo (efecto directo del movimiento)' },
+            { id:'PASIVO',                 label:'Siempre activo (pasivo permanente)' },
+            { id:'AL_INICIO_DE_RONDA',     label:'Al inicio de cada ronda' },
+            { id:'AL_FINAL_DE_RONDA',      label:'Al final de cada ronda' },
+            { id:'AL_REALIZAR_ATAQUE',     label:'Al realizar cualquier ataque' },
+            { id:'AL_REALIZAR_BASICO',     label:'Al realizar un ataque básico' },
+            { id:'AL_REALIZAR_ESPECIAL',   label:'Al realizar un ataque especial' },
+            { id:'AL_REALIZAR_OVER',       label:'Al realizar un Over' },
+            { id:'AL_REALIZAR_AOE',        label:'Al realizar un ataque AOE' },
+            { id:'AL_REALIZAR_MT',         label:'Al realizar un ataque MT' },
+            { id:'AL_REALIZAR_ST',         label:'Al realizar un ataque ST' },
+            { id:'AL_RECIBIR_DANIO',       label:'Al recibir daño' },
+            { id:'AL_RECIBIR_DANIO_BASICO',label:'Al recibir un ataque básico' },
+            { id:'AL_RECIBIR_DANIO_QUEMADURA',label:'Al recibir daño por Quemadura' },
+            { id:'AL_RECIBIR_DANIO_VENENO',label:'Al recibir daño por Veneno' },
+            { id:'AL_RECIBIR_DANIO_SANGRADO',label:'Al recibir daño por Sangrado/Hemorragia' },
+            { id:'AL_RECIBIR_DEBUFF',      label:'Al recibir un debuff' },
+            { id:'AL_RECIBIR_GOLPE_CRITICO',label:'Al recibir un golpe crítico' },
+            { id:'AL_CURAR_HP',            label:'Al curar HP (cualquier fuente)' },
+            { id:'AL_RECIBIR_CURACION',    label:'Al recibir curación' },
+            { id:'AL_GENERAR_CARGAS',      label:'Al generar cargas' },
+            { id:'AL_INVOCAR',             label:'Al realizar una invocación' },
+            { id:'AL_MORIR_INVOCACION',    label:'Al morir una invocación aliada' },
+            { id:'AL_TRANSFORMARSE',       label:'Al transformarse' },
+            { id:'AL_REVIVIR',             label:'Al revivir' },
+            { id:'AL_ELIMINAR_ENEMIGO',    label:'Al eliminar a un enemigo' },
+            { id:'AL_APLICAR_DEBUFF',      label:'Al aplicar un debuff a un enemigo' },
+            { id:'AL_APLICAR_BUFF',        label:'Al aplicar un buff a un aliado' },
+            { id:'AL_GOLPEAR_CON_DEBUFF',  label:'Al golpear a un enemigo con debuff activo' },
+            { id:'AL_GOLPEAR_CON_PROVOCACION',label:'Al golpear a un enemigo con Provocación/MegaProvocación' },
+        ];
+
+        // Catálogo de condiciones
+        window.CONDITION_CATALOGUE = [
+            { id:'NINGUNA',                     label:'Sin condición (siempre se aplica)' },
+            { id:'OBJETIVO_TIENE_DEBUFF',        label:'Si el objetivo tiene debuff activo' },
+            { id:'OBJETIVO_TIENE_BUFF',          label:'Si el objetivo tiene buff activo' },
+            { id:'OBJETIVO_TIENE_PROVOCACION',   label:'Si el objetivo tiene Provocación o MegaProvocación' },
+            { id:'OBJETIVO_TIENE_ESCUDO',        label:'Si el objetivo tiene Escudo HP activo' },
+            { id:'OBJETIVO_TIENE_SIGILO',        label:'Si el objetivo tiene Sigilo activo' },
+            { id:'PORTADOR_TIENE_DEBUFF',        label:'Si el portador tiene debuff activo' },
+            { id:'PORTADOR_TIENE_BUFF',          label:'Si el portador tiene buff activo' },
+            { id:'HAY_INVOCACIONES_ALIADAS',     label:'Si hay al menos N invocaciones aliadas activas' },
+            { id:'HAY_INVOCACION_ESPECIFICA',    label:'Si [nombre de invocación] está activa en el campo' },
+            { id:'EQUIPO_ENEMIGO_TIENE_DEBUFFS', label:'Si el equipo enemigo tiene al menos N debuffs activos' },
+            { id:'EQUIPO_ENEMIGO_TIENE_BUFFS',   label:'Si el equipo enemigo tiene al menos N buffs activos' },
+            { id:'PORTADOR_HP_BAJO',             label:'Si el portador tiene menos del N% de HP' },
+            { id:'OBJETIVO_HP_BAJO',             label:'Si el objetivo tiene menos del N% de HP' },
+            { id:'GOLPE_CRITICO',                label:'Si el ataque fue un golpe crítico' },
+            { id:'PROBABILIDAD',                 label:'Con X% de probabilidad' },
+        ];
+
+        // Catálogo de efectos atómicos
+        window.EFFECT_ATOM_CATALOGUE = [
+            { id:'DANIO_FIJO',                   label:'Daño fijo',                    params:['cantidad','objetivo'] },
+            { id:'DANIO_ESCALADO_DEBUFFS',        label:'Daño × debuffs enemigos',      params:['multiplicador','objetivo'] },
+            { id:'DANIO_ESCALADO_BUFFS',          label:'Daño × buffs objetivo',        params:['multiplicador','objetivo'] },
+            { id:'DANIO_ESCALADO_CARGAS',         label:'Daño × cargas objetivo',       params:['multiplicador','objetivo'] },
+            { id:'DANIO_ESCALADO_HP_FALTANTE',    label:'Daño = HP faltante objetivo',  params:['objetivo'] },
+            { id:'DANIO_ESCALADO_INVOCACIONES',   label:'Daño × invocaciones activas',  params:['multiplicador','objetivo'] },
+            { id:'DANIO_AOE',                     label:'Daño AOE a todos los enemigos',params:['cantidad'] },
+            { id:'DANIO_MT_FILTRO',               label:'Daño MT con filtro de debuff', params:['cantidad','debuff','max_golpes'] },
+            { id:'DANIO_BONUS_SI',                label:'Daño adicional si [condición]',params:['cantidad','condicion'] },
+            { id:'DANIO_DOBLE',                   label:'Duplicar el daño del movimiento', params:[] },
+            { id:'DANIO_TRIPLE',                  label:'Triplicar el daño del movimiento', params:[] },
+            { id:'CURAR_SELF',                    label:'Curar HP al portador',         params:['cantidad'] },
+            { id:'CURAR_ALIADO',                  label:'Curar HP a aliado',            params:['cantidad','quien'] },
+            { id:'CURAR_EQUIPO',                  label:'Curar HP al equipo aliado',    params:['cantidad'] },
+            { id:'CURAR_ESCALADO',                label:'Curar HP × [factor]',          params:['multiplicador','factor'] },
+            { id:'CURAR_100_PCT',                 label:'Curar 100% HP al equipo aliado', params:[] },
+            { id:'ROBAR_HP',                      label:'Robar HP al objetivo',         params:['cantidad'] },
+            { id:'GENERAR_CARGAS_SELF',           label:'Generar cargas al portador',   params:['cantidad'] },
+            { id:'GENERAR_CARGAS_ALIADO',         label:'Generar cargas a aliado',      params:['cantidad','quien'] },
+            { id:'GENERAR_CARGAS_EQUIPO',         label:'Generar cargas al equipo',     params:['cantidad'] },
+            { id:'GENERAR_CARGAS_ESCALADO',       label:'Generar cargas × [factor]',   params:['multiplicador','factor'] },
+            { id:'ROBAR_CARGAS',                  label:'Robar cargas al objetivo',     params:['cantidad'] },
+            { id:'DRENAR_CARGAS',                 label:'Drenar cargas del objetivo',   params:['cantidad'] },
+            { id:'DRENAR_CARGAS_EQUIPO',          label:'Drenar cargas del equipo enemigo', params:['cantidad'] },
+            { id:'APLICAR_BUFF_SELF',             label:'Aplicar buff al portador',     params:['buff','duracion'] },
+            { id:'APLICAR_BUFF_ALIADO',           label:'Aplicar buff a aliado',        params:['buff','duracion','quien'] },
+            { id:'APLICAR_BUFF_EQUIPO',           label:'Aplicar buff al equipo aliado',params:['buff','duracion'] },
+            { id:'APLICAR_DEBUFF_OBJETIVO',       label:'Aplicar debuff al objetivo',   params:['debuff','duracion'] },
+            { id:'APLICAR_DEBUFF_ALEATORIO',      label:'Aplicar debuff aleatorio al objetivo', params:[] },
+            { id:'APLICAR_DEBUFF_EQUIPO',         label:'Aplicar debuff al equipo enemigo', params:['debuff','duracion'] },
+            { id:'DISIPAR_DEBUFFS_SELF',          label:'Disipar debuffs del portador', params:['cantidad'] },
+            { id:'DISIPAR_DEBUFFS_EQUIPO',        label:'Disipar debuffs del equipo aliado', params:[] },
+            { id:'DISIPAR_BUFFS_OBJETIVO',        label:'Disipar buffs del objetivo',   params:['cantidad'] },
+            { id:'DISIPAR_BUFFS_EQUIPO_ENEMIGO',  label:'Disipar buffs del equipo enemigo', params:[] },
+            { id:'ESCUDO_SELF',                   label:'Escudo HP al portador',        params:['cantidad'] },
+            { id:'ESCUDO_EQUIPO',                 label:'Escudo HP al equipo aliado',   params:['cantidad'] },
+            { id:'AUMENTAR_HP_MAX_SELF',          label:'Aumentar HP máx del portador', params:['cantidad'] },
+            { id:'AUMENTAR_HP_MAX_EQUIPO',        label:'Aumentar HP máx del equipo',   params:['cantidad'] },
+            { id:'AUMENTAR_VELOCIDAD',            label:'Aumentar velocidad del portador', params:['cantidad'] },
+            { id:'INVOCAR',                       label:'Invocar al campo',             params:['nombre_invocacion'] },
+            { id:'GOLPE_CRITICO_PCT',             label:'Golpe crítico X% probabilidad',params:['porcentaje'] },
+            { id:'TURNO_ADICIONAL',               label:'Obtener turno adicional',      params:[] },
+            { id:'IGNORAR_PROVOCACION',           label:'Ignorar Provocación/MegaProvocación', params:[] },
+            { id:'ELIMINAR_OBJETIVO',             label:'Eliminar al objetivo (HP a 0)',params:['objetivo'] },
+            { id:'REFLEJAR_DEBUFF',               label:'Reflejar debuff al atacante',  params:[] },
+            { id:'COPIAR_BUFF',                   label:'Copiar buff del objetivo',     params:[] },
+        ];
+
+        // ── EJECUTOR DE EFECTOS ATÓMICOS ──
+        // Recibe un efecto atómico {type, params, condition} y lo ejecuta en el contexto actual
+        function executeAtomicEffect(effect, context) {
+            // context = { charName, targetName, allyTeam, enemyTeam, ability, finalDamage }
+            const { charName, targetName, allyTeam, enemyTeam } = context;
+            const attacker = gameState.characters[charName];
+            if (!attacker) return;
+
+            // ── Evaluar condición ──
+            if (effect.condition && effect.condition !== 'NINGUNA') {
+                if (!evalCondition(effect.condition, effect.conditionParams, context)) return;
+            }
+
+            // ── Evaluar probabilidad ──
+            if (effect.probability && effect.probability < 100) {
+                if (Math.random() * 100 > effect.probability) return;
+            }
+
+            const p = effect.params || {};
+            const qty = parseFloat(p.cantidad) || 1;
+
+            // Helper: get allies/enemies
+            const getAlives = (team) => Object.keys(gameState.characters).filter(n => {
+                const c = gameState.characters[n]; return c && c.team === team && !c.isDead && c.hp > 0;
+            });
+            const enemies = getAlives(enemyTeam);
+            const allies  = getAlives(allyTeam);
+            const rnd = arr => arr[Math.floor(Math.random()*arr.length)];
+
+            switch (effect.type) {
+                // ── DAÑO ──
+                case 'DANIO_FIJO': {
+                    const tgt = p.objetivo === 'self' ? charName : p.objetivo === 'aliado_aleatorio' ? rnd(allies) : targetName;
+                    if (tgt) applyDamageWithShield(tgt, qty, charName);
+                    addLog('⚔️ ' + charName + ': ' + qty + ' daño a ' + (tgt||targetName), 'damage');
+                    break;
+                }
+                case 'DANIO_AOE': {
+                    enemies.forEach(n => {
+                        if (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(n, true)) return;
+                        applyDamageWithShield(n, qty, charName);
+                    });
+                    if (typeof applyAOEToSummons === 'function') applyAOEToSummons(enemyTeam, qty, charName);
+                    addLog('⚔️ ' + charName + ': ' + qty + ' daño AOE', 'damage');
+                    break;
+                }
+                case 'DANIO_MT_FILTRO': {
+                    const filterDebuff = p.debuff || '';
+                    const maxHits = parseInt(p.max_golpes) || 4;
+                    // Count total filtered debuffs for bonus
+                    let totalDebuffs = 0;
+                    enemies.forEach(n => {
+                        const c = gameState.characters[n];
+                        (c.statusEffects||[]).forEach(e => { if (e && e.type==='debuff') totalDebuffs++; });
+                    });
+                    enemies.forEach(n => {
+                        const c = gameState.characters[n];
+                        const debuffList = ['Quemadura','Quemadura Solar','Veneno','Sangrado','Hemorragia','Congelacion','Mega Congelacion','Aturdimiento','Silenciar','Miedo'];
+                        const checkList = filterDebuff ? [filterDebuff] : debuffList;
+                        const hasFilter = checkList.some(d => typeof hasStatusEffect==='function' && hasStatusEffect(n, d));
+                        if (!hasFilter) return;
+                        const hits = Math.min(maxHits, (c.statusEffects||[]).filter(e=>e&&e.type==='debuff').length || 1);
+                        for (let i=0; i<hits; i++) applyDamageWithShield(n, qty, charName);
+                        if (p.bonus_por_total) applyDamageWithShield(n, totalDebuffs, charName);
+                        addLog('⚔️ ' + charName + ': ' + qty + '×' + hits + ' daño MT a ' + n, 'damage');
+                    });
+                    break;
+                }
+                case 'DANIO_ESCALADO_DEBUFFS': {
+                    let count = 0;
+                    enemies.forEach(n => { const c=gameState.characters[n]; count += (c.statusEffects||[]).filter(e=>e&&e.type==='debuff').length; });
+                    const dmg = Math.max(1, qty * count);
+                    const tgt2 = p.objetivo === 'aoe' ? null : targetName;
+                    if (tgt2) applyDamageWithShield(tgt2, dmg, charName);
+                    else enemies.forEach(n => { if (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(n,true)) return; applyDamageWithShield(n, dmg, charName); });
+                    addLog('⚔️ ' + charName + ': ' + dmg + ' daño (escalado × ' + count + ' debuffs)', 'damage');
+                    break;
+                }
+                case 'DANIO_ESCALADO_CARGAS': {
+                    const tgtChar = gameState.characters[targetName];
+                    const dmgC = Math.max(1, qty * (tgtChar ? tgtChar.charges||0 : 0));
+                    applyDamageWithShield(targetName, dmgC, charName);
+                    addLog('⚔️ ' + charName + ': ' + dmgC + ' daño (escalado × cargas de ' + targetName + ')', 'damage');
+                    break;
+                }
+                case 'DANIO_ESCALADO_BUFFS': {
+                    const tgtBuff = gameState.characters[targetName];
+                    const buffCount = tgtBuff ? (tgtBuff.statusEffects||[]).filter(e=>e&&e.type==='buff'&&!e.passiveHidden).length : 0;
+                    const dmgB = Math.max(1, qty * buffCount);
+                    applyDamageWithShield(targetName, dmgB, charName);
+                    addLog('⚔️ ' + charName + ': ' + dmgB + ' daño (escalado × ' + buffCount + ' buffs)', 'damage');
+                    break;
+                }
+                case 'DANIO_ESCALADO_INVOCACIONES': {
+                    const invCount = Object.values(gameState.summons).filter(s=>s&&s.team===allyTeam&&!s.isDead&&s.hp>0).length;
+                    const dmgI = Math.max(1, qty * invCount);
+                    applyDamageWithShield(targetName, dmgI, charName);
+                    addLog('⚔️ ' + charName + ': ' + dmgI + ' daño (escalado × ' + invCount + ' invocaciones)', 'damage');
+                    break;
+                }
+                case 'DANIO_ESCALADO_HP_FALTANTE': {
+                    const tgtHPM = gameState.characters[targetName];
+                    const dmgHPM = tgtHPM ? Math.max(1, (tgtHPM.maxHp||0) - (tgtHPM.hp||0)) : 1;
+                    applyDamageWithShield(targetName, dmgHPM, charName);
+                    addLog('⚔️ ' + charName + ': ' + dmgHPM + ' daño (HP faltante de ' + targetName + ')', 'damage');
+                    break;
+                }
+                case 'DANIO_BONUS_SI': {
+                    if (evalCondition(p.condicion, p, context)) {
+                        applyDamageWithShield(targetName, qty, charName);
+                        addLog('⚔️ ' + charName + ': +' + qty + ' daño adicional (condición cumplida)', 'damage');
+                    }
+                    break;
+                }
+                // ── CURACIÓN ──
+                case 'CURAR_SELF':
+                    if (typeof applyHeal==='function') applyHeal(charName, qty, 'habilidad');
+                    addLog('💚 ' + charName + ' recupera ' + qty + ' HP', 'heal');
+                    break;
+                case 'CURAR_EQUIPO':
+                    allies.forEach(n => { if (typeof applyHeal==='function') applyHeal(n, qty, 'habilidad'); });
+                    addLog('💚 Equipo aliado recupera ' + qty + ' HP', 'heal');
+                    break;
+                case 'CURAR_ALIADO': {
+                    const healTgt = p.quien === 'aleatorio' ? rnd(allies.filter(n=>n!==charName)) : (p.quien === 'menor_hp' ? allies.reduce((a,b) => (gameState.characters[a]?.hp||0) < (gameState.characters[b]?.hp||0) ? a : b) : targetName);
+                    if (healTgt && typeof applyHeal==='function') applyHeal(healTgt, qty, 'habilidad');
+                    addLog('💚 ' + (healTgt||targetName) + ' recupera ' + qty + ' HP', 'heal');
+                    break;
+                }
+                case 'CURAR_100_PCT':
+                    allies.forEach(n => { const c=gameState.characters[n]; if(c && typeof applyHeal==='function') applyHeal(n, (c.maxHp||0)-(c.hp||0), 'habilidad'); });
+                    addLog('💚 Equipo aliado restaura 100% HP', 'heal');
+                    break;
+                case 'CURAR_ESCALADO': {
+                    let factor = 1;
+                    if (p.factor === 'invocaciones') factor = Object.values(gameState.summons).filter(s=>s&&s.team===allyTeam&&!s.isDead&&s.hp>0).length;
+                    else if (p.factor === 'debuffs_disipados') factor = parseInt(context._disipados||0);
+                    const healAmt = Math.max(0, qty * factor);
+                    allies.forEach(n => { if (typeof applyHeal==='function') applyHeal(n, healAmt, 'habilidad'); });
+                    addLog('💚 Equipo aliado recupera ' + healAmt + ' HP (escalado)', 'heal');
+                    break;
+                }
+                case 'ROBAR_HP': {
+                    const tgtR = gameState.characters[targetName];
+                    if (tgtR) {
+                        const stolen = Math.min(qty, tgtR.hp||0);
+                        tgtR.hp = Math.max(0, (tgtR.hp||0) - stolen);
+                        if (tgtR.hp <= 0 && !tgtR.isDead) { tgtR.isDead = true; if(typeof registerKill==='function') registerKill(charName, targetName, false); }
+                        if (typeof applyHeal==='function') applyHeal(charName, stolen, 'robo de HP');
+                        addLog('🩸 ' + charName + ' roba ' + stolen + ' HP a ' + targetName, 'damage');
+                    }
+                    break;
+                }
+                // ── CARGAS ──
+                case 'GENERAR_CARGAS_SELF':
+                    attacker.charges = Math.min(20, (attacker.charges||0) + qty);
+                    addLog('⚡ ' + charName + ' genera ' + qty + ' cargas', 'buff');
+                    break;
+                case 'GENERAR_CARGAS_EQUIPO':
+                    allies.forEach(n => { const c=gameState.characters[n]; if(c) c.charges=Math.min(20,(c.charges||0)+qty); });
+                    addLog('⚡ Equipo aliado genera ' + qty + ' cargas', 'buff');
+                    break;
+                case 'GENERAR_CARGAS_ALIADO': {
+                    const caTgt = p.quien === 'aleatorio' ? rnd(allies.filter(n=>n!==charName)) : allies[0];
+                    const caC = caTgt ? gameState.characters[caTgt] : null;
+                    if (caC) caC.charges = Math.min(20, (caC.charges||0) + qty);
+                    addLog('⚡ ' + (caTgt||'aliado') + ' genera ' + qty + ' cargas', 'buff');
+                    break;
+                }
+                case 'GENERAR_CARGAS_ESCALADO': {
+                    let factorC = 1;
+                    if (p.factor==='invocaciones') factorC = Object.values(gameState.summons).filter(s=>s&&s.team===allyTeam&&!s.isDead&&s.hp>0).length;
+                    else if (p.factor==='debuffs_enemigos') { enemies.forEach(n=>{ const c=gameState.characters[n]; factorC += (c.statusEffects||[]).filter(e=>e&&e.type==='debuff').length; }); factorC = Math.max(1,factorC); }
+                    else if (p.factor==='buffs_enemigos') { enemies.forEach(n=>{ const c=gameState.characters[n]; factorC += (c.statusEffects||[]).filter(e=>e&&e.type==='buff'&&!e.passiveHidden).length; }); factorC = Math.max(1,factorC); }
+                    const cqty = qty * factorC;
+                    const cTgt2 = p.quien==='equipo' ? null : p.quien==='aliado_aleatorio' ? rnd(allies) : charName;
+                    if (cTgt2) { const cc=gameState.characters[cTgt2]; if(cc) cc.charges=Math.min(20,(cc.charges||0)+cqty); }
+                    else allies.forEach(n=>{ const cc=gameState.characters[n]; if(cc) cc.charges=Math.min(20,(cc.charges||0)+cqty); });
+                    addLog('⚡ Genera ' + cqty + ' cargas (escalado × ' + factorC + ')', 'buff');
+                    break;
+                }
+                case 'ROBAR_CARGAS': {
+                    const tgtRC = gameState.characters[targetName];
+                    if (tgtRC) {
+                        const stolen2 = Math.min(qty, tgtRC.charges||0);
+                        tgtRC.charges = Math.max(0, (tgtRC.charges||0) - stolen2);
+                        attacker.charges = Math.min(20, (attacker.charges||0) + stolen2);
+                        addLog('⚡ ' + charName + ' roba ' + stolen2 + ' cargas a ' + targetName, 'buff');
+                    }
+                    break;
+                }
+                case 'DRENAR_CARGAS': {
+                    const tgtDC = gameState.characters[targetName];
+                    if (tgtDC) { tgtDC.charges = Math.max(0, (tgtDC.charges||0) - qty); addLog('⚡ ' + targetName + ' pierde ' + qty + ' cargas', 'debuff'); }
+                    break;
+                }
+                case 'DRENAR_CARGAS_EQUIPO':
+                    enemies.forEach(n => { const c=gameState.characters[n]; if(c) c.charges=Math.max(0,(c.charges||0)-qty); });
+                    addLog('⚡ Equipo enemigo pierde ' + qty + ' cargas', 'debuff');
+                    break;
+                // ── BUFFS ──
+                case 'APLICAR_BUFF_SELF':
+                    if (typeof applyBuff==='function') applyBuff(charName, { name:p.buff, type:'buff', duration:parseInt(p.duracion)||2, emoji:'✨' });
+                    addLog('✨ ' + charName + ' recibe buff ' + p.buff, 'buff');
+                    break;
+                case 'APLICAR_BUFF_EQUIPO':
+                    allies.forEach(n => { if(typeof applyBuff==='function') applyBuff(n, {name:p.buff,type:'buff',duration:parseInt(p.duracion)||2,emoji:'✨'}); });
+                    addLog('✨ Equipo aliado recibe buff ' + p.buff, 'buff');
+                    break;
+                case 'APLICAR_BUFF_ALIADO': {
+                    const baTgt = p.quien==='aleatorio' ? rnd(allies.filter(n=>n!==charName)) : allies[0];
+                    if (baTgt && typeof applyBuff==='function') applyBuff(baTgt, {name:p.buff,type:'buff',duration:parseInt(p.duracion)||2,emoji:'✨'});
+                    addLog('✨ ' + (baTgt||'aliado') + ' recibe buff ' + p.buff, 'buff');
+                    break;
+                }
+                // ── DEBUFFS ──
+                case 'APLICAR_DEBUFF_OBJETIVO':
+                    applyGenericDebuff(targetName, p.debuff, parseInt(p.duracion)||2);
+                    break;
+                case 'APLICAR_DEBUFF_ALEATORIO': {
+                    const rdPool = window.DEBUFF_CATALOGUE || ['Quemadura','Veneno','Sangrado','Congelacion','Silenciar'];
+                    const rdChosen = rdPool[Math.floor(Math.random()*rdPool.length)];
+                    applyGenericDebuff(targetName, rdChosen, 2);
+                    break;
+                }
+                case 'APLICAR_DEBUFF_EQUIPO':
+                    enemies.forEach(n => applyGenericDebuff(n, p.debuff, parseInt(p.duracion)||2));
+                    addLog('💀 Debuff ' + p.debuff + ' aplicado al equipo enemigo', 'debuff');
+                    break;
+                // ── DISIPAR ──
+                case 'DISIPAR_DEBUFFS_SELF': {
+                    let disipados = 0;
+                    if (attacker.statusEffects) {
+                        const before = attacker.statusEffects.filter(e=>e&&e.type==='debuff').length;
+                        attacker.statusEffects = attacker.statusEffects.filter(e=>!e||e.type!=='debuff');
+                        disipados = before - attacker.statusEffects.filter(e=>e&&e.type==='debuff').length;
+                    }
+                    context._disipados = (context._disipados||0) + disipados;
+                    addLog('🌟 ' + charName + ' disipa ' + disipados + ' debuffs', 'buff');
+                    break;
+                }
+                case 'DISIPAR_DEBUFFS_EQUIPO': {
+                    let totalDis = 0;
+                    allies.forEach(n => { const c=gameState.characters[n]; if(!c||!c.statusEffects) return; const b=c.statusEffects.filter(e=>e&&e.type==='debuff').length; c.statusEffects=c.statusEffects.filter(e=>!e||e.type!=='debuff'); totalDis+=b-c.statusEffects.filter(e=>e&&e.type==='debuff').length; });
+                    context._disipados = (context._disipados||0) + totalDis;
+                    addLog('🌟 Equipo aliado disipa ' + totalDis + ' debuffs', 'buff');
+                    break;
+                }
+                case 'DISIPAR_BUFFS_OBJETIVO': {
+                    const tgtDisB = gameState.characters[targetName];
+                    if (tgtDisB && tgtDisB.statusEffects) { tgtDisB.statusEffects = tgtDisB.statusEffects.filter(e=>!e||e.type!=='buff'||e.passiveHidden); addLog('🌟 Buffs de ' + targetName + ' disipados', 'buff'); }
+                    break;
+                }
+                case 'DISIPAR_BUFFS_EQUIPO_ENEMIGO':
+                    enemies.forEach(n => { const c=gameState.characters[n]; if(c&&c.statusEffects) c.statusEffects=c.statusEffects.filter(e=>!e||e.type!=='buff'||e.passiveHidden); });
+                    addLog('🌟 Buffs del equipo enemigo disipados', 'buff');
+                    break;
+                // ── ESCUDO ──
+                case 'ESCUDO_SELF':
+                    attacker.shield = (attacker.shield||0) + qty;
+                    addLog('🛡️ ' + charName + ' recibe escudo ' + qty + ' HP', 'buff');
+                    break;
+                case 'ESCUDO_EQUIPO':
+                    allies.forEach(n => { const c=gameState.characters[n]; if(c) c.shield=(c.shield||0)+qty; });
+                    addLog('🛡️ Equipo aliado recibe escudo ' + qty + ' HP', 'buff');
+                    break;
+                // ── STATS ──
+                case 'AUMENTAR_HP_MAX_SELF':
+                    attacker.maxHp = (attacker.maxHp||0) + qty;
+                    addLog('💪 ' + charName + ' HP máx +' + qty, 'buff');
+                    break;
+                case 'AUMENTAR_HP_MAX_EQUIPO':
+                    allies.forEach(n => { const c=gameState.characters[n]; if(c) c.maxHp=(c.maxHp||0)+qty; });
+                    addLog('💪 Equipo aliado HP máx +' + qty, 'buff');
+                    break;
+                case 'AUMENTAR_VELOCIDAD':
+                    attacker.speed = (attacker.speed||80) + qty;
+                    if (typeof calculateTurnOrder==='function') calculateTurnOrder();
+                    addLog('💨 ' + charName + ' velocidad +' + qty, 'buff');
+                    break;
+                // ── ESPECIALES ──
+                case 'INVOCAR': {
+                    const teamSummons = Object.values(gameState.summons).filter(s=>s&&s.team===allyTeam&&!s.isDead&&s.hp>0);
+                    if (teamSummons.length >= 5) { addLog('❌ Máximo de 5 invocaciones alcanzado', 'info'); break; }
+                    if (typeof summonShadow==='function') summonShadow(p.nombre_invocacion, charName);
+                    break;
+                }
+                case 'TURNO_ADICIONAL':
+                    gameState._skeggoxExtraTurn = charName;
+                    addLog('⚡ ' + charName + ' obtiene turno adicional', 'buff');
+                    break;
+                case 'IGNORAR_PROVOCACION': {
+                    const atkC = gameState.characters[charName];
+                    if (atkC) atkC._ignoreTauntNextAttack = true;
+                    addLog('⚡ ' + charName + ' ignorará Provocación en el siguiente ataque', 'buff');
+                    break;
+                }
+                case 'ELIMINAR_OBJETIVO': {
+                    const tgtEl = gameState.characters[targetName];
+                    if (tgtEl) { tgtEl.hp=0; tgtEl.isDead=true; if(typeof registerKill==='function') registerKill(charName, targetName, false); addLog('💀 ' + targetName + ' eliminado', 'damage'); }
+                    break;
+                }
+                case 'GOLPE_CRITICO_PCT':
+                    context._critBonus = (context._critBonus||0) + (qty/100);
+                    break;
+                case 'REFLEJAR_DEBUFF':
+                    // Handled in debuff receive passive chain — flag set here
+                    context._reflectDebuff = true;
+                    break;
+                case 'COPIAR_BUFF': {
+                    const tgtCB = gameState.characters[targetName];
+                    if (tgtCB && tgtCB.statusEffects) {
+                        const buffs = tgtCB.statusEffects.filter(e=>e&&e.type==='buff'&&!e.passiveHidden);
+                        if (buffs.length > 0) {
+                            const picked = buffs[Math.floor(Math.random()*buffs.length)];
+                            if (typeof applyBuff==='function') applyBuff(charName, Object.assign({},picked));
+                            addLog('✨ ' + charName + ' copia buff ' + picked.name + ' de ' + targetName, 'buff');
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        // ── HELPER: aplicar debuff genérico por nombre ──
+        function applyGenericDebuff(targetName, debuffName, duration) {
+            if (!debuffName) return;
+            const n = debuffName.toLowerCase().replace(/[^a-záéíóúñ]/g,'');
+            if (n.includes('quemadursol') || n.includes('solar'))  { if(typeof applySolarBurn==='function') applySolarBurn(targetName, 10, duration); }
+            else if (n.includes('quemadura')) { if(typeof applyFlatBurn==='function') applyFlatBurn(targetName, 2, duration); }
+            else if (n.includes('veneno'))    { if(typeof applyPoison==='function') applyPoison(targetName, 1); }
+            else if (n.includes('sangrado'))  { if(typeof applyBleed==='function') applyBleed(targetName, duration); }
+            else if (n.includes('megaconge') || n.includes('megafrío')) { if(typeof applyFreeze==='function') applyFreeze(targetName, duration, true); }
+            else if (n.includes('congelac'))  { if(typeof applyFreeze==='function') applyFreeze(targetName, duration, false); }
+            else if (n.includes('silenci'))   { if(typeof applySilenciar==='function') applySilenciar(targetName, duration); }
+            else if (n.includes('aturdi'))    { if(typeof applyStun==='function') applyStun(targetName, duration); }
+            else if (n.includes('miedo'))     { if(typeof applyFear==='function') applyFear(targetName, duration); }
+            else if (n.includes('ceguera'))   { if(typeof applyBlind==='function') applyBlind(targetName, duration); }
+            else { if(typeof applyDebuff==='function') applyDebuff(targetName, {name:debuffName,type:'debuff',duration:duration,emoji:'💀'}); }
+            addLog('💀 ' + targetName + ' recibe ' + debuffName, 'debuff');
+        }
+        window.applyGenericDebuff = applyGenericDebuff;
+
+        // ── EVALUADOR DE CONDICIONES ──
+        function evalCondition(conditionId, params, context) {
+            const { charName, targetName, allyTeam, enemyTeam } = context;
+            const target = gameState.characters[targetName];
+            const attacker = gameState.characters[charName];
+            const p = params || {};
+            const N = parseFloat(p.n) || 1;
+            switch(conditionId) {
+                case 'NINGUNA': return true;
+                case 'OBJETIVO_TIENE_DEBUFF': return target && (target.statusEffects||[]).some(e=>e&&e.type==='debuff');
+                case 'OBJETIVO_TIENE_BUFF':   return target && (target.statusEffects||[]).some(e=>e&&e.type==='buff'&&!e.passiveHidden);
+                case 'OBJETIVO_TIENE_PROVOCACION': return target && (typeof hasStatusEffect==='function') && (hasStatusEffect(targetName,'Provocacion')||hasStatusEffect(targetName,'Mega Provocacion')||hasStatusEffect(targetName,'Provocación')||hasStatusEffect(targetName,'Mega Provocación'));
+                case 'OBJETIVO_TIENE_ESCUDO': return target && (target.shield||0) > 0;
+                case 'OBJETIVO_TIENE_SIGILO': return target && typeof hasStatusEffect==='function' && hasStatusEffect(targetName,'Sigilo');
+                case 'PORTADOR_TIENE_DEBUFF': return attacker && (attacker.statusEffects||[]).some(e=>e&&e.type==='debuff');
+                case 'PORTADOR_TIENE_BUFF':   return attacker && (attacker.statusEffects||[]).some(e=>e&&e.type==='buff'&&!e.passiveHidden);
+                case 'HAY_INVOCACIONES_ALIADAS': return Object.values(gameState.summons).filter(s=>s&&s.team===allyTeam&&!s.isDead&&s.hp>0).length >= N;
+                case 'HAY_INVOCACION_ESPECIFICA': return Object.values(gameState.summons).some(s=>s&&s.name===p.nombre_invocacion&&s.team===allyTeam&&!s.isDead&&s.hp>0);
+                case 'EQUIPO_ENEMIGO_TIENE_DEBUFFS': { let cnt=0; Object.keys(gameState.characters).forEach(n=>{const c=gameState.characters[n];if(c&&c.team===enemyTeam)cnt+=(c.statusEffects||[]).filter(e=>e&&e.type==='debuff').length;}); return cnt>=N; }
+                case 'EQUIPO_ENEMIGO_TIENE_BUFFS': { let cnt2=0; Object.keys(gameState.characters).forEach(n=>{const c=gameState.characters[n];if(c&&c.team===enemyTeam)cnt2+=(c.statusEffects||[]).filter(e=>e&&e.type==='buff'&&!e.passiveHidden).length;}); return cnt2>=N; }
+                case 'PORTADOR_HP_BAJO': return attacker && ((attacker.hp||0)/(attacker.maxHp||1)*100) < N;
+                case 'OBJETIVO_HP_BAJO': return target && ((target.hp||0)/(target.maxHp||1)*100) < N;
+                case 'GOLPE_CRITICO': return !!context._isCrit;
+                case 'PROBABILIDAD': return Math.random()*100 < N;
+                default: return true;
+            }
+        }
+        window.evalCondition = evalCondition;
+
+        // ── EJECUTOR DE HABILIDAD DINÁMICA ──
+        // Ejecuta todos los efectos de una habilidad de personaje dinámico
+        function executeDynamicAbility(ability, context) {
+            if (!ability || !ability.effects) return;
+            ability.effects.forEach(function(eff) {
+                if (!eff || !eff.type) return;
+                executeAtomicEffect(eff, context);
+            });
+        }
+        window.executeDynamicAbility = executeDynamicAbility;
+        window.executeAtomicEffect = executeAtomicEffect;
+
         // ── HELPER: Regla de Oro de Gilgamesh — se dispara en cada golpe crítico ──
         function triggerGilgameshCrit(gilName) {
             const _gil = gameState.characters[gilName];
@@ -303,6 +812,16 @@
             // Se setea SIEMPRE, no solo cuando el atacante tiene reliquias
             gameState._lastAbilityType = ability ? ability.type : null;
             gameState._lastAbilityChargeGain = ability ? (ability.chargeGain || 0) : 0;
+
+            // ── PASIVAS DINÁMICAS: trigger al realizar ataque ──
+            if (typeof runDynamicPassives === 'function' && gameState.selectedCharacter) {
+                const _dynAtkChar = gameState.characters[gameState.selectedCharacter];
+                if (_dynAtkChar) {
+                    const _dynTrigger = ability ? ('AL_REALIZAR_' + (ability.type||'basic').toUpperCase()) : 'AL_REALIZAR_ATAQUE';
+                    runDynamicPassives('AL_REALIZAR_ATAQUE', { charName: gameState.selectedCharacter, targetName });
+                    runDynamicPassives(_dynTrigger,           { charName: gameState.selectedCharacter, targetName });
+                }
+            }
 
             // ── HEREDERA LEGÍTIMA (Rhaenyra): enemigo con debuff activo usa movimiento → equipo aliado +1 carga ──
             if (gameState.selectedCharacter) {
@@ -9024,6 +9543,20 @@
                 }
                 if (typeof applyAOEToSummons === 'function') applyAOEToSummons(_aqETeam, finalDamage, gameState.selectedCharacter);
                 addLog('🐉 Asedio de la Reina Negra: ' + finalDamage + ' daño AOE', 'damage');
+
+            } else if (ability.effect === 'dynamic') {
+                // ── PERSONAJE DINÁMICO: ejecutar efectos desde Firebase ──
+                const _dynAtk  = gameState.characters[gameState.selectedCharacter];
+                const _dynTeam = _dynAtk ? _dynAtk.team : 'team1';
+                const _dynCtx  = {
+                    charName:    gameState.selectedCharacter,
+                    targetName:  targetName,
+                    allyTeam:    _dynTeam,
+                    enemyTeam:   _dynTeam === 'team1' ? 'team2' : 'team1',
+                    ability:     ability,
+                    finalDamage: finalDamage,
+                };
+                if (typeof executeDynamicAbility === 'function') executeDynamicAbility(ability, _dynCtx);
                 // Buffs to allied team
                 for (const _n in gameState.characters) {
                     const _c = gameState.characters[_n];
