@@ -451,15 +451,15 @@
 
         // ── Cargador de reliquias compartido — todos los modos ──────────────
         // ── Cargador de personajes dinámicos desde Firestore ──
-        window.loadDynamicCharacters = async function() {
-            try {
-                if (typeof firebase === 'undefined' || !firebase.firestore) return;
-                const db_fs = firebase.firestore();
-                const snap = await db_fs.collection('approved_characters').where('approved','==',true).get();
-                if (snap.empty) return;
-                snap.forEach(function(doc) {
-                    const ch = doc.data();
-                    if (!ch || !ch.name) return;
+        window.loadDynamicCharacters = function() {
+            // Uses Realtime Database (db.ref) — no Firestore required
+            if (typeof db === 'undefined') return;
+            db.ref('approved_characters').once('value').then(function(snap) {
+                const chars = snap.val();
+                if (!chars) return;
+                Object.keys(chars).forEach(function(key) {
+                    const ch = chars[key];
+                    if (!ch || !ch.name || ch.approved !== true) return;
                     const charObj = {
                         hp: ch.hp||20, maxHp: ch.hp||20, speed: ch.speed||80,
                         charges:0, team:'team1', statusEffects:[], shield:0, shieldEffect:null, isDead:false,
@@ -471,12 +471,12 @@
                                 chargeGain:ab.chargeGain||0, damage:ab.damage||0, target:ab.target||'single',
                                 effect:'dynamic', effects:ab.effects||[], description:ab.description||'' };
                         }),
-                        _isDynamic:true, _dynamicId:doc.id
+                        _isDynamic:true, _dynamicId:key
                     };
                     if (window.characterData) window.characterData[ch.name] = charObj;
                     console.log('[Dynamic] Personaje cargado:', ch.name);
                 });
-            } catch(e) { console.warn('[loadDynamicCharacters]', e); }
+            }).catch(function(e) { console.warn('[loadDynamicCharacters]', e); });
         };
 
         window.loadGameRelics = function() {
