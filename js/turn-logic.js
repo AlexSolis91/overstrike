@@ -638,6 +638,28 @@
         }
 
         // ── Escuchar liveState: actualizar log y HP en tiempo real durante turno del rival ──
+        // ── MOTOR DE PASIVAS DINÁMICAS ──
+        // Ejecuta los efectos de personajes dinámicos según el trigger activo
+        function runDynamicPassives(triggerId, contextOverride) {
+            for (const charName in gameState.characters) {
+                const ch = gameState.characters[charName];
+                if (!ch || ch.isDead || ch.hp <= 0 || !ch.passive || !ch._isDynamic) continue;
+                const effects = ch.passive.effects || [];
+                effects.forEach(function(eff) {
+                    if (!eff || eff.trigger !== triggerId) return;
+                    const team = ch.team;
+                    const ctx = Object.assign({
+                        charName: charName,
+                        targetName: charName,
+                        allyTeam: team,
+                        enemyTeam: team === 'team1' ? 'team2' : 'team1',
+                    }, contextOverride || {});
+                    if (typeof executeAtomicEffect === 'function') executeAtomicEffect(eff, ctx);
+                });
+            }
+        }
+        window.runDynamicPassives = runDynamicPassives;
+
         function listenLiveState() {
             if (!onlineMode || !currentRoomId) return;
 
@@ -2257,6 +2279,9 @@
                         addLog('💚 Visión Esmeralda: el equipo aliado recibe ' + _lvChosen + ' 2T (inicio de ronda)', 'buff');
                     }
 
+                    // ── PASIVAS DINÁMICAS: inicio de ronda ──
+                    if (typeof runDynamicPassives === 'function') runDynamicPassives('AL_INICIO_DE_RONDA');
+
                     // ── HEREDERA LEGÍTIMA (Rhaenyra): inicio de ronda → invoca 1 Cría de Dragón (máx 5 invocaciones por equipo) ──
                     for (const _rhRN in gameState.characters) {
                         const _rhRC = gameState.characters[_rhRN];
@@ -2736,6 +2761,9 @@
                         }
                     }
                 }
+
+                // ── PASIVAS DINÁMICAS: fin de ronda ──
+                if (typeof runDynamicPassives === 'function') runDynamicPassives('AL_FINAL_DE_RONDA');
 
                 // ── MORDEDURA (Cría de Dragón): fin de ronda → aplica debuff aleatorio a enemigo aleatorio ──
                 for (const _criaSumId in gameState.summons) {
