@@ -548,6 +548,18 @@ function processBurnEffects(charName) {
                 passiveHealExecuting = false;
             }
 
+            // ── PASIVAS DINÁMICAS: AL_CURAR_HP ──
+            if (!passiveHealExecuting && typeof runDynamicPassives === 'function') {
+                const _dynHChar = gameState.characters[charName];
+                if (_dynHChar && _dynHChar._isDynamic) {
+                    runDynamicPassives('AL_CURAR_HP', {
+                        charName, targetName: charName,
+                        allyTeam: _dynHChar.team,
+                        enemyTeam: _dynHChar.team === 'team1' ? 'team2' : 'team1'
+                    });
+                }
+            }
+
             // ── AURA DE LATVERIA (Doctor Doom): cuando un ENEMIGO cura HP → equipo aliado cura la misma cantidad ──
             if (!passiveHealExecuting) {
                 // Find Doctor Doom alive in the OPPOSING team of the healed char
