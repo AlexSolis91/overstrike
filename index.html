@@ -453,8 +453,8 @@
         // ── Cargador de personajes dinámicos desde Firestore ──
         window.loadDynamicCharacters = function() {
             // Uses Realtime Database (db.ref) — no Firestore required
-            if (typeof db === 'undefined') return;
-            db.ref('approved_characters').once('value').then(function(snap) {
+            if (typeof db === 'undefined') return Promise.resolve();
+            return db.ref('approved_characters').once('value').then(function(snap) {
                 const chars = snap.val();
                 if (!chars) return;
                 Object.keys(chars).forEach(function(key) {
@@ -1343,7 +1343,19 @@
 
         function csInit() {
             csRenderSlots();
-            csRenderGrid();
+            // Cargar personajes dinámicos aprobados ANTES de renderizar el grid
+            if (typeof window.loadDynamicCharacters === 'function') {
+                var _dynPromise = window.loadDynamicCharacters();
+                // loadDynamicCharacters returns a promise (db.ref().once())
+                // Wait for it then re-render the grid with new characters included
+                if (_dynPromise && typeof _dynPromise.then === 'function') {
+                    _dynPromise.then(function() { csRenderGrid(); });
+                } else {
+                    csRenderGrid();
+                }
+            } else {
+                csRenderGrid();
+            }
         }
 
         function csRenderSlots() {
