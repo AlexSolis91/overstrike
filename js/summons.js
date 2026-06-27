@@ -1460,6 +1460,18 @@
                 }
             }
 
+            // ── PASIVAS DINÁMICAS: AL_RECIBIR_DANIO ──
+            if (remainingDamage > 0 && !passiveExecuting && typeof runDynamicPassives === 'function') {
+                const _dynRDChar = gameState.characters[targetName];
+                if (_dynRDChar) {
+                    runDynamicPassives('AL_RECIBIR_DANIO', {
+                        charName: targetName, targetName,
+                        allyTeam: _dynRDChar.team,
+                        enemyTeam: _dynRDChar.team === 'team1' ? 'team2' : 'team1'
+                    });
+                }
+            }
+
             // ── TORMENTA ROJA: al recibir daño por Quemadura o Veneno → 3 daño AOE al equipo enemigo ──
             // _currentDamageSource fue seteado en status-effects.js/turn-logic.js antes de llamar a esta función
             if (remainingDamage > 0 && !passiveExecuting) {
