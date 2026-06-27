@@ -151,6 +151,7 @@
             { id:'AL_APLICAR_BUFF',        label:'Al aplicar un buff a un aliado' },
             { id:'AL_GOLPEAR_CON_DEBUFF',  label:'Al golpear a un enemigo con debuff activo' },
             { id:'AL_GOLPEAR_CON_PROVOCACION',label:'Al golpear a un enemigo con Provocación/MegaProvocación' },
+            { id:'CUANDO_ENEMIGO_ATACA',          label:'Cuando un enemigo ejecuta un ataque' },
         ];
 
         // Catálogo de condiciones
@@ -817,9 +818,33 @@
             if (typeof runDynamicPassives === 'function' && gameState.selectedCharacter) {
                 const _dynAtkChar = gameState.characters[gameState.selectedCharacter];
                 if (_dynAtkChar) {
-                    const _dynTrigger = ability ? ('AL_REALIZAR_' + (ability.type||'basic').toUpperCase()) : 'AL_REALIZAR_ATAQUE';
-                    runDynamicPassives('AL_REALIZAR_ATAQUE', { charName: gameState.selectedCharacter, targetName });
-                    runDynamicPassives(_dynTrigger,           { charName: gameState.selectedCharacter, targetName });
+                    const _dynAtkTeam  = _dynAtkChar.team;
+                    const _dynDefTeam  = _dynAtkTeam === 'team1' ? 'team2' : 'team1';
+                    const _dynTrigger  = ability ? ('AL_REALIZAR_' + (ability.type||'basic').toUpperCase()) : 'AL_REALIZAR_ATAQUE';
+
+                    // Pasivas del ATACANTE: AL_REALIZAR_ATAQUE / AL_REALIZAR_BASIC / etc.
+                    runDynamicPassives('AL_REALIZAR_ATAQUE', { charName: gameState.selectedCharacter, targetName,
+                        allyTeam: _dynAtkTeam, enemyTeam: _dynDefTeam });
+                    runDynamicPassives(_dynTrigger, { charName: gameState.selectedCharacter, targetName,
+                        allyTeam: _dynAtkTeam, enemyTeam: _dynDefTeam });
+
+                    // Pasivas del EQUIPO DEFENSOR: CUANDO_ENEMIGO_ATACA
+                    // Cada personaje dinámico en el equipo que está siendo atacado puede reaccionar
+                    for (const _defN in gameState.characters) {
+                        const _defC = gameState.characters[_defN];
+                        if (!_defC || _defC.isDead || _defC.hp <= 0 || !_defC._isDynamic || _defC.team !== _dynDefTeam) continue;
+                        const _defEffects = (_defC.passive && _defC.passive.effects) || [];
+                        _defEffects.forEach(function(eff) {
+                            if (!eff || eff.trigger !== 'CUANDO_ENEMIGO_ATACA') return;
+                            const _defCtx = {
+                                charName:   _defN,
+                                targetName: gameState.selectedCharacter, // el atacante es el "objetivo" de la reacción
+                                allyTeam:   _dynDefTeam,
+                                enemyTeam:  _dynAtkTeam,
+                            };
+                            if (typeof executeAtomicEffect === 'function') executeAtomicEffect(eff, _defCtx);
+                        });
+                    }
                 }
             }
 
