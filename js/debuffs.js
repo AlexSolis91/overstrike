@@ -649,6 +649,18 @@ function applyDebuff(targetName, effectObj) {
             }
             target.statusEffects.push(effectObj);
 
+            // ── PASIVAS DINÁMICAS: AL_RECIBIR_DEBUFF ──
+            if (!passiveExecuting && effectObj && effectObj.type === 'debuff' && !effectObj.passiveHidden && typeof runDynamicPassives === 'function') {
+                const _dynDBChar = gameState.characters[targetName];
+                if (_dynDBChar && _dynDBChar._isDynamic) {
+                    runDynamicPassives('AL_RECIBIR_DEBUFF', {
+                        charName: targetName, targetName,
+                        allyTeam: _dynDBChar.team,
+                        enemyTeam: _dynDBChar.team === 'team1' ? 'team2' : 'team1'
+                    });
+                }
+            }
+
             // ── AURA DE LATVERIA (Doctor Doom): al recibir debuff → Protección Sagrada + disipa debuffs aliados + 3 cargas por debuff ──
             if (!passiveExecuting && effectObj && effectObj.type === 'debuff' && !effectObj.passiveHidden) {
                 const _doomDbChar = gameState.characters[targetName];
