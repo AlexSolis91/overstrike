@@ -2993,65 +2993,72 @@
         function _ncEffectBlock(idx, prefix) {
             const effectTypes = (window.EFFECT_ATOM_CATALOGUE||[]).map(e=>`<option value="${e.id}">${e.label}</option>`).join('');
             const triggerTypes = (window.TRIGGER_CATALOGUE||[]).map(t=>`<option value="${t.id}">${t.label}</option>`).join('');
-            const conditions = (window.CONDITION_CATALOGUE||[]).map(c=>`<option value="${c.id}">${c.label}</option>`).join('');
-            const buffs = (window.BUFF_CATALOGUE||[]).map(b=>`<option value="${b}">${b}</option>`).join('');
+            const buffs   = (window.BUFF_CATALOGUE||[]).map(b=>`<option value="${b}">${b}</option>`).join('');
             const debuffs = (window.DEBUFF_CATALOGUE||[]).map(d=>`<option value="${d}">${d}</option>`).join('');
+            const sel = _ncSel(), inp = _ncInp();
             return `
             <div style="border:1px solid #3a1f6e;border-radius:8px;padding:10px;margin-top:8px;">
                 <div style="font-size:11px;color:#a78bfa;font-weight:600;margin-bottom:6px;">EFECTO ${idx}</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
                     <div>
                         <label style="font-size:10px;color:#9ca3af">Tipo de efecto</label>
-                        <select id="${prefix}_eff_type_${idx}" style="${_ncSel()}" onchange="_ncEffectTypeChange('${prefix}','${idx}')">
+                        <select id="${prefix}_eff_type_${idx}" style="${sel}" onchange="_ncEffectTypeChange('${prefix}','${idx}')">
                             <option value="">— Sin efecto —</option>${effectTypes}
                         </select>
                     </div>
                     <div>
                         <label style="font-size:10px;color:#9ca3af">Gatillo</label>
-                        <select id="${prefix}_eff_trigger_${idx}" style="${_ncSel()}">
+                        <select id="${prefix}_eff_trigger_${idx}" style="${sel}">
                             ${triggerTypes}
                         </select>
                     </div>
                     <div>
-                        <label style="font-size:10px;color:#9ca3af">Condición</label>
-                        <select id="${prefix}_eff_cond_${idx}" style="${_ncSel()}">
-                            ${conditions}
+                        <label style="font-size:10px;color:#9ca3af">Objetivo del efecto</label>
+                        <select id="${prefix}_eff_objetivo_${idx}" style="${sel}">
+                            <option value="enemigo_golpeado">Enemigo golpeado</option>
+                            <option value="enemigo_aleatorio">Enemigo aleatorio</option>
+                            <option value="2_enemigos_aleatorios">2 enemigos aleatorios</option>
+                            <option value="3_enemigos_aleatorios">3 enemigos aleatorios</option>
+                            <option value="4_enemigos_aleatorios">4 enemigos aleatorios</option>
+                            <option value="todos_enemigos">Todos los enemigos</option>
+                            <option value="enemigo_mas_hp">Enemigo con más HP</option>
+                            <option value="enemigo_menos_hp">Enemigo con menos HP</option>
+                            <option value="enemigo_mas_cargas">Enemigo con más cargas</option>
+                            <option value="enemigo_menos_cargas">Enemigo con menos cargas</option>
+                            <option value="self">El portador</option>
+                            <option value="aliado_aleatorio">Aliado aleatorio</option>
+                            <option value="2_aliados_aleatorios">2 aliados aleatorios</option>
+                            <option value="3_aliados_aleatorios">3 aliados aleatorios</option>
+                            <option value="todos_aliados">Todos los aliados</option>
+                            <option value="aliado_menos_hp">Aliado con menos HP</option>
+                            <option value="aliado_mas_hp">Aliado con más HP</option>
                         </select>
                     </div>
                     <div>
                         <label style="font-size:10px;color:#9ca3af">Probabilidad %</label>
-                        <input id="${prefix}_eff_prob_${idx}" type="number" min="1" max="100" value="100" style="${_ncInp()}">
+                        <input id="${prefix}_eff_prob_${idx}" type="number" min="1" max="100" value="100" style="${inp}">
                     </div>
                 </div>
                 <div id="${prefix}_eff_params_${idx}" style="margin-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
                     <div>
                         <label style="font-size:10px;color:#9ca3af">Cantidad / Multiplicador</label>
-                        <input id="${prefix}_eff_qty_${idx}" type="number" value="1" min="0" style="${_ncInp()}">
+                        <input id="${prefix}_eff_qty_${idx}" type="number" value="1" min="0" style="${inp}">
                     </div>
                     <div id="${prefix}_eff_buff_wrap_${idx}" style="display:none">
-                        <label style="font-size:10px;color:#9ca3af">Buff</label>
-                        <select id="${prefix}_eff_buff_${idx}" style="${_ncSel()}">${buffs}</select>
+                        <label style="font-size:10px;color:#9ca3af">Buff a aplicar</label>
+                        <select id="${prefix}_eff_buff_${idx}" style="${sel}">${buffs}</select>
                     </div>
                     <div id="${prefix}_eff_debuff_wrap_${idx}" style="display:none">
-                        <label style="font-size:10px;color:#9ca3af">Debuff</label>
-                        <select id="${prefix}_eff_debuff_${idx}" style="${_ncSel()}">${debuffs}</select>
+                        <label style="font-size:10px;color:#9ca3af">Debuff a aplicar</label>
+                        <select id="${prefix}_eff_debuff_${idx}" style="${sel}">${debuffs}</select>
                     </div>
                     <div id="${prefix}_eff_dur_wrap_${idx}" style="display:none">
                         <label style="font-size:10px;color:#9ca3af">Duración (turnos)</label>
-                        <input id="${prefix}_eff_dur_${idx}" type="number" value="2" min="1" style="${_ncInp()}">
-                    </div>
-                    <div id="${prefix}_eff_quien_wrap_${idx}" style="display:none">
-                        <label style="font-size:10px;color:#9ca3af">Objetivo extra</label>
-                        <select id="${prefix}_eff_quien_${idx}" style="${_ncSel()}">
-                            <option value="aleatorio">Aliado aleatorio</option>
-                            <option value="equipo">Todo el equipo</option>
-                            <option value="menor_hp">Aliado con menos HP</option>
-                            <option value="self">El portador</option>
-                        </select>
+                        <input id="${prefix}_eff_dur_${idx}" type="number" value="2" min="1" style="${inp}">
                     </div>
                     <div id="${prefix}_eff_factor_wrap_${idx}" style="display:none">
                         <label style="font-size:10px;color:#9ca3af">Factor de escala</label>
-                        <select id="${prefix}_eff_factor_${idx}" style="${_ncSel()}">
+                        <select id="${prefix}_eff_factor_${idx}" style="${sel}">
                             <option value="invocaciones">Invocaciones activas</option>
                             <option value="debuffs_enemigos">Debuffs en equipo enemigo</option>
                             <option value="buffs_enemigos">Buffs en equipo enemigo</option>
@@ -3061,11 +3068,7 @@
                     </div>
                     <div id="${prefix}_eff_invoc_wrap_${idx}" style="display:none">
                         <label style="font-size:10px;color:#9ca3af">Nombre invocación</label>
-                        <input id="${prefix}_eff_invoc_${idx}" type="text" placeholder="Ej: Cría de Dragón" style="${_ncInp()}">
-                    </div>
-                    <div id="${prefix}_eff_n_cond_wrap_${idx}" style="display:none">
-                        <label style="font-size:10px;color:#9ca3af">N (para condición)</label>
-                        <input id="${prefix}_eff_n_cond_${idx}" type="number" value="1" min="0" style="${_ncInp()}">
+                        <input id="${prefix}_eff_invoc_${idx}" type="text" placeholder="Ej: Cría de Dragón" style="${inp}">
                     </div>
                 </div>
             </div>`;
@@ -3073,17 +3076,16 @@
 
         function _ncEffectTypeChange(prefix, idx) {
             const type = document.getElementById(`${prefix}_eff_type_${idx}`)?.value || '';
-            const needsBuff   = type.includes('BUFF') && !type.includes('DISIPAR');
-            const needsDebuff = type.includes('DEBUFF') && !type.includes('DISIPAR');
+            // Separar buff de debuff: solo mostrar el selector correcto según el tipo
+            const needsBuff   = (type === 'APLICAR_BUFF_SELF' || type === 'APLICAR_BUFF_EQUIPO' || type === 'APLICAR_BUFF_ALIADO');
+            const needsDebuff = (type === 'APLICAR_DEBUFF_OBJETIVO' || type === 'APLICAR_DEBUFF_EQUIPO');
             const needsDur    = needsBuff || needsDebuff;
-            const needsQuien  = ['CURAR_ALIADO','GENERAR_CARGAS_ALIADO','APLICAR_BUFF_ALIADO','CURAR_ESCALADO','GENERAR_CARGAS_ESCALADO'].includes(type);
-            const needsFactor = ['CURAR_ESCALADO','GENERAR_CARGAS_ESCALADO','DANIO_ESCALADO_INVOCACIONES'].includes(type) || type.includes('ESCALADO');
-            const needsInvoc  = type === 'INVOCAR' || type === 'HAY_INVOCACION_ESPECIFICA';
+            const needsFactor = type.includes('ESCALADO');
+            const needsInvoc  = type === 'INVOCAR';
             const show = (id, v) => { const el=document.getElementById(`${prefix}_eff_${id}_wrap_${idx}`); if(el) el.style.display=v?'block':'none'; };
             show('buff',   needsBuff);
             show('debuff', needsDebuff);
             show('dur',    needsDur);
-            show('quien',  needsQuien);
             show('factor', needsFactor);
             show('invoc',  needsInvoc);
         }
@@ -3107,6 +3109,7 @@
                     <div><label style="font-size:10px;color:#9ca3af">Daño base</label><input id="ab_dmg_${abilIdx}" type="number" value="0" min="0" style="${_ncInp()}"></div>
                     <div><label style="font-size:10px;color:#9ca3af">Costo (cargas)</label><input id="ab_cost_${abilIdx}" type="number" value="0" min="0" style="${_ncInp()}"></div>
                     <div><label style="font-size:10px;color:#9ca3af">Genera cargas</label><input id="ab_gain_${abilIdx}" type="number" value="1" min="0" style="${_ncInp()}"></div>
+                    <div style="grid-column:1/-1"><label style="font-size:10px;color:#9ca3af">Descripción del movimiento</label><textarea id="ab_desc_${abilIdx}" rows="2" placeholder="Describe el movimiento tal como aparecerá en el juego..." style="${_ncInp()}width:100%;resize:vertical;"></textarea></div>
                 </div>
                 ${_ncEffectBlock(1,'ab'+abilIdx)}
                 ${_ncEffectBlock(2,'ab'+abilIdx)}
@@ -3156,7 +3159,8 @@
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
                         <div><label style="font-size:10px;color:#9ca3af">Nombre de la pasiva</label>
                             <input id="nc_passive_name" type="text" placeholder="Ej: Regla de Oro" style="${_ncInp()}"></div>
-                        <div></div>
+                        <div><label style="font-size:10px;color:#9ca3af">Descripción de la pasiva</label>
+                            <textarea id="nc_passive_desc" rows="2" placeholder="Describe qué hace la pasiva en lenguaje del juego..." style="${_ncInp()}resize:vertical;"></textarea></div>
                     </div>
                     ${_ncEffectBlock(1,'ps')}
                     ${_ncEffectBlock(2,'ps')}
@@ -3202,19 +3206,17 @@
             const type = get('type')?.value || '';
             if (!type) return null;
             return {
-                type: type,
-                trigger: get('trigger')?.value || 'SIN_GATILLO',
-                condition: get('cond')?.value || 'NINGUNA',
-                probability: parseFloat(get('prob')?.value)||100,
+                type:        type,
+                trigger:     get('trigger')?.value   || 'SIN_GATILLO',
+                objetivo:    get('objetivo')?.value  || 'enemigo_golpeado',
+                probability: parseFloat(get('prob')?.value) || 100,
                 params: {
-                    cantidad:         parseFloat(get('qty')?.value)||0,
-                    buff:             get('buff')?.value||'',
-                    debuff:           get('debuff')?.value||'',
-                    duracion:         parseInt(get('dur')?.value)||2,
-                    quien:            get('quien')?.value||'aleatorio',
-                    factor:           get('factor')?.value||'invocaciones',
-                    nombre_invocacion:get('invoc')?.value||'',
-                    n:                parseFloat(get('n_cond')?.value)||1,
+                    cantidad:          parseFloat(get('qty')?.value)  || 0,
+                    buff:              get('buff')?.value              || '',
+                    debuff:            get('debuff')?.value            || '',
+                    duracion:          parseInt(get('dur')?.value)     || 2,
+                    factor:            get('factor')?.value            || 'invocaciones',
+                    nombre_invocacion: get('invoc')?.value             || '',
                 }
             };
         }
@@ -3224,12 +3226,14 @@
             const name = get('name')?.value?.trim();
             if (!name) return null;
             const effects = [1,2,3].map(i=>_ncReadEffect('ab'+idx, i)).filter(Boolean);
+            const description = get('desc')?.value?.trim() || '';
             return {
                 name, type: get('type')?.value||'basic',
                 target: get('target')?.value||'single',
                 damage: parseFloat(get('dmg')?.value)||0,
                 cost:   parseInt(get('cost')?.value)||0,
                 chargeGain: parseInt(get('gain')?.value)||0,
+                description,
                 effects
             };
         }
@@ -3244,7 +3248,13 @@
             const summonImg = document.getElementById('nc_summon_img')?.value?.trim()||'';
             const passiveName = document.getElementById('nc_passive_name')?.value?.trim()||'';
             const passiveEffects = [1,2,3].map(i=>_ncReadEffect('ps',i)).filter(Boolean);
-            const passiveDesc = passiveEffects.map(e=>e.type).join(', ');
+            // Use manually written description if provided, otherwise auto-generate from effect types
+            const passiveDescManual = document.getElementById('nc_passive_desc')?.value?.trim()||'';
+            const passiveDesc = passiveDescManual || passiveEffects.map(e=>{
+                const atom = (window.EFFECT_ATOM_CATALOGUE||[]).find(a=>a.id===e.type);
+                const trigger = (window.TRIGGER_CATALOGUE||[]).find(t=>t.id===e.trigger);
+                return (trigger && trigger.id !== 'SIN_GATILLO' ? trigger.label + ': ' : '') + (atom ? atom.label : e.type);
+            }).filter(Boolean).join('. ');
             const abilities = type!=='Invocacion' ? [1,2,3,4].map(i=>_ncReadAbility(i)).filter(Boolean) : [];
             return { type, name, hp, speed, portrait, transformPortrait, summonImg,
                 passiveName, passiveDesc, passiveEffects, abilities,
