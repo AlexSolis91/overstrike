@@ -3263,58 +3263,100 @@
             const msg = document.getElementById('nc_msg');
             if (!data.name) { if(msg){msg.style.color='#f87171';msg.textContent='❌ El nombre es obligatorio.';} return; }
             try {
-                if (!firebase.firestore) throw new Error('Firestore no disponible');
-                const db_fs = firebase.firestore();
-                await db_fs.collection('pending_characters').add(data);
-                if (msg) { msg.style.color='#34d399'; msg.textContent='✅ Personaje guardado como pendiente. Esperando aprobación del admin.'; }
+                // Usar Realtime Database (db.ref) — no requiere Firestore
+                const newRef = db.ref('pending_characters').push();
+                data._id = newRef.key;
+                await newRef.set(data);
+                if (msg) { msg.style.color='#34d399'; msg.textContent='✅ Personaje guardado como pendiente. Esperando aprobación del admin (ID: ' + newRef.key + ')'; }
             } catch(e) {
-                if (msg) { msg.style.color='#f87171'; msg.textContent='❌ Error: ' + e.message; }
+                if (msg) { msg.style.color='#f87171'; msg.textContent='❌ Error al guardar: ' + e.message; }
             }
         }
         window._ncSave = _ncSave;
 
         // ── PANEL DE APROBACIÓN (solo solisalex8291@gmail.com) ──
-        window._ncOpenApproval = async function() {
-            try {
-                const db_fs = firebase.firestore();
-                const snap = await db_fs.collection('pending_characters').where('approved','==',false).get();
-                let html = '<div style="position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:99998;overflow-y:auto;display:flex;justify-content:center;padding:20px;" id="ncApproval">';
-                html += '<div style="background:#0d0016;border:1px solid #5b21b6;border-radius:16px;width:100%;max-width:600px;padding:24px;color:#e2d9f3;font-family:sans-serif;">';
-                html += '<div style="display:flex;justify-content:space-between;margin-bottom:16px;"><h2 style="margin:0;color:#c4b5fd;">✅ APROBAR PERSONAJES</h2><button onclick="document.getElementById(\'ncApproval\').remove()" style="background:none;border:none;color:#9ca3af;font-size:20px;cursor:pointer;">✕</button></div>';
-                if (snap.empty) { html += '<p style="color:#9ca3af;">No hay personajes pendientes.</p>'; }
-                else {
-                    snap.forEach(function(doc) {
-                        const d = doc.data();
-                        html += `<div style="border:1px solid #3a1f6e;border-radius:10px;padding:12px;margin-bottom:12px;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;">
-                                <div><strong style="color:#c4b5fd;">${d.name}</strong> <span style="font-size:11px;color:#6b7280;">${d.type} — ${d.abilities?.length||0} movimientos — por ${d.createdBy}</span></div>
-                                <button onclick="_ncApprove('${doc.id}')" style="padding:5px 12px;border-radius:6px;border:none;background:#7c3aed;color:white;cursor:pointer;font-size:12px;">Aprobar</button>
-                            </div>
-                            <div style="font-size:10px;color:#9ca3af;margin-top:4px;">Pasiva: ${d.passiveName} — ${d.passiveEffects?.length||0} efectos</div>
-                        </div>`;
+        function _ncCloseApproval() {
+            var el = document.getElementById('ncApproval');
+            if (el) el.remove();
+        }
+        window._ncCloseApproval = _ncCloseApproval;
+
+        window._ncOpenApproval = function() {
+            db.ref('pending_characters').once('value').then(function(snap) {
+                var existing = document.getElementById('ncApproval');
+                if (existing) existing.remove();
+
+                // Build overlay using DOM (avoids HTML string quote conflicts)
+                var overlay = document.createElement('div');
+                overlay.id = 'ncApproval';
+                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:99998;overflow-y:auto;display:flex;justify-content:center;padding:20px;';
+
+                var panel = document.createElement('div');
+                panel.style.cssText = 'background:#0d0016;border:1px solid #5b21b6;border-radius:16px;width:100%;max-width:600px;padding:24px;color:#e2d9f3;font-family:sans-serif;';
+                overlay.appendChild(panel);
+
+                var header = document.createElement('div');
+                header.style.cssText = 'display:flex;justify-content:space-between;margin-bottom:16px;';
+                var h2 = document.createElement('h2');
+                h2.style.cssText = 'margin:0;color:#c4b5fd;';
+                h2.textContent = '✅ APROBAR PERSONAJES';
+                var closeBtn = document.createElement('button');
+                closeBtn.style.cssText = 'background:none;border:none;color:#9ca3af;font-size:20px;cursor:pointer;';
+                closeBtn.textContent = '✕';
+                closeBtn.onclick = _ncCloseApproval;
+                header.appendChild(h2);
+                header.appendChild(closeBtn);
+                panel.appendChild(header);
+
+                var pending = snap.val();
+                var keys = pending ? Object.keys(pending).filter(function(k){ return pending[k] && pending[k].approved === false; }) : [];
+
+                if (keys.length === 0) {
+                    var empty = document.createElement('p');
+                    empty.style.color = '#9ca3af';
+                    empty.textContent = 'No hay personajes pendientes de aprobación.';
+                    panel.appendChild(empty);
+                } else {
+                    keys.forEach(function(key) {
+                        var d = pending[key];
+                        var card = document.createElement('div');
+                        card.style.cssText = 'border:1px solid #3a1f6e;border-radius:10px;padding:12px;margin-bottom:12px;';
+
+                        var row = document.createElement('div');
+                        row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;';
+
+                        var info = document.createElement('div');
+                        var strong = document.createElement('strong');
+                        strong.style.color = '#c4b5fd';
+                        strong.textContent = d.name || 'Sin nombre';
+                        var span = document.createElement('span');
+                        span.style.cssText = 'font-size:11px;color:#6b7280;margin-left:8px;';
+                        span.textContent = (d.type||'') + ' — ' + ((d.abilities||[]).length) + ' movimientos — por ' + (d.createdBy||'?');
+                        info.appendChild(strong);
+                        info.appendChild(span);
+
+                        var approveBtn = document.createElement('button');
+                        approveBtn.style.cssText = 'padding:5px 12px;border-radius:6px;border:none;background:#7c3aed;color:white;cursor:pointer;font-size:12px;';
+                        approveBtn.textContent = 'Aprobar';
+                        (function(k){ approveBtn.onclick = function(){ window._ncApprove(k); }; })(key);
+
+                        row.appendChild(info);
+                        row.appendChild(approveBtn);
+                        card.appendChild(row);
+
+                        var sub = document.createElement('div');
+                        sub.style.cssText = 'font-size:10px;color:#9ca3af;margin-top:4px;';
+                        sub.textContent = 'Pasiva: ' + (d.passiveName||'—') + ' — ' + ((d.passiveEffects||[]).length) + ' efectos';
+                        card.appendChild(sub);
+                        panel.appendChild(card);
                     });
                 }
-                html += '</div></div>';
-                const el = document.createElement('div');
-                el.innerHTML = html;
-                document.body.appendChild(el.firstChild);
-            } catch(e) { alert('Error cargando pendientes: ' + e.message); }
+
+                document.body.appendChild(overlay);
+            }).catch(function(e) { alert('Error cargando pendientes: ' + e.message); });
         };
 
-        window._ncApprove = async function(docId) {
-            try {
-                const db_fs = firebase.firestore();
-                // Move from pending to approved
-                const doc = await db_fs.collection('pending_characters').doc(docId).get();
-                const data = Object.assign({}, doc.data(), { approved: true, approvedAt: Date.now(), approvedBy: currentUser?.email });
-                await db_fs.collection('approved_characters').doc(docId).set(data);
-                await db_fs.collection('pending_characters').doc(docId).delete();
-                alert('✅ Personaje aprobado: ' + data.name);
-                window._ncOpenApproval(); // Refresh
-            } catch(e) { alert('Error: ' + e.message); }
-        };
-
-        // Inject lobby button when lobby is shown
+                // Inject lobby button when lobby is shown
         const _ncOrigShowLobby = window.showLobby;
         window.showLobby = function() {
             if (_ncOrigShowLobby) _ncOrigShowLobby.apply(this, arguments);
