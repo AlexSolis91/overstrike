@@ -2944,6 +2944,386 @@
             });
         }
 
+
+        // ══════════════════════════════════════════════════════════════════════
+        // PANEL ADMIN — CREAR NUEVO PERSONAJE
+        // Solo visible para solisalex8291@gmail.com y edgarreyna@gmail.com
+        // ══════════════════════════════════════════════════════════════════════
+
+        const _NC_ADMINS = ['solisalex8291@gmail.com', 'edgarreyna@overstrike.com'];
+
+        function _ncIsAdmin() {
+            return currentUser && _NC_ADMINS.some(a => (currentUser.email||'').toLowerCase().includes(a.split('@')[0]));
+        }
+
+        // Inject the "Nuevo Personaje" button in the lobby
+        function _ncInjectButton() {
+            if (!_ncIsAdmin()) return;
+            if (document.getElementById('btnNuevoPersonaje')) return;
+            // Inject approval panel button (only for solisalex8291)
+            const isSuperAdmin = currentUser && (currentUser.email||'').includes('solisalex8291');
+            if (isSuperAdmin) {
+                const existingApproval = document.getElementById('btnAprobarPersonajes');
+                if (!existingApproval) {
+                    const existingBtn2 = Array.from(document.querySelectorAll('button')).find(b=>b.textContent.includes('LEADERBOARD')||b.textContent.includes('Leaderboard'));
+                    if (existingBtn2) {
+                        const btn2 = document.createElement('button');
+                        btn2.id = 'btnAprobarPersonajes';
+                        btn2.className = existingBtn2.className;
+                        btn2.innerHTML = '✅ APROBAR PERSONAJES';
+                        btn2.style.cssText = 'margin-top:4px;background:linear-gradient(135deg,#0a2e1a,#105727);border:1px solid #22c55e;';
+                        btn2.onclick = window._ncOpenApproval;
+                        existingBtn2.parentNode.insertBefore(btn2, existingBtn2.nextSibling?.nextSibling || existingBtn2.nextSibling);
+                    }
+                }
+            }
+            // Find the "Ver Leaderboard" button
+            const existing = Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('LEADERBOARD') || b.textContent.includes('Leaderboard'));
+            if (!existing) return;
+            const btn = document.createElement('button');
+            btn.id = 'btnNuevoPersonaje';
+            btn.className = existing.className;
+            btn.innerHTML = '🧬 NUEVO PERSONAJE';
+            btn.style.cssText = 'margin-top:8px;background:linear-gradient(135deg,#1a0a2e,#2d1057);border:1px solid #7c3aed;';
+            btn.onclick = _ncOpenPanel;
+            existing.parentNode.insertBefore(btn, existing.nextSibling);
+        }
+
+        // ── Build effect block HTML ──
+        function _ncEffectBlock(idx, prefix) {
+            const effectTypes = (window.EFFECT_ATOM_CATALOGUE||[]).map(e=>`<option value="${e.id}">${e.label}</option>`).join('');
+            const triggerTypes = (window.TRIGGER_CATALOGUE||[]).map(t=>`<option value="${t.id}">${t.label}</option>`).join('');
+            const conditions = (window.CONDITION_CATALOGUE||[]).map(c=>`<option value="${c.id}">${c.label}</option>`).join('');
+            const buffs = (window.BUFF_CATALOGUE||[]).map(b=>`<option value="${b}">${b}</option>`).join('');
+            const debuffs = (window.DEBUFF_CATALOGUE||[]).map(d=>`<option value="${d}">${d}</option>`).join('');
+            return `
+            <div style="border:1px solid #3a1f6e;border-radius:8px;padding:10px;margin-top:8px;">
+                <div style="font-size:11px;color:#a78bfa;font-weight:600;margin-bottom:6px;">EFECTO ${idx}</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    <div>
+                        <label style="font-size:10px;color:#9ca3af">Tipo de efecto</label>
+                        <select id="${prefix}_eff_type_${idx}" style="${_ncSel()}" onchange="_ncEffectTypeChange('${prefix}','${idx}')">
+                            <option value="">— Sin efecto —</option>${effectTypes}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:10px;color:#9ca3af">Gatillo</label>
+                        <select id="${prefix}_eff_trigger_${idx}" style="${_ncSel()}">
+                            ${triggerTypes}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:10px;color:#9ca3af">Condición</label>
+                        <select id="${prefix}_eff_cond_${idx}" style="${_ncSel()}">
+                            ${conditions}
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size:10px;color:#9ca3af">Probabilidad %</label>
+                        <input id="${prefix}_eff_prob_${idx}" type="number" min="1" max="100" value="100" style="${_ncInp()}">
+                    </div>
+                </div>
+                <div id="${prefix}_eff_params_${idx}" style="margin-top:6px;display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                    <div>
+                        <label style="font-size:10px;color:#9ca3af">Cantidad / Multiplicador</label>
+                        <input id="${prefix}_eff_qty_${idx}" type="number" value="1" min="0" style="${_ncInp()}">
+                    </div>
+                    <div id="${prefix}_eff_buff_wrap_${idx}" style="display:none">
+                        <label style="font-size:10px;color:#9ca3af">Buff</label>
+                        <select id="${prefix}_eff_buff_${idx}" style="${_ncSel()}">${buffs}</select>
+                    </div>
+                    <div id="${prefix}_eff_debuff_wrap_${idx}" style="display:none">
+                        <label style="font-size:10px;color:#9ca3af">Debuff</label>
+                        <select id="${prefix}_eff_debuff_${idx}" style="${_ncSel()}">${debuffs}</select>
+                    </div>
+                    <div id="${prefix}_eff_dur_wrap_${idx}" style="display:none">
+                        <label style="font-size:10px;color:#9ca3af">Duración (turnos)</label>
+                        <input id="${prefix}_eff_dur_${idx}" type="number" value="2" min="1" style="${_ncInp()}">
+                    </div>
+                    <div id="${prefix}_eff_quien_wrap_${idx}" style="display:none">
+                        <label style="font-size:10px;color:#9ca3af">Objetivo extra</label>
+                        <select id="${prefix}_eff_quien_${idx}" style="${_ncSel()}">
+                            <option value="aleatorio">Aliado aleatorio</option>
+                            <option value="equipo">Todo el equipo</option>
+                            <option value="menor_hp">Aliado con menos HP</option>
+                            <option value="self">El portador</option>
+                        </select>
+                    </div>
+                    <div id="${prefix}_eff_factor_wrap_${idx}" style="display:none">
+                        <label style="font-size:10px;color:#9ca3af">Factor de escala</label>
+                        <select id="${prefix}_eff_factor_${idx}" style="${_ncSel()}">
+                            <option value="invocaciones">Invocaciones activas</option>
+                            <option value="debuffs_enemigos">Debuffs en equipo enemigo</option>
+                            <option value="buffs_enemigos">Buffs en equipo enemigo</option>
+                            <option value="debuffs_disipados">Debuffs disipados</option>
+                            <option value="cargas_propias">Cargas del portador</option>
+                        </select>
+                    </div>
+                    <div id="${prefix}_eff_invoc_wrap_${idx}" style="display:none">
+                        <label style="font-size:10px;color:#9ca3af">Nombre invocación</label>
+                        <input id="${prefix}_eff_invoc_${idx}" type="text" placeholder="Ej: Cría de Dragón" style="${_ncInp()}">
+                    </div>
+                    <div id="${prefix}_eff_n_cond_wrap_${idx}" style="display:none">
+                        <label style="font-size:10px;color:#9ca3af">N (para condición)</label>
+                        <input id="${prefix}_eff_n_cond_${idx}" type="number" value="1" min="0" style="${_ncInp()}">
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function _ncEffectTypeChange(prefix, idx) {
+            const type = document.getElementById(`${prefix}_eff_type_${idx}`)?.value || '';
+            const needsBuff   = type.includes('BUFF') && !type.includes('DISIPAR');
+            const needsDebuff = type.includes('DEBUFF') && !type.includes('DISIPAR');
+            const needsDur    = needsBuff || needsDebuff;
+            const needsQuien  = ['CURAR_ALIADO','GENERAR_CARGAS_ALIADO','APLICAR_BUFF_ALIADO','CURAR_ESCALADO','GENERAR_CARGAS_ESCALADO'].includes(type);
+            const needsFactor = ['CURAR_ESCALADO','GENERAR_CARGAS_ESCALADO','DANIO_ESCALADO_INVOCACIONES'].includes(type) || type.includes('ESCALADO');
+            const needsInvoc  = type === 'INVOCAR' || type === 'HAY_INVOCACION_ESPECIFICA';
+            const show = (id, v) => { const el=document.getElementById(`${prefix}_eff_${id}_wrap_${idx}`); if(el) el.style.display=v?'block':'none'; };
+            show('buff',   needsBuff);
+            show('debuff', needsDebuff);
+            show('dur',    needsDur);
+            show('quien',  needsQuien);
+            show('factor', needsFactor);
+            show('invoc',  needsInvoc);
+        }
+        window._ncEffectTypeChange = _ncEffectTypeChange;
+
+        function _ncSel() { return 'width:100%;padding:4px 6px;font-size:12px;border:1px solid #3a1f6e;border-radius:6px;background:#0d0016;color:#e2d9f3;'; }
+        function _ncInp() { return 'width:100%;padding:4px 6px;font-size:12px;border:1px solid #3a1f6e;border-radius:6px;background:#0d0016;color:#e2d9f3;'; }
+
+        function _ncAbilityBlock(abilIdx) {
+            const cats = ['basic','special','over'].map(c=>`<option value="${c}">${c.toUpperCase()}</option>`).join('');
+            const targets = ['single','aoe','mt','self','summon'].map(t=>`<option value="${t}">${t.toUpperCase()}</option>`).join('');
+            return `
+            <div style="border:1px solid #4c1d95;border-radius:10px;padding:12px;margin-top:10px;background:#0d001a;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <span style="font-size:12px;font-weight:700;color:#c4b5fd;">MOVIMIENTO ${abilIdx}</span>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
+                    <div><label style="font-size:10px;color:#9ca3af">Nombre</label><input id="ab_name_${abilIdx}" type="text" placeholder="Nombre del movimiento" style="${_ncInp()}"></div>
+                    <div><label style="font-size:10px;color:#9ca3af">Categoría</label><select id="ab_type_${abilIdx}" style="${_ncSel()}">${cats}</select></div>
+                    <div><label style="font-size:10px;color:#9ca3af">Tipo de objetivo</label><select id="ab_target_${abilIdx}" style="${_ncSel()}">${targets}</select></div>
+                    <div><label style="font-size:10px;color:#9ca3af">Daño base</label><input id="ab_dmg_${abilIdx}" type="number" value="0" min="0" style="${_ncInp()}"></div>
+                    <div><label style="font-size:10px;color:#9ca3af">Costo (cargas)</label><input id="ab_cost_${abilIdx}" type="number" value="0" min="0" style="${_ncInp()}"></div>
+                    <div><label style="font-size:10px;color:#9ca3af">Genera cargas</label><input id="ab_gain_${abilIdx}" type="number" value="1" min="0" style="${_ncInp()}"></div>
+                </div>
+                ${_ncEffectBlock(1,'ab'+abilIdx)}
+                ${_ncEffectBlock(2,'ab'+abilIdx)}
+                ${_ncEffectBlock(3,'ab'+abilIdx)}
+            </div>`;
+        }
+
+        function _ncOpenPanel() {
+            if (document.getElementById('ncPanel')) { document.getElementById('ncPanel').remove(); return; }
+            const overlay = document.createElement('div');
+            overlay.id = 'ncPanel';
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;overflow-y:auto;display:flex;justify-content:center;padding:20px;';
+
+            const charTypes = ['Personaje','Jefe de Sala','Invocacion'].map(t=>`<option value="${t}">${t}</option>`).join('');
+
+            overlay.innerHTML = `
+            <div style="background:#0d0016;border:1px solid #5b21b6;border-radius:16px;width:100%;max-width:700px;padding:24px;color:#e2d9f3;font-family:sans-serif;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                    <h2 style="margin:0;font-size:18px;color:#c4b5fd;">🧬 NUEVO PERSONAJE</h2>
+                    <button onclick="document.getElementById('ncPanel').remove()" style="background:none;border:none;color:#9ca3af;font-size:20px;cursor:pointer;">✕</button>
+                </div>
+
+                <!-- DATOS BASE -->
+                <div style="background:#1a0033;border-radius:10px;padding:14px;margin-bottom:16px;">
+                    <div style="font-size:12px;font-weight:600;color:#a78bfa;margin-bottom:10px;">DATOS BASE</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        <div><label style="font-size:10px;color:#9ca3af">Tipo</label>
+                            <select id="nc_type" style="${_ncSel()}" onchange="_ncTypeChange()">${charTypes}</select></div>
+                        <div><label style="font-size:10px;color:#9ca3af">Nombre</label>
+                            <input id="nc_name" type="text" placeholder="Nombre del personaje" style="${_ncInp()}"></div>
+                        <div id="nc_portrait_wrap"><label style="font-size:10px;color:#9ca3af">URL Imagen</label>
+                            <input id="nc_portrait" type="text" placeholder="https://..." style="${_ncInp()}"></div>
+                        <div id="nc_transform_wrap"><label style="font-size:10px;color:#9ca3af">URL Transformación (opcional)</label>
+                            <input id="nc_transform" type="text" placeholder="https://..." style="${_ncInp()}"></div>
+                        <div id="nc_summon_img_wrap" style="display:none"><label style="font-size:10px;color:#9ca3af">URL Imagen Invocación</label>
+                            <input id="nc_summon_img" type="text" placeholder="https://..." style="${_ncInp()}"></div>
+                        <div><label style="font-size:10px;color:#9ca3af">HP</label>
+                            <input id="nc_hp" type="number" value="20" min="1" max="50" style="${_ncInp()}"></div>
+                        <div id="nc_speed_wrap"><label style="font-size:10px;color:#9ca3af">Velocidad</label>
+                            <input id="nc_speed" type="number" value="80" min="60" max="100" style="${_ncInp()}"></div>
+                    </div>
+                </div>
+
+                <!-- PASIVA -->
+                <div style="background:#1a0033;border-radius:10px;padding:14px;margin-bottom:16px;">
+                    <div style="font-size:12px;font-weight:600;color:#a78bfa;margin-bottom:10px;">HABILIDAD PASIVA</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                        <div><label style="font-size:10px;color:#9ca3af">Nombre de la pasiva</label>
+                            <input id="nc_passive_name" type="text" placeholder="Ej: Regla de Oro" style="${_ncInp()}"></div>
+                        <div></div>
+                    </div>
+                    ${_ncEffectBlock(1,'ps')}
+                    ${_ncEffectBlock(2,'ps')}
+                    ${_ncEffectBlock(3,'ps')}
+                </div>
+
+                <!-- MOVIMIENTOS -->
+                <div id="nc_abilities_wrap" style="background:#1a0033;border-radius:10px;padding:14px;margin-bottom:16px;">
+                    <div style="font-size:12px;font-weight:600;color:#a78bfa;margin-bottom:10px;">MOVIMIENTOS</div>
+                    ${_ncAbilityBlock(1)}
+                    ${_ncAbilityBlock(2)}
+                    ${_ncAbilityBlock(3)}
+                    ${_ncAbilityBlock(4)}
+                </div>
+
+                <!-- ACCIONES -->
+                <div style="display:flex;gap:10px;justify-content:flex-end;">
+                    <button onclick="document.getElementById('ncPanel').remove()" style="padding:8px 18px;border-radius:8px;border:1px solid #4b5563;background:transparent;color:#9ca3af;cursor:pointer;font-size:13px;">Cancelar</button>
+                    <button onclick="_ncPreview()" style="padding:8px 18px;border-radius:8px;border:1px solid #7c3aed;background:transparent;color:#c4b5fd;cursor:pointer;font-size:13px;">👁 Vista previa</button>
+                    <button onclick="_ncSave()" style="padding:8px 18px;border-radius:8px;border:none;background:#7c3aed;color:white;cursor:pointer;font-size:13px;font-weight:600;">💾 Guardar registro</button>
+                </div>
+                <div id="nc_msg" style="margin-top:10px;font-size:12px;text-align:center;"></div>
+            </div>`;
+            document.body.appendChild(overlay);
+        }
+        window._ncOpenPanel = _ncOpenPanel;
+        window._ncAbilityBlock = _ncAbilityBlock;
+
+        function _ncTypeChange() {
+            const t = document.getElementById('nc_type')?.value;
+            const isInvoc = t === 'Invocacion';
+            const el = (id) => document.getElementById(id);
+            if (el('nc_portrait_wrap'))   el('nc_portrait_wrap').style.display   = isInvoc ? 'none' : 'block';
+            if (el('nc_transform_wrap'))  el('nc_transform_wrap').style.display  = isInvoc ? 'none' : 'block';
+            if (el('nc_summon_img_wrap')) el('nc_summon_img_wrap').style.display = isInvoc ? 'block' : 'none';
+            if (el('nc_speed_wrap'))      el('nc_speed_wrap').style.display      = isInvoc ? 'none' : 'block';
+            if (el('nc_abilities_wrap'))  el('nc_abilities_wrap').style.display  = isInvoc ? 'none' : 'block';
+        }
+        window._ncTypeChange = _ncTypeChange;
+
+        function _ncReadEffect(prefix, idx) {
+            const get = (id) => document.getElementById(`${prefix}_eff_${id}_${idx}`);
+            const type = get('type')?.value || '';
+            if (!type) return null;
+            return {
+                type: type,
+                trigger: get('trigger')?.value || 'SIN_GATILLO',
+                condition: get('cond')?.value || 'NINGUNA',
+                probability: parseFloat(get('prob')?.value)||100,
+                params: {
+                    cantidad:         parseFloat(get('qty')?.value)||0,
+                    buff:             get('buff')?.value||'',
+                    debuff:           get('debuff')?.value||'',
+                    duracion:         parseInt(get('dur')?.value)||2,
+                    quien:            get('quien')?.value||'aleatorio',
+                    factor:           get('factor')?.value||'invocaciones',
+                    nombre_invocacion:get('invoc')?.value||'',
+                    n:                parseFloat(get('n_cond')?.value)||1,
+                }
+            };
+        }
+
+        function _ncReadAbility(idx) {
+            const get = (id) => document.getElementById(`ab_${id}_${idx}`);
+            const name = get('name')?.value?.trim();
+            if (!name) return null;
+            const effects = [1,2,3].map(i=>_ncReadEffect('ab'+idx, i)).filter(Boolean);
+            return {
+                name, type: get('type')?.value||'basic',
+                target: get('target')?.value||'single',
+                damage: parseFloat(get('dmg')?.value)||0,
+                cost:   parseInt(get('cost')?.value)||0,
+                chargeGain: parseInt(get('gain')?.value)||0,
+                effects
+            };
+        }
+
+        function _ncBuildData() {
+            const type    = document.getElementById('nc_type')?.value;
+            const name    = document.getElementById('nc_name')?.value?.trim();
+            const hp      = parseInt(document.getElementById('nc_hp')?.value)||20;
+            const speed   = parseInt(document.getElementById('nc_speed')?.value)||80;
+            const portrait = document.getElementById('nc_portrait')?.value?.trim()||'';
+            const transformPortrait = document.getElementById('nc_transform')?.value?.trim()||'';
+            const summonImg = document.getElementById('nc_summon_img')?.value?.trim()||'';
+            const passiveName = document.getElementById('nc_passive_name')?.value?.trim()||'';
+            const passiveEffects = [1,2,3].map(i=>_ncReadEffect('ps',i)).filter(Boolean);
+            const passiveDesc = passiveEffects.map(e=>e.type).join(', ');
+            const abilities = type!=='Invocacion' ? [1,2,3,4].map(i=>_ncReadAbility(i)).filter(Boolean) : [];
+            return { type, name, hp, speed, portrait, transformPortrait, summonImg,
+                passiveName, passiveDesc, passiveEffects, abilities,
+                approved: false, createdBy: currentUser?.email||'', createdAt: Date.now() };
+        }
+
+        function _ncPreview() {
+            const data = _ncBuildData();
+            const msg = document.getElementById('nc_msg');
+            if (msg) { msg.style.color='#a78bfa'; msg.textContent = '📋 Vista previa: ' + JSON.stringify(data, null, 2).substring(0,300) + '...'; }
+        }
+        window._ncPreview = _ncPreview;
+
+        async function _ncSave() {
+            const data = _ncBuildData();
+            const msg = document.getElementById('nc_msg');
+            if (!data.name) { if(msg){msg.style.color='#f87171';msg.textContent='❌ El nombre es obligatorio.';} return; }
+            try {
+                if (!firebase.firestore) throw new Error('Firestore no disponible');
+                const db_fs = firebase.firestore();
+                await db_fs.collection('pending_characters').add(data);
+                if (msg) { msg.style.color='#34d399'; msg.textContent='✅ Personaje guardado como pendiente. Esperando aprobación del admin.'; }
+            } catch(e) {
+                if (msg) { msg.style.color='#f87171'; msg.textContent='❌ Error: ' + e.message; }
+            }
+        }
+        window._ncSave = _ncSave;
+
+        // ── PANEL DE APROBACIÓN (solo solisalex8291@gmail.com) ──
+        window._ncOpenApproval = async function() {
+            try {
+                const db_fs = firebase.firestore();
+                const snap = await db_fs.collection('pending_characters').where('approved','==',false).get();
+                let html = '<div style="position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:99998;overflow-y:auto;display:flex;justify-content:center;padding:20px;" id="ncApproval">';
+                html += '<div style="background:#0d0016;border:1px solid #5b21b6;border-radius:16px;width:100%;max-width:600px;padding:24px;color:#e2d9f3;font-family:sans-serif;">';
+                html += '<div style="display:flex;justify-content:space-between;margin-bottom:16px;"><h2 style="margin:0;color:#c4b5fd;">✅ APROBAR PERSONAJES</h2><button onclick="document.getElementById(\'ncApproval\').remove()" style="background:none;border:none;color:#9ca3af;font-size:20px;cursor:pointer;">✕</button></div>';
+                if (snap.empty) { html += '<p style="color:#9ca3af;">No hay personajes pendientes.</p>'; }
+                else {
+                    snap.forEach(function(doc) {
+                        const d = doc.data();
+                        html += `<div style="border:1px solid #3a1f6e;border-radius:10px;padding:12px;margin-bottom:12px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <div><strong style="color:#c4b5fd;">${d.name}</strong> <span style="font-size:11px;color:#6b7280;">${d.type} — ${d.abilities?.length||0} movimientos — por ${d.createdBy}</span></div>
+                                <button onclick="_ncApprove('${doc.id}')" style="padding:5px 12px;border-radius:6px;border:none;background:#7c3aed;color:white;cursor:pointer;font-size:12px;">Aprobar</button>
+                            </div>
+                            <div style="font-size:10px;color:#9ca3af;margin-top:4px;">Pasiva: ${d.passiveName} — ${d.passiveEffects?.length||0} efectos</div>
+                        </div>`;
+                    });
+                }
+                html += '</div></div>';
+                const el = document.createElement('div');
+                el.innerHTML = html;
+                document.body.appendChild(el.firstChild);
+            } catch(e) { alert('Error cargando pendientes: ' + e.message); }
+        };
+
+        window._ncApprove = async function(docId) {
+            try {
+                const db_fs = firebase.firestore();
+                // Move from pending to approved
+                const doc = await db_fs.collection('pending_characters').doc(docId).get();
+                const data = Object.assign({}, doc.data(), { approved: true, approvedAt: Date.now(), approvedBy: currentUser?.email });
+                await db_fs.collection('approved_characters').doc(docId).set(data);
+                await db_fs.collection('pending_characters').doc(docId).delete();
+                alert('✅ Personaje aprobado: ' + data.name);
+                window._ncOpenApproval(); // Refresh
+            } catch(e) { alert('Error: ' + e.message); }
+        };
+
+        // Inject lobby button when lobby is shown
+        const _ncOrigShowLobby = window.showLobby;
+        window.showLobby = function() {
+            if (_ncOrigShowLobby) _ncOrigShowLobby.apply(this, arguments);
+            setTimeout(_ncInjectButton, 500);
+        };
+        // Also try on auth state change
+        setTimeout(function() { if (_ncIsAdmin()) _ncInjectButton(); }, 2000);
+
+
         function joinRoom(roomId) {
             if (!currentUser) return;
             currentRoomId = roomId;
