@@ -2992,23 +2992,35 @@
         // ── Build effect block HTML ──
         // ── SEARCHABLE SELECT HELPERS ──
         function _ncSearchSelectHTML(id, options, defaultVal) {
-            // Coerce to string — defaultVal puede ser número o null
-            var defStr = (defaultVal !== undefined && defaultVal !== null) ? String(defaultVal) : '';
-            var defLabel = '';
-            if (defStr) {
-                var found = options.find(function(o){ return String(typeof o==='string'?o:(o.id||o))===defStr; });
-                defLabel = found ? (typeof found==='string'?found:(found.label||found.id||String(found))) : defStr;
+            try {
+                // Coerce everything to string defensively
+                var safeStr = function(v) { return (v !== undefined && v !== null) ? String(v) : ''; };
+                var defStr = safeStr(defaultVal);
+                var safeOpts = Array.isArray(options) ? options : [];
+                var defLabel = defStr;
+                if (defStr) {
+                    var found = safeOpts.find(function(o) {
+                        if (!o && o !== 0) return false;
+                        return safeStr(typeof o==='string' ? o : (o.id !== undefined ? o.id : o)) === defStr;
+                    });
+                    if (found) defLabel = typeof found==='string' ? found : safeStr(found.label || found.id || found);
+                }
+                var opts = safeOpts.map(function(o) {
+                    if (!o && o !== 0) return '';
+                    var val = safeStr(typeof o==='string' ? o : (o.id !== undefined ? o.id : o));
+                    var lbl = typeof o==='string' ? o : safeStr(o.label || o.id || o);
+                    return '<div class="ncs-opt" data-val="' + val.replace(/"/g,'&quot;') + '">' + lbl + '</div>';
+                }).join('');
+                var bs = 'width:100%;padding:4px 6px;font-size:12px;border:1px solid #3a1f6e;border-radius:6px;background:#0d0016;color:#e2d9f3;box-sizing:border-box;';
+                return '<div class="ncs-wrap" style="position:relative;" data-ncid="' + id + '">' +
+                    '<input id="' + id + '_txt" type="text" autocomplete="off" value="' + defLabel.replace(/"/g,'&quot;') + '" placeholder="Buscar..." style="' + bs + '" oninput="_ncSearchFilter(this)" onfocus="_ncSearchOpen(this)" onblur="_ncSearchBlur(this)">' +
+                    '<input id="' + id + '" type="hidden" value="' + defStr.replace(/"/g,'&quot;') + '">' +
+                    '<div id="' + id + '_dd" class="ncs-dd" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:180px;overflow-y:auto;background:#1a0033;border:1px solid #5b21b6;border-radius:6px;z-index:999999;box-shadow:0 4px 20px rgba(0,0,0,.6);">' + opts + '</div></div>';
+            } catch(e) {
+                console.error('[_ncSearchSelectHTML] Error for id=' + id + ':', e);
+                // Fallback: return a plain input
+                return '<input id="' + id + '" type="text" value="' + String(defaultVal||'') + '" style="width:100%;padding:4px 6px;font-size:12px;border:1px solid #3a1f6e;border-radius:6px;background:#0d0016;color:#e2d9f3;">';
             }
-            var opts = options.map(function(o) {
-                var val = String(typeof o==='string'?o:(o.id||o));
-                var lbl = typeof o==='string'?o:(o.label||o.id||String(o));
-                return '<div class="ncs-opt" data-val="'+val.replace(/"/g,'&quot;')+'">'+ lbl +'</div>';
-            }).join('');
-            var bs = 'width:100%;padding:4px 6px;font-size:12px;border:1px solid #3a1f6e;border-radius:6px;background:#0d0016;color:#e2d9f3;box-sizing:border-box;';
-            return '<div class="ncs-wrap" style="position:relative;" data-ncid="'+id+'">'+
-                '<input id="'+id+'_txt" type="text" autocomplete="off" value="'+defLabel.replace(/"/g,'&quot;')+'" placeholder="Buscar..." style="'+bs+'" oninput="_ncSearchFilter(this)" onfocus="_ncSearchOpen(this)" onblur="_ncSearchBlur(this)">'+
-                '<input id="'+id+'" type="hidden" value="'+defStr.replace(/"/g,'&quot;')+'">'+
-                '<div id="'+id+'_dd" class="ncs-dd" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:180px;overflow-y:auto;background:#1a0033;border:1px solid #5b21b6;border-radius:6px;z-index:999999;box-shadow:0 4px 20px rgba(0,0,0,.6);">'+opts+'</div></div>';
         }
         window._ncSearchSelectHTML = _ncSearchSelectHTML;
 
@@ -3568,8 +3580,14 @@
                 var data = snap.val();
                 if (!data) { alert('❌ No se encontraron datos en Firebase'); return; }
 
-                // Abrir el panel
-                if (typeof window._ncOpenPanel === 'function') window._ncOpenPanel();
+                try {
+                    // Abrir el panel
+                    if (typeof window._ncOpenPanel === 'function') window._ncOpenPanel();
+                } catch(panelErr) {
+                    console.error('[_ncOpenEdit] Error abriendo panel:', panelErr);
+                    alert('Error al abrir el panel: ' + panelErr.message);
+                    return;
+                }
 
                 // Esperar a que el DOM del panel esté listo
                 setTimeout(function() {
@@ -3634,7 +3652,7 @@
                     } catch(e) { console.warn('[_ncOpenEdit]', e); }
                 }, 400);
 
-            }).catch(function(e) { alert('Error cargando datos: ' + e.message); });
+            }).catch(function(e) { console.error('[_ncOpenEdit] Firebase error:', e); alert('Error cargando datos: ' + e.message + '\n' + (e.stack||'')); });
         };
 
         // ── Aprobar un personaje: mover de pending_characters a approved_characters ──
