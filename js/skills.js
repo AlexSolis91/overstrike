@@ -9741,53 +9741,6 @@
                 };
                 if (typeof executeDynamicAbility === 'function') executeDynamicAbility(ability, _dynCtx);
 
-            } else if (ability.effect === 'dynamic') {
-                // ── PERSONAJE DINÁMICO: ejecutar efectos desde Firebase ──
-                const _dynAtk  = gameState.characters[gameState.selectedCharacter];
-                const _dynTeam = _dynAtk ? _dynAtk.team : 'team1';
-                const _dynCtx  = {
-                    charName:    gameState.selectedCharacter,
-                    targetName:  targetName,
-                    allyTeam:    _dynTeam,
-                    enemyTeam:   _dynTeam === 'team1' ? 'team2' : 'team1',
-                    ability:     ability,
-                    finalDamage: finalDamage,
-                };
-                if (typeof executeDynamicAbility === 'function') executeDynamicAbility(ability, _dynCtx);
-                // Buffs to allied team
-                for (const _n in gameState.characters) {
-                    const _c = gameState.characters[_n];
-                    if (!_c || _c.team !== _aqTeam || _c.isDead || _c.hp <= 0) continue;
-                    if (typeof applyBuff === 'function') applyBuff(_n, { name: 'Proteccion Sagrada', type: 'buff', duration: 2, emoji: '🛡️✨' });
-                    _c.shield = (_c.shield||0) + 5;
-                }
-                addLog('🐉 Asedio de la Reina Negra: equipo aliado recibe Protección Sagrada + Escudo 5 HP', 'buff');
-                // +2 charges per Cría de Dragón
-                const _aqCrias = Object.values(gameState.summons).filter(function(s){ return s && s.name === 'Cría de Dragón' && s.team === _aqTeam && s.hp > 0; });
-                if (_aqCrias.length > 0) {
-                    for (const _n in gameState.characters) {
-                        const _c = gameState.characters[_n];
-                        if (!_c || _c.team !== _aqTeam || _c.isDead || _c.hp <= 0) continue;
-                        _c.charges = Math.min(20, (_c.charges||0) + _aqCrias.length * 2);
-                    }
-                    addLog('🐉 Asedio de la Reina Negra: equipo aliado +' + (_aqCrias.length * 2) + ' cargas (' + _aqCrias.length + ' Crías)', 'buff');
-                }
-                // Syrax bonus
-                const _aqSyrax = Object.values(gameState.summons).some(function(s){ return s && s.name === 'Syrax' && s.team === _aqTeam && s.hp > 0; });
-                if (_aqSyrax) {
-                    for (const _n in gameState.characters) {
-                        const _c = gameState.characters[_n];
-                        if (!_c || _c.team !== _aqTeam || _c.isDead || _c.hp <= 0) continue;
-                        if (typeof applyHeal === 'function') applyHeal(_n, 10, 'Asedio de la Reina Negra (Syrax)');
-                    }
-                    for (const _n in gameState.characters) {
-                        const _c = gameState.characters[_n];
-                        if (!_c || _c.team !== _aqETeam || _c.isDead || _c.hp <= 0) continue;
-                        if (typeof applyFlatBurn === 'function') applyFlatBurn(_n, 5, 2);
-                    }
-                    addLog('🔥 Syrax potencia el Asedio: equipo aliado +10 HP + Quemaduras 5 HP al equipo enemigo', 'buff');
-                }
-
             // ══════════════════════════════════════════════════════
             // BJORN IRONSIDE — handlers
             // ══════════════════════════════════════════════════════
