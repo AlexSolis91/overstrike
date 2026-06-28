@@ -180,6 +180,7 @@
             { id:'AL_GOLPEAR_BUFF_REGEN',         label:'Al golpear enemigo con buff Regeneración' },
             { id:'AL_GOLPEAR_BUFF_AURA_FUEGO',    label:'Al golpear enemigo con buff Aura de Fuego' },
             { id:'CUANDO_ENEMIGO_ATACA',          label:'Cuando un enemigo ejecuta un ataque' },
+            { id:'AL_DISIPAR_DEBUFF',               label:'Al disipar un debuff (del equipo enemigo)' },
         ];
 
         // Catálogo de condiciones
@@ -543,10 +544,23 @@
                     if (tgtDisB && tgtDisB.statusEffects) { tgtDisB.statusEffects = tgtDisB.statusEffects.filter(e=>!e||e.type!=='buff'||e.passiveHidden); addLog('🌟 Buffs de ' + targetName + ' disipados', 'buff'); }
                     break;
                 }
-                case 'DISIPAR_BUFFS_EQUIPO_ENEMIGO':
-                    enemies.forEach(n => { const c=gameState.characters[n]; if(c&&c.statusEffects) c.statusEffects=c.statusEffects.filter(e=>!e||e.type!=='buff'||e.passiveHidden); });
-                    addLog('🌟 Buffs del equipo enemigo disipados', 'buff');
+                case 'DISIPAR_BUFFS_EQUIPO_ENEMIGO': {
+                    let _bDisp = 0;
+                    enemies.forEach(n => {
+                        const c = gameState.characters[n];
+                        if (c && c.statusEffects) {
+                            const before = c.statusEffects.filter(e=>e&&e.type==='buff'&&!e.passiveHidden).length;
+                            c.statusEffects = c.statusEffects.filter(e=>!e||e.type!=='buff'||e.passiveHidden);
+                            _bDisp += before;
+                        }
+                    });
+                    context._buffsDissipated = (context._buffsDissipated||0) + _bDisp;
+                    addLog('🌟 Buffs del equipo enemigo disipados (' + _bDisp + ')', 'buff');
+                    if (_bDisp > 0 && typeof runDynamicPassives === 'function') {
+                        runDynamicPassives('AL_DISIPAR_DEBUFF', { charName, targetName, allyTeam, enemyTeam, _buffsDissipated: _bDisp });
+                    }
                     break;
+                }
                 // ── ESCUDO ──
                 case 'ESCUDO_SELF':
                     attacker.shield = (attacker.shield||0) + qty;
@@ -620,7 +634,17 @@
             const n = debuffName.toLowerCase().replace(/[^a-záéíóúñ]/g,'');
             if (n.includes('quemadursol') || n.includes('solar'))  { if(typeof applySolarBurn==='function') applySolarBurn(targetName, 10, duration); }
             else if (n.includes('quemadura')) { if(typeof applyFlatBurn==='function') applyFlatBurn(targetName, 2, duration); }
-            else if (n.includes('veneno'))    { if(typeof applyPoison==='function') applyPoison(targetName, stacks || duration || 1); }
+            else if (n.includes('veneno'))    {
+                // stacks can be a number or 'buffs_disipados' (use count of dissipated buffs)
+                var poisonStacks = stacks || duration || 1;
+                if (String(poisonStacks) === 'buffs_disipados') {
+                    poisonStacks = (typeof context !== 'undefined' && context && context._buffsDissipated) ? parseInt(context._buffsDissipated) : 1;
+                    poisonStacks = Math.max(1, poisonStacks);
+                } else {
+                    poisonStacks = parseInt(poisonStacks) || 1;
+                }
+                if(typeof applyPoison==='function') applyPoison(targetName, poisonStacks);
+            }
             else if (n.includes('sangrado'))  { if(typeof applyBleed==='function') applyBleed(targetName, duration); }
             else if (n.includes('megaconge') || n.includes('megafrío')) { if(typeof applyFreeze==='function') applyFreeze(targetName, duration, true); }
             else if (n.includes('congelac'))  { if(typeof applyFreeze==='function') applyFreeze(targetName, duration, false); }
