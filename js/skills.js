@@ -281,12 +281,45 @@
             const allies  = getAlives(allyTeam);
             const rnd = arr => arr[Math.floor(Math.random()*arr.length)];
 
+            // ── Resolver objetivos según el campo 'objetivo' del efecto ──
+            function resolveTargets(objId) {
+                var pool = objId && objId.includes('aliado') ? allies : enemies;
+                if (!objId || objId === 'enemigo_golpeado') return [targetName].filter(Boolean);
+                if (objId === 'self') return [charName];
+                if (objId === 'todos_enemigos') return enemies.slice();
+                if (objId === 'todos_aliados') return allies.slice();
+                if (objId === 'aliado_aleatorio') return allies.length ? [rnd(allies)] : [];
+                if (objId === 'enemigo_aleatorio') return enemies.length ? [rnd(enemies)] : [];
+                // N enemigos/aliados aleatorios (CON repetición — mismo enemigo puede ser golpeado varias veces)
+                var m = objId.match(/^(\d+)_(enemigos|aliados)_aleatorios$/);
+                if (m) {
+                    var n = parseInt(m[1]); var src = m[2] === 'aliados' ? allies : enemies;
+                    if (!src.length) return [];
+                    var result = [];
+                    for (var _i=0; _i<n; _i++) { var alive = src.filter(function(x){var c=gameState.characters[x];return c&&!c.isDead&&c.hp>0;}); if(alive.length) result.push(rnd(alive)); }
+                    return result;
+                }
+                if (objId === 'enemigo_mas_hp') return enemies.length ? [enemies.reduce(function(a,b){return (gameState.characters[a]&&gameState.characters[b])?(gameState.characters[a].hp>=gameState.characters[b].hp?a:b):a;})] : [];
+                if (objId === 'enemigo_menos_hp') return enemies.length ? [enemies.reduce(function(a,b){return (gameState.characters[a]&&gameState.characters[b])?(gameState.characters[a].hp<=gameState.characters[b].hp?a:b):a;})] : [];
+                if (objId === 'enemigo_mas_cargas') return enemies.length ? [enemies.reduce(function(a,b){return (gameState.characters[a]&&gameState.characters[b])?((gameState.characters[a].charges||0)>=(gameState.characters[b].charges||0)?a:b):a;})] : [];
+                if (objId === 'enemigo_menos_cargas') return enemies.length ? [enemies.reduce(function(a,b){return (gameState.characters[a]&&gameState.characters[b])?((gameState.characters[a].charges||0)<=(gameState.characters[b].charges||0)?a:b):a;})] : [];
+                if (objId === 'aliado_menos_hp') return allies.length ? [allies.reduce(function(a,b){return (gameState.characters[a]&&gameState.characters[b])?(gameState.characters[a].hp<=gameState.characters[b].hp?a:b):a;})] : [];
+                if (objId === 'aliado_mas_hp') return allies.length ? [allies.reduce(function(a,b){return (gameState.characters[a]&&gameState.characters[b])?(gameState.characters[a].hp>=gameState.characters[b].hp?a:b):a;})] : [];
+                if (objId === '2_aliados_aleatorios') { var s2=allies.slice(); var r2=[]; for(var _j=0;_j<2;_j++){if(s2.length){var x=Math.floor(Math.random()*s2.length);r2.push(s2[x]);s2.splice(x,1);}} return r2; }
+                if (objId === '3_aliados_aleatorios') { var s3=allies.slice(); var r3=[]; for(var _k=0;_k<3;_k++){if(s3.length){var y=Math.floor(Math.random()*s3.length);r3.push(s3[y]);s3.splice(y,1);}} return r3; }
+                return [targetName].filter(Boolean);
+            }
+            const effectTargets = resolveTargets(effect.objetivo);
+
             switch (effect.type) {
                 // ── DAÑO ──
                 case 'DANIO_FIJO': {
-                    const tgt = p.objetivo === 'self' ? charName : p.objetivo === 'aliado_aleatorio' ? rnd(allies) : targetName;
-                    if (tgt) applyDamageWithShield(tgt, qty, charName);
-                    addLog('⚔️ ' + charName + ': ' + qty + ' daño a ' + (tgt||targetName), 'damage');
+                    effectTargets.forEach(function(tgt) {
+                        if (!tgt) return;
+                        var tc = gameState.characters[tgt]; if (!tc || tc.isDead || tc.hp <= 0) return;
+                        applyDamageWithShield(tgt, qty, charName);
+                    });
+                    addLog('⚔️ ' + charName + ': ' + qty + ' daño (' + effectTargets.length + ' objetivo(s))', 'damage');
                     break;
                 }
                 case 'DANIO_AOE': {
@@ -626,11 +659,27 @@
 
         // ── EJECUTOR DE HABILIDAD DINÁMICA ──
         // Ejecuta todos los efectos de una habilidad de personaje dinámico
+        // Respeta ability.hits para movimientos multi-golpe (MT con 3 golpes, etc.)
         function executeDynamicAbility(ability, context) {
             if (!ability || !ability.effects) return;
+            var hits = parseInt(ability.hits) || 1;
+            // Efectos con SIN_GATILLO se ejecutan N veces (una por golpe)
+            // Efectos con gatillo se ejecutan una sola vez (son pasivas/triggers, no golpes directos)
             ability.effects.forEach(function(eff) {
                 if (!eff || !eff.type) return;
-                executeAtomicEffect(eff, context);
+                var isDirectHit = !eff.trigger || eff.trigger === 'SIN_GATILLO';
+                if (isDirectHit && hits > 1) {
+                    for (var h = 0; h < hits; h++) {
+                        // Re-resolve alive enemies each hit (targets may die mid-combo)
+                        var c = gameState.characters[context.charName];
+                        var aTeam = c ? c.team : context.allyTeam;
+                        var eTeam = aTeam === 'team1' ? 'team2' : 'team1';
+                        var freshCtx = Object.assign({}, context, { allyTeam: aTeam, enemyTeam: eTeam });
+                        executeAtomicEffect(eff, freshCtx);
+                    }
+                } else {
+                    executeAtomicEffect(eff, context);
+                }
             });
         }
         window.executeDynamicAbility = executeDynamicAbility;
