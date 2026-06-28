@@ -2990,49 +2990,141 @@
         }
 
         // ── Build effect block HTML ──
+        // ── SEARCHABLE SELECT HELPERS ──
+        function _ncSearchSelectHTML(id, options, defaultVal) {
+            var defLabel = '';
+            if (defaultVal) {
+                var found = options.find(function(o){ return (typeof o==='string'?o:(o.id||o))===defaultVal; });
+                defLabel = found ? (typeof found==='string'?found:(found.label||found.id||found)) : defaultVal;
+            }
+            var opts = options.map(function(o) {
+                var val = typeof o==='string'?o:(o.id||o);
+                var lbl = typeof o==='string'?o:(o.label||o.id||o);
+                return '<div class="ncs-opt" data-val="'+val.replace(/"/g,'&quot;')+'">'+ lbl +'</div>';
+            }).join('');
+            var bs = 'width:100%;padding:4px 6px;font-size:12px;border:1px solid #3a1f6e;border-radius:6px;background:#0d0016;color:#e2d9f3;box-sizing:border-box;';
+            return '<div class="ncs-wrap" style="position:relative;" data-ncid="'+id+'">'+
+                '<input id="'+id+'_txt" type="text" autocomplete="off" value="'+(defLabel||'').replace(/"/g,'&quot;')+'" placeholder="Buscar..." style="'+bs+'" oninput="_ncSearchFilter(this)" onfocus="_ncSearchOpen(this)" onblur="_ncSearchBlur(this)">'+
+                '<input id="'+id+'" type="hidden" value="'+(defaultVal||'').replace(/"/g,'&quot;')+'">'+
+                '<div id="'+id+'_dd" class="ncs-dd" style="display:none;position:absolute;top:100%;left:0;right:0;max-height:180px;overflow-y:auto;background:#1a0033;border:1px solid #5b21b6;border-radius:6px;z-index:999999;box-shadow:0 4px 20px rgba(0,0,0,.6);">'+opts+'</div></div>';
+        }
+        window._ncSearchSelectHTML = _ncSearchSelectHTML;
+
+        function _ncSearchFilter(inp) {
+            var wrap = inp.closest('[data-ncid]');
+            var dd = wrap ? wrap.querySelector('.ncs-dd') : null;
+            if (!dd) return;
+            var q = inp.value.toLowerCase();
+            var vis = false;
+            dd.querySelectorAll('.ncs-opt').forEach(function(item) {
+                var m = item.textContent.toLowerCase().includes(q);
+                item.style.display = m ? '' : 'none';
+                if (m) vis = true;
+            });
+            dd.style.display = vis ? 'block' : 'none';
+        }
+        window._ncSearchFilter = _ncSearchFilter;
+
+        function _ncSearchOpen(inp) {
+            var wrap = inp.closest('[data-ncid]');
+            var dd = wrap ? wrap.querySelector('.ncs-dd') : null;
+            if (!dd) return;
+            _ncSearchFilter(inp);
+            var vis = Array.from(dd.querySelectorAll('.ncs-opt')).some(function(el){ return el.style.display!=='none'; });
+            if (vis) dd.style.display = 'block';
+            dd.querySelectorAll('.ncs-opt').forEach(function(opt) {
+                opt.onmousedown = function(e) {
+                    e.preventDefault();
+                    var val = opt.getAttribute('data-val');
+                    var lbl = opt.textContent;
+                    var hid = wrap.getAttribute('data-ncid');
+                    var hidden = document.getElementById(hid);
+                    if (hidden) { hidden.value = val; }
+                    inp.value = lbl;
+                    dd.style.display = 'none';
+                    // Trigger effect type change
+                    if (hid && hid.includes('_eff_type_')) {
+                        var sp = hid.split('_eff_type_');
+                        if (sp.length===2 && typeof _ncEffectTypeChange==='function') _ncEffectTypeChange(sp[0], sp[1]);
+                    }
+                };
+            });
+        }
+        window._ncSearchOpen = _ncSearchOpen;
+
+        function _ncSearchBlur(inp) {
+            var wrap = inp.closest('[data-ncid]');
+            setTimeout(function() {
+                var dd = wrap ? wrap.querySelector('.ncs-dd') : null;
+                if (dd) dd.style.display = 'none';
+            }, 200);
+        }
+        window._ncSearchBlur = _ncSearchBlur;
+
+        // Set value on a searchable select
+        function _ncSearchSetValue(id, val) {
+            var hidden = document.getElementById(id);
+            var txt = document.getElementById(id+'_txt');
+            if (!hidden || !txt) return;
+            hidden.value = val || '';
+            var wrap = txt.closest('[data-ncid]');
+            var dd = wrap ? wrap.querySelector('.ncs-dd') : null;
+            if (dd) {
+                var found = Array.from(dd.querySelectorAll('.ncs-opt')).find(function(o){ return o.getAttribute('data-val')===(val||''); });
+                txt.value = found ? found.textContent : (val||'');
+            }
+        }
+        window._ncSearchSetValue = _ncSearchSetValue;
+
+        // Inject CSS once
+        (function() {
+            if (document.getElementById('ncs-style')) return;
+            var s = document.createElement('style');
+            s.id = 'ncs-style';
+            s.textContent = '.ncs-opt{padding:5px 10px;font-size:12px;color:#e2d9f3;cursor:pointer;line-height:1.4;}.ncs-opt:hover{background:#3a1f6e;}';
+            document.head.appendChild(s);
+        })();
+
         function _ncEffectBlock(idx, prefix) {
-            const effectTypes = (window.EFFECT_ATOM_CATALOGUE||[]).map(e=>`<option value="${e.id}">${e.label}</option>`).join('');
-            const triggerTypes = (window.TRIGGER_CATALOGUE||[]).map(t=>`<option value="${t.id}">${t.label}</option>`).join('');
-            const buffs   = (window.BUFF_CATALOGUE||[]).map(b=>`<option value="${b}">${b}</option>`).join('');
-            const debuffs = (window.DEBUFF_CATALOGUE||[]).map(d=>`<option value="${d}">${d}</option>`).join('');
-            const sel = _ncSel(), inp = _ncInp();
+            const effectOpts = [{ id:'', label:'— Sin efecto —' }].concat(window.EFFECT_ATOM_CATALOGUE||[]);
+            const triggerOpts = window.TRIGGER_CATALOGUE || [];
+            const objetivoOpts = [
+                {id:'enemigo_golpeado',      label:'Enemigo golpeado'},
+                {id:'enemigo_aleatorio',     label:'Enemigo aleatorio'},
+                {id:'2_enemigos_aleatorios', label:'2 enemigos aleatorios'},
+                {id:'3_enemigos_aleatorios', label:'3 enemigos aleatorios'},
+                {id:'4_enemigos_aleatorios', label:'4 enemigos aleatorios'},
+                {id:'todos_enemigos',        label:'Todos los enemigos'},
+                {id:'enemigo_mas_hp',        label:'Enemigo con más HP'},
+                {id:'enemigo_menos_hp',      label:'Enemigo con menos HP'},
+                {id:'enemigo_mas_cargas',    label:'Enemigo con más cargas'},
+                {id:'enemigo_menos_cargas',  label:'Enemigo con menos cargas'},
+                {id:'self',                  label:'El portador'},
+                {id:'aliado_aleatorio',      label:'Aliado aleatorio'},
+                {id:'2_aliados_aleatorios',  label:'2 aliados aleatorios'},
+                {id:'3_aliados_aleatorios',  label:'3 aliados aleatorios'},
+                {id:'todos_aliados',         label:'Todos los aliados'},
+                {id:'aliado_menos_hp',       label:'Aliado con menos HP'},
+                {id:'aliado_mas_hp',         label:'Aliado con más HP'},
+            ];
+            const buffOpts  = (window.BUFF_CATALOGUE||[]).map(b=>({id:b,label:b}));
+            const debuffOpts= (window.DEBUFF_CATALOGUE||[]).map(d=>({id:d,label:d}));
+            const inp = _ncInp();
             return `
             <div style="border:1px solid #3a1f6e;border-radius:8px;padding:10px;margin-top:8px;">
                 <div style="font-size:11px;color:#a78bfa;font-weight:600;margin-bottom:6px;">EFECTO ${idx}</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
                     <div>
                         <label style="font-size:10px;color:#9ca3af">Tipo de efecto</label>
-                        <select id="${prefix}_eff_type_${idx}" style="${sel}" onchange="_ncEffectTypeChange('${prefix}','${idx}')">
-                            <option value="">— Sin efecto —</option>${effectTypes}
-                        </select>
+                        ${_ncSearchSelectHTML(prefix+'_eff_type_'+idx, effectOpts, '')}
                     </div>
                     <div>
                         <label style="font-size:10px;color:#9ca3af">Gatillo</label>
-                        <select id="${prefix}_eff_trigger_${idx}" style="${sel}">
-                            ${triggerTypes}
-                        </select>
+                        ${_ncSearchSelectHTML(prefix+'_eff_trigger_'+idx, triggerOpts, 'SIN_GATILLO')}
                     </div>
                     <div>
                         <label style="font-size:10px;color:#9ca3af">Objetivo del efecto</label>
-                        <select id="${prefix}_eff_objetivo_${idx}" style="${sel}">
-                            <option value="enemigo_golpeado">Enemigo golpeado</option>
-                            <option value="enemigo_aleatorio">Enemigo aleatorio</option>
-                            <option value="2_enemigos_aleatorios">2 enemigos aleatorios</option>
-                            <option value="3_enemigos_aleatorios">3 enemigos aleatorios</option>
-                            <option value="4_enemigos_aleatorios">4 enemigos aleatorios</option>
-                            <option value="todos_enemigos">Todos los enemigos</option>
-                            <option value="enemigo_mas_hp">Enemigo con más HP</option>
-                            <option value="enemigo_menos_hp">Enemigo con menos HP</option>
-                            <option value="enemigo_mas_cargas">Enemigo con más cargas</option>
-                            <option value="enemigo_menos_cargas">Enemigo con menos cargas</option>
-                            <option value="self">El portador</option>
-                            <option value="aliado_aleatorio">Aliado aleatorio</option>
-                            <option value="2_aliados_aleatorios">2 aliados aleatorios</option>
-                            <option value="3_aliados_aleatorios">3 aliados aleatorios</option>
-                            <option value="todos_aliados">Todos los aliados</option>
-                            <option value="aliado_menos_hp">Aliado con menos HP</option>
-                            <option value="aliado_mas_hp">Aliado con más HP</option>
-                        </select>
+                        ${_ncSearchSelectHTML(prefix+'_eff_objetivo_'+idx, objetivoOpts, 'enemigo_golpeado')}
                     </div>
                     <div>
                         <label style="font-size:10px;color:#9ca3af">Probabilidad %</label>
@@ -3046,11 +3138,11 @@
                     </div>
                     <div id="${prefix}_eff_buff_wrap_${idx}" style="display:none">
                         <label style="font-size:10px;color:#9ca3af">Buff a aplicar</label>
-                        <select id="${prefix}_eff_buff_${idx}" style="${sel}">${buffs}</select>
+                        ${_ncSearchSelectHTML(prefix+'_eff_buff_'+idx, buffOpts, '')}
                     </div>
                     <div id="${prefix}_eff_debuff_wrap_${idx}" style="display:none">
                         <label style="font-size:10px;color:#9ca3af">Debuff a aplicar</label>
-                        <select id="${prefix}_eff_debuff_${idx}" style="${sel}">${debuffs}</select>
+                        ${_ncSearchSelectHTML(prefix+'_eff_debuff_'+idx, debuffOpts, '')}
                     </div>
                     <div id="${prefix}_eff_dur_wrap_${idx}" style="display:none">
                         <label style="font-size:10px;color:#9ca3af">Duración (turnos)</label>
@@ -3429,17 +3521,19 @@
                 if (el) el.style.display = show ? 'block' : 'none';
             };
 
-            // Tipo de efecto — dispara el change para mostrar/ocultar params
-            var typeEl = document.getElementById(prefix + '_eff_type_' + idx);
-            if (typeEl) {
-                typeEl.value = eff.type || '';
-                if (typeof _ncEffectTypeChange === 'function') _ncEffectTypeChange(prefix, idx);
+            // Tipo de efecto (searchable select)
+            if (typeof _ncSearchSetValue === 'function') {
+                _ncSearchSetValue(prefix + '_eff_type_' + idx, eff.type || '');
             }
+            if (typeof _ncEffectTypeChange === 'function') _ncEffectTypeChange(prefix, idx);
 
-            // Gatillo, objetivo, probabilidad
-            setV('trigger',  eff.trigger   || 'SIN_GATILLO');
-            setV('objetivo', eff.objetivo  || 'enemigo_golpeado');
-            setV('prob',     (eff.probability !== undefined && eff.probability !== null) ? eff.probability : 100);
+            // Gatillo, objetivo (searchable selects)
+            if (typeof _ncSearchSetValue === 'function') {
+                _ncSearchSetValue(prefix + '_eff_trigger_' + idx, eff.trigger || 'SIN_GATILLO');
+                _ncSearchSetValue(prefix + '_eff_objetivo_' + idx, eff.objetivo || 'enemigo_golpeado');
+            }
+            // Probabilidad (regular input)
+            setV('prob', (eff.probability !== undefined && eff.probability !== null) ? eff.probability : 100);
 
             // Parámetros
             var p = eff.params || {};
@@ -3448,12 +3542,18 @@
             setV('factor', p.factor     || 'invocaciones');
             setV('invoc',  p.nombre_invocacion || '');
 
-            // Buff o Debuff — mostrar solo el correcto
+            // Buff o Debuff — searchable selects + mostrar solo el correcto
             var t = eff.type || '';
             var isBuff   = (t === 'APLICAR_BUFF_SELF' || t === 'APLICAR_BUFF_EQUIPO' || t === 'APLICAR_BUFF_ALIADO');
             var isDebuff = (t === 'APLICAR_DEBUFF_OBJETIVO' || t === 'APLICAR_DEBUFF_EQUIPO');
-            if (isBuff)   { setV('buff',   p.buff   || ''); showW('buff',   true); showW('debuff', false); }
-            if (isDebuff) { setV('debuff', p.debuff || ''); showW('debuff', true); showW('buff',   false); }
+            if (isBuff)   {
+                if (typeof _ncSearchSetValue === 'function') _ncSearchSetValue(prefix + '_eff_buff_'   + idx, p.buff   || '');
+                showW('buff', true); showW('debuff', false);
+            }
+            if (isDebuff) {
+                if (typeof _ncSearchSetValue === 'function') _ncSearchSetValue(prefix + '_eff_debuff_' + idx, p.debuff || '');
+                showW('debuff', true); showW('buff', false);
+            }
         }
         window._ncFillEffect = _ncFillEffect;
 
