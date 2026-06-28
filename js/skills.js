@@ -245,6 +245,7 @@
             { id:'AUMENTAR_HP_MAX_EQUIPO',        label:'Aumentar HP máx del equipo',   params:['cantidad'] },
             { id:'AUMENTAR_VELOCIDAD',            label:'Aumentar velocidad del portador', params:['cantidad'] },
             { id:'INVOCAR',                       label:'Invocar al campo',             params:['nombre_invocacion'] },
+            { id:'DANIO_X_STACKS_VENENO',          label:'Daño × stacks de Veneno en equipo enemigo', params:['multiplicador','objetivo'] },
             { id:'GOLPE_CRITICO_PCT',             label:'Golpe crítico X% probabilidad',params:['porcentaje'] },
             { id:'TURNO_ADICIONAL',               label:'Obtener turno adicional',      params:[] },
             { id:'IGNORAR_PROVOCACION',           label:'Ignorar Provocación/MegaProvocación', params:[] },
@@ -369,6 +370,24 @@
                     const dmgC = Math.max(1, qty * (tgtChar ? tgtChar.charges||0 : 0));
                     applyDamageWithShield(targetName, dmgC, charName);
                     addLog('⚔️ ' + charName + ': ' + dmgC + ' daño (escalado × cargas de ' + targetName + ')', 'damage');
+                    break;
+                }
+                case 'DANIO_X_STACKS_VENENO': {
+                    // Count total Veneno stacks across all living enemies
+                    let _totalVeneno = 0;
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== enemyTeam || _c.isDead || _c.hp <= 0) continue;
+                        const _vEff = (_c.statusEffects||[]).find(function(e){ return e && e.name && e.name.toLowerCase().includes('veneno'); });
+                        if (_vEff) _totalVeneno += (_vEff.poisonStacks || 1);
+                    }
+                    const _dmgV = Math.max(1, qty * _totalVeneno);
+                    effectTargets.forEach(function(tgt) {
+                        const _tc = gameState.characters[tgt];
+                        if (!_tc || _tc.isDead || _tc.hp <= 0) return;
+                        applyDamageWithShield(tgt, _dmgV, charName);
+                    });
+                    addLog('☠️ ' + charName + ': ' + _dmgV + ' daño (× ' + _totalVeneno + ' stacks de Veneno enemigos)', 'damage');
                     break;
                 }
                 case 'DANIO_ESCALADO_BUFFS': {
