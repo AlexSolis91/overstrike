@@ -3164,7 +3164,7 @@
                     </div>
                     <div id="${prefix}_eff_factor_wrap_${idx}" style="display:none">
                         <label style="font-size:10px;color:#9ca3af">Factor de escala</label>
-                        <select id="${prefix}_eff_factor_${idx}" style="${sel}">
+                        <select id="${prefix}_eff_factor_${idx}" style="${_ncSel()}">
                             <option value="invocaciones">Invocaciones activas</option>
                             <option value="debuffs_enemigos">Debuffs en equipo enemigo</option>
                             <option value="buffs_enemigos">Buffs en equipo enemigo</option>
