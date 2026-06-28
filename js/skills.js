@@ -100,7 +100,6 @@
 
 
         // ══════════════════════════════════════════════════════════════════════════
-        // MOTOR DE EFECTOS GENÉRICO — ejecuta personajes creados desde el panel admin
         // ══════════════════════════════════════════════════════════════════════════
 
         // Catálogo de buffs disponibles (para el formulario y el motor)
@@ -705,33 +704,6 @@
         }
         window.evalCondition = evalCondition;
 
-        // ── EJECUTOR DE HABILIDAD DINÁMICA ──
-        // Ejecuta todos los efectos de una habilidad de personaje dinámico
-        // Respeta ability.hits para movimientos multi-golpe (MT con 3 golpes, etc.)
-        function executeDynamicAbility(ability, context) {
-            if (!ability || !ability.effects) return;
-            var hits = parseInt(ability.hits) || 1;
-            // Efectos con SIN_GATILLO se ejecutan N veces (una por golpe)
-            // Efectos con gatillo se ejecutan una sola vez (son pasivas/triggers, no golpes directos)
-            ability.effects.forEach(function(eff) {
-                if (!eff || !eff.type) return;
-                var isDirectHit = !eff.trigger || eff.trigger === 'SIN_GATILLO';
-                if (isDirectHit && hits > 1) {
-                    for (var h = 0; h < hits; h++) {
-                        // Re-resolve alive enemies each hit (targets may die mid-combo)
-                        var c = gameState.characters[context.charName];
-                        var aTeam = c ? c.team : context.allyTeam;
-                        var eTeam = aTeam === 'team1' ? 'team2' : 'team1';
-                        var freshCtx = Object.assign({}, context, { allyTeam: aTeam, enemyTeam: eTeam });
-                        executeAtomicEffect(eff, freshCtx);
-                    }
-                } else {
-                    executeAtomicEffect(eff, context);
-                }
-            });
-        }
-        window.executeDynamicAbility = executeDynamicAbility;
-        window.executeAtomicEffect = executeAtomicEffect;
 
         // ── HELPER: Regla de Oro de Gilgamesh — se dispara en cada golpe crítico ──
         function triggerGilgameshCrit(gilName) {
@@ -957,7 +929,7 @@
                     // Cada personaje dinámico en el equipo que está siendo atacado puede reaccionar
                     for (const _defN in gameState.characters) {
                         const _defC = gameState.characters[_defN];
-                        if (!_defC || _defC.isDead || _defC.hp <= 0 || !_defC._isDynamic || _defC.team !== _dynDefTeam) continue;
+                        if (!_defC || _defC.isDead || _defC.hp <= 0 || _defC.team !== _dynDefTeam) continue;
                         const _defEffects = (_defC.passive && _defC.passive.effects) || [];
                         _defEffects.forEach(function(eff) {
                             if (!eff || eff.trigger !== 'CUANDO_ENEMIGO_ATACA') return;
