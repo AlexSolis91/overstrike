@@ -9740,6 +9740,20 @@
                     finalDamage: finalDamage,
                 };
                 if (typeof executeDynamicAbility === 'function') executeDynamicAbility(ability, _dynCtx);
+
+            } else if (ability.effect === 'dynamic') {
+                // ── PERSONAJE DINÁMICO: ejecutar efectos desde Firebase ──
+                const _dynAtk  = gameState.characters[gameState.selectedCharacter];
+                const _dynTeam = _dynAtk ? _dynAtk.team : 'team1';
+                const _dynCtx  = {
+                    charName:    gameState.selectedCharacter,
+                    targetName:  targetName,
+                    allyTeam:    _dynTeam,
+                    enemyTeam:   _dynTeam === 'team1' ? 'team2' : 'team1',
+                    ability:     ability,
+                    finalDamage: finalDamage,
+                };
+                if (typeof executeDynamicAbility === 'function') executeDynamicAbility(ability, _dynCtx);
                 // Buffs to allied team
                 for (const _n in gameState.characters) {
                     const _c = gameState.characters[_n];
