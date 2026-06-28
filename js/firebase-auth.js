@@ -3417,48 +3417,122 @@
         };
 
         // ── Editar un personaje dinámico: abrir el formulario pre-relleno ──
+        // ── Helper: rellenar un bloque de efecto con datos guardados ──
+        function _ncFillEffect(prefix, idx, eff) {
+            if (!eff || !eff.type) return;
+            var setV = function(id, val) {
+                var el = document.getElementById(prefix + '_eff_' + id + '_' + idx);
+                if (el && val !== undefined && val !== null) el.value = val;
+            };
+            var showW = function(id, show) {
+                var el = document.getElementById(prefix + '_eff_' + id + '_wrap_' + idx);
+                if (el) el.style.display = show ? 'block' : 'none';
+            };
+
+            // Tipo de efecto — dispara el change para mostrar/ocultar params
+            var typeEl = document.getElementById(prefix + '_eff_type_' + idx);
+            if (typeEl) {
+                typeEl.value = eff.type || '';
+                if (typeof _ncEffectTypeChange === 'function') _ncEffectTypeChange(prefix, idx);
+            }
+
+            // Gatillo, objetivo, probabilidad
+            setV('trigger',  eff.trigger   || 'SIN_GATILLO');
+            setV('objetivo', eff.objetivo  || 'enemigo_golpeado');
+            setV('prob',     (eff.probability !== undefined && eff.probability !== null) ? eff.probability : 100);
+
+            // Parámetros
+            var p = eff.params || {};
+            setV('qty',    (p.cantidad   !== undefined) ? p.cantidad   : 1);
+            setV('dur',    (p.duracion   !== undefined) ? p.duracion   : 2);
+            setV('factor', p.factor     || 'invocaciones');
+            setV('invoc',  p.nombre_invocacion || '');
+
+            // Buff o Debuff — mostrar solo el correcto
+            var t = eff.type || '';
+            var isBuff   = (t === 'APLICAR_BUFF_SELF' || t === 'APLICAR_BUFF_EQUIPO' || t === 'APLICAR_BUFF_ALIADO');
+            var isDebuff = (t === 'APLICAR_DEBUFF_OBJETIVO' || t === 'APLICAR_DEBUFF_EQUIPO');
+            if (isBuff)   { setV('buff',   p.buff   || ''); showW('buff',   true); showW('debuff', false); }
+            if (isDebuff) { setV('debuff', p.debuff || ''); showW('debuff', true); showW('buff',   false); }
+        }
+        window._ncFillEffect = _ncFillEffect;
+
         window._ncOpenEdit = function(charName, charObj) {
-            // Open the panel
-            if (typeof window._ncOpenPanel === 'function') window._ncOpenPanel();
-            // Wait for the panel DOM to render, then populate fields
-            setTimeout(function() {
-                try {
-                    // Basic fields
-                    const key = charObj._dynamicId;
-                    const set = function(id, val) { const el = document.getElementById(id); if (el) el.value = val || ''; };
-                    set('nc_name',         charName);
-                    set('nc_hp',           charObj.hp || 20);
-                    set('nc_speed',        charObj.speed || 80);
-                    set('nc_portrait',     charObj.portrait || '');
-                    set('nc_transform',    charObj.transformPortrait || '');
-                    set('nc_passive_name', charObj.passive && charObj.passive.name || '');
-                    set('nc_passive_desc', charObj.passive && charObj.passive.description || '');
-                    // Type
-                    const typeEl = document.getElementById('nc_type');
-                    if (typeEl) { typeEl.value = charObj._type || 'Personaje'; if (typeof _ncTypeChange === 'function') _ncTypeChange(); }
-                    // Abilities
-                    (charObj.abilities || []).forEach(function(ab, i) {
-                        const idx = i + 1;
-                        set('ab_name_'  + idx, ab.name);
-                        set('ab_desc_'  + idx, ab.description || '');
-                        set('ab_dmg_'   + idx, ab.damage || 0);
-                        set('ab_cost_'  + idx, ab.cost || 0);
-                        set('ab_gain_'  + idx, ab.chargeGain || 0);
-                        const typeEl2 = document.getElementById('ab_type_' + idx);
-                        if (typeEl2) typeEl2.value = ab.type || 'basic';
-                        const tgtEl = document.getElementById('ab_target_' + idx);
-                        if (tgtEl) tgtEl.value = ab.target || 'single';
-                        const hitsEl = document.getElementById('ab_hits_' + idx);
-                        if (hitsEl) hitsEl.value = ab.hits || 1;
-                    });
-                    // Mark as edit mode so _ncSave updates instead of creating new
-                    window._ncEditKey = key;
-                    window._ncEditOrigName = charName;
-                    // Change save button label
-                    const saveBtn = Array.from(document.querySelectorAll('#ncPanel button')).find(b => b.textContent.includes('Guardar registro'));
-                    if (saveBtn) saveBtn.textContent = '💾 Actualizar personaje';
-                } catch(e) { console.warn('[_ncOpenEdit]', e); }
-            }, 300);
+            // Leer los datos directamente desde Firebase para asegurar que tenemos los efectos completos
+            var key = charObj._dynamicId;
+            if (!key) { alert('❌ No se encontró el ID del personaje'); return; }
+
+            db.ref('approved_characters/' + key).once('value').then(function(snap) {
+                var data = snap.val();
+                if (!data) { alert('❌ No se encontraron datos en Firebase'); return; }
+
+                // Abrir el panel
+                if (typeof window._ncOpenPanel === 'function') window._ncOpenPanel();
+
+                // Esperar a que el DOM del panel esté listo
+                setTimeout(function() {
+                    try {
+                        var set = function(id, val) {
+                            var el = document.getElementById(id);
+                            if (el && val !== undefined && val !== null) el.value = val;
+                        };
+
+                        // ── DATOS BASE ──
+                        set('nc_name',         data.name      || charName);
+                        set('nc_hp',           data.hp        || 20);
+                        set('nc_speed',        data.speed     || 80);
+                        set('nc_portrait',     data.portrait  || '');
+                        set('nc_transform',    data.transformPortrait || '');
+
+                        // Tipo
+                        var typeEl = document.getElementById('nc_type');
+                        if (typeEl) {
+                            typeEl.value = data.type || 'Personaje';
+                            if (typeof _ncTypeChange === 'function') _ncTypeChange();
+                        }
+
+                        // ── PASIVA ──
+                        set('nc_passive_name', data.passiveName || '');
+                        set('nc_passive_desc', data.passiveDesc || '');
+
+                        // Efectos de la pasiva (vienen de data.passiveEffects)
+                        var passiveEffects = data.passiveEffects || [];
+                        passiveEffects.forEach(function(eff, i) {
+                            _ncFillEffect('ps', i + 1, eff);
+                        });
+
+                        // ── MOVIMIENTOS ──
+                        (data.abilities || []).forEach(function(ab, i) {
+                            var idx = i + 1;
+                            set('ab_name_'  + idx, ab.name        || '');
+                            set('ab_desc_'  + idx, ab.description || '');
+                            set('ab_dmg_'   + idx, ab.damage      || 0);
+                            set('ab_cost_'  + idx, ab.cost        || 0);
+                            set('ab_gain_'  + idx, ab.chargeGain  || 0);
+                            set('ab_hits_'  + idx, ab.hits        || 1);
+
+                            var abType = document.getElementById('ab_type_' + idx);
+                            if (abType) abType.value = ab.type || 'basic';
+                            var abTgt = document.getElementById('ab_target_' + idx);
+                            if (abTgt) abTgt.value = ab.target || 'single';
+
+                            // Efectos del movimiento (vienen de ab.effects)
+                            (ab.effects || []).forEach(function(eff, j) {
+                                _ncFillEffect('ab' + idx, j + 1, eff);
+                            });
+                        });
+
+                        // ── Modo edición ──
+                        window._ncEditKey = key;
+                        window._ncEditOrigName = charName;
+                        var saveBtn = Array.from(document.querySelectorAll('#ncPanel button'))
+                            .find(function(b) { return b.textContent.includes('Guardar'); });
+                        if (saveBtn) saveBtn.textContent = '💾 Actualizar personaje';
+
+                    } catch(e) { console.warn('[_ncOpenEdit]', e); }
+                }, 400);
+
+            }).catch(function(e) { alert('Error cargando datos: ' + e.message); });
         };
 
         // ── Aprobar un personaje: mover de pending_characters a approved_characters ──
