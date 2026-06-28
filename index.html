@@ -1631,36 +1631,6 @@
                 btns.appendChild(btnNo);
                 modal.appendChild(btns);
 
-                // ── Botones de admin para personajes dinámicos ──
-                if (char && char._isDynamic && typeof window._ncIsAdmin === 'function' && window._ncIsAdmin()) {
-                    const adminRow = el('div', '');
-                    adminRow.style.cssText = 'display:flex;gap:8px;justify-content:center;margin-top:10px;';
-
-                    // Botón Editar (visible para Alex y Edgar)
-                    const btnEdit = document.createElement('button');
-                    btnEdit.style.cssText = 'padding:6px 16px;border-radius:8px;border:1px solid #7c3aed;background:rgba(124,58,237,0.15);color:#c4b5fd;cursor:pointer;font-size:12px;font-weight:600;';
-                    btnEdit.textContent = '✏️ Editar personaje';
-                    btnEdit.onclick = function() {
-                        csConfirm(false); // cerrar modal
-                        if (typeof window._ncOpenEdit === 'function') window._ncOpenEdit(name, char);
-                    };
-                    adminRow.appendChild(btnEdit);
-
-                    // Botón Eliminar (solo para solisalex8291)
-                    if (window._ncIsSuperAdmin && window._ncIsSuperAdmin()) {
-                        const btnDel = document.createElement('button');
-                        btnDel.style.cssText = 'padding:6px 16px;border-radius:8px;border:1px solid #dc2626;background:rgba(220,38,38,0.12);color:#fca5a5;cursor:pointer;font-size:12px;font-weight:600;';
-                        btnDel.textContent = '🗑️ Eliminar personaje';
-                        btnDel.onclick = function() {
-                            if (confirm('¿Estás seguro de que quieres eliminar a "' + name + '"? Esta acción no se puede deshacer.')) {
-                                csConfirm(false);
-                                if (typeof window._ncDeleteChar === 'function') window._ncDeleteChar(name, char);
-                            }
-                        };
-                        adminRow.appendChild(btnDel);
-                    }
-                    modal.appendChild(adminRow);
-                }
 
                 document.getElementById('csDetailModal').classList.add('show');
 
