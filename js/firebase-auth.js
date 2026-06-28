@@ -3160,7 +3160,17 @@
                     </div>
                     <div id="${prefix}_eff_dur_wrap_${idx}" style="display:none">
                         <label id="${prefix}_eff_dur_lbl_${idx}" style="font-size:10px;color:#9ca3af">Duración (turnos)</label>
-                        <input id="${prefix}_eff_dur_${idx}" type="number" value="2" min="1" style="${inp}" oninput="">
+                        <div style="display:flex;gap:4px;align-items:center;">
+                            <input id="${prefix}_eff_dur_${idx}" type="text" value="2" placeholder="Núm. o 'buffs_disipados'" style="${inp}flex:1;">
+                            <div id="${prefix}_eff_dur_bd_btn_${idx}" style="display:none;">
+                                <button type="button"
+                                    title="Usar cantidad de buffs disipados como stacks"
+                                    onclick="(function(){var el=document.getElementById('${prefix}_eff_dur_${idx}');if(el){el.value=el.value==='buffs_disipados'?'1':'buffs_disipados';el.style.color=el.value==='buffs_disipados'?'#a78bfa':'';el.title=el.value==='buffs_disipados'?'✅ Usando buffs disipados como stacks':'';};})()"
+                                    style="padding:3px 7px;font-size:11px;border:1px solid #5b21b6;border-radius:5px;background:#1a0033;color:#c4b5fd;cursor:pointer;white-space:nowrap;">
+                                    ≡ Buffs Disipados
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     <div id="${prefix}_eff_factor_wrap_${idx}" style="display:none">
                         <label style="font-size:10px;color:#9ca3af">Factor de escala</label>
@@ -3217,14 +3227,20 @@
             const debuffEl = document.getElementById(`${prefix}_eff_debuff_${idx}`);
             const lbl = document.getElementById(`${prefix}_eff_dur_lbl_${idx}`);
             const inp = document.getElementById(`${prefix}_eff_dur_${idx}`);
+            const bdBtn = document.getElementById(`${prefix}_eff_dur_bd_btn_${idx}`);
             if (!lbl || !debuffEl) return;
             const debuff = debuffEl.value || '';
             if (debuff === 'Veneno') {
                 lbl.textContent = 'Stacks de Veneno';
-                if (inp && inp.value === '2') inp.value = '1'; // default 1 stack
+                if (bdBtn) bdBtn.style.display = 'block'; // show "Buffs Disipados" button
+                if (inp && (inp.value === '2' || inp.value === '')) inp.value = '1';
+                if (inp) inp.style.color = inp.value === 'buffs_disipados' ? '#a78bfa' : '';
             } else {
                 lbl.textContent = 'Duración (turnos)';
-                if (inp && inp.value === '1') inp.value = '2'; // default 2 turns
+                if (bdBtn) bdBtn.style.display = 'none'; // hide for non-Veneno
+                if (inp && inp.value === 'buffs_disipados') inp.value = '2'; // reset
+                if (inp) inp.style.color = '';
+                if (inp && inp.value === '1') inp.value = '2';
             }
         }
         window._ncUpdateDurLabel = _ncUpdateDurLabel;
