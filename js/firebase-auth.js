@@ -3418,44 +3418,101 @@
         window._ncOpenEdit = function(charName, charObj) {
             // Open the panel
             if (typeof window._ncOpenPanel === 'function') window._ncOpenPanel();
-            // Wait for the panel DOM to render, then populate fields
+            // Wait for the panel DOM to render, then populate all fields
             setTimeout(function() {
                 try {
-                    // Basic fields
                     const key = charObj._dynamicId;
-                    const set = function(id, val) { const el = document.getElementById(id); if (el) el.value = val || ''; };
+                    const set = function(id, val) { const el = document.getElementById(id); if (el) el.value = (val !== undefined && val !== null) ? val : ''; };
+
+                    // ── DATOS BASE ──
                     set('nc_name',         charName);
                     set('nc_hp',           charObj.hp || 20);
                     set('nc_speed',        charObj.speed || 80);
                     set('nc_portrait',     charObj.portrait || '');
                     set('nc_transform',    charObj.transformPortrait || '');
-                    set('nc_passive_name', charObj.passive && charObj.passive.name || '');
-                    set('nc_passive_desc', charObj.passive && charObj.passive.description || '');
-                    // Type
+
+                    // Tipo
                     const typeEl = document.getElementById('nc_type');
                     if (typeEl) { typeEl.value = charObj._type || 'Personaje'; if (typeof _ncTypeChange === 'function') _ncTypeChange(); }
-                    // Abilities
+
+                    // ── PASIVA ──
+                    set('nc_passive_name', (charObj.passive && charObj.passive.name) || '');
+                    set('nc_passive_desc', (charObj.passive && charObj.passive.description) || '');
+                    // Efectos de la pasiva
+                    var passiveEffects = (charObj.passive && charObj.passive.effects) || [];
+                    passiveEffects.forEach(function(eff, i) {
+                        _ncFillEffect('ps', i + 1, eff);
+                    });
+
+                    // ── MOVIMIENTOS ──
                     (charObj.abilities || []).forEach(function(ab, i) {
-                        const idx = i + 1;
-                        set('ab_name_'  + idx, ab.name);
+                        var idx = i + 1;
+                        set('ab_name_'  + idx, ab.name || '');
                         set('ab_desc_'  + idx, ab.description || '');
                         set('ab_dmg_'   + idx, ab.damage || 0);
                         set('ab_cost_'  + idx, ab.cost || 0);
                         set('ab_gain_'  + idx, ab.chargeGain || 0);
-                        const typeEl2 = document.getElementById('ab_type_' + idx);
-                        if (typeEl2) typeEl2.value = ab.type || 'basic';
-                        const tgtEl = document.getElementById('ab_target_' + idx);
-                        if (tgtEl) tgtEl.value = ab.target || 'single';
+                        var abType = document.getElementById('ab_type_' + idx);
+                        if (abType) abType.value = ab.type || 'basic';
+                        var abTgt = document.getElementById('ab_target_' + idx);
+                        if (abTgt) abTgt.value = ab.target || 'single';
+                        // Efectos del movimiento
+                        (ab.effects || []).forEach(function(eff, j) {
+                            _ncFillEffect('ab' + idx, j + 1, eff);
+                        });
                     });
-                    // Mark as edit mode so _ncSave updates instead of creating new
+
+                    // ── Modo edición ──
                     window._ncEditKey = key;
                     window._ncEditOrigName = charName;
-                    // Change save button label
-                    const saveBtn = Array.from(document.querySelectorAll('#ncPanel button')).find(b => b.textContent.includes('Guardar registro'));
+                    var saveBtn = Array.from(document.querySelectorAll('#ncPanel button')).find(function(b){ return b.textContent.includes('Guardar registro'); });
                     if (saveBtn) saveBtn.textContent = '💾 Actualizar personaje';
+
                 } catch(e) { console.warn('[_ncOpenEdit]', e); }
-            }, 300);
+            }, 350);
         };
+
+        // ── Helper: rellenar un bloque de efecto con los datos guardados ──
+        function _ncFillEffect(prefix, idx, eff) {
+            if (!eff) return;
+            var setV = function(id, val) { var el = document.getElementById(prefix + '_eff_' + id + '_' + idx); if (el && val !== undefined && val !== null) el.value = val; };
+            var showW = function(id, show) { var el = document.getElementById(prefix + '_eff_' + id + '_wrap_' + idx); if (el) el.style.display = show ? 'block' : 'none'; };
+
+            // Tipo de efecto — primary selector, trigger el change to show/hide param fields
+            var typeEl = document.getElementById(prefix + '_eff_type_' + idx);
+            if (typeEl) {
+                typeEl.value = eff.type || '';
+                // Dispatch change to update UI visibility
+                if (typeof _ncEffectTypeChange === 'function') _ncEffectTypeChange(prefix, idx);
+            }
+
+            // Gatillo
+            setV('trigger',  eff.trigger   || 'SIN_GATILLO');
+            // Objetivo
+            setV('objetivo', eff.objetivo  || 'enemigo_golpeado');
+            // Probabilidad
+            setV('prob',     eff.probability !== undefined ? eff.probability : 100);
+
+            // Parámetros
+            var p = eff.params || {};
+            setV('qty',    p.cantidad   !== undefined ? p.cantidad : 1);
+            setV('dur',    p.duracion   !== undefined ? p.duracion : 2);
+            setV('factor', p.factor     || 'invocaciones');
+            setV('invoc',  p.nombre_invocacion || '');
+
+            // Buff o Debuff según tipo
+            var type = eff.type || '';
+            if (type.includes('BUFF') && !type.includes('DISIPAR')) {
+                setV('buff', p.buff || '');
+                showW('buff', true);
+                showW('debuff', false);
+            } else if (type.includes('DEBUFF') && !type.includes('DISIPAR')) {
+                setV('debuff', p.debuff || '');
+                showW('debuff', true);
+                showW('buff', false);
+            }
+        }
+        window._ncFillEffect = _ncFillEffect;
 
         // ── Aprobar un personaje: mover de pending_characters a approved_characters ──
         window._ncApprove = function(key) {
