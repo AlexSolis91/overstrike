@@ -502,7 +502,12 @@
                 }
                 // ── DEBUFFS ──
                 case 'APLICAR_DEBUFF_OBJETIVO':
-                    applyGenericDebuff(targetName, p.debuff, parseInt(p.duracion)||2);
+                    // For Veneno: p.duracion holds the stack count (not turns)
+                    effectTargets.forEach(function(tgt) {
+                        if (!tgt) return;
+                        var tc = gameState.characters[tgt]; if (!tc || tc.isDead || tc.hp <= 0) return;
+                        applyGenericDebuff(tgt, p.debuff, parseInt(p.duracion)||2, parseInt(p.duracion)||1);
+                    });
                     break;
                 case 'APLICAR_DEBUFF_ALEATORIO': {
                     const rdPool = window.DEBUFF_CATALOGUE || ['Quemadura','Veneno','Sangrado','Congelacion','Silenciar'];
@@ -610,12 +615,12 @@
         }
 
         // ── HELPER: aplicar debuff genérico por nombre ──
-        function applyGenericDebuff(targetName, debuffName, duration) {
+        function applyGenericDebuff(targetName, debuffName, duration, stacks) {
             if (!debuffName) return;
             const n = debuffName.toLowerCase().replace(/[^a-záéíóúñ]/g,'');
             if (n.includes('quemadursol') || n.includes('solar'))  { if(typeof applySolarBurn==='function') applySolarBurn(targetName, 10, duration); }
             else if (n.includes('quemadura')) { if(typeof applyFlatBurn==='function') applyFlatBurn(targetName, 2, duration); }
-            else if (n.includes('veneno'))    { if(typeof applyPoison==='function') applyPoison(targetName, 1); }
+            else if (n.includes('veneno'))    { if(typeof applyPoison==='function') applyPoison(targetName, stacks || duration || 1); }
             else if (n.includes('sangrado'))  { if(typeof applyBleed==='function') applyBleed(targetName, duration); }
             else if (n.includes('megaconge') || n.includes('megafrío')) { if(typeof applyFreeze==='function') applyFreeze(targetName, duration, true); }
             else if (n.includes('congelac'))  { if(typeof applyFreeze==='function') applyFreeze(targetName, duration, false); }
