@@ -3159,8 +3159,8 @@
                         ${_ncSearchSelectHTML(prefix+'_eff_debuff_'+idx, debuffOpts, '')}
                     </div>
                     <div id="${prefix}_eff_dur_wrap_${idx}" style="display:none">
-                        <label style="font-size:10px;color:#9ca3af">Duración (turnos)</label>
-                        <input id="${prefix}_eff_dur_${idx}" type="number" value="2" min="1" style="${inp}">
+                        <label id="${prefix}_eff_dur_lbl_${idx}" style="font-size:10px;color:#9ca3af">Duración (turnos)</label>
+                        <input id="${prefix}_eff_dur_${idx}" type="number" value="2" min="1" style="${inp}" oninput="">
                     </div>
                     <div id="${prefix}_eff_factor_wrap_${idx}" style="display:none">
                         <label style="font-size:10px;color:#9ca3af">Factor de escala</label>
@@ -3194,7 +3194,40 @@
             show('dur',    needsDur);
             show('factor', needsFactor);
             show('invoc',  needsInvoc);
+            // Si es debuff, actualizar label de duración según el debuff seleccionado
+            if (needsDebuff) {
+                _ncUpdateDurLabel(prefix, idx);
+                // Escuchar cambios en el selector de debuff para actualizar el label
+                const debuffSel = document.getElementById(`${prefix}_eff_debuff_${idx}`);
+                if (debuffSel && !debuffSel._durLabelListener) {
+                    debuffSel._durLabelListener = true;
+                    debuffSel.addEventListener('change', function() { _ncUpdateDurLabel(prefix, idx); });
+                }
+                // También escuchar el hidden input del searchable select
+                const debuffHid = document.getElementById(`${prefix}_eff_debuff_${idx}`);
+                if (debuffHid && !debuffHid._durObserver) {
+                    debuffHid._durObserver = true;
+                    const obs = new MutationObserver(function() { _ncUpdateDurLabel(prefix, idx); });
+                    obs.observe(debuffHid, { attributes: true, attributeFilter: ['value'] });
+                }
+            }
         }
+
+        function _ncUpdateDurLabel(prefix, idx) {
+            const debuffEl = document.getElementById(`${prefix}_eff_debuff_${idx}`);
+            const lbl = document.getElementById(`${prefix}_eff_dur_lbl_${idx}`);
+            const inp = document.getElementById(`${prefix}_eff_dur_${idx}`);
+            if (!lbl || !debuffEl) return;
+            const debuff = debuffEl.value || '';
+            if (debuff === 'Veneno') {
+                lbl.textContent = 'Stacks de Veneno';
+                if (inp && inp.value === '2') inp.value = '1'; // default 1 stack
+            } else {
+                lbl.textContent = 'Duración (turnos)';
+                if (inp && inp.value === '1') inp.value = '2'; // default 2 turns
+            }
+        }
+        window._ncUpdateDurLabel = _ncUpdateDurLabel;
         window._ncEffectTypeChange = _ncEffectTypeChange;
 
         function _ncSel() { return 'width:100%;padding:4px 6px;font-size:12px;border:1px solid #3a1f6e;border-radius:6px;background:#0d0016;color:#e2d9f3;'; }
@@ -3567,6 +3600,8 @@
             if (isDebuff) {
                 if (typeof _ncSearchSetValue === 'function') _ncSearchSetValue(prefix + '_eff_debuff_' + idx, p.debuff || '');
                 showW('debuff', true); showW('buff', false);
+                // Update duration label (Veneno = stacks, others = turnos)
+                if (typeof _ncUpdateDurLabel === 'function') setTimeout(function(){ _ncUpdateDurLabel(prefix, idx); }, 50);
             }
         }
         window._ncFillEffect = _ncFillEffect;
