@@ -151,6 +151,9 @@
                 return; // no eliminar, simplemente revive
             }
 
+            // ── ANILLO DEL TIEMPO: al morir → revivir UNA VEZ con 100% HP + 20 cargas + turno adicional ──
+            // (Character death check is in applyDamageWithShield — handled below)
+
             // ── MORDEDURA (Cría de Dragón): al morir → Rhaenyra genera 3 cargas ──
             if (summon.name === 'Cría de Dragón' && reason === 'derrotado' && summon.summoner) {
                 const _criaRhae = gameState.characters[summon.summoner];
@@ -1255,6 +1258,19 @@
             
             let remainingDamage = damage;
 
+            // ── ESCUDO DE ESPEJO: 25% de reflejar el ataque al atacante ──
+            if (remainingDamage > 0 && attackerName && !passiveExecuting) {
+                const _emPortador = gameState.characters[targetName];
+                if (_emPortador && (_emPortador.equippedRelics||[]).includes('Escudo de Espejo')) {
+                    if (Math.random() < 0.25) {
+                        passiveExecuting = true;
+                        applyDamageWithShield(attackerName, remainingDamage, targetName);
+                        addLog('🪞 Escudo de Espejo: ' + remainingDamage + ' daño reflejado a ' + attackerName, 'damage');
+                        passiveExecuting = false;
+                    }
+                }
+            }
+
             // ── REGLA DE ORO (Gilgamesh): no recibe daño de atacantes con debuffs activos ──
             if (remainingDamage > 0 && attackerName && attackerName !== targetName) {
                 const _gilTgt = gameState.characters[targetName];
@@ -2307,11 +2323,41 @@
             // Damage tick animation removed
 
             if (target.hp <= 0 && oldHp > 0) {
-                target.isDead = true;
-                if (typeof _animCard === 'function') _animCard(targetName, 'anim-defeat', 700);
-                // ── BATTLE STATS: registrar kill usando función centralizada ──
-                const _killer = attackerName || gameState._currentTurnAttacker || null;
-                if (_killer) registerKill(_killer, targetName, false);
+                // ── ANILLO DEL TIEMPO: revivir UNA VEZ con 100% HP + 20 cargas + turno adicional ──
+                if (!target._anilloUsed && (target.equippedRelics||[]).includes('Anillo del Tiempo')) {
+                    target._anilloUsed = true;
+                    target.hp = target.maxHp;
+                    target.charges = Math.min(20, (target.charges||0) + 20);
+                    gameState._skeggoxExtraTurn = targetName;
+                    addLog('⌛ Anillo del Tiempo: ' + targetName + ' revive con ' + target.hp + ' HP y 20 cargas + turno adicional', 'buff');
+                    if (typeof _animCard === 'function') _animCard(targetName, 'anim-transform', 700);
+                } else {
+                    target.isDead = true;
+                    if (typeof _animCard === 'function') _animCard(targetName, 'anim-defeat', 700);
+
+                    // ── GOGETA: al morir → Goku y Vegeta se unen al equipo ──
+                    if (targetName === 'Gogeta' && !target._fusionExpired) {
+                        target._fusionExpired = true;
+                        addLog('💥 Fusión Perfecta: Gogeta ha caído — ¡Goku y Vegeta se unen al equipo!', 'info');
+                        var _goTeam = target.team;
+                        ['Goku', 'Vegeta'].forEach(function(charName) {
+                            if (!gameState.characters[charName] && window.characterData && window.characterData[charName]) {
+                                var d = window.characterData[charName];
+                                gameState.characters[charName] = Object.assign({}, d, {
+                                    hp: d.hp||20, maxHp: d.hp||20, charges: 0, team: _goTeam,
+                                    statusEffects: [], shield: 0, isDead: false
+                                });
+                                if (!gameState.turnOrder.includes(charName)) gameState.turnOrder.push(charName);
+                                addLog('👊 ' + charName + ' se une al combate por la Fusión Perfecta', 'buff');
+                            }
+                        });
+                        gameState.turnOrder = gameState.turnOrder.filter(function(n){ return n !== 'Gogeta'; });
+                        if (typeof calculateTurnOrder === 'function') calculateTurnOrder();
+                    }
+                    // ── BATTLE STATS: registrar kill usando función centralizada ──
+                    const _killer = attackerName || gameState._currentTurnAttacker || null;
+                    if (_killer) registerKill(_killer, targetName, false);
+                }
                 // ── REINO DE LAS SOMBRAS (Marik): 3 cargas cuando una invocación es eliminada ──
             // (se maneja en triggerSummonDeath que se llama desde applySummonDamage)
 
