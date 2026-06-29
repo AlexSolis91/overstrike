@@ -840,7 +840,7 @@
                 const portrait  = getCharPortrait(name);
 
                 // ── PERSONAJES CON DESBLOQUEO (ej. Bolvar Fordragon) ──
-                const _rtLockedChars = { 'Bolvar Fordragon': 'bolvar_fordragon' };
+                const _rtLockedChars = { 'Bolvar Fordragon': 'bolvar_fordragon', 'Gogeta': 'gogeta' };
                 const _rtLockKey = _rtLockedChars[name];
                 const _rtIsLocked = _rtLockKey && !(window._unlockedCharacters && window._unlockedCharacters[_rtLockKey]);
 
@@ -3735,6 +3735,10 @@
                 (reward.bolvarUnlockChance > 0 ? '<div style="background:rgba(200,100,0,0.15);border:1px solid rgba(251,146,60,0.5);border-radius:10px;padding:12px 20px;text-align:center;width:100%;">' +
                     '<div style="font-size:1.4rem;">' + (reward.bolvarUnlocked ? '🔓' : '🔒') + '</div>' +
                     '<div style="font-family:Orbitron,sans-serif;font-size:.85rem;color:' + (reward.bolvarUnlocked ? '#fb923c' : '#888') + ';font-weight:700;">' + (reward.bolvarUnlocked ? '¡BOLVAR FORDRAGON DESBLOQUEADO!' : 'Bolvar Fordragon no desbloqueado') + '</div>' +
+                    (reward.gogetaUnlocked !== undefined ? (
+                        '<div style="font-size:1.4rem;margin-top:4px;">' + (reward.gogetaUnlocked ? '🔓' : '🔒') + '</div>' +
+                        '<div style="font-family:Orbitron,sans-serif;font-size:.85rem;color:' + (reward.gogetaUnlocked ? '#a78bfa' : '#888') + ';font-weight:700;">' + (reward.gogetaUnlocked ? '¡GOGETA DESBLOQUEADO!' : 'Gogeta no desbloqueado') + '</div>'
+                    ) : '') +
                     '<div style="color:#666;font-size:.65rem;">Probabilidad: ' + Math.round(reward.bolvarUnlockChance * 100) + '% (posición #' + myRank + ')</div>' +
                 '</div>' : '') +
             '</div>';
@@ -4093,10 +4097,22 @@
                     else if (rank === 4) bolvarUnlockChance = 0.05;
                     else                bolvarUnlockChance = 0.01;
                 }
-                var bolvarUnlockRoll = bolvarUnlockChance > 0 ? Math.random() : 1; // roll now (stored, not re-rolled on claim)
+                var bolvarUnlockRoll = bolvarUnlockChance > 0 ? Math.random() : 1;
                 var bolvarUnlocked   = bolvarUnlockRoll < bolvarUnlockChance;
 
-                // Store claimable reward in Firebase (player must claim it from the notification modal)
+                // ── GOGETA: probabilidad de desbloqueo por posición (evento Broly) ──
+                var gogetaUnlockChance = 0;
+                if (bossName === 'Broly' && bossFelled) {
+                    if      (rank === 1) gogetaUnlockChance = 0.30;
+                    else if (rank === 2) gogetaUnlockChance = 0.20;
+                    else if (rank === 3) gogetaUnlockChance = 0.10;
+                    else if (rank === 4) gogetaUnlockChance = 0.05;
+                    else                gogetaUnlockChance = 0.01;
+                }
+                var gogetaUnlockRoll = gogetaUnlockChance > 0 ? Math.random() : 1;
+                var gogetaUnlocked   = gogetaUnlockRoll < gogetaUnlockChance;
+
+                // Store claimable reward in Firebase
                 await db.ref('weekly_boss/pending_rewards/' + entry.uid).set({
                     eventId:       eventId,
                     bossName:      bossName,
@@ -4110,8 +4126,10 @@
                     extraCount:    rw.extra ? Math.ceil((rw.extraCount||1) * multiplier) : 0,
                     multiplier:    multiplier,
                     ranking:       rankingSnapshot,
-                    bolvarUnlocked:  bolvarUnlocked,
+                    bolvarUnlocked:     bolvarUnlocked,
                     bolvarUnlockChance: bolvarUnlockChance,
+                    gogetaUnlocked:     gogetaUnlocked,
+                    gogetaUnlockChance: gogetaUnlockChance,
                     claimed:       false,
                     createdAt:     Date.now()
                 });
@@ -4158,11 +4176,27 @@
                 if (!alreadyUnlocked.val()) {
                     await unlockedRef.set(true);
                     console.log('[BOLVAR] ¡Personaje desbloqueado para ' + uid + '!');
-                    // Show unlock toast after claim
                     setTimeout(function() {
                         var t = document.createElement('div');
                         t.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#c86400,#fb923c);color:#fff;padding:16px 28px;border-radius:14px;font-family:Orbitron,sans-serif;font-size:.9rem;font-weight:700;z-index:9999999;box-shadow:0 0 30px rgba(200,100,0,0.6);text-align:center;';
                         t.innerHTML = '🔓 ¡BOLVAR FORDRAGON DESBLOQUEADO!<br><span style="font-size:.7rem;font-weight:400;opacity:.8;">Ahora puedes seleccionarlo en partidas</span>';
+                        document.body.appendChild(t);
+                        setTimeout(function(){ t.remove(); }, 5000);
+                    }, 1500);
+                }
+            }
+
+            // ── GOGETA: aplicar desbloqueo si corresponde (evento Broly) ──
+            if (reward.gogetaUnlocked) {
+                const gogetaRef = db.ref('users/' + uid + '/unlockedCharacters/gogeta');
+                const alreadyUnlocked = await gogetaRef.once('value');
+                if (!alreadyUnlocked.val()) {
+                    await gogetaRef.set(true);
+                    console.log('[GOGETA] ¡Personaje desbloqueado para ' + uid + '!');
+                    setTimeout(function() {
+                        var t = document.createElement('div');
+                        t.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1a0080,#6a00ff);color:#fff;padding:16px 28px;border-radius:14px;font-family:Orbitron,sans-serif;font-size:.9rem;font-weight:700;z-index:9999999;box-shadow:0 0 30px rgba(100,0,255,0.6);text-align:center;';
+                        t.innerHTML = '🔓 ¡GOGETA DESBLOQUEADO!<br><span style="font-size:.7rem;font-weight:400;opacity:.8;">¡La Fusión Perfecta puede unirse a tu equipo!</span>';
                         document.body.appendChild(t);
                         setTimeout(function(){ t.remove(); }, 5000);
                     }, 1500);
