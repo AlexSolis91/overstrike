@@ -8040,14 +8040,39 @@
                 renderCharacters();
 
             } else if (ability.effect === 'lado_luminoso_yoda') {
-                // Lado Luminoso: +10 cargas al aliado objetivo + turno adicional
-                const _llAlly = gameState.characters[targetName];
-                if (_llAlly && !_llAlly.isDead && _llAlly.hp > 0) {
+                // LADO LUMINOSO: +10 cargas al aliado objetivo + turno adicional
+                // El objetivo NO puede ser Viejo Maestro Yoda.
+                // Si el targetName es Yoda (ejecutado automáticamente por otro over),
+                // se reemplaza por un aliado aleatorio vivo (excepto Yoda).
+                const _llYodaName = gameState.selectedCharacter; // 'Viejo Maestro Yoda'
+                const _llYodaChar = gameState.characters[_llYodaName];
+                const _llTeam = _llYodaChar ? _llYodaChar.team : 'team1';
+
+                // Resolve actual target — never Yoda himself
+                let _llTarget = targetName;
+                if (!_llTarget || _llTarget === _llYodaName ||
+                    !gameState.characters[_llTarget] ||
+                    gameState.characters[_llTarget].isDead ||
+                    gameState.characters[_llTarget].hp <= 0 ||
+                    gameState.characters[_llTarget].team !== _llTeam) {
+                    // Pick a random alive ally that is NOT Yoda
+                    const _llAllies = Object.keys(gameState.characters).filter(function(n) {
+                        const c = gameState.characters[n];
+                        return c && c.team === _llTeam && !c.isDead && c.hp > 0 && n !== _llYodaName;
+                    });
+                    _llTarget = _llAllies.length > 0
+                        ? _llAllies[Math.floor(Math.random() * _llAllies.length)]
+                        : null;
+                }
+
+                if (_llTarget) {
+                    const _llAlly = gameState.characters[_llTarget];
                     _llAlly.charges = Math.min(20, (_llAlly.charges || 0) + 10);
-                    addLog('💫 Lado Luminoso: ' + targetName + ' recibe 10 cargas y gana turno adicional!', 'buff');
-                    // Grant extra turn via Skeggöx mechanism
-                    gameState._skeggoxExtraTurn = targetName;
+                    gameState._skeggoxExtraTurn = _llTarget;
+                    addLog('💫 Lado Luminoso: ' + _llTarget + ' recibe 10 cargas y gana turno adicional!', 'buff');
                     renderCharacters();
+                } else {
+                    addLog('💫 Lado Luminoso: no hay aliados disponibles para recibir el efecto', 'info');
                 }
 
             // ══════════════════════════════════════════════════════
