@@ -911,6 +911,95 @@
             gameState._lastAbilityType = ability ? ability.type : null;
             gameState._lastAbilityChargeGain = ability ? (ability.chargeGain || 0) : 0;
 
+            // ── ANILLO DEL TIEMPO: cuando enemigo usa especial u Over → portador +10 cargas + turno adicional ──
+            if (gameState.selectedCharacter && ability && (ability.type === 'special' || ability.type === 'over')) {
+                const _atAtk = gameState.characters[gameState.selectedCharacter];
+                if (_atAtk) {
+                    const _atDefTeam = _atAtk.team === 'team1' ? 'team2' : 'team1';
+                    for (const _atn in gameState.characters) {
+                        const _atc = gameState.characters[_atn];
+                        if (!_atc || _atc.isDead || _atc.hp <= 0 || _atc.team !== _atDefTeam) continue;
+                        if (!(_atc.equippedRelics||[]).includes('Anillo del Tiempo')) continue;
+                        _atc.charges = Math.min(20, (_atc.charges||0) + 10);
+                        gameState._skeggoxExtraTurn = _atn; // reuse extra turn flag
+                        addLog('⌛ Anillo del Tiempo: ' + _atn + ' +10 cargas + turno adicional (enemigo usó ' + ability.type + ')', 'buff');
+                        break;
+                    }
+                }
+            }
+
+            // ── FUSIÓN PERFECTA (Gogeta): cada vez que cualquier personaje usa habilidad → Gogeta enemigo +3 cargas ──
+            if (gameState.selectedCharacter) {
+                const _gkAtk = gameState.characters[gameState.selectedCharacter];
+                if (_gkAtk) {
+                    const _gkAllyTeam = _gkAtk.team === 'team1' ? 'team2' : 'team1';
+                    const _gogetaC = gameState.characters['Gogeta'];
+                    if (_gogetaC && !_gogetaC.isDead && _gogetaC.hp > 0 && _gogetaC.team === _gkAllyTeam) {
+                        _gogetaC.charges = Math.min(20, (_gogetaC.charges||0) + 3);
+                        addLog('💥 Fusión Perfecta: Gogeta genera 3 cargas (enemigo usó habilidad)', 'buff');
+                    }
+                }
+            }
+
+            // ── RELIQUIAS POST-ATAQUE ──────────────────────────────────────
+            if (finalDamage > 0 && attacker && (attacker.equippedRelics||[]).length > 0 && targetName) {
+                const _postTgt = gameState.characters[targetName];
+                const _postAtk = attacker;
+                const _postAtkTeam = _postAtk ? _postAtk.team : 'team1';
+                const _postDefTeam = _postAtkTeam === 'team1' ? 'team2' : 'team1';
+                const _postEnemies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===_postDefTeam&&!c.isDead&&c.hp>0; });
+
+                (attacker.equippedRelics||[]).forEach(function(relicName) {
+                    const _rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[relicName] : null;
+                    if (!_rd) return;
+
+                    // MARTILLO DEL ALBA: -2 cargas al enemigo golpeado
+                    if (_rd.effect === 'martillo_del_alba' && gameState._martilloAlbaActive && _postTgt) {
+                        _postTgt.charges = Math.max(0, (_postTgt.charges||0) - 2);
+                        addLog('🔨 Martillo del Alba: ' + targetName + ' pierde 2 cargas', 'debuff');
+                    }
+
+                    // ESPADA NICHIRIN NEGRA: aplica Quemadura Solar al objetivo
+                    if (_rd.effect === 'espada_nichirin_negra' && _postTgt && !_postTgt.isDead) {
+                        if (typeof applySolarBurn === 'function') applySolarBurn(targetName, 10, 2);
+                        addLog('🗡️ Espada Nichirin Negra: Quemadura Solar aplicada a ' + targetName, 'debuff');
+                    }
+
+                    // PALANTIR: aplica debuff Posesión al objetivo golpeado
+                    if (_rd.effect === 'palantir' && _postTgt && !_postTgt.isDead) {
+                        if (typeof applyDebuff === 'function') applyDebuff(targetName, {name:'Posesion',type:'debuff',duration:2,emoji:'👁️'});
+                        addLog('👁️ Palantir: Posesión aplicada a ' + targetName, 'debuff');
+                    }
+
+                    // OJO DE SERPIENTE: si objetivo tiene Veneno, propaga los mismos stacks a todos los demás enemigos
+                    if (_rd.effect === 'ojo_de_serpiente' && _postTgt) {
+                        const _oeVeff = (_postTgt.statusEffects||[]).find(function(e){ return e && e.name && e.name.toLowerCase().includes('veneno'); });
+                        if (_oeVeff) {
+                            const _oeStacks = _oeVeff.poisonStacks || 1;
+                            _postEnemies.forEach(function(_en) {
+                                if (_en === targetName) return;
+                                const _ec = gameState.characters[_en];
+                                if (!_ec || _ec.isDead || _ec.hp <= 0) return;
+                                if (typeof applyPoison === 'function') applyPoison(_en, _oeStacks);
+                            });
+                            addLog('🐍 Ojo de Serpiente: ' + _oeStacks + ' stacks de Veneno propagados a todos los enemigos', 'debuff');
+                        }
+                    }
+
+                    // OJO DE GORGONA: movimiento ST → cura aliados la mitad del daño causado
+                    if (_rd.effect === 'ojo_de_gorgona' && ability && ability.target === 'single' && finalDamage > 0) {
+                        const _ogHeal = Math.max(1, Math.floor(finalDamage / 2));
+                        Object.keys(gameState.characters).forEach(function(_aln) {
+                            const _alc = gameState.characters[_aln];
+                            if (!_alc || _alc.team !== _postAtkTeam || _alc.isDead || _alc.hp <= 0) return;
+                            if (typeof applyHeal === 'function') applyHeal(_aln, _ogHeal, 'Ojo de Gorgona');
+                        });
+                        addLog('👁️ Ojo de Gorgona: equipo aliado +' + _ogHeal + ' HP (mitad del daño ST)', 'heal');
+                    }
+                });
+                gameState._martilloAlbaActive = false;
+            }
+
             // ── PASIVAS DINÁMICAS: trigger al realizar ataque ──
             if (typeof runDynamicPassives === 'function' && gameState.selectedCharacter) {
                 const _dynAtkChar = gameState.characters[gameState.selectedCharacter];
@@ -1026,14 +1115,32 @@
                         if (!attacker._shadowmourneCounters) attacker._shadowmourneCounters = 0;
                         attacker._shadowmourneCounters++;
                         const _smC = attacker._shadowmourneCounters;
-                        finalDamage += 3 + _smC; // +3 fijo + +1 por cada contador acumulado
-                        attacker.charges = Math.min(20, (attacker.charges||0) + _smC); // +N cargas = N contadores
+                        finalDamage += 3 + _smC;
+                        attacker.charges = Math.min(20, (attacker.charges||0) + _smC);
                         if (_smC >= 10 && (ability.target === 'aoe' || ability.target === 'mt')) {
-                            finalDamage *= 2; // daño doble en AOE/MT (permanente desde el contador 10)
+                            finalDamage *= 2;
                             addLog('💀 Shadowmourne: ' + _smC + ' contadores — daño AOE/MT DOBLE + ' + (3+_smC) + ' bonus (' + finalDamage + ' total), +' + _smC + ' cargas', 'buff');
                         } else {
                             addLog('💀 Shadowmourne: ' + _smC + ' contador(es) — +' + (3+_smC) + ' daño total, +' + _smC + ' cargas', 'buff');
                         }
+                    }
+                    // ── ESPADA NICHIRIN NEGRA: daño doble a objetivos con Quemadura Solar ──
+                    if (_rd.effect === 'espada_nichirin_negra' && finalDamage > 0 && targetName) {
+                        const _ennTgt = gameState.characters[targetName];
+                        const _ennHasQS = _ennTgt && (_ennTgt.statusEffects||[]).some(function(e){ return e && e.name && e.name.toLowerCase().includes('solar'); });
+                        if (_ennHasQS) {
+                            finalDamage *= 2;
+                            addLog('🗡️ Espada Nichirin Negra: daño doble vs Quemadura Solar (' + finalDamage + ')', 'buff');
+                        }
+                    }
+                    // ── PALANTIR: ignora Provocación y Sigilo (set flag) ──
+                    if (_rd.effect === 'palantir') {
+                        attacker._ignoreTauntNextAttack = true;
+                        attacker._ignoreSigilNextAttack = true;
+                    }
+                    // ── MARTILLO DEL ALBA: -2 cargas al enemigo golpeado (post-ataque, marcamos flag) ──
+                    if (_rd.effect === 'martillo_del_alba' && finalDamage > 0) {
+                        gameState._martilloAlbaActive = true;
                     }
                 });
             }
@@ -9699,6 +9806,101 @@
                     addLog('🔥 Syrax potencia el Asedio: equipo aliado +10 HP + Quemaduras 5 HP al equipo enemigo', 'buff');
                 }
 
+
+            // ══════════════════════════════════════════════════════
+            // GOGETA — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'gogeta_castigador') {
+                // CASTIGADOR DE ALMAS: ST 5 daño. Si sin debuffs → 6 debuffs aleatorios
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('💥 Castigador de Almas: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                const _gcTgt = gameState.characters[targetName];
+                const _gcHasDebuff = _gcTgt && (_gcTgt.statusEffects||[]).some(function(e){ return e && e.type === 'debuff'; });
+                if (!_gcHasDebuff && _gcTgt && !_gcTgt.isDead) {
+                    const _gcPool = ['Quemadura','Veneno','Sangrado','Congelacion','Silenciar','Miedo','Aturdimiento','Ceguera','Debilitar','Agotamiento'];
+                    for (let _gi = 0; _gi < 6; _gi++) {
+                        const _gd = _gcPool[Math.floor(Math.random()*_gcPool.length)];
+                        if (_gd==='Quemadura')   { if(typeof applyFlatBurn==='function') applyFlatBurn(targetName, 2, 2); }
+                        else if (_gd==='Veneno') { if(typeof applyPoison==='function') applyPoison(targetName, 1); }
+                        else if (_gd==='Sangrado'){ if(typeof applyBleed==='function') applyBleed(targetName, 2); }
+                        else if (_gd==='Congelacion'){ if(typeof applyFreeze==='function') applyFreeze(targetName, 2, false); }
+                        else if (_gd==='Silenciar'){ if(typeof applySilenciar==='function') applySilenciar(targetName, 2); }
+                        else if (_gd==='Miedo')  { if(typeof applyFear==='function') applyFear(targetName, 2); }
+                        else if (_gd==='Aturdimiento'){ if(typeof applyStun==='function') applyStun(targetName, 2); }
+                        else if (_gd==='Ceguera'){ if(typeof applyBlind==='function') applyBlind(targetName, 2); }
+                        else { if(typeof applyDebuff==='function') applyDebuff(targetName, {name:_gd,type:'debuff',duration:2,emoji:'💀'}); }
+                    }
+                    addLog('💥 Castigador de Almas: ' + targetName + ' no tenía debuffs — 6 debuffs aplicados', 'debuff');
+                }
+
+            } else if (ability.effect === 'gogeta_galick_ho') {
+                // GALICK HO: AOE 5 daño. Ignora Esquiva Área. Disipa todos los buffs enemigos + +1 daño por buff
+                const _ghAtk  = gameState.characters[gameState.selectedCharacter];
+                const _ghTeam = _ghAtk ? _ghAtk.team : 'team1';
+                const _ghETeam = _ghTeam === 'team1' ? 'team2' : 'team1';
+                let _ghBuffsDis = 0;
+                // Count and disipa buffs FIRST
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _ghETeam || _c.isDead || _c.hp <= 0) continue;
+                    const _before = (_c.statusEffects||[]).filter(function(e){ return e && e.type==='buff' && !e.passiveHidden; }).length;
+                    _c.statusEffects = (_c.statusEffects||[]).filter(function(e){ return !e || e.type!=='buff' || e.passiveHidden; });
+                    _ghBuffsDis += _before;
+                }
+                const _ghFinalDmg = finalDamage + _ghBuffsDis;
+                // AOE damage — ignore Esquiva Area
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _ghETeam || _c.isDead || _c.hp <= 0) continue;
+                    applyDamageWithShield(_n, _ghFinalDmg, gameState.selectedCharacter);
+                }
+                if (typeof applyAOEToSummons === 'function') applyAOEToSummons(_ghETeam, _ghFinalDmg, gameState.selectedCharacter);
+                addLog('💥 Galick Ho: ' + _ghFinalDmg + ' daño AOE (' + finalDamage + ' base + ' + _ghBuffsDis + ' por buffs disipados)', 'damage');
+
+            } else if (ability.effect === 'gogeta_kamehameha') {
+                // KAME HAME HA: AOE 5 daño. Ignora Esquiva Área. Aplica 5 debuffs aleatorios
+                const _khAtk   = gameState.characters[gameState.selectedCharacter];
+                const _khTeam  = _khAtk ? _khAtk.team : 'team1';
+                const _khETeam = _khTeam === 'team1' ? 'team2' : 'team1';
+                const _khPool  = ['Quemadura','Veneno','Sangrado','Congelacion','Silenciar','Miedo','Aturdimiento'];
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _khETeam || _c.isDead || _c.hp <= 0) continue;
+                    applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                    for (let _ki=0; _ki<5; _ki++) {
+                        const _kd = _khPool[Math.floor(Math.random()*_khPool.length)];
+                        if (_kd==='Quemadura')   { if(typeof applyFlatBurn==='function') applyFlatBurn(_n, 2, 2); }
+                        else if (_kd==='Veneno') { if(typeof applyPoison==='function') applyPoison(_n, 1); }
+                        else if (_kd==='Sangrado'){ if(typeof applyBleed==='function') applyBleed(_n, 2); }
+                        else if (_kd==='Congelacion'){ if(typeof applyFreeze==='function') applyFreeze(_n, 2, false); }
+                        else if (_kd==='Silenciar'){ if(typeof applySilenciar==='function') applySilenciar(_n, 2); }
+                        else if (_kd==='Miedo')  { if(typeof applyFear==='function') applyFear(_n, 2); }
+                        else if (_kd==='Aturdimiento'){ if(typeof applyStun==='function') applyStun(_n, 2); }
+                    }
+                }
+                if (typeof applyAOEToSummons === 'function') applyAOEToSummons(_khETeam, finalDamage, gameState.selectedCharacter);
+                addLog('💥 Kame Hame Ha: ' + finalDamage + ' daño AOE + 5 debuffs a cada enemigo', 'damage');
+
+            } else if (ability.effect === 'gogeta_big_bang') {
+                // BIG BANG KAME HAME HA: AOE + +1 daño por cada buff/debuff en AMBOS equipos
+                const _bbAtk   = gameState.characters[gameState.selectedCharacter];
+                const _bbTeam  = _bbAtk ? _bbAtk.team : 'team1';
+                const _bbETeam = _bbTeam === 'team1' ? 'team2' : 'team1';
+                let _bbCount = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.isDead || _c.hp <= 0) continue;
+                    _bbCount += (_c.statusEffects||[]).filter(function(e){ return e && (e.type==='buff'||e.type==='debuff') && !e.passiveHidden; }).length;
+                }
+                const _bbFinalDmg = finalDamage + _bbCount;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _bbETeam || _c.isDead || _c.hp <= 0) continue;
+                    applyDamageWithShield(_n, _bbFinalDmg, gameState.selectedCharacter);
+                }
+                if (typeof applyAOEToSummons === 'function') applyAOEToSummons(_bbETeam, _bbFinalDmg, gameState.selectedCharacter);
+                addLog('💥 Big Bang Kame Hame Ha: ' + _bbFinalDmg + ' daño AOE (' + finalDamage + ' + ' + _bbCount + ' por efectos activos en ambos equipos)', 'damage');
 
             // ══════════════════════════════════════════════════════
             // BJORN IRONSIDE — handlers
