@@ -2282,6 +2282,20 @@
                     // ── PASIVAS DINÁMICAS: inicio de ronda ──
                     if (typeof runDynamicPassives === 'function') runDynamicPassives('AL_INICIO_DE_RONDA');
 
+                    // ── CAPA DE INVISIBILIDAD: inicio de ronda → 50% Esquivar + Sigilo ──
+                    for (const _capaN in gameState.characters) {
+                        const _capaC = gameState.characters[_capaN];
+                        if (!_capaC || _capaC.isDead || _capaC.hp <= 0) continue;
+                        if (!(_capaC.equippedRelics||[]).includes('Capa de Invisibilidad')) continue;
+                        if (Math.random() < 0.50) {
+                            if (typeof applyBuff === 'function') {
+                                applyBuff(_capaN, { name: 'Esquivar', type: 'buff', duration: 1, emoji: '💨' });
+                                applyBuff(_capaN, { name: 'Sigilo', type: 'buff', duration: 1, emoji: '🌑' });
+                            }
+                            addLog('🧣 Capa de Invisibilidad: ' + _capaN + ' obtiene Esquivar + Sigilo', 'buff');
+                        }
+                    }
+
                     // ── HEREDERA LEGÍTIMA (Rhaenyra): inicio de ronda → invoca 1 Cría de Dragón (máx 5 invocaciones por equipo) ──
                     for (const _rhRN in gameState.characters) {
                         const _rhRC = gameState.characters[_rhRN];
@@ -2784,6 +2798,30 @@
                     else if (_criaChosen === 'Silenciar')   { if (typeof applySilenciar === 'function') applySilenciar(_criaTarget, 1); }
                     else if (_criaChosen === 'Miedo')       { if (typeof applyFear === 'function') applyFear(_criaTarget, 1); }
                     addLog('🐉 Mordedura (Cría de Dragón): ' + _criaTarget + ' recibe ' + _criaChosen, 'debuff');
+                }
+
+                // ── GOGETA: al inicio de ronda 6+, verificar eliminación por tiempo ──
+                if (gameState.currentRound >= 6) {
+                    const _gkCh = gameState.characters['Gogeta'];
+                    if (_gkCh && !_gkCh.isDead && !_gkCh._fusionExpired) {
+                        _gkCh._fusionExpired = true;
+                        _gkCh.isDead = true; _gkCh.hp = 0;
+                        addLog('💥 Fusión Perfecta: La fusión expiró en Ronda ' + gameState.currentRound + ' — Gogeta eliminado', 'info');
+                        ['Goku', 'Vegeta'].forEach(function(charName) {
+                            if (!gameState.characters[charName] && window.characterData && window.characterData[charName]) {
+                                var d = window.characterData[charName];
+                                gameState.characters[charName] = Object.assign({}, d, {
+                                    hp: d.hp||20, maxHp: d.hp||20, charges: 0, team: _gkCh.team,
+                                    statusEffects: [], shield: 0, isDead: false
+                                });
+                                if (!gameState.turnOrder.includes(charName)) gameState.turnOrder.push(charName);
+                                addLog('👊 Fusión Perfecta: ' + charName + ' se une al equipo', 'buff');
+                            }
+                        });
+                        gameState.turnOrder = gameState.turnOrder.filter(function(n){ return n !== 'Gogeta'; });
+                        if (typeof calculateTurnOrder === 'function') calculateTurnOrder();
+                        if (typeof renderCharacters === 'function') renderCharacters();
+                    }
                 }
 
                 // ── ENFORCE PERMANENT PASSIVES (run at start of each round) ──
