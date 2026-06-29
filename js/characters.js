@@ -1015,6 +1015,20 @@
                 ]
             },
 
+            'Gogeta': {
+                hp: 20, maxHp: 20, speed: 98, charges: 10, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/cKYM45R5/gogeta-dokkan-wallpaper.jpg',
+                passive: { name: 'Fusión Perfecta', description: 'Efecto pasivo Cuerpo Perfecto. Gogeta inicia la partida con 10 cargas. Cada vez que un enemigo utilice una habilidad, Gogeta genera 3 cargas. Al reducir sus HP a 0 o al finalizar la 5ta ronda, Gogeta es eliminado y Goku y Vegeta se añaden al equipo.' },
+                abilities: [
+                    { name: 'Castigador de Almas',    type: 'basic',   cost: 5,  chargeGain: 0, damage: 5, target: 'single', effect: 'gogeta_castigador',    description: 'ST 5 daño. Si el objetivo no tiene ningún debuff activo, aplica 6 debuffs aleatorios.' },
+                    { name: 'Galick Ho',              type: 'special', cost: 7,  chargeGain: 0, damage: 5, target: 'aoe',    effect: 'gogeta_galick_ho',     description: 'AOE 5 daño. Ignora Esquiva Área. Disipa todos los buffs del equipo enemigo e inflige +1 de daño por cada buff disipado.' },
+                    { name: 'Kame Hame Ha',           type: 'special', cost: 7,  chargeGain: 0, damage: 5, target: 'aoe',    effect: 'gogeta_kamehameha',    description: 'AOE 5 daño. Ignora Esquiva Área. Aplica 5 debuffs aleatorios a los objetivos golpeados.' },
+                    { name: 'Big Bang Kame Hame Ha',  type: 'over',    cost: 18, chargeGain: 0, damage: 5, target: 'aoe',    effect: 'gogeta_big_bang',      description: 'AOE 5 daño. Causa +1 de daño por cada buff y debuff activo en ambos equipos.' }
+                ],
+                _isEventChar: true, _eventBoss: 'Broly'
+            },
+
             'Bolvar Fordragon': {
                 hp: 30, maxHp: 30, speed: 80, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
@@ -1101,6 +1115,14 @@
             'Frostmourne':          { tier:'Legendario',  slot:'Arma',    img:'https://i.ibb.co/60ncwCBX/image-67ce0467.png',   effect:'frostmourne',        desc:'Duplica el daño del portador. Roba cargas del objetivo equivalente al daño causado. Si el objetivo muere, revive como aliado con 100% HP y 20 cargas.', isEventRelic:true, eventBoss:'Lich King' },
             'Varita de Saúco':      { tier:'Legendario',  slot:'Arma',    img:'https://i.ibb.co/cKZ40jX9/image-1f459301.png',   effect:'varita_de_sauco',    desc:'Todos los movimientos del portador requieren la mitad de cargas. Cada vez que el portador ejecuta un movimiento AOE, causa el doble de daño pero pierde 3 HP. 30% de probabilidad de reflejar cualquier ataque recibido sobre el enemigo (recibe el mismo daño, debuffs y efecto de su propio ataque).', isEventRelic:true, eventBoss:'Albus Dumbledore' },
             'Shadowmourne':         { tier:'Legendario',  slot:'Arma',    img:'https://i.ibb.co/G3v2nk4w/Whats-App-Image-2026-06-19-at-12-08-09-PM.jpg', effect:'shadowmourne', desc:'Todos los ataques del portador causan +3 de daño adicional. Por cada ataque, la Shadowmourne genera 1 contador acumulado. Por cada contador: +1 de daño y +1 carga generada en ese ataque. Al llegar a 10 contadores, todos los ataques AOE y MT del portador causan daño doble (permanente, los contadores siguen acumulándose).', isEventRelic:true, eventBoss:'Bolvar Fordragon' },
+            'Anillo del Tiempo':    { tier:'Legendario',  slot:'Joya',    img:'https://i.ibb.co/4wKysxTx/image-2ccf255a.png',   effect:'anillo_del_tiempo',   desc:'Una única vez durante la partida, cuando el portador es derrotado, revive con 100% HP y 20 cargas y gana 1 turno adicional. Cada vez que un enemigo realice un ataque especial u Over, el portador genera 10 cargas y obtiene 1 turno adicional.' },
+            'Capa de Invisibilidad': { tier:'Raro',        slot:'Armadura', img:'https://i.ibb.co/TDMNfNsY/image-c0ca5843.png',  effect:'capa_de_invisibilidad', desc:'Al inicio de cada ronda, 50% de probabilidad de aplicar buff Esquivar y Sigilo al portador.' },
+            'Escudo de Espejo':     { tier:'Especial',    slot:'Escudo',   img:'https://i.ibb.co/pDbYQ7r/image-de6624f.png',    effect:'escudo_de_espejo',    desc:'25% de probabilidad de reflejar el ataque al atacante.' },
+            'Palantir':             { tier:'Épico',       slot:'Joya',     img:'https://i.ibb.co/9mYGrfWT/image-38dcb910.png',  effect:'palantir',            desc:'El portador ignora Provocación, Mega Provocación y Sigilo. Aplica debuff Posesión a los objetivos.' },
+            'Espada Nichirin Negra': { tier:'Épico',      slot:'Arma',    img:'https://i.ibb.co/9mGCFpQF/image-31f4293b.png',  effect:'espada_nichirin_negra', desc:'Aplica debuff Quemadura Solar con los ataques. Inflige daño doble a enemigos con debuff Quemadura Solar activo al golpearlos.' },
+            'Martillo del Alba':    { tier:'Raro',        slot:'Arma',    img:'https://i.ibb.co/DHGQFpg8/image-681276ff.png',   effect:'martillo_del_alba',   desc:'Reduce 2 cargas del enemigo golpeado.' },
+            'Ojo de Serpiente':     { tier:'Especial',    slot:'Joya',    img:'https://i.ibb.co/bjrdDzBF/image-ba09b3a0.png',   effect:'ojo_de_serpiente',    desc:'Si el objetivo golpeado tiene stacks de Veneno activo, aplica la misma cantidad de stacks de Veneno a todos los demás enemigos.' },
+            'Ojo de Gorgona':       { tier:'Épico',       slot:'Joya',    img:'https://i.ibb.co/rKvN3qL2/image-dd06954e.png',   effect:'ojo_de_gorgona',      desc:'Cuando el portador causa daño con un movimiento ST, cura HP a todos los aliados equivalente a la mitad del daño causado.' },
             'Mascara de Tyrael':    { tier:'Epico',       slot:'Yelmo',   img:'https://i.ibb.co/wFm6QxCs/image-cdf242f6.png',   effect:'tyrael_mask',        desc:'Al final de cada ronda, el portador genera 3 cargas.' },
             'Ignifugoz':            { tier:'Especial',    slot:'Armadura',img:'https://i.ibb.co/XZN4GJ80/image-a7bffce5.png',   effect:'ignifugoz_immunity', desc:'El portador es inmune a debuffs y daño de Quemaduras.' },
         };
