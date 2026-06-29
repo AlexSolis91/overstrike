@@ -642,6 +642,20 @@
                 ]
             },
 
+            'Gogeta': {
+                hp: 20, maxHp: 20, speed: 98, charges: 10, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/cKYM45R5/gogeta-dokkan-wallpaper.jpg',
+                passive: { name: 'Fusión Perfecta', description: 'Efecto pasivo Cuerpo Perfecto. Gogeta inicia con 10 cargas. Cada vez que un enemigo usa una habilidad, Gogeta genera 3 cargas. Al llegar a 0 HP o al finalizar la 5ta ronda, es eliminado y Goku y Vegeta se añaden al equipo.' },
+                abilities: [
+                    { name: 'Castigador de Almas',   type: 'basic',   cost: 5,  chargeGain: 0, damage: 5, target: 'single', effect: 'gogeta_castigador',  description: 'ST 5 daño. Si el objetivo no tiene debuffs activos, aplica 6 debuffs aleatorios.' },
+                    { name: 'Galick Ho',             type: 'special', cost: 7,  chargeGain: 0, damage: 5, target: 'aoe',    effect: 'gogeta_galick_ho',   description: 'AOE 5 daño. Ignora Esquiva Área. Disipa todos los buffs enemigos e inflige +1 daño por buff disipado.' },
+                    { name: 'Kame Hame Ha',          type: 'special', cost: 7,  chargeGain: 0, damage: 5, target: 'aoe',    effect: 'gogeta_kamehameha',  description: 'AOE 5 daño. Ignora Esquiva Área. Aplica 5 debuffs aleatorios a los objetivos.' },
+                    { name: 'Big Bang Kame Hame Ha', type: 'over',    cost: 18, chargeGain: 0, damage: 5, target: 'aoe',    effect: 'gogeta_big_bang',    description: 'AOE 5 daño. +1 daño por cada buff y debuff activo en ambos equipos.' }
+                ],
+                _isEventChar: true, _eventBoss: 'Broly'
+            },
+
             'Bolvar Fordragon': {
                 hp: 30, maxHp: 30, speed: 80, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
