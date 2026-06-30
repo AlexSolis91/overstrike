@@ -853,6 +853,28 @@
                 finalChargeGain *= 2;
             }
 
+            // ── CAZADOR DE HÉROES (Garou): +2 daño base por Modo Kaiju, luego daño doble si tiene Quemadura/Veneno/Sangrado ──
+            if (finalDamage > 0 && gameState.selectedCharacter === 'Garou' && ability && ability.effect !== 'modo_kaiju_garou') {
+                const _gkChar = gameState.characters['Garou'];
+                if (_gkChar) {
+                    // Bonus de daño base por Modo Kaiju (acumulable)
+                    if (_gkChar.garouKaijuMode && _gkChar.garouKaijuBonusDmg > 0) {
+                        finalDamage += _gkChar.garouKaijuBonusDmg;
+                        addLog('🦖 Modo Kaiju: +' + _gkChar.garouKaijuBonusDmg + ' daño base', 'damage');
+                    }
+                    // Daño doble si tiene Quemadura, Veneno o Sangrado activo
+                    const _gkHasDebuff = (_gkChar.statusEffects||[]).some(function(e){
+                        if (!e || !e.name) return false;
+                        const n = e.name.toLowerCase();
+                        return n.includes('quemadura') || n.includes('veneno') || n.includes('sangrado');
+                    });
+                    if (_gkHasDebuff) {
+                        finalDamage *= 2;
+                        addLog('🐾 Cazador de Héroes: daño doble (debuff activo en Garou)', 'damage');
+                    }
+                }
+            }
+
             // BUFF FURIA: +50% daño
             if (finalDamage > 0 && hasStatusEffect(gameState.selectedCharacter, 'Furia')) {
                 finalDamage = Math.ceil(finalDamage * 1.5);
@@ -910,6 +932,19 @@
             // Se setea SIEMPRE, no solo cuando el atacante tiene reliquias
             gameState._lastAbilityType = ability ? ability.type : null;
             gameState._lastAbilityChargeGain = ability ? (ability.chargeGain || 0) : 0;
+
+            // ── CAZADOR DE HÉROES (Garou): cada vez que un enemigo genera cargas → Garou +1 carga ──
+            if (gameState.selectedCharacter && gameState.selectedCharacter !== 'Garou' && ability && (ability.chargeGain || 0) > 0) {
+                const _gkAtk2 = gameState.characters[gameState.selectedCharacter];
+                if (_gkAtk2) {
+                    const _gkEnemyTeam = _gkAtk2.team === 'team1' ? 'team2' : 'team1';
+                    const _garouChar = gameState.characters['Garou'];
+                    if (_garouChar && !_garouChar.isDead && _garouChar.hp > 0 && _garouChar.team === _gkEnemyTeam) {
+                        _garouChar.charges = Math.min(20, (_garouChar.charges||0) + 1);
+                        addLog('🐾 Cazador de Héroes: Garou genera 1 carga (enemigo generó cargas)', 'buff');
+                    }
+                }
+            }
 
             // ── ANILLO DEL TIEMPO: cuando enemigo usa especial u Over → portador +10 cargas + turno adicional ──
             if (gameState.selectedCharacter && ability && (ability.type === 'special' || ability.type === 'over')) {
@@ -7452,36 +7487,45 @@
                 }
                 addLog('🌊 Decimotercera Postura: 13 golpes completados', 'damage');
             } else if (ability.effect === 'ryusui_garou') {
-                // GAROU — Ryusui Gansai-ken: 2 daño + reduce 2 cargas + Garou recupera 2 HP
-                const _rgAtk = gameState.characters[gameState.selectedCharacter];
-                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                const _rgTarget = gameState.characters[targetName];
-                if (_rgTarget) {
-                    const _rgDrain = Math.min(2, _rgTarget.charges || 0);
-                    _rgTarget.charges = Math.max(0, (_rgTarget.charges||0) - 2);
-                    if (_rgDrain > 0) addLog('⚡ Ryusui: ' + targetName + ' pierde ' + _rgDrain + ' cargas', 'debuff');
+                // GAROU — Ryusui Gansai-ken: 50% daño triple. 50% genera 3 cargas a un aliado aleatorio.
+                let _rgDmg = finalDamage;
+                if (Math.random() < 0.50) {
+                    _rgDmg = finalDamage * 3;
+                    addLog('🐾 Ryusui Gansai-ken: ¡daño triple!', 'damage');
                 }
-                // Garou heals 2 HP (basic attack heal from passive context — done here)
-                if (_rgAtk) {
-                    const _rgOldHp = _rgAtk.hp;
-                    _rgAtk.hp = Math.min(_rgAtk.maxHp, (_rgAtk.hp||0) + 2);
-                    if (_rgAtk.hp > _rgOldHp) addLog('🐾 Cazador de Héroes: Garou recupera ' + (_rgAtk.hp - _rgOldHp) + ' HP', 'heal');
+                applyDamageWithShield(targetName, _rgDmg, gameState.selectedCharacter);
+                addLog('🐾 Ryusui Gansai-ken: ' + _rgDmg + ' daño a ' + targetName, 'damage');
+                if (Math.random() < 0.50) {
+                    const _rgAtk = gameState.characters[gameState.selectedCharacter];
+                    const _rgAllyTeam = _rgAtk ? _rgAtk.team : 'team1';
+                    const _rgAllies = Object.keys(gameState.characters).filter(function(n) {
+                        const c = gameState.characters[n];
+                        return c && c.team === _rgAllyTeam && !c.isDead && c.hp > 0;
+                    });
+                    if (_rgAllies.length > 0) {
+                        const _rgChosen = _rgAllies[Math.floor(Math.random()*_rgAllies.length)];
+                        gameState.characters[_rgChosen].charges = Math.min(20, (gameState.characters[_rgChosen].charges||0) + 3);
+                        addLog('🐾 Ryusui Gansai-ken: ' + _rgChosen + ' genera 3 cargas', 'buff');
+                    }
                 }
-                addLog('🐾 Ryusui Gansai-ken: ' + finalDamage + ' daño a ' + targetName, 'damage');
 
             } else if (ability.effect === 'cross_fang_garou') {
-                // GAROU — Cross Fang Dragon Slayer Fist: 4 + 2 por cada personaje derrotado
-                let _cfBonus = 0;
+                // GAROU — Cross Fang Dragon Slayer Fist: daño adicional = cantidad de debuffs en equipo enemigo
+                const _cfAtk = gameState.characters[gameState.selectedCharacter];
+                const _cfEnemyTeam = _cfAtk ? (_cfAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                let _cfDebuffCount = 0;
                 for (const _n in gameState.characters) {
-                    const _c = gameState.characters[_n]; if (_c && _c.isDead) _cfBonus += 2;
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _cfEnemyTeam || _c.isDead || _c.hp <= 0) continue;
+                    _cfDebuffCount += (_c.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff'; }).length;
                 }
-                const _cfTotal = finalDamage + _cfBonus;
-                if (_cfBonus > 0) addLog('🐾 Cross Fang: +' + _cfBonus + ' daño por personajes derrotados', 'damage');
+                const _cfTotal = finalDamage + _cfDebuffCount;
+                if (_cfDebuffCount > 0) addLog('🐾 Cross Fang: +' + _cfDebuffCount + ' daño por debuffs en equipo enemigo', 'damage');
                 applyDamageWithShield(targetName, _cfTotal, gameState.selectedCharacter);
                 addLog('🐾 Cross Fang Dragon Slayer Fist: ' + _cfTotal + ' daño total a ' + targetName, 'damage');
 
             } else if (ability.effect === 'gamma_ray_garou') {
-                // GAROU — Gamma Ray Burst: 1 AOE + bonus por cargas del objetivo
+                // GAROU — Gamma Ray Burst: AOE. Aplica Debilitar a todos. Daño doble + (+1 por debuff) a los que ya tengan debuff
                 const _grAtk = gameState.characters[gameState.selectedCharacter];
                 const _grEnemyTeam = _grAtk ? (_grAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
                 if (checkAndRedirectAOEMegaProv(_grEnemyTeam, finalDamage, gameState.selectedCharacter)) {
@@ -7491,26 +7535,35 @@
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== _grEnemyTeam || _c.isDead || _c.hp <= 0) continue;
                         if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
-                        const _grDmg = finalDamage + (_c.charges || 0);
+                        const _grDebuffCount = (_c.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff'; }).length;
+                        let _grDmg = finalDamage;
+                        if (_grDebuffCount > 0) {
+                            _grDmg = (finalDamage + _grDebuffCount) * 2;
+                            addLog('🐾 Gamma Ray Burst: ' + _n + ' tiene debuffs — daño doble + bonus', 'damage');
+                        }
                         applyDamageWithShield(_n, _grDmg, gameState.selectedCharacter);
-                        applyAOEToSummons(_grEnemyTeam, finalDamage, gameState.selectedCharacter);
-                addLog('🐾 Gamma Ray Burst: ' + _grDmg + ' daño a ' + _n + ' (' + (_c.charges||0) + ' cargas)', 'damage');
+                        if (typeof applyDebuff === 'function') applyDebuff(_n, { name: 'Debilitar', type: 'debuff', duration: 2, emoji: '⬇️' });
+                        addLog('🐾 Gamma Ray Burst: ' + _grDmg + ' daño a ' + _n + ' + Debilitar aplicado', 'damage');
+                    }
+                    applyAOEToSummons(_grEnemyTeam, finalDamage, gameState.selectedCharacter);
+                }
+
+            } else if (ability.effect === 'modo_kaiju_garou') {
+                // GAROU — Modo Kaiju: solo si no está ya transformado. Dura 2 rondas. Revive HP 100%. +2 daño base permanente mientras dure (acumulable al recibir daño)
+                const _mkAtk = gameState.characters[gameState.selectedCharacter];
+                if (_mkAtk) {
+                    if (_mkAtk.garouKaijuMode) {
+                        addLog('🐾 Modo Kaiju: Garou ya está transformado', 'info');
+                    } else {
+                        _mkAtk.garouKaijuMode = true;
+                        _mkAtk.garouKaijuRoundsLeft = 2;
+                        _mkAtk.garouKaijuBonusDmg = 2; // +2 base inicial
+                        _mkAtk.hp = _mkAtk.maxHp;
+                        addLog('🐾 Modo Kaiju: ¡Garou se transforma! HP restaurado al 100%. Todos sus ataques +2 daño base', 'buff');
+                        if (typeof renderCharacters === 'function') renderCharacters();
                     }
                 }
 
-            } else if (ability.effect === 'saitama_mode_garou') {
-                // GAROU — Saitama Mode: inmunidad a debuffs + 50% reducción de daño recibido
-                const _smAtk = gameState.characters[gameState.selectedCharacter];
-                if (_smAtk) {
-                    _smAtk.garouSaitamaMode = true;
-                    _smAtk.immuneToDebuffs = true; // used by isImmuneToDebuff
-                    // Apply a permanent damage reduction buff (checked in applyDamageWithShield)
-                    applyBuff(gameState.selectedCharacter, {
-                        name: 'Saitama Mode', type: 'buff', duration: 999, permanent: true, emoji: '💀',
-                        damageReduction: 0.50, description: 'Inmune a debuffs. Recibe 50% menos daño.'
-                    });
-                    addLog('💀 Saitama Mode: Garou activa inmunidad y reducción de daño 50%', 'buff');
-                }
             } else if (ability.effect === 'energy_fists_lv') {
                 // LINTERNA VERDE — Energy Fists: +1 daño y +1 carga por cada Buff activo en Linterna Verde (cualquier procedencia)
                 const _efAtk = gameState.characters[gameState.selectedCharacter];
