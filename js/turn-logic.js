@@ -2720,6 +2720,24 @@
                             gameState._currentDamageSource = 'Veneno'; // Visión Esmeralda
                             applyDamageWithShield(_eorN, _eorPoisonDmg, null);
                             addLog('☠️ ' + _eorN + ' recibe ' + _eorPoisonDmg + ' de daño por Veneno (' + (_eorPoison.poisonStacks||0) + 'S) — el debuff expira', 'damage');
+
+                            // ── AGUIJÓN ESMERALDA: cuando un enemigo recibe daño por debuff Veneno → aplica 2 Stacks de Veneno a 2 enemigos aleatorios (del portador) ──
+                            for (const _aeN in gameState.characters) {
+                                const _aeC = gameState.characters[_aeN];
+                                if (!_aeC || _aeC.isDead || _aeC.hp <= 0) continue;
+                                if (!(_aeC.equippedRelics||[]).includes('Aguijón Esmeralda')) continue;
+                                if (_aeC.team === _eorC.team) continue; // el portador debe ser enemigo del que recibió el daño
+                                const _aeTargets = Object.keys(gameState.characters).filter(function(n) {
+                                    const c = gameState.characters[n];
+                                    return c && c.team === _eorC.team && !c.isDead && c.hp > 0;
+                                }).sort(function(){ return Math.random()-0.5; }).slice(0, 2);
+                                _aeTargets.forEach(function(n) {
+                                    if (typeof applyPoison === 'function') applyPoison(n, 2);
+                                });
+                                if (_aeTargets.length > 0) {
+                                    addLog('☠️ Aguijón Esmeralda: 2 stacks de Veneno aplicados a ' + _aeTargets.join(' y '), 'debuff');
+                                }
+                            }
                             if (typeof _animCard === 'function') _animCard(_eorN, 'anim-poison', 700);
                             if (typeof _spawnParticles === 'function') _spawnParticles(_eorN, '☠️', 3);
                             if (typeof registerPoisonDamage === 'function') registerPoisonDamage(_eorPoisonDmg);
