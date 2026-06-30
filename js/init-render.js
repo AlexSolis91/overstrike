@@ -512,7 +512,7 @@
                                       ((name === 'Vegeta' || name === 'Vegeta v2') && char.vegetaForm) ||
                                       ((name === 'Anakin Skywalker' || name === 'Anakin Skywalker v2') && char.darkSideAwakened) ||
                                       ((name === 'Muzan Kibutsuji' || name === 'Muzan Kibutsuji v2') && char.muzanTransformed) ||
-                                      (name === 'Garou' && char.garouSaitamaMode) ||
+                                      (name === 'Garou' && char.garouKaijuMode) ||
                                       ((name === 'Superman' || name === 'Superman v2') && char.supermanPrimeMode) ||
                                       ((name === 'Varian Wrynn' || name === 'Varian Wrynn v2') && char.varianTransformed) ||
                                       ((name === 'Escanor' || name === 'Escanor v2') && char.escanorTheOneActive) ||
@@ -545,6 +545,10 @@
                 }
                 // Portrait Antares transformado
                 if ((name === 'Antares' || name === 'Antares v2') && char.antaresTransformed && char.transformPortrait) {
+                    _dynPortrait = char.transformPortrait;
+                }
+                // Portrait Garou — Modo Kaiju
+                if (name === 'Garou' && char.garouKaijuMode && char.transformPortrait) {
                     _dynPortrait = char.transformPortrait;
                 }
                 if ((name === 'Meliodas' || name === 'Meliodas v2') && char._reyDemonioActive && char.transformPortrait) {
