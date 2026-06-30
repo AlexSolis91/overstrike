@@ -887,16 +887,6 @@
                 }
             }
 
-            // ── CAZADOR DE HÉROES (Garou): daño DIRECTO (attackerName=null) → cargas ──
-            // Solo se activa con daño directo (quemaduras, veneno, sangrado, efectos)
-            // NO se activa con daño por golpe del enemigo (attackerName = personaje)
-            if (!passiveExecuting && damage > 0 && attackerName === null &&
-                target.passive && target.passive.name === 'Cazador de Héroes') {
-                const _garouChargesGained = damage;
-                target.charges = Math.min(20, (target.charges || 0) + _garouChargesGained);
-                addLog('🐆 Cazador de Héroes: ' + targetName + ' convierte ' + damage + ' de daño directo en ' + _garouChargesGained + ' cargas', 'buff');
-                return 0; // No HP damage — converted to charges
-            }
             // ── CABALLERO DE LA NOCHE (Batman): inmune a daño de ataques especiales ──
             if (!passiveExecuting && attackerName && attackerName !== targetName &&
                 target.passive && target.passive.name === 'Caballero de la Noche') {
