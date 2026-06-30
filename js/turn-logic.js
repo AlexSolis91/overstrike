@@ -1161,8 +1161,11 @@
                                    ((name === 'Daemon Targaryen') && (char.daemonJineteTurns||0) > 0) ||
                                    ((name === 'Goku' || name.startsWith('Goku')) && char.ultraInstinto) ||
                                   ((name === 'Anakin Skywalker' || name === 'Anakin Skywalker v2') && char.darkSideAwakened) ||
-                                  ((name === 'Muzan Kibutsuji' || name === 'Muzan Kibutsuji v2') && char.muzanTransformed);
-            const portrait = char.portrait || char.transformPortrait || char.transformationPortrait || '';
+                                  ((name === 'Muzan Kibutsuji' || name === 'Muzan Kibutsuji v2') && char.muzanTransformed) ||
+                                  ((name === 'Garou') && char.garouKaijuMode);
+            const portrait = (isTransformed && (char.transformPortrait || char.transformationPortrait))
+                ? (char.transformPortrait || char.transformationPortrait)
+                : (char.portrait || char.transformPortrait || char.transformationPortrait || '');
 
             // Header row
             const header = document.createElement('div');
@@ -1328,7 +1331,8 @@
                                        (char.ultraInstinto && (charName === 'Goku' || charName.startsWith('Goku'))) ||
                                        (char.darkSideAwakened && (charName === 'Anakin Skywalker' || charName === 'Anakin Skywalker v2')) ||
                                        (char.muzanTransformed && (charName === 'Muzan Kibutsuji' || charName === 'Muzan Kibutsuji v2')) ||
-                                       (char._reyDemonioActive && (charName === 'Meliodas' || charName === 'Meliodas v2'));
+                                       (char._reyDemonioActive && (charName === 'Meliodas' || charName === 'Meliodas v2')) ||
+                                       (char.garouKaijuMode && charName === 'Garou');
             const modalPortrait = (isTransformedModal && (char.transformPortrait || char.transformationPortrait))
                 ? (char.transformPortrait || char.transformationPortrait)
                 : (char.portrait || char.transformPortrait || char.transformationPortrait || '');
