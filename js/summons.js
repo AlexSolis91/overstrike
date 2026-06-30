@@ -1434,12 +1434,16 @@
             }
 
             // ── CAZADOR DE HÉROES (Garou): si recibe 2 o menos de daño → contraataca gratis con Ryusui Gansai-ken ──
-            if (remainingDamage > 0 && remainingDamage <= 2 && targetName === 'Garou' && !target.isDead && target.hp > 0 && !passiveExecuting) {
-                passiveExecuting = true;
+            // Usa un guard DEDICADO (gameState._garouCounterActive) en lugar de passiveExecuting (variable global
+            // compartida entre todas las pasivas) para evitar que se resetee prematuramente por código anidado
+            // y cause recursión infinita.
+            if (remainingDamage > 0 && remainingDamage <= 2 && targetName === 'Garou' && !target.isDead && target.hp > 0 &&
+                !passiveExecuting && !gameState._garouCounterActive) {
+                gameState._garouCounterActive = true;
                 const _ghEnemyTeam = target.team === 'team1' ? 'team2' : 'team1';
                 const _ghEnemies = Object.keys(gameState.characters).filter(function(n) {
                     const c = gameState.characters[n];
-                    return c && c.team === _ghEnemyTeam && !c.isDead && c.hp > 0;
+                    return c && c.team === _ghEnemyTeam && !c.isDead && c.hp > 0 && n !== 'Garou';
                 });
                 if (_ghEnemies.length > 0 && typeof _executeAbilityCore === 'function') {
                     const _ghTarget = _ghEnemies[Math.floor(Math.random()*_ghEnemies.length)];
@@ -1452,13 +1456,16 @@
                         gameState.selectedCharacter = 'Garou';
                         gameState.selectedAbility = _ghAbility;
                         gameState._abilityExecuting = false;
-                        _executeAbilityCore(_ghTarget);
-                        gameState.selectedCharacter = _prevSelected;
-                        gameState.selectedAbility = _prevAbility;
-                        gameState._abilityExecuting = _prevExecuting;
+                        try {
+                            _executeAbilityCore(_ghTarget);
+                        } finally {
+                            gameState.selectedCharacter = _prevSelected;
+                            gameState.selectedAbility = _prevAbility;
+                            gameState._abilityExecuting = _prevExecuting;
+                        }
                     }
                 }
-                passiveExecuting = false;
+                gameState._garouCounterActive = false;
             }
 
             // ── VISIÓN ESMERALDA (Linterna Verde): un aliado recibe daño por Quemadura/Veneno/Sangrado/Hemorragia → cura 3 HP a todo el equipo aliado ──
