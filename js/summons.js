@@ -1451,18 +1451,21 @@
                     const c = gameState.characters[n];
                     return c && c.team === _ghEnemyTeam && !c.isDead && c.hp > 0;
                 });
-                if (_ghEnemies.length > 0 && typeof executeAbility === 'function') {
+                if (_ghEnemies.length > 0 && typeof _executeAbilityCore === 'function') {
                     const _ghTarget = _ghEnemies[Math.floor(Math.random()*_ghEnemies.length)];
                     const _ghAbility = (target.abilities||[]).find(function(a){ return a.effect === 'ryusui_garou'; });
                     if (_ghAbility) {
                         addLog('🐾 Cazador de Héroes: ¡Garou contraataca con Ryusui Gansai-ken!', 'buff');
                         const _prevSelected = gameState.selectedCharacter;
                         const _prevAbility = gameState.selectedAbility;
+                        const _prevExecuting = gameState._abilityExecuting;
                         gameState.selectedCharacter = 'Garou';
                         gameState.selectedAbility = _ghAbility;
-                        executeAbility('Garou', _ghAbility, _ghTarget);
+                        gameState._abilityExecuting = false;
+                        _executeAbilityCore(_ghTarget);
                         gameState.selectedCharacter = _prevSelected;
                         gameState.selectedAbility = _prevAbility;
+                        gameState._abilityExecuting = _prevExecuting;
                     }
                 }
                 passiveExecuting = false;
