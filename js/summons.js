@@ -934,12 +934,6 @@
                 addLog('🦸 Forma Prime: ' + targetName + ' reduce daño a ' + damage + ' (-50%)', 'buff');
             }
 
-            // ── SAITAMA MODE (Garou): reduce -2 daño recibido ──
-            if (target.garouSaitamaMode && damage > 0) {
-                damage = Math.max(0, damage - 2);
-                if (damage === 0) { addLog('💪 Saitama Mode: ' + targetName + ' bloquea el golpe (-2)', 'buff'); return 0; }
-                addLog('💪 Saitama Mode: ' + targetName + ' reduce daño a ' + damage + ' (-2)', 'buff');
-            }
 
             // CASTILLO INFINITO (Nakime): redirigir primer ataque ST de la ronda al equipo atacante
             if (attackerName !== null && attackerName !== targetName && !passiveExecuting) {
@@ -1442,6 +1436,37 @@
 
             target.hp = Math.max(0, target.hp - remainingDamage);
             if (remainingDamage > 0) target._dmgAnimatedThisFrame = true; // evita doble animación en renderCharacters
+
+            // ── MODO KAIJU (Garou): mientras transformado, cada vez que recibe daño → +1 daño base adicional permanente (mientras dure) ──
+            if (remainingDamage > 0 && targetName === 'Garou' && target.garouKaijuMode && !passiveExecuting) {
+                target.garouKaijuBonusDmg = (target.garouKaijuBonusDmg || 0) + 1;
+                addLog('🦖 Modo Kaiju: Garou +1 daño base permanente (total +' + target.garouKaijuBonusDmg + ')', 'buff');
+            }
+
+            // ── CAZADOR DE HÉROES (Garou): si recibe 2 o menos de daño → contraataca gratis con Ryusui Gansai-ken ──
+            if (remainingDamage > 0 && remainingDamage <= 2 && targetName === 'Garou' && !target.isDead && target.hp > 0 && !passiveExecuting) {
+                passiveExecuting = true;
+                const _ghEnemyTeam = target.team === 'team1' ? 'team2' : 'team1';
+                const _ghEnemies = Object.keys(gameState.characters).filter(function(n) {
+                    const c = gameState.characters[n];
+                    return c && c.team === _ghEnemyTeam && !c.isDead && c.hp > 0;
+                });
+                if (_ghEnemies.length > 0 && typeof executeAbility === 'function') {
+                    const _ghTarget = _ghEnemies[Math.floor(Math.random()*_ghEnemies.length)];
+                    const _ghAbility = (target.abilities||[]).find(function(a){ return a.effect === 'ryusui_garou'; });
+                    if (_ghAbility) {
+                        addLog('🐾 Cazador de Héroes: ¡Garou contraataca con Ryusui Gansai-ken!', 'buff');
+                        const _prevSelected = gameState.selectedCharacter;
+                        const _prevAbility = gameState.selectedAbility;
+                        gameState.selectedCharacter = 'Garou';
+                        gameState.selectedAbility = _ghAbility;
+                        executeAbility('Garou', _ghAbility, _ghTarget);
+                        gameState.selectedCharacter = _prevSelected;
+                        gameState.selectedAbility = _prevAbility;
+                    }
+                }
+                passiveExecuting = false;
+            }
 
             // ── VISIÓN ESMERALDA (Linterna Verde): un aliado recibe daño por Quemadura/Veneno/Sangrado/Hemorragia → cura 3 HP a todo el equipo aliado ──
             if (remainingDamage > 0 && !passiveExecuting && _debuffDamageSource) {
