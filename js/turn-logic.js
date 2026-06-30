@@ -1486,7 +1486,7 @@
                     const _charName = gameState.selectedCharacter;
                     const _c = gameState.characters[_charName];
                     if (_c && (_c.darkSideAwakened || _c.rikudoMode || _c.ultraInstinto || _c.muzanTransformed ||
-                        _c.varianTransformed || _c.garouSaitamaMode || _c.supermanPrimeMode ||
+                        _c.varianTransformed || _c.garouKaijuMode || _c.supermanPrimeMode ||
                         _c.dragonFormActive || _c.fenixArmorActive || _c.kuramaMode)) {
                         blockedByTransform = true;
                     }
@@ -2842,6 +2842,18 @@
                     }
                 }
 
+                // ── MODO KAIJU (Garou): contar ronda transformada, revertir tras 2 rondas ──
+                const _garouK = gameState.characters['Garou'];
+                if (_garouK && _garouK.garouKaijuMode && !_garouK.isDead) {
+                    _garouK.garouKaijuRoundsLeft = (_garouK.garouKaijuRoundsLeft || 0) - 1;
+                    if (_garouK.garouKaijuRoundsLeft <= 0) {
+                        _garouK.garouKaijuMode = false;
+                        _garouK.garouKaijuBonusDmg = 0;
+                        addLog('🐾 Modo Kaiju: la transformación de Garou ha terminado', 'info');
+                        if (typeof renderCharacters === 'function') renderCharacters();
+                    }
+                }
+
                 // ── ENFORCE PERMANENT PASSIVES (run at start of each round) ──
                 for (const _pn in gameState.characters) {
                     const _pc = gameState.characters[_pn];
@@ -3669,7 +3681,7 @@
             if (char.antaresTransformed && char.transformPortrait) portrait = char.transformPortrait;
             if (char.muzanTransformed && (char.transformPortrait || char.transformationPortrait))
                 portrait = char.transformPortrait || char.transformationPortrait;
-            if (char.garouSaitamaMode && char.transformPortrait) portrait = char.transformPortrait;
+            if (char.garouKaijuMode && char.transformPortrait) portrait = char.transformPortrait;
             if (char.dragonFormActive && (char.transformPortrait || char.transformationPortrait))
                 portrait = char.transformPortrait || char.transformationPortrait;
             if ((char.daemonJineteTurns||0) > 0 && char.transformPortrait)
