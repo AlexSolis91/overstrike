@@ -1809,21 +1809,6 @@
 
                         // ergonos_basic: handled above (no duplicate)
 
-                        // Aguijón Esmeralda: si objetivo tiene Veneno, extiende a 2 enemigos más
-                        case 'poison_spread':
-                            if (_tgtChar && typeof hasStatusEffect !== 'undefined' && hasStatusEffect(targetName, 'Veneno')) {
-                                var _psEnemies = Object.keys(gameState.characters).filter(function(n){
-                                    var _c = gameState.characters[n];
-                                    return _c && _c.team !== _atkChar.team && !_c.isDead && n !== targetName;
-                                }).sort(function(){ return Math.random()-0.5; }).slice(0,2);
-                                _psEnemies.forEach(function(n){
-                                    if (typeof applyDebuff === 'function')
-                                        applyDebuff(n, { name:'Veneno', type:'debuff', duration:2, emoji:'☠️', dotDamage:1 });
-                                    addLog('☠️ Aguijón Esmeralda: Veneno extendido a ' + n, 'debuff');
-                                });
-                            }
-                            break;
-
                         // Zenit: +3 cargas al recibir golpe (handled in defender section below)
                         case 'zenit_tank': break;
 
@@ -1857,19 +1842,6 @@
                             }
                             break;
 
-                        // Veneno se extiende al causar daño a enemigo envenenado
-                        case 'poison_spread':
-                            if (_tgtChar && hasStatusEffect && hasStatusEffect(targetName,'Veneno')) {
-                                const _enemies = Object.keys(gameState.characters).filter(function(n){
-                                    const _c = gameState.characters[n]; return _c && _c.team !== _atkChar.team && !_c.isDead && n !== targetName;
-                                }).sort(function(){ return Math.random()-0.5; }).slice(0,2);
-                                _enemies.forEach(function(n){
-                                    if (typeof applyDebuff === 'function')
-                                        applyDebuff(n, { name:'Veneno', type:'debuff', duration:2, emoji:'☠️', dotDamage:1 });
-                                    addLog('☠️ Aguijón Esmeralda: Veneno a ' + n, 'debuff');
-                                });
-                            }
-                            break;
                     }
                 });
 
