@@ -2191,27 +2191,51 @@
 
         // ── Trigger automático: último día del mes a medianoche ──────────────
         // ── Trigger de fin de temporada: día 1 de cada mes, cualquier usuario ──
-        // Se ejecuta en el día 1 del mes actual. Compara con la temporada anterior
-        // (mes anterior) y distribuye si aún no se ha hecho para esa temporada.
+        // 1) Distribuye recompensas de la temporada anterior (usando snapshot guardado)
+        // 2) Resetea masivamente los puntos de todos los jugadores a 0
         (function checkSeasonEnd() {
             var now = new Date();
-            // Solo ejecutar el día 1 del mes
             if (now.getDate() !== 1) return;
 
-            // Calculate previous month season key (the one that just ended)
-            var prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-            var prevSeasonKey = prevMonth.getFullYear() + '-' + String(prevMonth.getMonth() + 1).padStart(2, '0');
+            var curSeasonKey  = getCurrentSeasonKey(); // e.g. '2026-07'
+            var prevMonth     = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            var prevSeasonKey = prevMonth.getFullYear() + '-' + String(prevMonth.getMonth() + 1).padStart(2, '0'); // '2026-06'
 
             firebase.auth().onAuthStateChanged(function(user) {
                 if (!user) return;
-                // Check if rewards for previous season already distributed
+
+                // ── Step 1: Distribute rewards for previous season (if not done) ──
                 db.ref('season_rewards_distributed').once('value').then(function(snap) {
-                    if (snap.val() === prevSeasonKey) return; // already done
-                    // Not done yet — distribute. Any logged-in user can trigger this.
-                    // distributeSeasonRewards uses ranked_stats data which has the previous
-                    // season points (since seasonKey just changed to current month).
-                    // We pass the previous season key explicitly.
-                    distributeSeasonRewardsForKey(prevSeasonKey).catch(console.error);
+                    if (snap.val() !== prevSeasonKey) {
+                        distributeSeasonRewardsForKey(prevSeasonKey).catch(console.error);
+                    }
+                });
+
+                // ── Step 2: Mass-reset all players to 0 (if not done for current season) ──
+                db.ref('ranked_season_reset').once('value').then(function(snap) {
+                    if (snap.val() === curSeasonKey) return; // already reset this month
+                    db.ref('ranked_stats').once('value').then(function(allSnap) {
+                        var all = allSnap.val() || {};
+                        var updates = {};
+                        Object.keys(all).forEach(function(uid) {
+                            updates[uid + '/points']         = 0;
+                            updates[uid + '/atkPoints']      = 0;
+                            updates[uid + '/defPoints']      = 0;
+                            updates[uid + '/atkWins']        = 0;
+                            updates[uid + '/atkLosses']      = 0;
+                            updates[uid + '/atkDraws']       = 0;
+                            updates[uid + '/defWins']        = 0;
+                            updates[uid + '/defLosses']      = 0;
+                            updates[uid + '/seasonKey']      = curSeasonKey;
+                            updates[uid + '/raidToday']      = null;
+                            // Keep attackHistory/defenseHistory (just clear points)
+                        });
+                        if (Object.keys(updates).length === 0) return;
+                        db.ref('ranked_stats').update(updates).then(function() {
+                            db.ref('ranked_season_reset').set(curSeasonKey);
+                            console.log('[Season] Auto-reset completado para', curSeasonKey, '—', Object.keys(all).length, 'jugadores');
+                        }).catch(console.error);
+                    });
                 });
             });
         })();
