@@ -461,6 +461,14 @@ function processBurnEffects(charName) {
             return true;
         }
 
+        // Helper: check QS quickly (used in many places to block direct HP restoration)
+        function hasQuemaduraSolar(charName) {
+            const char = gameState.characters[charName];
+            if (!char || !char.statusEffects) return false;
+            return char.statusEffects.some(e => e && normAccent(e.name||'') === 'quemadura solar');
+        }
+        window.hasQuemaduraSolar = hasQuemaduraSolar;
+
         // Función centralizada de curación — respeta QS y aplica Aura de Luz automáticamente
         function applyHeal(charName, amount, logSource) {
             if (!canHeal(charName)) {
