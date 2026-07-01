@@ -2009,6 +2009,65 @@
         }
         window.distributeSeasonRewards = distributeSeasonRewards;
 
+        // Distribute rewards for a specific season key using the saved snapshot
+        async function distributeSeasonRewardsForKey(seasonKey) {
+            // Check if already distributed
+            const checkSnap = await db.ref('season_rewards_distributed').once('value');
+            if (checkSnap.val() === seasonKey) {
+                console.log('[Season] Ya distribuidos para:', seasonKey);
+                return;
+            }
+
+            // Read from the season snapshot (saved at end of month)
+            const snapshotRef = await db.ref('season_snapshots/' + seasonKey).once('value');
+            let players = [];
+
+            if (snapshotRef.val()) {
+                // Use snapshot if available
+                const snap = snapshotRef.val();
+                players = Object.entries(snap).map(function([uid, d]) {
+                    return { uid, points: d.points || 0, name: d.name || uid };
+                });
+            } else {
+                // Fallback: use current ranked_stats (less accurate if points already reset)
+                const rankSnap = await db.ref('ranked_stats').once('value');
+                const all = rankSnap.val() || {};
+                players = Object.entries(all).map(function([uid, d]) {
+                    return { uid, points: d.points || 0, name: d.name || uid };
+                }).filter(function(e) { return e.points > 0; });
+                console.warn('[Season] No snapshot found for', seasonKey, '— using live ranked_stats');
+            }
+
+            if (players.length === 0) {
+                console.log('[Season] No players to reward for', seasonKey);
+                await db.ref('season_rewards_distributed').set(seasonKey);
+                return;
+            }
+
+            for (var i = 0; i < players.length; i++) {
+                var p = players[i];
+                var league = getLeagueForPoints(p.points);
+                if (!league || league.gold === 0) continue;
+
+                var reward = {
+                    season:      seasonKey,
+                    league:      league.name,
+                    leagueEmoji: league.emoji,
+                    points:      p.points,
+                    gold:        league.gold,
+                    keys:        league.keys || 0,
+                    ts:          Date.now(),
+                    claimed:     false
+                };
+                await db.ref('users/' + p.uid + '/season_reward_pending').set(reward);
+                console.log('[Season] Recompensa pendiente para', p.name, '— liga:', league.name, p.points, 'pts');
+            }
+
+            await db.ref('season_rewards_distributed').set(seasonKey);
+            console.log('[Season] Premios distribuidos para', players.length, 'jugadores, temporada', seasonKey);
+        }
+        window.distributeSeasonRewardsForKey = distributeSeasonRewardsForKey;
+
         // Verificar al login si hay un premio pendiente de reclamar
         async function checkPendingSeasonReward(uid) {
             var snap = await db.ref('users/' + uid + '/season_reward_pending').once('value');
@@ -2092,22 +2151,30 @@
         };
 
         // ── Trigger automático: último día del mes a medianoche ──────────────
+        // ── Trigger de fin de temporada: día 1 de cada mes, cualquier usuario ──
+        // Se ejecuta en el día 1 del mes actual. Compara con la temporada anterior
+        // (mes anterior) y distribuye si aún no se ha hecho para esa temporada.
         (function checkSeasonEnd() {
-            var now   = new Date();
-            var lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0); // último día del mes
-            lastDay.setHours(0, 0, 0, 0);
-            var tomorrow = new Date(now);
-            tomorrow.setHours(0, 0, 0, 0);
-            tomorrow.setDate(tomorrow.getDate() + 1);
+            var now = new Date();
+            // Solo ejecutar el día 1 del mes
+            if (now.getDate() !== 1) return;
 
-            // Es el último día del mes y es medianoche (primeros 5 minutos)
-            if (now.getDate() === lastDay.getDate() && now.getHours() === 0 && now.getMinutes() < 5) {
-                firebase.auth().onAuthStateChanged(function(user) {
-                    if (user && typeof isAdmin === 'function' && isAdmin()) {
-                        distributeSeasonRewards().catch(console.error);
-                    }
+            // Calculate previous month season key (the one that just ended)
+            var prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            var prevSeasonKey = prevMonth.getFullYear() + '-' + String(prevMonth.getMonth() + 1).padStart(2, '0');
+
+            firebase.auth().onAuthStateChanged(function(user) {
+                if (!user) return;
+                // Check if rewards for previous season already distributed
+                db.ref('season_rewards_distributed').once('value').then(function(snap) {
+                    if (snap.val() === prevSeasonKey) return; // already done
+                    // Not done yet — distribute. Any logged-in user can trigger this.
+                    // distributeSeasonRewards uses ranked_stats data which has the previous
+                    // season points (since seasonKey just changed to current month).
+                    // We pass the previous season key explicitly.
+                    distributeSeasonRewardsForKey(prevSeasonKey).catch(console.error);
                 });
-            }
+            });
         })();
 
         function saveRankedResult(winnerTeam, playerTeam, playerChars, opponentName, opponentChars, battleStats) {
@@ -2170,9 +2237,29 @@
         }
 
         function _finalizeSaveAttacker(cur, myRef, myUid, myName, won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLgIdx, oppLgIdx, seasonKey, todayKey, playerChars, defOwnerUid, fakeOpp, atkWon, survivingDefenders, totalDefenders, roundsElapsed2, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, opponentChars, isDraw) {
-            // ── Reset mensual: si el seasonKey cambió, reiniciar puntuación a 0 ──
+            // ── Reset mensual: si el seasonKey cambió, guardar snapshot y reiniciar ──
             if (cur.seasonKey && cur.seasonKey !== seasonKey) {
                 addLog('🔄 Nueva temporada (' + seasonKey + '): puntuación reiniciada a 0', 'info');
+                // Save snapshot of all players for the previous season (for reward distribution)
+                var prevKey = cur.seasonKey;
+                db.ref('ranked_stats').once('value').then(function(allSnap) {
+                    var allData = allSnap.val() || {};
+                    var snapshot = {};
+                    for (var uid in allData) {
+                        var d = allData[uid];
+                        if ((d.points || 0) > 0) {
+                            snapshot[uid] = { name: d.name || uid, points: d.points || 0 };
+                        }
+                    }
+                    // Only save if snapshot doesn't exist yet
+                    db.ref('season_snapshots/' + prevKey).once('value').then(function(existing) {
+                        if (!existing.val()) {
+                            db.ref('season_snapshots/' + prevKey).set(snapshot).then(function() {
+                                console.log('[Season] Snapshot saved for', prevKey, Object.keys(snapshot).length, 'players');
+                            });
+                        }
+                    });
+                });
                 cur.points    = 0;
                 cur.atkPoints = 0;
                 cur.defPoints = 0;
