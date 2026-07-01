@@ -712,7 +712,7 @@
             if (!_gil.passive || _gil.passive.name !== 'Regla de Oro') return;
             _gil.charges = Math.min(20, (_gil.charges||0) + 1);
             const _gilOldHp = _gil.hp;
-            _gil.hp = Math.min(_gil.maxHp, (_gil.hp||0) + 1);
+            if (!hasQuemaduraSolar(gameState.selectedCharacter)) _gil.hp = Math.min(_gil.maxHp, (_gil.hp||0) + 1);
             if (_gil.hp > _gilOldHp && typeof notifyHeal === 'function') notifyHeal(gilName, _gil.hp - _gilOldHp, 'Regla de Oro');
             addLog('👑 Regla de Oro: ' + gilName + ' genera 1 carga y recupera 1 HP (golpe crítico)', 'buff');
         }
@@ -1964,7 +1964,7 @@
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 applyPoison(targetName, 3);
                 const muzanHeal = Math.min(3, attacker.maxHp - attacker.hp);
-                if (muzanHeal > 0) { const _muzOld=attacker.hp; attacker.hp = Math.min(attacker.maxHp, attacker.hp + muzanHeal); if (typeof notifyHeal === 'function') notifyHeal(gameState.selectedCharacter, attacker.hp-_muzOld, 'Muzan'); addLog(`🩸 Muzan recupera ${muzanHeal} HP`, 'heal'); }
+                if (muzanHeal > 0 && !hasQuemaduraSolar(gameState.selectedCharacter)) { const _muzOld=attacker.hp; attacker.hp = Math.min(attacker.maxHp, attacker.hp + muzanHeal); if (typeof notifyHeal === 'function') notifyHeal(gameState.selectedCharacter, attacker.hp-_muzOld, 'Muzan'); addLog(`🩸 Muzan recupera ${muzanHeal} HP`, 'heal'); }
                 addLog(`⚔️ Sangre Demoniaca: ${finalDamage} daño + Veneno 3 turnos a ${targetName}`, 'damage');
 
             } else if (ability.effect === 'sombra_noche') {
@@ -2093,7 +2093,7 @@
                         if (typeof applyHeal === 'function') {
                             applyHeal(charName, 1, 'Agonía de Escarcha');
                         } else if (typeof canHeal === 'function' ? canHeal(charName) : true) {
-                            attacker.hp = Math.min(attacker.maxHp, (attacker.hp||0) + 1);
+                            if (!hasQuemaduraSolar(gameState.selectedCharacter)) attacker.hp = Math.min(attacker.maxHp, (attacker.hp||0) + 1);
                             addLog('❄️ Lich King recupera 1 HP (robo de vida)', 'heal');
                         }
                     }
@@ -3044,7 +3044,7 @@
                 // Curación Mágica
                 const target = gameState.characters[targetName];
                 const oldHp = target.hp;
-                target.hp = Math.min(target.maxHp, target.hp + ability.heal);
+                if (!hasQuemaduraSolar(targetName)) target.hp = Math.min(target.maxHp, target.hp + ability.heal);
                 const actualHeal = target.hp - oldHp;
                 if (actualHeal > 0 && typeof notifyHeal === 'function') notifyHeal(targetName, actualHeal, ability.name);
                 addLog(`💚 ${gameState.selectedCharacter} usa ${ability.name} en ${targetName} recuperando ${actualHeal} HP`, 'heal');
@@ -3080,7 +3080,7 @@
                 
                 const healAmount = ability.heal || 3; // Great Horn cura 3 HP por defecto
                 const oldHp = attacker.hp;
-                { const _haOld=attacker.hp; attacker.hp = Math.min(attacker.maxHp, attacker.hp + healAmount); if (typeof notifyHeal === 'function') notifyHeal(gameState.selectedCharacter, attacker.hp-_haOld, ability.name); }
+                if (!hasQuemaduraSolar(gameState.selectedCharacter)) { const _haOld=attacker.hp; attacker.hp = Math.min(attacker.maxHp, attacker.hp + healAmount); if (typeof notifyHeal === 'function') notifyHeal(gameState.selectedCharacter, attacker.hp-_haOld, ability.name); }
                 const actualHeal = attacker.hp - oldHp;
                 
                 if (actualHeal > 0) {
@@ -3791,7 +3791,7 @@
                 // Lifesteal 50%
                 const lifesteal = Math.ceil(actualDmg * 0.5);
                 if (lifesteal > 0) {
-                    gameState.characters[charName].hp = Math.min(gameState.characters[charName].maxHp, gameState.characters[charName].hp + lifesteal);
+                    if (!hasQuemaduraSolar(charName)) gameState.characters[charName].hp = Math.min(gameState.characters[charName].maxHp, gameState.characters[charName].hp + lifesteal);
                     addLog('🔥 Cólera de Thestalos: ' + charName + ' recupera ' + lifesteal + ' HP (50% del daño)', 'heal');
                     if (typeof notifyHeal === 'function') notifyHeal(charName, lifesteal, 'Cólera de Thestalos');
                 }
@@ -3993,7 +3993,7 @@
                 const lsActualDmg = applyDamageWithShield(targetName, finalDamage, charName);
                 if (lsActualDmg > 0) {
                     const lsOldHp = attacker.hp;
-                    const _ls1Old=attacker.hp; attacker.hp = Math.min(attacker.maxHp, attacker.hp + lsActualDmg); if(typeof notifyHeal==="function") notifyHeal(gameState.selectedCharacter,attacker.hp-_ls1Old,"lifesteal");
+                    if (!hasQuemaduraSolar(gameState.selectedCharacter)) { const _ls1Old=attacker.hp; attacker.hp = Math.min(attacker.maxHp, attacker.hp + lsActualDmg); if(typeof notifyHeal==="function") notifyHeal(gameState.selectedCharacter,attacker.hp-_ls1Old,"lifesteal"); }
                     const lsHealed = attacker.hp - lsOldHp;
                     if (lsHealed > 0) addLog('🌀 Gakidō: ' + charName + ' roba ' + lsHealed + ' HP de ' + targetName, 'heal');
                 }
