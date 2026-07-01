@@ -102,7 +102,8 @@
                                        (c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'quemadura solar'; });
                             }).length;
                             if (_esQsCount > 0) {
-                                currentChar.hp = Math.min(currentChar.maxHp, (currentChar.hp||0) + _esQsCount);
+                                if (!hasQuemaduraSolar(charName)) currentChar.hp = Math.min(currentChar.maxHp, (currentChar.hp||0) + _esQsCount);
+                                else addLog('☀️ QS bloquea curación de ' + charName, 'debuff');
                                 addLog('🦁 Orgullo del León: ' + currentCharName + ' recupera ' + _esQsCount + ' HP (' + _esQsCount + ' enemigos con QS)', 'heal');
                             }
                         }
@@ -228,7 +229,8 @@
                         if (currentChar.antaresTransformed && currentChar.antaresTransformTurns > 0) {
                             if (typeof canHeal !== 'function' || canHeal(currentCharName)) {
                                 const _antOldHp = currentChar.hp;
-                                currentChar.hp = Math.min(currentChar.maxHp, currentChar.hp + 5);
+                                if (!hasQuemaduraSolar(charName)) currentChar.hp = Math.min(currentChar.maxHp, currentChar.hp + 5);
+                            else addLog('☀️ QS bloquea la Regeneración de ' + charName, 'debuff');
                                 if (currentChar.hp > _antOldHp) addLog('🐉 Dragon de la Destruccion: ' + currentCharName + ' recupera 5 HP', 'heal');
                             }
                             currentChar.antaresTransformTurns--;
@@ -242,7 +244,8 @@
                         // PASIVA LIMBO: Madara en Modo Rikudō regenera 1 HP por turno
                         if (((currentCharName === 'Madara Uchiha' || currentCharName.startsWith('Madara Uchiha')) || currentCharName === 'Madara Uchiha v2') && currentChar.rikudoMode && currentChar.hp > 0) {
                             const oldHp = currentChar.hp;
-                            currentChar.hp = Math.min(currentChar.maxHp, currentChar.hp + 1);
+                            if (!hasQuemaduraSolar(charName)) currentChar.hp = Math.min(currentChar.maxHp, currentChar.hp + 1);
+                            else addLog('☀️ QS bloquea la Regeneración de ' + charName, 'debuff');
                             if (currentChar.hp > oldHp) {
                                 addLog(`🌀 Limbo: Madara recupera 1 HP (${currentChar.hp}/${currentChar.maxHp})`, 'heal');
                                 triggerBendicionSagrada(currentChar.team, 1);
@@ -1733,7 +1736,7 @@
                         if (_alC.passive.name !== 'Fortaleza de Tauro') return;
                         if ((_alC.shield||0) > 0) {
                             if (typeof applyHeal === 'function') applyHeal(gameState.selectedCharacter, 2, 'Fortaleza de Tauro');
-                            else _alC.hp = Math.min(_alC.maxHp, (_alC.hp||0) + 2);
+                            else if (!hasQuemaduraSolar(_alN)) _alC.hp = Math.min(_alC.maxHp, (_alC.hp||0) + 2);
                             addLog('🐂 Fortaleza de Tauro: Aldebaran recupera 2 HP (Escudo activo al final del turno)', 'heal');
                         }
                     })();
@@ -2067,7 +2070,7 @@
                             if (!_rrd) return;
                             // +2 HP por turno (Anillo de la Vida)
                             if (_rrd.effect === 'regen_2hp_turn') {
-                                _rc.hp = Math.min(_rc.maxHp, (_rc.hp||0) + 2);
+                                if (!hasQuemaduraSolar(_rn)) _rc.hp = Math.min(_rc.maxHp, (_rc.hp||0) + 2);
                                 addLog('💚 Anillo de la Vida: ' + _rn + ' regenera 2HP', 'heal');
                             }
                             // Escudo 2HP al inicio de ronda (Escudo Invisible)
@@ -2954,7 +2957,7 @@
                     if (lowestAlly) {
                         const c = gameState.characters[lowestAlly];
                         const healAV = Math.min(3, c.maxHp - c.hp);
-                        if (healAV > 0) {
+                        if (healAV > 0 && !hasQuemaduraSolar(lowestAlly)) {
                             c.hp = Math.min(c.maxHp, c.hp + healAV);
                             addLog('💚 Aspecto de la Vida: ' + lowestAlly + ' recupera ' + healAV + ' HP', 'heal');
                             triggerBendicionSagrada(alexRound.team, healAV);
