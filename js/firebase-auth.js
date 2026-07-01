@@ -2052,9 +2052,43 @@
         }
 
         window.claimSeasonReward = async function(uid) {
+            // Read reward data before marking claimed
+            var rewardSnap = await db.ref('users/' + uid + '/season_reward_pending').once('value');
+            var reward = rewardSnap.val();
+            if (!reward || reward.claimed) return;
+
+            // Mark as claimed first (prevent double-claim)
             await db.ref('users/' + uid + '/season_reward_pending/claimed').set(true);
+
+            // Apply gold
+            if (reward.gold > 0) {
+                var goldSnap = await db.ref('users/' + uid + '/gold').once('value');
+                var currentGold = goldSnap.val() || 0;
+                await db.ref('users/' + uid + '/gold').set(currentGold + reward.gold);
+            }
+
+            // Apply arcane keys
+            if (reward.keys > 0) {
+                var keysSnap = await db.ref('users/' + uid + '/arcane_keys').once('value');
+                var currentKeys = keysSnap.val() || 0;
+                await db.ref('users/' + uid + '/arcane_keys').set(currentKeys + reward.keys);
+            }
+
+            // Update local state if available
+            if (typeof DB !== 'undefined') {
+                var localGold = (DB.get('gold') || 0) + (reward.gold || 0);
+                DB.set('gold', localGold);
+            }
+
             var modal = document.getElementById('seasonRewardModal');
             if (modal) modal.remove();
+
+            // Show confirmation toast
+            var toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#0a0e17,#1a1a2e);border:1px solid #ffd700;border-radius:12px;padding:14px 24px;color:#ffd700;font-family:Orbitron,sans-serif;font-size:.85rem;font-weight:700;z-index:999999;text-align:center;';
+            toast.innerHTML = '🎁 Recompensa de temporada recibida!<br><span style="color:#fff;font-size:.75rem;">' + (reward.gold||0).toLocaleString() + ' 🪙' + (reward.keys > 0 ? ' + ' + reward.keys + ' 🗝️' : '') + '</span>';
+            document.body.appendChild(toast);
+            setTimeout(function(){ toast.remove(); }, 4000);
         };
 
         // ── Trigger automático: último día del mes a medianoche ──────────────
