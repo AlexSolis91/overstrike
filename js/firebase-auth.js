@@ -2083,31 +2083,70 @@
             if (existing) existing.remove();
 
             var league = reward.league || 'Bronce';
-            var emoji = reward.leagueEmoji || '🥉';
-            var gold = (reward.gold || 0).toLocaleString();
-            var keys = reward.keys || 0;
-            var pts = (reward.points || 0).toLocaleString();
+            var emoji  = reward.leagueEmoji || '🥉';
+            var gold   = (reward.gold || 0).toLocaleString();
+            var keys   = reward.keys || 0;
+            var pts    = (reward.points || 0).toLocaleString();
             var season = reward.season || '';
 
-            // Find league color
-            var lData = RANKED_LEAGUES.find(function(l){ return l.name === league; }) || RANKED_LEAGUES[0];
-            var color = lData.color || '#ffd700';
+            var lData  = RANKED_LEAGUES.find(function(l){ return l.name === league; }) || RANKED_LEAGUES[0];
+            var color  = lData.color || '#ffd700';
 
-            var modal = document.createElement('div');
-            modal.id = 'seasonRewardModal';
-            modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:99999;display:flex;align-items:center;justify-content:center;animation:bossFadeIn .4s ease;';
-            modal.innerHTML = '<div style="background:linear-gradient(135deg,#0a0e17,#1a1a2e);border:2px solid ' + color + ';border-radius:20px;padding:36px 40px;text-align:center;max-width:420px;width:90%;box-shadow:0 0 40px ' + color + '44;">' +
-                '<div style="font-size:3.5rem;margin-bottom:12px;">' + emoji + '</div>' +
-                '<div style="font-family:Orbitron,sans-serif;color:' + color + ';font-size:1.1rem;font-weight:700;margin-bottom:6px;letter-spacing:.05em;">TEMPORADA ' + season + ' FINALIZADA</div>' +
-                '<div style="color:#aaa;font-size:.85rem;margin-bottom:20px;">Terminaste en <strong style="color:' + color + ';">Liga ' + league + '</strong> con <strong style="color:#fff;">' + pts + ' puntos</strong></div>' +
-                '<div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:16px;margin-bottom:24px;">' +
-                '<div style="font-family:Orbitron,sans-serif;color:#ffd700;font-size:.8rem;margin-bottom:12px;letter-spacing:.04em;">🎁 RECOMPENSA OBTENIDA</div>' +
-                '<div style="color:#ffd700;font-size:1.4rem;font-weight:700;margin-bottom:6px;">+' + gold + ' 🪙</div>' +
-                (keys > 0 ? '<div style="color:#b9f2ff;font-size:1rem;">+' + keys + ' 🗝️ Llave' + (keys > 1 ? 's' : '') + ' Arcana' + (keys > 1 ? 's' : '') + '</div>' : '') +
-                '</div>' +
-                '<button onclick="window.claimSeasonReward(\"' + uid + '\")">✅ RECLAMAR RECOMPENSA</button>' +
-                '</div>';
-            document.body.appendChild(modal);
+            // Build modal using DOM (no innerHTML + onclick string — avoids escaping bugs)
+            var overlay = document.createElement('div');
+            overlay.id = 'seasonRewardModal';
+            overlay.style.cssText = 'position:fixed;inset:0;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;background:rgba(0,0,0,0.88);z-index:999999;display:flex;align-items:center;justify-content:center;pointer-events:all;';
+
+            var card = document.createElement('div');
+            card.style.cssText = 'background:linear-gradient(135deg,#0a0e17,#1a1a2e);border:2px solid ' + color + ';border-radius:20px;padding:36px 40px;text-align:center;max-width:420px;width:90%;box-shadow:0 0 40px ' + color + '44;pointer-events:all;position:relative;z-index:1000000;';
+
+            var emojiDiv = document.createElement('div');
+            emojiDiv.style.cssText = 'font-size:3.5rem;margin-bottom:12px;';
+            emojiDiv.textContent = emoji;
+
+            var titleDiv = document.createElement('div');
+            titleDiv.style.cssText = 'font-family:Orbitron,sans-serif;color:' + color + ';font-size:1.1rem;font-weight:700;margin-bottom:6px;letter-spacing:.05em;';
+            titleDiv.textContent = 'TEMPORADA ' + season + ' FINALIZADA';
+
+            var subDiv = document.createElement('div');
+            subDiv.style.cssText = 'color:#aaa;font-size:.85rem;margin-bottom:20px;';
+            subDiv.innerHTML = 'Terminaste en <strong style="color:' + color + '">Liga ' + league + '</strong> con <strong style="color:#fff">' + pts + ' puntos</strong>';
+
+            var rewardBox = document.createElement('div');
+            rewardBox.style.cssText = 'background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:16px;margin-bottom:24px;';
+
+            var rewardTitle = document.createElement('div');
+            rewardTitle.style.cssText = 'font-family:Orbitron,sans-serif;color:#ffd700;font-size:.8rem;margin-bottom:12px;letter-spacing:.04em;';
+            rewardTitle.textContent = '🎁 RECOMPENSA OBTENIDA';
+
+            var goldDiv = document.createElement('div');
+            goldDiv.style.cssText = 'color:#ffd700;font-size:1.4rem;font-weight:700;margin-bottom:6px;';
+            goldDiv.textContent = '+' + gold + ' 🪙';
+
+            rewardBox.appendChild(rewardTitle);
+            rewardBox.appendChild(goldDiv);
+
+            if (keys > 0) {
+                var keysDiv = document.createElement('div');
+                keysDiv.style.cssText = 'color:#b9f2ff;font-size:1rem;';
+                keysDiv.textContent = '+' + keys + ' 🗝️ Llave' + (keys > 1 ? 's' : '') + ' Arcana' + (keys > 1 ? 's' : '');
+                rewardBox.appendChild(keysDiv);
+            }
+
+            var btn = document.createElement('button');
+            btn.textContent = '✅ RECLAMAR RECOMPENSA';
+            btn.style.cssText = 'display:block;width:100%;padding:14px 24px;background:linear-gradient(135deg,#00c4ff,#0077ff);border:none;border-radius:12px;color:#fff;font-family:Orbitron,sans-serif;font-size:.95rem;font-weight:700;letter-spacing:.05em;cursor:pointer;pointer-events:all;margin-top:8px;';
+            btn.addEventListener('click', function() {
+                window.claimSeasonReward(uid);
+            });
+
+            card.appendChild(emojiDiv);
+            card.appendChild(titleDiv);
+            card.appendChild(subDiv);
+            card.appendChild(rewardBox);
+            card.appendChild(btn);
+            overlay.appendChild(card);
+            document.body.appendChild(overlay);
         }
 
         window.claimSeasonReward = async function(uid) {
