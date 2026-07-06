@@ -840,7 +840,7 @@
                 const portrait  = getCharPortrait(name);
 
                 // ── PERSONAJES CON DESBLOQUEO (ej. Bolvar Fordragon) ──
-                const _rtLockedChars = { 'Bolvar Fordragon': 'bolvar_fordragon', 'Gogeta': 'gogeta' };
+                const _rtLockedChars = { 'Bolvar Fordragon': 'bolvar_fordragon', 'Gogeta': 'gogeta', 'Arthas Menethil': 'arthas_menethil' };
                 const _rtLockKey = _rtLockedChars[name];
                 const _rtIsLocked = _rtLockKey && !(window._unlockedCharacters && window._unlockedCharacters[_rtLockKey]);
 
@@ -4296,6 +4296,18 @@
                 var gogetaUnlockRoll = gogetaUnlockChance > 0 ? Math.random() : 1;
                 var gogetaUnlocked   = gogetaUnlockRoll < gogetaUnlockChance;
 
+                // ── ARTHAS MENETHIL: probabilidad de desbloqueo (evento Lich King) ──
+                var arthasUnlockChance = 0;
+                if (bossName === 'Lich King' && bossFelled) {
+                    if      (rank === 1) arthasUnlockChance = 0.30;
+                    else if (rank === 2) arthasUnlockChance = 0.20;
+                    else if (rank === 3) arthasUnlockChance = 0.10;
+                    else if (rank === 4) arthasUnlockChance = 0.05;
+                    else                arthasUnlockChance = 0.01;
+                }
+                var arthasUnlockRoll = arthasUnlockChance > 0 ? Math.random() : 1;
+                var arthasUnlocked   = arthasUnlockRoll < arthasUnlockChance;
+
                 // Store claimable reward in Firebase
                 await db.ref('weekly_boss/pending_rewards/' + entry.uid).set({
                     eventId:       eventId,
@@ -4314,6 +4326,8 @@
                     bolvarUnlockChance: bolvarUnlockChance,
                     gogetaUnlocked:     gogetaUnlocked,
                     gogetaUnlockChance: gogetaUnlockChance,
+                    arthasUnlocked:     arthasUnlocked,
+                    arthasUnlockChance: arthasUnlockChance,
                     claimed:       false,
                     createdAt:     Date.now()
                 });
@@ -4381,6 +4395,23 @@
                         var t = document.createElement('div');
                         t.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1a0080,#6a00ff);color:#fff;padding:16px 28px;border-radius:14px;font-family:Orbitron,sans-serif;font-size:.9rem;font-weight:700;z-index:9999999;box-shadow:0 0 30px rgba(100,0,255,0.6);text-align:center;';
                         t.innerHTML = '🔓 ¡GOGETA DESBLOQUEADO!<br><span style="font-size:.7rem;font-weight:400;opacity:.8;">¡La Fusión Perfecta puede unirse a tu equipo!</span>';
+                        document.body.appendChild(t);
+                        setTimeout(function(){ t.remove(); }, 5000);
+                    }, 1500);
+                }
+            }
+
+            // ── ARTHAS MENETHIL: aplicar desbloqueo si corresponde (evento Lich King) ──
+            if (reward.arthasUnlocked) {
+                const arthasRef = db.ref('users/' + uid + '/unlockedCharacters/arthas_menethil');
+                const arthasAlready = await arthasRef.once('value');
+                if (!arthasAlready.val()) {
+                    await arthasRef.set(true);
+                    console.log('[ARTHAS] ¡Personaje desbloqueado para ' + uid + '!');
+                    setTimeout(function() {
+                        var t = document.createElement('div');
+                        t.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1565c0,#4fc3f7);color:#fff;padding:16px 28px;border-radius:14px;font-family:Orbitron,sans-serif;font-size:.9rem;font-weight:700;z-index:9999999;box-shadow:0 0 30px rgba(79,195,247,0.6);text-align:center;';
+                        t.innerHTML = '🔓 ¡ARTHAS MENETHIL DESBLOQUEADO!<br><span style="font-size:.7rem;font-weight:400;opacity:.8;">El Príncipe del Escourge se une a tu ejército</span>';
                         document.body.appendChild(t);
                         setTimeout(function(){ t.remove(); }, 5000);
                     }, 1500);
