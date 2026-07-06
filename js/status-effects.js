@@ -476,6 +476,20 @@ function processBurnEffects(charName) {
                 return 0;
             }
             const _ch = gameState.characters[charName];
+
+            // ── DESEO DE MUERTE (Caballero de la Muerte Arthas): curación del equipo enemigo → daño doble ──
+            if (_ch && typeof gameState !== 'undefined') {
+                for (const _dkN in gameState.characters) {
+                    const _dkC = gameState.characters[_dkN];
+                    if (!_dkC || _dkC.isDead || !_dkC.passive || _dkC.passive.name !== 'Deseo de Muerte') continue;
+                    if (_dkC.team !== _ch.team) {
+                        const _dkDmg = amount * 2;
+                        addLog('💀 Deseo de Muerte: curación de ' + charName + ' convertida en ' + _dkDmg + ' de daño', 'damage');
+                        if (typeof applyDamageWithShield === 'function') applyDamageWithShield(charName, _dkDmg, _dkN);
+                        return 0;
+                    }
+                }
+            }
             if (!_ch || _ch.isDead || _ch.hp <= 0) return 0;
             // AURA DE LUZ: duplica la curación
             const _hasAuraLuz = (typeof hasStatusEffect === 'function') &&
@@ -523,6 +537,21 @@ function processBurnEffects(charName) {
         //         Adaptación Reactiva, MVP tracking, y cualquier pasiva futura.
         // ══════════════════════════════════════════════════════════════════════
         function notifyHeal(charName, amount, source) {
+            // ── AURA SAGRADA DISTORSIONADA (Arthas): cuando un ENEMIGO recibe curación → +5 cargas + turno adicional ──
+            if (amount > 0 && typeof gameState !== 'undefined') {
+                const _healedChar = gameState.characters[charName];
+                if (_healedChar) {
+                    for (const _aN in gameState.characters) {
+                        const _aC = gameState.characters[_aN];
+                        if (!_aC || _aC.isDead || !_aC.passive || _aC.passive.name !== 'Aura Sagrada Distorsionada') continue;
+                        if (_aC.team !== _healedChar.team) {
+                            _aC.charges = Math.min(20, (_aC.charges||0) + 5);
+                            gameState._skeggoxExtraTurn = _aN;
+                            addLog('🔱 Aura Sagrada Distorsionada: Arthas +5 cargas + turno adicional (' + charName + ' curado)', 'buff');
+                        }
+                    }
+                }
+            }
             if (!amount || amount <= 0) return;
             const _nhChar = gameState.characters[charName];
             if (!_nhChar || _nhChar.isDead || _nhChar.hp <= 0) return;
