@@ -656,6 +656,21 @@
                 _isEventChar: true, _eventBoss: 'Broly'
             },
 
+            'Arthas Menethil': {
+                hp: 20, maxHp: 20, speed: 80, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/C5tvthTw/Whats-App-Image-2026-07-06-at-11-21-56-AM.jpg',
+                transformPortrait: 'https://i.ibb.co/0y17rdzh/Whats-App-Image-2026-07-06-at-11-25-01-AM.jpg',
+                passive: { name: 'Aura Sagrada Distorsionada', description: 'Al inicio de la ronda 6, se transforma en Caballero de la Muerte. Cada vez que un enemigo recibe curación, genera 5 cargas y gana turno adicional. Cada vez que un aliado recibe debuff, cura 3 HP al aliado con menos HP.' },
+                abilities: [
+                    { name: 'Martillo de la Justicia', type: 'basic',   cost: 0,  chargeGain: 2, damage: 2, target: 'single', effect: 'arthas_hammer',     description: '70% de probabilidad de aplicar Aturdimiento. Si no aplica Aturdimiento, cura 3 HP al aliado con menos vida.' },
+                    { name: 'Guerrero de la Luz',      type: 'special', cost: 0,  chargeGain: 4, damage: 1, target: 'aoe',    effect: 'arthas_warrior',    description: 'AOE 1 daño + Ceguera. Si los objetivos tenían buffs activos, elimina 7 cargas.' },
+                    { name: 'Escudo Divino',            type: 'special', cost: 7,  chargeGain: 0, damage: 0, target: 'self',   effect: 'arthas_shield',     description: 'Aplica Escudo Sagrado a los 3 aliados con menos HP.' },
+                    { name: 'Consagración',             type: 'over',    cost: 15, chargeGain: 0, damage: 5, target: 'single', effect: 'arthas_consecrate', description: 'Si el objetivo tiene Provocación o Mega Provocación, inflige 80% de sus HP totales. +5 daño por cada reliquia del objetivo.' }
+                ],
+                _isEventChar: true, _eventBoss: 'Lich King'
+            },
+
             'Bolvar Fordragon': {
                 hp: 30, maxHp: 30, speed: 80, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
