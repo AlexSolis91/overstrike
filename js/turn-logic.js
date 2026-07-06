@@ -1972,6 +1972,21 @@
                         }
                     }
 
+                    // ── CAMPEON DE LA MUERTE: fin de ronda → disipa debuffs de un aliado aleatorio ──
+                    {
+                        const _campTeams2 = new Set();
+                        Object.values(gameState.summons||{}).forEach(function(s){ if(s&&s.name==='Campeon de la Muerte'&&s.hp>0) _campTeams2.add(s.team); });
+                        _campTeams2.forEach(function(_ct2) {
+                            const _ctAllies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===_ct2&&!c.isDead&&c.hp>0&&(c.statusEffects||[]).some(function(e){return e&&e.type==='debuff';}); });
+                            if (_ctAllies.length > 0) {
+                                const _ctChosen = _ctAllies[Math.floor(Math.random()*_ctAllies.length)];
+                                const _ctC = gameState.characters[_ctChosen];
+                                _ctC.statusEffects = (_ctC.statusEffects||[]).filter(function(e){ return !e||e.type!=='debuff'||e.passiveHidden; });
+                                addLog('💀 Campeón de la Muerte: debuffs de ' + _ctChosen + ' disipados', 'buff');
+                            }
+                        });
+                    }
+
                     // ── CUERPO PERFECTO (buff): fin de ronda → elimina debuffs del portador ──
                     for (const _cpN in gameState.characters) {
                         const _cpC = gameState.characters[_cpN];
@@ -2825,6 +2840,31 @@
                     addLog('🐉 Mordedura (Cría de Dragón): ' + _criaTarget + ' recibe ' + _criaChosen, 'debuff');
                 }
 
+                // ── ARTHAS MENETHIL: al inicio de la ronda 6, se transforma en Caballero de la Muerte ──
+                if (gameState.currentRound >= 6) {
+                    const _arthasC = gameState.characters['Arthas Menethil'];
+                    if (_arthasC && !_arthasC.isDead && _arthasC.hp > 0 && !_arthasC._transformed) {
+                        _arthasC._transformed = true;
+                        const _arthasTeam = _arthasC.team;
+                        const _dkData = window.characterData ? window.characterData['Caballero de la Muerte Arthas'] : null;
+                        if (_dkData) {
+                            // Add DK Arthas to team, remove regular Arthas
+                            gameState.characters['Caballero de la Muerte Arthas'] = Object.assign({}, _dkData, {
+                                hp: _dkData.hp||25, maxHp: _dkData.maxHp||25,
+                                charges: Math.min(20, (_arthasC.charges||0)),
+                                team: _arthasTeam, statusEffects: [], shield: 0, isDead: false
+                            });
+                            _arthasC.isDead = true; _arthasC.hp = 0;
+                            // Replace in turn order
+                            const _aIdx = gameState.turnOrder.indexOf('Arthas Menethil');
+                            if (_aIdx >= 0) gameState.turnOrder[_aIdx] = 'Caballero de la Muerte Arthas';
+                            else gameState.turnOrder.push('Caballero de la Muerte Arthas');
+                            addLog('💀 ¡Arthas Menethil se transforma en el Caballero de la Muerte!', 'buff');
+                            if (typeof renderCharacters === 'function') renderCharacters();
+                        }
+                    }
+                }
+
                 // ── GOGETA: al inicio de ronda 6+, verificar eliminación por tiempo ──
                 if (gameState.currentRound >= 6) {
                     const _gkCh = gameState.characters['Gogeta'];
@@ -2847,6 +2887,37 @@
                         if (typeof calculateTurnOrder === 'function') calculateTurnOrder();
                         if (typeof renderCharacters === 'function') renderCharacters();
                     }
+                }
+
+                // ── DESEO DE MUERTE (Caballero de la Muerte Arthas): inicio de ronda con Campeón → Escudo Sagrado al equipo ──
+                for (const _dkN in gameState.characters) {
+                    const _dkC = gameState.characters[_dkN];
+                    if (!_dkC || _dkC.isDead || !_dkC.passive || _dkC.passive.name !== 'Deseo de Muerte') continue;
+                    const _hasCampeon = Object.values(gameState.summons||{}).some(function(s){ return s && s.name === 'Campeon de la Muerte' && s.team === _dkC.team && s.hp > 0; });
+                    if (_hasCampeon) {
+                        for (const _aN in gameState.characters) {
+                            const _aC = gameState.characters[_aN];
+                            if (!_aC || _aC.team !== _dkC.team || _aC.isDead || _aC.hp <= 0) continue;
+                            if (typeof applyBuff === 'function') applyBuff(_aN, { name:'Escudo Sagrado', type:'buff', duration:1, emoji:'🛡️✨', passiveHidden:false });
+                        }
+                        addLog('💀 Deseo de Muerte: Campeón activo → equipo aliado gana Escudo Sagrado', 'buff');
+                    }
+                }
+
+                // ── CAMPEON DE LA MUERTE: inicio de ronda → +2 cargas a aliado aleatorio ──
+                {
+                    const _campAtk = gameState.selectedCharacter ? gameState.characters[gameState.selectedCharacter] : null;
+                    // Process for each team that has Campeon de la Muerte
+                    const _teamsWithCampeon = new Set();
+                    Object.values(gameState.summons||{}).forEach(function(s){ if(s&&s.name==='Campeon de la Muerte'&&s.hp>0) _teamsWithCampeon.add(s.team); });
+                    _teamsWithCampeon.forEach(function(_cteam) {
+                        const _cAllies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===_cteam&&!c.isDead&&c.hp>0; });
+                        if (_cAllies.length > 0) {
+                            const _chosen = _cAllies[Math.floor(Math.random()*_cAllies.length)];
+                            gameState.characters[_chosen].charges = Math.min(20, (gameState.characters[_chosen].charges||0) + 2);
+                            addLog('💀 Campeón de la Muerte: ' + _chosen + ' +2 cargas', 'buff');
+                        }
+                    });
                 }
 
                 // ── MODO KAIJU (Garou): contar ronda transformada, revertir tras 2 rondas ──
