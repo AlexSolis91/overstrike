@@ -10640,13 +10640,17 @@
                 // Apply damage to target
                 applyDamageWithShield(targetName, _jarDmg, gameState.selectedCharacter);
                 addLog('☀️ Juicio del Astro Rey: ' + _jarDmg + ' daño a ' + targetName + ' (×' + _jarMult + ')', 'damage');
-                // Apply burn to entire enemy team
+                // Apply burn to entire enemy team — capped at 150 HP vs Jefe de Sala
+                const _jarBurnCapped = (_jarTgtIsBoss && _jarBurn > 150) ? 150 : _jarBurn;
+                if (_jarTgtIsBoss && _jarBurn > 150) {
+                    addLog('☀️ Juicio del Astro Rey: Quemadura limitada a 150HP (máximo contra Jefe de Sala)', 'info');
+                }
                 Object.keys(gameState.characters).forEach(function(n) {
                     const _ec = gameState.characters[n];
                     if (!_ec || _ec.team !== _jarETeam || _ec.isDead || _ec.hp <= 0) return;
-                    applyFlatBurn(n, _jarBurn, 2);
+                    applyFlatBurn(n, _jarBurnCapped, 2);
                 });
-                addLog('☀️ Juicio del Astro Rey: Quemadura ' + _jarBurn + 'HP aplicada a todo el equipo enemigo', 'debuff');
+                addLog('☀️ Juicio del Astro Rey: Quemadura ' + _jarBurnCapped + 'HP aplicada a todo el equipo enemigo', 'debuff');
                 // Increment uses — next use will double again
                 _jarAtk._juicioUses++;
                 addLog('☀️ Juicio del Astro Rey: próximo uso → ' + (4 * Math.pow(2, _jarAtk._juicioUses)) + ' daño / ' + (4 * Math.pow(2, _jarAtk._juicioUses)) + 'HP quemadura', 'info');
