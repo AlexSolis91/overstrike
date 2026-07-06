@@ -2846,7 +2846,7 @@
                     if (_arthasC && !_arthasC.isDead && _arthasC.hp > 0 && !_arthasC._transformed) {
                         _arthasC._transformed = true;
                         const _arthasTeam = _arthasC.team;
-                        const _dkData = window.characterData ? window.characterData['Caballero de la Muerte Arthas'] : null;
+                        const _dkData = (window.TRANSFORM_DATA && window.TRANSFORM_DATA['Caballero de la Muerte Arthas']) || (window.characterData && window.characterData['Caballero de la Muerte Arthas']) || null;
                         if (_dkData) {
                             // Add DK Arthas to team, remove regular Arthas
                             gameState.characters['Caballero de la Muerte Arthas'] = Object.assign({}, _dkData, {
