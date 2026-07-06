@@ -963,6 +963,28 @@
                 }
             }
 
+            // ── AURA SAGRADA DISTORSIONADA (Arthas): cuando el OBJETIVO recibe un debuff del atacante → Arthas cura 3 HP al aliado con menos HP ──
+            // Fire when a debuff-applying ability hits (targetName is the one who received the debuff)
+            if (targetName && ability && ability.effect) {
+                const _aaDefChar = gameState.characters[targetName];
+                if (_aaDefChar) {
+                    for (const _artN in gameState.characters) {
+                        const _artC = gameState.characters[_artN];
+                        if (!_artC || _artC.isDead || !_artC.passive || _artC.passive.name !== 'Aura Sagrada Distorsionada') continue;
+                        // Arthas heals his allies when they are the ones getting debuffed
+                        // So Arthas must be on the SAME team as the targetName (targetName got debuffed = Arthas's ally got debuffed)
+                        if (_artC.team === _aaDefChar.team) {
+                            const _artAllies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===_artC.team&&!c.isDead&&c.hp>0; });
+                            if (_artAllies.length > 0) {
+                                const _artLowest = _artAllies.reduce(function(a,b){ return (gameState.characters[a].hp<=gameState.characters[b].hp)?a:b; });
+                                if (typeof applyHeal === 'function') applyHeal(_artLowest, 3, 'Aura Sagrada Distorsionada');
+                                addLog('🔱 Aura Sagrada Distorsionada: ' + _artLowest + ' +3 HP (' + targetName + ' recibió debuff)', 'heal');
+                            }
+                        }
+                    }
+                }
+            }
+
             // ── FUSIÓN PERFECTA (Gogeta): cada vez que cualquier personaje usa habilidad → Gogeta enemigo +3 cargas ──
             if (gameState.selectedCharacter) {
                 const _gkAtk = gameState.characters[gameState.selectedCharacter];
@@ -972,6 +994,25 @@
                     if (_gogetaC && !_gogetaC.isDead && _gogetaC.hp > 0 && _gogetaC.team === _gkAllyTeam) {
                         _gogetaC.charges = Math.min(20, (_gogetaC.charges||0) + 3);
                         addLog('💥 Fusión Perfecta: Gogeta genera 3 cargas (enemigo usó habilidad)', 'buff');
+                    }
+                }
+            }
+
+            // ── DESEO DE MUERTE (Caballero de la Muerte Arthas): ataques aliados 50% Congelación + 2 stacks Veneno ──
+            if (finalDamage > 0 && targetName && gameState.selectedCharacter) {
+                const _dkAtkChar = gameState.characters[gameState.selectedCharacter];
+                if (_dkAtkChar) {
+                    // Check if DK Arthas is on the same team as the attacker
+                    const _dkAlly = Object.values(gameState.characters).find(function(c){ return c && !c.isDead && c.passive && c.passive.name === 'Deseo de Muerte' && c.team === _dkAtkChar.team; });
+                    if (_dkAlly) {
+                        if (Math.random() < 0.50) {
+                            if (typeof applyFreeze === 'function') applyFreeze(targetName, 2, false);
+                            addLog('💀 Deseo de Muerte: Congelación aplicada a ' + targetName + ' (ataque aliado)', 'debuff');
+                        }
+                        if (Math.random() < 0.50) {
+                            if (typeof applyPoison === 'function') applyPoison(targetName, 2);
+                            addLog('💀 Deseo de Muerte: 2 stacks de Veneno aplicados a ' + targetName + ' (ataque aliado)', 'debuff');
+                        }
                     }
                 }
             }
@@ -9979,6 +10020,211 @@
                 }
                 if (typeof applyAOEToSummons === 'function') applyAOEToSummons(_bbETeam, _bbFinalDmg, gameState.selectedCharacter);
                 addLog('💥 Big Bang Kame Hame Ha: ' + _bbFinalDmg + ' daño AOE (' + finalDamage + ' + ' + _bbCount + ' por efectos activos en ambos equipos)', 'damage');
+
+            // ══════════════════════════════════════════════════════
+            // ARTHAS MENETHIL — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'arthas_hammer') {
+                // MARTILLO DE LA JUSTICIA: ST 2 daño. 70% Aturdimiento. Si no aplica → cura 3 HP aliado menos vida
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('🔨 Martillo de la Justicia: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (Math.random() < 0.70) {
+                    if (typeof applyStun === 'function') applyStun(targetName, 2);
+                    addLog('🔨 Martillo de la Justicia: Aturdimiento aplicado a ' + targetName, 'debuff');
+                } else {
+                    const _ahAtk = gameState.characters[gameState.selectedCharacter];
+                    const _ahTeam = _ahAtk ? _ahAtk.team : 'team1';
+                    const _ahAllies = Object.keys(gameState.characters).filter(function(n){
+                        const c = gameState.characters[n]; return c && c.team === _ahTeam && !c.isDead && c.hp > 0;
+                    });
+                    if (_ahAllies.length > 0) {
+                        const _ahLowest = _ahAllies.reduce(function(a,b){ return (gameState.characters[a].hp <= gameState.characters[b].hp) ? a : b; });
+                        if (typeof applyHeal === 'function') applyHeal(_ahLowest, 3, 'Martillo de la Justicia');
+                        addLog('🔨 Martillo de la Justicia: ' + _ahLowest + ' recupera 3 HP', 'heal');
+                    }
+                }
+
+            } else if (ability.effect === 'arthas_warrior') {
+                // GUERRERO DE LA LUZ: AOE 1 daño + Ceguera. Si tenía buffs antes → -7 cargas
+                const _awAtk  = gameState.characters[gameState.selectedCharacter];
+                const _awETeam = _awAtk ? (_awAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _awETeam || _c.isDead || _c.hp <= 0) continue;
+                    if (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(_n, true)) continue;
+                    const _hadBuffs = (_c.statusEffects||[]).some(function(e){ return e && e.type === 'buff' && !e.passiveHidden; });
+                    applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                    if (typeof applyBlind === 'function') applyBlind(_n, 2);
+                    if (_hadBuffs) {
+                        _c.charges = Math.max(0, (_c.charges||0) - 7);
+                        addLog('⚔️ Guerrero de la Luz: ' + _n + ' pierde 7 cargas (tenía buffs activos)', 'debuff');
+                    }
+                }
+                if (typeof applyAOEToSummons === 'function') applyAOEToSummons(_awETeam, finalDamage, gameState.selectedCharacter);
+                addLog('⚔️ Guerrero de la Luz: AOE ' + finalDamage + ' daño + Ceguera al equipo enemigo', 'damage');
+
+            } else if (ability.effect === 'arthas_shield') {
+                // ESCUDO DIVINO: Aplica Escudo Sagrado a los 3 aliados con menos HP
+                const _asAtk  = gameState.characters[gameState.selectedCharacter];
+                const _asTeam = _asAtk ? _asAtk.team : 'team1';
+                const _asAllies = Object.keys(gameState.characters)
+                    .filter(function(n){ const c=gameState.characters[n]; return c && c.team===_asTeam && !c.isDead && c.hp>0; })
+                    .sort(function(a,b){ return gameState.characters[a].hp - gameState.characters[b].hp; })
+                    .slice(0, 3);
+                _asAllies.forEach(function(n) {
+                    if (typeof applyBuff === 'function') applyBuff(n, { name:'Escudo Sagrado', type:'buff', duration:2, emoji:'🛡️✨', passiveHidden:false });
+                    addLog('🛡️ Escudo Divino: Escudo Sagrado aplicado a ' + n, 'buff');
+                });
+
+            } else if (ability.effect === 'arthas_consecrate') {
+                // CONSAGRACIÓN: ST 5. Si objetivo tiene Prov/MegaProv → 80% HP totales. +5 daño por reliquia del objetivo
+                const _acTgt = gameState.characters[targetName];
+                let _acDmg = finalDamage;
+                if (_acTgt) {
+                    // +5 per relic equipped on target
+                    const _acRelics = (_acTgt.equippedRelics||[]).length;
+                    if (_acRelics > 0) {
+                        _acDmg += _acRelics * 5;
+                        addLog('⚡ Consagración: +' + (_acRelics*5) + ' daño por ' + _acRelics + ' reliquias del objetivo', 'damage');
+                    }
+                    // 80% HP if target has taunt/mega taunt
+                    const _acHasTaunt = (_acTgt.statusEffects||[]).some(function(e){
+                        if (!e||!e.name) return false;
+                        const n = e.name.toLowerCase();
+                        return n.includes('provocacion') || n.includes('provocación') || n.includes('mega prov');
+                    });
+                    if (_acHasTaunt) {
+                        _acDmg = Math.floor((_acTgt.maxHp || _acTgt.hp) * 0.80);
+                        addLog('⚡ Consagración: objetivo tiene Provocación → ' + _acDmg + ' daño (80% HP totales)', 'damage');
+                    }
+                }
+                applyDamageWithShield(targetName, _acDmg, gameState.selectedCharacter);
+                addLog('⚡ Consagración: ' + _acDmg + ' daño total a ' + targetName, 'damage');
+
+            // ══════════════════════════════════════════════════════
+            // CABALLERO DE LA MUERTE ARTHAS — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'dkarthas_death_strike') {
+                // GOLPE DE LA MUERTE: ST 3. Si objetivo tiene Congelación o Veneno → turno adicional a aliado aleatorio
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('💀 Golpe de la Muerte: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                const _dkTgt = gameState.characters[targetName];
+                const _dkHasFreezeOrPoison = (_dkTgt&&(_dkTgt.statusEffects||[]).some(function(e){
+                    if(!e||!e.name) return false;
+                    const n=e.name.toLowerCase(); return n.includes('congelac') || n.includes('veneno');
+                }));
+                if (_dkHasFreezeOrPoison) {
+                    const _dkAtk = gameState.characters[gameState.selectedCharacter];
+                    const _dkAllies = Object.keys(gameState.characters).filter(function(n){
+                        const c=gameState.characters[n]; return c && c.team===_dkAtk.team && !c.isDead && c.hp>0;
+                    });
+                    if (_dkAllies.length > 0) {
+                        const _dkChosen = _dkAllies[Math.floor(Math.random()*_dkAllies.length)];
+                        gameState._skeggoxExtraTurn = _dkChosen;
+                        addLog('💀 Golpe de la Muerte: ' + _dkChosen + ' gana turno adicional (objetivo tenía Congelación/Veneno)', 'buff');
+                    }
+                }
+
+            } else if (ability.effect === 'dkarthas_frost') {
+                // ESCARCHA SANGRIENTA: AOE 5. Ignora Esquiva Área. 50% Congelación por objetivo.
+                // Por cada Congelación aplicada: aliados +3 HP máx, Campeones +5 HP máx
+                const _fAtk   = gameState.characters[gameState.selectedCharacter];
+                const _fETeam = _fAtk ? (_fAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _fATeam = _fAtk ? _fAtk.team : 'team1';
+                let _fFrozeCount = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _fETeam || _c.isDead || _c.hp <= 0) continue;
+                    applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                    if (Math.random() < 0.50) {
+                        if (typeof applyFreeze === 'function') applyFreeze(_n, 2, false);
+                        _fFrozeCount++;
+                        addLog('❄️ Escarcha Sangrienta: Congelación aplicada a ' + _n, 'debuff');
+                    }
+                }
+                if (typeof applyAOEToSummons === 'function') applyAOEToSummons(_fETeam, finalDamage, gameState.selectedCharacter);
+                addLog('❄️ Escarcha Sangrienta: ' + finalDamage + ' daño AOE — ' + _fFrozeCount + ' Congelaciones aplicadas', 'damage');
+                // Per freeze: allied team +3 maxHP, Champions +5 maxHP
+                if (_fFrozeCount > 0) {
+                    const _fBonus = _fFrozeCount * 3;
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _fATeam || _c.isDead) continue;
+                        _c.maxHp = (_c.maxHp||0) + _fBonus;
+                        _c.hp    = Math.min(_c.maxHp, _c.hp);
+                        addLog('❄️ Escarcha Sangrienta: ' + _n + ' +' + _fBonus + ' HP máx', 'buff');
+                    }
+                    const _chBonus = _fFrozeCount * 5;
+                    Object.values(gameState.summons||{}).forEach(function(s){
+                        if (s && s.name === 'Campeon de la Muerte' && s.team === _fATeam && s.hp > 0) {
+                            s.maxHp = (s.maxHp||0) + _chBonus;
+                            s.hp    = Math.min(s.maxHp, s.hp);
+                            addLog('❄️ Escarcha Sangrienta: Campeón de la Muerte +' + _chBonus + ' HP máx', 'buff');
+                        }
+                    });
+                }
+
+            } else if (ability.effect === 'dkarthas_corrupt') {
+                // CORRUPCIÓN DE ALMAS: AOE 5. Ignora Esquiva Área. 50% 3 stacks Veneno.
+                // Por cada Veneno aplicado: equipo aliado +3 cargas, cada Campeón +5 HP
+                const _coAtk   = gameState.characters[gameState.selectedCharacter];
+                const _coETeam = _coAtk ? (_coAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _coATeam = _coAtk ? _coAtk.team : 'team1';
+                let _coPoisonCount = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _coETeam || _c.isDead || _c.hp <= 0) continue;
+                    applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                    if (Math.random() < 0.50) {
+                        if (typeof applyPoison === 'function') applyPoison(_n, 3);
+                        _coPoisonCount++;
+                        addLog('🩸 Corrupción de Almas: 3 stacks de Veneno aplicados a ' + _n, 'debuff');
+                    }
+                }
+                if (typeof applyAOEToSummons === 'function') applyAOEToSummons(_coETeam, finalDamage, gameState.selectedCharacter);
+                addLog('🩸 Corrupción de Almas: ' + finalDamage + ' daño AOE — ' + _coPoisonCount + ' Venenos aplicados', 'damage');
+                if (_coPoisonCount > 0) {
+                    const _coCharges = _coPoisonCount * 3;
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _coATeam || _c.isDead) continue;
+                        _c.charges = Math.min(20, (_c.charges||0) + _coCharges);
+                    }
+                    addLog('🩸 Corrupción de Almas: equipo aliado +' + _coCharges + ' cargas', 'buff');
+                    const _coHeal = _coPoisonCount * 5;
+                    Object.values(gameState.summons||{}).forEach(function(s){
+                        if (s && s.name === 'Campeon de la Muerte' && s.team === _coATeam && s.hp > 0) {
+                            s.hp = Math.min(s.maxHp, s.hp + _coHeal);
+                            addLog('🩸 Corrupción de Almas: Campeón de la Muerte +' + _coHeal + ' HP', 'heal');
+                        }
+                    });
+                }
+
+            } else if (ability.effect === 'dkarthas_army') {
+                // EJÉRCITO DE LOS CONDENADOS: Invoca hasta 5 Campeones de la Muerte
+                const _arAtk  = gameState.characters[gameState.selectedCharacter];
+                const _arTeam = _arAtk ? _arAtk.team : 'team1';
+                const _existing = Object.values(gameState.summons||{}).filter(function(s){ return s && s.name === 'Campeon de la Muerte' && s.team === _arTeam && s.hp > 0; }).length;
+                const _toInvoke = Math.max(0, 5 - _existing);
+                if (_toInvoke === 0) {
+                    addLog('💀 Ejército de los Condenados: ya hay 5 Campeones activos (máximo alcanzado)', 'info');
+                } else {
+                    const catalogEntry = (typeof SUMMON_CATALOGUE !== 'undefined') ? SUMMON_CATALOGUE['Campeon de la Muerte'] : { hp:20, maxHp:20 };
+                    for (let _i = 0; _i < _toInvoke; _i++) {
+                        const _sid = 'campeon_muerte_' + Date.now() + '_' + _i;
+                        gameState.summons = gameState.summons || {};
+                        gameState.summons[_sid] = {
+                            id: _sid, name: 'Campeon de la Muerte',
+                            hp: catalogEntry.hp||20, maxHp: catalogEntry.maxHp||20,
+                            team: _arTeam, summoner: gameState.selectedCharacter,
+                            isDead: false, img: catalogEntry.img || ''
+                        };
+                    }
+                    addLog('💀 Ejército de los Condenados: ' + _toInvoke + ' Campeones de la Muerte invocados', 'buff');
+                    if (typeof renderSummons === 'function') renderSummons();
+                }
 
             // ══════════════════════════════════════════════════════
             // BJORN IRONSIDE — handlers
