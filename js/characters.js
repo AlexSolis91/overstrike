@@ -1029,6 +1029,34 @@
                 _isEventChar: true, _eventBoss: 'Broly'
             },
 
+            'Arthas Menethil': {
+                hp: 20, maxHp: 20, speed: 80, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/C5tvthTw/Whats-App-Image-2026-07-06-at-11-21-56-AM.jpg',
+                transformPortrait: 'https://i.ibb.co/0y17rdzh/Whats-App-Image-2026-07-06-at-11-25-01-AM.jpg',
+                passive: { name: 'Aura Sagrada Distorsionada', description: 'Al inicio de la ronda 6, Arthas se transforma en el Caballero de la Muerte. Cada vez que un enemigo recibe curación, Arthas genera 5 cargas y gana turno adicional (una vez por cada enemigo curado). Cada vez que un aliado recibe un debuff, cura 3 HP al aliado con menos HP del equipo.' },
+                abilities: [
+                    { name: 'Martillo de la Justicia', type: 'basic',   cost: 0,  chargeGain: 2, damage: 2, target: 'single', effect: 'arthas_hammer',   description: '70% de probabilidad de aplicar Aturdimiento. Si no aplica Aturdimiento, cura 3 HP al aliado con menos vida.' },
+                    { name: 'Guerrero de la Luz',      type: 'special', cost: 0,  chargeGain: 4, damage: 1, target: 'aoe',    effect: 'arthas_warrior',  description: 'Aplica debuff Ceguera. Si los objetivos tenían buffs activos antes del ataque, elimina 7 cargas a los objetivos golpeados.' },
+                    { name: 'Escudo Divino',            type: 'special', cost: 7,  chargeGain: 0, damage: 0, target: 'self',   effect: 'arthas_shield',   description: 'Aplica buff Escudo Sagrado a los 3 aliados con menos HP.' },
+                    { name: 'Consagración',             type: 'over',    cost: 15, chargeGain: 0, damage: 5, target: 'single', effect: 'arthas_consecrate', description: 'Si el objetivo tiene Provocación o Mega Provocación, inflige el 80% de sus HP totales. +5 daño por cada reliquia equipada en el objetivo.' }
+                ],
+                _isEventChar: true, _eventBoss: 'Lich King'
+            },
+
+            'Caballero de la Muerte Arthas': {
+                hp: 25, maxHp: 25, speed: 85, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/0y17rdzh/Whats-App-Image-2026-07-06-at-11-25-01-AM.jpg',
+                passive: { name: 'Deseo de Muerte', description: 'Al inicio de cada ronda, si hay al menos 1 Campeón de la Muerte, el equipo aliado gana Escudo Sagrado. Todas las curaciones del equipo enemigo causan daño equivalente al doble de la curación. Los ataques de todos los aliados tienen 50% de aplicar Congelación y 2 stacks de Veneno.' },
+                abilities: [
+                    { name: 'Golpe de la Muerte',     type: 'basic',   cost: 0,  chargeGain: 3, damage: 3, target: 'single', effect: 'dkarthas_death_strike',  description: 'Si el objetivo tiene Congelación o Veneno activo, otorga turno adicional a un aliado aleatorio.' },
+                    { name: 'Escarcha Sangrienta',    type: 'special', cost: 7,  chargeGain: 0, damage: 5, target: 'aoe',    effect: 'dkarthas_frost',        description: 'Ignora Esquiva Área. 50% de aplicar Congelación. Por cada Congelación aplicada: +3 HP máximo al equipo aliado y +5 HP máximo a cada Campeón de la Muerte.' },
+                    { name: 'Corrupción de Almas',    type: 'special', cost: 7,  chargeGain: 0, damage: 5, target: 'aoe',    effect: 'dkarthas_corrupt',      description: 'Ignora Esquiva Área. 50% de aplicar 3 stacks de Veneno. Por cada Veneno aplicado: equipo aliado +3 cargas y cada Campeón de la Muerte +5 HP.' },
+                    { name: 'Ejército de los Condenados', type: 'over', cost: 18, chargeGain: 0, damage: 0, target: 'self', effect: 'dkarthas_army',          description: 'Invoca 5 Campeones de la Muerte (máximo 5 en total).' }
+                ]
+            },
+
             'Bolvar Fordragon': {
                 hp: 30, maxHp: 30, speed: 80, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
