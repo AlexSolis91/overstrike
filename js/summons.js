@@ -2719,6 +2719,10 @@
             target.shield = prevShield + shieldAmount;
             if (specialEffect) target.shieldEffect = specialEffect;
             addLog('🛡️ ' + targetName + ' recibe Escudo +' + shieldAmount + ' HP (total: ' + target.shield + ' HP)', 'buff');
+            // ── Trigger shield gain animation ──
+            if (typeof window.animateShieldGain === 'function') {
+                window.animateShieldGain(targetName);
+            }
         }
 
         
