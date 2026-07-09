@@ -581,7 +581,7 @@
             'Lagertha': {
                 hp: 25, maxHp: 25, speed: 80, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.ibb.co/v6jCng5L/Whats-App-Image-2026-07-08-at-4-46-04-PM.jpg',
+                portrait: 'https://i.ibb.co/XxCCTzsj/Whats-App-Image-2026-07-08-at-4-46-04-PM.jpg',
                 passive: { name: 'Doncella Escudera', description: 'Cada vez que un enemigo con Sangrado recibe un golpe, el equipo aliado gana 2 HP de escudo. Lagertha es inmune a Veneno y Quemaduras. Cada vez que Lagertha pierde HP de escudo, recupera 2 HP.' },
                 abilities: [
                     { name: 'Hacha y Escudo',  type: 'basic',   cost: 0,  chargeGain: 2, damage: 1, target: 'single', effect: 'hacha_escudo_lagertha_v2', description: 'ST 1 daño + Provocación a Lagertha. 50% de probabilidad de aplicar Reflejar.' },
