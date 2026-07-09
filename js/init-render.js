@@ -447,6 +447,81 @@
         // Snapshot de cargas anterior para detectar generación de cargas
         var _prevChargesSnapshot = {};
 
+        // ── Shield gain animation ──────────────────────────────────────────────
+        (function() {
+            // Inject CSS once
+            if (!document.getElementById('shield-anim-style')) {
+                var s = document.createElement('style');
+                s.id = 'shield-anim-style';
+                s.textContent = `
+                    .shield-anim-emoji {
+                        position: absolute;
+                        font-size: 3.2rem;
+                        pointer-events: none;
+                        z-index: 9999;
+                        user-select: none;
+                        will-change: transform, opacity, font-size;
+                        filter: drop-shadow(0 0 8px #00c8ff) drop-shadow(0 0 16px #ffffff88);
+                        animation: shieldShrink 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+                    }
+                    @keyframes shieldShrink {
+                        0%   { transform: translate(-50%, -50%) scale(1);    opacity: 1; }
+                        60%  { transform: translate(-50%, -50%) scale(0.38); opacity: 1; }
+                        100% { transform: translate(-50%, -50%) scale(0.22); opacity: 0; }
+                    }
+                `;
+                document.head.appendChild(s);
+            }
+        })();
+
+        window.animateShieldGain = function(charName) {
+            var cardId = 'char-' + charName.replace(/\s+/g, '-');
+            var card = document.getElementById(cardId);
+            if (!card) return;
+
+            var portraitWrap = card.querySelector('.char-portrait-wrap');
+            if (!portraitWrap) return;
+
+            var wRect = portraitWrap.getBoundingClientRect();
+            var overlay = card.querySelector('.char-hp-overlay');
+
+            // Start: center of portrait
+            var startX = wRect.left + wRect.width  * 0.5;
+            var startY = wRect.top  + wRect.height * 0.45;
+
+            // End: position of the shield value in the overlay (bottom-left area of portrait)
+            var endX = wRect.left + wRect.width  * 0.15;
+            var endY = wRect.top  + wRect.height * 0.88;
+
+            var el = document.createElement('div');
+            el.className = 'shield-anim-emoji';
+            el.textContent = '🛡️';
+            el.style.left = startX + 'px';
+            el.style.top  = startY + 'px';
+            el.style.position = 'fixed';
+            document.body.appendChild(el);
+
+            // Animate movement toward the shield value position
+            var startTime = null;
+            var duration = 750;
+            function step(ts) {
+                if (!startTime) startTime = ts;
+                var progress = Math.min((ts - startTime) / duration, 1);
+                // Ease out cubic
+                var ease = 1 - Math.pow(1 - progress, 3);
+                var x = startX + (endX - startX) * ease;
+                var y = startY + (endY - startY) * ease;
+                el.style.left = x + 'px';
+                el.style.top  = y + 'px';
+                if (progress < 1) {
+                    requestAnimationFrame(step);
+                } else {
+                    el.remove();
+                }
+            }
+            requestAnimationFrame(step);
+        };
+
         function renderCharacters() {
             const team1Container = document.getElementById('team1Characters');
             const team2Container = document.getElementById('team2Characters');
