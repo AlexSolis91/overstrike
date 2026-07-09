@@ -2304,7 +2304,19 @@
                     // ── PASIVAS DINÁMICAS: inicio de ronda ──
                     if (typeof runDynamicPassives === 'function') runDynamicPassives('AL_INICIO_DE_RONDA');
 
-                    // ── CAPA DE INVISIBILIDAD: inicio de ronda → 50% Esquivar + Sigilo ──
+                    // ── ESTRATEGA DE ODIN (Ragnar): inicio de ronda → 5 HP escudo al equipo aliado ──
+                for (const _ragnN in gameState.characters) {
+                    const _ragnC = gameState.characters[_ragnN];
+                    if (!_ragnC || _ragnC.isDead || !_ragnC.passive || _ragnC.passive.name !== 'Estratega de Odin') continue;
+                    for (const _an in gameState.characters) {
+                        const _ac = gameState.characters[_an];
+                        if (!_ac || _ac.isDead || _ac.hp <= 0 || _ac.team !== _ragnC.team) continue;
+                        _ac.shield = (_ac.shield||0) + 5;
+                    }
+                    addLog('🪓 Estratega de Odin: equipo aliado +5 HP de escudo', 'buff');
+                }
+
+                // ── CAPA DE INVISIBILIDAD: inicio de ronda → 50% Esquivar + Sigilo ──
                     for (const _capaN in gameState.characters) {
                         const _capaC = gameState.characters[_capaN];
                         if (!_capaC || _capaC.isDead || _capaC.hp <= 0) continue;
