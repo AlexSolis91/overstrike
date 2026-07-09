@@ -113,6 +113,11 @@
             // Apply a burn that does flat HP damage (not percent)
             const target = gameState.characters[targetName];
             if (!target) return;
+            // DONCELLA ESCUDERA (Lagertha): inmune a Quemaduras
+            if (target.passive && target.passive.name === 'Doncella Escudera') {
+                addLog('🛡️ Doncella Escudera: Lagertha es inmune a Quemaduras', 'buff');
+                return;
+            }
             // MAESTRÍA DE LA VARITA DE SAÚCO (Dumbledore) / IGNIFUGOZ: inmune a Quemadura
             if (target.passive && target.passive.name === 'Maestría de la Varita de Saúco') {
                 addLog('✨ Maestría de la Varita de Saúco: ' + targetName + ' es inmune a Quemadura', 'buff');
