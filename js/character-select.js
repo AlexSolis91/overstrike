@@ -168,18 +168,17 @@
             },
 
             'Ragnar Lothbrok': {
-                hp: 25, maxHp: 25, speed: 83, charges: 0, team: 'team2',
+                hp: 25, maxHp: 25, speed: 83, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/9XqFNYqW/Captura_de_pantalla_2026_03_11_234717.png',
-                passive: { name: 'Hijo de Odin', description: 'Cada vez que Ragnar recibe daño por golpe, genera 1 carga.' },
+                portrait: 'https://i.ibb.co/TDCS5pvx/Ragnar-from-Vikingard.jpg',
+                passive: { name: 'Estratega de Odin', description: 'Al inicio de cada ronda, aplica 5 HP de escudo al equipo aliado. 50% de probabilidad de aplicar Sangrado cada vez que un aliado pierde HP de escudo. Si un aliado muere mientras Ragnar ya está muerto, Ragnar revive con 15 HP y 20 cargas y reduce 50% los HP de un enemigo aleatorio.' },
                 abilities: [
-                    { name: 'Furia Vikinga', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'apply_bleed', description: 'Causa 2 de daño. Aplica debuff Sangrado.' },
-                    { name: 'Tormenta del Norte', type: 'special', cost: 3, chargeGain: 0, damage: 2, target: 'aoe', effect: 'tormenta_norte_v2', description: 'Causa 2 AOE. 50% de probabilidad de aplicar Sangrado. Genera 2 puntos de carga por cada enemigo golpeado con debuff Sangrado.' },
-                    { name: 'Rey Pagano', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'aoe', effect: 'rey_pagano', description: 'Causa 4 AOE. Aplica debuff Sangrado. Si el enemigo ya tenía Debuff Sangrado activo antes de ejecutar este ataque, aplica Debuff Miedo en el enemigo golpeado.' },
-                    { name: 'Águila de Sangre', type: 'over', cost: 15, chargeGain: 0, damage: 10, target: 'single', effect: 'blood_eagle', description: 'Causa 10 de daño. Si el objetivo tiene menos del 50% de vida, esta habilidad Elimina al objetivo. Si esta habilidad mata al objetivo, aplica debuff Miedo a 2 enemigos aleatorios.' }
+                    { name: 'Furia Vikinga',     type: 'basic',   cost: 0,  chargeGain: 2, damage: 2,  target: 'single', effect: 'furia_vikinga_v2',    description: 'Aplica Sangrado. Si el objetivo tenía Hemorragia activa antes del ataque, Ragnar y un aliado aleatorio generan 5 cargas.' },
+                    { name: 'Rey Pagano',         type: 'special', cost: 5,  chargeGain: 0, damage: 4,  target: 'aoe',    effect: 'rey_pagano_v2',      description: 'AOE 4 daño + Sangrado. Si el enemigo tenía Sangrado activo antes del ataque, aplica Miedo.' },
+                    { name: 'Tormenta del Norte', type: 'special', cost: 6,  chargeGain: 0, damage: 1,  target: 'mt',     effect: 'tormenta_norte_v3',  description: '10 golpes MT + Sangrado. Por cada Sangrado que se convierta en Hemorragia: equipo aliado +3 HP de escudo.' },
+                    { name: 'Águila de Sangre',   type: 'over',    cost: 10, chargeGain: 0, damage: 10, target: 'single', effect: 'aguila_sangre_v2',   description: 'ST 10 daño. Si objetivo tiene menos del 50% HP, lo elimina. Si muere por este ataque, un aliado aleatorio gana 10 cargas.' }
                 ]
             },
-
             'Saitama': {
                 hp: 20, maxHp: 20, speed: 97, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
@@ -582,13 +581,13 @@
             'Lagertha': {
                 hp: 25, maxHp: 25, speed: 80, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.ibb.co/WWWHbctz/Captura-de-pantalla-2026-03-23-135145.png',
-                passive: { name: 'Doncella Escudera', description: 'Cada vez que un enemigo con Sangrado recibe un golpe, Lagertha genera Buff Escudo de 1 HP. Lagertha tiene 50% de probabilidad de esquivar debuff Quemadura y Veneno.' },
+                portrait: 'https://i.ibb.co/v6jCng5L/Whats-App-Image-2026-07-08-at-4-46-04-PM.jpg',
+                passive: { name: 'Doncella Escudera', description: 'Cada vez que un enemigo con Sangrado recibe un golpe, el equipo aliado gana 2 HP de escudo. Lagertha es inmune a Veneno y Quemaduras. Cada vez que Lagertha pierde HP de escudo, recupera 2 HP.' },
                 abilities: [
-                    { name: 'Hacha y Escudo', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'single', effect: 'hacha_escudo_lagertha', description: 'Causa 1 daño. Lagertha se aplica Buff Provocación. 50% de que Lagertha se aplica Buff Reflejar.' },
-                    { name: 'Muro de Escudo', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'ally_aoe', effect: 'muro_escudo_lagertha', description: 'Aplica Buff Escudo de 5 HP al equipo aliado. Aplica Buff Protección Sagrada al equipo aliado por 2 turnos.' },
-                    { name: 'Furia de Freya', type: 'special', cost: 7, chargeGain: 0, damage: 2, target: 'single', effect: 'furia_freya_lagertha', description: 'Causa daño directo: 2 + 1 adicional por cada punto de escudo que tenga el objetivo.' },
-                    { name: 'Valquiria', type: 'over', cost: 12, chargeGain: 0, damage: 0, target: 'single', effect: 'valquiria_lagertha', description: 'El equipo aliado ataca con su básico al objetivo (generando cargas y efectos). Aplica Buff Asistir al equipo aliado por 3 turnos.' }
+                    { name: 'Hacha y Escudo',  type: 'basic',   cost: 0,  chargeGain: 2, damage: 1, target: 'single', effect: 'hacha_escudo_lagertha_v2', description: 'ST 1 daño + Provocación a Lagertha. 50% de probabilidad de aplicar Reflejar.' },
+                    { name: 'Muro de Escudo',  type: 'special', cost: 4,  chargeGain: 0, damage: 0, target: 'self',   effect: 'muro_escudo_lagertha_v2',  description: 'Escudo 5 HP + Protección Sagrada 2T al equipo aliado.' },
+                    { name: 'Furia de Freya',  type: 'special', cost: 7,  chargeGain: 0, damage: 2, target: 'mt',     effect: 'furia_freya_v2',            description: '5 golpes MT. Por cada debuff activo en el enemigo golpeado, aplica 1 buff aleatorio a un aliado aleatorio.' },
+                    { name: 'Valquiria',       type: 'over',    cost: 12, chargeGain: 0, damage: 0, target: 'single', effect: 'valquiria_lagertha_v2',    description: 'Todo el equipo aliado usa su básico sobre el objetivo. Aplica Contraataque al equipo aliado por 3 turnos.' }
                 ]
             },
             'Shinobu Kocho': {
