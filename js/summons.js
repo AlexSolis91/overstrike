@@ -1298,6 +1298,29 @@
                         addLog('🐂 Fortaleza de Tauro: Aldebaran genera 2 cargas (escudo absorbió golpe)', 'buff');
                     }
 
+                    // ── DONCELLA ESCUDERA (Lagertha): al perder HP de escudo → recupera 2 HP ──
+                    if (target.passive && target.passive.name === 'Doncella Escudera') {
+                        if (typeof applyHeal === 'function') applyHeal(targetName, 2, 'Doncella Escudera');
+                        addLog('🛡️ Doncella Escudera: Lagertha recupera 2 HP (perdió HP de escudo)', 'heal');
+                    }
+
+                    // ── ESTRATEGA DE ODIN (Ragnar): 50% de Sangrado al atacante cuando aliado pierde HP de escudo ──
+                    if (attackerName && !passiveExecuting) {
+                        const _rShAtk = gameState.characters[targetName];
+                        if (_rShAtk) {
+                            for (const _rShN in gameState.characters) {
+                                const _rShC = gameState.characters[_rShN];
+                                if (!_rShC || _rShC.isDead || !_rShC.passive || _rShC.passive.name !== 'Estratega de Odin') continue;
+                                if (_rShC.team !== _rShAtk.team) continue;
+                                if (Math.random() < 0.50) {
+                                    if (typeof applyBleed === 'function') applyBleed(attackerName, 2);
+                                    addLog('🪓 Estratega de Odin: ' + attackerName + ' recibe Sangrado (aliado perdió escudo)', 'debuff');
+                                }
+                                break;
+                            }
+                        }
+                    }
+
                     // ÚLTIMO REY DE LOS MUERTOS (Bolvar BOSS): genera 3 cargas por cada punto de escudo HP perdido
                     if (target.passive && target.passive.name === 'Último Rey de los Muertos') {
                         const _brvCharges = damage * 3; // 3 cargas por cada HP de escudo absorbido
@@ -1339,8 +1362,24 @@
                     remainingDamage = damage - target.shield;
                     addLog(`🛡️ El escudo de ${targetName} se rompe absorbiendo ${shieldHP} de daño`, 'damage');
 
-                    // HIJO DE ODIN (Ragnar): escudo se rompe → NO genera cargas (escudo no sigue activo)
-                    // fire_charge_regen: escudo se rompe → NO genera cargas (escudo no sigue activo)
+                    // DONCELLA ESCUDERA (Lagertha): al perder HP de escudo (aunque se rompa) → recupera 2 HP
+                    if (target.passive && target.passive.name === 'Doncella Escudera') {
+                        if (typeof applyHeal === 'function') applyHeal(targetName, 2, 'Doncella Escudera');
+                        addLog('🛡️ Doncella Escudera: Lagertha recupera 2 HP (escudo roto)', 'heal');
+                    }
+                    // ESTRATEGA DE ODIN (Ragnar): 50% Sangrado al atacante cuando escudo de aliado se rompe
+                    if (attackerName && !passiveExecuting) {
+                        for (const _rShBN in gameState.characters) {
+                            const _rShBC = gameState.characters[_rShBN];
+                            if (!_rShBC || _rShBC.isDead || !_rShBC.passive || _rShBC.passive.name !== 'Estratega de Odin') continue;
+                            if (_rShBC.team !== target.team) continue;
+                            if (Math.random() < 0.50) {
+                                if (typeof applyBleed === 'function') applyBleed(attackerName, 2);
+                                addLog('🪓 Estratega de Odin: ' + attackerName + ' recibe Sangrado (escudo de aliado roto)', 'debuff');
+                            }
+                            break;
+                        }
+                    }
 
                     // ÚLTIMO REY DE LOS MUERTOS (Bolvar BOSS): genera 3 cargas por HP de escudo absorbido incluso al romperse
                     if (target.passive && target.passive.name === 'Último Rey de los Muertos') {
@@ -2331,6 +2370,30 @@
                 } else {
                     target.isDead = true;
                     if (typeof _animCard === 'function') _animCard(targetName, 'anim-defeat', 700);
+
+                    // ── ESTRATEGA DE ODIN (Ragnar): si aliado muere mientras Ragnar está muerto → Ragnar revive ──
+                    if (targetName !== 'Ragnar Lothbrok') { // Don't trigger on Ragnar's own death
+                        const _diedTeam = target.team;
+                        for (const _rN in gameState.characters) {
+                            const _rC = gameState.characters[_rN];
+                            if (!_rC || !_rC.passive || _rC.passive.name !== 'Estratega de Odin') continue;
+                            if (_rC.team !== _diedTeam) continue;
+                            if (!_rC.isDead || _rC.hp > 0) continue; // Ragnar must already be dead
+                            // Ragnar revives
+                            _rC.isDead = false; _rC.hp = 15; _rC.charges = 20;
+                            addLog('🪓 Estratega de Odin: ¡Ragnar revive con 15 HP y 20 cargas!', 'buff');
+                            const _rETeam = _rC.team === 'team1' ? 'team2' : 'team1';
+                            const _rEnemies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===_rETeam&&!c.isDead&&c.hp>0; });
+                            if (_rEnemies.length > 0) {
+                                const _rEnemy = _rEnemies[Math.floor(Math.random()*_rEnemies.length)];
+                                const _rEnemyC = gameState.characters[_rEnemy];
+                                const _rHpLost = Math.floor(_rEnemyC.hp * 0.50);
+                                applyDamageWithShield(_rEnemy, _rHpLost, _rN);
+                                addLog('🪓 Estratega de Odin: ' + _rEnemy + ' pierde 50% HP (' + _rHpLost + ')', 'damage');
+                            }
+                            if (typeof renderCharacters === 'function') renderCharacters();
+                        }
+                    }
 
                     // ── GOGETA: al morir → Goku y Vegeta se unen al equipo ──
                     if (targetName === 'Gogeta' && !target._fusionExpired) {
