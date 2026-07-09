@@ -1062,12 +1062,10 @@ function applyDebuff(targetName, effectObj) {
                 if (!gameState.battleStats.poisonAppliers) gameState.battleStats.poisonAppliers = new Set();
                 gameState.battleStats.poisonAppliers.add(gameState.selectedCharacter);
             }
-            // DONCELLA ESCUDERA (Lagertha): 50% de esquivar Veneno
+            // DONCELLA ESCUDERA (Lagertha): inmune a Veneno
             if (target.passive && target.passive.name === 'Doncella Escudera') {
-                if (Math.random() < 0.50) {
-                    addLog('🛡️ Doncella Escudera: Lagertha esquiva Veneno (50%)', 'buff');
-                    return;
-                }
+                addLog('🛡️ Doncella Escudera: Lagertha es inmune a Veneno', 'buff');
+                return;
             }
             const _poisonStacks = stacks || 1;
             // VENENO STACKEABLE: un solo debuff que acumula stacks. Daño = total de stacks, calculado UNA VEZ al final de ronda.
