@@ -946,6 +946,33 @@
                 }
             }
 
+            // ── DONCELLA ESCUDERA (Lagertha): cuando se golpea a un enemigo con Sangrado → equipo aliado +2 HP escudo ──
+            if (finalDamage > 0 && targetName) {
+                const _lagTgt = gameState.characters[targetName];
+                if (_lagTgt && !_lagTgt.isDead) {
+                    const _hasBleedTgt = (_lagTgt.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'sangrado'; });
+                    if (_hasBleedTgt) {
+                        const _lagAtkChar = gameState.characters[gameState.selectedCharacter];
+                        if (_lagAtkChar) {
+                            // Find Lagertha on same team as attacker
+                            for (const _lagN in gameState.characters) {
+                                const _lagC = gameState.characters[_lagN];
+                                if (!_lagC || _lagC.isDead || !_lagC.passive || _lagC.passive.name !== 'Doncella Escudera') continue;
+                                if (_lagC.team !== _lagAtkChar.team) continue;
+                                // Grant 2 HP shield to entire allied team
+                                for (const _aln in gameState.characters) {
+                                    const _alc = gameState.characters[_aln];
+                                    if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== _lagC.team) continue;
+                                    _alc.shield = (_alc.shield||0) + 2;
+                                }
+                                addLog('🛡️ Doncella Escudera: equipo aliado +2 HP de escudo (golpe a ' + targetName + ' con Sangrado)', 'buff');
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
             // ── ANILLO DEL TIEMPO: cuando enemigo usa especial u Over → portador +10 cargas + turno adicional ──
             if (gameState.selectedCharacter && ability && (ability.type === 'special' || ability.type === 'over')) {
                 const _atAtk = gameState.characters[gameState.selectedCharacter];
@@ -3239,65 +3266,105 @@
                 }
 
             // ── FURIA VIKINGA (Ragnar) ──
-            } else if (ability.effect === 'furia_vikinga') {
+            } else if (ability.effect === 'furia_vikinga_v2') {
+                // FURIA VIKINGA: ST 2 daño + Sangrado. Si objetivo tenía Hemorragia → Ragnar y aliado aleatorio +5 cargas
+                const _fvTgt = gameState.characters[targetName];
+                const _fvHadHemo = _fvTgt && (_fvTgt.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'hemorragia'; });
                 applyDamageWithShield(targetName, finalDamage, charName);
-                applyBleed(targetName, 2);
-                addLog('🩸 Furia Vikinga: ' + targetName + ' recibe Sangrado (1 turno)', 'damage');
-
-            // ── TORMENTA DEL NORTE (Ragnar AOE) ──
-            } else if (ability.effect === 'tormenta_norte') {
-                const enemyTeamTN = attacker.team === 'team1' ? 'team2' : 'team1';
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (!c || c.team !== enemyTeamTN || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n, true)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
-                    applyDamageWithShield(n, finalDamage, charName);
-                    // 50% aplicar Sangrado
-                    if (Math.random() < 0.5) {
-                        applyBleed(n, 2);
-                        addLog('🩸 Tormenta del Norte: ' + n + ' recibe Sangrado', 'damage');
+                if (typeof applyBleed === 'function') applyBleed(targetName, 2);
+                addLog('🪓 Furia Vikinga: ' + finalDamage + ' daño + Sangrado a ' + targetName, 'damage');
+                if (_fvHadHemo) {
+                    attacker.charges = Math.min(20, (attacker.charges||0) + 5);
+                    const _fvAllies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===attacker.team&&!c.isDead&&c.hp>0&&n!==charName; });
+                    if (_fvAllies.length > 0) {
+                        const _fvChosen = _fvAllies[Math.floor(Math.random()*_fvAllies.length)];
+                        gameState.characters[_fvChosen].charges = Math.min(20, (gameState.characters[_fvChosen].charges||0) + 5);
+                        addLog('⚡ Furia Vikinga: ' + charName + ' y ' + _fvChosen + ' +5 cargas (objetivo tenía Hemorragia)', 'buff');
                     } else {
-                        // Si ya tenía Sangrado: Frenesí a Ragnar
-                        const cPost = gameState.characters[n];
-                        if (cPost && cPost.statusEffects && cPost.statusEffects.some(function(e) { return e && normAccent(e.name||'') === 'sangrado'; })) {
-                            gameState.characters[charName].statusEffects.push({ name: 'Frenesi', type: 'buff', duration: 4, emoji: '🔥' });
-                            addLog('🔥 Tormenta del Norte: ' + charName + ' gana Frenesí 3 turnos (objetivo tenía Sangrado)', 'buff');
+                        addLog('⚡ Furia Vikinga: ' + charName + ' +5 cargas (objetivo tenía Hemorragia)', 'buff');
+                    }
+                }
+
+            // ── TORMENTA DEL NORTE V3 (10 golpes MT, Sangrado→escudo aliado) ──
+            } else if (ability.effect === 'tormenta_norte_v3') {
+                const _tnAtk   = gameState.characters[charName];
+                const _tnETeam = _tnAtk ? (_tnAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _tnATeam = _tnAtk ? _tnAtk.team : 'team1';
+                const _tnEnemies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===_tnETeam&&!c.isDead&&c.hp>0; });
+                let _tnShieldBonus = 0;
+                for (let _i = 0; _i < 10; _i++) {
+                    if (_tnEnemies.length === 0) break;
+                    const _tnTgt = _tnEnemies[Math.floor(Math.random()*_tnEnemies.length)];
+                    const _tnC   = gameState.characters[_tnTgt];
+                    if (!_tnC || _tnC.isDead || _tnC.hp <= 0) continue;
+                    // Check if target had Sangrado BEFORE this hit
+                    const _hadBleedTN = (_tnC.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'sangrado'; });
+                    applyDamageWithShield(_tnTgt, finalDamage, charName);
+                    if (typeof applyBleed === 'function') applyBleed(_tnTgt, 2);
+                    // Check if applying Sangrado converted it to Hemorragia
+                    // Convention: if target had Sangrado before AND now has Hemorragia → conversion happened
+                    const _nowHemo = (_tnC.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'hemorragia'; });
+                    if (_hadBleedTN && _nowHemo) {
+                        _tnShieldBonus += 3;
+                    }
+                }
+                addLog('🌩️ Tormenta del Norte: 10 golpes MT — ' + _tnShieldBonus + ' HP de escudo generados', 'damage');
+                if (_tnShieldBonus > 0) {
+                    for (const _an in gameState.characters) {
+                        const _ac = gameState.characters[_an];
+                        if (!_ac || _ac.team !== _tnATeam || _ac.isDead || _ac.hp <= 0) continue;
+                        _ac.shield = (_ac.shield||0) + _tnShieldBonus;
+                    }
+                    addLog('🌩️ Tormenta del Norte: equipo aliado +' + _tnShieldBonus + ' HP escudo (Sangrados → Hemorragia)', 'buff');
+                }
+
+            // ── REY PAGANO V2 (AOE 4 daño + Sangrado; si tenía Sangrado → Miedo) ──
+            } else if (ability.effect === 'rey_pagano_v2') {
+                const _rpAtk   = gameState.characters[charName];
+                const _rpETeam = _rpAtk ? (_rpAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _rpETeam || _c.isDead || _c.hp <= 0) continue;
+                    if (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(_n, true)) { addLog('🌟 ' + _n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
+                    const _hadBleedRP = (_c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'sangrado'; });
+                    applyDamageWithShield(_n, finalDamage, charName);
+                    if (typeof applyBleed === 'function') applyBleed(_n, 2);
+                    if (_hadBleedRP) {
+                        if (typeof applyFear === 'function') applyFear(_n, 2);
+                        addLog('😱 Rey Pagano: ' + _n + ' tenía Sangrado → Miedo aplicado', 'debuff');
+                    }
+                }
+                if (typeof applyAOEToSummons === 'function') applyAOEToSummons(_rpETeam, finalDamage, charName);
+                addLog('👑 Rey Pagano: ' + finalDamage + ' daño AOE + Sangrado al equipo enemigo', 'damage');
+
+            // ── ÁGUILA DE SANGRE V2 (ST 10; <50% HP → elimina; si muere → aliado +10 cargas) ──
+            } else if (ability.effect === 'aguila_sangre_v2') {
+                const _asTgt = gameState.characters[targetName];
+                if (_asTgt && !_asTgt.isDead) {
+                    const _asHpPct = _asTgt.hp / (_asTgt.maxHp || 1);
+                    if (_asHpPct < 0.50) {
+                        // Instant kill
+                        _asTgt.hp = 0; _asTgt.isDead = true;
+                        addLog('🦅 Águila de Sangre: ' + targetName + ' tenía menos del 50% HP → ELIMINADO', 'damage');
+                        if (typeof registerKill === 'function') registerKill(charName, targetName, false);
+                    } else {
+                        applyDamageWithShield(targetName, finalDamage, charName);
+                        addLog('🦅 Águila de Sangre: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                    }
+                    // If target died (either way), grant 10 charges to random ally
+                    const _asNowDead = gameState.characters[targetName];
+                    if (_asNowDead && (_asNowDead.isDead || _asNowDead.hp <= 0)) {
+                        const _asAtk = gameState.characters[charName];
+                        const _asAllies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===_asAtk.team&&!c.isDead&&c.hp>0&&n!==charName; });
+                        if (_asAllies.length > 0) {
+                            const _asChosen = _asAllies[Math.floor(Math.random()*_asAllies.length)];
+                            gameState.characters[_asChosen].charges = Math.min(20, (gameState.characters[_asChosen].charges||0) + 10);
+                            addLog('🦅 Águila de Sangre: ' + _asChosen + ' +10 cargas (' + targetName + ' eliminado)', 'buff');
                         }
                     }
                 }
-                applyAOEDamageToSummons(attacker.team, finalDamage, charName);
 
-            // ── TORMENTA DEL NORTE V2 (Ragnar - updated) ──
-            } else if (ability.effect === 'tormenta_norte_v2') {
-                const enemyTeamTNv2 = attacker.team === 'team1' ? 'team2' : 'team1';
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (!c || c.team !== enemyTeamTNv2 || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n, true)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
-                    applyDamageWithShield(n, finalDamage, charName);
-                    const hadBleed = hasStatusEffect(n, 'Sangrado');
-                    if (Math.random() < 0.5) applyBleed(n, 1);
-                    if (hadBleed) { attacker.charges = Math.min(20, (attacker.charges||0) + 2); addLog('⚡ Tormenta del Norte: +2 cargas a ' + charName + ' (objetivo tenía Sangrado)', 'buff'); }
-                }
-                applyAOEDamageToSummons(attacker.team, finalDamage, charName);
-                addLog('🪓 Tormenta del Norte: ' + finalDamage + ' daño AOE', 'damage');
-
-            // ── REY PAGANO (Ragnar AOE) ──
-            } else if (ability.effect === 'rey_pagano') {
-                const enemyTeamRP = attacker.team === 'team1' ? 'team2' : 'team1';
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (!c || c.team !== enemyTeamRP || c.isDead || c.hp <= 0) continue;
-                    if (checkAsprosAOEImmunity(n, true)) { addLog('🌟 ' + n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
-                    const hadBleedRP = hasStatusEffect(n, 'Sangrado');
-                    applyDamageWithShield(n, finalDamage, charName);
-                    applyBleed(n, 2);
-                    if (hadBleedRP) { applyFear(n, 2); addLog('😱 Rey Pagano: ' + n + ' tenía Sangrado → aplica Miedo', 'damage'); }
-                }
-                applyAOEDamageToSummons(attacker.team, finalDamage, charName);
-                addLog('👑 Rey Pagano: ' + finalDamage + ' daño AOE + Sangrado', 'damage');
-
-            // ── DJEM SO (Anakin básico) ──
+            // ── DJEM SO (Anakin básico) ──            // ── DJEM SO (Anakin básico) ──
             } else if (ability.effect === 'corte_agua') {
                 // GIYU — Corte de Agua: 1 dmg + Escudo 2HP en Giyu
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
@@ -7156,79 +7223,104 @@
             // LAGERTHA
             // ══════════════════════════════════════════════════════
 
-            } else if (ability.effect === 'hacha_escudo_lagertha') {
-                // ST — 1 daño + Provocación a Lagertha + 50% Reflejar
-                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                const _hlAtk = gameState.characters[gameState.selectedCharacter];
+            } else if (ability.effect === 'hacha_escudo_lagertha_v2') {
+                // HACHA Y ESCUDO: ST 1 daño + Provocación a Lagertha + 50% Reflejar
+                applyDamageWithShield(targetName, finalDamage, charName);
+                const _hlAtk = gameState.characters[charName];
                 if (_hlAtk) {
-                    // Provocación
-                    _hlAtk.statusEffects = (_hlAtk.statusEffects||[]).filter(e => !e || normAccent(e.name||'') !== 'provocacion');
-                    _hlAtk.statusEffects.push({ name: 'Provocacion', type: 'buff', duration: 2, emoji: '🛡️' });
-                    // 50% Reflejar
+                    _hlAtk.statusEffects = (_hlAtk.statusEffects||[]).filter(function(e){ return !e||normAccent(e.name||'')!=='provocacion'; });
+                    _hlAtk.statusEffects.push({ name:'Provocacion', type:'buff', duration:2, emoji:'🛡️' });
                     if (Math.random() < 0.50) {
-                        _hlAtk.statusEffects = (_hlAtk.statusEffects||[]).filter(e => !e || normAccent(e.name||'') !== 'reflejar');
-                        _hlAtk.statusEffects.push({ name: 'Reflejar', type: 'buff', duration: 2, emoji: '🪞' });
+                        _hlAtk.statusEffects = (_hlAtk.statusEffects||[]).filter(function(e){ return !e||normAccent(e.name||'')!=='reflejar'; });
+                        _hlAtk.statusEffects.push({ name:'Reflejar', type:'buff', duration:2, emoji:'🪞' });
                         addLog('🪓 Hacha y Escudo: Lagertha gana Reflejar', 'buff');
                     }
                 }
-                addLog('🪓 Hacha y Escudo: ' + finalDamage + ' daño + Provocación', 'damage');
+                addLog('🪓 Hacha y Escudo: ' + finalDamage + ' daño + Provocación a Lagertha', 'damage');
 
-            } else if (ability.effect === 'muro_escudo_lagertha') {
-                // AOE aliados — Escudo 5 HP + Protección Sagrada 2T
-                const _mlAtk = gameState.characters[gameState.selectedCharacter];
-                const _mlMyTeam = _mlAtk ? _mlAtk.team : 'team1';
+            } else if (ability.effect === 'muro_escudo_lagertha_v2') {
+                // MURO DE ESCUDO: Escudo 5 HP + Protección Sagrada 2T al equipo aliado
+                const _mlAtk = gameState.characters[charName];
+                const _mlTeam = _mlAtk ? _mlAtk.team : 'team1';
                 for (const _an in gameState.characters) {
                     const _a = gameState.characters[_an];
-                    if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _mlMyTeam) continue;
-                    _a.shield = (_a.shield || 0) + 5;
-                    _a.statusEffects = (_a.statusEffects||[]).filter(e => !e || normAccent(e.name||'') !== 'proteccion sagrada');
-                    _a.statusEffects.push({ name: 'Proteccion Sagrada', type: 'buff', duration: 2, emoji: '✝️' });
-                    addLog('🛡️ Muro de Escudo: ' + _an + ' recibe Escudo 5 HP + Protección Sagrada 2T', 'buff');
+                    if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _mlTeam) continue;
+                    _a.shield = (_a.shield||0) + 5;
+                    _a.statusEffects = (_a.statusEffects||[]).filter(function(e){ return !e||normAccent(e.name||'')!=='proteccion sagrada'; });
+                    _a.statusEffects.push({ name:'Proteccion Sagrada', type:'buff', duration:2, emoji:'✝️' });
+                    addLog('🛡️ Muro de Escudo: ' + _an + ' +5 HP escudo + Protección Sagrada 2T', 'buff');
                 }
 
-            } else if (ability.effect === 'furia_freya_lagertha') {
-                // ST — daño directo: 2 + 1 por cada punto de escudo del objetivo
-                const _ffTgt = gameState.characters[targetName];
-                const _ffShield = _ffTgt ? (_ffTgt.shield || 0) : 0;
-                const _ffDmg = finalDamage + _ffShield;
-                // Daño directo (attackerName = null bypasea escudo y Escudo Sagrado)
-                applyDamageWithShield(targetName, _ffDmg, null);
-                addLog('🪓 Furia de Freya: ' + _ffDmg + ' daño directo (' + finalDamage + ' base + ' + _ffShield + ' por escudo del objetivo)', 'damage');
-
-            } else if (ability.effect === 'valquiria_lagertha') {
-                // ST — equipo aliado usa su básico sobre el objetivo + Buff Asistir 3T
-                const _vlAtk = gameState.characters[gameState.selectedCharacter];
-                const _vlMyTeam = _vlAtk ? _vlAtk.team : 'team1';
-                const _vlTgt = gameState.characters[targetName];
-                if (_vlTgt) {
-                    for (const _an in gameState.characters) {
-                        const _a = gameState.characters[_an];
-                        if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _vlMyTeam || _an === gameState.selectedCharacter) continue;
-                        const _basic = _a.abilities && _a.abilities[0];
-                        if (_basic && _basic.damage > 0) {
-                            passiveExecuting = true;
-                            const _savedSel = gameState.selectedCharacter;
-                            const _savedAb = gameState.selectedAbility;
-                            gameState.selectedCharacter = _an;
-                            gameState.selectedAbility = _basic;
-                            applyDamageWithShield(targetName, _basic.damage, _an);
-                            _a.charges = Math.min(20, (_a.charges||0) + (_basic.chargeGain||0));
-                            addLog('⚔️ Valquiria: ' + _an + ' ataca a ' + targetName + ' con ' + _basic.name + ' (' + _basic.damage + ' daño)', 'damage');
-                            gameState.selectedCharacter = _savedSel;
-                            gameState.selectedAbility = _savedAb;
-                            passiveExecuting = false;
+            } else if (ability.effect === 'furia_freya_v2') {
+                // FURIA DE FREYA: 5 golpes MT 2 daño. Por cada debuff en enemigo golpeado → buff aleatorio a aliado aleatorio
+                const _ffAtk   = gameState.characters[charName];
+                const _ffETeam = _ffAtk ? (_ffAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _ffATeam = _ffAtk ? _ffAtk.team : 'team1';
+                const _ffEnemies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===_ffETeam&&!c.isDead&&c.hp>0; });
+                const _ffBuffPool = ['Escudo Sagrado','Armadura','Esquiva Area','Esquivar','Cuerpo Perfecto'];
+                const _ffBuffEmoji = {'Escudo Sagrado':'🛡️✨','Armadura':'🔰','Esquiva Area':'💨','Esquivar':'💨','Cuerpo Perfecto':'💪'};
+                for (let _i = 0; _i < 5; _i++) {
+                    if (_ffEnemies.length === 0) break;
+                    const _ffTgtN = _ffEnemies[Math.floor(Math.random()*_ffEnemies.length)];
+                    const _ffTgt  = gameState.characters[_ffTgtN];
+                    if (!_ffTgt || _ffTgt.isDead || _ffTgt.hp <= 0) continue;
+                    applyDamageWithShield(_ffTgtN, finalDamage, charName);
+                    // Count debuffs on target AFTER hit
+                    const _ffDebuffs = (_ffTgt.statusEffects||[]).filter(function(e){ return e&&e.type==='debuff'&&!e.passiveHidden; });
+                    if (_ffDebuffs.length > 0) {
+                        const _ffAllies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===_ffATeam&&!c.isDead&&c.hp>0; });
+                        for (let _d = 0; _d < _ffDebuffs.length; _d++) {
+                            if (_ffAllies.length === 0) break;
+                            const _ffAlly = _ffAllies[Math.floor(Math.random()*_ffAllies.length)];
+                            const _ffBuff = _ffBuffPool[Math.floor(Math.random()*_ffBuffPool.length)];
+                            const _ffEmoji = _ffBuffEmoji[_ffBuff] || '✨';
+                            if (typeof applyBuff === 'function') applyBuff(_ffAlly, { name:_ffBuff, type:'buff', duration:2, emoji:_ffEmoji });
+                            addLog('⚔️ Furia de Freya: ' + _ffAlly + ' gana ' + _ffBuff + ' (debuff en ' + _ffTgtN + ')', 'buff');
                         }
                     }
                 }
-                // Buff Asistir 3T al equipo aliado
+                addLog('⚔️ Furia de Freya: 5 golpes MT completados', 'damage');
+
+            } else if (ability.effect === 'valquiria_lagertha_v2') {
+                // VALQUIRIA: todo el equipo aliado usa su básico sobre el objetivo + Contraataque 3T
+                const _vlAtk  = gameState.characters[charName];
+                const _vlTeam = _vlAtk ? _vlAtk.team : 'team1';
+                const _vlTgt  = gameState.characters[targetName];
+                if (_vlTgt) {
+                    for (const _an in gameState.characters) {
+                        const _a = gameState.characters[_an];
+                        if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _vlTeam || _an === charName) continue;
+                        const _basic = _a.abilities && _a.abilities[0];
+                        if (!_basic || !_basic.damage || _basic.damage <= 0) continue;
+                        passiveExecuting = true;
+                        const _saveSel = gameState.selectedCharacter;
+                        const _saveAb  = gameState.selectedAbility;
+                        gameState.selectedCharacter = _an;
+                        gameState.selectedAbility   = _basic;
+                        applyDamageWithShield(targetName, _basic.damage, _an);
+                        _a.charges = Math.min(20, (_a.charges||0) + (_basic.chargeGain||0));
+                        // Apply the basic's effects too
+                        if (typeof executeAbility === 'function' && _basic.effect) {
+                            // Only apply effects, not damage (damage already applied)
+                            addLog('⚔️ Valquiria: ' + _an + ' usa ' + _basic.name + ' → ' + _basic.damage + ' daño a ' + targetName, 'damage');
+                        } else {
+                            addLog('⚔️ Valquiria: ' + _an + ' ataca a ' + targetName + ' (' + _basic.damage + ' daño)', 'damage');
+                        }
+                        gameState.selectedCharacter = _saveSel;
+                        gameState.selectedAbility   = _saveAb;
+                        passiveExecuting = false;
+                    }
+                }
+                // Buff Contraataque 3T al equipo aliado
                 for (const _an in gameState.characters) {
                     const _a = gameState.characters[_an];
-                    if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _vlMyTeam) continue;
-                    applyBuff(_an, { name: 'Asistir', type: 'buff', duration: 3, emoji: '🤝' });
+                    if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _vlTeam) continue;
+                    if (typeof applyBuff === 'function') applyBuff(_an, { name:'Contraataque', type:'buff', duration:3, emoji:'⚔️' });
                 }
-                addLog('⚔️ Valquiria: Equipo aliado atacó. Buff Asistir 3T aplicado', 'buff');
+                addLog('⚔️ Valquiria: equipo aliado atacó + Contraataque 3T', 'buff');
 
             // ══════════════════════════════════════════════════════
+            // SHINOBU KOCHO            // ══════════════════════════════════════════════════════
             // SHINOBU KOCHO
             // ══════════════════════════════════════════════════════
 
