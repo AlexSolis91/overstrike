@@ -257,21 +257,19 @@
             },
 
             'Muzan Kibutsuji': {
-                hp: 20, maxHp: 20, speed: 86, charges: 0, team: 'team2',
+                hp: 20, maxHp: 20, speed: 86, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 muzanTransformed: false,
-                portrait: 'https://i.postimg.cc/fL41fCgH/Captura_de_pantalla_2026_02_28_020016.png',
-                transformPortrait: 'https://i.ibb.co/RTtv2Ytc/descarga-9.jpg',
-                transformationPortrait: 'https://i.ibb.co/RTtv2Ytc/descarga-9.jpg',
-                passive: { name: 'Progenitor Demoniaco', description: 'Al pricipio de cada ronda, Muzan aplica Curacion de 2 HP a Muzan y 1 HP a un aliado aleatorio. Cada vez que un debuff Veneno haga daño, Muzan genera 1 punto de carga.' },
+                portrait: 'https://i.ibb.co/v4B63sHw/he-s-so-handsome.jpg',
+                transformPortrait: 'https://i.ibb.co/2754TPmc/Insta-Pet-Ai-FULL-VIEW-ZOOM-IN-OUT-Kurozai-new-character-instapetai-Calling.jpg',
+                passive: { name: 'Progenitor Demoniaco', description: 'Fin de ronda: equipo aliado se cura HP = daño total por Veneno esa ronda. Cada stack de Veneno aplicado a enemigo = +1 carga para Muzan. Transformado: al recibir golpe aplica 5 stacks Veneno al atacante y se cura 5 HP.' },
                 abilities: [
-                    { name: 'Espinas de Sangre', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'apply_poison', poisonDuration: 2, description: 'Causa 2 de daño. Se aplica Debuff Veneno al objetivo por 2 turnos.' },
-                    { name: 'Sangre Demoniaca', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'single', effect: 'sangre_demoniaca', poisonDuration: 3, heal: 3, description: 'Causa 3 de daño. Aplica Debuff Veneno en el objetivo por 3 turnos. Aplica Curación a Muzan por 3 HP.' },
-                    { name: 'Sombra de la Noche', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'aoe', effect: 'sombra_noche', poisonDuration: 3, description: 'Causa 3 AOE. Aplica Buff Sigilo por 2 turnos. Aplica Debuff Veneno por 3 turnos.' },
-                    { name: 'Rey de los Demonios Definitivo', type: 'over', cost: 12, chargeGain: 0, damage: 1, target: 'aoe', effect: 'muzan_transform', description: 'TRANSFORMACIÓN: Causa 1 AOE. Aplica Debuff Veneno por 5 turnos. Aplica Buff Regeneración de 30% por 5 turnos. Aumenta su celeridad 20%. Aumenta su probabilidad de crítico 70%.' }
+                    { name: 'Espinas de Sangre',             type: 'basic',   cost: 0,  chargeGain: 0, damage: 1, target: 'mt',   effect: 'muzan_espinas',   description: 'MT 3 golpes, 1 stack Veneno. Transformado: 5 golpes, 3 stacks Veneno.' },
+                    { name: 'Sangre Demoniaca',               type: 'special', cost: 5,  chargeGain: 0, damage: 3, target: 'aoe',  effect: 'muzan_sangre',    description: 'AOE 3 daño + 1 stack Veneno. Transformado: +3 cargas al equipo aliado por cada stack aplicado.' },
+                    { name: 'Sombras de la Noche',            type: 'special', cost: 8,  chargeGain: 0, damage: 2, target: 'mt',   effect: 'muzan_sombras',   description: 'MT 5 golpes, 3 stacks Veneno. Transformado: aplica Posesión a objetivos golpeados.' },
+                    { name: 'Rey de los Demonios Definitivo', type: 'over',    cost: 15, chargeGain: 0, damage: 0, target: 'self', effect: 'muzan_transform', description: 'Transformación permanente única. +10 HP max, +10 VEL. Inicio de ronda: -2 cargas al equipo enemigo.' }
                 ]
             },
-
             'Nakime': {
                 hp: 15, maxHp: 15, speed: 80, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
@@ -491,15 +489,15 @@
                 ]
             },
             'The Joker': {
-                hp: 20, maxHp: 20, speed: 85, charges: 0, team: 'team1',
+                hp: 20, maxHp: 20, speed: 79, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.ibb.co/gZQDP5Cm/Captura-de-pantalla-2026-03-20-230645.png',
-                passive: { name: 'Anarquía', description: 'Cada vez que un enemigo recibe daño de Veneno, 50% de probabilidad de aplicar debuff Aturdimiento en ese enemigo.' },
+                portrait: 'https://i.ibb.co/KYQp5vZ/Whats-App-Image-2026-07-08-at-5-28-44-PM.jpg',
+                passive: { name: 'Anarquía', description: 'Al inicio de cada ronda: 50% Sigilo, 50% Esquivar, 50% Esquiva Área, 50% Intimidación (2T). Cuando un enemigo sufre daño por Quemadura o Veneno, aplica un debuff aleatorio por 1 turno.' },
                 abilities: [
-                    { name: 'Naipes Impregnados', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'naipes_joker', description: 'Causa 1 daño. Aplica debuff Veneno 2 turnos sobre el objetivo.' },
-                    { name: 'Granada de Humo Púrpura', type: 'special', cost: 2, chargeGain: 0, damage: 1, target: 'aoe', effect: 'granada_joker', description: 'Causa 1 AOE. Aplica debuff Veneno 3 turnos sobre los enemigos.' },
-                    { name: 'Detonador del Caos', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'aoe', effect: 'detonador_joker', description: 'Causa 3 AOE. Si el enemigo tiene Veneno o Aturdimiento, 50% de eliminar todas sus cargas.' },
-                    { name: '¿Por qué tan serio?', type: 'over', cost: 8, chargeGain: 0, damage: 2, target: 'single', effect: 'por_que_serio_joker', description: 'Causa 2 daño. Si el objetivo tiene Veneno activo, reduce un 60% su HP actual.' }
+                    { name: 'Naipes Impregnados',      type: 'basic',   cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'joker_naipes',    description: 'ST 2 daño. Si Joker tiene buffs activos: Quemadura N HP y N stacks Veneno al objetivo (N = buffs activos).' },
+                    { name: 'Granada de Humo Púrpura', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'aoe',    effect: 'joker_granada',   description: 'AOE 3 stacks Veneno. Si objetivo tenía ≥5 stacks, activa el daño instantáneamente.' },
+                    { name: 'Detonador del Caos',      type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'aoe',    effect: 'joker_detonador', description: 'AOE Quemadura 3 HP. Si objetivo tenía Quemadura ≥5 HP, activa el daño instantáneamente.' },
+                    { name: '¿Por qué tan serio?',     type: 'over',    cost: 8, chargeGain: 0, damage: 5, target: 'mt',     effect: 'joker_serio',    description: 'MT 5 daño. 50% Aura de Fuego, 50% Espinas, 50% Infectar. Por cada buff aplicado, +3 ataques básicos.' }
                 ]
             },
             'Batman': {
