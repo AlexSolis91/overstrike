@@ -3640,86 +3640,144 @@
         }
 
         // ── Equipar reliquia en personaje ──
-        async function equipRelic(uid, charName, slotIndex, relicName) {
-            // Verificar que el jugador tiene la reliquia en inventario
-            const invRef = db.ref('users/' + uid + '/inventory/relics/' + relicName);
-            const invSnap = await invRef.once('value');
-            if ((invSnap.val()||0) < 1) {
-                alert('No tienes esta reliquia en tu inventario.');
-                return false;
-            }
-            // Verificar compatibilidad de slots
-            const charRef = db.ref('users/' + uid + '/characters/' + charName + '/slots');
-            const charSnap = await charRef.once('value');
-            const slots = charSnap.val() || { slot1: null, slot2: null, slot3: null };
+        // ── SLOT SYSTEM v2: 6 slots (2 Arma, 2 Equipacion, 2 Joya) ──
+        // Slot keys: arma1, arma2, equip1, equip2, joya1, joya2
+        // Slots 2 of each category start locked; unlock costs: 100k → 500k → 1M per char
+
+        async function getCharSlots(uid, charName) {
+            const snap = await db.ref('users/' + uid + '/characters/' + charName + '/slots_v2').once('value');
+            return snap.val() || {};
+        }
+
+        async function getSlotUnlocks(uid, charName) {
+            const snap = await db.ref('users/' + uid + '/characters/' + charName + '/slot_unlocks').once('value');
+            return snap.val() || { arma2: false, equip2: false, joya2: false };
+        }
+
+        async function unlockSlot(uid, charName, slotKey) {
+            const unlocks = await getSlotUnlocks(uid, charName);
+            const unlockedCount = Object.values(unlocks).filter(Boolean).length;
+            const cost = unlockedCount === 0 ? 100000 : unlockedCount === 1 ? 500000 : 1000000;
+            if (unlocks[slotKey]) { alert('Este slot ya está desbloqueado.'); return false; }
+            const label = unlockedCount === 0 ? '100,000' : unlockedCount === 1 ? '500,000' : '1,000,000';
+            if (!confirm('¿Desbloquear slot por ' + label + ' 🪙 de oro?')) return false;
+            const ok = await spendGold(uid, cost);
+            if (!ok) { alert('No tienes suficiente oro.'); return false; }
+            await db.ref('users/' + uid + '/characters/' + charName + '/slot_unlocks/' + slotKey).set(true);
+            alert('✅ Slot desbloqueado.');
+            return true;
+        }
+
+        async function equipRelic(uid, charName, slotKey, relicName) {
+            // Verify inventory
+            const invSnap = await db.ref('users/' + uid + '/inventory/relics/' + relicName).once('value');
+            if ((invSnap.val()||0) < 1) { alert('No tienes esta reliquia en tu inventario.'); return false; }
+
             const relic = typeof RELICS_DATA !== 'undefined' ? RELICS_DATA[relicName] : null;
             if (!relic) { alert('Reliquia no encontrada.'); return false; }
 
-            // Verificar incompatibilidades
-            const allEquipped = [slots.slot1, slots.slot2, slots.slot3].filter(Boolean);
-            const allRelicData = allEquipped.map(function(r){ return typeof RELICS_DATA !== 'undefined' ? RELICS_DATA[r] : null; }).filter(Boolean);
-            const equippedSlots = allRelicData.map(function(r){ return r.slot; });
+            const cat = relic.slotCategory || (relic.slot === 'Joya' ? 'Joya' : relic.slot === 'Arco' || relic.slot === 'Escudo' ? 'Arma' : relic.slot === 'Armadura' || relic.slot === 'Botas' || relic.slot === 'Guante' || relic.slot === 'Yelmo' ? 'Equipacion' : 'Arma');
+            const subtype = relic.subtype || relic.slot;
 
-            // Regla: no duplicados
-            if (allEquipped.includes(relicName)) {
-                alert('No puedes equipar 2 reliquias con el mismo nombre en el mismo personaje.');
-                return false;
-            }
-            // Regla: Arco excluye Arma y Escudo
-            if (relic.slot === 'Arco' && (equippedSlots.includes('Arma') || equippedSlots.includes('Escudo'))) {
-                alert('No puedes equipar Arco junto con Armas o Escudo.');
-                return false;
-            }
-            if ((relic.slot === 'Arma' || relic.slot === 'Escudo') && equippedSlots.includes('Arco')) {
-                alert('No puedes equipar Armas o Escudo junto con un Arco.');
-                return false;
-            }
-            // Regla: 2 Armas excluye Escudo y Arco
-            const armaCount = equippedSlots.filter(function(s){ return s === 'Arma'; }).length;
-            if (relic.slot === 'Escudo' && armaCount >= 2) {
-                alert('No puedes equipar Escudo con 2 Armas.');
-                return false;
-            }
-            if (relic.slot === 'Arco' && armaCount >= 1) {
-                alert('No puedes equipar Arco con Armas.');
-                return false;
-            }
-            if (relic.slot === 'Arma' && armaCount >= 1 && equippedSlots.includes('Escudo')) {
-                alert('No puedes tener 2 Armas y Escudo al mismo tiempo.');
+            // Verify slot matches category
+            const slotCat = slotKey.startsWith('arma') ? 'Arma' : slotKey.startsWith('equip') ? 'Equipacion' : 'Joya';
+            if (cat !== slotCat) {
+                alert('Esta reliquia es de tipo ' + cat + ' y no puede ir en un slot de ' + slotCat + '.');
                 return false;
             }
 
-            // Equipar
-            const slotKey = 'slot' + slotIndex;
-            const oldRelic = slots[slotKey];
-            if (oldRelic) {
-                alert('Este slot ya tiene una reliquia. Primero remuévela (costo: 10,000 oro).');
-                return false;
+            // Check if slot is locked
+            if (slotKey === 'arma2' || slotKey === 'equip2' || slotKey === 'joya2') {
+                const unlocks = await getSlotUnlocks(uid, charName);
+                if (!unlocks[slotKey]) { alert('Este slot está bloqueado. Desbloquéalo primero.'); return false; }
             }
-            await charRef.update({ [slotKey]: relicName });
+
+            const slots = await getCharSlots(uid, charName);
+
+            // Check slot is empty
+            if (slots[slotKey]) { alert('Este slot ya está ocupado. Primero remueve la reliquia actual.'); return false; }
+
+            // Duplicate check
+            if (Object.values(slots).includes(relicName)) { alert('Ya tienes esta reliquia equipada en este personaje.'); return false; }
+
+            // Rules for Arma slots
+            if (slotCat === 'Arma') {
+                const equippedArmas = ['arma1','arma2'].map(function(k){ return slots[k]; }).filter(Boolean);
+                const armaRelics = equippedArmas.map(function(r){ return RELICS_DATA[r]; }).filter(Boolean);
+                const hasArco  = armaRelics.some(function(r){ return r.subtype === 'Arco'; });
+                const hasEscudo = armaRelics.some(function(r){ return r.subtype === 'Escudo'; });
+
+                // Arco rules: if equipping arco, no other arma slot can have Arco, Arma, Escudo
+                if (subtype === 'Arco' && equippedArmas.length > 0) {
+                    alert('Un Arco ocupa el segundo slot de Arma como Equipación. No puedes tener otra Arma o Escudo con un Arco.');
+                    return false;
+                }
+                // If equipping non-arco while arco is equipped
+                if (subtype !== 'Arco' && hasArco) {
+                    alert('No puedes equipar Armas o Escudos junto con un Arco.');
+                    return false;
+                }
+                // Two shields rule
+                if (subtype === 'Escudo' && hasEscudo) {
+                    alert('No puedes equipar dos Escudos en el mismo personaje.');
+                    return false;
+                }
+            }
+
+            await db.ref('users/' + uid + '/characters/' + charName + '/slots_v2/' + slotKey).set(relicName);
             await removeRelicFromInventory(uid, relicName);
             await updateLobbyHUD();
-            alert('✅ ' + relicName + ' equipada en ' + charName);
+            alert('✅ ' + relicName + ' equipada en ' + charName + ' (slot ' + slotKey + ')');
             return true;
         }
 
-        // ── Remover reliquia equipada (cuesta 10,000 oro) ──
-        async function removeRelic(uid, charName, slotIndex) {
-            const slotKey = 'slot' + slotIndex;
-            const charRef = db.ref('users/' + uid + '/characters/' + charName + '/slots/' + slotKey);
-            const snap = await charRef.once('value');
+        async function removeRelic(uid, charName, slotKey) {
+            const relicRef = db.ref('users/' + uid + '/characters/' + charName + '/slots_v2/' + slotKey);
+            const snap = await relicRef.once('value');
             const relicName = snap.val();
             if (!relicName) { alert('No hay reliquia en este slot.'); return false; }
-
             const ok = await spendGold(uid, 10000);
-            if (!ok) { alert('No tienes suficiente oro. Remover una reliquia cuesta 10,000 oro.'); return false; }
-
-            await charRef.remove();
+            if (!ok) { alert('No tienes suficiente oro. Remover cuesta 10,000 🪙.'); return false; }
+            await relicRef.remove();
             await addRelicToInventory(uid, relicName);
             await updateLobbyHUD();
-            alert('✅ ' + relicName + ' removida. Regresó a tu inventario.');
+            alert('✅ ' + relicName + ' removida y devuelta al inventario.');
             return true;
         }
+
+        // ── MIGRATION: unequip everyone and return relics to inventory ──
+        window.migrateRelicsToV2 = async function() {
+            if (!isAdmin()) { alert('Solo admins.'); return; }
+            if (!confirm('¿Migrar TODOS los jugadores al sistema de 6 slots? Esto desequipará a todos los personajes y devolverá las reliquias al inventario.')) return;
+            const usersSnap = await db.ref('users').once('value');
+            const users = usersSnap.val() || {};
+            let count = 0;
+            for (const [uid, userData] of Object.entries(users)) {
+                const chars = (userData.characters) || {};
+                for (const [charName, charData] of Object.entries(chars)) {
+                    const slots = charData.slots || {};
+                    const equipped = [slots.slot1, slots.slot2, slots.slot3].filter(Boolean);
+                    if (equipped.length === 0) continue;
+                    // Return each relic to inventory
+                    for (const relicName of equipped) {
+                        const invRef = db.ref('users/' + uid + '/inventory/relics/' + relicName);
+                        const invSnap = await invRef.once('value');
+                        await invRef.set((invSnap.val()||0) + 1);
+                        count++;
+                    }
+                    // Clear old slots
+                    await db.ref('users/' + uid + '/characters/' + charName + '/slots').remove();
+                    // Initialize new empty slots_v2
+                    await db.ref('users/' + uid + '/characters/' + charName + '/slots_v2').set({
+                        arma1: null, arma2: null, equip1: null, equip2: null, joya1: null, joya2: null
+                    });
+                    await db.ref('users/' + uid + '/characters/' + charName + '/slot_unlocks').set({
+                        arma2: false, equip2: false, joya2: false
+                    });
+                }
+            }
+            alert('✅ Migración completada. ' + count + ' reliquias devueltas a inventarios.');
+        };
 
         // ── Abrir cofre ──
         async function openChest(uid, chestType) {
@@ -3896,6 +3954,9 @@
         }
         // Exponer globalmente para jefe-de-sala.js
         window.getBossData = getBossData;
+        window.unlockSlot = unlockSlot;
+        window.getCharSlots = getCharSlots;
+        window.getSlotUnlocks = getSlotUnlocks;
 
         // ── Check if boss event has expired (7 days) and auto-distribute rewards ──
         async function checkBossEventExpiry() {
@@ -4229,6 +4290,7 @@
         }
         window.isAdmin = isAdmin;
         window.distributeEndEventRewards = distributeEndEventRewards;
+        window.migrateRelicsToV2 = window.migrateRelicsToV2; // already set above
 
         // ── Reset de recursos del admin (uso único desde consola) ──
         window.adminResetMyResources = async function(goldAmount, keysAmount) {
