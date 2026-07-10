@@ -2021,67 +2021,85 @@
                     if (enemyCo.hp <= 0) { enemyCo.isDead = true; registerKill(gameState.selectedCharacter, enemyNameCo, false); }
                 }
 
-            } else if (ability.effect === 'apply_poison_2') {
-                // MUZAN - Espinas de Sangre
-                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                applyPoison(targetName, 2);
-                addLog(`⚔️ ${gameState.selectedCharacter} usa Espinas de Sangre en ${targetName} causando ${finalDamage} daño`, 'damage');
+            } else if (ability.effect === 'muzan_espinas') {
+                // ESPINAS DE SANGRE: MT 3 golpes, 1 stack Veneno. Transformado: 5 golpes, 3 stacks Veneno
+                const _meETeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                const _meTargets = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; if(!c||c.team!==_meETeam||c.isDead||c.hp<=0) return false; const _hasIntim=(c.statusEffects||[]).some(function(e){return e&&normAccent(e.name||'')==='intimidacion';}); return !_hasIntim; });
+                const _meHits    = attacker.muzanTransformed ? 5 : 3;
+                const _meStacks  = attacker.muzanTransformed ? 3 : 1;
+                for (let _i = 0; _i < _meHits; _i++) {
+                    if (_meTargets.length === 0) break;
+                    const _meTgt = _meTargets[Math.floor(Math.random()*_meTargets.length)];
+                    if (!gameState.characters[_meTgt]?.isDead) {
+                        applyDamageWithShield(_meTgt, finalDamage, charName);
+                        if (typeof applyPoison === 'function') applyPoison(_meTgt, _meStacks);
+                    }
+                }
+                addLog('🩸 Espinas de Sangre: ' + _meHits + ' golpes MT + ' + _meStacks + ' stack(s) Veneno' + (attacker.muzanTransformed ? ' [Rey Demonios]' : ''), 'damage');
 
-            } else if (ability.effect === 'sangre_demoniaca') {
-                // MUZAN - Sangre Demoniaca: daño + veneno 3 turnos + cura 3 HP a Muzan
-                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                applyPoison(targetName, 3);
-                const muzanHeal = Math.min(3, attacker.maxHp - attacker.hp);
-                if (muzanHeal > 0 && !hasQuemaduraSolar(gameState.selectedCharacter)) { const _muzOld=attacker.hp; attacker.hp = Math.min(attacker.maxHp, attacker.hp + muzanHeal); if (typeof notifyHeal === 'function') notifyHeal(gameState.selectedCharacter, attacker.hp-_muzOld, 'Muzan'); addLog(`🩸 Muzan recupera ${muzanHeal} HP`, 'heal'); }
-                addLog(`⚔️ Sangre Demoniaca: ${finalDamage} daño + Veneno 3 turnos a ${targetName}`, 'damage');
-
-            } else if (ability.effect === 'sombra_noche') {
-                // MUZAN - Sombra de la Noche: AOE daño + Sigilo 2T + Veneno 3T a enemigos
-                const snTeam = attacker.team === 'team1' ? 'team2' : 'team1';
-                checkAndRemoveStealth(snTeam);
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (c && c.team === snTeam && !c.isDead && c.hp > 0) {
-                        if (!checkAsprosAOEImmunity(n, true)) {
-                            applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
-                            applyPoison(n, 3);
+            } else if (ability.effect === 'muzan_sangre') {
+                // SANGRE DEMONIACA: AOE 3 daño + 1 stack Veneno. Transformado: +3 cargas/stack aplicado
+                const _msETeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                if (checkAndRedirectAOEMegaProv(_msETeam, finalDamage, charName)) { addLog('🩸 Sangre Demoniaca redirigida', 'info'); }
+                else {
+                    let _msTotalStacks = 0;
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _msETeam || _c.isDead || _c.hp <= 0) continue;
+                        if (checkAsprosAOEImmunity(_n, true)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
+                        applyDamageWithShield(_n, finalDamage, charName);
+                        if (typeof applyPoison === 'function') applyPoison(_n, 1);
+                        _msTotalStacks++;
+                    }
+                    if (typeof applyAOEToSummons === 'function') applyAOEToSummons(_msETeam, finalDamage, charName);
+                    addLog('🩸 Sangre Demoniaca: AOE ' + finalDamage + ' daño + 1 stack Veneno', 'damage');
+                    if (attacker.muzanTransformed && _msTotalStacks > 0) {
+                        const _msCharges = _msTotalStacks * 3;
+                        for (const _an in gameState.characters) {
+                            const _ac = gameState.characters[_an];
+                            if (!_ac || _ac.team !== attacker.team || _ac.isDead) continue;
+                            _ac.charges = Math.min(20, (_ac.charges||0) + _msCharges);
                         }
+                        addLog('🩸 Sangre Demoniaca [Rey Demonios]: equipo aliado +' + _msCharges + ' cargas (' + _msTotalStacks + ' stacks × 3)', 'buff');
                     }
                 }
-                // Sigilo con flag appliedThisTurn para sobrevivir el turno actual
-                attacker.statusEffects = (attacker.statusEffects || []).filter(e => e && normAccent(e.name||'') !== 'sigilo');
-                attacker.statusEffects.push({ name: 'Sigilo', type: 'buff', duration: 2, emoji: '👤', appliedThisTurn: true });
-                addLog('🌑 Sombra de la Noche: ' + finalDamage + ' AOE + Veneno 3T + Sigilo aplicado a ' + charName, 'damage');
 
-            
+            } else if (ability.effect === 'muzan_sombras') {
+                // SOMBRAS DE LA NOCHE: MT 5 golpes, 3 stacks Veneno. Transformado: aplica también Posesión
+                const _msnETeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                const _msnEnemies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; if(!c||c.team!==_msnETeam||c.isDead||c.hp<=0) return false; const _hasIntim=(c.statusEffects||[]).some(function(e){return e&&normAccent(e.name||'')==='intimidacion';}); return !_hasIntim; });
+                for (let _i = 0; _i < 5; _i++) {
+                    if (_msnEnemies.length === 0) break;
+                    const _msnTgt = _msnEnemies[Math.floor(Math.random()*_msnEnemies.length)];
+                    const _msnC = gameState.characters[_msnTgt];
+                    if (!_msnC || _msnC.isDead) continue;
+                    applyDamageWithShield(_msnTgt, finalDamage, charName);
+                    if (typeof applyPoison === 'function') applyPoison(_msnTgt, 3);
+                    if (attacker.muzanTransformed) {
+                        if (typeof applyDebuff === 'function') applyDebuff(_msnTgt, { name:'Posesion', type:'debuff', duration:2, emoji:'👁️' });
+                        addLog('🩸 Sombras de la Noche: Posesión aplicada a ' + _msnTgt + ' [Rey Demonios]', 'debuff');
+                    }
+                }
+                addLog('🩸 Sombras de la Noche: 5 golpes MT + 3 stacks Veneno por golpe', 'damage');
+
             } else if (ability.effect === 'muzan_transform') {
-                // MUZAN - Rey de los Demonios Definitivo: TRANSFORMACION
-                // 1 AOE + Veneno 5T + +10 velocidad + ataques activan ticks de veneno
-                attacker.muzanTransformed = true;
-                const _mzTP = attacker.transformPortrait || attacker.transformationPortrait;
-                if (_mzTP) { attacker.portrait = _mzTP; }
-                audioManager.playTransformSfx(); if (typeof _animCard === 'function') _animCard(gameState.selectedCharacter, 'anim-transform', 700); if (typeof _triggerPowerUp === 'function') { const _puChar = gameState.characters[gameState.selectedCharacter]; _triggerPowerUp(gameState.selectedCharacter, _puChar ? _puChar.team : 'team1'); }
-                const mzTeam = attacker.team === 'team1' ? 'team2' : 'team1';
-                checkAndRemoveStealth(mzTeam);
-                // 1 daño AOE
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (c && c.team === mzTeam && !c.isDead && c.hp > 0) {
-                        applyDamageWithShield(n, finalDamage, gameState.selectedCharacter);
-                        applyPoison(n, 5);
-                    }
+                // REY DE LOS DEMONIOS DEFINITIVO: transformación única permanente
+                if (attacker.muzanTransformed) {
+                    addLog('👹 Muzan ya está transformado en Rey de los Demonios Definitivo', 'info');
+                } else {
+                    attacker.muzanTransformed = true;
+                    const _mzTP = attacker.transformPortrait || attacker.transformationPortrait;
+                    if (_mzTP) { attacker.portrait = _mzTP; }
+                    // +10 HP max, +10 VEL
+                    attacker.maxHp = (attacker.maxHp||20) + 10;
+                    attacker.hp    = Math.min(attacker.maxHp, attacker.hp + 10);
+                    attacker.speed = (attacker.speed||86) + 10;
+                    if (typeof audioManager !== 'undefined' && audioManager.playTransformSfx) audioManager.playTransformSfx();
+                    if (typeof _animCard === 'function') _animCard(charName, 'anim-transform', 700);
+                    if (typeof _triggerPowerUp === 'function') _triggerPowerUp(charName, attacker.team);
+                    addLog('👹 ¡REY DE LOS DEMONIOS DEFINITIVO! Muzan +10 HP máx, +10 VEL. Al inicio de cada ronda: -2 cargas al equipo enemigo.', 'buff');
+                    if (typeof renderCharacters === 'function') renderCharacters();
                 }
-                for (let sid in gameState.summons) {
-                    const s = gameState.summons[sid];
-                    if (s && s.team === mzTeam && s.hp > 0) applySummonDamage(sid, finalDamage, gameState.selectedCharacter);
-                }
-                // +10 velocidad permanente
-                attacker.speed = (attacker.speed || 86) + 10;
-                // Flag: ataques de Muzan activarán ticks de veneno (procesado en applyDamageWithShield)
-                attacker.muzanVenomOnHit = true;
-                ability.used = true;
-                addLog('👹 ¡Rey de los Demonios Definitivo! 1 AOE + Veneno 5T al equipo enemigo. Muzan gana +10 VEL. Sus ataques activarán ticks de veneno.', 'buff');
-
             } else if (ability.effect === 'apply_fear_1') {
                 // SAURON Voluntad de Mordor / DARTH VADER Intimidación del Imperio
                 if (finalDamage > 0) applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
@@ -6163,76 +6181,105 @@
                     addLog('💥 Golpes Consecutivos: ' + _gcsTotalDmg + ' daño a ' + targetName, 'damage');
                 }
 
-            } else if (ability.effect === 'naipes_joker') {
-                // JOKER — Naipes Impregnados: 1 dmg + Veneno 2T
-                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                applyPoison(targetName, 2);
-                addLog('🃏 Naipes Impregnados: ' + finalDamage + ' daño + Veneno 2T a ' + targetName, 'damage');
+            } else if (ability.effect === 'joker_naipes') {
+                // NAIPES IMPREGNADOS: ST 2 daño. Si Joker tiene buffs: Quemadura N HP + N stacks Veneno (N = buffs activos)
+                applyDamageWithShield(targetName, finalDamage, charName);
+                addLog('🃏 Naipes Impregnados: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                const _njBuffs = (attacker.statusEffects||[]).filter(function(e){ return e && e.type === 'buff' && !e.passiveHidden; }).length;
+                if (_njBuffs > 0) {
+                    if (typeof applyFlatBurn === 'function') applyFlatBurn(targetName, _njBuffs, 2);
+                    if (typeof applyPoison === 'function') applyPoison(targetName, _njBuffs);
+                    addLog('🃏 Naipes Impregnados: Quemadura ' + _njBuffs + ' HP y ' + _njBuffs + ' stacks Veneno aplicados (Joker tenía ' + _njBuffs + ' buffs)', 'debuff');
+                }
 
-            } else if (ability.effect === 'granada_joker') {
-                // JOKER — Granada de Humo Púrpura: 1 AOE + Veneno 3T
-                const _gjTeam = attacker.team === 'team1' ? 'team2' : 'team1';
-                if (checkAndRedirectAOEMegaProv(_gjTeam, finalDamage, gameState.selectedCharacter)) {
-                    addLog('🃏 Granada redirigida por Mega Provocación', 'damage');
-                } else {
+            } else if (ability.effect === 'joker_granada') {
+                // GRANADA DE HUMO PÚRPURA: AOE 3 stacks Veneno. Si objetivo tenía ≥5 stacks → activa daño instantáneo
+                const _ggETeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                if (checkAndRedirectAOEMegaProv(_ggETeam, 0, charName)) { addLog('🃏 Granada redirigida por Mega Provocación', 'info'); }
+                else {
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
-                        if (!_c || _c.team !== _gjTeam || _c.isDead || _c.hp <= 0) continue;
+                        if (!_c || _c.team !== _ggETeam || _c.isDead || _c.hp <= 0) continue;
                         if (checkAsprosAOEImmunity(_n, true)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
-                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
-                        applyPoison(_n, 3);
+                        // Count current poison stacks BEFORE applying new ones
+                        const _prevPoison = (_c.statusEffects||[]).find(function(e){ return e && normAccent(e.name||'') === 'veneno'; });
+                        const _prevStacks = _prevPoison ? (_prevPoison.poisonStacks || 1) : 0;
+                        if (typeof applyPoison === 'function') applyPoison(_n, 3);
+                        if (_prevStacks >= 5) {
+                            // Activate all accumulated poison stacks as instant damage
+                            const _instantDmg = _prevStacks;
+                            if (typeof applyDamageWithShield === 'function') applyDamageWithShield(_n, _instantDmg, charName);
+                            addLog('🃏 Granada Humo Púrpura: ' + _n + ' tenía ' + _prevStacks + ' stacks → ' + _instantDmg + ' daño instantáneo', 'damage');
+                        }
                     }
+                    if (typeof applyAOEToSummons === 'function') applyAOEToSummons(_ggETeam, 0, charName);
+                    addLog('🃏 Granada de Humo Púrpura: 3 stacks Veneno aplicados a todo el equipo enemigo', 'debuff');
                 }
-                applyAOEToSummons(_gjTeam, finalDamage, gameState.selectedCharacter);
-                addLog('🃏 Granada de Humo Púrpura: 1 AOE + Veneno 3T a todos los enemigos', 'damage');
 
-            } else if (ability.effect === 'detonador_joker') {
-                // JOKER — Detonador del Caos: 3 AOE + 50% drain cargas si tiene Veneno/Aturdimiento
-                const _djTeam = attacker.team === 'team1' ? 'team2' : 'team1';
-                if (checkAndRedirectAOEMegaProv(_djTeam, finalDamage, gameState.selectedCharacter)) {
-                    addLog('🃏 Detonador redirigido por Mega Provocación', 'damage');
-                } else {
+            } else if (ability.effect === 'joker_detonador') {
+                // DETONADOR DEL CAOS: AOE Quemadura 3 HP. Si objetivo tenía Quemadura ≥5 HP → activa daño instantáneo
+                const _jdETeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                if (checkAndRedirectAOEMegaProv(_jdETeam, 0, charName)) { addLog('🃏 Detonador redirigido por Mega Provocación', 'info'); }
+                else {
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
-                        if (!_c || _c.team !== _djTeam || _c.isDead || _c.hp <= 0) continue;
+                        if (!_c || _c.team !== _jdETeam || _c.isDead || _c.hp <= 0) continue;
                         if (checkAsprosAOEImmunity(_n, true)) { addLog('🌟 ' + _n + ' es inmune (Esquiva Área)', 'buff'); continue; }
-                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
-                        const _hasVenAturd = (_c.statusEffects||[]).some(function(e){
-                            const nm = normAccent(e&&e.name||'').toLowerCase();
-                            return nm.includes('veneno') || nm.includes('aturdimiento');
-                        });
-                        if (_hasVenAturd && Math.random() < 0.50) {
-                            addLog('🃏 Detonador del Caos: ' + _n + ' pierde todas sus cargas (' + _c.charges + ')', 'damage');
-                            _c.charges = 0;
+                        // Check existing burn value BEFORE applying
+                        const _prevBurn = (_c.statusEffects||[]).find(function(e){ return e && normAccent(e.name||'').includes('quemadura') && !normAccent(e.name||'').includes('solar'); });
+                        const _prevBurnVal = _prevBurn ? (_prevBurn.flatHp || _prevBurn.burnDmg || _prevBurn.value || 0) : 0;
+                        if (typeof applyFlatBurn === 'function') applyFlatBurn(_n, 3, 2);
+                        if (_prevBurnVal >= 5) {
+                            const _instantDmg = _prevBurnVal;
+                            if (typeof applyDamageWithShield === 'function') applyDamageWithShield(_n, _instantDmg, charName);
+                            addLog('🃏 Detonador del Caos: ' + _n + ' tenía Quemadura ' + _prevBurnVal + ' HP → ' + _instantDmg + ' daño instantáneo', 'damage');
                         }
                     }
+                    if (typeof applyAOEToSummons === 'function') applyAOEToSummons(_jdETeam, 0, charName);
+                    addLog('🃏 Detonador del Caos: Quemadura 3 HP a todo el equipo enemigo', 'debuff');
                 }
-                addLog('🃏 Detonador del Caos: 3 AOE completado', 'damage');
 
-            } else if (ability.effect === 'por_que_serio_joker') {
-                // JOKER — ¿Por qué tan serio?: 2 dmg
-                // Vs normal: si tiene Veneno → -60% HP actual
-                // Vs Jefe de Sala: daño = número de stacks de veneno acumulados
-                const _pqTgt = gameState.characters[targetName];
-                const _pqIsBoss = window._bossMode && _pqTgt && _pqTgt.isBoss;
-                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                addLog('🃏 ¿Por qué tan serio?: ' + finalDamage + ' daño a ' + targetName, 'damage');
-                if (_pqTgt && !_pqTgt.isDead && _pqTgt.hp > 0) {
-                    const _pqVenoStacks = (_pqTgt.statusEffects||[]).filter(function(e){ return e && normAccent(e.name||'').toLowerCase().includes('veneno'); }).length;
-                    if (_pqIsBoss) {
-                        if (_pqVenoStacks > 0) {
-                            applyDamageWithShield(targetName, _pqVenoStacks, gameState.selectedCharacter);
-                            addLog('🃏 ¿Por qué tan serio? [Jefe]: ' + _pqVenoStacks + ' daño por stacks de veneno (' + _pqVenoStacks + ' stacks)', 'damage');
-                        } else {
-                            addLog('🃏 ¿Por qué tan serio? [Jefe]: sin stacks de veneno', 'info');
+            } else if (ability.effect === 'joker_serio') {
+                // ¿POR QUÉ TAN SERIO?: MT 5 daño. 50% Aura de Fuego, 50% Espinas, 50% Infectar.
+                // Por cada buff aplicado → 3 ataques básicos sobre objetivos aleatorios
+                const _jsBuffPool = [
+                    { name:'Aura de Fuego', emoji:'🔥', type:'buff', duration:2 },
+                    { name:'Espinas',       emoji:'🌵', type:'buff', duration:2 },
+                    { name:'Infectar',      emoji:'☣️',  type:'buff', duration:2 }
+                ];
+                let _jsBuffsApplied = 0;
+                _jsBuffPool.forEach(function(b) {
+                    if (Math.random() < 0.50) {
+                        if (typeof applyBuff === 'function') applyBuff(charName, Object.assign({}, b));
+                        addLog('🃏 ¿Por qué tan serio?: Joker gana ' + b.name, 'buff');
+                        _jsBuffsApplied++;
+                    }
+                });
+                // MT 5 damage
+                const _jsETeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                const _jsTargets = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; if(!c||c.team!==_jsETeam||c.isDead||c.hp<=0) return false; const _hasIntim=(c.statusEffects||[]).some(function(e){return e&&normAccent(e.name||'')==='intimidacion';}); return !_hasIntim; });
+                for (let _i = 0; _i < 5; _i++) {
+                    if (_jsTargets.length === 0) break;
+                    const _jsTgt = _jsTargets[Math.floor(Math.random()*_jsTargets.length)];
+                    if (!gameState.characters[_jsTgt]?.isDead) applyDamageWithShield(_jsTgt, finalDamage, charName);
+                }
+                addLog('🃏 ¿Por qué tan serio?: 5 golpes MT + ' + _jsBuffsApplied + ' buff(s) aplicados', 'damage');
+                // Per buff applied → 3 basic attacks on random enemies
+                if (_jsBuffsApplied > 0 && typeof _executeAbilityCore === 'function') {
+                    const _jsBasic = (attacker.abilities||[])[0];
+                    if (_jsBasic) {
+                        for (let _b = 0; _b < _jsBuffsApplied * 3; _b++) {
+                            const _aliveEnemies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===_jsETeam&&!c.isDead&&c.hp>0; });
+                            if (_aliveEnemies.length === 0) break;
+                            const _jsBTgt = _aliveEnemies[Math.floor(Math.random()*_aliveEnemies.length)];
+                            const _prevSel = gameState.selectedCharacter; const _prevAb = gameState.selectedAbility; const _prevExec = gameState._abilityExecuting;
+                            gameState.selectedCharacter = charName; gameState.selectedAbility = _jsBasic; gameState._abilityExecuting = false;
+                            passiveExecuting = true;
+                            _executeAbilityCore(_jsBTgt);
+                            passiveExecuting = false;
+                            gameState.selectedCharacter = _prevSel; gameState.selectedAbility = _prevAb; gameState._abilityExecuting = _prevExec;
                         }
-                    } else {
-                        if (_pqVenoStacks > 0) {
-                            const _pqLoss = Math.floor(_pqTgt.hp * 0.60);
-                            _pqTgt.hp = Math.max(0, _pqTgt.hp - _pqLoss);
-                            if (_pqTgt.hp <= 0) { _pqTgt.isDead = true; registerKill(gameState.selectedCharacter, targetName, false); if (typeof checkGameOver === 'function') checkGameOver(); }
-                            addLog('🃏 ¿Por qué tan serio? -60% HP: ' + targetName + ' pierde ' + _pqLoss + ' HP', 'damage');
-                        }
+                        addLog('🃏 ¿Por qué tan serio?: ' + (_jsBuffsApplied*3) + ' ataques básicos extra ejecutados', 'damage');
                     }
                 }
             } else if (ability.effect === 'batarang_batman') {
@@ -11683,6 +11730,8 @@
             { type: 'debuff', name: '💔 Debilitar', effect: 'Recibe un 50% más de daño de todos los golpes recibidos.' },
             { type: 'debuff', name: '🔇 Silenciar', effect: 'Bloquea una categoría de movimientos (Básico, Especial u Over) del portador de manera aleatoria.' },
             { type: 'debuff', name: '😴 Agotamiento', effect: 'Reduce de 1 a 3 cargas del portador de manera aleatoria.' },
+            { type: 'debuff', name: '☠️ Ponzoña', effect: 'El portador no puede aplicarse Buffs mientras el debuff Ponzoña esté activo. Si el portador recibe daño por Veneno, pierde 3 cargas.' },
+            { type: 'buff',   name: '😤 Intimidación', effect: 'El portador no puede ser afectado por movimientos MT.' },
         ];
 
         function showBuffDebuffGuide() {
