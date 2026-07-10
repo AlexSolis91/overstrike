@@ -500,7 +500,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260718"></script>
+    <script src="js/firebase-auth.js?v=20260717"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -879,12 +879,32 @@
                 const color = tierColors[rd.tier]||'#aaa';
                 const card = document.createElement('div');
                 card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid ' + color + ';border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:all .15s;';
-                card.onmouseover = function(){ this.style.transform='scale(1.05)'; };
-                card.onmouseout  = function(){ this.style.transform='scale(1)'; };
+                card.onmouseover = function(e){
+                    this.style.transform='scale(1.05)';
+                    var tip = document.getElementById('_relicPickerTip');
+                    if (!tip) { tip = document.createElement('div'); tip.id='_relicPickerTip'; document.body.appendChild(tip); }
+                    tip.style.cssText = 'position:fixed;z-index:99999;background:#0a1628;border:1px solid ' + color + ';border-radius:10px;padding:10px 14px;max-width:240px;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.7);';
+                    tip.innerHTML = '<div style="font-size:.75rem;font-weight:700;color:#fff;margin-bottom:4px;">' + name + '</div>' +
+                        '<div style="font-size:.68rem;color:' + color + ';margin-bottom:6px;">' + rd.tier + (rd.subtype ? ' · ' + rd.subtype : '') + '</div>' +
+                        '<div style="font-size:.7rem;color:#ccc;line-height:1.5;">' + (rd.desc || '') + '</div>';
+                    var r = this.getBoundingClientRect();
+                    var left = r.right + 8;
+                    if (left + 250 > window.innerWidth) left = r.left - 258;
+                    tip.style.left = left + 'px';
+                    tip.style.top  = Math.max(8, r.top) + 'px';
+                    tip.style.display = 'block';
+                };
+                card.onmouseout  = function(){
+                    this.style.transform='scale(1)';
+                    var tip = document.getElementById('_relicPickerTip');
+                    if (tip) tip.style.display = 'none';
+                };
                 card.onclick = async function(){
                     const ok = await equipRelic(user.uid, _equipCharName, slotKey, name);
                     if (ok) {
                         picker.style.display = 'none';
+            var tip = document.getElementById('_relicPickerTip');
+            if (tip) tip.style.display = 'none';
                         await renderEquipSlots(_equipCharName, user.uid);
                         await updateLobbyHUD();
                     }
@@ -1296,9 +1316,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260718"></script>
+    <script src="js/characters.js?v=20260717"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260718"></script>
+    <script src="js/audio-state.js?v=20260717"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -1992,23 +2012,23 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260718"></script>
+    <script src="js/ai-engine.js?v=20260717"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260718"></script>
+    <script src="js/init-render.js?v=20260717"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260718"></script>
+    <script src="js/turn-logic.js?v=20260717"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260718"></script>
+    <script src="js/status-effects.js?v=20260717"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260718"></script>
+    <script src="js/debuffs.js?v=20260717"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260718"></script>
+    <script src="js/summons.js?v=20260717"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260718"></script>
+    <script src="js/ability-select.js?v=20260717"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260718"></script>
+<script src="js/skills.js?v=20260717"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260718"></script>
+    <script src="js/jefe-de-sala.js?v=20260717"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
