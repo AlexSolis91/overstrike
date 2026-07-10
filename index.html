@@ -195,7 +195,7 @@
         <div style="display:flex;flex:1;width:100%;align-items:center;justify-content:center;padding:1rem 0;">
 
             <!-- ── MODO DE JUEGO — centered ── -->
-            <div style="min-width:300px;max-width:380px;width:100%;background:rgba(0,10,30,0.85);border:1px solid rgba(0,196,255,0.25);border-radius:18px;padding:1.4rem 1.8rem;display:flex;flex-direction:column;gap:.5rem;">
+            <div style="min-width:300px;max-width:380px;width:100%;background:rgba(0,10,30,0.85);border:1px solid rgba(0,196,255,0.25);border-radius:18px;padding:1.2rem 1.6rem;display:flex;flex-direction:column;gap:.35rem;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:.78rem;color:#00c4ff;letter-spacing:.12em;text-align:center;margin-bottom:.2rem;">MODO DE JUEGO</div>
 
                 <!-- 🌐 ONLINE button — opens modal with Crear / Ver partidas -->
@@ -235,33 +235,33 @@
         <!-- ── END ONLINE MODAL ── -->
 
                 <button onclick="goToLocalMode('multi')"
-                    style="width:100%;padding:.72rem 1rem;font-family:'Orbitron',sans-serif;font-size:.82rem;background:rgba(0,196,255,0.07);color:#aaa;border:1px solid #2a3a4a;border-radius:10px;cursor:pointer;transition:all .2s;"
+                    style="width:100%;padding:.58rem 1rem;font-family:'Orbitron',sans-serif;font-size:.8rem;background:rgba(0,196,255,0.07);color:#aaa;border:1px solid #2a3a4a;border-radius:10px;cursor:pointer;transition:all .2s;"
                     onmouseover="this.style.borderColor='#00c4ff44';this.style.color='#ccc'" onmouseout="this.style.borderColor='#2a3a4a';this.style.color='#aaa'">👥 LOCAL — 2 Jugadores</button>
 
                 <button onclick="goToLocalMode('solo')"
-                    style="width:100%;padding:.72rem 1rem;font-family:'Orbitron',sans-serif;font-size:.82rem;background:rgba(255,51,102,0.07);color:#aaa;border:1px solid #3a1a22;border-radius:10px;cursor:pointer;transition:all .2s;"
+                    style="width:100%;padding:.58rem 1rem;font-family:'Orbitron',sans-serif;font-size:.8rem;background:rgba(255,51,102,0.07);color:#aaa;border:1px solid #3a1a22;border-radius:10px;cursor:pointer;transition:all .2s;"
                     onmouseover="this.style.borderColor='#ff336644';this.style.color='#ccc'" onmouseout="this.style.borderColor='#3a1a22';this.style.color='#aaa'">🤖 SOLITARIO — vs IA</button>
 
                 <button onclick="showRaidLobby()"
-                    style="width:100%;padding:.72rem 1rem;font-family:'Orbitron',sans-serif;font-size:.82rem;font-weight:700;background:linear-gradient(135deg,#3a2000,#7a4500);color:#ffaa00;border:2px solid #ffaa00;border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;box-shadow:0 0 10px rgba(255,170,0,.18);"
+                    style="width:100%;padding:.58rem 1rem;font-family:'Orbitron',sans-serif;font-size:.8rem;font-weight:700;background:linear-gradient(135deg,#3a2000,#7a4500);color:#ffaa00;border:2px solid #ffaa00;border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;box-shadow:0 0 10px rgba(255,170,0,.18);"
                     onmouseover="this.style.boxShadow='0 0 26px rgba(255,170,0,.55)'" onmouseout="this.style.boxShadow='0 0 10px rgba(255,170,0,.18)'">🏆 RANKED — Raid Diario</button>
 
                 <button onclick="window.showBossScreen && window.showBossScreen()"
-                    style="width:100%;padding:.72rem 1rem;font-family:'Orbitron',sans-serif;font-size:.82rem;font-weight:700;background:linear-gradient(135deg,#1a0000,#500000);color:#ff4444;border:2px solid #ff4444;border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;"
+                    style="width:100%;padding:.58rem 1rem;font-family:'Orbitron',sans-serif;font-size:.8rem;font-weight:700;background:linear-gradient(135deg,#1a0000,#500000);color:#ff4444;border:2px solid #ff4444;border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;"
                     onmouseover="this.style.boxShadow='0 0 22px rgba(255,68,68,.55)'" onmouseout="this.style.boxShadow='none'">⚔️ JEFE DE SALA</button>
 
                 <button onclick="showRankedTeamScreen()"
-                    style="width:100%;padding:.72rem 1rem;font-family:'Orbitron',sans-serif;font-size:.82rem;font-weight:700;background:linear-gradient(135deg,#002040,#004080);color:#4fc3f7;border:2px solid #4fc3f7;border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;"
+                    style="width:100%;padding:.58rem 1rem;font-family:'Orbitron',sans-serif;font-size:.8rem;font-weight:700;background:linear-gradient(135deg,#002040,#004080);color:#4fc3f7;border:2px solid #4fc3f7;border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;"
                     onmouseover="this.style.boxShadow='0 0 20px rgba(79,195,247,.5)'" onmouseout="this.style.boxShadow='none'">⚔️ CREAR EQUIPO RANKED</button>
 
                 <!-- Admin (hidden by default) -->
                 <button id="adminBtn" onclick="window.showAdminPanel && window.showAdminPanel()"
-                    style="display:none;width:100%;padding:.5rem;font-family:Orbitron,sans-serif;font-size:.7rem;background:rgba(255,215,0,0.1);color:#ffd700;border:1px solid rgba(255,215,0,0.3);border-radius:8px;cursor:pointer;">👑 ADMIN</button>
+                    style="display:none;width:100%;padding:.4rem;font-family:Orbitron,sans-serif;font-size:.7rem;background:rgba(255,215,0,0.1);color:#ffd700;border:1px solid rgba(255,215,0,0.3);border-radius:8px;cursor:pointer;">👑 ADMIN</button>
 
                 <div style="height:1px;background:rgba(255,255,255,.08);margin:.1rem 0;"></div>
 
                 <button onclick="showLeaderboard()"
-                    style="width:100%;padding:.6rem 1rem;font-family:'Orbitron',sans-serif;font-size:.76rem;background:rgba(255,170,0,0.06);color:#ffaa00;border:1px solid rgba(255,170,0,0.25);border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;"
+                    style="width:100%;padding:.5rem 1rem;font-family:'Orbitron',sans-serif;font-size:.74rem;background:rgba(255,170,0,0.06);color:#ffaa00;border:1px solid rgba(255,170,0,0.25);border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;"
                     onmouseover="this.style.borderColor='rgba(255,170,0,.5)'" onmouseout="this.style.borderColor='rgba(255,170,0,.25)'">📊 VER LEADERBOARD</button>
             </div>
         </div>
