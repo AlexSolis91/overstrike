@@ -711,8 +711,8 @@
                 'background:', (isMeRest ? 'rgba(255,68,68,0.12)' : 'rgba(255,255,255,0.02)'), ';',
                 'border:1px solid ', (isMeRest ? 'rgba(255,68,68,0.3)' : 'rgba(255,255,255,0.04)'), ';',
                 'border-radius:7px;padding:7px 9px;margin-bottom:4px;">',
-            '<span style="font-size:.7rem;color:#666;">5to en adelante</span>',
-            '<div style="text-align:right;"><div style="font-size:.7rem;color:#888;">🪙 5,000</div></div>',
+            '<span style="font-size:.7rem;color:#666;">4to en adelante</span>',
+            '<div style="text-align:right;"><div style="font-size:.7rem;color:#888;">🪙 5,000 + 🗝️ 1</div></div>',
             '</div>'
         );
 
