@@ -867,65 +867,33 @@
         async function loadDailyMarket() {
             const grid = document.getElementById('market-daily-grid');
             grid.innerHTML = '<div style="color:#555;font-size:.8rem;grid-column:1/-1;text-align:center;padding:20px;">Cargando...</div>';
-            const market = await getDailyMarket();
             const user = firebase.auth().currentUser;
             if (!user) return;
-            const tierColors = { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700' };
             grid.innerHTML = '';
-            // 1. Reliquia diaria
-            if (market.relic) {
-                const rd = typeof RELICS_DATA !== 'undefined' ? RELICS_DATA[market.relic.name] : null;
-                const color = tierColors[market.relic.tier]||'#aaa';
-                var _mrn = market.relic.name.replace(/'/g,"\\'");
-                var _mrc = color;
-                grid.innerHTML += '<div style="background:rgba(255,255,255,0.04);border:2px solid ' + color + ';border-radius:12px;padding:14px;text-align:center;">' +
-                    '<img src="' + (rd?rd.img:'') + '" style="width:64px;height:64px;object-fit:contain;border-radius:8px;margin-bottom:8px;cursor:pointer;" ' +
-                    'onclick="showRelicTooltip(\'' + _mrn + '\',typeof RELICS_DATA!==\'undefined\'?RELICS_DATA[\'' + _mrn + '\']: null,\'' + _mrc + '\',this)" ' +
-                    'title="Ver descripción">' +
-                    '<div style="font-size:.75rem;color:#fff;font-weight:700;margin-bottom:4px;">' + market.relic.name + '</div>' +
-                    '<div style="font-size:.68rem;color:' + color + ';margin-bottom:8px;">' + market.relic.tier + '</div>' +
-                    '<div style="font-size:.75rem;color:#ffaa00;margin-bottom:8px;">' + market.relic.price.toLocaleString() + ' 🥇</div>' +
-                    '<button onclick="buyDailyItem(\'' + user.uid + '\',\'relic\')" style="width:100%;padding:6px;background:rgba(255,170,0,0.2);border:1px solid #ffaa00;color:#ffaa00;border-radius:8px;font-size:.7rem;cursor:pointer;">Comprar</button>' +
-                    '</div>';
-            }
-            // 2. Runa de Ataque
-            grid.innerHTML += '<div style="background:rgba(200,100,255,0.05);border:2px solid #c864ff;border-radius:12px;padding:14px;text-align:center;">' +
-                '<img src="https://i.ibb.co/8D3s84Nw/image-53bcf67.png" style="width:64px;height:64px;object-fit:contain;border-radius:8px;margin-bottom:8px;cursor:pointer;" ' +
-                'onclick="showItemTooltip(\'Runa de Ataque\',\'https://i.ibb.co/8D3s84Nw/image-53bcf67.png\',\'#c864ff\',\'Runa Especial\',\'Aumenta el daño de los ataques especiales del portador. Se aplica automáticamente al equipar.\',this)" ' +
-                'title="Ver descripción">' +
-                '<div style="font-size:.75rem;color:#fff;font-weight:700;margin-bottom:4px;">Runa de Ataque</div>' +
-                '<div style="font-size:.68rem;color:#c864ff;margin-bottom:8px;">Especial</div>' +
-                '<div style="font-size:.75rem;color:#ffaa00;margin-bottom:8px;">50,000 🥇</div>' +
-                '<button onclick="buyDailyItem(\'' + user.uid + '\',\'rune\')" style="width:100%;padding:6px;background:rgba(200,100,255,0.2);border:1px solid #c864ff;color:#c864ff;border-radius:8px;font-size:.7rem;cursor:pointer;">Comprar</button>' +
+
+            // ── 1. Cofre Arcano ──
+            const arcanaDesc = 'Abre con 1 Llave Arcana. Contiene 1 Reliquia y 5,000–10,000 Oro.\n\nProbabilidades:\n• Raro 49.5%\n• Especial 35%\n• Runa de Ataque 10%\n• Épico 5%\n• Legendario 0.5%';
+            grid.innerHTML += '<div style="background:rgba(255,215,0,0.06);border:2px solid #ffd700;border-radius:14px;padding:18px;text-align:center;">' +
+                '<img src="https://i.ibb.co/21Cqvp06/Gemini-Generated-Image-g76wcgg76wcgg76w.png" style="width:80px;height:80px;object-fit:contain;margin:0 auto 10px;display:block;cursor:pointer;" ' +
+                'onclick="showItemTooltip(\'Cofre Arcano\',\'https://i.ibb.co/21Cqvp06/Gemini-Generated-Image-g76wcgg76wcgg76w.png\',\'#ffd700\',\'Cofre Legendario\',\'Abre con 1 Llave Arcana.\',this)">' +
+                '<div style="font-size:.82rem;color:#fff;font-weight:700;margin-bottom:4px;">Cofre Arcano</div>' +
+                '<div style="font-size:.68rem;color:#888;margin-bottom:4px;">Raro 49.5% · Especial 35%</div>' +
+                '<div style="font-size:.65rem;color:#888;margin-bottom:4px;">Runa 10% · Épico 5% · Leg. 0.5%</div>' +
+                '<div style="font-size:.75rem;color:#ffd700;margin-bottom:4px;">1 🗝️ Llave Arcana <span id="arcanePityIndicator" style="display:none;margin-left:4px;font-size:.65rem;color:#ffd700;font-weight:700;"></span></div>' +
+                '<div style="font-size:.65rem;color:#ffaa00;margin-bottom:10px;">+ 5,000–10,000 🪙 Oro</div>' +
+                '<button onclick="buyDailyItem(\'' + user.uid + '\',\'chest_arcana\')" style="width:100%;padding:7px;background:linear-gradient(135deg,#3a2800,#7a5500);border:2px solid #ffd700;color:#ffd700;border-radius:8px;font-size:.75rem;cursor:pointer;font-family:Orbitron,sans-serif;font-weight:700;">🔑 ABRIR</button>' +
                 '</div>';
-            // 3-6. Cofres
-            const chests = [
-                { id:'chest_rare',    label:'Cofre Raro',    price:'10,000',  color:'#aaa',    border:'border:1px solid #aaa',    img:'https://i.ibb.co/m5XMkCRD/Gemini-Generated-Image-6hcw6f6hcw6f6hcw.png' },
-                { id:'chest_special', label:'Cofre Especial', price:'25,000',  color:'#4fc3f7', border:'border:1px solid #4fc3f7', img:'https://i.ibb.co/fV9Q3kYf/Gemini-Generated-Image-37x6la37x6la37x6.png' },
-                { id:'chest_epic',    label:'Cofre Épico',    price:'60,000',  color:'#c864ff', border:'border:1px solid #c864ff', img:'https://i.ibb.co/8D28wG42/Gemini-Generated-Image-vqlk4cvqlk4cvqlk.png' },
-                { id:'chest_arcana',  label:'Cofre Arcano',   price:'1 🗝️',   color:'#ffd700', border:'border:2px solid #ffd700', img:'https://i.ibb.co/21Cqvp06/Gemini-Generated-Image-g76wcgg76wcgg76w.png' },
-            ];
-            var _chestContents = {
-                'chest_rare':    'Contiene: 1 Reliquia aleatoria (100% Rara). +1,000 Oro.',
-                'chest_special': 'Contiene: 1 Reliquia aleatoria (60% Rara · 40% Especial). +2,000 Oro. 5% de bonus: +1 Runa de Ataque.',
-                'chest_epic':    'Contiene: 1 Reliquia aleatoria (40% Rara · 35% Especial · 25% Épica). +5,000 Oro. 10% de bonus: +1 Runa de Ataque.',
-                'chest_arcana':  'Contiene: 1 Reliquia aleatoria (70% Especial · 29% Épica · 1% Legendaria). +10,000 Oro. 20% de bonus: +1 Runa de Ataque.',
-            };
-            chests.forEach(function(ch){
-                var _chDesc = _chestContents[ch.id] || 'Cofre con reliquias.';
-                var _chImg = ch.img.replace(/'/g,"\\'");
-                var _chLabel = ch.label.replace(/'/g,"\\'");
-                var _chColor = ch.color;
-                var _pityIndicator = ch.id === 'chest_arcana' ? '<span id="arcanePityIndicator" style="display:none;margin-left:6px;font-size:.68rem;color:#ffd700;font-weight:700;vertical-align:middle;"></span>' : '';
-                grid.innerHTML += '<div style="background:rgba(255,255,255,0.03);' + ch.border + ';border-radius:12px;padding:14px;text-align:center;">' +
-                    '<img src="' + ch.img + '" style="width:72px;height:72px;object-fit:contain;margin-bottom:8px;display:block;margin-left:auto;margin-right:auto;cursor:pointer;" ' +
-                    'onclick="showItemTooltip(\'' + _chLabel + '\',\'' + _chImg + '\',\'' + _chColor + '\',\'Cofre\',\'' + _chDesc + '\',this)" ' +
-                    'onerror="this.style.display=\'none\'"> ' +
-                    '<div style="font-size:.75rem;color:#fff;font-weight:700;margin-bottom:4px;">' + ch.label + '</div>' +
-                    '<div style="font-size:.75rem;color:#ffaa00;margin-bottom:8px;">' + ch.price + _pityIndicator + '</div>' +
-                    '<button onclick="buyDailyItem(\'' + user.uid + '\',\'' + ch.id + '\')" style="width:100%;padding:6px;background:rgba(255,255,255,0.05);border:1px solid ' + ch.color + ';color:' + ch.color + ';border-radius:8px;font-size:.7rem;cursor:pointer;">Comprar</button>' +
-                    '</div>';
-            });
+
+            // ── 2. Runa de Portal ──
+            grid.innerHTML += '<div style="background:rgba(100,200,255,0.05);border:2px solid #4fc3f7;border-radius:14px;padding:18px;text-align:center;">' +
+                '<img src="https://i.ibb.co/Qv7MFXyj/image.png" style="width:80px;height:80px;object-fit:contain;margin:0 auto 10px;display:block;cursor:pointer;" ' +
+                'onclick="showItemTooltip(\'Runa de Portal\',\'https://i.ibb.co/Qv7MFXyj/image.png\',\'#4fc3f7\',\'Runa Especial\',\'Próximamente: descubre su poder misterioso.\',this)">' +
+                '<div style="font-size:.82rem;color:#fff;font-weight:700;margin-bottom:4px;">Runa de Portal</div>' +
+                '<div style="font-size:.68rem;color:#4fc3f7;margin-bottom:8px;">Runa Especial</div>' +
+                '<div style="font-size:.75rem;color:#ffaa00;margin-bottom:10px;">100,000 🪙</div>' +
+                '<button onclick="buyDailyItem(\'' + user.uid + '\',\'portal_rune\')" style="width:100%;padding:7px;background:linear-gradient(135deg,#00204a,#004080);border:2px solid #4fc3f7;color:#4fc3f7;border-radius:8px;font-size:.75rem;cursor:pointer;font-family:Orbitron,sans-serif;font-weight:700;">⚡ COMPRAR</button>' +
+                '</div>';
+
             if (typeof initArcanePityIndicator === 'function') initArcanePityIndicator(user.uid);
         }
 
