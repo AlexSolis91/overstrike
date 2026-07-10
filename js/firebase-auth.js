@@ -3721,34 +3721,22 @@
 
         // ── Abrir cofre ──
         async function openChest(uid, chestType) {
-            const prices = { rare: 10000, special: 25000, epic: 60000, arcana: 0 };
-            const goldReward = { rare: 1000, special: 2000, epic: 5000, arcana: 10000 };
+            // Solo Cofre Arcano disponible — cuesta 1 Llave Arcana
+            const keyRef = db.ref('users/' + uid + '/arcane_keys');
+            const keySnap = await keyRef.once('value');
+            if ((keySnap.val()||0) < 1) { alert('No tienes Llaves Arcanas.'); return; }
+            await keyRef.set((keySnap.val()||0) - 1);
 
-            if (chestType !== 'arcana') {
-                const ok = await spendGold(uid, prices[chestType]);
-                if (!ok) { alert('No tienes suficiente oro.'); return; }
-            } else {
-                const keyRef = db.ref('users/' + uid + '/arcane_keys');
-                const keySnap = await keyRef.once('value');
-                if ((keySnap.val()||0) < 1) { alert('No tienes Llaves Arcanas.'); return; }
-                await keyRef.set((keySnap.val()||0) - 1);
-            }
+            // Determinar reliquia con nuevas probabilidades
+            const relic = await rollChestRelicAsync(uid, 'arcana');
 
-            // Determinar reliquia
-            const relic = chestType === 'arcana' ? await rollChestRelicAsync(uid, chestType) : rollChestRelic(chestType);
-            await addGold(uid, goldReward[chestType]);
+            // Oro aleatorio entre 5000 y 10000
+            const goldReward = Math.floor(Math.random() * 5001) + 5000;
+            await addGold(uid, goldReward);
             await addRelicToInventory(uid, relic.name);
 
-            // Probabilidad de obtener Runa de Ataque como bonus
-            const runeChance = { rare: 0, special: 0.05, epic: 0.10, arcana: 0.20 };
-            let bonusRune = false;
-            if (runeChance[chestType] && Math.random() < runeChance[chestType]) {
-                await db.ref('users/' + uid + '/attack_runes').transaction(function(v){ return (v||0) + 1; });
-                bonusRune = true;
-            }
-
             await updateLobbyHUD();
-            showChestOpenModal(chestType, relic, goldReward[chestType], bonusRune);
+            showChestOpenModal('arcana', relic, goldReward, false);
         }
 
         async function rollChestRelicAsync(uid, chestType) {
@@ -3780,12 +3768,21 @@
             const newStreak = (pityData.streak || 0) + 1;
             await db.ref('users/' + uid + '/arcane_pity').set({ bonus: pityData.bonus + perOpenBonus, lastOpenAt: now, streak: newStreak });
 
+            // New drop rates: Legendario 0.5%, Épico 5%, Runa 10%, Especial 35%, Raro 49.5%
             const rv = Math.random();
-            let tier;
-            if (rv < totalLegPct) tier = 'Legendario';
-            else { const rv2 = Math.random(); tier = rv2 < 0.70 ? 'Especial' : 'Epico'; }
+            let tier, bonusRuneArcana = false;
+            if (rv < totalLegPct)                      tier = 'Legendario';   // ~0.5% (+ pity)
+            else if (rv < totalLegPct + 0.05)          tier = 'Epico';        // 5%
+            else if (rv < totalLegPct + 0.05 + 0.10) { tier = 'Runa'; }      // 10% → Runa de Ataque
+            else if (rv < totalLegPct + 0.05 + 0.10 + 0.35) tier = 'Especial'; // 35%
+            else                                        tier = 'Raro';         // 49.5%
 
             let name;
+            if (tier === 'Runa') {
+                // Drop a Runa de Ataque instead of a relic
+                await db.ref('users/' + uid + '/attack_runes').transaction(function(v){ return (v||0)+1; });
+                return { name: 'Runa de Ataque', tier: 'Runa', img: 'https://i.ibb.co/8D3s84Nw/image-53bcf67.png', isRune: true };
+            }
             if (tier === 'Legendario' && bossIsLichKing && (eventRelicsByBoss['Lich King']||[]).length > 0) {
                 const evPool = eventRelicsByBoss['Lich King'];
                 name = evPool[Math.floor(Math.random() * evPool.length)];
@@ -3838,19 +3835,52 @@
         }
 
         function showChestOpenModal(chestType, relic, goldBonus, bonusRune) {
-            const tierColors = { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700' };
-            const color = tierColors[relic.tier] || '#fff';
-            const ov = document.createElement('div');
-            ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;align-items:center;justify-content:center;';
-            ov.innerHTML = '<div style="background:#0a1628;border:2px solid ' + color + ';border-radius:16px;padding:32px;max-width:400px;width:90%;text-align:center;">' +
-                '<div style="font-size:3rem;margin-bottom:12px;">🎁</div>' +
-                '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:' + color + ';margin-bottom:8px;">¡COFRE ABIERTO!</div>' +
-                '<img src="' + (typeof RELICS_DATA!=='undefined'&&RELICS_DATA[relic.name]?RELICS_DATA[relic.name].img:'') + '" style="width:80px;height:80px;object-fit:contain;border-radius:8px;border:2px solid ' + color + ';margin:12px auto;display:block;">' +
+            const tierColors = { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700', Runa:'#c864ff' };
+            const isLegendary = relic.tier === 'Legendario';
+            const isRune      = relic.isRune;
+            const color       = tierColors[relic.tier] || '#fff';
+
+            // ── Legendary: full-screen particle burst effect ──
+            if (isLegendary) {
+                var style = document.createElement('style');
+                style.textContent = '@keyframes legGlow{0%,100%{box-shadow:0 0 24px #ffd700,0 0 60px #ffd70088;}50%{box-shadow:0 0 50px #ffd700,0 0 120px #ffd700cc,0 0 200px #ffaa0044;}} @keyframes legSpin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}} @keyframes legParticle{0%{transform:translate(-50%,-50%) scale(1);opacity:1;}100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(0);opacity:0;}}';
+                document.head.appendChild(style);
+                // Burst particles
+                for (var p=0; p<20; p++) {
+                    var dot = document.createElement('div');
+                    var angle = (p/20)*Math.PI*2;
+                    var dist = 80+Math.random()*120;
+                    dot.style.cssText = 'position:fixed;left:50%;top:50%;width:8px;height:8px;border-radius:50%;background:'+(['#ffd700','#ffaa00','#fffbe6','#ff8800'][p%4])+';z-index:10000;pointer-events:none;--tx:'+Math.round(Math.cos(angle)*dist)+'px;--ty:'+Math.round(Math.sin(angle)*dist)+'px;animation:legParticle 1.2s ease-out forwards;animation-delay:'+(p*0.04)+'s;';
+                    document.body.appendChild(dot);
+                    setTimeout(function(d){d.remove();}, 1600+p*40, dot);
+                }
+            }
+
+            var imgSrc = isRune ? relic.img : (typeof RELICS_DATA!=='undefined'&&RELICS_DATA[relic.name]?RELICS_DATA[relic.name].img:'');
+            var imgStyle = isLegendary
+                ? 'width:90px;height:90px;object-fit:contain;border-radius:10px;border:3px solid #ffd700;margin:14px auto;display:block;animation:legGlow 1.5s ease-in-out infinite;'
+                : 'width:80px;height:80px;object-fit:contain;border-radius:8px;border:2px solid '+color+';margin:12px auto;display:block;';
+
+            var titleLine = isLegendary
+                ? '<div style="font-family:Orbitron,sans-serif;font-size:1.25rem;color:#ffd700;margin-bottom:8px;text-shadow:0 0 20px #ffd700,0 0 40px #ffaa00;">⭐ ¡LEGENDARIO! ⭐</div>'
+                : '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:'+color+';margin-bottom:8px;">¡COFRE ABIERTO!</div>';
+
+            var runeTitle = isRune
+                ? '<div style="font-size:.85rem;color:#c864ff;font-weight:700;margin-bottom:4px;">🔮 Runa de Ataque</div>'
+                : '';
+
+            var ov = document.createElement('div');
+            ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,'+(isLegendary?'0,0.95':'0,0.9')+';z-index:9999;display:flex;align-items:center;justify-content:center;';
+            ov.innerHTML = '<div style="background:'+(isLegendary?'linear-gradient(135deg,#1a1000,#2a1800)':'#0a1628')+';border:'+(isLegendary?'2px solid #ffd700':'2px solid '+color)+';border-radius:16px;padding:32px;max-width:400px;width:90%;text-align:center;'+(isLegendary?'box-shadow:0 0 40px #ffd70066;':'')+'">' +
+                '<div style="font-size:3rem;margin-bottom:12px;">' + (isLegendary ? '✨' : '🎁') + '</div>' +
+                titleLine +
+                (isRune ? '' : '<img src="' + imgSrc + '" style="' + imgStyle + '">') +
+                (isRune ? '<div style="font-size:3rem;margin:12px 0;">🔮</div>' : '') +
+                runeTitle +
                 '<div style="font-size:1rem;color:#fff;font-weight:700;margin-bottom:4px;">' + relic.name + '</div>' +
-                '<div style="font-size:.8rem;color:' + color + ';margin-bottom:12px;">' + relic.tier + '</div>' +
-                '<div style="font-size:.8rem;color:#ffaa00;margin-bottom:' + (bonusRune ? '6px' : '16px') + ';">+ ' + goldBonus.toLocaleString() + ' Oro</div>' +
-                (bonusRune ? '<div style="font-size:.85rem;color:#c864ff;font-weight:700;margin-bottom:16px;">🔮 + 1 Runa de Ataque</div>' : '') +
-                '<button onclick="this.parentElement.parentElement.remove()" style="background:linear-gradient(135deg,#003a1a,#00aa55);border:2px solid #00ff88;color:#00ff88;border-radius:8px;padding:10px 24px;font-family:Orbitron,sans-serif;cursor:pointer;">¡GENIAL!</button>' +
+                '<div style="font-size:.8rem;color:' + color + ';margin-bottom:12px;">' + (isRune ? 'Recurso especial' : relic.tier) + '</div>' +
+                '<div style="font-size:.8rem;color:#ffaa00;margin-bottom:16px;">+ ' + goldBonus.toLocaleString() + ' 🪙 Oro</div>' +
+                '<button onclick="this.parentElement.parentElement.remove()" style="background:linear-gradient(135deg,#003a1a,#00aa55);border:2px solid #00ff88;color:#00ff88;border-radius:8px;padding:10px 24px;font-family:Orbitron,sans-serif;cursor:pointer;">' + (isLegendary ? '🌟 ¡INCREÍBLE!' : '¡GENIAL!') + '</button>' +
                 '</div>';
             document.body.appendChild(ov);
         }
@@ -4110,6 +4140,12 @@
                 await db.ref('users/' + uid + '/attack_runes').transaction(function(v){ return (v||0)+1; });
                 await updateLobbyHUD();
                 alert('✅ Runa de Ataque agregada a tu inventario.');
+            } else if (itemType === 'portal_rune') {
+                const ok = await spendGold(uid, 100000);
+                if (!ok) { alert('No tienes suficiente oro. Necesitas 100,000 🪙'); return; }
+                await db.ref('users/' + uid + '/portal_runes').transaction(function(v){ return (v||0)+1; });
+                await updateLobbyHUD();
+                alert('✅ ¡Runa de Portal adquirida!');
             } else if (itemType.startsWith('chest_')) {
                 const type = itemType.replace('chest_','');
                 await openChest(uid, type);
