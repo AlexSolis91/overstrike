@@ -474,6 +474,37 @@ function processBurnEffects(charName) {
         }
         window.hasQuemaduraSolar = hasQuemaduraSolar;
 
+        // ── ANARQUÍA (The Joker): when an enemy suffers Veneno or Quemadura damage → apply random debuff to that enemy ──
+        // Called from turn-logic.js wherever Veneno/Quemadura tick damage is applied
+        window.jokerAnarquiaOnDot = function(targetName) {
+            if (!targetName || !gameState) return;
+            const targetChar = gameState.characters[targetName];
+            if (!targetChar || targetChar.isDead) return;
+            // Find Joker on the opposing team
+            for (const _jN in gameState.characters) {
+                const _jC = gameState.characters[_jN];
+                if (!_jC || _jC.isDead || !_jC.passive || _jC.passive.name !== 'Anarquía') continue;
+                if (_jC.team === targetChar.team) continue; // Joker must be enemy of target
+                const _debuffPool = [
+                    { name:'Ceguera',      type:'debuff', duration:1, emoji:'👁️‍🗨️' },
+                    { name:'Aturdimiento', type:'debuff', duration:1, emoji:'⭐' },
+                    { name:'Posesion',     type:'debuff', duration:1, emoji:'👁️' },
+                    { name:'Confusion',    type:'debuff', duration:1, emoji:'🌀' },
+                    { name:'Sangrado',     type:'debuff', duration:1, emoji:'🩸', dotDamage:1 },
+                    { name:'Debilitar',    type:'debuff', duration:1, emoji:'⬇️' },
+                    { name:'Congelacion',  type:'debuff', duration:1, emoji:'❄️' },
+                    { name:'Agotamiento',  type:'debuff', duration:1, emoji:'😴' },
+                    { name:'Miedo',        type:'debuff', duration:1, emoji:'😱' },
+                    { name:'Ponzona',      type:'debuff', duration:1, emoji:'☠️' },
+                    { name:'Silenciar',    type:'debuff', duration:1, emoji:'🤫' }
+                ];
+                const _chosen = _debuffPool[Math.floor(Math.random() * _debuffPool.length)];
+                if (typeof applyDebuff === 'function') applyDebuff(targetName, Object.assign({}, _chosen));
+                addLog('🃏 Anarquía: ' + targetName + ' recibe ' + _chosen.name + ' 1T (sufrió daño por DOT)', 'debuff');
+                break; // Only one Joker can trigger this
+            }
+        };
+
         // Función centralizada de curación — respeta QS y aplica Aura de Luz automáticamente
         function applyHeal(charName, amount, logSource) {
             if (!canHeal(charName)) {
