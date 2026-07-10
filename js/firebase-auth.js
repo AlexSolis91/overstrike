@@ -2634,13 +2634,13 @@
             modal.id = '_rewardsModal';
             modal.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);';
             var SEASON_LEAGUES = [
-                { name:'Bronce',   min:0,     max:1499,  gold:'50,000',    keys:0,  emoji:'🥉', color:'#cd7f32' },
-                { name:'Plata',    min:1500,  max:2999,  gold:'100,000',   keys:0,  emoji:'🥈', color:'#C0C0C0' },
-                { name:'Oro',      min:3000,  max:4499,  gold:'200,000',   keys:0,  emoji:'🥇', color:'#FFD700' },
-                { name:'Diamante', min:4500,  max:5999,  gold:'300,000',   keys:1,  emoji:'💎', color:'#b9f2ff' },
-                { name:'Platino',  min:6000,  max:7499,  gold:'400,000',   keys:2,  emoji:'⭐', color:'#E5E4E2' },
-                { name:'Master',   min:7500,  max:9999,  gold:'500,000',   keys:5,  emoji:'👑', color:'#FFD700' },
-                { name:'Leyenda',  min:10000, max:999999, gold:'1,000,000', keys:10, emoji:'🔱', color:'#00ffcc' },
+                { name:'Bronce',   min:0,     max:1499,  gold:'5,000',    keys:1,  emoji:'🥉', color:'#cd7f32' },
+                { name:'Plata',    min:1500,  max:2999,  gold:'10,000',   keys:1,  emoji:'🥈', color:'#C0C0C0' },
+                { name:'Oro',      min:3000,  max:4499,  gold:'20,000',   keys:2,  emoji:'🥇', color:'#FFD700' },
+                { name:'Diamante', min:4500,  max:5999,  gold:'50,000',   keys:2,  emoji:'💎', color:'#b9f2ff' },
+                { name:'Platino',  min:6000,  max:7499,  gold:'100,000',  keys:3,  emoji:'⭐', color:'#E5E4E2' },
+                { name:'Master',   min:7500,  max:9999,  gold:'200,000',  keys:5,  emoji:'👑', color:'#FFD700' },
+                { name:'Leyenda',  min:10000, max:999999, gold:'500,000', keys:10, emoji:'🔱', color:'#00ffcc' },
             ];
             var rows = SEASON_LEAGUES.map(function(lg) {
                 var keysStr = lg.keys > 0 ? ' + ' + lg.keys + ' 🗝️' : '';
