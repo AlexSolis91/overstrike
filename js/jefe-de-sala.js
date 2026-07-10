@@ -20,16 +20,16 @@
     // 1. RECOMPENSAS POR POSICIÓN
     // ─────────────────────────────────────────────────────────────────────────
     var BOSS_RANK_REWARDS = [
-        { rank: 1,  label: '🥇 1er Lugar',  gold: 100000, keys: 2, extra: '2 Llaves Arcanas',  color: '#ffd700', bg: 'rgba(255,215,0,0.12)'  },
-        { rank: 2,  label: '🥈 2do Lugar',  gold: 50000,  keys: 1, extra: '1 Llave Arcana',    color: '#c0c0c0', bg: 'rgba(192,192,192,0.08)' },
-        { rank: 3,  label: '🥉 3er Lugar',  gold: 20000,  keys: 0, extra: 'Cofre Épico',        color: '#cd7f32', bg: 'rgba(205,127,50,0.08)'  },
-        { rank: 4,  label: '4to Lugar',      gold: 10000,  keys: 0, extra: 'Cofre Especial',     color: '#4fc3f7', bg: 'rgba(79,195,247,0.06)'  },
-        { rank: 5,  label: 'Top 5+',         gold: 5000,   keys: 0, extra: null,                 color: '#888',    bg: 'rgba(255,255,255,0.02)' },
-        { rank: 6,  label: 'Top 5+',         gold: 5000,   keys: 0, extra: null,                 color: '#888',    bg: 'rgba(255,255,255,0.02)' },
-        { rank: 7,  label: 'Top 5+',         gold: 5000,   keys: 0, extra: null,                 color: '#888',    bg: 'rgba(255,255,255,0.02)' },
-        { rank: 8,  label: 'Top 5+',         gold: 5000,   keys: 0, extra: null,                 color: '#888',    bg: 'rgba(255,255,255,0.02)' },
-        { rank: 9,  label: 'Top 5+',         gold: 5000,   keys: 0, extra: null,                 color: '#888',    bg: 'rgba(255,255,255,0.02)' },
-        { rank: 10, label: 'Top 5+',         gold: 5000,   keys: 0, extra: null,                 color: '#888',    bg: 'rgba(255,255,255,0.02)' }
+        { rank: 1,  label: '🥇 1er Lugar',  gold: 100000, keys: 5, extra: '5 Llaves Arcanas',  color: '#ffd700', bg: 'rgba(255,215,0,0.12)'  },
+        { rank: 2,  label: '🥈 2do Lugar',  gold: 50000,  keys: 3, extra: '3 Llaves Arcanas',  color: '#c0c0c0', bg: 'rgba(192,192,192,0.08)' },
+        { rank: 3,  label: '🥉 3er Lugar',  gold: 20000,  keys: 2, extra: '2 Llaves Arcanas',  color: '#cd7f32', bg: 'rgba(205,127,50,0.08)'  },
+        { rank: 4,  label: '4to Lugar',      gold: 5000,   keys: 1, extra: '1 Llave Arcana',    color: '#4fc3f7', bg: 'rgba(79,195,247,0.06)'  },
+        { rank: 5,  label: 'Top 5+',         gold: 5000,   keys: 1, extra: '1 Llave Arcana',    color: '#888',    bg: 'rgba(255,255,255,0.02)' },
+        { rank: 6,  label: 'Top 5+',         gold: 5000,   keys: 1, extra: '1 Llave Arcana',    color: '#888',    bg: 'rgba(255,255,255,0.02)' },
+        { rank: 7,  label: 'Top 5+',         gold: 5000,   keys: 1, extra: '1 Llave Arcana',    color: '#888',    bg: 'rgba(255,255,255,0.02)' },
+        { rank: 8,  label: 'Top 5+',         gold: 5000,   keys: 1, extra: '1 Llave Arcana',    color: '#888',    bg: 'rgba(255,255,255,0.02)' },
+        { rank: 9,  label: 'Top 5+',         gold: 5000,   keys: 1, extra: '1 Llave Arcana',    color: '#888',    bg: 'rgba(255,255,255,0.02)' },
+        { rank: 10, label: 'Top 5+',         gold: 5000,   keys: 1, extra: '1 Llave Arcana',    color: '#888',    bg: 'rgba(255,255,255,0.02)' }
     ];
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -79,12 +79,11 @@
     window.BOSS_DEFAULT_PASSIVES = BOSS_DEFAULT_PASSIVES;
 
     function getBossRewardForRank(rank) {
-        if (!rank || rank <= 0) return { gold: 5000, keys: 0, extra: null, color: '#888', bg: 'transparent' };
-        if (rank === 1) return { rank:1, gold:100000, keys:2, extra:'2 Llaves Arcanas', color:'#ffd700', bg:'rgba(255,215,0,0.12)' };
-        if (rank === 2) return { rank:2, gold:50000,  keys:1, extra:'1 Llave Arcana',   color:'#c0c0c0', bg:'rgba(192,192,192,0.08)' };
-        if (rank === 3) return { rank:3, gold:20000,  keys:0, extra:'Cofre Épico',      color:'#cd7f32', bg:'rgba(205,127,50,0.08)' };
-        if (rank === 4) return { rank:4, gold:10000,  keys:0, extra:'Cofre Especial',   color:'#4fc3f7', bg:'rgba(79,195,247,0.06)' };
-        return           { rank:rank, gold:5000,   keys:0, extra:null,              color:'#888',    bg:'rgba(255,255,255,0.02)' };
+        if (!rank || rank <= 0) return { gold: 5000, keys: 1, extra: '1 Llave Arcana', color: '#888', bg: 'transparent' };
+        if (rank === 1) return { rank:1, gold:100000, keys:5, extra:'5 Llaves Arcanas', color:'#ffd700', bg:'rgba(255,215,0,0.12)' };
+        if (rank === 2) return { rank:2, gold:50000,  keys:3, extra:'3 Llaves Arcanas', color:'#c0c0c0', bg:'rgba(192,192,192,0.08)' };
+        if (rank === 3) return { rank:3, gold:20000,  keys:2, extra:'2 Llaves Arcanas', color:'#cd7f32', bg:'rgba(205,127,50,0.08)' };
+        return           { rank:rank, gold:5000,   keys:1, extra:'1 Llave Arcana',  color:'#888',    bg:'rgba(255,255,255,0.02)' };
     }
 
     // ─────────────────────────────────────────────────────────────────────────
