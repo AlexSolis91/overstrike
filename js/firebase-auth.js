@@ -3601,6 +3601,8 @@
             const keyEl  = document.getElementById('hud-keys');
             if (goldEl) goldEl.textContent = (data.gold||0).toLocaleString();
             if (runeEl) runeEl.textContent = data.attack_runes||0;
+            const portalEl = document.getElementById('hud-portal-runes');
+            if (portalEl) portalEl.textContent = data.portal_runes||0;
             if (keyEl)  keyEl.textContent  = data.arcane_keys||0;
         }
 
