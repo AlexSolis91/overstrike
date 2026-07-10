@@ -500,7 +500,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260716"></script>
+    <script src="js/firebase-auth.js?v=20260717"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -557,10 +557,12 @@
                 function _loadRelicsForUid(uid, charNames) {
                     charNames.forEach(function(charName) {
                         var baseName = charName.replace(/ v\d+$/, '');
-                        db.ref('users/' + uid + '/characters/' + baseName + '/slots').once('value').then(function(snap) {
-                            var equip = snap.val();
-                            if (!equip) return;
-                            var slots = [equip.slot1, equip.slot2, equip.slot3].filter(Boolean);
+                        db.ref('users/' + uid + '/characters/' + baseName).once('value').then(function(snap) {
+                            var charData = snap.val();
+                            if (!charData) return;
+                            // Support both slots_v2 (new) and slots (legacy)
+                            var equip = charData.slots_v2 || charData.slots || {};
+                            var slots = Object.values(equip).filter(Boolean);
                             if (!slots.length) return;
                             var ch = gameState.characters[charName];
                             if (!ch) return;
@@ -763,7 +765,7 @@
                 Object.keys(characterData).forEach(function(name) {
                     const cd = characterData[name];
                     const portrait = typeof getCharPortrait === 'function' ? getCharPortrait(name) : (cd.portrait||'');
-                    const charSlots = data.characters && data.characters[name] && data.characters[name].slots ? data.characters[name].slots : {};
+                    const charSlots = data.characters && data.characters[name] && (data.characters[name].slots_v2 || data.characters[name].slots) ? (data.characters[name].slots_v2 || data.characters[name].slots) : {};
                     const equippedCount = Object.values(charSlots).filter(Boolean).length;
                     const card = document.createElement('div');
                     card.style.cssText = 'background:rgba(79,195,247,0.05);border:1px solid rgba(79,195,247,0.2);border-radius:10px;padding:8px;text-align:center;cursor:pointer;transition:all .15s;';
@@ -772,7 +774,7 @@
                     card.onclick = function(){ openEquipCharScreen(name, user.uid); };
                     card.innerHTML = '<img src="' + portrait + '" style="width:60px;height:60px;object-fit:cover;border-radius:8px;" referrerpolicy="no-referrer">' +
                         '<div style="font-size:.6rem;color:#ccc;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + name.split(' ')[0] + '</div>' +
-                        '<div style="font-size:.58rem;color:#4fc3f7;">' + equippedCount + '/3 slots</div>';
+                        '<div style="font-size:.58rem;color:#4fc3f7;">' + equippedCount + '/6 slots</div>';
                     charsGrid.appendChild(card);
                 });
             }
@@ -791,36 +793,71 @@
 
         async function renderEquipSlots(charName, uid) {
             const data = await getPlayerData(uid);
-            const slots = (data.characters && data.characters[charName] && data.characters[charName].slots) || {};
+            const slotsV2 = (data.characters && data.characters[charName] && data.characters[charName].slots_v2) || {};
+            const unlocks = (data.characters && data.characters[charName] && data.characters[charName].slot_unlocks) || { arma2:false, equip2:false, joya2:false };
             const container = document.getElementById('equip-slots-container');
             container.innerHTML = '';
             const tierColors = { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700' };
-            [1,2,3].forEach(function(i) {
-                const slotKey = 'slot' + i;
-                const equipped = slots[slotKey];
+
+            const SLOT_CONFIG = [
+                { key:'arma1',  label:'⚔️ Arma 1',       cat:'Arma',      locked:false },
+                { key:'arma2',  label:'⚔️ Arma 2',       cat:'Arma',      locked:!unlocks.arma2 },
+                { key:'equip1', label:'🛡️ Equipación 1', cat:'Equipacion',locked:false },
+                { key:'equip2', label:'🛡️ Equipación 2', cat:'Equipacion',locked:!unlocks.equip2 },
+                { key:'joya1',  label:'💎 Joya 1',        cat:'Joya',      locked:false },
+                { key:'joya2',  label:'💎 Joya 2',        cat:'Joya',      locked:!unlocks.joya2 },
+            ];
+
+            // Count already unlocked extra slots to determine next cost
+            const unlockedCount = Object.values(unlocks).filter(Boolean).length;
+            const nextCost = unlockedCount === 0 ? '100,000' : unlockedCount === 1 ? '500,000' : '1,000,000';
+
+            SLOT_CONFIG.forEach(function(cfg) {
+                const equipped = slotsV2[cfg.key];
                 const rd = equipped && typeof RELICS_DATA !== 'undefined' ? RELICS_DATA[equipped] : null;
-                const color = rd ? (tierColors[rd.tier]||'#aaa') : 'rgba(255,255,255,0.15)';
+                const color = rd ? (tierColors[rd.tier]||'#aaa') : cfg.locked ? '#444' : 'rgba(255,255,255,0.15)';
                 const slotEl = document.createElement('div');
-                slotEl.style.cssText = 'background:rgba(255,255,255,0.04);border:2px solid ' + color + ';border-radius:12px;padding:14px;display:flex;align-items:center;gap:12px;';
-                if (equipped && rd) {
-                    slotEl.innerHTML = '<img src="' + rd.img + '" style="width:48px;height:48px;object-fit:contain;border-radius:8px;">' +
+                slotEl.style.cssText = 'background:rgba(255,255,255,0.03);border:2px solid ' + color + ';border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px;' + (cfg.locked ? 'opacity:.6;' : '');
+
+                const labelHtml = '<div style="font-size:.62rem;color:#666;font-family:Orbitron,sans-serif;margin-bottom:2px;">' + cfg.label + '</div>';
+
+                if (cfg.locked) {
+                    slotEl.innerHTML = labelHtml +
+                        '<div style="width:44px;height:44px;border:2px dashed #444;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;">🔒</div>' +
                         '<div style="flex:1;">' +
-                        '<div style="font-size:.85rem;color:#fff;font-weight:700;">' + equipped + '</div>' +
-                        '<div style="font-size:.7rem;color:' + color + ';">' + rd.tier + ' · ' + rd.slot + '</div>' +
-                        '<div style="font-size:.68rem;color:#aaa;margin-top:2px;">' + rd.desc + '</div>' +
+                            '<div style="color:#555;font-size:.78rem;">Slot bloqueado</div>' +
+                            '<div style="color:#888;font-size:.65rem;margin-top:2px;">Siguiente desbloqueo: ' + nextCost + ' 🪙</div>' +
                         '</div>' +
-                        '<button data-uid="' + _escHtmlInv(uid) + '" data-char="' + _escHtmlInv(charName) + '" data-slot="' + i + '" onclick="event.stopPropagation();var b=this;removeRelic(b.dataset.uid,b.dataset.char,parseInt(b.dataset.slot)).then(function(){renderEquipSlots(b.dataset.char,b.dataset.uid)})" style="background:rgba(255,51,102,0.15);border:1px solid #ff3366;color:#ff3366;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:.65rem;white-space:nowrap;">Remover<br><span style=\'color:#ffaa00\'>10,000 🥇</span></button>';
+                        '<button data-uid="' + _escHtmlInv(uid) + '" data-char="' + _escHtmlInv(charName) + '" data-slotkey="' + cfg.key + '" ' +
+                        'onclick="event.stopPropagation();var b=this;unlockSlot(b.dataset.uid,b.dataset.char,b.dataset.slotkey).then(function(ok){ if(ok) renderEquipSlots(b.dataset.char,b.dataset.uid); })" ' +
+                        'style="background:rgba(255,170,0,0.15);border:1px solid #ffaa00;color:#ffaa00;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:.65rem;white-space:nowrap;">🔓 Desbloquear</button>';
+                } else if (equipped && rd) {
+                    slotEl.innerHTML = labelHtml +
+                        '<img src="' + rd.img + '" style="width:44px;height:44px;object-fit:contain;border-radius:8px;">' +
+                        '<div style="flex:1;">' +
+                            '<div style="font-size:.82rem;color:#fff;font-weight:700;">' + equipped + '</div>' +
+                            '<div style="font-size:.68rem;color:' + color + ';">' + rd.tier + ' · ' + (rd.subtype||rd.slot) + '</div>' +
+                            '<div style="font-size:.65rem;color:#aaa;margin-top:2px;">' + rd.desc + '</div>' +
+                        '</div>' +
+                        '<button data-uid="' + _escHtmlInv(uid) + '" data-char="' + _escHtmlInv(charName) + '" data-slotkey="' + cfg.key + '" ' +
+                        'onclick="event.stopPropagation();var b=this;removeRelic(b.dataset.uid,b.dataset.char,b.dataset.slotkey).then(function(ok){ if(ok) renderEquipSlots(b.dataset.char,b.dataset.uid); })" ' +
+                        'style="background:rgba(255,51,102,0.15);border:1px solid #ff3366;color:#ff3366;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:.65rem;white-space:nowrap;">Remover<br><span style=\'color:#ffaa00\'>10k 🪙</span></button>';
                 } else {
-                    slotEl.innerHTML = '<div style="width:48px;height:48px;border:2px dashed rgba(255,255,255,0.2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:rgba(255,255,255,0.2);">+</div>' +
-                        '<div style="flex:1;color:rgba(255,255,255,0.4);font-size:.8rem;">Slot vacío</div>' +
-                        '<button onclick="openRelicPicker(' + i + ')" style="background:rgba(79,195,247,0.15);border:1px solid #4fc3f7;color:#4fc3f7;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:.7rem;">Equipar</button>';
+                    slotEl.innerHTML = labelHtml +
+                        '<div style="width:44px;height:44px;border:2px dashed rgba(255,255,255,0.15);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:rgba(255,255,255,0.15);">+</div>' +
+                        '<div style="flex:1;color:rgba(255,255,255,0.35);font-size:.78rem;">Slot vacío — ' + cfg.cat + '</div>' +
+                        '<button onclick="openRelicPicker(\'' + cfg.key + '\',\'' + cfg.cat + '\')" style="background:rgba(79,195,247,0.15);border:1px solid #4fc3f7;color:#4fc3f7;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:.7rem;">Equipar</button>';
                 }
-                container.appendChild(slotEl);
+
+                // Add label above slot
+                const wrapper = document.createElement('div');
+                wrapper.appendChild(slotEl);
+                container.appendChild(wrapper);
             });
         }
 
-        async function openRelicPicker(slotIndex) {
-            _equipSlotIndex = slotIndex;
+        async function openRelicPicker(slotKey, slotCategory) {
+            _equipSlotIndex = slotKey; // reuse for compat
             const picker = document.getElementById('equip-relic-picker');
             picker.style.display = 'block';
             const grid = document.getElementById('equip-relic-grid');
@@ -835,14 +872,17 @@
                 if (!qty || qty <= 0) return;
                 const rd = typeof RELICS_DATA !== 'undefined' ? RELICS_DATA[name] : null;
                 if (!rd) return;
+                // Filter by slot category
+                const relicCat = rd.slotCategory || (rd.slot === 'Joya' ? 'Joya' : (rd.slot === 'Arco' || rd.slot === 'Escudo') ? 'Arma' : (rd.slot === 'Armadura' || rd.slot === 'Botas' || rd.slot === 'Guante' || rd.slot === 'Yelmo') ? 'Equipacion' : 'Arma');
+                if (relicCat !== slotCategory) return;
                 hasAny = true;
                 const color = tierColors[rd.tier]||'#aaa';
                 const card = document.createElement('div');
                 card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid ' + color + ';border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:all .15s;';
                 card.onmouseover = function(){ this.style.transform='scale(1.05)'; };
                 card.onmouseout  = function(){ this.style.transform='scale(1)'; };
-                card.onclick     = async function(){
-                    const ok = await equipRelic(user.uid, _equipCharName, _equipSlotIndex, name);
+                card.onclick = async function(){
+                    const ok = await equipRelic(user.uid, _equipCharName, slotKey, name);
                     if (ok) {
                         picker.style.display = 'none';
                         await renderEquipSlots(_equipCharName, user.uid);
@@ -851,11 +891,11 @@
                 };
                 card.innerHTML = '<img src="' + rd.img + '" style="width:48px;height:48px;object-fit:contain;border-radius:6px;">' +
                     '<div style="font-size:.65rem;color:#ccc;margin-top:4px;">' + name + '</div>' +
-                    '<div style="font-size:.6rem;color:' + color + ';">' + rd.tier + '</div>' +
+                    '<div style="font-size:.6rem;color:' + color + ';">' + rd.tier + ' · ' + (rd.subtype||rd.slot) + '</div>' +
                     '<div style="font-size:.58rem;color:#555;">×' + qty + '</div>';
                 grid.appendChild(card);
             });
-            if (!hasAny) grid.innerHTML = '<div style="color:#555;font-size:.8rem;text-align:center;grid-column:1/-1;padding:20px;">No tienes reliquias disponibles.</div>';
+            if (!hasAny) grid.innerHTML = '<div style="color:#555;font-size:.8rem;text-align:center;grid-column:1/-1;padding:20px;">No tienes reliquias de tipo <b>' + slotCategory + '</b> en tu inventario.</div>';
         }
 
         // ── Mercado ──
@@ -1256,9 +1296,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260716"></script>
+    <script src="js/characters.js?v=20260717"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260716"></script>
+    <script src="js/audio-state.js?v=20260717"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -1603,10 +1643,11 @@
                 // ── Reliquias equipadas por el jugador en este personaje ──
                 const _csUser = firebase && firebase.auth ? firebase.auth().currentUser : null;
                 if (_csUser && typeof db !== 'undefined') {
-                    const _csRelicRef = db.ref('users/' + _csUser.uid + '/characters/' + name + '/slots');
+                    const _csRelicRef = db.ref('users/' + _csUser.uid + '/characters/' + name);
                     _csRelicRef.once('value').then(function(snap) {
-                        const _csEquip = snap.val() || {};
-                        const _csRelicNames = [_csEquip.slot1, _csEquip.slot2, _csEquip.slot3].filter(Boolean);
+                        const _csCharData = snap.val() || {};
+                        const _csEquip = _csCharData.slots_v2 || _csCharData.slots || {};
+                        const _csRelicNames = Object.values(_csEquip).filter(Boolean);
                         if (_csRelicNames.length === 0) return;
                         const relicBox = el('div', '');
                         relicBox.style.cssText = 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 12px;margin-top:8px;';
@@ -1951,23 +1992,23 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260716"></script>
+    <script src="js/ai-engine.js?v=20260717"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260716"></script>
+    <script src="js/init-render.js?v=20260717"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260716"></script>
+    <script src="js/turn-logic.js?v=20260717"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260716"></script>
+    <script src="js/status-effects.js?v=20260717"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260716"></script>
+    <script src="js/debuffs.js?v=20260717"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260716"></script>
+    <script src="js/summons.js?v=20260717"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260716"></script>
+    <script src="js/ability-select.js?v=20260717"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260716"></script>
+<script src="js/skills.js?v=20260717"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260716"></script>
+    <script src="js/jefe-de-sala.js?v=20260717"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
