@@ -108,79 +108,137 @@
     </div>
     <!-- ==================== END MODE SELECT SCREEN ==================== -->
 
+    <!-- ==================== SPLASH SCREEN ==================== -->
+    <div id="splashScreen" style="display:none; position:fixed; inset:0; z-index:99999; flex-direction:column; align-items:center; justify-content:center; background:url(https://i.postimg.cc/jSmHp0dw/4c9b34ddf1759d2a2950c4c8e1694ca9.jpg) center/cover no-repeat;">
+        <!-- Dark overlay -->
+        <div style="position:absolute;inset:0;background:linear-gradient(160deg,rgba(0,0,12,0.72) 0%,rgba(0,5,25,0.80) 100%);"></div>
+        <!-- Content -->
+        <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:2.4rem;">
+            <!-- Logo -->
+            <div style="font-family:'Orbitron',sans-serif;font-size:clamp(3.5rem,10vw,7rem);font-weight:900;letter-spacing:.18em;color:#fff;
+                text-shadow:0 0 30px #00c4ff,0 0 60px #00c4ff,0 0 120px rgba(0,196,255,0.5),0 4px 0 rgba(0,50,80,0.8);
+                animation:splashGlow 2.5s ease-in-out infinite alternate;">OVERSTRIKE</div>
+            <!-- Tagline -->
+            <div style="font-family:'Orbitron',sans-serif;font-size:clamp(.75rem,2vw,1rem);color:rgba(255,255,255,0.45);letter-spacing:.4em;text-transform:uppercase;margin-top:-.8rem;">5v5 RPG Battle</div>
+            <!-- Enter button -->
+            <button onclick="document.getElementById('splashScreen').style.display='none'; document.getElementById('lobbyScreen').style.display='flex'; if(typeof refreshRooms==='function') refreshRooms();"
+                style="font-family:'Orbitron',sans-serif;font-size:1.05rem;font-weight:700;letter-spacing:.18em;
+                    padding:1rem 3.5rem;border-radius:12px;cursor:pointer;margin-top:.6rem;
+                    background:linear-gradient(135deg,#003a5c,#006fa6);
+                    color:#00c4ff;border:2px solid #00c4ff;
+                    box-shadow:0 0 24px rgba(0,196,255,0.4),inset 0 0 20px rgba(0,196,255,0.05);
+                    transition:all .25s;"
+                onmouseover="this.style.boxShadow='0 0 48px rgba(0,196,255,0.75),inset 0 0 30px rgba(0,196,255,0.1)';this.style.transform='scale(1.04)'"
+                onmouseout="this.style.boxShadow='0 0 24px rgba(0,196,255,0.4),inset 0 0 20px rgba(0,196,255,0.05)';this.style.transform='scale(1)'">
+                ▶ ENTRAR
+            </button>
+        </div>
+        <style>
+        @keyframes splashGlow {
+            from { text-shadow:0 0 30px #00c4ff,0 0 60px #00c4ff,0 0 120px rgba(0,196,255,0.4),0 4px 0 rgba(0,50,80,.8); }
+            to   { text-shadow:0 0 50px #00c4ff,0 0 90px #00c4ff,0 0 180px rgba(0,196,255,0.7),0 4px 0 rgba(0,50,80,.8); }
+        }
+        </style>
+    </div>
+    <!-- ==================== END SPLASH SCREEN ==================== -->
+
     <!-- ==================== LOBBY SCREEN ==================== -->
-    <div id="lobbyScreen" style="display:none; flex-direction:column; align-items:center; min-height:100vh; background:linear-gradient(rgba(5,5,20,0.9),rgba(5,5,20,0.9)), url(https://i.postimg.cc/jSmHp0dw/4c9b34ddf1759d2a2950c4c8e1694ca9.jpg) center/cover no-repeat; padding:2rem; gap:1.5rem;">
-        <div style="display:flex; width:100%; width:98vw; max-width:none; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1rem;">
-            <div style="font-family:'Orbitron',sans-serif; font-size:1.6rem; font-weight:900; color:#00c4ff; text-shadow:0 0 15px #00c4ff;">⚔️ OVERSTRIKE</div>
-            <div style="display:flex;align-items:center;gap:8px;">
-            <div id="lobbyHUD" style="display:flex;align-items:center;gap:10px;margin-right:4px;">
+    <div id="lobbyScreen" style="display:none; flex-direction:column; align-items:center; min-height:100vh; background:linear-gradient(rgba(5,5,20,0.88),rgba(5,5,20,0.88)), url(https://i.postimg.cc/jSmHp0dw/4c9b34ddf1759d2a2950c4c8e1694ca9.jpg) center/cover fixed; padding:1.4rem 2rem 2rem;">
+
+        <!-- ── TOP BAR ── -->
+        <div style="display:flex;width:100%;max-width:1200px;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.2rem;">
+            <!-- Logo -->
+            <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;">⚔️ OVERSTRIKE</div>
+
+            <!-- HUD: Mercado · Inventario · Oro · Runas · Llaves · Avatar -->
+            <div id="lobbyHUD" style="display:flex;align-items:center;gap:10px;">
+                <!-- Mercado -->
+                <button onclick="window.showMarketScreen && window.showMarketScreen()"
+                    style="font-family:Orbitron,sans-serif;font-size:.72rem;font-weight:700;padding:.42rem 1rem;background:linear-gradient(135deg,#1a1000,#402a00);color:#ffaa00;border:1.5px solid #ffaa00;border-radius:8px;cursor:pointer;letter-spacing:.05em;transition:all .2s;"
+                    onmouseover="this.style.boxShadow='0 0 12px rgba(255,170,0,.55)'" onmouseout="this.style.boxShadow='none'">🏪 MERCADO</button>
+                <!-- Inventario -->
+                <button onclick="window.showInventoryScreen && window.showInventoryScreen()"
+                    style="font-family:Orbitron,sans-serif;font-size:.72rem;font-weight:700;padding:.42rem 1rem;background:linear-gradient(135deg,#1a0a2e,#2d1b69);color:#c864ff;border:1.5px solid #c864ff;border-radius:8px;cursor:pointer;letter-spacing:.05em;transition:all .2s;"
+                    onmouseover="this.style.boxShadow='0 0 12px rgba(200,100,255,.55)'" onmouseout="this.style.boxShadow='none'">🎒 INVENTARIO</button>
+                <!-- Separador -->
+                <div style="width:1px;height:24px;background:rgba(255,255,255,.12);"></div>
+                <!-- Oro -->
                 <div style="display:flex;align-items:center;gap:4px;" title="Oro">
-                    <img src="https://i.ibb.co/Q7t26McR/Captura-de-pantalla-2026-05-07-155804.png" style="width:22px;height:22px;object-fit:contain;">
+                    <img src="https://i.ibb.co/Q7t26McR/Captura-de-pantalla-2026-05-07-155804.png" style="width:20px;height:20px;object-fit:contain;">
                     <span id="hud-gold" style="font-family:Orbitron,sans-serif;font-size:.78rem;color:#ffaa00;font-weight:700;">0</span>
                 </div>
+                <!-- Runas -->
                 <div style="display:flex;align-items:center;gap:4px;" title="Runas de Ataque">
-                    <img src="https://i.ibb.co/8D3s84Nw/image-53bcf67.png" style="width:20px;height:20px;object-fit:contain;">
+                    <img src="https://i.ibb.co/8D3s84Nw/image-53bcf67.png" style="width:18px;height:18px;object-fit:contain;">
                     <span id="hud-runes" style="font-family:Orbitron,sans-serif;font-size:.78rem;color:#c864ff;font-weight:700;">0</span>
                 </div>
-                <div style="display:flex;align-items:center;gap:4px;" title="Llaves Arcanas">
-                    <span style="font-size:1.1rem;">🗝️</span>
+                <!-- Llaves -->
+                <div style="display:flex;align-items:center;gap:3px;" title="Llaves Arcanas">
+                    <span style="font-size:1rem;">🗝️</span>
                     <span id="hud-keys" style="font-family:Orbitron,sans-serif;font-size:.78rem;color:#4fc3f7;font-weight:700;">0</span>
                 </div>
+                <!-- Separador -->
+                <div style="width:1px;height:24px;background:rgba(255,255,255,.12);"></div>
+                <!-- Avatar + nombre + salir -->
+                <div id="lobbyUserInfo" style="display:flex;align-items:center;gap:10px;background:rgba(0,196,255,0.08);border:1px solid rgba(0,196,255,0.2);border-radius:50px;padding:6px 14px;">
+                    <img id="lobbyUserPhoto" src="" style="width:28px;height:28px;border-radius:50%;border:2px solid #00c4ff;" onerror="this.style.display='none'">
+                    <span id="lobbyUserName" style="font-size:.85rem;color:#fff;"></span>
+                    <button onclick="signOut()" style="background:rgba(255,51,102,0.15);border:1px solid #ff3366;color:#ff3366;border-radius:20px;padding:3px 10px;font-size:.72rem;cursor:pointer;">Salir</button>
+                </div>
             </div>
-            <div id="lobbyUserInfo" style="display:flex; align-items:center; gap:12px; background:rgba(0,196,255,0.08); border:1px solid rgba(0,196,255,0.2); border-radius:50px; padding:8px 16px;">
-                <img id="lobbyUserPhoto" src="" style="width:32px;height:32px;border-radius:50%;border:2px solid #00c4ff;" onerror="this.style.display='none'">
-                <span id="lobbyUserName" style="font-size:.9rem; color:#fff;"></span>
-                <button onclick="signOut()" style="background:rgba(255,51,102,0.15); border:1px solid #ff3366; color:#ff3366; border-radius:20px; padding:4px 12px; font-size:.75rem; cursor:pointer;">Salir</button>
-            </div>
-            </div><!-- end hud+user wrapper -->
         </div>
-        <div style="display:flex; gap:1.2rem; width:98vw; max-width:none; flex-wrap:nowrap; height:calc(100vh - 110px);">
-            <div style="flex:1; min-width:220px; display:flex; flex-direction:column; gap:1rem;">
-                <div style="background:rgba(0,10,30,0.8); border:1px solid rgba(0,196,255,0.2); border-radius:16px; padding:1.5rem;">
-                    <div style="font-family:'Orbitron',sans-serif; font-size:.8rem; color:#00c4ff; margin-bottom:1rem; letter-spacing:.1em;">MODO DE JUEGO</div>
-                    <button onclick="createOnlineRoom()" style="width:100%; padding:1rem; font-family:'Orbitron',sans-serif; font-size:.85rem; background:linear-gradient(135deg,#003a5c,#006fa6); color:#00c4ff; border:2px solid #00c4ff; border-radius:10px; cursor:pointer; margin-bottom:.8rem; transition:all .2s;" onmouseover="this.style.boxShadow='0 0 20px #00c4ff'" onmouseout="this.style.boxShadow='none'">🌐 CREAR SALA ONLINE</button>
-                    <button onclick="goToLocalMode('multi')" style="width:100%; padding:1rem; font-family:'Orbitron',sans-serif; font-size:.85rem; background:rgba(0,196,255,0.08); color:#aaa; border:1px solid #333; border-radius:10px; cursor:pointer; margin-bottom:.8rem;">👥 LOCAL — 2 Jugadores</button>
-                    <button onclick="goToLocalMode('solo')" style="width:100%; padding:1rem; font-family:'Orbitron',sans-serif; font-size:.85rem; background:rgba(255,51,102,0.08); color:#aaa; border:1px solid #333; border-radius:10px; cursor:pointer;">🤖 SOLITARIO — vs IA</button>
-                    <button onclick="showRaidLobby()" style="width:100%; padding:1rem; font-family:'Orbitron',sans-serif; font-size:.85rem; background:linear-gradient(135deg,#3a2000,#7a4500); color:#ffaa00; border:2px solid #ffaa00; border-radius:10px; cursor:pointer; margin-top:.8rem; transition:all .2s; letter-spacing:.05em; box-shadow:0 0 12px rgba(255,170,0,0.2);" onmouseover="this.style.boxShadow='0 0 24px rgba(255,170,0,0.5)'" onmouseout="this.style.boxShadow='0 0 12px rgba(255,170,0,0.2)'">🏆 RANKED — Raid Diario</button>
-                    <!-- Botones Inventario/Mercado/Jefe movidos al panel del chat -->
-            <button onclick="showRankedTeamScreen()"  style="width:100%; padding:1rem; font-family:'Orbitron',sans-serif; font-size:.85rem; background:linear-gradient(135deg,#002040,#004080); color:#4fc3f7; border:2px solid #4fc3f7; border-radius:10px; cursor:pointer; margin-top:.5rem; transition:all .2s; letter-spacing:.05em;" onmouseover="this.style.boxShadow='0 0 18px rgba(79,195,247,0.5)'" onmouseout="this.style.boxShadow='none'">⚔️ EQUIPO RANKED</button>
-                    <button id='adminBtn' onclick='window.showAdminPanel && window.showAdminPanel()' style='display:none;width:100%;padding:.5rem;font-family:Orbitron,sans-serif;font-size:.7rem;background:rgba(255,215,0,0.1);color:#ffd700;border:1px solid rgba(255,215,0,0.3);border-radius:8px;cursor:pointer;margin-top:4px;'>👑 ADMIN</button>
-                    
-                    <button onclick="showLeaderboard()" style="width:100%; padding:.7rem; font-family:'Orbitron',sans-serif; font-size:.78rem; background:rgba(255,170,0,0.06); color:#ffaa00; border:1px solid rgba(255,170,0,0.3); border-radius:10px; cursor:pointer; margin-top:.5rem; letter-spacing:.05em;">📊 VER LEADERBOARD</button>
+
+        <!-- ── MAIN CONTENT: centered menu + rooms ── -->
+        <div style="display:flex;width:100%;max-width:1200px;gap:2rem;align-items:flex-start;flex-wrap:wrap;">
+
+            <!-- ── LEFT: SALAS DISPONIBLES ── -->
+            <div style="flex:2;min-width:280px;background:rgba(0,10,30,0.82);border:1px solid rgba(0,196,255,0.18);border-radius:16px;padding:1.4rem;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                    <div style="font-family:'Orbitron',sans-serif;font-size:.78rem;color:#00c4ff;letter-spacing:.1em;">SALAS DISPONIBLES</div>
+                    <button onclick="refreshRooms()" style="background:none;border:1px solid #333;color:#666;border-radius:8px;padding:4px 10px;font-size:.72rem;cursor:pointer;">🔄 Actualizar</button>
                 </div>
-                <div style="background:rgba(0,10,30,0.8); border:1px solid rgba(0,255,136,0.2); border-radius:16px; padding:1.2rem; flex:1;">
-                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:.8rem;">
-                        <div style="width:8px;height:8px;background:#00ff88;border-radius:50%;animation:loginPulse 2s infinite;"></div>
-                        <span style="font-family:'Orbitron',sans-serif; font-size:.75rem; color:#00ff88; letter-spacing:.05em;">JUGADORES EN LÍNEA</span>
-                        <span id="onlineCount" style="font-size:.8rem; color:#666; margin-left:auto;">0</span>
-                    </div>
-                    <div id="playersList" style="display:flex; flex-direction:column; gap:.5rem; max-height:400px; overflow-y:auto; flex:1;"></div>
+                <div id="roomsList" style="display:flex;flex-direction:column;gap:.6rem;min-height:260px;overflow-y:auto;">
+                    <div style="text-align:center;color:#444;padding:2rem;font-size:.85rem;">Cargando salas...</div>
                 </div>
             </div>
-            <div style="flex:2; min-width:280px; background:rgba(0,10,30,0.8); border:1px solid rgba(0,196,255,0.2); border-radius:16px; padding:1.5rem;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-                    <div style="font-family:'Orbitron',sans-serif; font-size:.8rem; color:#00c4ff; letter-spacing:.1em;">SALAS DISPONIBLES</div>
-                    <button onclick="refreshRooms()" style="background:none; border:1px solid #333; color:#666; border-radius:8px; padding:4px 10px; font-size:.75rem; cursor:pointer;">🔄 Actualizar</button>
-                </div>
-                <div id="roomsList" style="display:flex; flex-direction:column; gap:.6rem; min-height:300px; flex:1; overflow-y:auto;">
-                    <div style="text-align:center; color:#444; padding:2rem; font-size:.85rem;">Cargando salas...</div>
-                </div>
-            </div>
-            <div style="flex:1.2; min-width:240px; background:rgba(0,10,30,0.8); border:1px solid rgba(255,170,0,0.25); border-radius:16px; padding:1.5rem; display:flex; flex-direction:column;">
-                <div style="font-family:'Orbitron',sans-serif; font-size:.75rem; color:#ffaa00; letter-spacing:.1em; margin-bottom:.8rem;">💬 CHAT GLOBAL</div>
-                <div id="globalChatMessages" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:.4rem; min-height:0; flex:1; max-height:none; margin-bottom:.8rem;"></div>
-                <div style="display:flex; gap:.5rem;">
-                    <input id="globalChatInput" type="text" placeholder="Mensaje al lobby..." maxlength="120"
-                        style="flex:1; background:rgba(255,170,0,0.07); border:1px solid rgba(255,170,0,0.2); border-radius:8px; padding:8px 12px; color:#fff; font-size:.82rem; outline:none;"
-                        onkeydown="if(event.key==='Enter') sendGlobalChat()">
-                    <button onclick="sendGlobalChat()" style="background:linear-gradient(135deg,#7a4800,#cc7700); border:none; color:#ffcc44; border-radius:8px; padding:8px 14px; cursor:pointer; font-size:.85rem;">➤</button>
-                </div>
-                <!-- Botones de acceso rápido debajo del chat -->
-                <div style="display:flex;gap:6px;margin-top:10px;">
-                    <button onclick="window.showInventoryScreen && window.showInventoryScreen()" style="flex:1;padding:.55rem;font-family:Orbitron,sans-serif;font-size:.7rem;background:linear-gradient(135deg,#1a0a2e,#2d1b69);color:#c864ff;border:2px solid #c864ff;border-radius:9px;cursor:pointer;" onmouseover="this.style.boxShadow='0 0 14px rgba(200,100,255,0.5)'" onmouseout="this.style.boxShadow='none'">🎒 INVENTARIO</button>
-                    <button onclick="window.showMarketScreen && window.showMarketScreen()" style="flex:1;padding:.55rem;font-family:Orbitron,sans-serif;font-size:.7rem;background:linear-gradient(135deg,#1a1000,#402a00);color:#ffaa00;border:2px solid #ffaa00;border-radius:9px;cursor:pointer;" onmouseover="this.style.boxShadow='0 0 14px rgba(255,170,0,0.5)'" onmouseout="this.style.boxShadow='none'">🏪 MERCADO</button>
-                </div>
-                <button onclick="window.showBossScreen && window.showBossScreen()" style="width:100%;padding:.6rem;margin-top:6px;font-family:Orbitron,sans-serif;font-size:.78rem;background:linear-gradient(135deg,#1a0000,#500000);color:#ff4444;border:2px solid #ff4444;border-radius:9px;cursor:pointer;letter-spacing:.05em;" onmouseover="this.style.boxShadow='0 0 18px rgba(255,68,68,0.5)'" onmouseout="this.style.boxShadow='none'">⚔️ JEFE DE SALA</button>
+
+            <!-- ── CENTER: MODO DE JUEGO ── -->
+            <div style="flex:1;min-width:260px;max-width:340px;margin:0 auto;background:rgba(0,10,30,0.85);border:1px solid rgba(0,196,255,0.25);border-radius:18px;padding:2rem 1.8rem;display:flex;flex-direction:column;gap:.7rem;align-self:center;">
+                <div style="font-family:'Orbitron',sans-serif;font-size:.78rem;color:#00c4ff;letter-spacing:.12em;text-align:center;margin-bottom:.4rem;">MODO DE JUEGO</div>
+
+                <button onclick="createOnlineRoom()"
+                    style="width:100%;padding:.9rem 1rem;font-family:'Orbitron',sans-serif;font-size:.82rem;font-weight:700;background:linear-gradient(135deg,#003a5c,#006fa6);color:#00c4ff;border:2px solid #00c4ff;border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;"
+                    onmouseover="this.style.boxShadow='0 0 22px #00c4ff'" onmouseout="this.style.boxShadow='none'">🌐 CREAR SALA ONLINE</button>
+
+                <button onclick="goToLocalMode('multi')"
+                    style="width:100%;padding:.9rem 1rem;font-family:'Orbitron',sans-serif;font-size:.82rem;background:rgba(0,196,255,0.07);color:#aaa;border:1px solid #2a3a4a;border-radius:10px;cursor:pointer;transition:all .2s;"
+                    onmouseover="this.style.borderColor='#00c4ff44';this.style.color='#ccc'" onmouseout="this.style.borderColor='#2a3a4a';this.style.color='#aaa'">👥 LOCAL — 2 Jugadores</button>
+
+                <button onclick="goToLocalMode('solo')"
+                    style="width:100%;padding:.9rem 1rem;font-family:'Orbitron',sans-serif;font-size:.82rem;background:rgba(255,51,102,0.07);color:#aaa;border:1px solid #3a1a22;border-radius:10px;cursor:pointer;transition:all .2s;"
+                    onmouseover="this.style.borderColor='#ff336644';this.style.color='#ccc'" onmouseout="this.style.borderColor='#3a1a22';this.style.color='#aaa'">🤖 SOLITARIO — vs IA</button>
+
+                <button onclick="showRaidLobby()"
+                    style="width:100%;padding:.9rem 1rem;font-family:'Orbitron',sans-serif;font-size:.82rem;font-weight:700;background:linear-gradient(135deg,#3a2000,#7a4500);color:#ffaa00;border:2px solid #ffaa00;border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;box-shadow:0 0 10px rgba(255,170,0,.18);"
+                    onmouseover="this.style.boxShadow='0 0 26px rgba(255,170,0,.55)'" onmouseout="this.style.boxShadow='0 0 10px rgba(255,170,0,.18)'">🏆 RANKED — Raid Diario</button>
+
+                <button onclick="window.showBossScreen && window.showBossScreen()"
+                    style="width:100%;padding:.9rem 1rem;font-family:'Orbitron',sans-serif;font-size:.82rem;font-weight:700;background:linear-gradient(135deg,#1a0000,#500000);color:#ff4444;border:2px solid #ff4444;border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;"
+                    onmouseover="this.style.boxShadow='0 0 22px rgba(255,68,68,.55)'" onmouseout="this.style.boxShadow='none'">⚔️ JEFE DE SALA</button>
+
+                <button onclick="showRankedTeamScreen()"
+                    style="width:100%;padding:.9rem 1rem;font-family:'Orbitron',sans-serif;font-size:.82rem;font-weight:700;background:linear-gradient(135deg,#002040,#004080);color:#4fc3f7;border:2px solid #4fc3f7;border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;"
+                    onmouseover="this.style.boxShadow='0 0 20px rgba(79,195,247,.5)'" onmouseout="this.style.boxShadow='none'">⚔️ CREAR EQUIPO RANKED</button>
+
+                <!-- Admin (hidden by default) -->
+                <button id="adminBtn" onclick="window.showAdminPanel && window.showAdminPanel()"
+                    style="display:none;width:100%;padding:.5rem;font-family:Orbitron,sans-serif;font-size:.7rem;background:rgba(255,215,0,0.1);color:#ffd700;border:1px solid rgba(255,215,0,0.3);border-radius:8px;cursor:pointer;">👑 ADMIN</button>
+
+                <div style="height:1px;background:rgba(255,255,255,.08);margin:.2rem 0;"></div>
+
+                <button onclick="showLeaderboard()"
+                    style="width:100%;padding:.7rem 1rem;font-family:'Orbitron',sans-serif;font-size:.76rem;background:rgba(255,170,0,0.06);color:#ffaa00;border:1px solid rgba(255,170,0,0.25);border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;"
+                    onmouseover="this.style.borderColor='rgba(255,170,0,.5)'" onmouseout="this.style.borderColor='rgba(255,170,0,.25)'">📊 VER LEADERBOARD</button>
             </div>
         </div>
         <div id="challengeModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9000; align-items:center; justify-content:center;">
