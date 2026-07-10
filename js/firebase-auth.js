@@ -3588,7 +3588,7 @@
         // ── Leer datos del jugador ──
         async function getPlayerData(uid) {
             const snap = await db.ref('users/' + uid).once('value');
-            return snap.val() || { gold: 0, arcane_keys: 0, attack_runes: 0, inventory: { relics: {} }, characters: {} };
+            return snap.val() || { gold: 0, arcane_keys: 0, attack_runes: 0, portal_runes: 0, inventory: { relics: {} }, characters: {} };
         }
 
         // ── Actualizar HUD del lobby ──
