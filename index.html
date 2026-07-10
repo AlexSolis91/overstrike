@@ -13,6 +13,14 @@
 <body>
 
 <!-- ==================== AUDIO SYSTEM ==================== -->
+<!-- SFX: ENTRAR button on splash screen -->
+<audio id="sfxEntrar" preload="auto">
+  <source src="https://ia903102.us.archive.org/30/items/sounds-of-button-selection-in-the-game-menu-sound-effect-64-kbps_kAezi12R/sounds-of-button-selection-in-the-game-menu-sound-effect-64-kbps_kAezi12R.mp3" type="audio/mpeg">
+</audio>
+<!-- SFX: Modo de Juego buttons -->
+<audio id="sfxModo" preload="auto">
+  <source src="https://ia600400.us.archive.org/28/items/top-60-sound-effects-for-editing-1-2026-64-kbps_aA2b0OXH/top-60-sound-effects-for-editing-1-2026-64-kbps_aA2b0OXH.mp3" type="audio/mpeg">
+</audio>
 <audio id="audioMenu" loop preload="auto">
   <source src="https://ia902809.us.archive.org/28/items/sung-jinwoo-wolf-assassin-solo-leveling-ep-4-ost-cover-64-kbps/Sung%20Jinwoo%2C%20Wolf%20Assassin%20_%20Solo%20Leveling%20EP%204%20_%20%E4%BF%BA%E3%81%A0%E3%81%91%E3%83%AC%E3%83%99%E3%83%AB%E3%82%A2%E3%83%83%E3%83%97%E3%81%AA%E4%BB%B6%20OST%20Cover%20-%20%2864%20Kbps%29.mp3" type="audio/mpeg">
 </audio>
@@ -121,7 +129,7 @@
             <!-- Tagline -->
             <div style="font-family:'Orbitron',sans-serif;font-size:clamp(.75rem,2vw,1rem);color:rgba(255,255,255,0.45);letter-spacing:.4em;text-transform:uppercase;margin-top:-.8rem;">5v5 RPG Battle</div>
             <!-- Enter button -->
-            <button onclick="document.getElementById('splashScreen').style.display='none'; document.getElementById('lobbyScreen').style.display='flex'; if(typeof refreshRooms==='function') refreshRooms();"
+            <button onclick="var _s=document.getElementById('sfxEntrar'); if(_s){_s.currentTime=0;_s.play().catch(function(){});} document.getElementById('splashScreen').style.display='none'; document.getElementById('lobbyScreen').style.display='flex'; if(typeof refreshRooms==='function') refreshRooms();"
                 style="font-family:'Orbitron',sans-serif;font-size:1.05rem;font-weight:700;letter-spacing:.18em;
                     padding:1rem 3.5rem;border-radius:12px;cursor:pointer;margin-top:.6rem;
                     background:linear-gradient(135deg,#003a5c,#006fa6);
@@ -199,7 +207,7 @@
                 <div style="font-family:'Orbitron',sans-serif;font-size:.85rem;color:#00c4ff;letter-spacing:.14em;text-align:center;margin-bottom:.5rem;">MODO DE JUEGO</div>
 
                 <!-- 🌐 ONLINE button — opens modal with Crear / Ver partidas -->
-                <button onclick="document.getElementById('onlineModal').style.display='flex';"
+                <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} document.getElementById('onlineModal').style.display='flex';"
                     style="width:100%;padding:.75rem 1rem;font-family:'Orbitron',sans-serif;font-size:.82rem;font-weight:700;background:linear-gradient(135deg,#003a5c,#006fa6);color:#00c4ff;border:2px solid #00c4ff;border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;"
                     onmouseover="this.style.boxShadow='0 0 22px #00c4ff'" onmouseout="this.style.boxShadow='none'">🌐 ONLINE</button>
 
@@ -207,13 +215,13 @@
         <div id="onlineModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:99000;align-items:center;justify-content:center;">
             <div style="background:linear-gradient(135deg,#07101f,#0d1a30);border:2px solid #00c4ff;border-radius:20px;padding:2.4rem 2.8rem;text-align:center;min-width:320px;max-width:440px;width:90%;position:relative;">
                 <!-- Close -->
-                <button onclick="document.getElementById('onlineModal').style.display='none';"
+                <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} document.getElementById('onlineModal').style.display='none';"
                     style="position:absolute;top:14px;right:16px;background:rgba(255,51,102,.15);border:1px solid #ff3366;color:#ff3366;border-radius:50%;width:30px;height:30px;font-size:1rem;cursor:pointer;line-height:1;">✕</button>
                 <div style="font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:900;color:#00c4ff;letter-spacing:.1em;margin-bottom:.4rem;">🌐 MODO ONLINE</div>
                 <div style="color:#666;font-size:.78rem;margin-bottom:1.8rem;letter-spacing:.05em;">Crea una sala o únete a una partida existente</div>
                 <!-- Two main buttons -->
                 <div style="display:flex;flex-direction:column;gap:.9rem;">
-                    <button onclick="document.getElementById('onlineModal').style.display='none'; createOnlineRoom();"
+                    <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} document.getElementById('onlineModal').style.display='none'; createOnlineRoom();"
                         style="width:100%;padding:1rem 1.2rem;font-family:'Orbitron',sans-serif;font-size:.88rem;font-weight:700;background:linear-gradient(135deg,#003a5c,#006fa6);color:#00c4ff;border:2px solid #00c4ff;border-radius:12px;cursor:pointer;letter-spacing:.05em;transition:all .2s;"
                         onmouseover="this.style.boxShadow='0 0 22px #00c4ff'" onmouseout="this.style.boxShadow='none'">
                         ➕ CREAR PARTIDA
@@ -227,30 +235,30 @@
                     </button>
                     <!-- Rooms list (hidden by default, shown on click) -->
                     <div id="onlineRoomsList" style="display:none;flex-direction:column;gap:.5rem;max-height:240px;overflow-y:auto;border-top:1px solid rgba(0,196,255,.15);padding-top:.8rem;margin-top:.2rem;"></div>
-                    <button onclick="document.getElementById('onlineModal').style.display='none';"
+                    <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} document.getElementById('onlineModal').style.display='none';"
                         style="width:100%;padding:.6rem;font-family:'Orbitron',sans-serif;font-size:.72rem;background:transparent;color:#555;border:1px solid #2a3a4a;border-radius:8px;cursor:pointer;">Cancelar</button>
                 </div>
             </div>
         </div>
         <!-- ── END ONLINE MODAL ── -->
 
-                <button onclick="goToLocalMode('multi')"
+                <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} goToLocalMode('multi')"
                     style="width:100%;padding:.85rem 1rem;font-family:'Orbitron',sans-serif;font-size:.88rem;background:rgba(0,196,255,0.07);color:#aaa;border:1px solid #2a3a4a;border-radius:10px;cursor:pointer;transition:all .2s;"
                     onmouseover="this.style.borderColor='#00c4ff44';this.style.color='#ccc'" onmouseout="this.style.borderColor='#2a3a4a';this.style.color='#aaa'">👥 LOCAL — 2 Jugadores</button>
 
-                <button onclick="goToLocalMode('solo')"
+                <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} goToLocalMode('solo')"
                     style="width:100%;padding:.85rem 1rem;font-family:'Orbitron',sans-serif;font-size:.88rem;background:rgba(255,51,102,0.07);color:#aaa;border:1px solid #3a1a22;border-radius:10px;cursor:pointer;transition:all .2s;"
                     onmouseover="this.style.borderColor='#ff336644';this.style.color='#ccc'" onmouseout="this.style.borderColor='#3a1a22';this.style.color='#aaa'">🤖 SOLITARIO — vs IA</button>
 
-                <button onclick="showRaidLobby()"
+                <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} showRaidLobby()"
                     style="width:100%;padding:.85rem 1rem;font-family:'Orbitron',sans-serif;font-size:.88rem;font-weight:700;background:linear-gradient(135deg,#3a2000,#7a4500);color:#ffaa00;border:2px solid #ffaa00;border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;box-shadow:0 0 10px rgba(255,170,0,.18);"
                     onmouseover="this.style.boxShadow='0 0 26px rgba(255,170,0,.55)'" onmouseout="this.style.boxShadow='0 0 10px rgba(255,170,0,.18)'">🏆 RANKED — Raid Diario</button>
 
-                <button onclick="window.showBossScreen && window.showBossScreen()"
+                <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} window.showBossScreen && window.showBossScreen()"
                     style="width:100%;padding:.85rem 1rem;font-family:'Orbitron',sans-serif;font-size:.88rem;font-weight:700;background:linear-gradient(135deg,#1a0000,#500000);color:#ff4444;border:2px solid #ff4444;border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;"
                     onmouseover="this.style.boxShadow='0 0 22px rgba(255,68,68,.55)'" onmouseout="this.style.boxShadow='none'">⚔️ JEFE DE SALA</button>
 
-                <button onclick="showRankedTeamScreen()"
+                <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} showRankedTeamScreen()"
                     style="width:100%;padding:.85rem 1rem;font-family:'Orbitron',sans-serif;font-size:.88rem;font-weight:700;background:linear-gradient(135deg,#002040,#004080);color:#4fc3f7;border:2px solid #4fc3f7;border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;"
                     onmouseover="this.style.boxShadow='0 0 20px rgba(79,195,247,.5)'" onmouseout="this.style.boxShadow='none'">⚔️ CREAR EQUIPO RANKED</button>
 
@@ -260,7 +268,7 @@
 
                 <div style="height:1px;background:rgba(255,255,255,.08);margin:.3rem 0;"></div>
 
-                <button onclick="showLeaderboard()"
+                <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} showLeaderboard()"
                     style="width:100%;padding:.72rem 1rem;font-family:'Orbitron',sans-serif;font-size:.82rem;background:rgba(255,170,0,0.06);color:#ffaa00;border:1px solid rgba(255,170,0,0.25);border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;"
                     onmouseover="this.style.borderColor='rgba(255,170,0,.5)'" onmouseout="this.style.borderColor='rgba(255,170,0,.25)'">📊 VER LEADERBOARD</button>
             </div>
