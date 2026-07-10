@@ -683,10 +683,10 @@
 
         // Filas de recompensa individuales (1-4)
         var rewardRows = [
-            { r:1, label:'🥇 1er Lugar', gold:100000, extra:'2 Llaves Arcanas', color:'#ffd700', bg:'rgba(255,215,0,0.12)' },
-            { r:2, label:'🥈 2do Lugar', gold:50000,  extra:'1 Llave Arcana',   color:'#c0c0c0', bg:'rgba(192,192,192,0.08)' },
-            { r:3, label:'🥉 3er Lugar', gold:20000,  extra:'Cofre Épico',      color:'#cd7f32', bg:'rgba(205,127,50,0.08)' },
-            { r:4, label:'4to Lugar',    gold:10000,  extra:'Cofre Especial',   color:'#4fc3f7', bg:'rgba(79,195,247,0.06)' }
+            { r:1, label:'🥇 1er Lugar', gold:100000, extra:'5 Llaves Arcanas', color:'#ffd700', bg:'rgba(255,215,0,0.12)' },
+            { r:2, label:'🥈 2do Lugar', gold:50000,  extra:'3 Llaves Arcanas', color:'#c0c0c0', bg:'rgba(192,192,192,0.08)' },
+            { r:3, label:'🥉 3er Lugar', gold:20000,  extra:'2 Llaves Arcanas', color:'#cd7f32', bg:'rgba(205,127,50,0.08)' },
+            { r:4, label:'4to Lugar',    gold:5000,   extra:'1 Llave Arcana',   color:'#4fc3f7', bg:'rgba(79,195,247,0.06)' }
         ];
         rewardRows.forEach(function(rw) {
             var isMeRow = myRank === rw.r;
