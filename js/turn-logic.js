@@ -1968,6 +1968,8 @@
                             let _poisonDmg = 0;
                             _poisons.forEach(function(p){ _poisonDmg += (p.dotDamage||1); });
                             if (typeof applyDamageWithShield === 'function') applyDamageWithShield(_en, _poisonDmg, _vEndN);
+                            // ── ANARQUÍA (Joker): cuando enemigo sufre daño por Quemadura → debuff aleatorio ──
+                            if (typeof window.jokerAnarquiaOnDot === 'function') window.jokerAnarquiaOnDot(_en);
                             addLog('🐍 Horrocrux Viviente: ' + _en + ' recibe ' + _poisonDmg + ' daño por Veneno (Nagini activa, fin de ronda)', 'damage');
                         }
                     }
@@ -2304,7 +2306,25 @@
                     // ── PASIVAS DINÁMICAS: inicio de ronda ──
                     if (typeof runDynamicPassives === 'function') runDynamicPassives('AL_INICIO_DE_RONDA');
 
-                    // ── ESTRATEGA DE ODIN (Ragnar): inicio de ronda → 5 HP escudo al equipo aliado ──
+                    // ── ANARQUÍA (The Joker): inicio de ronda → 50% cada buff (Sigilo, Esquivar, Esquiva Área, Intimidación) ──
+                for (const _jkN in gameState.characters) {
+                    const _jkC = gameState.characters[_jkN];
+                    if (!_jkC || _jkC.isDead || !_jkC.passive || _jkC.passive.name !== 'Anarquía') continue;
+                    const _jkBuffs = [
+                        { name:'Sigilo',      emoji:'👤', roll: Math.random() },
+                        { name:'Esquivar',    emoji:'💨', roll: Math.random() },
+                        { name:'Esquiva Area',emoji:'💨', roll: Math.random() },
+                        { name:'Intimidacion',emoji:'😤', roll: Math.random() }
+                    ];
+                    _jkBuffs.forEach(function(b) {
+                        if (b.roll < 0.50) {
+                            if (typeof applyBuff === 'function') applyBuff(_jkN, { name:b.name, type:'buff', duration:2, emoji:b.emoji, passiveHidden:false });
+                            addLog('🃏 Anarquía: Joker gana ' + b.name + ' (2T)', 'buff');
+                        }
+                    });
+                }
+
+                // ── ESTRATEGA DE ODIN (Ragnar): inicio de ronda → 5 HP escudo al equipo aliado ──
                 for (const _ragnN in gameState.characters) {
                     const _ragnC = gameState.characters[_ragnN];
                     if (!_ragnC || _ragnC.isDead || !_ragnC.passive || _ragnC.passive.name !== 'Estratega de Odin') continue;
@@ -2755,6 +2775,17 @@
                             applyDamageWithShield(_eorN, _eorPoisonDmg, null);
                             addLog('☠️ ' + _eorN + ' recibe ' + _eorPoisonDmg + ' de daño por Veneno (' + (_eorPoison.poisonStacks||0) + 'S) — el debuff expira', 'damage');
 
+                            // ── PONZOÑA: si el portador recibe daño de Veneno → pierde 3 cargas ──
+                            const _eorC2 = gameState.characters[_eorN];
+                            const _hasPonzona = (_eorC2&&(_eorC2.statusEffects||[]).some(function(e){ return e&&normAccent(e.name||'')==='ponzona'; }));
+                            if (_hasPonzona && _eorPoisonDmg > 0) {
+                                gameState.characters[_eorN].charges = Math.max(0, (gameState.characters[_eorN].charges||0) - 3);
+                                addLog('☠️ Ponzoña: ' + _eorN + ' pierde 3 cargas (daño por Veneno)', 'debuff');
+                            }
+
+                            // ── ANARQUÍA (Joker): cuando enemigo sufre daño por Veneno → debuff aleatorio ──
+                            if (typeof window.jokerAnarquiaOnDot === 'function') window.jokerAnarquiaOnDot(_eorN);
+
                             // ── AGUIJÓN ESMERALDA: cuando un enemigo recibe daño por debuff Veneno → aplica 2 Stacks de Veneno a 2 enemigos aleatorios (del portador) ──
                             for (const _aeN in gameState.characters) {
                                 const _aeC = gameState.characters[_aeN];
@@ -2788,6 +2819,10 @@
                                 _muzanP.charges = Math.min(20, (_muzanP.charges||0) + 1);
                                 addLog('🧛‍♂️ Progenitor Demoniaco: Muzan genera 1 carga (veneno activo)', 'buff');
                             }
+                        }
+                        // PROGENITOR DEMONIACO (Muzan): acumular daño por Veneno para curar al equipo al final de ronda
+                        if (_eorPoisonDmg > 0) {
+                            gameState._muzanPoisonHealing = (gameState._muzanPoisonHealing||0) + _eorPoisonDmg;
                         }
                         // El debuff Veneno expira por completo tras aplicarse, sin importar si hizo daño o no
                         _eorC.statusEffects = (_eorC.statusEffects||[]).filter(function(e){ return e !== _eorPoison; });
@@ -2901,6 +2936,19 @@
                     }
                 }
 
+                // ── PROGENITOR DEMONIACO (Muzan transformado): inicio de ronda → -2 cargas al equipo enemigo ──
+                for (const _mzN in gameState.characters) {
+                    const _mzC = gameState.characters[_mzN];
+                    if (!_mzC || _mzC.isDead || !_mzC.muzanTransformed) continue;
+                    const _mzETeam = _mzC.team === 'team1' ? 'team2' : 'team1';
+                    for (const _en in gameState.characters) {
+                        const _ec = gameState.characters[_en];
+                        if (!_ec || _ec.team !== _mzETeam || _ec.isDead) continue;
+                        _ec.charges = Math.max(0, (_ec.charges||0) - 2);
+                    }
+                    addLog('👹 Progenitor Demoniaco [Rey Demonios]: equipo enemigo pierde 2 cargas', 'debuff');
+                }
+
                 // ── DESEO DE MUERTE (Caballero de la Muerte Arthas): inicio de ronda con Campeón → Escudo Sagrado al equipo ──
                 for (const _dkN in gameState.characters) {
                     const _dkC = gameState.characters[_dkN];
@@ -2930,6 +2978,23 @@
                             addLog('💀 Campeón de la Muerte: ' + _chosen + ' +2 cargas', 'buff');
                         }
                     });
+                }
+
+                // ── PROGENITOR DEMONIACO (Muzan): al final de ronda, curar al equipo aliado = daño causado por Veneno ──
+                if ((gameState._muzanPoisonHealing||0) > 0) {
+                    for (const _muzN in gameState.characters) {
+                        const _muzC = gameState.characters[_muzN];
+                        if (!_muzC || !_muzC.passive || _muzC.passive.name !== 'Progenitor Demoniaco' || _muzC.isDead) continue;
+                        const _healAmount = gameState._muzanPoisonHealing;
+                        for (const _an in gameState.characters) {
+                            const _ac = gameState.characters[_an];
+                            if (!_ac || _ac.team !== _muzC.team || _ac.isDead || _ac.hp <= 0) continue;
+                            if (typeof applyHeal === 'function') applyHeal(_an, _healAmount, 'Progenitor Demoniaco');
+                        }
+                        addLog('👹 Progenitor Demoniaco: equipo aliado recupera ' + _healAmount + ' HP (daño por Veneno esta ronda)', 'heal');
+                        break;
+                    }
+                    gameState._muzanPoisonHealing = 0;
                 }
 
                 // ── MODO KAIJU (Garou): contar ronda transformada, revertir tras 2 rondas ──
