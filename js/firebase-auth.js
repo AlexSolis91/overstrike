@@ -3103,34 +3103,38 @@
         }
 
         function refreshRooms() {
-            const list = document.getElementById('roomsList');
+            // Populate the onlineRoomsList inside the modal (old roomsList is now hidden)
+            var list = document.getElementById('onlineRoomsList') || document.getElementById('roomsList');
             if (!list) return;
-            list.innerHTML = '<div style="text-align:center;color:#444;padding:1.5rem;font-size:.85rem;">Buscando salas...</div>';
+            list.innerHTML = '<div style="text-align:center;color:#666;padding:1.2rem;font-size:.82rem;">🔍 Buscando partidas...</div>';
 
             db.ref('rooms').orderByChild('status').equalTo('waiting').limitToLast(10).once('value', function(snap) {
                 list.innerHTML = '';
                 const rooms = snap.val();
                 if (!rooms || Object.keys(rooms).length === 0) {
-                    list.innerHTML = '<div style="text-align:center;color:#444;padding:2rem;font-size:.85rem;">No hay salas disponibles.<br><span style="color:#666;">¡Crea una y espera un rival!</span></div>';
+                    list.innerHTML = '<div style="text-align:center;color:#555;padding:1.4rem;font-size:.82rem;">No hay partidas disponibles.<br><span style="color:#444;font-size:.75rem;">¡Sé el primero en crear una!</span></div>';
                     return;
                 }
                 Object.entries(rooms).forEach(function([roomId, room]) {
-                    if (room.host && room.host.uid === currentUser.uid) return; // skip own rooms
+                    if (room.host && room.host.uid === currentUser.uid) return;
                     const card = document.createElement('div');
-                    card.style.cssText = 'background:rgba(0,196,255,0.06);border:1px solid rgba(0,196,255,0.15);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;';
+                    card.style.cssText = 'background:rgba(0,196,255,0.06);border:1px solid rgba(0,196,255,0.15);border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;';
                     const hostName2 = (room.host.name || 'Jugador').replace(/</g,'&lt;');
                     card.innerHTML = [
                         '<div>',
-                            '<div style="font-weight:700;color:#fff;font-size:.9rem;">' + hostName2 + '</div>',
-                            '<div style="font-size:.75rem;color:#666;">Sala: <span style="color:#00c4ff;font-family:Orbitron,sans-serif;">' + roomId + '</span></div>',
+                            '<div style="font-weight:700;color:#fff;font-size:.88rem;">' + hostName2 + '</div>',
+                            '<div style="font-size:.72rem;color:#666;">Sala: <span style="color:#00c4ff;font-family:Orbitron,sans-serif;">' + roomId + '</span></div>',
                         '</div>',
-                        '<button data-rid="' + roomId + '" style="background:linear-gradient(135deg,#003a5c,#006fa6);border:1px solid #00c4ff;color:#00c4ff;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:.8rem;font-family:Orbitron,sans-serif;">UNIRSE</button>'
+                        '<button data-rid="' + roomId + '" style="background:linear-gradient(135deg,#003a5c,#006fa6);border:1px solid #00c4ff;color:#00c4ff;border-radius:8px;padding:7px 14px;cursor:pointer;font-size:.78rem;font-family:Orbitron,sans-serif;">UNIRSE</button>'
                     ].join('');
-                    card.querySelector('button').addEventListener('click', function() { joinRoom(roomId); });
+                    card.querySelector('button').addEventListener('click', function() {
+                        document.getElementById('onlineModal').style.display = 'none';
+                        joinRoom(roomId);
+                    });
                     list.appendChild(card);
                 });
                 if (list.children.length === 0) {
-                    list.innerHTML = '<div style="text-align:center;color:#444;padding:2rem;font-size:.85rem;">No hay salas de otros jugadores.</div>';
+                    list.innerHTML = '<div style="text-align:center;color:#555;padding:1.4rem;font-size:.82rem;">No hay partidas de otros jugadores.</div>';
                 }
             });
         }
