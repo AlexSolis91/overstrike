@@ -261,6 +261,12 @@ function triggerMaboroshi(targetTeam, debuffName) {
         function applyBuff(targetName, effectObj) {
             const target = gameState.characters[targetName];
             if (!target || !target.statusEffects) return;
+            // ── PONZOÑA: el portador no puede recibir buffs ──
+            const _hasPonzona = (target.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'ponzona'; });
+            if (_hasPonzona) {
+                addLog('☠️ Ponzoña: ' + targetName + ' no puede recibir buffs', 'debuff');
+                return;
+            }
             // SABIDURÍA ANTIGUA (Yoda): inmune a buffs (los enemigos no pueden buffear a Yoda)
             // Sus propias habilidades sí aplican buffs a sus ALIADOS — no a Yoda mismo
             if (target.passive && target.passive.name === 'Sabiduría Antigua') {
@@ -1078,6 +1084,22 @@ function applyDebuff(targetName, effectObj) {
                 addLog(`☠️ ${targetName} es envenenado (Veneno ${_poisonStacks}S)`, 'damage');
             }
             if (typeof triggerIzanamiPartB === 'function') triggerIzanamiPartB(targetName);
+
+            // ── PROGENITOR DEMONIACO (Muzan): +1 carga por cada stack de Veneno aplicado ──
+            if (!passiveExecuting && _poisonStacks > 0) {
+                const _targetC = gameState.characters[targetName];
+                if (_targetC) {
+                    for (const _mzN in gameState.characters) {
+                        const _mzC = gameState.characters[_mzN];
+                        if (!_mzC || _mzC.isDead || !_mzC.passive || _mzC.passive.name !== 'Progenitor Demoniaco') continue;
+                        if (_mzC.team === _targetC.team) continue; // Muzan must be on the attacking team
+                        _mzC.charges = Math.min(20, (_mzC.charges||0) + _poisonStacks);
+                        addLog('👹 Progenitor Demoniaco: Muzan +' + _poisonStacks + ' carga(s) (Veneno aplicado a ' + targetName + ')', 'buff');
+                        break;
+                    }
+                }
+            }
+
             // SEÑOR DE LOS NAZGUL (Rey Brujo): cura 2 HP al aplicar Veneno en un enemigo
             if (!passiveExecuting) {
                 for (const _rbN in gameState.characters) {
