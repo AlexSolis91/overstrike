@@ -3761,9 +3761,10 @@
 
             const bossData = typeof getBossData === 'function' ? await getBossData() : null;
             const bossIsLichKing = bossData && bossData.status === 'active' && bossData.name === 'Lich King';
-            const perOpenBonus = bossIsLichKing ? 0.015 : 0.01;
-            const baseLegPct   = bossIsLichKing ? 0.010 : 0.005;
-            const totalLegPct  = Math.min(0.50, baseLegPct + pityData.bonus);
+            // +0.5% por cofre abierto dentro de la ventana de 4 minutos, máximo 5%
+            const perOpenBonus = 0.005;
+            const baseLegPct   = 0.005;
+            const totalLegPct  = Math.min(0.05, baseLegPct + pityData.bonus);
             // Update pity (incrementa racha y reinicia el temporizador a 240s)
             const newStreak = (pityData.streak || 0) + 1;
             await db.ref('users/' + uid + '/arcane_pity').set({ bonus: pityData.bonus + perOpenBonus, lastOpenAt: now, streak: newStreak });
