@@ -188,27 +188,51 @@
             </div>
         </div>
 
-        <!-- ── MAIN CONTENT: centered menu + rooms ── -->
-        <div style="display:flex;width:100%;max-width:1200px;gap:2rem;align-items:flex-start;flex-wrap:wrap;">
+        <!-- ── MAIN CONTENT: centered menu only ── -->
+        <!-- Hidden roomsList kept in DOM so Firebase code doesn't break -->
+        <div id="roomsList" style="display:none;"></div>
 
-            <!-- ── LEFT: SALAS DISPONIBLES ── -->
-            <div style="flex:2;min-width:280px;background:rgba(0,10,30,0.82);border:1px solid rgba(0,196,255,0.18);border-radius:16px;padding:1.4rem;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-                    <div style="font-family:'Orbitron',sans-serif;font-size:.78rem;color:#00c4ff;letter-spacing:.1em;">SALAS DISPONIBLES</div>
-                    <button onclick="refreshRooms()" style="background:none;border:1px solid #333;color:#666;border-radius:8px;padding:4px 10px;font-size:.72rem;cursor:pointer;">🔄 Actualizar</button>
-                </div>
-                <div id="roomsList" style="display:flex;flex-direction:column;gap:.6rem;min-height:260px;overflow-y:auto;">
-                    <div style="text-align:center;color:#444;padding:2rem;font-size:.85rem;">Cargando salas...</div>
-                </div>
-            </div>
+        <div style="display:flex;width:100%;max-width:1200px;justify-content:center;">
 
-            <!-- ── CENTER: MODO DE JUEGO ── -->
-            <div style="flex:1;min-width:260px;max-width:340px;margin:0 auto;background:rgba(0,10,30,0.85);border:1px solid rgba(0,196,255,0.25);border-radius:18px;padding:2rem 1.8rem;display:flex;flex-direction:column;gap:.7rem;align-self:center;">
+            <!-- ── MODO DE JUEGO — centered ── -->
+            <div style="min-width:300px;max-width:380px;width:100%;background:rgba(0,10,30,0.85);border:1px solid rgba(0,196,255,0.25);border-radius:18px;padding:2rem 1.8rem;display:flex;flex-direction:column;gap:.7rem;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:.78rem;color:#00c4ff;letter-spacing:.12em;text-align:center;margin-bottom:.4rem;">MODO DE JUEGO</div>
 
-                <button onclick="createOnlineRoom()"
+                <!-- 🌐 ONLINE button — opens modal with Crear / Ver partidas -->
+                <button onclick="document.getElementById('onlineModal').style.display='flex';"
                     style="width:100%;padding:.9rem 1rem;font-family:'Orbitron',sans-serif;font-size:.82rem;font-weight:700;background:linear-gradient(135deg,#003a5c,#006fa6);color:#00c4ff;border:2px solid #00c4ff;border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;"
-                    onmouseover="this.style.boxShadow='0 0 22px #00c4ff'" onmouseout="this.style.boxShadow='none'">🌐 CREAR SALA ONLINE</button>
+                    onmouseover="this.style.boxShadow='0 0 22px #00c4ff'" onmouseout="this.style.boxShadow='none'">🌐 ONLINE</button>
+
+        <!-- ── ONLINE MODAL ── -->
+        <div id="onlineModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:99000;align-items:center;justify-content:center;">
+            <div style="background:linear-gradient(135deg,#07101f,#0d1a30);border:2px solid #00c4ff;border-radius:20px;padding:2.4rem 2.8rem;text-align:center;min-width:320px;max-width:440px;width:90%;position:relative;">
+                <!-- Close -->
+                <button onclick="document.getElementById('onlineModal').style.display='none';"
+                    style="position:absolute;top:14px;right:16px;background:rgba(255,51,102,.15);border:1px solid #ff3366;color:#ff3366;border-radius:50%;width:30px;height:30px;font-size:1rem;cursor:pointer;line-height:1;">✕</button>
+                <div style="font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:900;color:#00c4ff;letter-spacing:.1em;margin-bottom:.4rem;">🌐 MODO ONLINE</div>
+                <div style="color:#666;font-size:.78rem;margin-bottom:1.8rem;letter-spacing:.05em;">Crea una sala o únete a una partida existente</div>
+                <!-- Two main buttons -->
+                <div style="display:flex;flex-direction:column;gap:.9rem;">
+                    <button onclick="document.getElementById('onlineModal').style.display='none'; createOnlineRoom();"
+                        style="width:100%;padding:1rem 1.2rem;font-family:'Orbitron',sans-serif;font-size:.88rem;font-weight:700;background:linear-gradient(135deg,#003a5c,#006fa6);color:#00c4ff;border:2px solid #00c4ff;border-radius:12px;cursor:pointer;letter-spacing:.05em;transition:all .2s;"
+                        onmouseover="this.style.boxShadow='0 0 22px #00c4ff'" onmouseout="this.style.boxShadow='none'">
+                        ➕ CREAR PARTIDA
+                        <div style="font-size:.7rem;color:rgba(0,196,255,.6);font-weight:400;margin-top:.2rem;letter-spacing:.03em;">Genera una sala y espera a un rival</div>
+                    </button>
+                    <button onclick="document.getElementById('onlineRoomsList').style.display=document.getElementById('onlineRoomsList').style.display==='none'?'flex':'none'; if(document.getElementById('onlineRoomsList').style.display==='flex') refreshRooms();"
+                        style="width:100%;padding:1rem 1.2rem;font-family:'Orbitron',sans-serif;font-size:.88rem;font-weight:700;background:linear-gradient(135deg,#1a3a00,#2e6600);color:#88ff44;border:2px solid #88ff44;border-radius:12px;cursor:pointer;letter-spacing:.05em;transition:all .2s;"
+                        onmouseover="this.style.boxShadow='0 0 22px rgba(136,255,68,.5)'" onmouseout="this.style.boxShadow='none'">
+                        🔍 VER PARTIDAS DISPONIBLES
+                        <div style="font-size:.7rem;color:rgba(136,255,68,.6);font-weight:400;margin-top:.2rem;letter-spacing:.03em;">Únete a una sala existente</div>
+                    </button>
+                    <!-- Rooms list (hidden by default, shown on click) -->
+                    <div id="onlineRoomsList" style="display:none;flex-direction:column;gap:.5rem;max-height:240px;overflow-y:auto;border-top:1px solid rgba(0,196,255,.15);padding-top:.8rem;margin-top:.2rem;"></div>
+                    <button onclick="document.getElementById('onlineModal').style.display='none';"
+                        style="width:100%;padding:.6rem;font-family:'Orbitron',sans-serif;font-size:.72rem;background:transparent;color:#555;border:1px solid #2a3a4a;border-radius:8px;cursor:pointer;">Cancelar</button>
+                </div>
+            </div>
+        </div>
+        <!-- ── END ONLINE MODAL ── -->
 
                 <button onclick="goToLocalMode('multi')"
                     style="width:100%;padding:.9rem 1rem;font-family:'Orbitron',sans-serif;font-size:.82rem;background:rgba(0,196,255,0.07);color:#aaa;border:1px solid #2a3a4a;border-radius:10px;cursor:pointer;transition:all .2s;"
