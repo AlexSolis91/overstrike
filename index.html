@@ -161,11 +161,11 @@
             <!-- HUD: Mercado · Inventario · Oro · Runas · Llaves · Avatar -->
             <div id="lobbyHUD" style="display:flex;align-items:center;gap:10px;">
                 <!-- Mercado -->
-                <button onclick="window.showMarketScreen && window.showMarketScreen()"
+                <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} window.showMarketScreen && window.showMarketScreen()"
                     style="font-family:Orbitron,sans-serif;font-size:.72rem;font-weight:700;padding:.42rem 1rem;background:linear-gradient(135deg,#1a1000,#402a00);color:#ffaa00;border:1.5px solid #ffaa00;border-radius:8px;cursor:pointer;letter-spacing:.05em;transition:all .2s;"
                     onmouseover="this.style.boxShadow='0 0 12px rgba(255,170,0,.55)'" onmouseout="this.style.boxShadow='none'">🏪 MERCADO</button>
                 <!-- Inventario -->
-                <button onclick="window.showInventoryScreen && window.showInventoryScreen()"
+                <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} window.showInventoryScreen && window.showInventoryScreen()"
                     style="font-family:Orbitron,sans-serif;font-size:.72rem;font-weight:700;padding:.42rem 1rem;background:linear-gradient(135deg,#1a0a2e,#2d1b69);color:#c864ff;border:1.5px solid #c864ff;border-radius:8px;cursor:pointer;letter-spacing:.05em;transition:all .2s;"
                     onmouseover="this.style.boxShadow='0 0 12px rgba(200,100,255,.55)'" onmouseout="this.style.boxShadow='none'">🎒 INVENTARIO</button>
                 <!-- Separador -->
