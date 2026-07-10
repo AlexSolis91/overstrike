@@ -4294,30 +4294,28 @@
 
             if (ranking.length === 0) return;
 
-            const multiplier = bossFelled ? 2.0 : 1.0;
-
+            // No multiplier — boss defeat no longer grants extra reward
             const rewardsByRank = [
-                { gold: 100000, keys: 2, extra: 'chest_arcana',  extraCount: 2 },  // 1st
-                { gold: 50000,  keys: 1, extra: 'chest_arcana',  extraCount: 1 },  // 2nd
-                { gold: 20000,  keys: 0, extra: 'chest_epic',    extraCount: 1 },  // 3rd
-                { gold: 10000,  keys: 0, extra: 'chest_special', extraCount: 1 },  // 4th
+                { gold: 100000, keys: 5 },  // 1st — 5 llaves
+                { gold: 50000,  keys: 3 },  // 2nd — 3 llaves
+                { gold: 20000,  keys: 2 },  // 3rd — 2 llaves
             ];
 
             // Build full ranking snapshot for each player's notification
             const rankingSnapshot = ranking.map(function(e, idx) {
                 var rk = idx + 1;
-                var rw2 = rk <= 4 ? rewardsByRank[rk-1] : { gold: 5000, keys: 0 };
+                var rw2 = rk <= 3 ? rewardsByRank[rk-1] : { gold: 5000, keys: 1 };
                 return { rank: rk, playerName: e.playerName, totalDamage: e.totalDamage,
-                         gold: Math.round(rw2.gold * multiplier), keys: Math.round((rw2.keys||0) * multiplier) };
+                         gold: rw2.gold, keys: rw2.keys };
             });
 
             for (var i = 0; i < ranking.length; i++) {
                 var entry = ranking[i];
                 var rank  = i + 1;
-                var rw    = rank <= 4 ? rewardsByRank[rank-1] : { gold: 5000, keys: 0, extra: null };
+                var rw    = rank <= 3 ? rewardsByRank[rank-1] : { gold: 5000, keys: 1 };
 
-                var finalGold = Math.round(rw.gold * multiplier);
-                var finalKeys = Math.round((rw.keys||0) * multiplier);
+                var finalGold = rw.gold;
+                var finalKeys = rw.keys;
 
                 // ── BOLVAR FORDRAGON: probabilidad de desbloqueo por posición ──
                 var bolvarUnlockChance = 0;
@@ -4365,9 +4363,8 @@
                     totalDamage:   entry.totalDamage,
                     gold:          finalGold,
                     keys:          finalKeys,
-                    extra:         rw.extra || null,
-                    extraCount:    rw.extra ? Math.ceil((rw.extraCount||1) * multiplier) : 0,
-                    multiplier:    multiplier,
+                    extra:         null,
+                    extraCount:    0,
                     ranking:       rankingSnapshot,
                     bolvarUnlocked:     bolvarUnlocked,
                     bolvarUnlockChance: bolvarUnlockChance,
