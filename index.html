@@ -154,12 +154,12 @@
     <div id="lobbyScreen" style="display:none; flex-direction:column; align-items:center; justify-content:space-between; min-height:100vh; background:linear-gradient(rgba(5,5,20,0.88),rgba(5,5,20,0.88)), url(https://i.postimg.cc/jSmHp0dw/4c9b34ddf1759d2a2950c4c8e1694ca9.jpg) center/cover fixed; padding:1rem 2rem 1rem;">
 
         <!-- ── TOP BAR ── -->
-        <div style="display:flex;width:100%;max-width:1200px;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.2rem;">
-            <!-- Logo -->
-            <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;">⚔️ OVERSTRIKE</div>
+        <div style="display:flex;width:100%;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.2rem;">
+            <!-- Logo: sin emoji, pegado a la izquierda -->
+            <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;white-space:nowrap;">OVERSTRIKE</div>
 
-            <!-- HUD: Mercado · Inventario · Oro · Runas · Llaves · Avatar -->
-            <div id="lobbyHUD" style="display:flex;align-items:center;gap:10px;">
+            <!-- HUD: empujado todo a la derecha junto al botón mute -->
+            <div id="lobbyHUD" style="display:flex;align-items:center;gap:10px;margin-left:auto;">
                 <!-- Mercado -->
                 <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} window.showMarketScreen && window.showMarketScreen()"
                     style="font-family:Orbitron,sans-serif;font-size:.72rem;font-weight:700;padding:.42rem 1rem;background:linear-gradient(135deg,#1a1000,#402a00);color:#ffaa00;border:1.5px solid #ffaa00;border-radius:8px;cursor:pointer;letter-spacing:.05em;transition:all .2s;"
@@ -175,10 +175,15 @@
                     <img src="https://i.ibb.co/Q7t26McR/Captura-de-pantalla-2026-05-07-155804.png" style="width:20px;height:20px;object-fit:contain;">
                     <span id="hud-gold" style="font-family:Orbitron,sans-serif;font-size:.78rem;color:#ffaa00;font-weight:700;">0</span>
                 </div>
-                <!-- Runas -->
+                <!-- Runas de Ataque -->
                 <div style="display:flex;align-items:center;gap:4px;" title="Runas de Ataque">
                     <img src="https://i.ibb.co/8D3s84Nw/image-53bcf67.png" style="width:18px;height:18px;object-fit:contain;">
                     <span id="hud-runes" style="font-family:Orbitron,sans-serif;font-size:.78rem;color:#c864ff;font-weight:700;">0</span>
+                </div>
+                <!-- Runas de Portal -->
+                <div style="display:flex;align-items:center;gap:4px;" title="Runas de Portal">
+                    <img src="https://i.ibb.co/Qv7MFXyj/image.png" style="width:18px;height:18px;object-fit:contain;">
+                    <span id="hud-portal-runes" style="font-family:Orbitron,sans-serif;font-size:.78rem;color:#4fc3f7;font-weight:700;">0</span>
                 </div>
                 <!-- Llaves -->
                 <div style="display:flex;align-items:center;gap:3px;" title="Llaves Arcanas">
