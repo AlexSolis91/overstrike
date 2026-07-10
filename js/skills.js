@@ -2088,6 +2088,7 @@
                     addLog('👹 Muzan ya está transformado en Rey de los Demonios Definitivo', 'info');
                 } else {
                     attacker.muzanTransformed = true;
+                    ability.used = true; // Bloquea el Over permanentemente — no se puede usar dos veces
                     const _mzTP = attacker.transformPortrait || attacker.transformationPortrait;
                     if (_mzTP) { attacker.portrait = _mzTP; }
                     // +10 HP max, +10 VEL
@@ -2647,7 +2648,7 @@
                 // Curación de aliado (Alexstrasza Fuego Vital / Min Byung)
                 const healAmt = ability.healAmount || ability.heal || 2;
                 const tgt2 = gameState.characters[targetName];
-                if (tgt2) {
+                if (tgt2 && (typeof canHeal !== 'function' || canHeal(targetName))) {
                     const old = tgt2.hp; tgt2.hp = Math.min(tgt2.maxHp, tgt2.hp + healAmt);
                     const actual = tgt2.hp - old;
                     addLog(`💚 ${targetName} recupera ${actual} HP`, 'heal');
@@ -2685,7 +2686,7 @@
             } else if (ability.effect === 'don_de_la_vida') {
                 // Don de la Vida (Alexstrasza actualizado): cura 4 HP al objetivo
                 const tgtDV = gameState.characters[targetName];
-                if (tgtDV) {
+                if (tgtDV && (typeof canHeal !== 'function' || canHeal(targetName))) {
                     const oldHpDV = tgtDV.hp;
                     tgtDV.hp = Math.min(tgtDV.maxHp, tgtDV.hp + 4);
                     const _ddvHeal = tgtDV.hp - oldHpDV;
@@ -3782,7 +3783,7 @@
             // ══════════════════════════════════════════════
             } else if (ability.effect === 'aguja_medicinal') {
                 const tgtAM = gameState.characters[targetName];
-                if (tgtAM) {
+                if (tgtAM && (typeof canHeal !== 'function' || canHeal(targetName))) {
                     const oldHpAM = tgtAM.hp;
                     tgtAM.hp = Math.min(tgtAM.maxHp, tgtAM.hp + 1);
                     const debuffIdx = tgtAM.statusEffects.findIndex(e => e && e.type === 'debuff');
@@ -3817,6 +3818,7 @@
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== tamTeam2 || c.isDead || c.hp <= 0) continue;
+                    if (typeof hasQuemaduraSolar === 'function' && hasQuemaduraSolar(n)) continue;
                     c.hp = Math.min(c.maxHp, c.hp + totalRemoved);
                 }
                 addLog('💊 Medicina Demoníaca: ' + totalRemoved + ' Debuffs eliminados → +' + totalRemoved + ' HP al equipo', 'heal');
