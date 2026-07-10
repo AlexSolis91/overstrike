@@ -45,7 +45,7 @@
         });
 
         function showScreen(id) {
-            ['loginScreen','lobbyScreen','waitingScreen','modeSelectScreen','charSelectScreen'].forEach(function(s) {
+            ['loginScreen','splashScreen','lobbyScreen','waitingScreen','modeSelectScreen','charSelectScreen'].forEach(function(s) {
                 const el = document.getElementById(s);
                 if (el) el.style.display = 'none';
             });
@@ -55,6 +55,7 @@
             if (id === 'lobbyScreen' || id === 'waitingScreen') target.style.display = 'flex';
             else if (id === 'modeSelectScreen') target.style.display = 'flex';
             else if (id === 'loginScreen') target.style.display = 'flex';
+            else if (id === 'splashScreen') target.style.display = 'flex';
             else target.style.display = 'block';
         }
 
@@ -216,7 +217,13 @@
             if (gc && gc.style.display === 'block') return; // game running
             if (charScreen && charScreen.style.display !== 'none') return; // char select open
             if (modeScreen && modeScreen.style.display !== 'none') return; // mode select open
-            showScreen('lobbyScreen');
+            // First call after login: show splash. Subsequent calls (back from game, etc.): show lobby directly.
+            if (!window._splashShown) {
+                window._splashShown = true;
+                showScreen('splashScreen');
+            } else {
+                showScreen('lobbyScreen');
+            }
             document.getElementById('lobbyUserName').textContent = currentUser.displayName || currentUser.email;
             const photo = document.getElementById('lobbyUserPhoto');
             if (currentUser.photoURL) photo.src = currentUser.photoURL;
