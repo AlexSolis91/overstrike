@@ -1472,6 +1472,18 @@
                 addLog('🦖 Modo Kaiju: Garou +1 daño base permanente (total +' + target.garouKaijuBonusDmg + ')', 'buff');
             }
 
+            // ── PROGENITOR DEMONIACO (Muzan transformado): al recibir golpe → 5 stacks Veneno al atacante + Muzan +5 HP ──
+            if (remainingDamage > 0 && targetName && attackerName && !passiveExecuting) {
+                const _mzDef = gameState.characters[targetName];
+                if (_mzDef && _mzDef.muzanTransformed && _mzDef.passive && _mzDef.passive.name === 'Progenitor Demoniaco') {
+                    passiveExecuting = true;
+                    if (typeof applyPoison === 'function') applyPoison(attackerName, 5);
+                    if (typeof applyHeal === 'function') applyHeal(targetName, 5, 'Progenitor Demoniaco');
+                    addLog('👹 Progenitor Demoniaco: 5 stacks Veneno a ' + attackerName + ' + Muzan +5 HP', 'buff');
+                    passiveExecuting = false;
+                }
+            }
+
             // ── CAZADOR DE HÉROES (Garou): si recibe 2 o menos de daño → contraataca gratis con Ryusui Gansai-ken ──
             // Usa un guard DEDICADO (gameState._garouCounterActive) en lugar de passiveExecuting (variable global
             // compartida entre todas las pasivas) para evitar que se resetee prematuramente por código anidado
