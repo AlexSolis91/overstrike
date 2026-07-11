@@ -458,15 +458,15 @@
 
             var wRect = portraitWrap.getBoundingClientRect();
 
-            // Phase 1: appear BIG at portrait center
-            // Phase 2: shrink + move toward shield value display (bottom-left of portrait)
+            // ── Positions: start centered on portrait, end at shield value (bottom-left) ──
             var centerX = wRect.left + wRect.width  * 0.50;
             var centerY = wRect.top  + wRect.height * 0.42;
             var endX    = wRect.left + wRect.width  * 0.12;
             var endY    = wRect.top  + wRect.height * 0.90;
 
-            var startFontPx = Math.round(wRect.width * 0.85); // nearly fills the portrait width
-            var endFontPx   = 14; // normal text size
+            // ── Sizes: start BIG (min 120px so it's always visible regardless of card size) ──
+            var startFontPx = Math.max(120, Math.round(wRect.width * 1.4));
+            var endFontPx   = 16;
 
             var el = document.createElement('div');
             el.textContent = '🛡️';
@@ -477,7 +477,7 @@
                 'user-select:none',
                 'line-height:1',
                 'transform:translate(-50%,-50%)',
-                'filter:drop-shadow(0 0 6px #4af) drop-shadow(0 0 18px #fff8)',
+                'filter:drop-shadow(0 0 10px #00c8ff) drop-shadow(0 0 30px #ffffff99)',
                 'left:' + centerX + 'px',
                 'top:'  + centerY + 'px',
                 'font-size:' + startFontPx + 'px',
@@ -485,15 +485,14 @@
             ].join(';');
             document.body.appendChild(el);
 
-            // 3 phases:
-            // 0 → 15%  : hold big (flash effect)
-            // 15% → 85%: shrink + move to target
-            // 85% → 100%: fade out at target
-            var duration = 900;
+            // 3 phases (total 1600ms — slow enough to be clearly seen):
+            // 0  → 25% : hold big with pulse (400ms)
+            // 25%→ 85% : shrink + travel toward shield value (960ms)
+            // 85%→100% : fade out at destination (240ms)
+            var duration = 1600;
             var startTime = null;
 
-            function easeInOut(t) { return t < 0.5 ? 2*t*t : -1+(4-2*t)*t; }
-            function easeOut(t)   { return 1 - Math.pow(1-t, 3); }
+            function easeOut(t) { return 1 - Math.pow(1-t, 3); }
 
             function step(ts) {
                 if (!startTime) startTime = ts;
@@ -501,22 +500,22 @@
 
                 var x, y, fontSize, opacity;
 
-                if (p < 0.15) {
-                    // Hold big, slight pulse
+                if (p < 0.25) {
+                    // Hold big — slow pulse so user clearly sees the shield
                     x = centerX; y = centerY;
-                    fontSize = startFontPx * (1 + 0.08 * Math.sin(p / 0.15 * Math.PI));
+                    fontSize = startFontPx * (1 + 0.10 * Math.sin(p / 0.25 * Math.PI));
                     opacity  = 1;
                 } else if (p < 0.85) {
-                    // Move + shrink
-                    var t = easeOut((p - 0.15) / 0.70);
+                    // Shrink + move toward shield value display
+                    var t = easeOut((p - 0.25) / 0.60);
                     x        = centerX + (endX - centerX) * t;
                     y        = centerY + (endY - centerY) * t;
                     fontSize = startFontPx + (endFontPx - startFontPx) * t;
                     opacity  = 1;
                 } else {
-                    // Fade out at destination
+                    // Fade out
                     var t2 = (p - 0.85) / 0.15;
-                    x        = endX; y = endY;
+                    x = endX; y = endY;
                     fontSize = endFontPx;
                     opacity  = 1 - t2;
                 }
