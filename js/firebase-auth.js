@@ -4100,6 +4100,78 @@
         }
         // Exponer globalmente para jefe-de-sala.js
         window.getBossData = getBossData;
+
+        // ── JUGADORES EN LÍNEA + CHAT PRIVADO ──────────────────────────────
+        var _pcTarget2 = null, _pcListener2 = null;
+
+        window.loadOnlinePlayersList = function() {
+            var list = document.getElementById('onlinePlayersList');
+            if (!list) return;
+            list.innerHTML = '<div style="color:#555;font-size:.8rem;text-align:center;padding:1rem;">Cargando...</div>';
+            db.ref('presence').once('value', function(snap) {
+                var data = snap.val() || {};
+                var myUid = currentUser ? currentUser.uid : null;
+                var others = Object.entries(data).filter(function(e){ return e[0] !== myUid; });
+                list.innerHTML = '';
+                if (others.length === 0) {
+                    list.innerHTML = '<div style="color:#555;font-size:.8rem;text-align:center;padding:1.5rem;">No hay otros jugadores en línea</div>';
+                    return;
+                }
+                others.forEach(function(e) {
+                    var uid = e[0], info = e[1];
+                    var row = document.createElement('div');
+                    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(0,196,255,.1);border-radius:10px;gap:10px;';
+                    var safeName = (info.name||'Jugador').replace(/'/g,"\'");
+                    row.innerHTML = '<div style="display:flex;align-items:center;gap:8px;">' +
+                        '<span style="width:8px;height:8px;background:#00ff88;border-radius:50%;display:inline-block;flex-shrink:0;"></span>' +
+                        '<span style="font-size:.82rem;color:#ccc;">' + (info.name||'Jugador') + '</span>' +
+                        '</div>' +
+                        '<button onclick="openPrivateChatWith('' + uid + '','' + safeName + '')" ' +
+                        'style="background:linear-gradient(135deg,#003a5c,#006fa6);border:1px solid #00c4ff;color:#00c4ff;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:.72rem;font-family:Orbitron,sans-serif;white-space:nowrap;">💬 Chat</button>';
+                    list.appendChild(row);
+                });
+            });
+        };
+
+        window.openPrivateChatWith = function(uid, name) {
+            document.getElementById('onlinePlayersModal').style.display = 'none';
+            _pcTarget2 = { uid: uid, name: name };
+            document.getElementById('privateChatTitle').textContent = '💬 ' + name;
+            document.getElementById('privateChatMessages').innerHTML = '';
+            document.getElementById('privateChatInput').value = '';
+            document.getElementById('privateChatModal').style.display = 'flex';
+            if (_pcListener2) { _pcListener2.off(); }
+            var myUid = currentUser.uid;
+            var key = [myUid, uid].sort().join('_');
+            _pcListener2 = db.ref('chats/' + key);
+            _pcListener2.on('value', function(snap) {
+                var msgs = snap.val() || {};
+                var box = document.getElementById('privateChatMessages');
+                if (!box) return;
+                box.innerHTML = '';
+                Object.values(msgs).sort(function(a,b){return a.ts-b.ts;}).forEach(function(m) {
+                    var isMe = m.from === myUid;
+                    var d = document.createElement('div');
+                    d.style.cssText = 'display:flex;flex-direction:column;align-items:' + (isMe?'flex-end':'flex-start') + ';gap:2px;';
+                    d.innerHTML = '<div style="max-width:82%;background:' + (isMe?'rgba(0,196,255,.18)':'rgba(255,255,255,.07)') + ';border:1px solid ' + (isMe?'rgba(0,196,255,.3)':'rgba(255,255,255,.1)') + ';border-radius:10px;padding:6px 10px;font-size:.78rem;color:#fff;word-break:break-word;">' + m.text.replace(/</g,'&lt;') + '</div>' +
+                        '<div style="font-size:.6rem;color:#444;">' + new Date(m.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) + '</div>';
+                    box.appendChild(d);
+                });
+                box.scrollTop = box.scrollHeight;
+                db.ref('chat_notifications/' + myUid + '/' + uid).remove();
+            });
+        };
+
+        window.sendPrivateChatMessage = function() {
+            var input = document.getElementById('privateChatInput');
+            var text = (input.value||'').trim();
+            if (!text || !_pcTarget2 || !currentUser) return;
+            var key = [currentUser.uid, _pcTarget2.uid].sort().join('_');
+            db.ref('chats/' + key).push({ from: currentUser.uid, fromName: currentUser.displayName, text: text, ts: Date.now() });
+            db.ref('chat_notifications/' + _pcTarget2.uid + '/' + currentUser.uid).set({ fromName: currentUser.displayName, lastMsg: text, ts: Date.now(), read: false });
+            input.value = '';
+        };
+        // ── END JUGADORES EN LÍNEA ──────────────────────────────────────────
         window.unlockSlot = unlockSlot;
         window.getCharSlots = getCharSlots;
         window.getSlotUnlocks = getSlotUnlocks;
