@@ -2395,14 +2395,14 @@
         </div>
     </div>
     <script>
-    // ── Universal button click sound ──
+    // ── Universal button click sound (lobby only — game buttons use audioManager.playSelect) ──
     document.addEventListener('click', function(e) {
         var btn = e.target.closest('button');
         if (!btn) return;
+        // Skip buttons inside the game container — those use audioManager.playSelect()
+        if (btn.closest('#gameContainer') || btn.closest('.game-container')) return;
         var sfx = document.getElementById('sfxEntrar');
         if (!sfx) return;
-        // Don't re-trigger if button already handles its own sfx via onclick
-        // (both sfxEntrar and sfxModo now use the same audio so it's fine to double-trigger once)
         sfx.currentTime = 0;
         sfx.play().catch(function(){});
     }, { passive: true });
