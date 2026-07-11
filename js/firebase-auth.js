@@ -4104,25 +4104,31 @@
         // ── CHAT NOTIFICATION LISTENER ──
         function listenForPrivateChatNotifications() {
             if (!currentUser) return;
-            // Track unread counts per sender uid
-            window._chatUnreadMap = window._chatUnreadMap || {};
-            db.ref('chat_notifications/' + currentUser.uid).on('value', function(snap) {
+            var notifRef = db.ref('chat_notifications/' + currentUser.uid);
+            window._chatUnreadSenders = [];
+
+            // .on('value') keeps the dot updated in real time
+            notifRef.on('value', function(snap) {
                 var notifs = snap.val() || {};
-                var totalUnread = Object.keys(notifs).length;
-                // Show/hide red dot on Jugadores en línea button
-                var dot = document.getElementById('chatNotifDot');
-                if (dot) dot.style.display = totalUnread > 0 ? 'inline-block' : 'none';
-                // Play sound for NEW notifications
-                var prevTotal = window._chatPrevNotifCount || 0;
-                if (totalUnread > prevTotal) {
-                    var sfx = document.getElementById('sfxChatNotif');
-                    if (sfx && typeof audioManager !== 'undefined' && !audioManager.muted) {
-                        sfx.currentTime = 0; sfx.volume = 0.7; sfx.play().catch(function(){});
-                    }
-                }
-                window._chatPrevNotifCount = totalUnread;
-                // Store sender uids for dot display in player list
                 window._chatUnreadSenders = Object.keys(notifs);
+                var dot = document.getElementById('chatNotifDot');
+                if (dot) dot.style.display = window._chatUnreadSenders.length > 0 ? 'inline-block' : 'none';
+            });
+
+            // .on('child_added') fires ONLY when a NEW notification arrives — skip initial load
+            var _initialized = false;
+            notifRef.on('child_added', function(snap) {
+                if (!_initialized) return; // skip existing notifications on page load
+                // New message arrived in real time
+                var sfx = document.getElementById('sfxChatNotif');
+                if (sfx && typeof audioManager !== 'undefined' && !audioManager.muted) {
+                    sfx.currentTime = 0; sfx.volume = 0.7; sfx.play().catch(function(){});
+                }
+            });
+
+            // Mark initialization complete after all existing children are loaded
+            notifRef.once('value', function() {
+                _initialized = true;
             });
         }
 
