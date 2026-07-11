@@ -34,6 +34,10 @@
 <audio id="sfxHit" preload="auto">
   <source src="https://ia903102.us.archive.org/20/items/freesound-gamestudio-rpg-sword-attack-combo-29-388954_4P3qDq1h/freesound-gamestudio-rpg-sword-attack-combo-29-388954_4P3qDq1h.mp3" type="audio/mpeg">
 </audio>
+<!-- SFX: Chat notification -->
+<audio id="sfxChatNotif" preload="auto">
+  <source src="https://ia800400.us.archive.org/28/items/top-60-sound-effects-for-editing-1-2026-64-kbps_aA2b0OXH/top-60-sound-effects-for-editing-1-2026-64-kbps_aA2b0OXH.mp3" type="audio/mpeg">
+</audio>
 <!-- SFX: Poison DOT -->
 <audio id="sfxPoison" preload="auto">
   <source src="https://ia601902.us.archive.org/14/items/acid-splash-poison-attack-free-sound-effect-64-kbps_wTgNg8Ef/acid-splash-poison-attack-free-sound-effect-64-kbps_wTgNg8Ef.mp3" type="audio/mpeg">
@@ -332,7 +336,7 @@
 
                 <button onclick="document.getElementById('onlinePlayersModal').style.display='flex'; window.loadOnlinePlayersList && window.loadOnlinePlayersList(); var _m=document.getElementById('sfxModo');if(_m){_m.currentTime=0;_m.play().catch(function(){});}"
                     style="width:100%;padding:.72rem 1rem;font-family:'Orbitron',sans-serif;font-size:.82rem;background:rgba(0,255,136,0.06);color:#00ff88;border:1px solid rgba(0,255,136,0.25);border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;"
-                    onmouseover="this.style.borderColor='rgba(0,255,136,.5)'" onmouseout="this.style.borderColor='rgba(0,255,136,.25)'">👥 JUGADORES EN LÍNEA</button>
+                    onmouseover="this.style.borderColor='rgba(0,255,136,.5)'" onmouseout="this.style.borderColor='rgba(0,255,136,.25)'"><span style='position:relative;display:inline-flex;align-items:center;gap:6px;'>👥 JUGADORES EN LÍNEA<span id='chatNotifDot' style='display:none;width:9px;height:9px;background:#ff3366;border-radius:50%;flex-shrink:0;box-shadow:0 0 6px #ff3366;'></span></span></button>
             </div>
         </div>
         <div id="challengeModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9000; align-items:center; justify-content:center;">
