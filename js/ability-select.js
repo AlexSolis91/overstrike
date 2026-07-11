@@ -189,7 +189,7 @@
                 }
                 // Botón de confirmación real
                 grid.innerHTML += `
-                    <button class="target-btn" onclick="executeAbility(null)" style="border-color: var(--danger); background: linear-gradient(135deg, rgba(255,51,102,0.3), rgba(255,0,80,0.2)); min-height:80px;">
+                    <button class="target-btn" onclick="playGameSelectSfx();executeAbility(null)" style="border-color: var(--danger); background: linear-gradient(135deg, rgba(255,51,102,0.3), rgba(255,0,80,0.2)); min-height:80px;">
                         <div class="target-btn-info" style="padding:20px;">
                             💥 Confirmar AOE<br>
                             <small>${'🔷🔶'.split('')[targetTeam === 'team2' ? 1 : 0]} ${typeof getTeamLabel === 'function' ? getTeamLabel(targetTeam) : (targetTeam === 'team2' ? 'REAPERS' : 'HUNTERS')}</small>
