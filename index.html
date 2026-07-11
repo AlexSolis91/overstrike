@@ -325,7 +325,7 @@
 
                 <div style="height:1px;background:rgba(255,255,255,.08);margin:.2rem 0;"></div>
 
-                <button onclick="document.getElementById('onlinePlayersModal').style.display='flex'; window.loadOnlinePlayersList && window.loadOnlinePlayersList();"
+                <button onclick="document.getElementById('onlinePlayersModal').style.display='flex'; window.loadOnlinePlayersList && window.loadOnlinePlayersList(); var _m=document.getElementById('sfxModo');if(_m){_m.currentTime=0;_m.play().catch(function(){});}"
                     style="width:100%;padding:.72rem 1rem;font-family:'Orbitron',sans-serif;font-size:.82rem;background:rgba(0,255,136,0.06);color:#00ff88;border:1px solid rgba(0,255,136,0.25);border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;"
                     onmouseover="this.style.borderColor='rgba(0,255,136,.5)'" onmouseout="this.style.borderColor='rgba(0,255,136,.25)'">👥 JUGADORES EN LÍNEA</button>
             </div>
