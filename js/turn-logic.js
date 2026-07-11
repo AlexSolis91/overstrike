@@ -773,6 +773,7 @@
         }
 
         function continueTurn() {
+            if (typeof audioManager !== 'undefined') audioManager.playSelect();
             gameState._relicEffectsActive = false;
             gameState._abilityExecuting = false; // Permitir siguiente ataque
             // ── ENFORCE PERMANENT PASSIVES AT TURN START ──
