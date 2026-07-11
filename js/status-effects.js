@@ -660,8 +660,7 @@ function processBurnEffects(charName) {
                         for (const _aln in gameState.characters) {
                             const _alc = gameState.characters[_aln];
                             if (!_alc || _alc.isDead || _alc.hp <= 0 || _alc.team !== _doomAllyTeam) continue;
-                            _alc.hp = Math.min(_alc.maxHp, (_alc.hp||0) + amount);
-                            if (typeof showHpTick === 'function') showHpTick(_aln, amount);
+                            applyHeal(_aln, amount, 'Aura de Latveria');
                         }
                         addLog('🌩️ Aura de Latveria: equipo de Doctor Doom recupera ' + amount + ' HP (enemigo curó)', 'heal');
                         passiveHealExecuting = false;
