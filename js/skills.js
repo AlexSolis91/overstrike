@@ -10392,15 +10392,9 @@
                     if (_miedoCount > 0) {
                         Object.values(gameState.characters).forEach(function(c) {
                             if (!c || c.team !== _bjTeam || c.isDead || c.hp <= 0) return;
-                            const _prevHp = c.hp;
-                            c.hp = Math.min(c.maxHp, (c.hp||0) + _miedoCount);
-                            const _healed = c.hp - _prevHp;
-                            if (_healed > 0 && typeof showHpTick === 'function') {
-                                const _cname = Object.keys(gameState.characters).find(function(k){ return gameState.characters[k] === c; });
-                                if (_cname) {
-                                    showHpTick(_cname, _healed);
-                                    if (typeof notifyHeal === 'function' && !passiveExecuting) notifyHeal(_cname, _healed, 'curación');
-                                }
+                            const _cname = Object.keys(gameState.characters).find(function(k){ return gameState.characters[k] === c; });
+                            if (_cname) {
+                                applyHeal(_cname, _miedoCount, 'Impacto del Norte');
                             }
                         });
                         addLog('🪓 Impacto del Norte: equipo aliado recupera ' + _miedoCount + ' HP (Miedos activos en enemigos)', 'heal');
