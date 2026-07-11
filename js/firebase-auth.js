@@ -276,7 +276,7 @@
             });
 
             listenForChallenges(); // #4
-            listenForChatNotifications(); // chat notifications
+            listenForPrivateChatNotifications(); // chat notifications + dot
         }
 
         // ── CHAT SYSTEM ──────────────────────────────────────────────
@@ -4101,6 +4101,31 @@
         // Exponer globalmente para jefe-de-sala.js
         window.getBossData = getBossData;
 
+        // ── CHAT NOTIFICATION LISTENER ──
+        function listenForPrivateChatNotifications() {
+            if (!currentUser) return;
+            // Track unread counts per sender uid
+            window._chatUnreadMap = window._chatUnreadMap || {};
+            db.ref('chat_notifications/' + currentUser.uid).on('value', function(snap) {
+                var notifs = snap.val() || {};
+                var totalUnread = Object.keys(notifs).length;
+                // Show/hide red dot on Jugadores en línea button
+                var dot = document.getElementById('chatNotifDot');
+                if (dot) dot.style.display = totalUnread > 0 ? 'inline-block' : 'none';
+                // Play sound for NEW notifications
+                var prevTotal = window._chatPrevNotifCount || 0;
+                if (totalUnread > prevTotal) {
+                    var sfx = document.getElementById('sfxChatNotif');
+                    if (sfx && typeof audioManager !== 'undefined' && !audioManager.muted) {
+                        sfx.currentTime = 0; sfx.volume = 0.7; sfx.play().catch(function(){});
+                    }
+                }
+                window._chatPrevNotifCount = totalUnread;
+                // Store sender uids for dot display in player list
+                window._chatUnreadSenders = Object.keys(notifs);
+            });
+        }
+
         // ── JUGADORES EN LÍNEA + CHAT PRIVADO ──────────────────────────────
         var _pcTarget2 = null, _pcListener2 = null;
 
@@ -4122,8 +4147,9 @@
                     var row = document.createElement('div');
                     row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(0,196,255,.1);border-radius:10px;gap:10px;';
                     var btn = document.createElement('button');
-                    btn.textContent = '💬 Chat';
-                    btn.style.cssText = 'background:linear-gradient(135deg,#003a5c,#006fa6);border:1px solid #00c4ff;color:#00c4ff;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:.72rem;font-family:Orbitron,sans-serif;white-space:nowrap;';
+                    var hasUnread = window._chatUnreadSenders && window._chatUnreadSenders.indexOf(uid) !== -1;
+                    btn.innerHTML = '💬 Chat' + (hasUnread ? ' <span style="display:inline-block;width:8px;height:8px;background:#ff3366;border-radius:50%;vertical-align:middle;box-shadow:0 0 5px #ff3366;"></span>' : '');
+                    btn.style.cssText = 'background:linear-gradient(135deg,#003a5c,#006fa6);border:1px solid ' + (hasUnread ? '#ff3366' : '#00c4ff') + ';color:' + (hasUnread ? '#ff3366' : '#00c4ff') + ';border-radius:8px;padding:5px 12px;cursor:pointer;font-size:.72rem;font-family:Orbitron,sans-serif;white-space:nowrap;';
                     (function(u,n){ btn.addEventListener('click', function(){ openPrivateChatWith(u,n); }); })(uid, info.name||'Jugador');
                     row.innerHTML = '<div style="display:flex;align-items:center;gap:8px;">' +
                         '<span style="width:8px;height:8px;background:#00ff88;border-radius:50%;display:inline-block;flex-shrink:0;"></span>' +
