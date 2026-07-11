@@ -15,11 +15,19 @@
 <!-- ==================== AUDIO SYSTEM ==================== -->
 <!-- SFX: ENTRAR button on splash screen -->
 <audio id="sfxEntrar" preload="auto">
-  <source src="https://ia903102.us.archive.org/30/items/sounds-of-button-selection-in-the-game-menu-sound-effect-64-kbps_kAezi12R/sounds-of-button-selection-in-the-game-menu-sound-effect-64-kbps_kAezi12R.mp3" type="audio/mpeg">
+  <source src="https://ia903200.us.archive.org/6/items/dragon-studio-digital-unlock-433002_LPWbaJ7O/dragon-studio-digital-unlock-433002_LPWbaJ7O.mp3" type="audio/mpeg">
 </audio>
 <!-- sfxModo redirects to sfxEntrar — universal button sound -->
 <audio id="sfxModo" preload="auto">
   <source src="https://ia903102.us.archive.org/30/items/sounds-of-button-selection-in-the-game-menu-sound-effect-64-kbps_kAezi12R/sounds-of-button-selection-in-the-game-menu-sound-effect-64-kbps_kAezi12R.mp3" type="audio/mpeg">
+</audio>
+<!-- SFX: Heal -->
+<audio id="sfxHeal" preload="auto">
+  <source src="https://ia601607.us.archive.org/32/items/universfield-next-level-114480_G7Tg7wyX/universfield-next-level-114480_G7Tg7wyX.mp3" type="audio/mpeg">
+</audio>
+<!-- SFX: Hit / damage received -->
+<audio id="sfxHit" preload="auto">
+  <source src="https://ia903102.us.archive.org/20/items/freesound-gamestudio-rpg-sword-attack-combo-29-388954_4P3qDq1h/freesound-gamestudio-rpg-sword-attack-combo-29-388954_4P3qDq1h.mp3" type="audio/mpeg">
 </audio>
 <audio id="audioMenu" loop preload="auto">
   <source src="https://ia902809.us.archive.org/28/items/sung-jinwoo-wolf-assassin-solo-leveling-ep-4-ost-cover-64-kbps/Sung%20Jinwoo%2C%20Wolf%20Assassin%20_%20Solo%20Leveling%20EP%204%20_%20%E4%BF%BA%E3%81%A0%E3%81%91%E3%83%AC%E3%83%99%E3%83%AB%E3%82%A2%E3%83%83%E3%83%97%E3%81%AA%E4%BB%B6%20OST%20Cover%20-%20%2864%20Kbps%29.mp3" type="audio/mpeg">
@@ -542,7 +550,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260721"></script>
+    <script src="js/firebase-auth.js?v=20260722"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -1358,9 +1366,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260721"></script>
+    <script src="js/characters.js?v=20260722"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260721"></script>
+    <script src="js/audio-state.js?v=20260722"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2054,23 +2062,23 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260721"></script>
+    <script src="js/ai-engine.js?v=20260722"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260721"></script>
+    <script src="js/init-render.js?v=20260722"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260721"></script>
+    <script src="js/turn-logic.js?v=20260722"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260721"></script>
+    <script src="js/status-effects.js?v=20260722"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260721"></script>
+    <script src="js/debuffs.js?v=20260722"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260721"></script>
+    <script src="js/summons.js?v=20260722"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260721"></script>
+    <script src="js/ability-select.js?v=20260722"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260721"></script>
+<script src="js/skills.js?v=20260722"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260721"></script>
+    <script src="js/jefe-de-sala.js?v=20260722"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
