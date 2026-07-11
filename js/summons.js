@@ -783,6 +783,13 @@
             // de la llamada desde los procesadores de fin de ronda de Quemadura/Veneno/Sangrado/Hemorragia
             const _debuffDamageSource = gameState._currentDamageSource || null;
             gameState._currentDamageSource = null;
+            // ── SFX: Hit sound — only for direct hits, not DOT (Veneno/Quemadura/Sangrado/Hemorragia) ──
+            if (damage > 0 && !_debuffDamageSource && !passiveExecuting) {
+                var _sfxHit = document.getElementById('sfxHit');
+                if (_sfxHit && typeof audioManager !== 'undefined' && !audioManager.muted) {
+                    _sfxHit.currentTime = 0; _sfxHit.volume = 0.5; _sfxHit.play().catch(function(){});
+                }
+            }
             // ── CABALLERO DE LA NOCHE (Batman): inmune a daño de movimientos especiales ──
             if (!passiveExecuting && gameState.selectedAbility && gameState.selectedAbility.type === 'special') {
                 const _batTarget = gameState.characters[targetName];
