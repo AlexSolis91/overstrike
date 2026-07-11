@@ -62,7 +62,7 @@
                 }
             },
 
-            selectSfxUrl: 'audio/Menu%20Select%20Sound%20-%20Super.mp3',
+            selectSfxUrl: 'https://ia601608.us.archive.org/26/items/vadim-makes-sound-game-ui-confirm-selection-sound-2-547852_wBgAfhtq/vadim-makes-sound-game-ui-confirm-selection-sound-2-547852_wBgAfhtq.mp3',
 
             playSelect: function() {
                 if (this.muted) return;
