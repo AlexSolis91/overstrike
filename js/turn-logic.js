@@ -2773,6 +2773,9 @@
                                 }
                             }
                             gameState._currentDamageSource = 'Veneno'; // Visión Esmeralda
+                            if (document.getElementById('sfxPoison') && typeof audioManager !== 'undefined' && !audioManager.muted) {
+                                var _sp=document.getElementById('sfxPoison'); _sp.currentTime=0; _sp.volume=0.55; _sp.play().catch(function(){});
+                            }
                             applyDamageWithShield(_eorN, _eorPoisonDmg, null);
                             addLog('☠️ ' + _eorN + ' recibe ' + _eorPoisonDmg + ' de daño por Veneno (' + (_eorPoison.poisonStacks||0) + 'S) — el debuff expira', 'damage');
 
