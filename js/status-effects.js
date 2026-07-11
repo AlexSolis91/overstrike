@@ -230,6 +230,9 @@ function processBurnEffects(charName) {
             damage = applyTuskPassive(charName, damage);
             if (damage > 0) {
                 gameState._currentDamageSource = 'Quemadura'; // Visión Esmeralda
+                if (document.getElementById('sfxBurn') && typeof audioManager !== 'undefined' && !audioManager.muted) {
+                    var _sb=document.getElementById('sfxBurn'); _sb.currentTime=0; _sb.volume=0.55; _sb.play().catch(function(){});
+                }
                 applyDamageWithShield(charName, damage, null);
                 addLog('🔥 ' + charName + ' recibe ' + damage + ' de daño por Quemadura', 'damage');
                 if (typeof _animCard === 'function') _animCard(charName, 'anim-fire', 700);
