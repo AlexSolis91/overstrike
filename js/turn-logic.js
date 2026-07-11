@@ -1579,7 +1579,7 @@
                 const button = document.createElement('button');
                 button.className = 'action-ability-btn';
                 button.disabled = finalDisabled;
-                button.onclick = () => selectAbilityFromModal(index);
+                button.onclick = () => { if(typeof playGameSelectSfx!=='undefined') playGameSelectSfx(); selectAbilityFromModal(index); };
 
                 let reasonTag = '';
                 if (blockedByCooldown && cooldownLabel) {
