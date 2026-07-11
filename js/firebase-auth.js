@@ -271,10 +271,155 @@
                 const el = document.getElementById('onlineCount');
                 if (el) el.textContent = count;
                 updatePlayersList(snap.val()); // #4
+                updateOnlineChatList(snap.val()); // chat panel
             });
 
             listenForChallenges(); // #4
+            listenForChatNotifications(); // chat notifications
         }
+
+        // ── CHAT SYSTEM ──────────────────────────────────────────────
+        var _chatCurrentTarget = null;   // { uid, name }
+        var _chatListener = null;        // Firebase listener ref
+        var _chatUnread = 0;
+
+        window.toggleChatPanel = function() {
+            var panel = document.getElementById('chatPanel');
+            if (!panel) return;
+            var isOpen = panel.style.display === 'flex';
+            if (isOpen) {
+                panel.style.display = 'none';
+            } else {
+                panel.style.display = 'flex';
+                panel.style.flexDirection = 'column';
+                // Reset badge
+                _chatUnread = 0;
+                var badge = document.getElementById('chatNotifBadge');
+                if (badge) badge.style.display = 'none';
+                // Show online players by default
+                closeChatWindow();
+            }
+        };
+
+        window.closeChatWindow = function() {
+            // Detach listener
+            if (_chatListener) { _chatListener.off(); _chatListener = null; }
+            _chatCurrentTarget = null;
+            document.getElementById('chatWindow').style.display = 'none';
+            document.getElementById('onlineChatPlayersList').style.display = 'block';
+            document.getElementById('chatPanelTitle').textContent = '💬 JUGADORES EN LÍNEA';
+        };
+
+        window.openPrivateChatPanel = function(targetUid, targetName) {
+            // Make sure panel is open
+            var panel = document.getElementById('chatPanel');
+            if (panel) { panel.style.display = 'flex'; panel.style.flexDirection = 'column'; }
+            // Switch to chat window
+            document.getElementById('onlineChatPlayersList').style.display = 'none';
+            var cw = document.getElementById('chatWindow');
+            cw.style.display = 'flex'; cw.style.flexDirection = 'column';
+            document.getElementById('chatPanelTitle').textContent = '💬 ' + targetName;
+            document.getElementById('chatMessages').innerHTML = '';
+            document.getElementById('chatInput').value = '';
+            _chatCurrentTarget = { uid: targetUid, name: targetName };
+            // Mark notification from this user as read
+            if (currentUser) {
+                db.ref('chat_notifications/' + currentUser.uid + '/' + targetUid).remove();
+            }
+            // Listen for messages in this conversation
+            var myUid = currentUser.uid;
+            var convKey = [myUid, targetUid].sort().join('_');
+            if (_chatListener) { _chatListener.off(); }
+            _chatListener = db.ref('chats/' + convKey);
+            _chatListener.on('value', function(snap) {
+                var msgs = snap.val() || {};
+                var container = document.getElementById('chatMessages');
+                if (!container) return;
+                container.innerHTML = '';
+                Object.values(msgs).sort(function(a,b){ return a.ts - b.ts; }).forEach(function(m) {
+                    var isMe = m.from === myUid;
+                    var el = document.createElement('div');
+                    el.style.cssText = 'display:flex;flex-direction:column;align-items:' + (isMe?'flex-end':'flex-start') + ';gap:2px;';
+                    el.innerHTML = '<div style="max-width:85%;background:' + (isMe?'rgba(0,196,255,.18)':'rgba(255,255,255,.07)') + ';border:1px solid ' + (isMe?'rgba(0,196,255,.35)':'rgba(255,255,255,.1)') + ';border-radius:10px;padding:6px 10px;font-size:.78rem;color:#fff;word-break:break-word;">' +
+                        _escHtml(m.text) + '</div>' +
+                        '<div style="font-size:.6rem;color:#444;">' + new Date(m.ts).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + '</div>';
+                    container.appendChild(el);
+                });
+                container.scrollTop = container.scrollHeight;
+            });
+        };
+
+        // Legacy alias used by existing player list buttons
+        window.openPrivateChat = window.openPrivateChatPanel;
+
+        window.sendChatMessage = function() {
+            var input = document.getElementById('chatInput');
+            var text = (input.value || '').trim();
+            if (!text || !_chatCurrentTarget || !currentUser) return;
+            var convKey = [currentUser.uid, _chatCurrentTarget.uid].sort().join('_');
+            db.ref('chats/' + convKey).push({
+                from: currentUser.uid,
+                fromName: currentUser.displayName,
+                to: _chatCurrentTarget.uid,
+                text: text,
+                ts: Date.now()
+            });
+            input.value = '';
+            // Send notification to recipient
+            db.ref('chat_notifications/' + _chatCurrentTarget.uid + '/' + currentUser.uid).set({
+                fromName: currentUser.displayName,
+                lastMsg: text,
+                ts: Date.now(),
+                read: false
+            });
+        };
+
+        // Listen for incoming chat notifications
+        function listenForChatNotifications() {
+            if (!currentUser) return;
+            db.ref('chat_notifications/' + currentUser.uid).on('value', function(snap) {
+                var notifs = snap.val() || {};
+                var unread = Object.values(notifs).filter(function(n){ return !n.read; }).length;
+                var badge = document.getElementById('chatNotifBadge');
+                if (badge) {
+                    if (unread > 0) {
+                        badge.textContent = unread > 9 ? '9+' : unread;
+                        badge.style.display = 'block';
+                        // Play notification sound
+                        var sfx = document.getElementById('sfxModo');
+                        if (sfx) { sfx.currentTime = 0; sfx.play().catch(function(){}); }
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        // Update the new online players list in chat panel
+        function updateOnlineChatList(presenceData) {
+            var list = document.getElementById('onlineChatPlayersList');
+            if (!list || !presenceData) return;
+            list.innerHTML = '';
+            var others = Object.entries(presenceData).filter(function(e){ return e[0] !== currentUser.uid; });
+            if (others.length === 0) {
+                list.innerHTML = '<div style="color:#444;font-size:.75rem;text-align:center;padding:20px;">No hay otros jugadores en línea</div>';
+                return;
+            }
+            others.forEach(function(e) {
+                var uid = e[0]; var data = e[1];
+                var row = document.createElement('div');
+                row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04);transition:background .15s;';
+                row.onmouseover = function(){ this.style.background='rgba(0,196,255,.06)'; };
+                row.onmouseout  = function(){ this.style.background=''; };
+                row.onclick     = function(){ openPrivateChatPanel(uid, data.name||'Jugador'); };
+                var dot = '<span style="width:7px;height:7px;background:#00ff88;border-radius:50%;display:inline-block;flex-shrink:0;"></span>';
+                row.innerHTML = dot + '<span style="flex:1;font-size:.82rem;color:#ccc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _escHtml(data.name||'Jugador') + '</span>' +
+                    '<span style="font-size:.65rem;color:#444;">💬</span>';
+                list.appendChild(row);
+            });
+        }
+
+        // ── END CHAT SYSTEM ──────────────────────────────────────────
 
         // #4: Update active players list
         function updatePlayersList(presenceData) {
