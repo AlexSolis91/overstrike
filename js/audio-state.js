@@ -124,6 +124,11 @@
             }
         };
 
+        // Expose playSelect globally for inline onclick handlers
+        window.playGameSelectSfx = function() {
+            if (typeof audioManager !== 'undefined') audioManager.playSelect();
+        };
+
         // Start menu music on first user interaction (browser autoplay policy)
         let audioStarted = false;
         function tryStartMenuMusic() {
