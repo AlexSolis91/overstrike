@@ -198,11 +198,9 @@
         </video>
         <!-- Dark overlay -->
         <div style="position:absolute;inset:0;background:linear-gradient(rgba(5,5,20,0.82),rgba(5,5,20,0.82));z-index:1;pointer-events:none;"></div>
-        <!-- All lobby content needs z-index:2 — applied via wrapper below -->
-        <div style="position:relative;z-index:2;display:contents;">
 
         <!-- ── TOP BAR ── -->
-        <div style="display:flex;width:100%;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.2rem;">
+        <div style="position:relative;z-index:2;display:flex;width:100%;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.2rem;">
             <!-- Logo: sin emoji, pegado a la izquierda -->
             <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;white-space:nowrap;">OVERSTRIKE</div>
 
@@ -379,7 +377,6 @@
                 <span id="chatNotifBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ff3366;color:#fff;border-radius:50%;width:18px;height:18px;font-size:.6rem;font-family:Orbitron,sans-serif;font-weight:700;line-height:18px;text-align:center;border:2px solid #07101f;">0</span>
             </button>
         </div>
-        </div><!-- end z-index:2 wrapper -->
     </div>
     <!-- ==================== END LOBBY SCREEN ==================== -->
 
