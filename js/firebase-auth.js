@@ -221,6 +221,7 @@
             if (!window._splashShown) {
                 window._splashShown = true;
                 showScreen('splashScreen');
+                if (typeof window._pickSplashVideo === 'function') window._pickSplashVideo();
             } else {
                 showScreen('lobbyScreen');
             }
