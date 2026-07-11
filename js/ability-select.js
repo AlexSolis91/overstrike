@@ -813,7 +813,7 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 ? `<img class="target-btn-portrait" src="${portrait}" alt="${name}" loading="eager" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="target-btn-portrait-placeholder" style="display:none">⚔️</div>`
                 : `<div class="target-btn-portrait-placeholder">⚔️</div>`;
             return `
-                <button class="target-btn" onclick="${onclick}" style="${extraStyle}">
+                <button class="target-btn" onclick="if(typeof audioManager!=='undefined')audioManager.playSelect();${onclick}" style="${extraStyle}">
                     ${imgHTML}
                     <div class="target-btn-info">${infoHTML}</div>
                 </button>
