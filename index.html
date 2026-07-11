@@ -140,7 +140,10 @@
         "https://ia601901.us.archive.org/29/items/p73wod/p73wod.mp4",
         "https://ia903105.us.archive.org/12/items/video-project-2_20260711/Video%20Project%20%282%29.mp4",
         "https://ia601503.us.archive.org/34/items/aa3fd7/aa3fd7.mp4",
-        "https://ia600905.us.archive.org/9/items/epczlh/epczlh.mp4"
+        "https://ia600905.us.archive.org/9/items/epczlh/epczlh.mp4",
+        "https://ia903105.us.archive.org/9/items/5wnpna/5wnpna.mp4",
+        "https://ia601807.us.archive.org/18/items/video-project-6_202607/Video%20Project%206.mp4",
+        "https://ia601507.us.archive.org/14/items/video-project-6-1_202607/Video%20Project%206%20%281%29.mp4"
     ];
     function _pickSplashVideo() {
         var v = SPLASH_VIDEOS[Math.floor(Math.random() * SPLASH_VIDEOS.length)];
@@ -188,7 +191,15 @@
     <!-- ==================== END SPLASH SCREEN ==================== -->
 
     <!-- ==================== LOBBY SCREEN ==================== -->
-    <div id="lobbyScreen" style="display:none; flex-direction:column; align-items:center; justify-content:space-between; min-height:100vh; background:linear-gradient(rgba(5,5,20,0.88),rgba(5,5,20,0.88)), url(https://i.postimg.cc/jSmHp0dw/4c9b34ddf1759d2a2950c4c8e1694ca9.jpg) center/cover fixed; padding:1rem 2rem 1rem;">
+    <div id="lobbyScreen" style="display:none; flex-direction:column; align-items:center; justify-content:space-between; min-height:100vh; position:relative; padding:1rem 2rem 1rem; overflow:hidden;">
+        <!-- Lobby background video -->
+        <video autoplay loop muted playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;">
+          <source src="https://ia600902.us.archive.org/1/items/video-project-3_20260711/Video%20Project%203.mp4" type="video/mp4">
+        </video>
+        <!-- Dark overlay -->
+        <div style="position:absolute;inset:0;background:linear-gradient(rgba(5,5,20,0.82),rgba(5,5,20,0.82));z-index:1;pointer-events:none;"></div>
+        <!-- All lobby content needs z-index:2 — applied via wrapper below -->
+        <div style="position:relative;z-index:2;display:contents;">
 
         <!-- ── TOP BAR ── -->
         <div style="display:flex;width:100%;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.8rem;margin-bottom:1.2rem;">
@@ -368,6 +379,7 @@
                 <span id="chatNotifBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ff3366;color:#fff;border-radius:50%;width:18px;height:18px;font-size:.6rem;font-family:Orbitron,sans-serif;font-weight:700;line-height:18px;text-align:center;border:2px solid #07101f;">0</span>
             </button>
         </div>
+        </div><!-- end z-index:2 wrapper -->
     </div>
     <!-- ==================== END LOBBY SCREEN ==================== -->
 
