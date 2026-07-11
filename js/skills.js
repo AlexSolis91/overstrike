@@ -742,7 +742,7 @@
         }
 
         function _executeAbilityCore(targetName) {
-            audioManager.playSelect(); // SFX on every ability/action            // SFX especial para OVER
+            // SFX especial para OVER
             if (gameState.selectedAbility && gameState.selectedAbility.type === 'over') {
                 audioManager.playOverSfx();
                 if (typeof _animCard === 'function') _animCard(gameState.selectedCharacter, 'anim-over', 700);
