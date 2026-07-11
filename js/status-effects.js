@@ -511,6 +511,13 @@ function processBurnEffects(charName) {
                 if (logSource) addLog('☀️ QS bloquea la curación de ' + charName, 'debuff');
                 return 0;
             }
+            // ── SFX: Heal sound ──
+            if (!passiveExecuting) {
+                var _sfxH = document.getElementById('sfxHeal');
+                if (_sfxH && typeof audioManager !== 'undefined' && !audioManager.muted) {
+                    _sfxH.currentTime = 0; _sfxH.volume = 0.55; _sfxH.play().catch(function(){});
+                }
+            }
             const _ch = gameState.characters[charName];
 
             // ── DESEO DE MUERTE (Caballero de la Muerte Arthas): curación del equipo enemigo → daño doble ──
