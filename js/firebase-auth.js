@@ -4121,13 +4121,15 @@
                     var uid = e[0], info = e[1];
                     var row = document.createElement('div');
                     row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(0,196,255,.1);border-radius:10px;gap:10px;';
-                    var safeName = (info.name||'Jugador').replace(/'/g,"\'");
+                    var btn = document.createElement('button');
+                    btn.textContent = '💬 Chat';
+                    btn.style.cssText = 'background:linear-gradient(135deg,#003a5c,#006fa6);border:1px solid #00c4ff;color:#00c4ff;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:.72rem;font-family:Orbitron,sans-serif;white-space:nowrap;';
+                    (function(u,n){ btn.addEventListener('click', function(){ openPrivateChatWith(u,n); }); })(uid, info.name||'Jugador');
                     row.innerHTML = '<div style="display:flex;align-items:center;gap:8px;">' +
                         '<span style="width:8px;height:8px;background:#00ff88;border-radius:50%;display:inline-block;flex-shrink:0;"></span>' +
-                        '<span style="font-size:.82rem;color:#ccc;">' + (info.name||'Jugador') + '</span>' +
-                        '</div>' +
-                        '<button onclick="openPrivateChatWith('' + uid + '','' + safeName + '')" ' +
-                        'style="background:linear-gradient(135deg,#003a5c,#006fa6);border:1px solid #00c4ff;color:#00c4ff;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:.72rem;font-family:Orbitron,sans-serif;white-space:nowrap;">💬 Chat</button>';
+                        '<span style="font-size:.82rem;color:#ccc;">' + (info.name||'Jugador').replace(/</g,'&lt;') + '</span>' +
+                        '</div>';
+                    row.appendChild(btn);
                     list.appendChild(row);
                 });
             });
