@@ -322,6 +322,12 @@
                 <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} showLeaderboard()"
                     style="width:100%;padding:.72rem 1rem;font-family:'Orbitron',sans-serif;font-size:.82rem;background:rgba(255,170,0,0.06);color:#ffaa00;border:1px solid rgba(255,170,0,0.25);border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;"
                     onmouseover="this.style.borderColor='rgba(255,170,0,.5)'" onmouseout="this.style.borderColor='rgba(255,170,0,.25)'">📊 VER LEADERBOARD</button>
+
+                <div style="height:1px;background:rgba(255,255,255,.08);margin:.2rem 0;"></div>
+
+                <button onclick="document.getElementById('onlinePlayersModal').style.display='flex'; window.loadOnlinePlayersList && window.loadOnlinePlayersList();"
+                    style="width:100%;padding:.72rem 1rem;font-family:'Orbitron',sans-serif;font-size:.82rem;background:rgba(0,255,136,0.06);color:#00ff88;border:1px solid rgba(0,255,136,0.25);border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;"
+                    onmouseover="this.style.borderColor='rgba(0,255,136,.5)'" onmouseout="this.style.borderColor='rgba(0,255,136,.25)'">👥 JUGADORES EN LÍNEA</button>
             </div>
         </div>
         <div id="challengeModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9000; align-items:center; justify-content:center;">
@@ -336,39 +342,7 @@
             </div>
         </div>
 
-        <!-- ── CHAT BUTTON (bottom-right) ── -->
-    </div>
-
-    <!-- ── CHAT BUTTON (fixed, always on top) ── -->
-    <div id="chatBtnWrap" style="position:fixed;bottom:24px;right:24px;z-index:8000;display:flex;flex-direction:column;align-items:flex-end;gap:10px;">
-
-        <!-- Online Players + Chat Panel (hidden by default) -->
-        <div id="chatPanel" style="display:none;flex-direction:column;width:300px;height:460px;background:linear-gradient(160deg,#07101f,#0c1828);border:1px solid rgba(0,196,255,0.25);border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.7);">
-
-        <!-- Panel Header -->
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid rgba(0,196,255,.12);background:rgba(0,196,255,.06);">
-            <div id="chatPanelTitle" style="font-family:Orbitron,sans-serif;font-size:.75rem;color:#00c4ff;font-weight:700;letter-spacing:.08em;">💬 JUGADORES EN LÍNEA</div>
-            <button onclick="document.getElementById('chatPanel').style.display='none';"
-            style="background:none;border:none;color:#555;font-size:1rem;cursor:pointer;line-height:1;padding:0;">✕</button>
-        </div>
-
-        <!-- Online Players List -->
-        <div id="onlineChatPlayersList" style="flex:1;overflow-y:auto;padding:8px 0;"></div>
-
-        <!-- Chat Window (hidden until player selected) -->
-        <div id="chatWindow" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
-            <div id="chatBackBtn" style="padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;color:#4fc3f7;font-size:.72rem;"
-            onclick="closeChatWindow()">← Volver a jugadores</div>
-            <div id="chatMessages" style="flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:6px;"></div>
-            <div style="display:flex;gap:6px;padding:8px 10px;border-top:1px solid rgba(255,255,255,.06);">
-            <input id="chatInput" type="text" maxlength="200" placeholder="Mensaje..."
-                style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;color:#fff;font-size:.78rem;outline:none;"
-                onkeydown="if(event.key==='Enter') sendChatMessage()">
-            <button onclick="sendChatMessage()"
-                style="background:linear-gradient(135deg,#003a5c,#006fa6);border:1px solid #00c4ff;color:#00c4ff;border-radius:8px;padding:7px 12px;cursor:pointer;font-size:.8rem;">➤</button>
-            </div>
-        </div>
-        </div>
+    
 
         <!-- Chat Toggle Button -->
         <button id="chatToggleBtn" onclick="toggleChatPanel()"
@@ -573,10 +547,7 @@
     <!-- ==================== CHAT UI ==================== -->
 
         <div id="chatMessages"></div>
-        <div id="chatInputRow">
-            <input id="chatInput" type="text" placeholder="Escribe un mensaje..." maxlength="120" onkeydown="if(event.key==='Enter')sendChatMessage()">
-            <button id="chatSendBtn" onclick="sendChatMessage()">➤</button>
-        </div>
+
     </div>
     <!-- ==================== END CHAT UI ==================== -->
 
