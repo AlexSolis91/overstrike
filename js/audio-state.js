@@ -67,8 +67,20 @@
             playSelect: function() {
                 if (this.muted) return;
                 try {
-                    const sfx = new Audio(this.selectSfxUrl);
+                    // Use preloaded element for instant playback — no network delay
+                    var sfx = document.getElementById('sfxSelect');
+                    if (!sfx) {
+                        sfx = document.createElement('audio');
+                        sfx.id = 'sfxSelect';
+                        sfx.preload = 'auto';
+                        var src = document.createElement('source');
+                        src.src = this.selectSfxUrl;
+                        src.type = 'audio/mpeg';
+                        sfx.appendChild(src);
+                        document.body.appendChild(sfx);
+                    }
                     sfx.volume = 0.6;
+                    sfx.currentTime = 0;
                     sfx.play().catch(function() {});
                 } catch(e) {}
             },
