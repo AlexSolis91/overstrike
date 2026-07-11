@@ -322,6 +322,12 @@
                 <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} showLeaderboard()"
                     style="width:100%;padding:.72rem 1rem;font-family:'Orbitron',sans-serif;font-size:.82rem;background:rgba(255,170,0,0.06);color:#ffaa00;border:1px solid rgba(255,170,0,0.25);border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;"
                     onmouseover="this.style.borderColor='rgba(255,170,0,.5)'" onmouseout="this.style.borderColor='rgba(255,170,0,.25)'">📊 VER LEADERBOARD</button>
+
+                <div style="height:1px;background:rgba(255,255,255,.08);margin:.2rem 0;"></div>
+
+                <button onclick="document.getElementById('onlinePlayersModal').style.display='flex'; loadOnlinePlayersList();"
+                    style="width:100%;padding:.72rem 1rem;font-family:'Orbitron',sans-serif;font-size:.82rem;background:rgba(0,255,136,0.06);color:#00ff88;border:1px solid rgba(0,255,136,0.25);border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;"
+                    onmouseover="this.style.borderColor='rgba(0,255,136,.5)'" onmouseout="this.style.borderColor='rgba(0,255,136,.25)'">👥 JUGADORES EN LÍNEA</button>
             </div>
         </div>
         <div id="challengeModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.75); z-index:9000; align-items:center; justify-content:center;">
@@ -339,47 +345,7 @@
         <!-- ── CHAT BUTTON (bottom-right) ── -->
     </div>
 
-    <!-- ── CHAT BUTTON (fixed, always on top) ── -->
-    <div id="chatBtnWrap" style="position:fixed;bottom:24px;right:24px;z-index:8000;display:flex;flex-direction:column;align-items:flex-end;gap:10px;">
 
-        <!-- Online Players + Chat Panel (hidden by default) -->
-        <div id="chatPanel" style="display:none;flex-direction:column;width:300px;height:460px;background:linear-gradient(160deg,#07101f,#0c1828);border:1px solid rgba(0,196,255,0.25);border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,.7);">
-
-        <!-- Panel Header -->
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid rgba(0,196,255,.12);background:rgba(0,196,255,.06);">
-            <div id="chatPanelTitle" style="font-family:Orbitron,sans-serif;font-size:.75rem;color:#00c4ff;font-weight:700;letter-spacing:.08em;">💬 JUGADORES EN LÍNEA</div>
-            <button onclick="document.getElementById('chatPanel').style.display='none';"
-            style="background:none;border:none;color:#555;font-size:1rem;cursor:pointer;line-height:1;padding:0;">✕</button>
-        </div>
-
-        <!-- Online Players List -->
-        <div id="onlineChatPlayersList" style="flex:1;overflow-y:auto;padding:8px 0;"></div>
-
-        <!-- Chat Window (hidden until player selected) -->
-        <div id="chatWindow" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
-            <div id="chatBackBtn" style="padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;color:#4fc3f7;font-size:.72rem;"
-            onclick="closeChatWindow()">← Volver a jugadores</div>
-            <div id="chatMessages" style="flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:6px;"></div>
-            <div style="display:flex;gap:6px;padding:8px 10px;border-top:1px solid rgba(255,255,255,.06);">
-            <input id="chatInput" type="text" maxlength="200" placeholder="Mensaje..."
-                style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;color:#fff;font-size:.78rem;outline:none;"
-                onkeydown="if(event.key==='Enter') sendChatMessage()">
-            <button onclick="sendChatMessage()"
-                style="background:linear-gradient(135deg,#003a5c,#006fa6);border:1px solid #00c4ff;color:#00c4ff;border-radius:8px;padding:7px 12px;cursor:pointer;font-size:.8rem;">➤</button>
-            </div>
-        </div>
-        </div>
-
-        <!-- Chat Toggle Button -->
-        <button id="chatToggleBtn" onclick="toggleChatPanel()"
-        style="position:relative;width:52px;height:52px;background:linear-gradient(135deg,#003a5c,#006fa6);border:2px solid #00c4ff;border-radius:50%;cursor:pointer;font-size:1.3rem;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,196,255,.35);transition:all .2s;"
-        onmouseover="this.style.boxShadow='0 4px 30px rgba(0,196,255,.7)'" onmouseout="this.style.boxShadow='0 4px 20px rgba(0,196,255,.35)'"
-        title="Jugadores en línea">
-        💬
-        <!-- Notification badge -->
-        <span id="chatNotifBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ff3366;color:#fff;border-radius:50%;width:18px;height:18px;font-size:.6rem;font-family:Orbitron,sans-serif;font-weight:700;line-height:18px;text-align:center;border:2px solid #07101f;">0</span>
-        </button>
-    </div>
     <!-- ==================== END LOBBY SCREEN ==================== -->
 
     <!-- ==================== WAITING ROOM SCREEN ==================== -->
@@ -572,11 +538,7 @@
 
     <!-- ==================== CHAT UI ==================== -->
 
-        <div id="chatMessages"></div>
-        <div id="chatInputRow">
-            <input id="chatInput" type="text" placeholder="Escribe un mensaje..." maxlength="120" onkeydown="if(event.key==='Enter')sendChatMessage()">
-            <button id="chatSendBtn" onclick="sendChatMessage()">➤</button>
-        </div>
+
     </div>
     <!-- ==================== END CHAT UI ==================== -->
 
@@ -2435,5 +2397,107 @@
         </div>
     </div>
 
+    <!-- ── JUGADORES EN LÍNEA MODAL ── -->
+    <div id="onlinePlayersModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:50000;align-items:center;justify-content:center;">
+        <div style="background:linear-gradient(135deg,#07101f,#0d1a30);border:2px solid rgba(0,196,255,.3);border-radius:20px;padding:1.8rem;min-width:320px;max-width:420px;width:90%;position:relative;max-height:70vh;display:flex;flex-direction:column;">
+            <button onclick="document.getElementById('onlinePlayersModal').style.display='none';"
+                style="position:absolute;top:14px;right:14px;background:rgba(255,51,102,.15);border:1px solid #ff3366;color:#ff3366;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:.9rem;line-height:1;">✕</button>
+            <div style="font-family:Orbitron,sans-serif;font-size:.9rem;font-weight:700;color:#00c4ff;margin-bottom:1.2rem;letter-spacing:.1em;">👥 JUGADORES EN LÍNEA</div>
+            <div id="onlinePlayersList" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:.5rem;">
+                <div style="color:#555;font-size:.8rem;text-align:center;padding:1rem;">Cargando...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── CHAT PRIVADO MODAL ── -->
+    <div id="privateChatModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:50001;align-items:center;justify-content:center;">
+        <div style="background:linear-gradient(135deg,#07101f,#0d1a30);border:2px solid rgba(0,196,255,.3);border-radius:20px;width:360px;max-width:95%;height:480px;display:flex;flex-direction:column;position:relative;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid rgba(0,196,255,.12);">
+                <div id="privateChatTitle" style="font-family:Orbitron,sans-serif;font-size:.78rem;color:#00c4ff;font-weight:700;">💬 Chat</div>
+                <button onclick="document.getElementById('privateChatModal').style.display='none';"
+                    style="background:rgba(255,51,102,.15);border:1px solid #ff3366;color:#ff3366;border-radius:50%;width:26px;height:26px;cursor:pointer;font-size:.85rem;line-height:1;">✕</button>
+            </div>
+            <div id="privateChatMessages" style="flex:1;overflow-y:auto;padding:10px 14px;display:flex;flex-direction:column;gap:6px;"></div>
+            <div style="display:flex;gap:6px;padding:10px 12px;border-top:1px solid rgba(255,255,255,.06);">
+                <input id="privateChatInput" type="text" maxlength="200" placeholder="Mensaje..."
+                    style="flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:7px 10px;color:#fff;font-size:.78rem;outline:none;"
+                    onkeydown="if(event.key==='Enter') sendPrivateChatMessage()">
+                <button onclick="sendPrivateChatMessage()"
+                    style="background:linear-gradient(135deg,#003a5c,#006fa6);border:1px solid #00c4ff;color:#00c4ff;border-radius:8px;padding:7px 12px;cursor:pointer;font-size:.85rem;">➤</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ── Online players list loader ──
+    function loadOnlinePlayersList() {
+        var list = document.getElementById('onlinePlayersList');
+        if (!list || typeof db === 'undefined') return;
+        list.innerHTML = '<div style="color:#555;font-size:.8rem;text-align:center;padding:1rem;">Cargando...</div>';
+        db.ref('presence').once('value', function(snap) {
+            var data = snap.val() || {};
+            var myUid = typeof currentUser !== 'undefined' && currentUser ? currentUser.uid : null;
+            var others = Object.entries(data).filter(function(e){ return e[0] !== myUid; });
+            list.innerHTML = '';
+            if (others.length === 0) {
+                list.innerHTML = '<div style="color:#555;font-size:.8rem;text-align:center;padding:1.5rem;">No hay otros jugadores en línea</div>';
+                return;
+            }
+            others.forEach(function(e) {
+                var uid = e[0], info = e[1];
+                var row = document.createElement('div');
+                row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(0,196,255,.1);border-radius:10px;gap:10px;';
+                row.innerHTML = '<div style="display:flex;align-items:center;gap:8px;">' +
+                    '<span style="width:8px;height:8px;background:#00ff88;border-radius:50%;display:inline-block;flex-shrink:0;"></span>' +
+                    '<span style="font-size:.82rem;color:#ccc;">' + (info.name||'Jugador') + '</span>' +
+                    '</div>' +
+                    '<button onclick="openPrivateChatWith('' + uid + '','' + (info.name||'Jugador').replace(/'/g,"\'") + '')" ' +
+                    'style="background:linear-gradient(135deg,#003a5c,#006fa6);border:1px solid #00c4ff;color:#00c4ff;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:.72rem;font-family:Orbitron,sans-serif;white-space:nowrap;">💬 Chat</button>';
+                list.appendChild(row);
+            });
+        });
+    }
+
+    // ── Private chat ──
+    var _pcTarget = null, _pcListener = null;
+    function openPrivateChatWith(uid, name) {
+        document.getElementById('onlinePlayersModal').style.display = 'none';
+        _pcTarget = { uid: uid, name: name };
+        document.getElementById('privateChatTitle').textContent = '💬 ' + name;
+        document.getElementById('privateChatMessages').innerHTML = '';
+        document.getElementById('privateChatInput').value = '';
+        document.getElementById('privateChatModal').style.display = 'flex';
+        if (_pcListener) { _pcListener.off(); }
+        var myUid = currentUser.uid;
+        var key = [myUid, uid].sort().join('_');
+        _pcListener = db.ref('chats/' + key);
+        _pcListener.on('value', function(snap) {
+            var msgs = snap.val() || {};
+            var box = document.getElementById('privateChatMessages');
+            if (!box) return;
+            box.innerHTML = '';
+            Object.values(msgs).sort(function(a,b){return a.ts-b.ts;}).forEach(function(m) {
+                var isMe = m.from === myUid;
+                var d = document.createElement('div');
+                d.style.cssText = 'display:flex;flex-direction:column;align-items:' + (isMe?'flex-end':'flex-start') + ';gap:2px;';
+                d.innerHTML = '<div style="max-width:82%;background:' + (isMe?'rgba(0,196,255,.18)':'rgba(255,255,255,.07)') + ';border:1px solid ' + (isMe?'rgba(0,196,255,.3)':'rgba(255,255,255,.1)') + ';border-radius:10px;padding:6px 10px;font-size:.78rem;color:#fff;word-break:break-word;">' + m.text.replace(/</g,'&lt;') + '</div>' +
+                    '<div style="font-size:.6rem;color:#444;">' + new Date(m.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) + '</div>';
+                box.appendChild(d);
+            });
+            box.scrollTop = box.scrollHeight;
+            // Mark as read
+            db.ref('chat_notifications/' + myUid + '/' + uid).remove();
+        });
+    }
+    function sendPrivateChatMessage() {
+        var input = document.getElementById('privateChatInput');
+        var text = (input.value||'').trim();
+        if (!text || !_pcTarget || !currentUser) return;
+        var key = [currentUser.uid, _pcTarget.uid].sort().join('_');
+        db.ref('chats/' + key).push({ from: currentUser.uid, fromName: currentUser.displayName, text: text, ts: Date.now() });
+        db.ref('chat_notifications/' + _pcTarget.uid + '/' + currentUser.uid).set({ fromName: currentUser.displayName, lastMsg: text, ts: Date.now(), read: false });
+        input.value = '';
+    }
+    </script>
 </body>
 </html>
