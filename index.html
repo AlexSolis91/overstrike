@@ -133,11 +133,26 @@
     <!-- ==================== END MODE SELECT SCREEN ==================== -->
 
     <!-- ==================== SPLASH SCREEN ==================== -->
-    <div id="splashScreen" style="display:none; position:fixed; inset:0; z-index:99999; flex-direction:column; align-items:center; justify-content:center; background:url(https://i.postimg.cc/jSmHp0dw/4c9b34ddf1759d2a2950c4c8e1694ca9.jpg) center/cover no-repeat;">
-        <!-- Dark overlay -->
-        <div style="position:absolute;inset:0;background:linear-gradient(160deg,rgba(0,0,12,0.72) 0%,rgba(0,5,25,0.80) 100%);"></div>
+    <!-- ── Splash background videos — add more URLs to SPLASH_VIDEOS to rotate randomly ── -->
+    <script>
+    var SPLASH_VIDEOS = ["https://ia600501.us.archive.org/13/items/video-project_20260711/Video%20Project.mp4"];
+    function _pickSplashVideo() {
+        var v = SPLASH_VIDEOS[Math.floor(Math.random() * SPLASH_VIDEOS.length)];
+        var el = document.getElementById('splashBgVideo');
+        if (el) { el.src = v; el.load(); el.play().catch(function(){}); }
+    }
+    </script>
+
+    <div id="splashScreen" style="display:none; position:fixed; inset:0; z-index:99999; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; background:#000;">
+        <!-- Background video -->
+        <video id="splashBgVideo" autoplay loop muted playsinline
+            style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;">
+      <source src="https://ia600501.us.archive.org/13/items/video-project_20260711/Video%20Project.mp4" type="video/mp4">
+        </video>
+        <!-- Dark overlay for readability -->
+        <div style="position:absolute;inset:0;background:linear-gradient(160deg,rgba(0,0,12,0.60) 0%,rgba(0,5,25,0.70) 100%);z-index:1;"></div>
         <!-- Content -->
-        <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:2.4rem;">
+        <div style="position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:2.4rem;">
             <!-- Logo -->
             <div style="font-family:'Orbitron',sans-serif;font-size:clamp(3.5rem,10vw,7rem);font-weight:900;letter-spacing:.18em;color:#fff;
                 text-shadow:0 0 30px #00c4ff,0 0 60px #00c4ff,0 0 120px rgba(0,196,255,0.5),0 4px 0 rgba(0,50,80,0.8);
@@ -558,7 +573,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260724"></script>
+    <script src="js/firebase-auth.js?v=20260725"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -1374,9 +1389,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260724"></script>
+    <script src="js/characters.js?v=20260725"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260724"></script>
+    <script src="js/audio-state.js?v=20260725"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2070,23 +2085,23 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260724"></script>
+    <script src="js/ai-engine.js?v=20260725"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260724"></script>
+    <script src="js/init-render.js?v=20260725"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260724"></script>
+    <script src="js/turn-logic.js?v=20260725"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260724"></script>
+    <script src="js/status-effects.js?v=20260725"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260724"></script>
+    <script src="js/debuffs.js?v=20260725"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260724"></script>
+    <script src="js/summons.js?v=20260725"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260724"></script>
+    <script src="js/ability-select.js?v=20260725"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260724"></script>
+<script src="js/skills.js?v=20260725"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260724"></script>
+    <script src="js/jefe-de-sala.js?v=20260725"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
