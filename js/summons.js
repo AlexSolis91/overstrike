@@ -2620,8 +2620,8 @@
                             if (typeof canHeal === 'function' && !canHeal(_stkAllyName)) { addLog('Tesoro del Cielo: QS bloquea curacion de ' + _stkAllyName, 'debuff'); continue; }
                             const _stkHpBefore = _stkAlly.hp;
                             const _stkOld = _stkAlly.hp;
-                    { const _skOld=_stkAlly.hp; _stkAlly.hp = Math.min(_stkAlly.maxHp, _stkAlly.hp + 1); if(typeof notifyHeal==='function') notifyHeal(_stkAllyName||targetName, _stkAlly.hp-_skOld, 'passive'); }
-                    if (_stkAlly.hp > _stkOld && typeof showHpTick === 'function') showHpTick(_stkAllyName, _stkAlly.hp - _stkOld); if (typeof triggerBendicionSagrada === 'function' && !passiveExecuting) { var _bsC = gameState.characters[_stkAllyName]; if (_bsC) triggerBendicionSagrada(_bsC.team, 0); }
+                    applyHeal(_stkAllyName, 1, 'Tesoro del Cielo');
+                    if (typeof triggerBendicionSagrada === 'function' && !passiveExecuting) { var _bsC = gameState.characters[_stkAllyName]; if (_bsC) triggerBendicionSagrada(_bsC.team, 0); }
                             if (_stkAlly.hp > _stkHpBefore) {
                                 addLog('✨ Tesoro del Cielo: ' + _stkAllyName + ' recupera 1 HP', 'heal');
                                 if (_stkAllyName === _stkName) {
