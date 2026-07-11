@@ -7794,12 +7794,9 @@
                 // Heal + cleanse both
                 [{ name: gameState.selectedCharacter, char: _svLG }, { name: targetName, char: _svAlly }].forEach(function(obj) {
                     if (!obj.char) return;
-                    const _svOld = obj.char.hp;
-                    obj.char.hp = Math.min(obj.char.maxHp, obj.char.hp + 5);
-                    const _svHeal = obj.char.hp - _svOld;
+                    const _svHeal = applyHeal(obj.name, 5, 'Soporte Vital');
                     if (_svHeal > 0) {
                         addLog('💚 ' + obj.name + ' recupera ' + _svHeal + ' HP (Soporte Vital)', 'heal');
-                        if (typeof notifyHeal === 'function') notifyHeal(obj.name, _svHeal, 'Soporte Vital');
                     }
                     const _svBefore = (obj.char.statusEffects || []).filter(e => e && e.type === 'debuff').length;
                     obj.char.statusEffects = (obj.char.statusEffects || []).filter(e => !e || e.type !== 'debuff');
