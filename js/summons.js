@@ -1496,7 +1496,8 @@
             // compartida entre todas las pasivas) para evitar que se resetee prematuramente por código anidado
             // y cause recursión infinita.
             if (remainingDamage > 0 && remainingDamage <= 2 && targetName === 'Garou' && !target.isDead && target.hp > 0 &&
-                !passiveExecuting && !gameState._garouCounterActive) {
+                !gameState._garouCounterActive) {
+                // Note: passiveExecuting check removed — Garou must counter even when hit by passives (e.g. Explosión de Sangre)
                 gameState._garouCounterActive = true;
                 const _ghEnemyTeam = target.team === 'team1' ? 'team2' : 'team1';
                 const _ghEnemies = Object.keys(gameState.characters).filter(function(n) {
