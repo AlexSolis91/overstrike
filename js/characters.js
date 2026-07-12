@@ -18,15 +18,15 @@
             },
 
             'Sun Jin Woo': {
-                hp: 20, maxHp: 20, speed: 96, charges: 0, team: 'team1',
+                hp: 20, maxHp: 20, speed: 95, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/prGM9z1K/Whats-App-Image-2026-05-19-at-11-39-05-AM.jpg',
-                passive: { name: 'Arise!', description: 'Al inicio de su turno invoca una sombra aleatoria. Cada vez que una invocación es eliminada genera 2 cargas.' },
+                passive: { name: 'Arise!', description: 'Al inicio de su turno invoca una sombra aleatoria (que no esté ya en campo). Cada vez que una invocación es eliminada genera 3 cargas. Por cada Buff aplicado sobre un enemigo, Sun Jin Woo genera 2 cargas. Al inicio de cada ronda se aplica Buff Sigilo 1 turno.' },
                 abilities: [
-                    { name: 'Sigilo de las Sombras', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'sigilo_sombras_sjw', description: 'Se aplica Buff Sigilo por 2 turnos.' },
-                    { name: 'Daga de Kamish', type: 'special', cost: 3, chargeGain: 0, damage: 2, target: 'single', effect: 'daga_kamish', description: 'Causa +1 daño adicional por cada sombra invocada. Roba 1 carga por cada sombra invocada.' },
-                    { name: 'Autoridad del Gobernante', type: 'special', cost: 8, chargeGain: 0, damage: 0, target: 'self', effect: 'autoridad_gobernante', description: 'Se aplica Buff Esquiva Área 3 turnos. Se aplica Buff Regeneración 20% por 3 turnos.' },
-                    { name: 'Purgatorio de las Sombras', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'aoe', effect: 'summon_kamish', description: 'Sacrifica todas sus sombras (excepto Kamish), causa 3 daño AOE por sombra sacrificada.' }
+                    { name: 'Daga de Kamish',         type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'daga_kamish_sjw',         description: 'Causa +1 daño adicional por cada sombra invocada en tu equipo. Limpia 1 Buff activo del equipo enemigo (distribuido aleatoriamente) por cada sombra invocada.' },
+                    { name: 'Autoridad del Gobernante', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'single', effect: 'autoridad_gobernante_sjw', description: 'Elimina todas las cargas del objetivo. Por cada carga eliminada, limpia 1 Debuff de un aliado aleatorio.' },
+                    { name: 'Dominio del Monarca',    type: 'special', cost: 10, chargeGain: 0, damage: 0, target: 'self',   effect: 'dominio_monarca_sjw',     description: 'Sun Jin Woo y las sombras invocadas aumentan +1 HP Máx por cada sombra invocada. Activa inmediatamente las habilidades pasivas de todas las sombras invocadas.' },
+                    { name: 'Extracción de Sombras',  type: 'over',    cost: 15, chargeGain: 0, damage: 0, target: 'single', effect: 'extraccion_sombras_sjw',  description: 'Solo usable sobre un enemigo ya derrotado (HP = 0). Revive al objetivo como aliado con 5 HP y 20 cargas. Su pasiva es sustituida por Explosión de Sombras: al morir causa daño = sus cargas actuales sobre un enemigo aleatorio.' }
                 ]
             },
             'Aldebaran': {
