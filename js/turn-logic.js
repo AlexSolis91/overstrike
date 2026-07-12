@@ -84,12 +84,16 @@
                             }
                         })();
 
-                        // SUN JIN WOO PASIVA: Sigilo al inicio de su turno, dura hasta fin de ronda (no es permanente)
-                        if ((currentCharName === 'Sun Jin Woo' || currentCharName.startsWith('Sun Jin Woo')) || currentCharName === 'Sun Jin Woo v2') {
-                            const sjw = gameState.characters['Sun Jin Woo'];
-                            if (sjw && !sjw.isDead && sjw.hp > 0) {
-                                // ARISE! passive: at start of turn, perform random invocation from shadow pool
-                                triggerSJWArisePassive(currentCharName); // supports v2 names
+                        // SUN JIN WOO PASIVA: Arise! — invoca sombra aleatoria + Sigilo 1T al inicio de turno
+                        if (currentChar && currentChar.passive && currentChar.passive.name === 'Arise!') {
+                            if (currentChar && !currentChar.isDead && currentChar.hp > 0) {
+                                // Invoke random shadow
+                                if (typeof triggerSJWArisePassive === 'function') triggerSJWArisePassive(currentCharName);
+                                // Apply Sigilo 1 turn
+                                if (typeof applyStealth === 'function') {
+                                    applyStealth(currentCharName, 1);
+                                    addLog('👤 Arise! (Pasiva): ' + currentCharName + ' gana Sigilo 1T', 'buff');
+                                }
                             }
                         }
 
@@ -770,6 +774,22 @@
             btn.onclick = function() { hideContinueButton(); continueTurn(); };
             document.body.appendChild(btn);
             return btn;
+        }
+
+        // ── SJW Arise!: +2 cargas por cada Buff aplicado sobre un enemigo ──
+        function notifyEnemyBuffApplied(buffedCharName) {
+            // Find Sun Jin Woo on the opposite team
+            const _buffedC = gameState.characters[buffedCharName];
+            if (!_buffedC) return;
+            const _sjwTeam = _buffedC.team === 'team1' ? 'team2' : 'team1';
+            for (const _n in gameState.characters) {
+                const _c = gameState.characters[_n];
+                if (!_c || _c.team !== _sjwTeam || _c.isDead || _c.hp <= 0) continue;
+                if (_c.passive && _c.passive.name === 'Arise!') {
+                    generateChargesInline(_n, 2);
+                    addLog('👤 Arise! (Pasiva): ' + _n + ' gana 2 cargas (buff aplicado a enemigo)', 'buff');
+                }
+            }
         }
 
         function continueTurn() {
@@ -1911,6 +1931,19 @@
                             addLog('🐻 Piel de Nanook: Bjorn gana +' + _bjStolenTotal + ' cargas totales (fin de ronda)', 'buff');
                         }
                     }
+
+                    // ── KAISEL (SJW): aplica 2 stacks Veneno a todos los enemigos al inicio de ronda ──
+                    Object.keys(gameState.summons).forEach(function(kaisId) {
+                        const _kais = gameState.summons[kaisId];
+                        if (!_kais || _kais.name !== 'Kaisel' || _kais.hp <= 0) return;
+                        const _kaisETeam = _kais.team === 'team1' ? 'team2' : 'team1';
+                        for (const _kn in gameState.characters) {
+                            const _kc = gameState.characters[_kn];
+                            if (!_kc || _kc.team !== _kaisETeam || _kc.isDead || _kc.hp <= 0) continue;
+                            applyPoison(_kn, 2, 1);
+                        }
+                        addLog('☠️ Kaisel (Maldición): aplica 2 stacks de Veneno a todos los enemigos', 'debuff');
+                    });
 
                     // ── ABSOLUTE ZERO (Sub-Zero): inicio de ronda → Megacongelación en enemigo aleatorio ──
                     for (const _szN in gameState.characters) {
