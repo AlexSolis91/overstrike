@@ -517,6 +517,18 @@
                     { name: '¿Por qué tan serio?',    type: 'over',    cost: 8, chargeGain: 0, damage: 5, target: 'mt',     effect: 'joker_serio',    description: 'MT 5 daño. 50% Aura de Fuego, 50% Espinas, 50% Infectar para Joker. Por cada buff aplicado por esta habilidad, Joker ejecuta 3 ataques básicos sobre objetivos aleatorios.' }
                 ]
             },
+            'Androide 17': {
+                name: 'Androide 17',
+                hp: 20, maxHp: 20, speed: 89, charges: 0,
+                portrait: 'https://i.ibb.co/7Jv6kYdg/Android-17.jpg',
+                passive: { name: 'Protección de la Naturaleza', description: 'Cuando un enemigo usa un Over: antes de su daño, aplica Escudo a cada aliado con HP = cargas gastadas por ese Over. Cuando Androide 17 recibe un debuff: lo elimina y genera 2 cargas para el equipo aliado.' },
+                abilities: [
+                    { name: 'Ráfagas de Energía',          type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'rafagas_energia_a17',     description: 'Golpea 1-5 veces a enemigos aleatorios (puede repetir). 50% de robar 1 carga del enemigo golpeado.' },
+                    { name: 'Barrera de Fotones Dinámica', type: 'special', cost: 3,  chargeGain: 0, damage: 0, target: 'self',   effect: 'barrera_fotones_a17',    description: 'Elimina 1-5 debuffs del equipo aliado. Por cada debuff eliminado el equipo aliado genera 1 carga.' },
+                    { name: 'Destello de Fotones',         type: 'special', cost: 8,  chargeGain: 0, damage: 4, target: 'single', effect: 'destello_fotones_a17',   description: 'Causa 4 daño ST. Elimina 1-10 Buffs del equipo enemigo. Por cada Buff eliminado multiplica el daño de este ataque.' },
+                    { name: 'Barrera de Impacto Total',    type: 'over',    cost: 8,  chargeGain: 0, damage: 0, target: 'self',   effect: 'barrera_impacto_a17',    description: 'Aplica Escudo 10 HP a todo el equipo aliado (incluido Androide 17). Genera 5 cargas a todos los aliados excepto Androide 17.' },
+                ]
+            },
             'Batman': {
                 name: 'Batman',
                 hp: 25, maxHp: 25, speed: 84, charges: 0,
