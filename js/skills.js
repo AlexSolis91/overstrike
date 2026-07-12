@@ -10,6 +10,15 @@
             if (hasStatusEffect(charName, 'Concentración')) finalAmt = amount * 2;
             c.charges = Math.min(20, (c.charges || 0) + finalAmt);
             if (typeof _animCard === 'function') _animCard(charName, 'anim-charge', 500);
+
+            // ── CAZADOR DE HÉROES (Garou): cuando un ENEMIGO genera cargas → Garou +1 carga ──
+            if (!passiveExecuting) {
+                const _garouC = gameState.characters['Garou'];
+                if (_garouC && !_garouC.isDead && _garouC.hp > 0 && _garouC.team !== (c.team)) {
+                    _garouC.charges = Math.min(20, (_garouC.charges||0) + 1);
+                    addLog('🐾 Cazador de Héroes: Garou +1 carga (enemigo generó cargas)', 'buff');
+                }
+            }
         }
         function applyAOEDamageToTeam(enemyTeam, damage, attackerName) {
             let _kyoAOEHits = 0;
@@ -933,18 +942,7 @@
             gameState._lastAbilityType = ability ? ability.type : null;
             gameState._lastAbilityChargeGain = ability ? (ability.chargeGain || 0) : 0;
 
-            // ── CAZADOR DE HÉROES (Garou): cada vez que un enemigo genera cargas → Garou +1 carga ──
-            if (gameState.selectedCharacter && gameState.selectedCharacter !== 'Garou' && ability && (ability.chargeGain || 0) > 0) {
-                const _gkAtk2 = gameState.characters[gameState.selectedCharacter];
-                if (_gkAtk2) {
-                    const _gkEnemyTeam = _gkAtk2.team === 'team1' ? 'team2' : 'team1';
-                    const _garouChar = gameState.characters['Garou'];
-                    if (_garouChar && !_garouChar.isDead && _garouChar.hp > 0 && _garouChar.team === _gkEnemyTeam) {
-                        _garouChar.charges = Math.min(20, (_garouChar.charges||0) + 1);
-                        addLog('🐾 Cazador de Héroes: Garou genera 1 carga (enemigo generó cargas)', 'buff');
-                    }
-                }
-            }
+            // (Cazador de Héroes charge hook moved to generateChargesInline)
 
             // ── DONCELLA ESCUDERA (Lagertha): cuando se golpea a un enemigo con Sangrado → equipo aliado +2 HP escudo ──
             if (finalDamage > 0 && targetName) {
