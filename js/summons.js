@@ -2846,8 +2846,26 @@
             if (!killerName || !gameState.battleStats) return;
             _mvp('killMap', killerName);
             if (byInvocation) {
-                // +5 puntos extra por kill via invocación
                 _mvp('summonKills', killerName);
+            }
+
+            // ── EXPLOSIÓN DE SOMBRAS (Extracción de Sombras pasiva): al morir causa daño = cargas al morir ──
+            if (victimName) {
+                const _esVictim = gameState.characters[victimName];
+                if (_esVictim && _esVictim.passive && _esVictim.passive._explosionDeSombras) {
+                    const _esCharges = _esVictim.charges || 0;
+                    if (_esCharges > 0) {
+                        const _esETeam = _esVictim.team === 'team1' ? 'team2' : 'team1';
+                        const _esEnemies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c && c.team===_esETeam && !c.isDead && c.hp>0; });
+                        if (_esEnemies.length > 0) {
+                            const _esTgt = _esEnemies[Math.floor(Math.random() * _esEnemies.length)];
+                            gameState._currentDamageSource = 'ExplosionDeSombras';
+                            applyDamageWithShield(_esTgt, _esCharges, victimName);
+                            addLog('💀 Explosión de Sombras: ' + victimName + ' causa ' + _esCharges + ' daño a ' + _esTgt + ' al morir', 'damage');
+                            gameState._currentDamageSource = null;
+                        }
+                    }
+                }
             }
 
             // ── REY DE LA MUERTE (Lich King): si el Lich King mata a alguien → revive como aliado ──
@@ -3189,7 +3207,7 @@ function applyRegeneration(targetName, amount, duration) {
             if (!sjwChar || sjwChar.isDead || sjwChar.hp <= 0) return;
             const shadowPool = gameState._sjwShadowWeights || {
                 'Igris': 0.25, 'Iron': 0.25, 'Tusk': 0.20,
-                'Beru': 0.10, 'Bellion': 0.06, 'Kaisel': 0.10, 'Kamish': 0.04
+                'Beru': 0.15, 'Kaisel': 0.10, 'Bellion': 0.045, 'Kamish': 0.005
             };
             // Check if we already have max summons (5 per team)
             const teamSummons = Object.values(gameState.summons).filter(s => s && s.team === sjwChar.team);
