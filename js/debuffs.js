@@ -371,6 +371,12 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 }
             }
             target.statusEffects.push(effectObj);
+            // ── Notificar a SJW Arise!: +2 cargas por buff aplicado sobre ENEMIGO ──
+            if (typeof notifyEnemyBuffApplied === 'function' && !passiveExecuting && effectObj && effectObj.type === 'buff') {
+                const _neb_team = target.team;
+                const _sjwExists = Object.values(gameState.characters||{}).some(function(c){ return c && c.passive && c.passive.name === 'Arise!' && c.team !== _neb_team && !c.isDead && c.hp > 0; });
+                if (_sjwExists) notifyEnemyBuffApplied(targetName);
+            }
             // ── CELERIDAD: aplicar aumento de velocidad inmediatamente ──
             if (effectObj && normAccent(effectObj.name||'') === 'celeridad') {
                 let _celBonus = 0;
