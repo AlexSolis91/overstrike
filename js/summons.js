@@ -460,11 +460,14 @@
                     if (!igris) return;
                     const enemyTeam = igris.team === 'team1' ? 'team2' : 'team1';
                     // Comandante Rojo Sangriento: 2 dano AOE a TODOS los enemigos
+                    // Temporarily disable passiveExecuting so Garou's counter can trigger
+                    passiveExecuting = false;
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== enemyTeam || _c.isDead || _c.hp <= 0) continue;
                         applyDamageWithShield(_n, 2, 'Igris');
                     }
+                    passiveExecuting = true;
                     for (const _sid in gameState.summons) {
                         const _s = gameState.summons[_sid];
                         if (!_s || _s.team !== enemyTeam || _s.hp <= 0 || _sid === igrisId) continue;
@@ -1495,9 +1498,10 @@
             // Usa un guard DEDICADO (gameState._garouCounterActive) en lugar de passiveExecuting (variable global
             // compartida entre todas las pasivas) para evitar que se resetee prematuramente por código anidado
             // y cause recursión infinita.
-            if (remainingDamage > 0 && remainingDamage <= 2 && targetName === 'Garou' && !target.isDead && target.hp > 0 &&
+            // Check by passive name so it works for any version/rename of Garou
+            const _isGarouTarget = target && target.passive && target.passive.name === 'Cazador de Héroes';
+            if (remainingDamage > 0 && remainingDamage <= 2 && _isGarouTarget && !target.isDead && target.hp > 0 &&
                 !gameState._garouCounterActive) {
-                // Note: passiveExecuting check removed — Garou must counter even when hit by passives (e.g. Explosión de Sangre)
                 gameState._garouCounterActive = true;
                 const _ghEnemyTeam = target.team === 'team1' ? 'team2' : 'team1';
                 const _ghEnemies = Object.keys(gameState.characters).filter(function(n) {
