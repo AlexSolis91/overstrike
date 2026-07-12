@@ -710,7 +710,7 @@ function processBurnEffects(charName) {
                     });
                     if (_nhEnemies.length > 0) {
                         passiveHealExecuting = true;
-                        passiveExecuting = true;
+                        // Note: passiveExecuting stays FALSE so Garou's counter can trigger on each hit
                         for (var _nhi = 0; _nhi < 5; _nhi++) {
                             const _alive = _nhEnemies.filter(function(n) {
                                 const _c = gameState.characters[n];
@@ -726,7 +726,6 @@ function processBurnEffects(charName) {
                             }
                         }
                         passiveHealExecuting = false;
-                        passiveExecuting = false;
                         addLog('🌸 Explosión de Sangre: 5 daño al equipo enemigo (' + (source||charName) + ' curó ' + amount + ' HP)', 'damage');
                     }
                 }
