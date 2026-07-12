@@ -6633,10 +6633,10 @@
                 addLog('🌑 Dominio del Monarca: pasivas de ' + _dmCount + ' sombras activadas', 'buff');
 
             } else if (ability.effect === 'extraccion_sombras_sjw') {
-                // Extracción de Sombras: solo usable sobre enemigo derrotado (HP=0)
+                // Extracción de Sombras: revive enemigo derrotado como aliado
                 const _esTgt = gameState.characters[targetName];
-                if (!_esTgt || (_esTgt.hp > 0 && !_esTgt.isDead)) {
-                    addLog('⚠️ Extracción de Sombras: ' + targetName + ' debe estar derrotado (HP = 0)', 'info');
+                if (!_esTgt) {
+                    addLog('⚠️ Extracción de Sombras: objetivo no encontrado', 'info');
                 } else {
                     // Revive as ally with 5 HP, 20 charges, team switches
                     _esTgt.isDead = false;
@@ -6657,25 +6657,39 @@
                 }
 
             } else if (ability.effect === 'autoridad_gobernante_sjw') {
-                // Autoridad del Gobernante v2: elimina todas las cargas del objetivo, por cada carga limpia 1 debuff aliado
+                // Autoridad del Gobernante: elimina todas las cargas del objetivo, por cada carga limpia 1 debuff aliado
                 const _agTgt = gameState.characters[targetName];
                 if (_agTgt) {
-                    const _agCharges = _agTgt.charges || 0;
+                    const _agCharges = Math.floor(_agTgt.charges || 0); // snapshot BEFORE zeroing
                     _agTgt.charges = 0;
                     addLog('👑 Autoridad del Gobernante: ' + targetName + ' pierde ' + _agCharges + ' cargas', 'debuff');
-                    // Limpia 1 debuff de aliado aleatorio por carga eliminada
-                    const _agMyTeam = attacker.team;
-                    for (let _i = 0; _i < _agCharges; _i++) {
-                        const _agAllies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c && c.team===_agMyTeam && !c.isDead && c.hp>0; });
-                        if (_agAllies.length === 0) break;
-                        const _agAlly = _agAllies[Math.floor(Math.random() * _agAllies.length)];
-                        const _agAllyC = gameState.characters[_agAlly];
-                        const _agDebuffs = (_agAllyC.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff' && !e.permanent; });
-                        if (_agDebuffs.length > 0) {
+                    if (_agCharges > 0) {
+                        // Collect all allies with at least 1 debuff
+                        const _agMyTeam = attacker.team;
+                        const _agAlliesWithDebuff = [];
+                        for (const _n in gameState.characters) {
+                            const _c = gameState.characters[_n];
+                            if (!_c || _c.team !== _agMyTeam || _c.isDead || _c.hp <= 0) continue;
+                            const _dbs = (_c.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff' && !e.permanent; });
+                            if (_dbs.length > 0) _agAlliesWithDebuff.push(_n);
+                        }
+                        let _cleaned = 0;
+                        for (let _i = 0; _i < _agCharges; _i++) {
+                            // Refresh list each iteration (debuffs may have been removed)
+                            const _available = _agAlliesWithDebuff.filter(function(n){
+                                const _c = gameState.characters[n];
+                                return _c && (_c.statusEffects||[]).some(function(e){ return e && e.type==='debuff' && !e.permanent; });
+                            });
+                            if (_available.length === 0) break;
+                            const _agAlly = _available[Math.floor(Math.random() * _available.length)];
+                            const _agAllyC = gameState.characters[_agAlly];
+                            const _agDebuffs = (_agAllyC.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff' && !e.permanent; });
                             const _rem = _agDebuffs[Math.floor(Math.random() * _agDebuffs.length)];
                             _agAllyC.statusEffects = (_agAllyC.statusEffects||[]).filter(function(e){ return e !== _rem; });
                             addLog('👑 Autoridad: limpia ' + (_rem.name||'') + ' de ' + _agAlly, 'buff');
+                            _cleaned++;
                         }
+                        addLog('👑 Autoridad del Gobernante: ' + _cleaned + ' debuffs limpiados de aliados', 'buff');
                     }
                 }
 
