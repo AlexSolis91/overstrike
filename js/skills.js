@@ -6657,39 +6657,36 @@
                 }
 
             } else if (ability.effect === 'autoridad_gobernante_sjw') {
-                // Autoridad del Gobernante: elimina todas las cargas del objetivo, por cada carga limpia 1 debuff aliado
+                // Autoridad del Gobernante: elimina todas las cargas del objetivo; por cada carga limpia 1 debuff aliado aleatorio
                 const _agTgt = gameState.characters[targetName];
                 if (_agTgt) {
-                    const _agCharges = Math.floor(_agTgt.charges || 0); // snapshot BEFORE zeroing
+                    const _agCharges = Math.floor(_agTgt.charges || 0);
                     _agTgt.charges = 0;
                     addLog('👑 Autoridad del Gobernante: ' + targetName + ' pierde ' + _agCharges + ' cargas', 'debuff');
                     if (_agCharges > 0) {
-                        // Collect all allies with at least 1 debuff
-                        const _agMyTeam = attacker.team;
-                        const _agAlliesWithDebuff = [];
+                        const _agMyTeam = gameState.characters[gameState.selectedCharacter] ? gameState.characters[gameState.selectedCharacter].team : (attacker ? attacker.team : 'team1');
+                        // Build flat list of ALL debuffs across ALL allies: [{char, effect}]
+                        const _agAllDebuffs = [];
                         for (const _n in gameState.characters) {
                             const _c = gameState.characters[_n];
                             if (!_c || _c.team !== _agMyTeam || _c.isDead || _c.hp <= 0) continue;
-                            const _dbs = (_c.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff' && !e.permanent; });
-                            if (_dbs.length > 0) _agAlliesWithDebuff.push(_n);
-                        }
-                        let _cleaned = 0;
-                        for (let _i = 0; _i < _agCharges; _i++) {
-                            // Refresh list each iteration (debuffs may have been removed)
-                            const _available = _agAlliesWithDebuff.filter(function(n){
-                                const _c = gameState.characters[n];
-                                return _c && (_c.statusEffects||[]).some(function(e){ return e && e.type==='debuff' && !e.permanent; });
+                            (_c.statusEffects||[]).forEach(function(e) {
+                                if (e && e.type === 'debuff' && !e.permanent) _agAllDebuffs.push({ char: _n, effect: e });
                             });
-                            if (_available.length === 0) break;
-                            const _agAlly = _available[Math.floor(Math.random() * _available.length)];
-                            const _agAllyC = gameState.characters[_agAlly];
-                            const _agDebuffs = (_agAllyC.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff' && !e.permanent; });
-                            const _rem = _agDebuffs[Math.floor(Math.random() * _agDebuffs.length)];
-                            _agAllyC.statusEffects = (_agAllyC.statusEffects||[]).filter(function(e){ return e !== _rem; });
-                            addLog('👑 Autoridad: limpia ' + (_rem.name||'') + ' de ' + _agAlly, 'buff');
+                        }
+                        // Pick random debuffs from the pool, up to _agCharges times
+                        let _cleaned = 0;
+                        for (let _i = 0; _i < _agCharges && _agAllDebuffs.length > 0; _i++) {
+                            const _pick = Math.floor(Math.random() * _agAllDebuffs.length);
+                            const _item = _agAllDebuffs.splice(_pick, 1)[0];
+                            const _c2 = gameState.characters[_item.char];
+                            if (!_c2) continue;
+                            _c2.statusEffects = (_c2.statusEffects||[]).filter(function(e){ return e !== _item.effect; });
+                            addLog('👑 Autoridad: limpia ' + (_item.effect.name||'debuff') + ' de ' + _item.char, 'buff');
                             _cleaned++;
                         }
-                        addLog('👑 Autoridad del Gobernante: ' + _cleaned + ' debuffs limpiados de aliados', 'buff');
+                        if (_cleaned > 0) addLog('👑 Autoridad del Gobernante: ' + _cleaned + ' debuff(s) limpiados del equipo aliado', 'buff');
+                        else addLog('👑 Autoridad del Gobernante: no había debuffs en el equipo aliado', 'info');
                     }
                 }
 
