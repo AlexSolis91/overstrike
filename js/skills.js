@@ -1283,12 +1283,34 @@
                     addLog('❌ Error al invocar sombra', 'info');
                 }
 
+            } else if (ability.effect === 'daga_kamish_sjw') {
+                // SUN JIN WOO - Daga de Kamish v2: 1 base + 1 por sombra; limpia 1 buff enemigo por sombra (random)
+                const _dkShadows = Object.values(gameState.summons).filter(function(s){ return s && s.team === attacker.team && s.hp > 0; }).length;
+                const _dkDmg = finalDamage + _dkShadows;
+                applyDamageWithShield(targetName, _dkDmg, gameState.selectedCharacter);
+                addLog('🗡️ Daga de Kamish: ' + _dkDmg + ' daño (' + finalDamage + ' base + ' + _dkShadows + ' por sombras)', 'damage');
+                // Limpia 1 buff enemigo aleatorio por cada sombra invocada
+                const _dkEnemyTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                const _dkEnemies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c && c.team===_dkEnemyTeam && !c.isDead && c.hp>0; });
+                for (let _i = 0; _i < _dkShadows; _i++) {
+                    if (_dkEnemies.length === 0) break;
+                    const _dkTgt = _dkEnemies[Math.floor(Math.random() * _dkEnemies.length)];
+                    const _dkTgtC = gameState.characters[_dkTgt];
+                    if (!_dkTgtC) continue;
+                    const _dkBuffs = (_dkTgtC.statusEffects||[]).filter(function(e){ return e && e.type === 'buff' && !e.permanent; });
+                    if (_dkBuffs.length > 0) {
+                        const _rem = _dkBuffs[Math.floor(Math.random() * _dkBuffs.length)];
+                        _dkTgtC.statusEffects = (_dkTgtC.statusEffects||[]).filter(function(e){ return e !== _rem; });
+                        addLog('🗡️ Daga de Kamish: limpia Buff ' + (_rem.name||'') + ' de ' + _dkTgt, 'buff');
+                    }
+                }
+
             } else if (ability.effect === 'daga_kamish') {
-                // SUN JIN WOO - Daga de Kamish: 2 daño base + 2 por sombra invocada
+                // Versión legacy — redirigir al nuevo handler
                 const shadowsActive = getSummonsBySummoner(gameState.selectedCharacter).length;
                 const dagaDmg = finalDamage + (shadowsActive * 2);
                 applyDamageWithShield(targetName, dagaDmg, gameState.selectedCharacter);
-                addLog(`🗡️ Daga de Kamish: ${dagaDmg} daño (base ${finalDamage} + ${shadowsActive * 2} por ${shadowsActive} sombra${shadowsActive !== 1 ? 's' : ''})`, 'damage');
+                addLog('🗡️ Daga de Kamish: ' + dagaDmg + ' daño', 'damage');
 
             } else if (ability.effect === 'stealth') {
                 // Sigilo - dura hasta fin de la ronda actual (1 ronda)
@@ -6548,14 +6570,121 @@
                 applyStealth(gameState.selectedCharacter, 2);
                 addLog('👤 Sigilo de las Sombras: ' + charName + ' entra en Sigilo 2T', 'buff');
 
+            } else if (ability.effect === 'dominio_monarca_sjw') {
+                // Dominio del Monarca: +1 HP Máx a SJW y sombras por cada sombra activa; activa pasivas de sombras
+                const _dmShadows = Object.entries(gameState.summons).filter(function(e){ return e[1] && e[1].team === attacker.team && e[1].hp > 0; });
+                const _dmCount = _dmShadows.length;
+                // Increase HP Max for SJW
+                attacker.maxHp = (attacker.maxHp||20) + _dmCount;
+                attacker.hp = Math.min(attacker.maxHp, (attacker.hp||0) + _dmCount);
+                addLog('🌑 Dominio del Monarca: ' + charName + ' gana +' + _dmCount + ' HP Máx (' + _dmCount + ' sombras activas)', 'buff');
+                // Increase HP Max for each shadow
+                _dmShadows.forEach(function(e){ var s=e[1]; s.maxHp=(s.maxHp||5)+_dmCount; s.hp=Math.min(s.maxHp,(s.hp||0)+_dmCount); });
+                // Trigger passive of each shadow immediately
+                if (typeof triggerIgrisPassive === 'function' && _dmShadows.some(function(e){ return e[1].name==='Igris'; }))
+                    triggerIgrisPassive(charName);
+                if (typeof triggerBeruPassive === 'function' && _dmShadows.some(function(e){ return e[1].name==='Beru'; }))
+                    triggerBeruPassive();
+                if (typeof triggerKaiselPassive === 'function' && _dmShadows.some(function(e){ return e[1].name==='Kaisel'; }))
+                    triggerKaiselPassive();
+                if (_dmShadows.some(function(e){ return e[1].name==='Bellion'; })) {
+                    // Bellion: 2 damage per shadow to random enemy
+                    const _bellCount = _dmCount;
+                    const _bellTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                    const _bellEnemies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c && c.team===_bellTeam && !c.isDead && c.hp>0; });
+                    if (_bellEnemies.length > 0) {
+                        const _bellTgt = _bellEnemies[Math.floor(Math.random() * _bellEnemies.length)];
+                        applyDamageWithShield(_bellTgt, 2 * _bellCount, 'Bellion');
+                        addLog('🌑 Bellion (Dominio): ' + (2*_bellCount) + ' daño a ' + _bellTgt, 'damage');
+                    }
+                }
+                if (_dmShadows.some(function(e){ return e[1].name==='Iron'; })) {
+                    // Iron: 3 cargas al equipo aliado
+                    const _ironTeam = attacker.team;
+                    for (const _an in gameState.characters) {
+                        const _ac = gameState.characters[_an];
+                        if (!_ac || _ac.team !== _ironTeam || _ac.isDead || _ac.hp <= 0) continue;
+                        generateChargesInline(_an, 3);
+                    }
+                    addLog('🌑 Iron (Dominio): equipo aliado gana 3 cargas', 'buff');
+                }
+                if (_dmShadows.some(function(e){ return e[1].name==='Tusk'; })) {
+                    // Tusk: aplica Quemadura 2HP a 2 enemigos aleatorios
+                    const _tuskTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                    const _tuskEn = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c && c.team===_tuskTeam && !c.isDead && c.hp>0; });
+                    for (let _ti = 0; _ti < 2 && _tuskEn.length > 0; _ti++) {
+                        const _tt = _tuskEn[Math.floor(Math.random() * _tuskEn.length)];
+                        applyFlatBurn(_tt, 2, 1);
+                        addLog('🌑 Tusk (Dominio): Quemadura 2HP aplicada a ' + _tt, 'debuff');
+                    }
+                }
+                if (_dmShadows.some(function(e){ return e[1].name==='Kamish'; })) {
+                    // Kamish: 50 daño repartido aleatoriamente
+                    const _kamTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                    const _kamEn = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c && c.team===_kamTeam && !c.isDead && c.hp>0; });
+                    let _kamDmgLeft = 50;
+                    for (let _ki = 0; _ki < 50 && _kamDmgLeft > 0 && _kamEn.length > 0; _ki++) {
+                        const _kt = _kamEn[Math.floor(Math.random() * _kamEn.length)];
+                        applyDamageWithShield(_kt, 1, 'Kamish');
+                        _kamDmgLeft--;
+                    }
+                    addLog('🌑 Kamish (Dominio): 50 daño repartido al equipo enemigo', 'damage');
+                }
+                addLog('🌑 Dominio del Monarca: pasivas de ' + _dmCount + ' sombras activadas', 'buff');
+
+            } else if (ability.effect === 'extraccion_sombras_sjw') {
+                // Extracción de Sombras: solo usable sobre enemigo derrotado (HP=0)
+                const _esTgt = gameState.characters[targetName];
+                if (!_esTgt || (_esTgt.hp > 0 && !_esTgt.isDead)) {
+                    addLog('⚠️ Extracción de Sombras: ' + targetName + ' debe estar derrotado (HP = 0)', 'info');
+                } else {
+                    // Revive as ally with 5 HP, 20 charges, team switches
+                    _esTgt.isDead = false;
+                    _esTgt.hp = 5;
+                    _esTgt.maxHp = Math.max(_esTgt.maxHp||20, 5);
+                    _esTgt.charges = 20;
+                    _esTgt.team = attacker.team;
+                    _esTgt.shield = 0;
+                    _esTgt.statusEffects = [];
+                    // Replace passive with Explosion de Sombras
+                    _esTgt.passive = {
+                        name: 'Explosión de Sombras',
+                        description: 'Al morir, causa daño equivalente a sus cargas actuales sobre un enemigo aleatorio.',
+                        _explosionDeSombras: true
+                    };
+                    addLog('💀 Extracción de Sombras: ' + targetName + ' revive como aliado con 5 HP y 20 cargas. Pasiva sustituida por Explosión de Sombras.', 'buff');
+                    renderCharacters();
+                }
+
+            } else if (ability.effect === 'autoridad_gobernante_sjw') {
+                // Autoridad del Gobernante v2: elimina todas las cargas del objetivo, por cada carga limpia 1 debuff aliado
+                const _agTgt = gameState.characters[targetName];
+                if (_agTgt) {
+                    const _agCharges = _agTgt.charges || 0;
+                    _agTgt.charges = 0;
+                    addLog('👑 Autoridad del Gobernante: ' + targetName + ' pierde ' + _agCharges + ' cargas', 'debuff');
+                    // Limpia 1 debuff de aliado aleatorio por carga eliminada
+                    const _agMyTeam = attacker.team;
+                    for (let _i = 0; _i < _agCharges; _i++) {
+                        const _agAllies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c && c.team===_agMyTeam && !c.isDead && c.hp>0; });
+                        if (_agAllies.length === 0) break;
+                        const _agAlly = _agAllies[Math.floor(Math.random() * _agAllies.length)];
+                        const _agAllyC = gameState.characters[_agAlly];
+                        const _agDebuffs = (_agAllyC.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff' && !e.permanent; });
+                        if (_agDebuffs.length > 0) {
+                            const _rem = _agDebuffs[Math.floor(Math.random() * _agDebuffs.length)];
+                            _agAllyC.statusEffects = (_agAllyC.statusEffects||[]).filter(function(e){ return e !== _rem; });
+                            addLog('👑 Autoridad: limpia ' + (_rem.name||'') + ' de ' + _agAlly, 'buff');
+                        }
+                    }
+                }
+
             } else if (ability.effect === 'autoridad_gobernante') {
+                // Legacy autoridad
                 const _agAtk = gameState.characters[gameState.selectedCharacter];
                 if (_agAtk) {
-                    _agAtk.statusEffects = (_agAtk.statusEffects||[]).filter(e => !e || normAccent(e.name||'') !== 'esquiva area');
-                    _agAtk.statusEffects.push({ name: 'Esquiva Area', type: 'buff', duration: 3, emoji: '💨' });
-                    _agAtk.statusEffects = (_agAtk.statusEffects||[]).filter(e => !e || normAccent(e.name||'') !== 'regeneracion');
-                    _agAtk.statusEffects.push({ name: 'Regeneracion', type: 'buff', duration: 3, percent: 20, emoji: '💖' });
-                    addLog('👑 Autoridad del Gobernante: ' + charName + ' gana Esquiva Área 3T + Regeneración 20% 3T', 'buff');
+                    applyAreaDodge(_agAtk, 3);
+                    addLog('👑 Autoridad del Gobernante (legacy): Esquiva Área 3T', 'buff');
                 }
 
             // ══════════════════════════════════════════════════════
