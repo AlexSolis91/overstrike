@@ -236,6 +236,27 @@
                     }
                 }
 
+            } else if (ability.target === 'enemy_dead') {
+                // Targets only DEAD enemies — for Extracción de Sombras
+                title.textContent = '💀 Selecciona un Enemigo Derrotado';
+                let hasDeadEnemy = false;
+                for (let name in gameState.characters) {
+                    const char = gameState.characters[name];
+                    if (char.team === enemyTeam && char.isDead) {
+                        hasDeadEnemy = true;
+                        grid.innerHTML += makeTargetBtn(
+                            `executeAbility('${name}')`,
+                            getActivePortrait(name, char),
+                            name,
+                            `<strong>${name}</strong><br><small>💀 Derrotado — HP 0</small>`,
+                            'filter: grayscale(0.5); border-color: #c864ff;'
+                        );
+                    }
+                }
+                if (!hasDeadEnemy) {
+                    grid.innerHTML = '<div style="color:#888;font-size:.85rem;text-align:center;grid-column:1/-1;padding:20px;">No hay enemigos derrotados disponibles.</div>';
+                }
+
             } else {
                 // Single target — enemigos
                 const targetTeam = attackerTeam === 'team1' ? 'team2' : 'team1';
