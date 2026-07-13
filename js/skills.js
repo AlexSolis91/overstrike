@@ -6879,6 +6879,13 @@
                 addLog('⚫ Kamehame Ha Oscuro: ' + _kmDmg + ' daño a ' + targetName, 'damage');
                 if (Math.random() < 0.50) applyStun(targetName, 1);
 
+            } else if (ability.effect === 'arde_cosmos_seiya') {
+                // SEIYA — ¡Arde, cosmos!: genera 2-10 cargas + turno adicional
+                const _acCharges = Math.floor(Math.random() * 9) + 2; // 2-10
+                generateChargesInline(gameState.selectedCharacter, _acCharges);
+                gameState._extraTurnChar = gameState.selectedCharacter;
+                addLog('🔥 ¡Arde, cosmos!: Seiya gana ' + _acCharges + ' cargas y un turno adicional', 'buff');
+
             } else if (ability.effect === 'puno_pegaso_seiya') {
                 // SEIYA — Puño de Pegaso: 1 daño + genera 1-3 cargas a un aliado aleatorio
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
