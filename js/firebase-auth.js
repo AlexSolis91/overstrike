@@ -4090,9 +4090,18 @@
                 ? '<div style="font-family:Orbitron,sans-serif;font-size:1.25rem;color:#ffd700;margin-bottom:8px;text-shadow:0 0 20px #ffd700,0 0 40px #ffaa00;">⭐ ¡LEGENDARIO! ⭐</div>'
                 : '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:'+color+';margin-bottom:8px;letter-spacing:.05em;">¡COFRE ABIERTO!</div>';
 
-            var imgBlock = isRune
-                ? '<img src="'+imgSrc+'" style="width:90px;height:90px;object-fit:contain;border-radius:10px;border:2px solid #c864ff;margin:14px auto;display:block;">'
-                : (imgSrc ? '<img src="'+imgSrc+'" style="'+imgStyle+'" onerror="this.style.display='none'">' : '<div style="font-size:3rem;margin:12px 0;">⚔️</div>');
+            var imgBlock;
+            if (isRune) {
+                imgBlock = '<img src="' + imgSrc + '" style="width:90px;height:90px;object-fit:contain;border-radius:10px;border:2px solid #c864ff;margin:14px auto;display:block;">';
+            } else if (imgSrc) {
+                var imgEl = document.createElement('img');
+                imgEl.src = imgSrc;
+                imgEl.style.cssText = imgStyle;
+                imgEl.onerror = function(){ this.style.display = 'none'; };
+                imgBlock = imgEl.outerHTML;
+            } else {
+                imgBlock = '<div style="font-size:3rem;margin:12px 0;">⚔️</div>';
+            }
 
             // ── Create portal container appended to <html> to escape ALL stacking contexts ──
             var portal = document.createElement('div');
