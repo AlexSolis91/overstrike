@@ -9768,6 +9768,108 @@
             // ALBUS DUMBLEDORE — handlers
             // ══════════════════════════════════════════════════════
 
+
+            } else if (ability.effect === 'confundus_grindelwald') {
+                // GRINDELWALD — Confundus: 2 daño ST + Mega Posesión a 2 enemigos si objetivo tenía buff
+                const _cgTgt = gameState.characters[targetName];
+                const _cgHadBuff = _cgTgt && (_cgTgt.statusEffects||[]).some(function(e){ return e && e.type==='buff'; });
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                if (_cgHadBuff) {
+                    const _cgETeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                    const _cgEnemies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===_cgETeam&&!c.isDead&&c.hp>0; });
+                    const _shuffled = _cgEnemies.sort(function(){ return Math.random()-0.5; }).slice(0,2);
+                    _shuffled.forEach(function(n){
+                        applyDebuff(n, { name:'Mega Posesion', type:'debuff', duration:3, emoji:'😈' });
+                        addLog('🔮 Confundus: Mega Posesión aplicada a ' + n, 'debuff');
+                    });
+                }
+
+            } else if (ability.effect === 'protego_diabolica_grindelwald') {
+                // GRINDELWALD — Protego Diabolica: disipa debuffs aliados + escudo 1HP/debuff + Aura de Fuego 3T
+                const _pdTeam = attacker.team;
+                let _pdDebuffsCleared = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _pdTeam || _c.isDead || _c.hp <= 0) continue;
+                    const _debuffs = (_c.statusEffects||[]).filter(function(e){ return e && e.type==='debuff' && !e.permanent; });
+                    _pdDebuffsCleared += _debuffs.length;
+                    _c.statusEffects = (_c.statusEffects||[]).filter(function(e){ return !e || e.type !== 'debuff' || e.permanent; });
+                }
+                // Apply shield 1HP per debuff cleared
+                if (_pdDebuffsCleared > 0) {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _pdTeam || _c.isDead || _c.hp <= 0) continue;
+                        applyShield(_n, _pdDebuffsCleared);
+                    }
+                }
+                // Apply Aura de Fuego 3T
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _pdTeam || _c.isDead || _c.hp <= 0) continue;
+                    applyBuff(_n, { name:'Aura de Fuego', type:'buff', duration:3, emoji:'🔥' });
+                }
+                addLog('🔵 Protego Diabolica: ' + _pdDebuffsCleared + ' debuffs disipados + Escudo ' + _pdDebuffsCleared + ' HP + Aura de Fuego 3T al equipo', 'buff');
+
+            } else if (ability.effect === 'infierno_azul_grindelwald') {
+                // GRINDELWALD — Infierno Azul: AOE ignora Esquiva Área + Quemadura 3HP + QS + disipa buffs enemigos + 1 carga aliada por buff
+                const _ibETeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                let _ibBuffsCleared = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _ibETeam || _c.isDead || _c.hp <= 0) continue;
+                    // Ignore area dodge
+                    const _savedSE = _c.statusEffects;
+                    _c.statusEffects = (_c.statusEffects||[]).filter(function(e){ return !e || (e.name !== 'Esquiva Area' && e.name !== 'EsquivaArea'); });
+                    applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                    // Apply Quemadura 3HP
+                    applyFlatBurn(_n, 3, 2);
+                    // Apply Quemadura Solar
+                    applyDebuff(_n, { name:'Quemadura Solar', type:'debuff', duration:2, emoji:'☀️', quemaduraSolar: true });
+                    // Disipa buffs
+                    const _buffs = (_c.statusEffects||[]).filter(function(e){ return e && e.type==='buff' && !e.permanent; });
+                    _ibBuffsCleared += _buffs.length;
+                    _c.statusEffects = (_c.statusEffects||[]).filter(function(e){ return !e || e.type !== 'buff' || e.permanent; });
+                }
+                addLog('🔵 Infierno Azul: AOE a todos los enemigos + Quemadura 3HP + QS — ' + _ibBuffsCleared + ' buffs disipados', 'damage');
+                // 1 carga aliada por buff disipado
+                if (_ibBuffsCleared > 0) {
+                    const _ibAllies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===attacker.team&&!c.isDead&&c.hp>0; });
+                    _ibAllies.forEach(function(n){ generateChargesInline(n, _ibBuffsCleared); });
+                    addLog('🔵 Infierno Azul: equipo aliado gana ' + _ibBuffsCleared + ' cargas', 'buff');
+                }
+
+            } else if (ability.effect === 'apocalipsis_grindelwald') {
+                // GRINDELWALD — Apocalipsis del Bien Mayor: 3 efectos aleatorios de 5
+                const _apETeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                const _apMyTeam = attacker.team;
+                const _apEffects = [
+                    function() { // 1: Quemaduras 15HP
+                        for (const _n in gameState.characters) { const _c=gameState.characters[_n]; if(!_c||_c.team!==_apETeam||_c.isDead||_c.hp<=0) continue; applyFlatBurn(_n, 15, 2); }
+                        addLog('🔥 Apocalipsis: Quemaduras 15HP a todos los enemigos', 'debuff');
+                    },
+                    function() { // 2: 15 stacks Veneno
+                        for (const _n in gameState.characters) { const _c=gameState.characters[_n]; if(!_c||_c.team!==_apETeam||_c.isDead||_c.hp<=0) continue; applyPoison(_n, 15, 2); }
+                        addLog('☠️ Apocalipsis: 15 stacks Veneno a todos los enemigos', 'debuff');
+                    },
+                    function() { // 3: Silenciar 3T
+                        for (const _n in gameState.characters) { const _c=gameState.characters[_n]; if(!_c||_c.team!==_apETeam||_c.isDead||_c.hp<=0) continue; applyDebuff(_n, { name:'Silenciar', type:'debuff', duration:3, emoji:'🔇', silenciar:true }); }
+                        addLog('🔇 Apocalipsis: Silenciar 3T a todos los enemigos', 'debuff');
+                    },
+                    function() { // 4: Cura 15HP aliados
+                        for (const _n in gameState.characters) { const _c=gameState.characters[_n]; if(!_c||_c.team!==_apMyTeam||_c.isDead||_c.hp<=0) continue; applyHeal(_n, 15, 'Apocalipsis'); }
+                        addLog('💚 Apocalipsis: 15 HP curados a todos los aliados', 'heal');
+                    },
+                    function() { // 5: 15 cargas aliados
+                        for (const _n in gameState.characters) { const _c=gameState.characters[_n]; if(!_c||_c.team!==_apMyTeam||_c.isDead||_c.hp<=0) continue; generateChargesInline(_n, 15); }
+                        addLog('⚡ Apocalipsis: 15 cargas a todos los aliados', 'buff');
+                    }
+                ];
+                // Pick 3 random unique effects
+                const _apShuffled = _apEffects.sort(function(){ return Math.random()-0.5; });
+                _apShuffled.slice(0,3).forEach(function(fn){ fn(); });
+                addLog('💀 Apocalipsis del Bien Mayor: 3 efectos aplicados', 'buff');
+
             } else if (ability.effect === 'chispa_de_sauco_dumbledore') {
                 // Chispa de Saúco: 2 daño ST. Silenciar 2T a 3 enemigos aleatorios. Dumbledore genera 1-8 cargas adicionales.
                 const _csAtk = gameState.characters[gameState.selectedCharacter];
