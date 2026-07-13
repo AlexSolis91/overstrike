@@ -6899,7 +6899,7 @@
             } else if (ability.effect === 'arde_cosmos_seiya') {
                 // SEIYA — ¡Arde, cosmos!: genera 2-10 cargas + turno adicional
                 // Guard against double-fire (self target calls core twice)
-                if (gameState._ardeCosmos_fired) { gameState._ardeCosmos_fired = false; break; }
+                if (gameState._ardeCosmos_fired) { gameState._ardeCosmos_fired = false; return; }
                 gameState._ardeCosmos_fired = true;
                 const _acCharges = Math.floor(Math.random() * 9) + 2; // 2-10
                 generateChargesInline(gameState.selectedCharacter, _acCharges);
