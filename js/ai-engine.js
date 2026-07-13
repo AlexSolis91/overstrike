@@ -52,6 +52,16 @@
                             });
                             if (alreadyActive) return false;
                         }
+                        // Bloquear enemy_dead si no hay enemigos derrotados
+                        if (ab.target === 'enemy_dead') {
+                            const _cTeam = char.team;
+                            const _eTeam = _cTeam === 'team1' ? 'team2' : 'team1';
+                            const _hasDeadEnemy = Object.keys(gameState.characters).some(function(n) {
+                                const c = gameState.characters[n];
+                                return c && c.team === _eTeam && c.isDead;
+                            });
+                            if (!_hasDeadEnemy) return false;
+                        }
                         return true;
                     });
                 }
