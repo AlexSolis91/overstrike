@@ -4835,6 +4835,23 @@
         }
         window.claimBossReward = claimBossReward;
 
+        // ── ADMIN: give attack runes to all players ──
+        window.adminGiveRunasAtaqueToAll = async function(amount) {
+            if (!isAdmin()) { console.warn('Not admin'); return; }
+            amount = amount || 12;
+            const snap = await db.ref('users').once('value');
+            const users = snap.val() || {};
+            let count = 0;
+            for (const uid in users) {
+                const runaRef = db.ref('users/' + uid + '/runas_ataque');
+                const current = (await runaRef.once('value')).val() || 0;
+                await runaRef.set(current + amount);
+                count++;
+            }
+            console.log('[ADMIN] Gave ' + amount + ' runas_ataque to ' + count + ' players');
+            alert('✅ Se dieron ' + amount + ' runas de ataque a ' + count + ' jugadores');
+        };
+
         async function adminGetRanking() {
             if (!isAdmin()) return [];
             const snap = await db.ref('weekly_boss/damage_log').once('value');
