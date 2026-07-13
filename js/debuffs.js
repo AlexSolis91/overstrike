@@ -377,6 +377,33 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 const _sjwExists = Object.values(gameState.characters||{}).some(function(c){ return c && c.passive && c.passive.name === 'Arise!' && c.team !== _neb_team && !c.isDead && c.hp > 0; });
                 if (_sjwExists) notifyEnemyBuffApplied(targetName);
             }
+            // ── VISIÓN DE PROFETA (Grindelwald): cuando un buff se aplica a un ENEMIGO, limpia ese buff + 2 más de 2 enemigos aleatorios ──
+            if (!passiveExecuting && effectObj && effectObj.type === 'buff') {
+                const _gTeam = target.team; // team of the buffed char
+                const _grindTeam = _gTeam === 'team1' ? 'team2' : 'team1'; // Grindelwald's team
+                for (const _gn in gameState.characters) {
+                    const _gc = gameState.characters[_gn];
+                    if (!_gc || _gc.team !== _grindTeam || _gc.isDead || _gc.hp <= 0) continue;
+                    if (!_gc.passive || _gc.passive.name !== 'Visión de Profeta') continue;
+                    // Grindelwald is on the opposite team — strip the just-applied buff immediately
+                    target.statusEffects = (target.statusEffects||[]).filter(function(e){ return e !== effectObj; });
+                    addLog('🔮 Visión de Profeta: limpia buff ' + (effectObj.name||'') + ' de ' + targetName, 'buff');
+                    // Strip 2 more buffs from 2 random enemies (Grindelwald's enemies = _gTeam)
+                    const _gEnemies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===_gTeam&&!c.isDead&&c.hp>0; });
+                    for (let _gi=0; _gi<2; _gi++) {
+                        if (_gEnemies.length===0) break;
+                        const _gTgt = _gEnemies[Math.floor(Math.random()*_gEnemies.length)];
+                        const _gC2 = gameState.characters[_gTgt];
+                        const _gBuffs = (_gC2.statusEffects||[]).filter(function(e){ return e&&e.type==='buff'&&!e.permanent; });
+                        if (_gBuffs.length>0) {
+                            const _gRem = _gBuffs[Math.floor(Math.random()*_gBuffs.length)];
+                            _gC2.statusEffects = (_gC2.statusEffects||[]).filter(function(e){ return e!==_gRem; });
+                            addLog('🔮 Visión de Profeta: limpia buff ' + (_gRem.name||'') + ' de ' + _gTgt, 'buff');
+                        }
+                    }
+                    break; // Only one Grindelwald
+                }
+            }
             // ── CELERIDAD: aplicar aumento de velocidad inmediatamente ──
             if (effectObj && normAccent(effectObj.name||'') === 'celeridad') {
                 let _celBonus = 0;
