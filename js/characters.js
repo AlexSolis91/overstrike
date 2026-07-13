@@ -161,7 +161,7 @@
                 portraitUI:    'https://i.ibb.co/nsjHhRk9/Whats-App-Image-2026-03-31-at-11-17-12-AM-1.jpg',
                 passive: { name: 'Superacion de Limites', description: 'Cada vez que Goku se transforma, recupera 5 HP. Transformado en SS1: cada golpe genera 3 cargas. SS3: todos los ataques causan daño crítico. SS Blue: contraataca con 3 básicos al recibir un golpe. Ultra Instinto: Esquiva Área + Esquivar + +5 daño en todos los ataques.' },
                 abilities: [
-                    { name: 'Kame Hame Ha', type: 'basic', cost: 0, chargeGain: 2, damage: 3, target: 'single', effect: 'kame_hame_ha_goku', description: 'Causa 3 daño.' },
+                    { name: 'Kame Hame Ha', type: 'basic', cost: 0, chargeGain: 4, damage: 3, target: 'single', effect: 'kame_hame_ha_goku', description: 'Causa 3 daño. Genera 4 cargas.' },
                     { name: 'Kaio Ken', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'self', effect: 'kaio_ken_goku', description: 'Se aplica Buff Contraataque 3 turnos. Se aplica Buff Furia 3 turnos.' },
                     { name: 'Transformacion', type: 'special', cost: 8, chargeGain: 7, damage: 0, target: 'self', effect: 'transformacion_goku', description: 'TRANSFORMACION: 35% Super Sayajin, 30% Super Sayajin 3, 25% Super Sayajin Blue, 10% Ultra Instinto. Recupera 5 HP. Gana un turno adicional.' },
                     { name: 'Genkidama', type: 'over', cost: 12, chargeGain: 0, damage: 8, target: 'aoe', effect: 'genkidama_goku', description: 'Causa 8 AOE. SS1: roba 5 cargas de cada enemigo. SS3: ignora Esquivar y Esquiva Área. SS Blue: reduce a 0 las cargas de cada enemigo. Ultra Instinto: 50% de eliminar a cada enemigo golpeado.' }
@@ -424,7 +424,7 @@
                 abilities: [
                     { name: 'Puño de Pegaso',      type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'puno_pegaso_seiya',    description: 'Causa 1 daño. Genera de 1 a 3 cargas a un aliado aleatorio.' },
                     { name: '¡Arde, cosmos!',      type: 'special', cost: 3,  chargeGain: 0, damage: 0, target: 'self',   effect: 'arde_cosmos_seiya',    description: 'Seiya genera de 2 a 10 cargas y gana 1 turno adicional.' },
-                    { name: 'Vínculo de Atena',    type: 'special', cost: 0,  chargeGain: 0, damage: 0, target: 'self',   effect: 'vinculo_atena_seiya',  description: 'Seiya sacrifica el 50% de su HP. Reparte sus cargas actuales entre los aliados aleatoriamente. Aplica Buff Esquivar 2 turnos al equipo aliado.' },
+                    { name: 'Vínculo de Atena',    type: 'special', cost: 6,  chargeGain: 0, damage: 1, target: 'single', effect: 'vinculo_atena_seiya',  description: 'Realiza 5 ataques básicos sobre el objetivo. Cada ataque tiene un 50% de probabilidad de crítico (daño doble) independiente.' },
                     { name: 'Pegasus Ryu Sei Ken', type: 'over',    cost: 12, chargeGain: 0, damage: 0, target: 'single', effect: 'pegasus_ryuseiken',    description: 'Causa 5 a 30 daño adicional al objetivo. Si elimina al objetivo, causa 5 a 15 daño adicional a cada enemigo.' }
                 ]
             },
