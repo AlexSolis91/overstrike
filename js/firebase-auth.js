@@ -4921,4 +4921,4934 @@
                 // Verificar si hay un premio de temporada pendiente de reclamar
                 try { await checkPendingSeasonReward(user.uid); } catch(e) {}
             }
+        });var imgBlock;
+            if (isRune) {
+                imgBlock = '<img src="' + imgSrc + '" style="width:90px;height:90px;object-fit:contain;border-radius:10px;border:2px solid #c864ff;margin:14px auto;display:block;">';
+            } else if (imgSrc) {
+                imgBlock = '<img src="' + imgSrc + '" style="' + imgStyle + '">';
+            } else {
+                imgBlock = '<div style="font-size:3rem;margin:12px 0;">⚔️</div>';
+            }/ ==================== FIREBASE CONFIG & AUTH ====================
+        const firebaseConfig = {
+            apiKey: "AIzaSyChCFsE6F4iO97iH1ItFWCJtHU-XoA5Ruk",
+            authDomain: "overstrike-game.firebaseapp.com",
+            databaseURL: "https://overstrike-game-default-rtdb.firebaseio.com",
+            projectId: "overstrike-game",
+            storageBucket: "overstrike-game.firebasestorage.app",
+            messagingSenderId: "685184595019",
+            appId: "1:685184595019:web:24791d11451b8ee8aec9ce"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        // ── Current user & room state ──
+        let currentUser = null;
+        let currentRoomId = null;
+        let isRoomHost = false;
+        let onlineMode = false;
+        let chatOpen = false;
+        let unreadMessages = 0;
+        let roomListener = null;
+        let chatListener = null;
+
+        // ── Auth state listener ──
+        auth.onAuthStateChanged(function(user) {
+            if (user) {
+                currentUser = user;
+                document.getElementById('loginScreen').style.display = 'none';
+                // Only show lobby if no game, mode select, or char select is active
+                var _gc = document.querySelector('.game-container');
+                var _cs = document.getElementById('charSelectScreen');
+                var _ms = document.getElementById('modeSelectScreen');
+                var _gameActive = _gc && _gc.style.display === 'block';
+                var _csActive = _cs && _cs.style.display !== 'none';
+                var _msActive = _ms && _ms.style.display !== 'none';
+                if (!_gameActive && !_csActive && !_msActive) {
+                    showLobby();
+                }
+            } else {
+                currentUser = null;
+                showScreen('loginScreen');
+            }
+        });
+
+        function showScreen(id) {
+            ['loginScreen','splashScreen','lobbyScreen','waitingScreen','modeSelectScreen','charSelectScreen'].forEach(function(s) {
+                const el = document.getElementById(s);
+                if (el) el.style.display = 'none';
+            });
+
+            const target = document.getElementById(id);
+            if (!target) return;
+            if (id === 'lobbyScreen' || id === 'waitingScreen') target.style.display = 'flex';
+            else if (id === 'modeSelectScreen') target.style.display = 'flex';
+            else if (id === 'loginScreen') target.style.display = 'flex';
+            else if (id === 'splashScreen') target.style.display = 'flex';
+            else target.style.display = 'block';
+        }
+
+        function signInWithGoogle() {
+            const btn = document.getElementById('googleLoginBtn');
+            btn.disabled = true;
+            btn.style.opacity = '0.7';
+            document.getElementById('loginStatus').textContent = 'Conectando...';
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider).then(function(result) {
+                // onAuthStateChanged handles the rest
+            }).catch(function(err) {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                document.getElementById('loginStatus').textContent = 'Error: ' + err.message;
+                console.error('Login error:', err);
+            });
+        }
+
+        function signOut() {
+            if (currentRoomId) cancelRoom();
+            auth.signOut().then(function() {
+                showScreen('loginScreen');
+                document.getElementById('loginStatus').textContent = '';
+            });
+        }
+
+        // ── Lobby ──
+
+        // ── BACK BUTTON INJECTION ──────────────────────────────────────────
+        // Adds "← Volver" buttons to screens that need them.
+        // Called once on page load and whenever a screen is shown.
+        function injectBackButtons() {
+            // Screen definitions: { screenId, backLabel, backAction }
+            var BACK_CONFIG = [
+                {
+                    id: 'charSelectScreen',
+                    label: '← Volver al Lobby',
+                    action: 'showLobby()',
+                    existsCheck: function(el) {
+                        return !!el.querySelector('#csBackBtn');
+                    },
+                    inject: function(el) {
+                        var btn = document.createElement('button');
+                        btn.id = 'csBackBtn';
+                        btn.textContent = '← Volver al Lobby';
+                        btn.setAttribute('onclick', "document.querySelector('.game-container') && (document.querySelector('.game-container').style.display = 'none'); showScreen('lobbyScreen'); showLobby();");
+                        btn.style.cssText = [
+                            'position:fixed',
+                            'top:14px',
+                            'left:14px',
+                            'z-index:9999',
+                            'background:rgba(0,0,0,0.55)',
+                            'border:1.5px solid rgba(255,255,255,0.25)',
+                            'color:#ccc',
+                            'font-family:Orbitron,sans-serif',
+                            'font-size:.72rem',
+                            'letter-spacing:.06em',
+                            'padding:8px 16px',
+                            'border-radius:8px',
+                            'cursor:pointer',
+                            'transition:all .15s'
+                        ].join(';');
+                        btn.onmouseover = function() {
+                            this.style.background = 'rgba(79,195,247,0.18)';
+                            this.style.borderColor = '#4fc3f7';
+                            this.style.color = '#4fc3f7';
+                        };
+                        btn.onmouseout = function() {
+                            this.style.background = 'rgba(0,0,0,0.55)';
+                            this.style.borderColor = 'rgba(255,255,255,0.25)';
+                            this.style.color = '#ccc';
+                        };
+                        el.appendChild(btn);
+                    }
+                },
+                {
+                    id: 'modeSelectScreen',
+                    existsCheck: function(el) {
+                        // modeSelectScreen already has "← Volver al Lobby" as the first button
+                        return true;
+                    },
+                    inject: function() {}
+                },
+                {
+                    id: 'waitingScreen',
+                    existsCheck: function(el) {
+                        // waitingScreen already has "Cancelar" button
+                        return true;
+                    },
+                    inject: function() {}
+                }
+            ];
+
+            BACK_CONFIG.forEach(function(cfg) {
+                var el = document.getElementById(cfg.id);
+                if (!el) return;
+                if (!cfg.existsCheck(el)) cfg.inject(el);
+            });
+        }
+
+        // Run on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(injectBackButtons, 500);
+        });
+        // Also run immediately in case DOM is already ready
+        if (document.readyState !== 'loading') {
+            setTimeout(injectBackButtons, 500);
+        }
+
+
+        // ══════════════════════════════════════════════════════════
+        // BATTLE BACKGROUNDS — random image each game
+        // ══════════════════════════════════════════════════════════
+        var BATTLE_BACKGROUNDS = [
+            'https://i.ibb.co/8LxLkDJY/Ancient-Drake-Giulia-Gentilini.jpg',
+            'https://i.ibb.co/ymWMRVz0/descarga-27.jpg',
+            'https://i.ibb.co/Q3BDLJX3/Tree-Brushes-Stamps.jpg',
+            'https://i.ibb.co/gZBst66Z/descarga-25.jpg',
+            'https://i.ibb.co/fGCKr6PC/image.jpg',
+            'https://i.ibb.co/Jw51jQ50/descarga-21.jpg',
+            'https://i.ibb.co/8nkyyhmx/descarga-18.jpg',
+            'https://i.ibb.co/chqF1cgx/descarga-17.jpg',
+            'https://i.ibb.co/KjVHhmmb/descarga-20.jpg',
+            'https://i.ibb.co/tMsBvX8z/Mortal-Kombat-Dragon-Logo.jpg',
+            'https://i.ibb.co/n8wgwPQF/Background-Battles-LETTA.jpg',
+            'https://i.ibb.co/60JZvczS/descarga-10.jpg',
+            'https://i.ibb.co/1GRjfQpG/Dragon-Ball-Z-Revival-Of-F.jpg',
+            'https://i.ibb.co/3yyY65nG/Instagram.jpg'
+        ];
+        var LICH_KING_BACKGROUND = 'https://i.ibb.co/Txt7q1bY/descarga-8.jpg';
+
+        function applyBattleBackground(bossName) {
+            var url = (bossName && bossName.toLowerCase().includes('lich'))
+                ? LICH_KING_BACKGROUND
+                : BATTLE_BACKGROUNDS[Math.floor(Math.random() * BATTLE_BACKGROUNDS.length)];
+            // Set body background — game-container is transparent so it shows through
+            document.body.style.backgroundImage = 'url(' + url + ')';
+            document.body.style.backgroundSize = 'cover';
+            document.body.style.backgroundPosition = 'center center';
+            document.body.style.backgroundRepeat = 'no-repeat';
+            document.body.style.backgroundAttachment = 'fixed';
+            var gc = document.querySelector('.game-container');
+            if (gc) gc.style.background = 'transparent';
+        }
+
+        function clearBattleBackground() {
+            document.body.style.backgroundImage = '';
+            var gc = document.querySelector('.game-container');
+            if (gc) gc.style.background = '';
+        }
+
+        function showLobby() {
+            clearBattleBackground();
+            // Never override an active game, mode select, or char select screen
+            var gc = document.querySelector('.game-container');
+            var charScreen = document.getElementById('charSelectScreen');
+            var modeScreen = document.getElementById('modeSelectScreen');
+            if (gc && gc.style.display === 'block') return; // game running
+            if (charScreen && charScreen.style.display !== 'none') return; // char select open
+            if (modeScreen && modeScreen.style.display !== 'none') return; // mode select open
+            // First call after login: show splash. Subsequent calls (back from game, etc.): show lobby directly.
+            if (!window._splashShown) {
+                window._splashShown = true;
+                showScreen('splashScreen');
+                if (typeof window._pickSplashVideo === 'function') window._pickSplashVideo();
+            } else {
+                showScreen('lobbyScreen');
+            }
+            document.getElementById('lobbyUserName').textContent = currentUser.displayName || currentUser.email;
+            const photo = document.getElementById('lobbyUserPhoto');
+            if (currentUser.photoURL) photo.src = currentUser.photoURL;
+            else photo.style.display = 'none';
+            refreshRooms();
+            trackOnlinePresence();
+            initGlobalChat(); // #5
+
+            // Mostrar botones admin si es administrador
+            var _isAdmin = typeof isAdmin === 'function' && isAdmin();
+            var adminBtn = document.getElementById('adminBtn');
+            var bossBtn  = document.getElementById('bossActivationBtn');
+            if (adminBtn) adminBtn.style.display = _isAdmin ? 'block' : 'none';
+            if (bossBtn)  bossBtn.style.display  = _isAdmin ? 'block' : 'none';
+
+            // Check for pending boss event reward (runs once per session)
+            if (!window._bossRewardChecked && currentUser) {
+                window._bossRewardChecked = true;
+                if (typeof checkPendingBossReward === 'function') {
+                    checkPendingBossReward(currentUser.uid);
+                }
+            }
+        }
+
+        function goToLocalMode(mode) {
+            // Go directly to char select - skip modeSelectScreen entirely from lobby
+            csSelectMode(mode);
+        }
+
+        function trackOnlinePresence() {
+            if (!currentUser) return;
+            const userRef = db.ref('presence/' + currentUser.uid);
+            userRef.set({ name: currentUser.displayName, online: true, ts: Date.now(), uid: currentUser.uid });
+            userRef.onDisconnect().remove();
+
+            // Check and show ranked defense notifications
+            listenForDefenseNotifications();
+
+            // Check 30-day leaderboard reset
+            checkLeaderboardReset();
+
+            // Count online users and update players list
+            db.ref('presence').on('value', function(snap) {
+                const count = snap.numChildren();
+                const el = document.getElementById('onlineCount');
+                if (el) el.textContent = count;
+                updatePlayersList(snap.val()); // #4
+                updateOnlineChatList(snap.val()); // chat panel
+            });
+
+            listenForChallenges(); // #4
+            listenForPrivateChatNotifications(); // chat notifications + dot
+        }
+
+        // ── CHAT SYSTEM ──────────────────────────────────────────────
+        var _chatCurrentTarget = null;   // { uid, name }
+        var _chatListener = null;        // Firebase listener ref
+        var _chatUnread = 0;
+
+        window.toggleChatPanel = function() {
+            var panel = document.getElementById('chatPanel');
+            if (!panel) return;
+            var isOpen = panel.style.display === 'flex';
+            if (isOpen) {
+                panel.style.display = 'none';
+            } else {
+                panel.style.display = 'flex';
+                panel.style.flexDirection = 'column';
+                // Reset badge
+                _chatUnread = 0;
+                var badge = document.getElementById('chatNotifBadge');
+                if (badge) badge.style.display = 'none';
+                // Show online players by default
+                closeChatWindow();
+            }
+        };
+
+        window.closeChatWindow = function() {
+            // Detach listener
+            if (_chatListener) { _chatListener.off(); _chatListener = null; }
+            _chatCurrentTarget = null;
+            document.getElementById('chatWindow').style.display = 'none';
+            document.getElementById('onlineChatPlayersList').style.display = 'block';
+            document.getElementById('chatPanelTitle').textContent = '💬 JUGADORES EN LÍNEA';
+        };
+
+        window.openPrivateChatPanel = function(targetUid, targetName) {
+            // Make sure panel is open
+            var panel = document.getElementById('chatPanel');
+            if (panel) { panel.style.display = 'flex'; panel.style.flexDirection = 'column'; }
+            // Switch to chat window
+            document.getElementById('onlineChatPlayersList').style.display = 'none';
+            var cw = document.getElementById('chatWindow');
+            cw.style.display = 'flex'; cw.style.flexDirection = 'column';
+            document.getElementById('chatPanelTitle').textContent = '💬 ' + targetName;
+            document.getElementById('chatMessages').innerHTML = '';
+            document.getElementById('chatInput').value = '';
+            _chatCurrentTarget = { uid: targetUid, name: targetName };
+            // Mark notification from this user as read
+            if (currentUser) {
+                db.ref('chat_notifications/' + currentUser.uid + '/' + targetUid).remove();
+            }
+            // Listen for messages in this conversation
+            var myUid = currentUser.uid;
+            var convKey = [myUid, targetUid].sort().join('_');
+            if (_chatListener) { _chatListener.off(); }
+            _chatListener = db.ref('chats/' + convKey);
+            _chatListener.on('value', function(snap) {
+                var msgs = snap.val() || {};
+                var container = document.getElementById('chatMessages');
+                if (!container) return;
+                container.innerHTML = '';
+                Object.values(msgs).sort(function(a,b){ return a.ts - b.ts; }).forEach(function(m) {
+                    var isMe = m.from === myUid;
+                    var el = document.createElement('div');
+                    el.style.cssText = 'display:flex;flex-direction:column;align-items:' + (isMe?'flex-end':'flex-start') + ';gap:2px;';
+                    el.innerHTML = '<div style="max-width:85%;background:' + (isMe?'rgba(0,196,255,.18)':'rgba(255,255,255,.07)') + ';border:1px solid ' + (isMe?'rgba(0,196,255,.35)':'rgba(255,255,255,.1)') + ';border-radius:10px;padding:6px 10px;font-size:.78rem;color:#fff;word-break:break-word;">' +
+                        _escHtml(m.text) + '</div>' +
+                        '<div style="font-size:.6rem;color:#444;">' + new Date(m.ts).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) + '</div>';
+                    container.appendChild(el);
+                });
+                container.scrollTop = container.scrollHeight;
+            });
+        };
+
+        // Legacy alias used by existing player list buttons
+        window.openPrivateChat = window.openPrivateChatPanel;
+
+        window.sendChatMessage = function() {
+            var input = document.getElementById('chatInput');
+            var text = (input.value || '').trim();
+            if (!text || !_chatCurrentTarget || !currentUser) return;
+            var convKey = [currentUser.uid, _chatCurrentTarget.uid].sort().join('_');
+            db.ref('chats/' + convKey).push({
+                from: currentUser.uid,
+                fromName: currentUser.displayName,
+                to: _chatCurrentTarget.uid,
+                text: text,
+                ts: Date.now()
+            });
+            input.value = '';
+            // Send notification to recipient
+            db.ref('chat_notifications/' + _chatCurrentTarget.uid + '/' + currentUser.uid).set({
+                fromName: currentUser.displayName,
+                lastMsg: text,
+                ts: Date.now(),
+                read: false
+            });
+        };
+
+        // Listen for incoming chat notifications
+        function listenForChatNotifications() {
+            if (!currentUser) return;
+            db.ref('chat_notifications/' + currentUser.uid).on('value', function(snap) {
+                var notifs = snap.val() || {};
+                var unread = Object.values(notifs).filter(function(n){ return !n.read; }).length;
+                var badge = document.getElementById('chatNotifBadge');
+                if (badge) {
+                    if (unread > 0) {
+                        badge.textContent = unread > 9 ? '9+' : unread;
+                        badge.style.display = 'block';
+                        // Play notification sound
+                        var sfx = document.getElementById('sfxModo');
+                        if (sfx) { sfx.currentTime = 0; sfx.play().catch(function(){}); }
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        // Update the new online players list in chat panel
+        function updateOnlineChatList(presenceData) {
+            var list = document.getElementById('onlineChatPlayersList');
+            if (!list || !presenceData) return;
+            list.innerHTML = '';
+            var others = Object.entries(presenceData).filter(function(e){ return e[0] !== currentUser.uid; });
+            if (others.length === 0) {
+                list.innerHTML = '<div style="color:#444;font-size:.75rem;text-align:center;padding:20px;">No hay otros jugadores en línea</div>';
+                return;
+            }
+            others.forEach(function(e) {
+                var uid = e[0]; var data = e[1];
+                var row = document.createElement('div');
+                row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04);transition:background .15s;';
+                row.onmouseover = function(){ this.style.background='rgba(0,196,255,.06)'; };
+                row.onmouseout  = function(){ this.style.background=''; };
+                row.onclick     = function(){ openPrivateChatPanel(uid, data.name||'Jugador'); };
+                var dot = '<span style="width:7px;height:7px;background:#00ff88;border-radius:50%;display:inline-block;flex-shrink:0;"></span>';
+                row.innerHTML = dot + '<span style="flex:1;font-size:.82rem;color:#ccc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _escHtml(data.name||'Jugador') + '</span>' +
+                    '<span style="font-size:.65rem;color:#444;">💬</span>';
+                list.appendChild(row);
+            });
+        }
+
+        // ── END CHAT SYSTEM ──────────────────────────────────────────
+
+        // #4: Update active players list
+        function updatePlayersList(presenceData) {
+            const list = document.getElementById('playersList');
+            if (!list || !presenceData) return;
+            list.innerHTML = '';
+            Object.entries(presenceData).forEach(function([uid, data]) {
+                if (uid === currentUser.uid) return;
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:6px;padding:6px 8px;background:rgba(0,255,136,0.05);border:1px solid rgba(0,255,136,0.1);border-radius:8px;';
+                const nameSpan = document.createElement('span');
+                nameSpan.style.cssText = 'color:#ccc;font-size:.8rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+                nameSpan.textContent = data.name || 'Jugador';
+                const btns = document.createElement('div');
+                btns.style.cssText = 'display:flex;gap:4px;flex-shrink:0;';
+
+                const chatBtn = document.createElement('button');
+                chatBtn.title = 'Chat privado';
+                chatBtn.textContent = '💬';
+                chatBtn.style.cssText = 'background:rgba(0,196,255,0.1);border:1px solid rgba(0,196,255,0.3);color:#00c4ff;border-radius:6px;padding:3px 7px;cursor:pointer;font-size:.8rem;';
+                chatBtn.onclick = function() { openPrivateChat(uid, data.name); };
+
+                const chalBtn = document.createElement('button');
+                chalBtn.title = 'Desafiar';
+                chalBtn.textContent = '⚔️';
+                chalBtn.dataset.targetUid = uid;
+                chalBtn.style.cssText = 'background:rgba(255,170,0,0.1);border:1px solid rgba(255,170,0,0.3);color:#ffaa00;border-radius:6px;padding:3px 7px;cursor:pointer;font-size:.8rem;';
+                chalBtn.onclick = function() { sendChallenge(uid, data.name, chalBtn); };
+
+                btns.appendChild(chatBtn);
+                btns.appendChild(chalBtn);
+                row.appendChild(nameSpan);
+                row.appendChild(btns);
+                list.appendChild(row);
+            });
+            if (list.children.length === 0) {
+                list.innerHTML = '<div style="color:#444;font-size:.78rem;text-align:center;padding:.5rem;">No hay otros jugadores</div>';
+            }
+        }
+
+        // #4: Send challenge
+        let pendingChallengeId = null;
+        function sendChallenge(targetUid, targetName, btn) {
+            if (!currentUser) return;
+            if (pendingChallengeId) {
+                db.ref('challenges/' + pendingChallengeId).remove();
+                pendingChallengeId = null;
+            }
+            const chalId = currentUser.uid + '_' + targetUid;
+            pendingChallengeId = chalId;
+            db.ref('challenges/' + chalId).set({
+                fromUid: currentUser.uid,
+                fromName: currentUser.displayName || 'Jugador',
+                toUid: targetUid,
+                status: 'pending',
+                ts: Date.now()
+            });
+            btn.textContent = '⏳';
+            btn.disabled = true;
+            btn.title = 'Desafío enviado — click para cancelar';
+            btn.onclick = function() { cancelChallenge(chalId, btn, targetUid, targetName); };
+
+            db.ref('challenges/' + chalId + '/status').on('value', function(snap) {
+                const status = snap.val();
+                if (status === 'accepted') {
+                    db.ref('challenges/' + chalId + '/status').off();
+                    pendingChallengeId = null;
+                    const roomId = generateRoomCode();
+                    db.ref('challenges/' + chalId).update({ roomId: roomId });
+                    createOnlineRoomFromChallenge(roomId, chalId);
+                } else if (status === 'rejected') {
+                    db.ref('challenges/' + chalId + '/status').off();
+                    db.ref('challenges/' + chalId).remove();
+                    pendingChallengeId = null;
+                    btn.textContent = '⚔️';
+                    btn.disabled = false;
+                    btn.onclick = function() { sendChallenge(targetUid, targetName, btn); };
+                    alert(targetName + ' rechazó el desafío.');
+                }
+            });
+        }
+
+        function cancelChallenge(chalId, btn, targetUid, targetName) {
+            db.ref('challenges/' + chalId).remove();
+            pendingChallengeId = null;
+            if (btn) {
+                btn.textContent = '⚔️';
+                btn.disabled = false;
+                btn.onclick = function() { sendChallenge(targetUid, targetName, btn); };
+            }
+        }
+
+        // #4: Listen for incoming challenges
+        let activeChallengeId = null;
+        function listenForChallenges() {
+            if (!currentUser) return;
+            db.ref('challenges').orderByChild('toUid').equalTo(currentUser.uid).on('child_added', function(snap) {
+                const chal = snap.val();
+                if (!chal || chal.status !== 'pending') return;
+                activeChallengeId = snap.key;
+                const modal = document.getElementById('challengeModal');
+                if (modal) {
+                    document.getElementById('challengeModalText').textContent = (chal.fromName || 'Alguien') + ' te desafía a una batalla.';
+                    modal.style.display = 'flex';
+                }
+            });
+        }
+
+        function respondChallenge(accept) {
+            const modal = document.getElementById('challengeModal');
+            if (modal) modal.style.display = 'none';
+            if (!activeChallengeId) return;
+            if (accept) {
+                db.ref('challenges/' + activeChallengeId + '/status').set('accepted');
+                db.ref('challenges/' + activeChallengeId + '/roomId').on('value', function(snap) {
+                    const roomId = snap.val();
+                    if (!roomId) return;
+                    db.ref('challenges/' + activeChallengeId + '/roomId').off();
+                    db.ref('challenges/' + activeChallengeId).remove();
+                    activeChallengeId = null;
+                    joinRoom(roomId);
+                });
+            } else {
+                db.ref('challenges/' + activeChallengeId + '/status').set('rejected');
+                setTimeout(function() {
+                    if (activeChallengeId) db.ref('challenges/' + activeChallengeId).remove();
+                }, 2000);
+                activeChallengeId = null;
+            }
+        }
+
+        function createOnlineRoomFromChallenge(roomId, chalId) {
+            currentRoomId = roomId;
+            isRoomHost = true;
+            onlineMode = true;
+            db.ref('rooms/' + roomId).set({
+                host: { uid: currentUser.uid, name: currentUser.displayName, photo: currentUser.photoURL || '' },
+                guest: null,
+                status: 'waiting',
+                created: Date.now()
+            }).then(function() {
+                db.ref('challenges/' + chalId).remove();
+                showScreen('waitingScreen');
+                document.getElementById('waitingRoomCode').textContent = roomId;
+                document.getElementById('waitingStatus').textContent = '⏳ Conectando con rival...';
+                listenForGuest(roomId);
+            });
+        }
+
+        // #4: Private chat
+        let privateChatTarget = null;
+        let privateChatRef = null;
+        function openPrivateChat(targetUid, targetName) {
+            privateChatTarget = { uid: targetUid, name: targetName };
+            let panel = document.getElementById('privateChatPanel');
+            if (!panel) {
+                panel = document.createElement('div');
+                panel.id = 'privateChatPanel';
+                panel.style.cssText = 'position:fixed;bottom:20px;right:20px;width:300px;height:380px;background:#0a0e17;border:2px solid rgba(0,196,255,0.4);border-radius:16px;display:flex;flex-direction:column;z-index:8000;box-shadow:0 0 30px rgba(0,196,255,0.2);';
+                panel.innerHTML = [
+                    '<div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(0,196,255,0.15);">',
+                    '<span id="privateChatTitle" style="font-family:Orbitron,sans-serif;font-size:.78rem;color:#00c4ff;"></span>',
+                    '<button onclick="closePrivateChat()" style="background:none;border:none;color:#666;cursor:pointer;font-size:1rem;">✕</button>',
+                    '</div>',
+                    '<div id="privateChatMessages" style="flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:6px;"></div>',
+                    '<div style="display:flex;gap:6px;padding:10px;border-top:1px solid rgba(0,196,255,0.1);">',
+                    '<input id="privateChatInput" type="text" placeholder="Mensaje..." maxlength="120" style="flex:1;background:rgba(0,196,255,0.07);border:1px solid rgba(0,196,255,0.2);border-radius:8px;padding:7px 10px;color:#fff;font-size:.8rem;outline:none;" onkeydown="if(event.key===\'Enter\') sendPrivateMessage()">',
+                    '<button onclick="sendPrivateMessage()" style="background:linear-gradient(135deg,#003a5c,#006fa6);border:none;color:#00c4ff;border-radius:8px;padding:7px 12px;cursor:pointer;">➤</button>',
+                    '</div>'
+                ].join('');
+                document.body.appendChild(panel);
+            }
+            document.getElementById('privateChatTitle').textContent = '💬 ' + targetName;
+            document.getElementById('privateChatMessages').innerHTML = '';
+            panel.style.display = 'flex';
+
+            if (privateChatRef) privateChatRef.off();
+            const chatKey = [currentUser.uid, targetUid].sort().join('_');
+            privateChatRef = db.ref('privateChats/' + chatKey);
+            privateChatRef.limitToLast(50).on('child_added', function(snap) {
+                const msg = snap.val();
+                if (!msg) return;
+                const isMe = msg.uid === currentUser.uid;
+                const el = document.createElement('div');
+                el.style.cssText = 'max-width:80%;padding:6px 10px;border-radius:10px;font-size:.78rem;word-break:break-word;' + (isMe ? 'align-self:flex-end;background:rgba(0,196,255,0.15);color:#fff;' : 'align-self:flex-start;background:rgba(255,255,255,0.07);color:#ccc;');
+                el.innerHTML = '<span style="font-size:.68rem;color:#666;display:block;">' + escapeHtml(msg.name) + '</span>' + escapeHtml(msg.text);
+                document.getElementById('privateChatMessages').appendChild(el);
+                document.getElementById('privateChatMessages').scrollTop = 99999;
+            });
+        }
+
+        function closePrivateChat() {
+            const panel = document.getElementById('privateChatPanel');
+            if (panel) panel.style.display = 'none';
+            if (privateChatRef) { privateChatRef.off(); privateChatRef = null; }
+        }
+
+        function sendPrivateMessage() {
+            if (!privateChatTarget || !currentUser) return;
+            const input = document.getElementById('privateChatInput');
+            const text = (input && input.value.trim()) || '';
+            if (!text) return;
+            input.value = '';
+            const chatKey = [currentUser.uid, privateChatTarget.uid].sort().join('_');
+            db.ref('privateChats/' + chatKey).push({
+                uid: currentUser.uid,
+                name: currentUser.displayName || 'Jugador',
+                text: text,
+                ts: Date.now()
+            });
+        }
+
+        // #5: Global lobby chat
+        let globalChatListener = null;
+        function initGlobalChat() {
+            if (globalChatListener) return;
+            const chatRef = db.ref('globalChat');
+            globalChatListener = chatRef.limitToLast(60).on('child_added', function(snap) {
+                const msg = snap.val();
+                if (!msg) return;
+                const isMe = currentUser && msg.uid === currentUser.uid;
+                const el = document.createElement('div');
+                el.style.cssText = 'max-width:85%;padding:5px 9px;border-radius:8px;font-size:.78rem;word-break:break-word;' + (isMe ? 'align-self:flex-end;background:rgba(255,170,0,0.15);color:#fff;' : 'align-self:flex-start;background:rgba(255,255,255,0.06);color:#ccc;');
+                el.innerHTML = '<span style="font-size:.68rem;color:#888;display:block;">' + escapeHtml(msg.name) + '</span>' + escapeHtml(msg.text);
+                const container = document.getElementById('globalChatMessages');
+                if (container) { container.appendChild(el); container.scrollTop = 99999; }
+            });
+        }
+
+        function sendGlobalChat() {
+            if (!currentUser) return;
+            const input = document.getElementById('globalChatInput');
+            const text = (input && input.value.trim()) || '';
+            if (!text) return;
+            input.value = '';
+            const newMsg = {
+                uid: currentUser.uid,
+                name: currentUser.displayName || 'Jugador',
+                text: text,
+                ts: Date.now()
+            };
+            // Enforce max 30 messages: read current count, delete oldest if needed
+            const chatRef = db.ref('globalChat');
+            chatRef.once('value', function(snap) {
+                const msgs = snap.val();
+                const keys = msgs ? Object.keys(msgs) : [];
+                if (keys.length >= 30) {
+                    // Sort by ts and delete oldest
+                    const sorted = keys.sort(function(a, b) {
+                        return (msgs[a].ts || 0) - (msgs[b].ts || 0);
+                    });
+                    const toDelete = sorted.slice(0, keys.length - 29); // keep 29, add 1 = 30
+                    const updates = {};
+                    toDelete.forEach(function(k) { updates[k] = null; });
+                    chatRef.update(updates).then(function() { chatRef.push(newMsg); });
+                } else {
+                    chatRef.push(newMsg);
+                }
+            });
+        }
+
+
+        // ════════════════════════════════════════════════
+        // MODO RANKED
+        // ════════════════════════════════════════════════
+        const RANKED_FAKE_NAMES = ['Richo92', 'ManuEx', 'Dante777', 'LoboREX', 'MarcoAntonio', 'JesusGz', 'Leonheart', 'Arturo', 'Rois Najera', 'David89', 'Erikkson10', 'Klaord', 'Carlos Cortes', 'Alexis', 'ViktorBaezzz', 'DonaldTrump22', 'Elbicho', 'ValeriaBitz', 'Jorge Vz', 'Porfirio', 'D3XTER', 'Don RAMON', 'Lieerey', 'MR poop', 'yorobot', 'Vicente Martinez', 'Cavendish', 'Vinchester', 'GoodZilla', 'Nikoory', 'Zamael', 'Draxler'];
+        let rankedMatchmakingTimer = null;
+        let rankedMatchmakingListener = null;
+
+
+        // ════════════════════════════════════════════════
+        // EQUIPO RANKED — Selección y guardado de equipos
+        // ════════════════════════════════════════════════
+        let rtPickingTeam = 'attack'; // 'attack' | 'defense'
+        let rtPickingSlot = -1;
+        let rtFilterRole = 'all';
+        let rtFilterSpec = 'all';
+        let rtPendingConfirmName = null; // personaje pendiente de confirmar en ranked
+
+        // ── Tabla de roles y especialidades ──
+        const RT_CHAR_ROLES = {
+            'Madara Uchiha':        { roles: ['DPS'], specs: ['Golpe Critico','Turnos adicionales','Transformacion'] },
+            'Sun Jin Woo':          { roles: ['Invoker','Crowd Control'], specs: ['Sigilo','Generacion de Cargas','Eliminacion de Cargas','Quemaduras'] },
+            'Aldebaran':            { roles: ['Tanque','DPS'], specs: ['Provocacion','Escudo'] },
+            'Leonidas':             { roles: ['Support'], specs: ['Limpiador de Debuffs','Generacion de Cargas','Regeneracion HP','Aturdimiento'] },
+            'Min Byung':            { roles: ['Healer','Support'], specs: ['Curacion HP','Limpiador de Debuffs','Generacion de Cargas','Revividor','Esquiva Area'] },
+            'Rengoku':              { roles: ['DPS','Dotter'], specs: ['Quemaduras','Aturdimiento','Generacion de Cargas'] },
+            'Aspros de Gemini':     { roles: ['Crowd Control'], specs: ['Limpiador de Buffs','Roba Cargas','Generacion de Cargas','Esquiva Area','Confusion'] },
+            'Ymir':                 { roles: ['Tanque','Crowd Control','Support'], specs: ['Provocacion','Sangrado','Congelacion','Megacongelacion','Espinas','Golpe Critico','Limpiador de Debuffs'] },
+            'Thestalos':            { roles: ['Tanque','Dotter'], specs: ['Contraataque','Provocacion','Quemaduras','Curacion HP','Escudo Sagrado','Golpe Critico','Daño triple'] },
+            'Alexstrasza':          { roles: ['Healer','Dotter'], specs: ['Curacion HP','Escudo','Aura de Fuego','Transformacion','Regeneracion HP','Aura de Luz'] },
+            'Anakin Skywalker':     { roles: ['DPS'], specs: ['Asistir','Golpe Critico','Eliminacion de Cargas','Aturdimiento','Miedo','Transformacion','Reflejar'] },
+            'Goku':                 { roles: ['DPS'], specs: ['Contraataque','Furia','Transformacion','Eliminacion de Cargas'] },
+            'Ragnar Lothbrok':      { roles: ['DPS'], specs: ['Sangrado','Miedo'] },
+            'Saitama':              { roles: ['DPS'], specs: ['Inmunidades','Furia','Daño triple','Insta Kill'] },
+            'Ozymandias':           { roles: ['Invoker','Crowd Control'], specs: ['Quemadura Solar','Curacion HP','Eliminacion de Cargas'] },
+            'Gilgamesh':            { roles: ['DPS','Crowd Control'], specs: ['Golpe Critico','Eliminacion de Cargas','Anti Invoker','Roba Cargas'] },
+            'Goku Black':           { roles: ['DPS','Crowd Control','Invoker'], specs: ['Aura Oscura','Roba Cargas','Golpe Critico','Aturdimiento','Eliminacion de Cargas'] },
+            'Saga de Geminis':      { roles: ['DPS','Crowd Control'], specs: ['Aumento de Velocidad','Posesion','Mega Posesion'] },
+            'Minato Namikaze':      { roles: ['Crowd Control','Support'], specs: ['Esquiva Area','Celeridad','Aturdimiento','Congelacion','Posesion','Quemadura Solar','Sangrado','Miedo','Confusion','Debilitar','Silenciar','Roba Cargas','Generacion de Cargas'] },
+            'Muzan Kibutsuji':      { roles: ['DPS','Dotter'], specs: ['Curacion HP','Veneno','Transformacion'] },
+            'Nakime':               { roles: ['Crowd Control','Support'], specs: ['Confusion','Roba Cargas','Roba HP','Inmunidades'] },
+            'Sauron':               { roles: ['Tanque','DPS'], specs: ['Aturdimiento','Mega provocacion','Curacion HP','Silenciar'] },
+            'Darth Vader':          { roles: ['DPS','Crowd Control'], specs: ['Aura Oscura','Miedo','Aturdimiento','Reflejar'] },
+            'Lich King':            { roles: ['Tanque','Invoker','Crowd Control'], specs: ['Revividor','Congelacion','Aura Gelida','Roba HP','Inmunidades'] },
+            'Padme Amidala':        { roles: ['Support'], specs: ['Generacion de Cargas','Escudo','Limpiador de Debuffs'] },
+            'Daenerys Targaryen':   { roles: ['Invoker','Dotter','Healer'], specs: ['Quemaduras','Escudo Sagrado','Curacion HP','Inmunidades'] },
+            'Tamayo':               { roles: ['Support','Healer'], specs: ['Limpiador de Debuffs','Curacion HP','Regeneracion HP','Confusion'] },
+            'Emperador Palpatine':  { roles: ['Crowd Control'], specs: ['Aturdimiento','Posesion','Curacion HP','Mega Aturdimiento'] },
+            'Gandalf':              { roles: ['Healer','Support'], specs: ['Curacion HP','Provocacion','Regeneracion HP','Aura de Luz','Armadura','Inmunidades','Escudo'] },
+            'Doomsday':             { roles: ['Tanque','Crowd Control'], specs: ['Aturdimiento','Mega Aturdimiento','Curacion HP','Eliminacion de Cargas'] },
+            'Ikki de Fenix':        { roles: ['DPS','Dotter'], specs: ['Revive','Quemaduras','Eliminacion de Cargas'] },
+            'Linterna Verde':       { roles: ['Tanque','Support'], specs: ['Provocacion','Esquivar','Limpiador de Debuffs','Mega Aturdimiento','Curacion HP','Generacion de Cargas'] },
+            'Vegeta':               { roles: ['DPS'], specs: ['Transformacion','Limpiador de Buffs','Daño triple','Debilitar','Sangrado','Revive'] },
+            'Giyu Tomioka':         { roles: ['Tanque'], specs: ['Escudo','Mega Provocacion','Armadura'] },
+            'Itachi Uchiha':        { roles: ['Support','Dotter','Crowd Control'], specs: ['Posesion','Limpiador de debuffs','Quemaduras','Anti Invoker','Roba Cargas','Mega Aturdimiento','Debilitar'] },
+            'Garou':                { roles: ['DPS'], specs: ['Transformacion','Armadura','Veneno','Infectar'] },
+            'Tanjiro Kamado':       { roles: ['Support'], specs: ['Generacion de Cargas','Roba Cargas','Eliminacion de Cargas'] },
+            'The Joker':            { roles: ['Dotter','Crowd Control'], specs: ['Veneno','Aturdimiento'] },
+            'Batman':               { roles: ['Crowd Control','Support'], specs: ['Inmunidades','Aturdimiento','Roba Cargas','Esquiva Area','Silenciar','Eliminacion de Cargas'] },
+            'Superman':             { roles: ['Tanque'], specs: ['Curacion HP','Reduccion de Daño','Provocacion','Limpiador de Buffs','Quemadura Solar','Congelacion','Debilitar','Anti Invoker','Transformacion','Inmunidades'] },
+            'Kratos':               { roles: ['DPS'], specs: ['Sangrado','Mega Aturdimiento','Daño triple','Insta Kill'] },
+            'Shaka de Virgo':       { roles: ['Tanque','Healer','Support','Crowd Control'], specs: ['Provocacion','Curacion HP','Regeneracion HP','Generacion de Cargas','Mega posesion','Agotamiento'] },
+            'Varian Wrynn':         { roles: ['DPS'], specs: ['Golpe Critico','Regeneracion HP','Miedo','Aumento de Velocidad','Daño doble'] },
+            'Ivar the Boneless':    { roles: ['DPS','Support'], specs: ['Esquiva Area','Inmunidades','Reduccion de Velocidad','Aumento de Velocidad','Generacion de Cargas','Mega posesion'] },
+            'Lagertha':             { roles: ['Tanque','Support'], specs: ['Provocacion','Reflejar','Escudo','Proteccion Sagrada','Asistir'] },
+            'Shinobu Kocho':        { roles: ['Healer','Dotter','Support'], specs: ['Veneno','Curacion HP','Concentracion','Generacion de Cargas'] },
+            'Rey Brujo de Angmar':  { roles: ['Tanque','Dotter'], specs: ['Inmunidades','Provocacion','Infectar','Curacion HP','Eliminacion de Cargas'] },
+            'Flash':                { roles: ['DPS'], specs: ['Turnos adicionales','Esquiva Area','Esquivar','Roba Cargas','Golpe Critico'] },
+            'Naruto':               { roles: ['DPS'], specs: ['Transformacion','Mega Aturdimiento','Debilitar','Sangrado','Turnos Adicionales','Quemaduras'] },
+            'Jon Snow':             { roles: ['Support','Invoker'], specs: ['Esquiva Area','Revive','Mega Aturdimiento','Veneno'] },
+            'Antares':              { roles: ['DPS','Dotter'], specs: ['Quemaduras','Inmunidades','Miedo','Daño triple','Transformacion'] },
+            'Sasuke Uchiha':        { roles: ['DPS'], specs: ['Turnos adicionales','Roba Cargas','Agotamiento','Golpe Critico'] },
+            'Douma':                { roles: ['Support','Crowd Control','Invoker'], specs: ['Curacion HP','Congelacion','Megacongelacion','Generacion de Cargas'] },
+            'Jaina Proudmoore':     { roles: ['DPS','Crowd Control'], specs: ['Congelacion','Daño triple','Megacongelacion','Limpiador de Debuffs','Proteccion Sagrada','Eliminacion de Cargas','Reduccion de Velocidad'] },
+            'Gaara':                { roles: ['Support','Crowd Control'], specs: ['Aturdimiento','Reduccion de Velocidad','Anti Invoker','Daño triple','Roba Cargas','Escudo Sagrado','Insta Kill'] },
+            'Rey de la Noche':      { roles: ['Crowd Control'], specs: ['Inmunidades','Anti Invoker','Congelacion','Posesion','Megacongelacion','Revividor','Daño triple'] },
+            'Darkseid':             { roles: ['Tanque'], specs: ['Mega Provocacion','Roba HP','Golpe Critico','Anti Invoker'] },
+            'Escanor':              { roles: ['DPS','Tanque'], specs: ['Quemadura Solar','Transformacion'] },
+            'Yorichi':              { roles: ['DPS','Crowd Control'], specs: ['Quemadura Solar','Golpe Critico','Quemaduras'] },
+            'Marik Ishtar':         { roles: ['Invoker','Crowd Control'], specs: ['Quemadura Solar','Aura Oscura','Anti Invoker','Eliminacion de Cargas'] },
+            'Daemon Targaryen':     { roles: ['DPS','Dotter'], specs: ['Daño triple','Golpe Critico','Quemaduras','Limpiador de Buffs'] },
+            'Manigoldo':            { roles: ['DPS'], specs: ['Roba HP','Roba Cargas','Mega Aturdimiento'] },
+            'Kyo Kusanagi':         { roles: ['Support','Dotter'], specs: ['Aura de Fuego','Quemaduras','Silenciar','Roba HP','Roba Cargas'] },
+            'Iori Yagami':          { roles: ['DPS','Support'], specs: ['Generacion de Cargas','Aumento de Velocidad','Roba Cargas','Daño doble','Eliminacion de Cargas'] },
+            'Tirion Fordring':      { roles: ['Healer','Support'], specs: ['Proteccion Sagrada','Escudo Sagrado','Curacion HP','Generacion de Cargas','Aura de Luz','Limpiador de Debuffs','Revividor'] },
+        };
+        let rtAttackTeam = [];   // up to 5 char names
+        let rtDefenseTeam = [];  // up to 5 char names
+
+        function showRankedTeamScreen() {
+            if (!currentUser) return;
+            // Load saved teams from Firebase
+            db.ref('ranked_teams/' + currentUser.uid).once('value', function(snap) {
+                const data = snap.val() || {};
+                rtAttackTeam  = (data.attack  || []).slice();
+                rtDefenseTeam = (data.defense || []).slice();
+                document.getElementById('rankedTeamScreen').style.display = 'block';
+                rtRender();
+                // Inject "Probar vs IA" button if not already present
+                rtInjectTestButton();
+            });
+        }
+
+        function rtInjectTestButton() {
+            if (document.getElementById('rtTestVsIABtn')) return; // already injected
+            // Find the save button container and add our button after it
+            const screen = document.getElementById('rankedTeamScreen');
+            if (!screen) return;
+            // Find the GUARDAR button
+            const saveBtn = screen.querySelector('button[onclick*="saveRankedTeams"]') ||
+                Array.from(screen.querySelectorAll('button')).find(function(b) { return b.textContent.includes('GUARDAR'); });
+            if (!saveBtn) return;
+            const saveContainer = saveBtn.parentElement;
+            // Create our button
+            const testBtn = document.createElement('button');
+            testBtn.id = 'rtTestVsIABtn';
+            testBtn.onclick = rtTestVsIA;
+            testBtn.innerHTML = '⚔️ PROBAR MIS EQUIPOS VS IA';
+            testBtn.style.cssText = [
+                'background: linear-gradient(135deg, #ff6b35, #ff3366)',
+                'border: 2px solid #ff6b35',
+                'color: #fff',
+                'font-family: Orbitron, sans-serif',
+                'font-size: .85rem',
+                'font-weight: 700',
+                'letter-spacing: .08em',
+                'padding: 14px 28px',
+                'border-radius: 12px',
+                'cursor: pointer',
+                'width: 100%',
+                'margin-top: 10px',
+                'text-shadow: 0 1px 3px rgba(0,0,0,.5)',
+                'box-shadow: 0 0 20px rgba(255,107,53,.4)',
+                'transition: all .2s'
+            ].join(';');
+            testBtn.onmouseover = function() { this.style.boxShadow = '0 0 30px rgba(255,107,53,.7)'; this.style.transform = 'scale(1.02)'; };
+            testBtn.onmouseout  = function() { this.style.boxShadow = '0 0 20px rgba(255,107,53,.4)'; this.style.transform = 'scale(1)'; };
+            // Insert after save container (or after save button)
+            if (saveContainer && saveContainer !== screen) {
+                saveContainer.parentElement.insertBefore(
+                    Object.assign(document.createElement('div'), {
+                        style: 'padding: 0 24px 8px;',
+                        innerHTML: testBtn.outerHTML
+                    }),
+                    saveContainer.nextSibling
+                );
+                // Re-bind onclick after outerHTML loses it
+                const injected = document.getElementById('rtTestVsIABtn');
+                if (injected) injected.onclick = rtTestVsIA;
+            } else {
+                saveBtn.parentElement.appendChild(testBtn);
+            }
+            // Add helper tooltip
+            const tip = document.createElement('div');
+            tip.style.cssText = 'text-align:center;font-size:.75rem;color:#888;padding:4px 24px 12px;';
+            tip.textContent = '⚔️ TÚ con tu Equipo de Ataque · 🛡️ IA con tu Equipo de Defensa';
+            const injBtn = document.getElementById('rtTestVsIABtn');
+            if (injBtn) injBtn.parentElement.appendChild(tip);
+        }
+
+        function hideRankedTeamScreen() {
+            document.getElementById('rankedTeamScreen').style.display = 'none';
+            // Limpiar filtros y estado al cerrar
+            rtFilterRole = 'all'; rtFilterSpec = 'all';
+            const filtersRow = document.getElementById('rtFiltersRow');
+            if (filtersRow) filtersRow.remove();
+            rtCloseConfirm();
+        }
+
+        function rtRender() {
+            rtRenderSlots('attack',  'rtAttackSlots',  rtAttackTeam,  '#4fc3f7');
+            rtRenderSlots('defense', 'rtDefenseSlots', rtDefenseTeam, '#c864ff');
+            rtRenderGrid();
+        }
+
+        function rtRenderSlots(teamType, containerId, team, color) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.innerHTML = '';
+            for (let i = 0; i < 5; i++) {
+                const slot = document.createElement('div');
+                const isActive = (rtPickingTeam === teamType && rtPickingSlot === i);
+                const charName = team[i];
+                slot.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:10px;cursor:pointer;transition:all .15s;border:2px solid ' +
+                    (isActive ? color : (charName ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)')) + ';background:' +
+                    (isActive ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.3)') + ';';
+
+                if (charName) {
+                    const portrait = getCharPortrait(charName);
+                    slot.innerHTML = [
+                        '<img src="' + portrait + '" style="width:40px;height:40px;border-radius:8px;object-fit:cover;border:1px solid rgba(255,255,255,0.2);" referrerpolicy="no-referrer">',
+                        '<span style="flex:1;font-size:.9rem;color:#fff;font-weight:600;">' + escapeHtml(charName) + '</span>',
+                        '<button onclick="rtRemoveChar(\'' + teamType + '\',' + i + ');event.stopPropagation();" ' +
+                          'style="background:rgba(255,51,102,0.2);border:1px solid #ff3366;color:#ff3366;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:.75rem;">✕</button>'
+                    ].join('');
+                } else {
+                    slot.innerHTML = '<span style="color:#444;font-size:.85rem;">+ Slot ' + (i+1) + ' (vacío)</span>';
+                }
+
+                slot.onclick = function() { rtSelectSlot(teamType, i); };
+                container.appendChild(slot);
+            }
+        }
+
+        // ── Colectar todas las especialidades únicas para el filtro ──
+        function rtGetAllSpecs() {
+            const specs = new Set();
+            Object.values(RT_CHAR_ROLES).forEach(function(d){ (d.specs||[]).forEach(function(s){ specs.add(s); }); });
+            return Array.from(specs).sort();
+        }
+
+        // ── Render de filtros encima del grid ──
+        function rtRenderFilters(containerEl) {
+            if (document.getElementById('rtFiltersRow')) return; // ya existe
+            const allRoles = ['all','DPS','Tanque','Healer','Support','Crowd Control','Invoker','Dotter'];
+            const allSpecs = ['all', ...rtGetAllSpecs()];
+
+            const wrap = document.createElement('div');
+            wrap.id = 'rtFiltersRow';
+            wrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;align-items:center;';
+
+            // Rol
+            const rolLabel = document.createElement('span');
+            rolLabel.textContent = 'Rol:';
+            rolLabel.style.cssText = 'font-size:.75rem;color:#aaa;font-family:Orbitron,sans-serif;white-space:nowrap;';
+            wrap.appendChild(rolLabel);
+
+            const rolSel = document.createElement('select');
+            rolSel.id = 'rtFilterRolSel';
+            rolSel.style.cssText = 'background:#0a1628;border:1px solid #4fc3f7;color:#4fc3f7;border-radius:8px;padding:5px 10px;font-size:.75rem;cursor:pointer;font-family:Orbitron,sans-serif;';
+            allRoles.forEach(function(r){
+                const o = document.createElement('option');
+                o.value = r; o.textContent = r === 'all' ? '🎮 Todos' : r;
+                rolSel.appendChild(o);
+            });
+            rolSel.value = rtFilterRole;
+            rolSel.onchange = function(){ rtFilterRole = this.value; rtRenderGrid(); };
+            wrap.appendChild(rolSel);
+
+            // Separador
+            const sep = document.createElement('span');
+            sep.style.cssText = 'width:1px;height:20px;background:rgba(255,255,255,0.1);';
+            wrap.appendChild(sep);
+
+            // Especialidad
+            const specLabel = document.createElement('span');
+            specLabel.textContent = 'Especialidad:';
+            specLabel.style.cssText = 'font-size:.75rem;color:#aaa;font-family:Orbitron,sans-serif;white-space:nowrap;';
+            wrap.appendChild(specLabel);
+
+            const specSel = document.createElement('select');
+            specSel.id = 'rtFilterSpecSel';
+            specSel.style.cssText = 'background:#0a1628;border:1px solid #c864ff;color:#c864ff;border-radius:8px;padding:5px 10px;font-size:.75rem;cursor:pointer;font-family:Orbitron,sans-serif;max-width:220px;';
+            allSpecs.forEach(function(s){
+                const o = document.createElement('option');
+                o.value = s; o.textContent = s === 'all' ? '⭐ Todas' : s;
+                specSel.appendChild(o);
+            });
+            specSel.value = rtFilterSpec;
+            specSel.onchange = function(){ rtFilterSpec = this.value; rtRenderGrid(); };
+            wrap.appendChild(specSel);
+
+            // Contador
+            const counter = document.createElement('span');
+            counter.id = 'rtFilterCounter';
+            counter.style.cssText = 'font-size:.7rem;color:#555;margin-left:auto;white-space:nowrap;';
+            wrap.appendChild(counter);
+
+            containerEl.parentElement.insertBefore(wrap, containerEl);
+        }
+
+        function rtRenderGrid() {
+            const grid = document.getElementById('rtCharGrid');
+            if (!grid || typeof characterData === 'undefined') return;
+
+            // Inyectar filtros si no existen
+            rtRenderFilters(grid);
+            // Sincronizar selects con estado actual
+            const rs = document.getElementById('rtFilterRolSel');
+            const ss = document.getElementById('rtFilterSpecSel');
+            if (rs) rs.value = rtFilterRole;
+            if (ss) ss.value = rtFilterSpec;
+
+            grid.innerHTML = '';
+            const usedAttack  = new Set(rtAttackTeam.filter(Boolean));
+            const usedDefense = new Set(rtDefenseTeam.filter(Boolean));
+            const allUsed = new Set([...usedAttack, ...usedDefense]);
+
+            let shown = 0;
+            const normF = function(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); };
+
+            Object.keys(characterData).forEach(function(name) {
+                const cd = characterData[name];
+                if (!cd || !cd.abilities) return;
+
+                // Aplicar filtro
+                const roleData = RT_CHAR_ROLES[name];
+                if (rtFilterRole !== 'all') {
+                    if (!roleData || !roleData.roles.some(function(r){ return normF(r) === normF(rtFilterRole); })) return;
+                }
+                if (rtFilterSpec !== 'all') {
+                    if (!roleData || !roleData.specs.some(function(s){ return normF(s) === normF(rtFilterSpec); })) return;
+                }
+
+                shown++;
+                const inAttack  = usedAttack.has(name);
+                const inDefense = usedDefense.has(name);
+                const blocked   = allUsed.has(name);
+                const portrait  = getCharPortrait(name);
+
+                // ── PERSONAJES CON DESBLOQUEO (ej. Bolvar Fordragon) ──
+                const _rtLockedChars = { 'Bolvar Fordragon': 'bolvar_fordragon', 'Gogeta': 'gogeta', 'Arthas Menethil': 'arthas_menethil', 'Grindelwald': 'grindelwald' };
+                const _rtLockKey = _rtLockedChars[name];
+                const _rtIsLocked = _rtLockKey && !(window._unlockedCharacters && window._unlockedCharacters[_rtLockKey]);
+
+                const card = document.createElement('div');
+                card.title = name;
+                card.style.cssText = 'position:relative;border-radius:10px;overflow:hidden;cursor:' + (blocked || _rtIsLocked ? 'not-allowed' : 'pointer') +
+                    ';opacity:' + (blocked ? '0.35' : _rtIsLocked ? '0.4' : '1') +
+                    ';filter:' + (_rtIsLocked ? 'grayscale(100%)' : 'none') +
+                    ';transition:all .15s;border:2px solid ' +
+                    (inAttack ? '#4fc3f7' : inDefense ? '#c864ff' : 'rgba(255,255,255,0.1)') + ';';
+
+                // Mostrar rol como badge si hay filtro
+                const roleBadge = (roleData && roleData.roles[0] && rtFilterRole === 'all')
+                    ? '<div style="position:absolute;top:3px;left:3px;background:rgba(0,0,0,0.75);color:#aaa;border-radius:3px;padding:1px 3px;font-size:.48rem;line-height:1.2;max-width:90%;white-space:nowrap;overflow:hidden;">' + roleData.roles[0] + '</div>'
+                    : '';
+
+                card.innerHTML = [
+                    '<img src="' + portrait + '" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;" referrerpolicy="no-referrer">',
+                    '<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.8);padding:3px 4px;font-size:.6rem;color:#ccc;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + escapeHtml(name.split(' ')[0]) + '</div>',
+                    inAttack  ? '<div style="position:absolute;top:3px;right:3px;background:#4fc3f7;color:#000;border-radius:4px;padding:1px 4px;font-size:.55rem;font-weight:700;">ATK</div>' : '',
+                    inDefense ? '<div style="position:absolute;top:3px;' + (inAttack?'left':'right') + ':3px;background:#c864ff;color:#000;border-radius:4px;padding:1px 4px;font-size:.55rem;font-weight:700;">DEF</div>' : '',
+                    roleBadge
+                ].join('');
+
+                // Add lock badge if locked
+                if (_rtIsLocked) {
+                    const lockBadge = document.createElement('div');
+                    lockBadge.style.cssText = 'position:absolute;top:3px;right:3px;background:rgba(0,0,0,0.8);border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:.7rem;';
+                    lockBadge.textContent = '🔒';
+                    card.appendChild(lockBadge);
+                }
+
+                if (!blocked && !_rtIsLocked) {
+                    card.onmouseover = function() { this.style.transform = 'scale(1.06)'; this.style.boxShadow = '0 0 12px rgba(79,195,247,0.4)'; };
+                    card.onmouseout  = function() { this.style.transform = 'scale(1)'; this.style.boxShadow = 'none'; };
+                    card.onclick = (function(n){ return function(){ rtShowConfirm(n); }; })(name);
+                } else if (_rtIsLocked) {
+                    card.onclick = function() {
+                        var t = document.getElementById('_rtLockToast');
+                        if (!t) {
+                            t = document.createElement('div');
+                            t.id = '_rtLockToast';
+                            t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.9);color:#fb923c;padding:10px 20px;border-radius:10px;font-family:Orbitron,sans-serif;font-size:.75rem;font-weight:700;z-index:99999;border:1px solid rgba(251,146,60,0.4);';
+                            document.body.appendChild(t);
+                        }
+                        t.textContent = '🔒 ' + name + ' — Vence al Jefe de Sala para desbloquearlo';
+                        clearTimeout(t._hide);
+                        t._hide = setTimeout(function(){ if(t.parentNode) t.remove(); }, 3000);
+                    };
+                }
+                grid.appendChild(card);
+            });
+
+            // Actualizar contador
+            const counter = document.getElementById('rtFilterCounter');
+            if (counter) counter.textContent = shown + ' personajes';
+
+            // Update picking label
+            const lbl = document.getElementById('rtPickingFor');
+            if (lbl) {
+                if (rtPickingSlot >= 0) {
+                    lbl.textContent = (rtPickingTeam === 'attack' ? '🗡️ Equipo de Ataque' : '🛡️ Equipo de Defensa') + ' — Slot ' + (rtPickingSlot + 1);
+                    lbl.style.color = rtPickingTeam === 'attack' ? '#4fc3f7' : '#c864ff';
+                } else {
+                    lbl.textContent = 'Haz clic en un slot vacío o en el grid para seleccionar';
+                    lbl.style.color = '#666';
+                }
+            }
+        }
+
+        // ── Modal de confirmación estilo csShowDetail ──
+        function rtShowConfirm(name) {
+            if (typeof characterData === 'undefined') return;
+            const char = characterData[name];
+            if (!char) return;
+            rtPendingConfirmName = name;
+
+            const teamColor = rtPickingTeam === 'attack' ? '#4fc3f7' : '#c864ff';
+            const teamLabel = rtPickingTeam === 'attack' ? '🗡️ Equipo de Ataque' : '🛡️ Equipo de Defensa';
+
+            // Crear overlay
+            let overlay = document.getElementById('rtConfirmOverlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'rtConfirmOverlay';
+                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:6000;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;';
+                overlay.onclick = function(e){ if(e.target===overlay) rtCloseConfirm(); };
+                document.body.appendChild(overlay);
+            }
+
+            const portrait = getCharPortrait(name);
+            const passiveName = char.passive ? char.passive.name : '';
+            const passiveDesc = char.passive ? char.passive.description : '';
+            const roleData = RT_CHAR_ROLES[name];
+            const roles = roleData ? roleData.roles.join(' · ') : '';
+
+            const abilitiesHtml = (char.abilities || []).map(function(ab){
+                const typeColor = ab.type === 'over' ? '#ffd700' : ab.type === 'special' ? '#c864ff' : '#4fc3f7';
+                return '<div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:10px 12px;">' +
+                    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
+                    '<span style="font-weight:700;font-size:.8rem;color:#fff;">' + escapeHtml(ab.name||'') + '</span>' +
+                    '<span style="font-size:.65rem;color:' + typeColor + ';text-transform:uppercase;font-family:Orbitron,sans-serif;">' + (ab.type||'') + '</span>' +
+                    '</div>' +
+                    '<p style="font-size:.72rem;color:#bbb;margin:0 0 6px;line-height:1.4;">' + escapeHtml(ab.description||'') + '</p>' +
+                    '<div style="display:flex;align-items:center;gap:6px;">' +
+                    '<span style="background:rgba(255,170,0,0.15);border:1px solid rgba(255,170,0,0.4);color:#ffaa00;border-radius:6px;padding:2px 8px;font-size:.7rem;">💎 ' + (ab.cost||0) + '</span>' +
+                    '</div>' +
+                    '</div>';
+            }).join('');
+
+            overlay.innerHTML = '<div style="background:linear-gradient(135deg,#0a0f1e,#0d1425);border:2px solid ' + teamColor + ';border-radius:16px;padding:24px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 0 40px rgba(0,0,0,0.8);">' +
+                // Hero row
+                '<div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:16px;">' +
+                '<img src="' + portrait + '" style="width:90px;height:90px;border-radius:12px;object-fit:cover;border:2px solid ' + teamColor + ';flex-shrink:0;" referrerpolicy="no-referrer">' +
+                '<div style="flex:1;min-width:0;">' +
+                '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;font-weight:900;color:' + teamColor + ';margin-bottom:4px;">' + escapeHtml(name) + '</div>' +
+                '<div style="font-size:.72rem;color:#888;margin-bottom:6px;">⚡ VEL: ' + (char.speed||'—') + '  &nbsp; ❤️ HP: ' + (char.maxHp||char.hp||'—') + '</div>' +
+                (roles ? '<div style="font-size:.68rem;color:#aaa;background:rgba(255,255,255,0.06);border-radius:6px;padding:3px 8px;display:inline-block;">' + roles + '</div>' : '') +
+                '</div>' +
+                '</div>' +
+                // Pasiva
+                (passiveName ? '<div style="background:rgba(255,170,0,0.07);border:1px solid rgba(255,170,0,0.2);border-radius:10px;padding:10px 12px;margin-bottom:14px;">' +
+                    '<div style="font-size:.72rem;color:#ffaa00;font-weight:700;margin-bottom:4px;">✨ PASIVA: ' + escapeHtml(passiveName) + '</div>' +
+                    '<div style="font-size:.72rem;color:#ccc;line-height:1.4;">' + escapeHtml(passiveDesc) + '</div>' +
+                    '</div>' : '') +
+                // Habilidades
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">' + abilitiesHtml + '</div>' +
+                // Pregunta
+                '<div style="text-align:center;font-size:.85rem;color:#ddd;margin-bottom:14px;">¿Añadir <strong style="color:' + teamColor + ';">' + escapeHtml(name) + '</strong> a <strong style="color:' + teamColor + ';">' + teamLabel + '</strong>?</div>' +
+                // Botones
+                '<div style="display:flex;gap:10px;">' +
+                '<button onclick="rtConfirmChar(true)" style="flex:1;padding:12px;background:linear-gradient(135deg,#003a1a,#00aa55);border:2px solid #00ff88;color:#00ff88;border-radius:12px;font-family:Orbitron,sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;letter-spacing:.05em;">✅ Sí, seleccionar</button>' +
+                '<button onclick="rtConfirmChar(false)" style="flex:1;padding:12px;background:rgba(255,51,102,0.1);border:2px solid #ff3366;color:#ff3366;border-radius:12px;font-family:Orbitron,sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;letter-spacing:.05em;">❌ No, cancelar</button>' +
+                '</div>' +
+                '</div>';
+        }
+
+        function rtCloseConfirm() {
+            const ov = document.getElementById('rtConfirmOverlay');
+            if (ov) ov.remove();
+            rtPendingConfirmName = null;
+        }
+
+        function rtConfirmChar(yes) {
+            const name = rtPendingConfirmName;
+            rtCloseConfirm();
+            if (!yes || !name) return;
+            rtPickChar(name);
+        }
+
+        function rtSelectSlot(teamType, slotIdx) {
+            rtPickingTeam = teamType;
+            rtPickingSlot = slotIdx;
+            rtRender();
+        }
+
+        function rtRemoveChar(teamType, slotIdx) {
+            if (teamType === 'attack')  rtAttackTeam[slotIdx]  = null;
+            if (teamType === 'defense') rtDefenseTeam[slotIdx] = null;
+            // Compact (remove nulls but keep length by shifting)
+            if (teamType === 'attack')  rtAttackTeam  = rtCompact(rtAttackTeam);
+            if (teamType === 'defense') rtDefenseTeam = rtCompact(rtDefenseTeam);
+            rtPickingSlot = -1;
+            rtRender();
+        }
+
+        function rtCompact(arr) {
+            const filled = arr.filter(Boolean);
+            while (filled.length < 5) filled.push(null);
+            return filled;
+        }
+
+        function rtPickChar(name) {
+            if (rtPickingSlot < 0) {
+                // Auto-assign to first empty slot of current team
+                const team = rtPickingTeam === 'attack' ? rtAttackTeam : rtDefenseTeam;
+                const emptyIdx = team.findIndex(function(x) { return !x; });
+                if (emptyIdx < 0) { alert('El equipo ya tiene 5 personajes. Elimina uno primero.'); return; }
+                rtPickingSlot = emptyIdx;
+            }
+            if (rtPickingTeam === 'attack') {
+                rtAttackTeam[rtPickingSlot]  = name;
+            } else {
+                rtDefenseTeam[rtPickingSlot] = name;
+            }
+            // Advance to next empty slot
+            const currentTeam = rtPickingTeam === 'attack' ? rtAttackTeam : rtDefenseTeam;
+            const nextEmpty = currentTeam.findIndex(function(x,i) { return !x && i > rtPickingSlot; });
+            rtPickingSlot = nextEmpty >= 0 ? nextEmpty : -1;
+            rtRender();
+        }
+
+
+        function rtTestVsIA() {
+            const attack  = rtAttackTeam.filter(Boolean);
+            const defense = rtDefenseTeam.filter(Boolean);
+            if (attack.length < 5)  { alert('⚠️ Configura 5 personajes en tu Equipo de Ataque primero.'); return; }
+            if (defense.length < 5) { alert('⚠️ Configura 5 personajes en tu Equipo de Defensa primero.'); return; }
+            const playerName = currentUser ? (currentUser.displayName || 'Jugador') : 'Jugador';
+            // Mark this as a self-test — results must NOT be saved to the leaderboard
+            window._rankedSelfTest = true;
+            // El equipo de defensa también es del mismo jugador — usar su propio UID para cargar sus reliquias
+            window._rankedDefenseOwnerUid = currentUser ? currentUser.uid : null;
+            hideRankedTeamScreen();
+            _launchRankedVsIAWithTeam(attack, defense, playerName + ' (Defensa — Prueba)');
+        }
+
+        function saveRankedTeams() {
+            if (!currentUser) return;
+            const attack  = rtAttackTeam.filter(Boolean);
+            const defense = rtDefenseTeam.filter(Boolean);
+            if (attack.length < 5) { alert('El Equipo de Ataque necesita 5 personajes.'); return; }
+            if (defense.length < 5) { alert('El Equipo de Defensa necesita 5 personajes.'); return; }
+            const data = { attack: attack, defense: defense, uid: currentUser.uid, name: currentUser.displayName || 'Jugador', ts: Date.now() };
+            db.ref('ranked_teams/' + currentUser.uid).set(data).then(function() {
+                const msg = document.getElementById('rankedTeamSaveMsg');
+                if (msg) { msg.textContent = '✅ Equipos guardados correctamente'; msg.style.display = 'block'; setTimeout(function() { msg.style.display = 'none'; }, 3000); }
+            });
+        }
+
+        function getRankedTeams(callback) {
+            if (!currentUser) { callback(null); return; }
+            db.ref('ranked_teams/' + currentUser.uid).once('value', function(snap) {
+                callback(snap.val());
+            });
+        }
+
+        function hasRankedTeams(callback) {
+            getRankedTeams(function(data) {
+                callback(data && data.attack && data.attack.length >= 5 && data.defense && data.defense.length >= 5);
+            });
+        }
+
+        // ══════════════════════════════════════════════════════
+        // SISTEMA RAID DIARIO
+        // ══════════════════════════════════════════════════════
+
+        function showRaidLobby() {
+            if (!currentUser) return;
+            hasRankedTeams(function(hasTeams) {
+                if (!hasTeams) {
+                    alert('⚠️ Configura tu Equipo Ranked antes de jugar.\nHaz clic en "⚔️ EQUIPO RANKED".');
+                    return;
+                }
+                // Asegurar que el jugador tenga su nombre registrado en ranked_stats
+                var uid  = currentUser.uid;
+                var name = currentUser.displayName || 'Jugador';
+                db.ref('ranked_stats/' + uid + '/name').once('value', function(nameSnap) {
+                    if (!nameSnap.val()) {
+                        db.ref('ranked_stats/' + uid + '/name').set(name);
+                    }
+                    _loadOrGenerateRaidTargets(function(raidData) {
+                        _renderRaidLobby(raidData);
+                    });
+                });
+            });
+        }
+
+        function _getTodayMidnightKey() {
+            var d = new Date();
+            return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        }
+
+        function _loadOrGenerateRaidTargets(callback) {
+            var uid = currentUser.uid;
+            var todayKey = _getTodayMidnightKey();
+            db.ref('ranked_stats/' + uid + '/raidToday').once('value', function(snap) {
+                var raidData = snap.val() || {};
+                // Si ya tenemos datos de hoy con targets suficientes, devolverlos tal cual
+                if (raidData.date === todayKey && raidData.targets && raidData.targets.length >= 5) {
+                    callback(raidData);
+                    return;
+                }
+                // Si tenemos datos de hoy pero menos de 5 targets: intentar completar
+                // (puede haber nuevos jugadores con equipo desde que se generó la lista)
+                if (raidData.date === todayKey && raidData.targets && raidData.targets.length > 0) {
+                    // Regenerar pero preservar los ataques ya realizados
+                    var attacksLeft      = raidData.attacksLeft !== undefined ? raidData.attacksLeft : 5;
+                    var attackedTargets  = raidData.attackedTargets || [];
+                    var attackedUids     = new Set(attackedTargets);
+                    _generateRaidTargets(uid, todayKey, function(newRaid) {
+                        // Restaurar estado de los targets ya atacados en la nueva lista
+                        var oldTargetMap = {};
+                        (raidData.targets || []).forEach(function(t) { oldTargetMap[t.uid] = t; });
+                        newRaid.targets = newRaid.targets.map(function(t) {
+                            if (oldTargetMap[t.uid]) return oldTargetMap[t.uid]; // preservar resultado
+                            return t;
+                        });
+                        newRaid.attacksLeft     = attacksLeft;
+                        newRaid.attackedTargets = attackedTargets;
+                        db.ref('ranked_stats/' + uid + '/raidToday').set(newRaid);
+                        callback(newRaid);
+                    });
+                    return;
+                }
+                // Generar nuevos objetivos para hoy
+                _generateRaidTargets(uid, todayKey, callback);
+            });
+        }
+
+        function _generateRaidTargets(uid, todayKey, callback) {
+            // Buscar desde ranked_teams (todos los que tienen equipo) como fuente primaria
+            // así no se pierden jugadores que no tienen entrada en ranked_stats aún
+            db.ref('ranked_teams').once('value', function(teamsSnap) {
+                var allTeams = teamsSnap.val() || {};
+                // Filtrar: tienen equipo de defensa completo y no son el jugador actual
+                var eligibleUids = Object.keys(allTeams).filter(function(oUid) {
+                    if (oUid === uid) return false;
+                    var t = allTeams[oUid];
+                    return t && t.defense && t.defense.filter(Boolean).length >= 5;
+                });
+
+                if (eligibleUids.length === 0) {
+                    // Sin rivales disponibles
+                    var emptyRaid = { date: todayKey, attacksLeft: 5, targets: [], attackedTargets: [] };
+                    db.ref('ranked_stats/' + uid + '/raidToday').set(emptyRaid);
+                    callback(emptyRaid);
+                    return;
+                }
+
+                // Cruzar con ranked_stats para obtener puntos y nombre
+                db.ref('ranked_stats').once('value', function(statsSnap) {
+                    var allStats = statsSnap.val() || {};
+                    var myPoints = (allStats[uid] && allStats[uid].points) || 0;
+
+                    var candidates = eligibleUids.map(function(oUid) {
+                        var t    = allTeams[oUid];
+                        var stat = allStats[oUid] || {};
+                        // Calcular puntos desde historial si están disponibles
+                        var pts = 0;
+                        if (stat.attackHistory || stat.defenseHistory) {
+                            var atkH = (stat.attackHistory  || []).reduce(function(s,x){ return s+(x.pts||0); }, 0);
+                            var defH = (stat.defenseHistory || []).reduce(function(s,x){ return s+(x.pts||0); }, 0);
+                            pts = Math.max(0, atkH + defH);
+                        } else {
+                            pts = stat.points || 0;
+                        }
+                        // Nombre: preferir ranked_stats, fallback a ranked_teams
+                        var name = stat.name || t.name || 'Jugador';
+                        return { uid: oUid, name: name, points: pts };
+                    });
+
+                    // Ordenar por proximidad de rating
+                    candidates.sort(function(a, b) {
+                        return Math.abs(a.points - myPoints) - Math.abs(b.points - myPoints);
+                    });
+
+                    // Tomar hasta 5
+                    var targets = candidates.slice(0, 5).map(function(c) {
+                        return { uid: c.uid, name: c.name, points: c.points, attacked: false, result: null, pts: null };
+                    });
+
+                    var raidData = {
+                        date: todayKey,
+                        attacksLeft: 5,
+                        targets: targets,
+                        attackedTargets: []
+                    };
+                    db.ref('ranked_stats/' + uid + '/raidToday').set(raidData);
+                    callback(raidData);
+                });
+            });
+        }
+
+        function _renderRaidLobby(raidData) {
+            var existing = document.getElementById('raidLobbyModal');
+            if (existing) existing.remove();
+
+            var modal = document.createElement('div');
+            modal.id = 'raidLobbyModal';
+            modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9000;display:flex;align-items:center;justify-content:center;padding:16px;';
+
+            var targets = raidData.targets || [];
+            var attacksLeft = raidData.attacksLeft !== undefined ? raidData.attacksLeft : 5;
+            var attacksDone = 5 - attacksLeft;
+
+            // Generar filas de objetivos
+            var targetRows = targets.map(function(t) {
+                var attacked = t.attacked || false;
+                // Si el resultado es 'pending' (batalla no completada), tratar como no atacado
+                // pero mantener el ataque consumido
+                var hasResult = attacked && t.result && t.result !== 'pending';
+                var resultLabel = '';
+                var resultColor = '#888';
+                var ptsLabel = '';
+                if (hasResult) {
+                    if (t.result === 'win')  { resultLabel = '✅ Victoria'; resultColor = '#00ff88'; }
+                    if (t.result === 'loss') { resultLabel = '❌ Derrota';  resultColor = '#ff4466'; }
+                    if (t.result === 'draw') { resultLabel = '🤝 Empate';   resultColor = '#ffaa00'; }
+                    var pts = t.pts || 0;
+                    ptsLabel = '<span style="color:' + (pts >= 0 ? '#00ff88' : '#ff4466') + ';font-weight:700;font-size:.85rem;">' + (pts >= 0 ? '+' : '') + pts + ' pts</span>';
+                }
+                var attackBtn = attacked
+                    ? '<span style="color:#444;font-size:.75rem;">Ya atacado</span>'
+                    : '<button onclick="raidAttackTarget(\'' + t.uid + '\',\'' + t.name.replace(/'/g,'') + '\')" style="background:linear-gradient(135deg,rgba(255,170,0,0.2),rgba(255,100,0,0.1));border:1px solid #ffaa00;color:#ffaa00;padding:7px 16px;border-radius:8px;cursor:pointer;font-family:Orbitron,sans-serif;font-size:.7rem;font-weight:700;letter-spacing:.05em;">ATACAR</button>';
+                return '<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;background:rgba(255,255,255,' + (attacked ? '0.02' : '0.05') + ');border:1px solid rgba(255,255,255,' + (attacked ? '0.05' : '0.12') + ');opacity:' + (attacked ? '0.6' : '1') + ';">' +
+                    '<div style="flex:1;">' +
+                        '<div style="font-size:.9rem;font-weight:700;color:' + (attacked ? '#666' : '#fff') + ';">' + _escapeHtmlRaid(t.name) + '</div>' +
+                        '<div style="font-size:.75rem;color:#888;margin-top:2px;">⭐ ' + (t.points || 0) + ' pts</div>' +
+                    '</div>' +
+                    (hasResult ? '<div style="text-align:right;"><div style="font-size:.75rem;color:' + resultColor + ';">' + resultLabel + '</div><div>' + ptsLabel + '</div></div>' : '') +
+                    '<div>' + attackBtn + '</div>' +
+                '</div>';
+            }).join('');
+
+            if (targets.length === 0) {
+                targetRows = '<div style="text-align:center;color:#666;padding:24px;">No hay rivales disponibles por ahora.<br>Vuelve más tarde o usa "Buscar Rival".</div>';
+            }
+
+            // Íconos de ataques disponibles
+            var attackIcons = '';
+            for (var i = 0; i < 5; i++) {
+                attackIcons += '<span style="font-size:1.4rem;opacity:' + (i < attacksLeft ? '1' : '0.25') + ';">⚡</span>';
+            }
+
+            modal.innerHTML = [
+                '<div style="max-width:520px;width:100%;background:linear-gradient(135deg,rgba(5,8,20,0.98),rgba(10,5,25,0.98));border:2px solid rgba(255,170,0,0.5);border-radius:20px;padding:24px;max-height:90vh;overflow-y:auto;">',
+
+                // Header
+                '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">',
+                '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;font-weight:900;color:#ffaa00;letter-spacing:.08em;">⚔️ RAID DIARIO</div>',
+                '<button onclick="document.getElementById(\'raidLobbyModal\').remove()" style="background:none;border:1px solid #444;color:#888;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:.8rem;">✕ Cerrar</button>',
+                '</div>',
+
+                // Ataques disponibles
+                '<div style="background:rgba(255,170,0,0.05);border:1px solid rgba(255,170,0,0.2);border-radius:12px;padding:12px 16px;margin-bottom:18px;">',
+                '<div style="font-size:.7rem;color:#888;letter-spacing:.15em;margin-bottom:8px;">ATAQUES DISPONIBLES HOY</div>',
+                '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">' + attackIcons + '<span style="color:#888;font-size:.8rem;margin-left:4px;">(' + attacksLeft + '/5)</span></div>',
+                // Botón recargar ataques con Runa
+                attacksLeft === 0
+                    ? '<button onclick="raidRefillAttacks()" style="margin-top:10px;width:100%;padding:8px;background:rgba(200,100,255,0.1);border:1px solid #c864ff;color:#c864ff;border-radius:8px;font-size:.74rem;cursor:pointer;font-family:Orbitron,sans-serif;letter-spacing:.04em;">🔮 RECARGAR ATAQUES (cuesta 1 Runa de Ataque)</button>'
+                    : '',
+                '</div>',
+
+                // Lista de objetivos
+                '<div style="font-size:.7rem;color:#888;letter-spacing:.15em;margin-bottom:10px;">🎯 TUS OBJETIVOS DE HOY</div>',
+                '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px;">' + targetRows + '</div>',
+
+                // Botón Buscar Rival (solo visible si atacó los 5 o no hay targets)
+                (attacksLeft === 0 || targets.length === 0)
+                    ? '<div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:16px;"><div style="font-size:.75rem;color:#888;margin-bottom:10px;text-align:center;">Ataques diarios agotados — continúa con puntos reducidos</div><button onclick="document.getElementById(\'raidLobbyModal\').remove();startRankedMatchmaking();" style="width:100%;padding:13px;background:linear-gradient(135deg,rgba(0,196,255,0.15),rgba(0,196,255,0.08));border:2px solid #00c4ff;color:#00c4ff;border-radius:12px;cursor:pointer;font-family:Orbitron,sans-serif;font-size:.8rem;font-weight:700;letter-spacing:.08em;">🔍 BUSCAR RIVAL</button></div>'
+                    : '',
+
+                // Botón historial
+                '<div style="margin-top:12px;text-align:center;"><button onclick="showRaidHistory()" style="background:none;border:1px solid rgba(255,255,255,0.15);color:#888;border-radius:8px;padding:8px 18px;cursor:pointer;font-size:.75rem;letter-spacing:.05em;">📋 Ver historial de batallas</button></div>',
+
+                '</div>'
+            ].join('');
+
+            document.body.appendChild(modal);
+        }
+
+        function _escapeHtmlRaid(str) {
+            return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        async function raidRefillAttacks() {
+            if (!currentUser) return;
+            var uid = currentUser.uid;
+            // Verificar runas de ataque
+            var runaSnap = await db.ref('users/' + uid + '/attack_runes').once('value');
+            var runas = runaSnap.val() || 0;
+            if (runas <= 0) {
+                alert('No tienes Runas de Ataque disponibles. Consíguela en el Mercado.');
+                return;
+            }
+            if (!confirm('¿Gastar 1 Runa de Ataque para recargar tus 5 ataques de Raid Diario?')) return;
+            // Descontar runa
+            await db.ref('users/' + uid + '/attack_runes').transaction(function(v){ return Math.max(0, (v||0) - 1); });
+            // Recargar ataques: resetear attacksLeft Y limpiar attackedTargets para habilitar nuevos rivales
+            var todayKey = _getTodayMidnightKey();
+            await db.ref('ranked_stats/' + uid + '/raidToday').update({
+                attacksLeft: 5,
+                attackedTargets: [],   // ← Limpia la lista de ya atacados
+                targets: [],           // ← Fuerza regeneración de nuevos objetivos
+                date: todayKey
+            });
+            await updateLobbyHUD();
+            // Cerrar y reabrir el modal raid (showRaidLobby regenerará nuevos targets)
+            var modal = document.getElementById('raidLobbyModal');
+            if (modal) modal.remove();
+            showRaidLobby();
+        }
+
+        function raidAttackTarget(targetUid, targetName) {
+            if (!currentUser) return;
+            var todayKey = _getTodayMidnightKey();
+            db.ref('ranked_stats/' + currentUser.uid + '/raidToday').once('value', function(snap) {
+                var raidData = snap.val() || {};
+                if (raidData.date !== todayKey || (raidData.attacksLeft || 0) <= 0) {
+                    alert('Ya no tienes ataques disponibles hoy.');
+                    return;
+                }
+                if (raidData.attackedTargets && raidData.attackedTargets.indexOf(targetUid) >= 0) {
+                    alert('Ya atacaste a este rival hoy.');
+                    return;
+                }
+                // ── Descontar ataque INMEDIATAMENTE en Firebase antes de lanzar la batalla ──
+                var newAttacksLeft = Math.max(0, (raidData.attacksLeft || 5) - 1);
+                var newAttackedTargets = (raidData.attackedTargets || []).concat([targetUid]);
+                var newTargets = (raidData.targets || []).map(function(t) {
+                    if (t.uid === targetUid) { t.attacked = true; t.result = 'pending'; }
+                    return t;
+                });
+                var updatedRaid = {
+                    date: raidData.date || todayKey,
+                    attacksLeft: newAttacksLeft,
+                    attackedTargets: newAttackedTargets,
+                    targets: newTargets
+                };
+                db.ref('ranked_stats/' + currentUser.uid + '/raidToday').set(updatedRaid, function() {
+                    var modal = document.getElementById('raidLobbyModal');
+                    if (modal) modal.remove();
+
+                    window._rankedIsRaidAttack = true;
+                    window._rankedFromMatchmaking = true;
+                    window._rankedMode = true;
+                    window._rankedPlayerTeam = 'team1';
+                    window._rankedFakeOpponent = targetName;
+                    window._rankedDefenseOwnerUid = targetUid;
+
+                    var myName = currentUser.displayName || 'Jugador';
+                    window._teamNames = { team1: myName, team2: targetName };
+
+                    db.ref('ranked_teams/' + targetUid).once('value', function(defSnap) {
+                        var defData = defSnap.val() || {};
+                        var defTeam = (defData.defense || []).filter(Boolean);
+                        if (defTeam.length < 5) {
+                            // Devolver ataque si el equipo no es válido
+                            db.ref('ranked_stats/' + currentUser.uid + '/raidToday/attacksLeft').set(newAttacksLeft + 1);
+                            alert('El equipo defensor no está completo. Elige otro objetivo.');
+                            window._rankedIsRaidAttack = false;
+                            window._rankedFromMatchmaking = false;
+                            window._rankedMode = false;
+                            showRaidLobby();
+                            return;
+                        }
+                        getRankedTeams(function(myTeams) {
+                            _launchRankedVsIAWithTeam(myTeams ? myTeams.attack : null, defTeam, targetName);
+                        });
+                    });
+                });
+            });
+        }
+
+        // ── FUNCIÓN DE ADMIN: reset manual de todos los jugadores ──
+        function adminResetAllPlayers() {
+            if (!currentUser) { alert('Debes estar logueado.'); return; }
+            var seasonKey = getCurrentSeasonKey();
+            if (!confirm('\u26A0\uFE0F \u00BFReiniciar puntuaci\u00F3n de TODOS los jugadores a 0?\nTemporada: ' + seasonKey)) return;
+            db.ref('ranked_stats').once('value', function(snap) {
+                var all = snap.val() || {};
+                var updates = {};
+                var count = 0;
+                Object.keys(all).forEach(function(uid) {
+                    updates[uid + '/points']        = 0;
+                    updates[uid + '/atkPoints']     = 0;
+                    updates[uid + '/defPoints']     = 0;
+                    updates[uid + '/atkWins']       = 0;
+                    updates[uid + '/atkLosses']     = 0;
+                    updates[uid + '/atkDraws']      = 0;
+                    updates[uid + '/defWins']       = 0;
+                    updates[uid + '/defLosses']     = 0;
+                    updates[uid + '/seasonKey']     = seasonKey;
+                    updates[uid + '/attackHistory'] = null;
+                    updates[uid + '/defenseHistory']= null;
+                    updates[uid + '/raidToday']     = null;
+                    count++;
+                });
+                db.ref('ranked_stats').update(updates, function(err) {
+                    if (err) { alert('\u274C Error: ' + err.message); return; }
+                    alert('\u2705 Reset completo. ' + count + ' jugadores reiniciados a 0 pts (Temporada ' + seasonKey + ').');
+                    var lb = document.getElementById('leaderboardModal');
+                    if (lb && lb.style.display !== 'none') showLeaderboard();
+                });
+            });
+        }
+
+        function showRaidHistory() {
+            if (!currentUser) return;
+            db.ref('ranked_stats/' + currentUser.uid).once('value', function(snap) {
+                var data = snap.val() || {};
+                var atkHistory = data.attackHistory  || [];
+                var defHistory = data.defenseHistory || [];
+                _renderRaidHistory(atkHistory, defHistory);
+            });
+        }
+
+        function _renderRaidHistory(atkHistory, defHistory) {
+            var existing = document.getElementById('raidHistoryModal');
+            if (existing) existing.remove();
+
+            function buildRows(history, isAtk) {
+                if (!history.length) return '<div style="text-align:center;color:#555;padding:16px;font-size:.85rem;">Sin registros aún</div>';
+                return history.map(function(e) {
+                    var date = e.ts ? new Date(e.ts).toLocaleDateString('es-MX', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+                    var resLabel, resColor;
+                    if (e.result === 'win')  { resLabel = '✅ Victoria'; resColor = '#00ff88'; }
+                    else if (e.result === 'loss') { resLabel = '❌ Derrota'; resColor = '#ff4466'; }
+                    else { resLabel = '🤝 Empate'; resColor = '#ffaa00'; }
+                    var pts = e.pts || 0;
+                    var ptsColor = pts >= 0 ? '#00ff88' : '#ff4466';
+                    var ptsStr = (pts >= 0 ? '+' : '') + pts + ' pts';
+                    var modeTag = isAtk && e.isRaid
+                        ? '<span style="font-size:.6rem;background:rgba(255,170,0,0.15);border:1px solid rgba(255,170,0,0.3);color:#ffaa00;border-radius:4px;padding:1px 5px;margin-left:4px;">RAID</span>'
+                        : (isAtk ? '<span style="font-size:.6rem;background:rgba(0,196,255,0.1);border:1px solid rgba(0,196,255,0.2);color:#00c4ff;border-radius:4px;padding:1px 5px;margin-left:4px;">RIVAL</span>' : '');
+                    var who = isAtk ? ('vs ' + _escapeHtmlRaid(e.opponent || 'CPU')) : ('por ' + _escapeHtmlRaid(e.attacker || '?'));
+                    return '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.05);">' +
+                        '<div style="flex:1;">' +
+                            '<div style="font-size:.85rem;color:#ccc;">' + who + modeTag + '</div>' +
+                            '<div style="font-size:.7rem;color:#555;margin-top:1px;">' + date + '</div>' +
+                        '</div>' +
+                        '<div style="text-align:right;">' +
+                            '<div style="font-size:.8rem;color:' + resColor + ';">' + resLabel + '</div>' +
+                            '<div style="font-size:.85rem;font-weight:700;color:' + ptsColor + ';">' + ptsStr + '</div>' +
+                        '</div>' +
+                    '</div>';
+                }).join('');
+            }
+
+            var modal = document.createElement('div');
+            modal.id = 'raidHistoryModal';
+            modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9100;display:flex;align-items:center;justify-content:center;padding:16px;';
+
+            // Tab activo
+            var activeTab = 'atk';
+            modal.innerHTML = [
+                '<div style="max-width:480px;width:100%;background:linear-gradient(135deg,rgba(5,8,20,0.98),rgba(10,5,25,0.98));border:2px solid rgba(255,255,255,0.1);border-radius:20px;overflow:hidden;max-height:85vh;display:flex;flex-direction:column;">',
+
+                // Header
+                '<div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.08);">',
+                '<div style="font-family:Orbitron,sans-serif;font-size:.95rem;font-weight:700;color:#fff;letter-spacing:.05em;">📋 HISTORIAL DE BATALLAS</div>',
+                '<button onclick="document.getElementById(\'raidHistoryModal\').remove()" style="background:none;border:1px solid #444;color:#888;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:.8rem;">✕</button>',
+                '</div>',
+
+                // Tabs
+                '<div style="display:flex;border-bottom:1px solid rgba(255,255,255,0.08);">',
+                '<button id="raidTabAtk" onclick="raidSwitchTab(\'atk\')" style="flex:1;padding:10px;background:rgba(255,170,0,0.1);border:none;border-bottom:2px solid #ffaa00;color:#ffaa00;font-family:Orbitron,sans-serif;font-size:.7rem;font-weight:700;cursor:pointer;letter-spacing:.05em;">⚔️ ATAQUES</button>',
+                '<button id="raidTabDef" onclick="raidSwitchTab(\'def\')" style="flex:1;padding:10px;background:none;border:none;border-bottom:2px solid transparent;color:#555;font-family:Orbitron,sans-serif;font-size:.7rem;font-weight:700;cursor:pointer;letter-spacing:.05em;">🛡️ DEFENSAS</button>',
+                '</div>',
+
+                // Content
+                '<div id="raidHistoryContent" style="overflow-y:auto;flex:1;">',
+                buildRows(atkHistory, true),
+                '</div>',
+
+                '</div>'
+            ].join('');
+
+            // Guardar historial en el modal para tab switching
+            modal._atkHistory = atkHistory;
+            modal._defHistory = defHistory;
+
+            document.body.appendChild(modal);
+
+            // Tab switch global
+            window.raidSwitchTab = function(tab) {
+                var m = document.getElementById('raidHistoryModal');
+                if (!m) return;
+                var content = document.getElementById('raidHistoryContent');
+                var tabAtk  = document.getElementById('raidTabAtk');
+                var tabDef  = document.getElementById('raidTabDef');
+                if (tab === 'atk') {
+                    content.innerHTML = buildRows(m._atkHistory, true);
+                    tabAtk.style.borderBottomColor = '#ffaa00'; tabAtk.style.color = '#ffaa00'; tabAtk.style.background = 'rgba(255,170,0,0.1)';
+                    tabDef.style.borderBottomColor = 'transparent'; tabDef.style.color = '#555'; tabDef.style.background = 'none';
+                } else {
+                    content.innerHTML = buildRows(m._defHistory, false);
+                    tabDef.style.borderBottomColor = '#00c4ff'; tabDef.style.color = '#00c4ff'; tabDef.style.background = 'rgba(0,196,255,0.1)';
+                    tabAtk.style.borderBottomColor = 'transparent'; tabAtk.style.color = '#555'; tabAtk.style.background = 'none';
+                }
+            };
+        }
+
+        function startRankedMatchmaking() {
+            if (!currentUser) return;
+            // Check if player has configured ranked teams
+            hasRankedTeams(function(hasTeams) {
+                if (!hasTeams) {
+                    alert('⚠️ Debes configurar tu Equipo Ranked (Ataque y Defensa) antes de jugar en modo Ranked.\n\nHaz clic en "⚔️ EQUIPO RANKED" para configurarlo.');
+                    return;
+                }
+                _startRankedSearch();
+            });
+        }
+
+        function _startRankedSearch() {
+            // Mark this as a legitimate ranked match from Buscar Rival
+            window._rankedFromMatchmaking = true;
+            const myUid  = currentUser.uid;
+            const myName = currentUser.displayName || 'Jugador';
+
+            showRankedSearchModal();
+
+            // Register in queue
+            const queueRef = db.ref('ranked_queue/' + myUid);
+            queueRef.set({ uid: myUid, name: myName, ts: Date.now() });
+            queueRef.onDisconnect().remove();
+
+            let matched = false;
+            rankedMatchmakingListener = db.ref('ranked_queue').on('value', function(snap) {
+                if (matched) return;
+                const queue = snap.val() || {};
+
+                // If we already received a matchedRoomId, process it (we were matched as guest)
+                if (queue[myUid] && queue[myUid].matchedRoomId) {
+                    // Handled below by the specific listener — do nothing here
+                    return;
+                }
+
+                const others = Object.entries(queue).filter(function(e) {
+                    return e[0] !== myUid && !e[1].matchedRoomId && !e[1].matchedBy;
+                });
+                if (others.length === 0) return;
+
+                // Found a rival — Ataque vs Ataque
+                const [opponentUid, opponentData] = others[0];
+                const iAmHost = myUid < opponentUid;
+
+                // RACE CONDITION guard: use Firebase transaction so only one player becomes host
+                db.ref('ranked_queue/' + opponentUid + '/matchedBy').transaction(function(current) {
+                    if (current !== null) return; // already matched by someone else
+                    return myUid;
+                }, function(err, committed) {
+                    if (err || !committed) return; // lost the race
+                    if (matched) return;
+                    matched = true;
+                    clearRankedTimer();
+                    db.ref('ranked_queue').off('value', rankedMatchmakingListener);
+
+                    if (iAmHost) {
+                    const roomId = 'R_' + generateRoomCode();
+                    db.ref('ranked_queue/' + opponentUid).update({ matchedRoomId: roomId });
+                    db.ref('ranked_queue/' + myUid).remove();
+                    currentRoomId = roomId; isRoomHost = true; onlineMode = true;
+                    window._rankedMode = true;
+                    window._rankedFromMatchmaking = true;
+                    window._rankedPlayerTeam = 'team1'; // host is always team1
+                    // Use attack teams for both players
+                    getRankedTeams(function(myTeams) {
+                        db.ref('ranked_teams/' + opponentUid).once('value', function(snap2) {
+                            const oppTeams = snap2.val() || {};
+                            window._teamNames = { team1: myName, team2: opponentData.name || 'Rival' };
+                            window._opponentUid = opponentUid; // Guardar para cargar reliquias del rival
+                            db.ref('rooms/' + roomId).set({
+                                host: { uid: myUid, name: myName, photo: currentUser.photoURL || '' },
+                                guest: { uid: opponentUid, name: opponentData.name || 'Rival' },
+                                status: 'ready', ranked: true, created: Date.now(),
+                                hostAttack: myTeams ? myTeams.attack : null,
+                                guestAttack: oppTeams ? oppTeams.attack : null
+                            }).then(function() {
+                                hideRankedSearchModal();
+                                window._rankedOpponentName = opponentData.name || 'Rival';
+                                startOnlineGame(roomId, true);
+                            });
+                        });
+                    });
+                } else {
+                    // Wait for matchedRoomId
+                    db.ref('ranked_queue/' + myUid + '/matchedRoomId').on('value', function(s) {
+                        const rid = s.val();
+                        if (!rid) return;
+                        db.ref('ranked_queue/' + myUid + '/matchedRoomId').off();
+                        db.ref('ranked_queue/' + myUid).remove();
+                        matched = true; clearRankedTimer();
+                        hideRankedSearchModal();
+                        currentRoomId = rid; isRoomHost = false; onlineMode = true;
+                        window._rankedMode = true;
+                        window._rankedFromMatchmaking = true;
+                        window._rankedPlayerTeam = 'team2'; // guest is always team2
+                        window._rankedOpponentName = opponentData.name || 'Rival';
+                        window._teamNames = { team1: opponentData.name || 'Rival', team2: myName };
+                        // Update room with guest info AND their attack team
+                        getRankedTeams(function(myTeams) {
+                            db.ref('rooms/' + rid).update({
+                                guest: { uid: myUid, name: myName, photo: currentUser.photoURL || '' },
+                                guestAttack: myTeams ? myTeams.attack : [],
+                                status: 'ready'
+                            }).then(function() { startOnlineGame(rid, false); });
+                        });
+                    });
+                }
+                }); // end transaction
+            });
+
+            // 10s timer: no rival → fight random player's defense team
+            rankedMatchmakingTimer = setTimeout(function() {
+                if (matched) return;
+                matched = true;
+                clearRankedTimer();
+                if (rankedMatchmakingListener) { db.ref('ranked_queue').off('value', rankedMatchmakingListener); rankedMatchmakingListener = null; }
+                db.ref('ranked_queue/' + myUid).remove();
+                hideRankedSearchModal();
+                _startRankedVsDefense();
+            }, 10000);
+        }
+
+        function _startRankedVsDefense() {
+            // Pick a random player's defense team (excluding self)
+            db.ref('ranked_teams').once('value', function(snap) {
+                const allTeams = snap.val() || {};
+                const eligible = Object.entries(allTeams).filter(function(e) {
+                    return e[0] !== currentUser.uid && e[1].defense && e[1].defense.length >= 5;
+                });
+
+                const myName = currentUser.displayName || 'Jugador';
+
+                if (eligible.length === 0) {
+                    // No defense teams available — fall back to random IA with random team
+                    window._rankedMode = true;
+                    window._rankedFromMatchmaking = true;
+                    window._rankedPlayerTeam = 'team1'; // player always attacks as team1 vs CPU
+                    window._rankedFakeOpponent = 'CPU';
+                    window._rankedDefenseOwnerUid = null;
+                    window._teamNames = { team1: myName, team2: 'CPU' };
+                    getRankedTeams(function(myTeams) {
+                        _launchRankedVsIAWithTeam(myTeams ? myTeams.attack : null, null, 'CPU');
+                    });
+                    return;
+                }
+
+                // Pick a random eligible defense
+                const [defOwnerUid, defData] = eligible[Math.floor(Math.random() * eligible.length)];
+                const defOwnerName = defData.name || 'Rival';
+                window._rankedMode = true;
+                window._rankedFromMatchmaking = true;
+                window._rankedPlayerTeam = 'team1';
+                window._rankedFakeOpponent = defOwnerName;
+                window._rankedDefenseOwnerUid = defOwnerUid;
+                window._opponentUid = defOwnerUid; // ← para cargar reliquias del rival
+                window._teamNames = { team1: myName, team2: defOwnerName };
+
+                getRankedTeams(function(myTeams) {
+                    _launchRankedVsIAWithTeam(myTeams ? myTeams.attack : null, defData.defense, defOwnerName);
+                });
+            });
+        }
+
+        function _launchRankedVsIAWithTeam(attackTeam, defenseTeam, opponentName) {
+            const myName = currentUser ? (currentUser.displayName || 'Jugador') : 'Jugador';
+            window._rankedMode = true;
+            window._rankedFromMatchmaking = true;
+            window._rankedPlayerTeam = 'team1'; // player always attacks as team1 in vs-IA ranked
+            window._rankedFakeOpponent = opponentName;
+
+            // Pre-load teams into csState so no character select screen is needed
+            csState.team1 = attackTeam || [];
+            csState.team2 = defenseTeam || [];
+            csState.phase = 'done';
+            csState.gameMode = 'solo';
+            csState.pendingChar = null;
+
+            if (csState.team1.length >= 5 && csState.team2.length >= 5) {
+                // Skip char select — start directly
+                // Hide all non-game screens
+                ['charSelectScreen','lobbyScreen','waitingScreen','modeSelectScreen','rankedTeamScreen'].forEach(function(id) {
+                    const el = document.getElementById(id); if (el) el.style.display = 'none';
+                });
+                document.querySelector('.game-container').style.display = 'block';
+                applyBattleBackground(''); // fondo aleatorio para ranked
+                // Build character map
+                const selectedChars = {};
+                const nameCount = {};
+                const allSelected = csState.team1.map(function(n) { return { name: n, team: 'team1' }; })
+                    .concat(csState.team2.map(function(n) { return { name: n, team: 'team2' }; }));
+                allSelected.forEach(function(entry) {
+                    const base = entry.name;
+                    nameCount[base] = (nameCount[base] || 0) + 1;
+                    const key = nameCount[base] > 1 ? base + ' v' + nameCount[base] : base;
+                    if (!characterData[base]) return;
+                    const charCopy = JSON.parse(JSON.stringify(characterData[base]));
+                    charCopy.team = entry.team;
+                    charCopy.baseName = base;
+                    selectedChars[key] = charCopy;
+                });
+                initGame(selectedChars);
+                window._teamNames = { team1: myName, team2: opponentName };
+                gameState.gameMode = 'ranked';
+                gameState.aiTeam = 'team2';
+                const th1 = document.getElementById('teamHeader1'); if (th1) th1.textContent = '🔷 ' + myName;
+                const th2 = document.getElementById('teamHeader2'); if (th2) th2.textContent = '🔶 ' + opponentName;
+                const sh1 = document.getElementById('statusHeader1'); if (sh1) sh1.textContent = '🔷 ' + myName;
+                const sh2 = document.getElementById('statusHeader2'); if (sh2) sh2.textContent = '🔶 ' + opponentName;
+                addLog('🏆 RANKED: ' + myName + ' vs ' + opponentName + ' (equipo de defensa)', 'info');
+                // ← Cargar reliquias del jugador y rival
+                if (typeof window.loadGameRelics === 'function') window.loadGameRelics();
+                audioManager.playRandomBattle();
+            } else {
+                // Fallback: go to char select (team1 only if no attack team)
+                showScreen('charSelectScreen');
+                csInit();
+            }
+        }
+        function clearRankedTimer() {
+            if (rankedMatchmakingTimer) { clearTimeout(rankedMatchmakingTimer); rankedMatchmakingTimer = null; }
+        }
+
+        let rankedSearchInterval = null;
+        function showRankedSearchModal() {
+            let modal = document.getElementById('rankedSearchModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'rankedSearchModal';
+                modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:10000;display:flex;align-items:center;justify-content:center;';
+                document.body.appendChild(modal); // append FIRST so querySelector works
+            }
+            modal.innerHTML = [
+                '<div style="background:linear-gradient(135deg,#0a0e17,#0d1525);border:2px solid #ffaa00;border-radius:20px;padding:2.5rem 3rem;text-align:center;max-width:380px;box-shadow:0 0 50px rgba(255,170,0,0.3);">',
+                '<div style="font-size:2.5rem;margin-bottom:.8rem;">&#x1F50D;</div>',
+                '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:#ffaa00;margin-bottom:.5rem;letter-spacing:.1em;">BUSCANDO RIVAL...</div>',
+                '<div style="color:#888;font-size:.85rem;margin-bottom:1.5rem;">Conectando con otro jugador online</div>',
+                '<div id="rankedTimerDisplay" style="font-family:Orbitron,sans-serif;font-size:2rem;color:#fff;margin-bottom:1.5rem;">10</div>',
+                '<div style="width:100%;height:6px;background:rgba(255,170,0,0.2);border-radius:3px;overflow:hidden;">',
+                '<div id="rankedTimerBar" style="height:100%;background:linear-gradient(90deg,#ffaa00,#ff6600);width:100%;border-radius:3px;transition:width 1s linear;"></div>',
+                '</div>',
+                '<button id="cancelRankedBtn" style="margin-top:1.5rem;background:rgba(255,51,102,0.15);border:1px solid #ff3366;color:#ff3366;border-radius:10px;padding:10px 24px;cursor:pointer;font-size:.85rem;">&#x274C; Cancelar</button>',
+                '</div>'
+            ].join('');
+            modal.querySelector('#cancelRankedBtn').onclick = cancelRankedSearch;
+            modal.style.display = 'flex';
+            // Countdown animation
+            let timeLeft = 10;
+            const timerEl = modal.querySelector('#rankedTimerDisplay');
+            const barEl = modal.querySelector('#rankedTimerBar');
+            if (timerEl) timerEl.textContent = '10';
+            if (barEl) { barEl.style.transition = 'none'; barEl.style.width = '100%'; }
+            if (rankedSearchInterval) clearInterval(rankedSearchInterval);
+            setTimeout(function() { if (barEl) barEl.style.transition = 'width 1s linear'; }, 50);
+            rankedSearchInterval = setInterval(function() {
+                timeLeft--;
+                if (timerEl) timerEl.textContent = timeLeft;
+                if (barEl) barEl.style.width = (timeLeft * 10) + '%';
+                if (timeLeft <= 0) clearInterval(rankedSearchInterval);
+            }, 1000);
+        }
+
+        function hideRankedSearchModal() {
+            const modal = document.getElementById('rankedSearchModal');
+            if (modal) modal.style.display = 'none';
+            if (rankedSearchInterval) { clearInterval(rankedSearchInterval); rankedSearchInterval = null; }
+        }
+
+        function cancelRankedSearch() {
+            clearRankedTimer();
+            if (rankedMatchmakingListener) {
+                db.ref('ranked_queue').off('value', rankedMatchmakingListener);
+                rankedMatchmakingListener = null;
+            }
+            if (currentUser) db.ref('ranked_queue/' + currentUser.uid).remove();
+            hideRankedSearchModal();
+        }
+
+        // ════════════════════════════════════════════════
+        // RANKED STATS — Sistema de Puntuación v2
+        // ════════════════════════════════════════════════
+
+        // ── Ligas ──
+        var LEAGUES = [
+            { name: 'Bronce',    min: 0,     max: 1499,  icon: '🥉',  subs: ['III','II','I'] },
+            { name: 'Plata',     min: 1500,  max: 2999,  icon: '🥈',  subs: ['III','II','I'] },
+            { name: 'Oro',       min: 3000,  max: 4499,  icon: '🥇',  subs: ['III','II','I'] },
+            { name: 'Diamante',  min: 4500,  max: 5999,  icon: '💎',  subs: ['III','II','I'] },
+            { name: 'Platino',   min: 6000,  max: 7499,  icon: '⭐',  subs: ['III','II','I'] },
+            { name: 'Master',    min: 7500,  max: 9999,  icon: '👑',  subs: ['III','II','I'] },
+            { name: 'Leyenda',   min: 10000, max: 999999,icon: '🔱',  subs: ['III','II','I'] },
+            { name: 'Campeones', min: 11000, max: 14999, icon: '👑',  subs: [] },
+            { name: 'Leyenda',   min: 15000, max: Infinity, icon: '🔱', subs: [] }
+        ];
+
+        function getLeague(points) {
+            var p = Math.max(0, points || 0);
+            for (var i = LEAGUES.length - 1; i >= 0; i--) {
+                if (p >= LEAGUES[i].min) {
+                    var lg = LEAGUES[i];
+                    var sub = '';
+                    if (lg.subs.length > 0) {
+                        var range = lg.max - lg.min + 1;
+                        var subSize = Math.floor(range / 3);
+                        var offset = p - lg.min;
+                        var subIdx = Math.min(2, Math.floor(offset / subSize));
+                        // subIdx 0 = III (lowest), 1 = II, 2 = I (highest)
+                        sub = lg.subs[2 - subIdx];
+                    }
+                    return { name: lg.name, icon: lg.icon, sub: sub, full: lg.icon + ' ' + lg.name + (sub ? ' ' + sub : '') };
+                }
+            }
+            return { name: 'Bronce', icon: '⚔️', sub: 'III', full: '⚔️ Bronce III' };
+        }
+
+        function getLeagueIndex(points) {
+            var p = Math.max(0, points || 0);
+            for (var i = LEAGUES.length - 1; i >= 0; i--) {
+                if (p >= LEAGUES[i].min) return i;
+            }
+            return 0;
+        }
+
+        // ══════════════════════════════════════════════════════
+        // SISTEMA RAID DIARIO — Cálculo de puntos v2
+        // ══════════════════════════════════════════════════════
+
+        // ── Puntos para los 5 Ataques Diarios (alta recompensa) ──
+        function calcRaidAttackPoints(won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, isDraw) {
+            if (isDraw) return 20;
+            if (!won) {
+                // Derrota — penalización según rendimiento
+                var deadAllies = totalAllies - survivingAllies;
+                if (enemiesEliminated >= totalEnemies - 1 && deadAllies <= 1) return -20; // casi ganó
+                if (enemiesEliminated >= 2) return -35;
+                if (enemiesEliminated >= 1) return -50;
+                return -80; // aplastado
+            }
+            // Victoria — base según bajas sufridas
+            var base = 0;
+            if (survivingAllies >= totalAllies)           base = 80; // perfecta: 0 bajas
+            else if (survivingAllies >= totalAllies - 2)  base = 60; // sólida: 1-2 bajas
+            else                                          base = 40; // ajustada: 3+ bajas
+            // Bonus por velocidad
+            var speedBonus = 0;
+            if (roundsElapsed <= 3) speedBonus = Math.round(base * 0.15);
+            // Bonus por aplaste total
+            var cleanBonus = (enemiesEliminated >= totalEnemies && survivingAllies >= totalAllies) ? Math.round(base * 0.20) : 0;
+            return base + speedBonus + cleanBonus;
+        }
+
+        // ── Puntos para Buscar Rival (post 5 ataques, baja recompensa, máx 10) ──
+        function calcBuscarRivalPoints(won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, isDraw) {
+            if (isDraw) return 5;
+            if (!won) {
+                if (enemiesEliminated >= totalEnemies - 1) return 4; // buena derrota
+                if (enemiesEliminated >= 2)               return 3;
+                if (enemiesEliminated >= 1)               return 2;
+                return 1; // aplastado
+            }
+            // Victoria
+            if (survivingAllies >= totalAllies && roundsElapsed <= 3) return 10; // perfecta
+            if (survivingAllies >= totalAllies)                        return 9;
+            if (survivingAllies >= totalAllies - 1 && roundsElapsed <= 4) return 8;
+            if (survivingAllies >= totalAllies - 1)                    return 7;
+            if (roundsElapsed <= 3)                                    return 8;
+            if (survivingAllies >= totalAllies - 2)                    return 7;
+            return 6; // victoria normal
+        }
+
+        // ── Puntos de defensa (siempre positivos) ──
+        function calcDefensePoints(defenseWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defTotalHpRemaining, defTotalHpMax) {
+            if (defenseWon) {
+                // Victoria defensiva
+                if (survivingDefenders >= totalDefenders && attackersEliminated >= totalAttackers && roundsElapsed <= 3) return 50; // perfecta
+                if (survivingDefenders >= totalDefenders - 1 && attackersEliminated >= totalAttackers) return 35; // sólida
+                return 25; // costosa
+            } else {
+                // Derrota defensiva — siempre gana puntos positivos
+                if (attackersEliminated >= 3) return 20; // resistió bien
+                if (attackersEliminated >= 1 || roundsElapsed >= 5) return 10; // reñida
+                return 3; // aplastada
+            }
+        }
+
+        // ── Multiplicador diario legacy (solo para Buscar Rival) ──
+        function getDailyMultiplier(battlesPlayedToday) {
+            return 1.0; // Buscar Rival ya tiene cap en calcBuscarRivalPoints
+        }
+
+        // ── calcAttackPoints legacy (redirige al sistema correcto) ──
+        function calcAttackPoints(won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLeagueIdx, oppLeagueIdx) {
+            // Se mantiene por compatibilidad pero el nuevo sistema usa calcRaidAttackPoints/calcBuscarRivalPoints
+            var base = won ? 100 : 15;
+            var bonus = 0;
+            if (won) {
+                var aliveRatio = totalAllies > 0 ? survivingAllies / totalAllies : 0;
+                if (aliveRatio >= 1.0)       bonus += 40;
+                else if (aliveRatio >= 0.67) bonus += 20;
+                else if (aliveRatio > 0)     bonus += 5;
+                if (roundsElapsed <= 3)      bonus += 25;
+                else if (roundsElapsed <= 5) bonus += 10;
+                if (enemiesEliminated >= totalEnemies) bonus += 15;
+            } else {
+                if (enemiesEliminated >= 2)      bonus += 20;
+                else if (enemiesEliminated >= 1) bonus += 10;
+            }
+            var total = base + bonus;
+            var diff = oppLeagueIdx - myLeagueIdx;
+            var mult = diff >= 2 ? 1.5 : diff === 1 ? 1.25 : diff === 0 ? 1.0 : diff === -1 ? 0.75 : 0.5;
+            return Math.max(1, Math.round(total * mult));
+        }
+
+        // ── Obtener día actual como string YYYY-MM-DD ──
+        function getTodayKey() {
+            var d = new Date();
+            return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+        }
+
+        // ── Obtener semana actual como string YYYY-Www ──
+        function getCurrentSeasonKey() {
+            var d = new Date();
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+        }
+
+        // ── Premio de fin de temporada Ranked ──────────────────────────────────
+        // ── LIGAS RANKED ───────────────────────────────────────────────
+        const RANKED_LEAGUES = [
+            { name:'Bronce',   min:0,     max:1499,  gold:5000,    keys:1,  emoji:'🥉', color:'#cd7f32' },
+            { name:'Plata',    min:1500,  max:2999,  gold:10000,   keys:1,  emoji:'🥈', color:'#C0C0C0' },
+            { name:'Oro',      min:3000,  max:4499,  gold:20000,   keys:2,  emoji:'🥇', color:'#FFD700' },
+            { name:'Diamante', min:4500,  max:5999,  gold:50000,   keys:2,  emoji:'💎', color:'#b9f2ff' },
+            { name:'Platino',  min:6000,  max:7499,  gold:100000,  keys:3,  emoji:'⭐', color:'#E5E4E2' },
+            { name:'Master',   min:7500,  max:9999,  gold:200000,  keys:5,  emoji:'👑', color:'#FFD700' },
+            { name:'Leyenda',  min:10000, max:999999, gold:500000, keys:10, emoji:'🔱', color:'#00ffcc' },
+        ];
+        window.RANKED_LEAGUES = RANKED_LEAGUES;
+
+        function getLeagueForPoints(pts) {
+            for (var i = RANKED_LEAGUES.length - 1; i >= 0; i--) {
+                if (pts >= RANKED_LEAGUES[i].min) return RANKED_LEAGUES[i];
+            }
+            return RANKED_LEAGUES[0];
+        }
+        window.getLeagueForPoints = getLeagueForPoints;
+
+        async function distributeSeasonRewards() {
+            const snap = await db.ref('ranked_stats').once('value');
+            const all = snap.val() || {};
+            const curSeason = getCurrentSeasonKey();
+
+            // Verificar si ya se distribuyeron
+            const checkSnap = await db.ref('season_rewards_distributed').once('value');
+            if (checkSnap.val() === curSeason) { console.log('[Season] Ya distribuidos:', curSeason); return; }
+
+            const players = Object.entries(all)
+                .map(function([uid, d]) { return { uid, points: d.points || 0, name: d.name || uid }; })
+                .filter(function(e) { return e.points >= 0; });
+
+            if (players.length === 0) return;
+
+            for (var i = 0; i < players.length; i++) {
+                var p = players[i];
+                var league = getLeagueForPoints(p.points);
+
+                // Otorgar oro
+                await addGold(p.uid, league.gold);
+
+                // Otorgar llaves arcanas
+                if (league.keys > 0) {
+                    var keysSnap = await db.ref('users/' + p.uid + '/arcane_keys').once('value');
+                    await db.ref('users/' + p.uid + '/arcane_keys').set((keysSnap.val() || 0) + league.keys);
+                }
+
+                // Guardar notificación de premio pendiente de reclamar
+                var reward = { 
+                    season: curSeason,
+                    league: league.name,
+                    leagueEmoji: league.emoji,
+                    points: p.points,
+                    gold: league.gold,
+                    keys: league.keys,
+                    ts: Date.now(),
+                    claimed: false
+                };
+                await db.ref('users/' + p.uid + '/season_reward_pending').set(reward);
+                console.log('[Season] Recompensa pendiente para', p.name, '— liga:', league.name);
+            }
+
+            await db.ref('season_rewards_distributed').set(curSeason);
+            console.log('[Season] Premios distribuidos para', players.length, 'jugadores, temporada', curSeason);
+        }
+        window.distributeSeasonRewards = distributeSeasonRewards;
+
+        // Distribute rewards for a specific season key using the saved snapshot
+        async function distributeSeasonRewardsForKey(seasonKey) {
+            // Check if already distributed
+            const checkSnap = await db.ref('season_rewards_distributed').once('value');
+            if (checkSnap.val() === seasonKey) {
+                console.log('[Season] Ya distribuidos para:', seasonKey);
+                return;
+            }
+
+            // Read from the season snapshot (saved at end of month)
+            const snapshotRef = await db.ref('season_snapshots/' + seasonKey).once('value');
+            let players = [];
+
+            if (snapshotRef.val()) {
+                // Use snapshot if available
+                const snap = snapshotRef.val();
+                players = Object.entries(snap).map(function([uid, d]) {
+                    return { uid, points: d.points || 0, name: d.name || uid };
+                });
+            } else {
+                // Fallback: use current ranked_stats (less accurate if points already reset)
+                const rankSnap = await db.ref('ranked_stats').once('value');
+                const all = rankSnap.val() || {};
+                players = Object.entries(all).map(function([uid, d]) {
+                    return { uid, points: d.points || 0, name: d.name || uid };
+                }).filter(function(e) { return e.points > 0; });
+                console.warn('[Season] No snapshot found for', seasonKey, '— using live ranked_stats');
+            }
+
+            if (players.length === 0) {
+                console.log('[Season] No players to reward for', seasonKey);
+                await db.ref('season_rewards_distributed').set(seasonKey);
+                return;
+            }
+
+            for (var i = 0; i < players.length; i++) {
+                var p = players[i];
+                var league = getLeagueForPoints(p.points);
+                if (!league || league.gold === 0) continue;
+
+                var reward = {
+                    season:      seasonKey,
+                    league:      league.name,
+                    leagueEmoji: league.emoji,
+                    points:      p.points,
+                    gold:        league.gold,
+                    keys:        league.keys || 0,
+                    ts:          Date.now(),
+                    claimed:     false
+                };
+                await db.ref('users/' + p.uid + '/season_reward_pending').set(reward);
+                console.log('[Season] Recompensa pendiente para', p.name, '— liga:', league.name, p.points, 'pts');
+            }
+
+            await db.ref('season_rewards_distributed').set(seasonKey);
+            console.log('[Season] Premios distribuidos para', players.length, 'jugadores, temporada', seasonKey);
+        }
+        window.distributeSeasonRewardsForKey = distributeSeasonRewardsForKey;
+
+        // Verificar al login si hay un premio pendiente de reclamar
+        async function checkPendingSeasonReward(uid) {
+            var snap = await db.ref('users/' + uid + '/season_reward_pending').once('value');
+            var reward = snap.val();
+            if (!reward || reward.claimed) return;
+            // Mostrar ventana emergente
+            showSeasonRewardModal(uid, reward);
+        }
+        window.checkPendingSeasonReward = checkPendingSeasonReward;
+
+        function showSeasonRewardModal(uid, reward) {
+            var existing = document.getElementById('seasonRewardModal');
+            if (existing) existing.remove();
+
+            var league = reward.league || 'Bronce';
+            var emoji  = reward.leagueEmoji || '🥉';
+            var gold   = (reward.gold || 0).toLocaleString();
+            var keys   = reward.keys || 0;
+            var pts    = (reward.points || 0).toLocaleString();
+            var season = reward.season || '';
+
+            var lData  = RANKED_LEAGUES.find(function(l){ return l.name === league; }) || RANKED_LEAGUES[0];
+            var color  = lData.color || '#ffd700';
+
+            // Build modal using DOM (no innerHTML + onclick string — avoids escaping bugs)
+            var overlay = document.createElement('div');
+            overlay.id = 'seasonRewardModal';
+            overlay.style.cssText = 'position:fixed;inset:0;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;background:rgba(0,0,0,0.88);z-index:999999;display:flex;align-items:center;justify-content:center;pointer-events:all;';
+
+            var card = document.createElement('div');
+            card.style.cssText = 'background:linear-gradient(135deg,#0a0e17,#1a1a2e);border:2px solid ' + color + ';border-radius:20px;padding:36px 40px;text-align:center;max-width:420px;width:90%;box-shadow:0 0 40px ' + color + '44;pointer-events:all;position:relative;z-index:1000000;';
+
+            var emojiDiv = document.createElement('div');
+            emojiDiv.style.cssText = 'font-size:3.5rem;margin-bottom:12px;';
+            emojiDiv.textContent = emoji;
+
+            var titleDiv = document.createElement('div');
+            titleDiv.style.cssText = 'font-family:Orbitron,sans-serif;color:' + color + ';font-size:1.1rem;font-weight:700;margin-bottom:6px;letter-spacing:.05em;';
+            titleDiv.textContent = 'TEMPORADA ' + season + ' FINALIZADA';
+
+            var subDiv = document.createElement('div');
+            subDiv.style.cssText = 'color:#aaa;font-size:.85rem;margin-bottom:20px;';
+            subDiv.innerHTML = 'Terminaste en <strong style="color:' + color + '">Liga ' + league + '</strong> con <strong style="color:#fff">' + pts + ' puntos</strong>';
+
+            var rewardBox = document.createElement('div');
+            rewardBox.style.cssText = 'background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:16px;margin-bottom:24px;';
+
+            var rewardTitle = document.createElement('div');
+            rewardTitle.style.cssText = 'font-family:Orbitron,sans-serif;color:#ffd700;font-size:.8rem;margin-bottom:12px;letter-spacing:.04em;';
+            rewardTitle.textContent = '🎁 RECOMPENSA OBTENIDA';
+
+            var goldDiv = document.createElement('div');
+            goldDiv.style.cssText = 'color:#ffd700;font-size:1.4rem;font-weight:700;margin-bottom:6px;';
+            goldDiv.textContent = '+' + gold + ' 🪙';
+
+            rewardBox.appendChild(rewardTitle);
+            rewardBox.appendChild(goldDiv);
+
+            if (keys > 0) {
+                var keysDiv = document.createElement('div');
+                keysDiv.style.cssText = 'color:#b9f2ff;font-size:1rem;';
+                keysDiv.textContent = '+' + keys + ' 🗝️ Llave' + (keys > 1 ? 's' : '') + ' Arcana' + (keys > 1 ? 's' : '');
+                rewardBox.appendChild(keysDiv);
+            }
+
+            var btn = document.createElement('button');
+            btn.textContent = '✅ RECLAMAR RECOMPENSA';
+            btn.style.cssText = 'display:block;width:100%;padding:14px 24px;background:linear-gradient(135deg,#00c4ff,#0077ff);border:none;border-radius:12px;color:#fff;font-family:Orbitron,sans-serif;font-size:.95rem;font-weight:700;letter-spacing:.05em;cursor:pointer;pointer-events:all;margin-top:8px;';
+            btn.addEventListener('click', function() {
+                window.claimSeasonReward(uid);
+            });
+
+            card.appendChild(emojiDiv);
+            card.appendChild(titleDiv);
+            card.appendChild(subDiv);
+            card.appendChild(rewardBox);
+            card.appendChild(btn);
+            overlay.appendChild(card);
+            document.body.appendChild(overlay);
+        }
+
+        window.claimSeasonReward = async function(uid) {
+            // Read reward data before marking claimed
+            var rewardSnap = await db.ref('users/' + uid + '/season_reward_pending').once('value');
+            var reward = rewardSnap.val();
+            if (!reward || reward.claimed) return;
+
+            // Mark as claimed first (prevent double-claim)
+            await db.ref('users/' + uid + '/season_reward_pending/claimed').set(true);
+
+            // Apply gold
+            if (reward.gold > 0) {
+                var goldSnap = await db.ref('users/' + uid + '/gold').once('value');
+                var currentGold = goldSnap.val() || 0;
+                await db.ref('users/' + uid + '/gold').set(currentGold + reward.gold);
+            }
+
+            // Apply arcane keys
+            if (reward.keys > 0) {
+                var keysSnap = await db.ref('users/' + uid + '/arcane_keys').once('value');
+                var currentKeys = keysSnap.val() || 0;
+                await db.ref('users/' + uid + '/arcane_keys').set(currentKeys + reward.keys);
+            }
+
+            // Update local state if available
+            if (typeof DB !== 'undefined') {
+                var localGold = (DB.get('gold') || 0) + (reward.gold || 0);
+                DB.set('gold', localGold);
+            }
+
+            var modal = document.getElementById('seasonRewardModal');
+            if (modal) modal.remove();
+
+            // Show confirmation toast
+            var toast = document.createElement('div');
+            toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#0a0e17,#1a1a2e);border:1px solid #ffd700;border-radius:12px;padding:14px 24px;color:#ffd700;font-family:Orbitron,sans-serif;font-size:.85rem;font-weight:700;z-index:999999;text-align:center;';
+            toast.innerHTML = '🎁 Recompensa de temporada recibida!<br><span style="color:#fff;font-size:.75rem;">' + (reward.gold||0).toLocaleString() + ' 🪙' + (reward.keys > 0 ? ' + ' + reward.keys + ' 🗝️' : '') + '</span>';
+            document.body.appendChild(toast);
+            setTimeout(function(){ toast.remove(); }, 4000);
+        };
+
+        // ── Trigger automático: último día del mes a medianoche ──────────────
+        // ── Trigger de fin de temporada: día 1 de cada mes, cualquier usuario ──
+        // 1) Distribuye recompensas de la temporada anterior (usando snapshot guardado)
+        // 2) Resetea masivamente los puntos de todos los jugadores a 0
+        (function checkSeasonEnd() {
+            var now = new Date();
+            if (now.getDate() !== 1) return;
+
+            var curSeasonKey  = getCurrentSeasonKey(); // e.g. '2026-07'
+            var prevMonth     = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            var prevSeasonKey = prevMonth.getFullYear() + '-' + String(prevMonth.getMonth() + 1).padStart(2, '0'); // '2026-06'
+
+            firebase.auth().onAuthStateChanged(function(user) {
+                if (!user) return;
+
+                // ── Step 1: Distribute rewards for previous season (if not done) ──
+                db.ref('season_rewards_distributed').once('value').then(function(snap) {
+                    if (snap.val() !== prevSeasonKey) {
+                        distributeSeasonRewardsForKey(prevSeasonKey).catch(console.error);
+                    }
+                });
+
+                // ── Step 2: Mass-reset all players to 0 (if not done for current season) ──
+                db.ref('ranked_season_reset').once('value').then(function(snap) {
+                    if (snap.val() === curSeasonKey) return; // already reset this month
+                    db.ref('ranked_stats').once('value').then(function(allSnap) {
+                        var all = allSnap.val() || {};
+                        var updates = {};
+                        Object.keys(all).forEach(function(uid) {
+                            updates[uid + '/points']         = 0;
+                            updates[uid + '/atkPoints']      = 0;
+                            updates[uid + '/defPoints']      = 0;
+                            updates[uid + '/atkWins']        = 0;
+                            updates[uid + '/atkLosses']      = 0;
+                            updates[uid + '/atkDraws']       = 0;
+                            updates[uid + '/defWins']        = 0;
+                            updates[uid + '/defLosses']      = 0;
+                            updates[uid + '/seasonKey']      = curSeasonKey;
+                            updates[uid + '/raidToday']      = null;
+                            // Keep attackHistory/defenseHistory (just clear points)
+                        });
+                        if (Object.keys(updates).length === 0) return;
+                        db.ref('ranked_stats').update(updates).then(function() {
+                            db.ref('ranked_season_reset').set(curSeasonKey);
+                            console.log('[Season] Auto-reset completado para', curSeasonKey, '—', Object.keys(all).length, 'jugadores');
+                        }).catch(console.error);
+                    });
+                });
+            });
+        })();
+
+        function saveRankedResult(winnerTeam, playerTeam, playerChars, opponentName, opponentChars, battleStats) {
+            if (!currentUser || !window._rankedMode) return;
+            window._rankedMode = false;
+            if (!window._rankedFromMatchmaking || window._rankedSelfTest) {
+                window._rankedFromMatchmaking = false;
+                window._rankedSelfTest = false;
+                addLog('Modo Prueba: los resultados NO se registran en el Leaderboard', 'info');
+                return;
+            }
+            window._rankedFromMatchmaking = false;
+            window._rankedSelfTest = false;
+
+            var myUid   = currentUser.uid;
+            var myName  = currentUser.displayName || 'Jugador';
+            var isDraw  = (winnerTeam === 'draw');
+            var won     = !isDraw && (winnerTeam === playerTeam);
+            var fakeOpp = window._rankedFakeOpponent || opponentName;
+            window._rankedFakeOpponent = null;
+            var defOwnerUid = window._rankedDefenseOwnerUid || null;
+            window._rankedDefenseOwnerUid = null;
+
+            // Extraer stats de batalla (pasados desde turn-logic o defaults)
+            var bs = battleStats || {};
+            var survivingAllies    = bs.survivingAllies    || 0;
+            var totalAllies        = bs.totalAllies        || 3;
+            var roundsElapsed      = bs.roundsElapsed      || 5;
+            var enemiesEliminated  = bs.enemiesEliminated  || 0;
+            var totalEnemies       = bs.totalEnemies       || 3;
+            var survivingDefenders = bs.survivingDefenders || 0;
+            var totalDefenders     = bs.totalDefenders     || 3;
+            var attackersEliminated= bs.attackersEliminated|| 0;
+            var totalAttackers     = bs.totalAttackers     || 3;
+            var defHpRemaining     = bs.defHpRemaining     || 0;
+            var defHpMax           = bs.defHpMax           || 1;
+
+            var seasonKey = getCurrentSeasonKey();
+            var todayKey  = getTodayKey();
+            var myRef     = db.ref('ranked_stats/' + myUid);
+
+            myRef.once('value', function(snap) {
+                var cur = snap.val() || {};
+                cur.name = myName;
+
+                // Obtener índice de liga propio y del oponente
+                var myPoints  = cur.points || 0;
+                var myLgIdx   = getLeagueIndex(myPoints);
+                // Para oponente buscar sus puntos en DB (asíncrono simplificado — usar liga 0 si no se encuentra)
+                var oppLgIdx  = 0;
+                if (defOwnerUid) {
+                    db.ref('ranked_stats/' + defOwnerUid + '/points').once('value', function(oppSnap) {
+                        oppLgIdx = getLeagueIndex(oppSnap.val() || 0);
+                        _finalizeSaveAttacker(cur, myRef, myUid, myName, won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLgIdx, oppLgIdx, seasonKey, todayKey, playerChars, defOwnerUid, fakeOpp, won, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, opponentChars, isDraw);
+                    });
+                } else {
+                    _finalizeSaveAttacker(cur, myRef, myUid, myName, won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLgIdx, oppLgIdx, seasonKey, todayKey, playerChars, defOwnerUid, fakeOpp, won, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, opponentChars, isDraw);
+                }
+            });
+        }
+
+        function _finalizeSaveAttacker(cur, myRef, myUid, myName, won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLgIdx, oppLgIdx, seasonKey, todayKey, playerChars, defOwnerUid, fakeOpp, atkWon, survivingDefenders, totalDefenders, roundsElapsed2, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, opponentChars, isDraw) {
+            // ── Reset mensual: si el seasonKey cambió, guardar snapshot y reiniciar ──
+            if (cur.seasonKey && cur.seasonKey !== seasonKey) {
+                addLog('🔄 Nueva temporada (' + seasonKey + '): puntuación reiniciada a 0', 'info');
+                // Save snapshot of all players for the previous season (for reward distribution)
+                var prevKey = cur.seasonKey;
+                db.ref('ranked_stats').once('value').then(function(allSnap) {
+                    var allData = allSnap.val() || {};
+                    var snapshot = {};
+                    for (var uid in allData) {
+                        var d = allData[uid];
+                        if ((d.points || 0) > 0) {
+                            snapshot[uid] = { name: d.name || uid, points: d.points || 0 };
+                        }
+                    }
+                    // Only save if snapshot doesn't exist yet
+                    db.ref('season_snapshots/' + prevKey).once('value').then(function(existing) {
+                        if (!existing.val()) {
+                            db.ref('season_snapshots/' + prevKey).set(snapshot).then(function() {
+                                console.log('[Season] Snapshot saved for', prevKey, Object.keys(snapshot).length, 'players');
+                            });
+                        }
+                    });
+                });
+                cur.points    = 0;
+                cur.atkPoints = 0;
+                cur.defPoints = 0;
+                cur.atkWins   = 0;
+                cur.atkLosses = 0;
+                cur.atkDraws  = 0;
+                cur.defWins   = 0;
+                cur.defLosses = 0;
+                cur.attackHistory  = [];
+                cur.defenseHistory = [];
+                cur.raidToday = {};
+            }
+
+            // ── Determinar si es Raid Diario o Buscar Rival ──
+            var isRaidAttack = window._rankedIsRaidAttack || false;
+            window._rankedIsRaidAttack = false;
+
+            // ── Calcular puntos ──
+            var atkPoints;
+            if (isRaidAttack) {
+                atkPoints = calcRaidAttackPoints(won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, isDraw);
+            } else {
+                atkPoints = calcBuscarRivalPoints(won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, isDraw);
+            }
+
+            // ── Aplicar puntos ──
+            // atkPoints puede ser negativo (derrota). Lo reflejamos en atkPoints acumulado.
+            var prevAtkPoints = cur.atkPoints || 0;
+            var prevDefPoints = cur.defPoints || 0;
+            cur.atkPoints = prevAtkPoints + atkPoints; // puede ser negativo
+            cur.defPoints = prevDefPoints;             // sin cambio aquí
+            // points total = suma de atk + def (siempre coherente)
+            cur.points    = Math.max(0, cur.atkPoints + cur.defPoints);
+            cur.atkWins   = (cur.atkWins   || 0) + (won ? 1 : 0);
+            cur.atkLosses = (cur.atkLosses || 0) + (!won && !isDraw ? 1 : 0);
+            cur.atkDraws  = (cur.atkDraws  || 0) + (isDraw ? 1 : 0);
+            cur.defWins   = cur.defWins  || 0;
+            cur.defLosses = cur.defLosses || 0;
+            cur.seasonKey = seasonKey;
+
+            // ── Historial de ataques ──
+            cur.attackHistory = cur.attackHistory || [];
+            var atkEntry = {
+                ts: Date.now(),
+                opponent: fakeOpp || 'CPU',
+                opponentUid: defOwnerUid || null,
+                result: isDraw ? 'draw' : (won ? 'win' : 'loss'),
+                pts: atkPoints,
+                isRaid: isRaidAttack
+            };
+            cur.attackHistory.unshift(atkEntry);
+            if (cur.attackHistory.length > 30) cur.attackHistory = cur.attackHistory.slice(0, 30);
+
+            // ── Char usage ──
+            cur.charStats = cur.charStats || {};
+            (playerChars || []).forEach(function(c) {
+                if (!c) return;
+                cur.charStats[c] = cur.charStats[c] || { used: 0, wins: 0 };
+                cur.charStats[c].used++;
+                if (won) cur.charStats[c].wins++;
+            });
+
+            // ── Si es Raid, actualizar SOLO el resultado del target (attacksLeft ya fue decrementado en raidAttackTarget) ──
+            if (isRaidAttack && defOwnerUid) {
+                // Leer raidToday fresco desde Firebase para no sobreescribir con datos viejos
+                db.ref('ranked_stats/' + myUid + '/raidToday').once('value', function(raidSnap) {
+                    var freshRaid = raidSnap.val() || {};
+                    if (!freshRaid.targets) freshRaid.targets = [];
+                    freshRaid.targets = freshRaid.targets.map(function(t) {
+                        if (t.uid === defOwnerUid) {
+                            t.attacked = true;
+                            t.result = isDraw ? 'draw' : (won ? 'win' : 'loss');
+                            t.pts = atkPoints;
+                        }
+                        return t;
+                    });
+                    db.ref('ranked_stats/' + myUid + '/raidToday').set(freshRaid);
+                });
+            }
+
+            db.ref('ranked_teams/' + myUid).once('value', function(myTeamSnap) {
+                var myTeamData = myTeamSnap.val() || {};
+                cur.currentAtkTeam = (myTeamData.attack  || []).filter(Boolean).slice(0,5);
+                cur.currentDefTeam = (myTeamData.defense || []).filter(Boolean).slice(0,5);
+                myRef.set(cur);
+                var ptLabel = atkPoints >= 0 ? '+' + atkPoints : String(atkPoints);
+                var modeLabel = isRaidAttack ? '⚔️ Raid' : '🔍 Rival';
+                addLog('🏆 Puntos Ranked [' + modeLabel + ']: ' + ptLabel + ' | Total: ' + cur.points, atkPoints >= 0 ? 'buff' : 'damage');
+
+                // ── ORO POR PARTIDA RANKED ──
+                // Victoria: 100 oro × personajes vivos al finalizar
+                // Derrota: 50 oro × enemigos eliminados durante la partida
+                var goldEarned = 0;
+                if (won) {
+                    goldEarned = (survivingAllies || 0) * 100;
+                    addLog('🥇 Ranked [' + modeLabel + ']: Victoria — +' + goldEarned + ' oro (' + (survivingAllies||0) + ' personajes vivos × 100)', 'buff');
+                } else if (!isDraw) {
+                    goldEarned = (enemiesEliminated || 0) * 50;
+                    addLog('🥇 Ranked [' + modeLabel + ']: Derrota — +' + goldEarned + ' oro (' + (enemiesEliminated||0) + ' enemigos eliminados × 50)', 'info');
+                }
+                if (goldEarned > 0) {
+                    addGold(myUid, goldEarned).then(function() { updateLobbyHUD(); });
+                }
+            });
+
+            // ── Guardar stats del defensor ──
+            if (defOwnerUid) {
+                _saveDef(defOwnerUid, fakeOpp, !won, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, seasonKey, todayKey, opponentChars, myName, myUid, isDraw);
+                db.ref('ranked_notifications/' + defOwnerUid).push().set({
+                    type: 'defense_attacked', attackerName: myName, attackerUid: myUid,
+                    defenseWon: !won, ts: Date.now(), read: false
+                });
+            }
+
+            // Calcular MVP — solo del equipo ganador
+            // NOTA: playerTeam NO existe en este scope. Usamos won + los arrays de chars directamente.
+            // Si won=true → playerChars ganó. Si won=false → opponentChars ganó.
+            var _mvpChar = null;
+            if (gameState._mvpCharFromRoom) {
+                // Viene del host via Firebase room — ya normalizado
+                _mvpChar = gameState._mvpCharFromRoom;
+                gameState._mvpCharFromRoom = null;
+            } else {
+                var _calcFn = window._calculateMvpScore || null;
+                if (_calcFn && gameState.battleStats) {
+                    var _mvpBest = -1;
+                    // El equipo ganador son los chars del jugador si ganó, sino los del oponente
+                    var _winCharsForMvp = won ? (playerChars || []) : (opponentChars || []);
+                    for (var _mi = 0; _mi < _winCharsForMvp.length; _mi++) {
+                        var _mn = _winCharsForMvp[_mi];
+                        if (!_mn) continue;
+                        var _ms = _calcFn(_mn);
+                        if (_ms > _mvpBest) { _mvpBest = _ms; _mvpChar = _mn; }
+                    }
+                    if (_mvpChar) _mvpChar = _mvpChar.replace(/\s+v\d+$/i, '').trim();
+                }
+            }
+            // wChars = equipo ganador, lChars = equipo perdedor
+            var _wChars = won ? (playerChars || []) : (opponentChars || []);
+            var _lChars = won ? (opponentChars || []) : (playerChars || []);
+            _saveGlobalCharStats(_wChars, _lChars, seasonKey, _mvpChar);
+        }
+
+        function _saveDef(defOwnerUid, defOwnerName, defWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, seasonKey, todayKey, opponentChars, attackerName, attackerUid, isDraw) {
+            var defRef = db.ref('ranked_stats/' + defOwnerUid);
+            defRef.once('value', function(snap) {
+                var cur = snap.val() || {};
+                if (!cur.name) {
+                    db.ref('ranked_teams/' + defOwnerUid).once('value', function(tSnap) {
+                        var tData = tSnap.val() || {};
+                        cur.name = tData.name || defOwnerName || defOwnerUid;
+                        _applyDefPoints(cur, defRef, defOwnerUid, defWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, seasonKey, todayKey, opponentChars, attackerName, attackerUid, isDraw);
+                    });
+                } else {
+                    _applyDefPoints(cur, defRef, defOwnerUid, defWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, seasonKey, todayKey, opponentChars, attackerName, attackerUid, isDraw);
+                }
+            });
+        }
+
+        function _applyDefPoints(cur, defRef, defOwnerUid, defWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, seasonKey, todayKey, opponentChars, attackerName, attackerUid, isDraw) {
+            var rawDefPoints = calcDefensePoints(defWon, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax);
+            var defPoints    = Math.max(1, rawDefPoints);
+
+            cur.defPoints = (cur.defPoints || 0) + defPoints;
+            cur.atkPoints = cur.atkPoints || 0;
+            // points total = suma de atk + def (siempre coherente)
+            cur.points    = Math.max(0, cur.atkPoints + cur.defPoints);
+            cur.defWins   = (cur.defWins   || 0) + (defWon ? 1 : 0);
+            cur.defLosses = (cur.defLosses || 0) + (defWon ? 0 : 1);
+            cur.atkWins   = cur.atkWins   || 0;
+            cur.atkLosses = cur.atkLosses || 0;
+            cur.seasonKey = seasonKey;
+
+            // ── Historial de defensas ──
+            cur.defenseHistory = cur.defenseHistory || [];
+            var defEntry = {
+                ts: Date.now(),
+                attacker: attackerName || 'Desconocido',
+                attackerUid: attackerUid || null,
+                result: isDraw ? 'draw' : (defWon ? 'win' : 'loss'),
+                pts: defPoints
+            };
+            cur.defenseHistory.unshift(defEntry);
+            if (cur.defenseHistory.length > 30) cur.defenseHistory = cur.defenseHistory.slice(0, 30);
+
+            db.ref('ranked_teams/' + defOwnerUid).once('value', function(tSnap) {
+                var tData = tSnap.val() || {};
+                cur.currentDefTeam = (tData.defense || []).filter(Boolean).slice(0,5);
+                cur.currentAtkTeam = cur.currentAtkTeam || (tData.attack || []).filter(Boolean).slice(0,5);
+                var defChars = (tData.defense || []).filter(Boolean);
+                cur.charStats = cur.charStats || {};
+                defChars.forEach(function(c) {
+                    if (!c) return;
+                    cur.charStats[c] = cur.charStats[c] || { used: 0, wins: 0 };
+                    cur.charStats[c].used++;
+                    if (defWon) cur.charStats[c].wins++;
+                });
+                _saveGlobalCharStats(defWon ? defChars : [], defWon ? [] : defChars, seasonKey, null);
+                defRef.set(cur);
+            });
+        }
+
+        // ── Guardar stats globales de personajes (para panel de Meta) ──
+        // Guarda stats de UNA PARTIDA para ambos equipos en una sola escritura atómica
+        // Evita race conditions y totalBattles duplicado
+        // Normalizar nombre de personaje (quitar sufijo v2, v3...)
+        function _normCharName(name) {
+            return (name || '').replace(/\s+v\d+$/i, '').trim();
+        }
+
+        function _saveGlobalCharStats(winnerChars, loserChars, seasonKey, mvpCharName) {
+            if ((!winnerChars || !winnerChars.length) && (!loserChars || !loserChars.length)) return;
+            // Normalizar todos los nombres
+            var wChars = (winnerChars || []).map(_normCharName).filter(Boolean);
+            var lChars = (loserChars  || []).map(_normCharName).filter(Boolean);
+            var mvpNorm = mvpCharName ? _normCharName(mvpCharName) : null;
+
+            var metaRef = db.ref('ranked_meta/' + seasonKey);
+
+            // Usar Firebase transaction para evitar race conditions entre jugadores concurrentes
+            metaRef.transaction(function(meta) {
+                if (meta === null) meta = {};
+                meta.totalBattles = (meta.totalBattles || 0) + 1;
+                meta.chars = meta.chars || {};
+
+                // Equipo ganador: used++ wins++ y MVP si aplica
+                wChars.forEach(function(ch) {
+                    meta.chars[ch] = meta.chars[ch] || { used: 0, wins: 0, mvps: 0 };
+                    meta.chars[ch].used  = (meta.chars[ch].used  || 0) + 1;
+                    meta.chars[ch].wins  = (meta.chars[ch].wins  || 0) + 1;
+                    meta.chars[ch].mvps  = meta.chars[ch].mvps  || 0;
+                    if (ch === mvpNorm) meta.chars[ch].mvps += 1;
+                });
+
+                // Equipo perdedor: used++ y MVP si aplica
+                lChars.forEach(function(ch) {
+                    meta.chars[ch] = meta.chars[ch] || { used: 0, wins: 0, mvps: 0 };
+                    meta.chars[ch].used  = (meta.chars[ch].used  || 0) + 1;
+                    meta.chars[ch].wins  = meta.chars[ch].wins  || 0;
+                    meta.chars[ch].mvps  = meta.chars[ch].mvps  || 0;
+                    if (ch === mvpNorm) meta.chars[ch].mvps += 1;
+                });
+
+                return meta;
+            }, function(error, committed) {
+                if (error) console.error('[META] Transaction failed:', error);
+            });
+        }
+
+
+        // ════════════════════════════════════════════════
+        // LEADERBOARD v2 — Sistema de Ligas + Puntuación Dual
+        // ════════════════════════════════════════════════
+
+        function showLeaderboard() {
+            var modal = document.getElementById('leaderboardModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'leaderboardModal';
+                modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:10000;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px;box-sizing:border-box;';
+                document.body.appendChild(modal);
+                modal.innerHTML = [
+                    '<div style="width:100%;max-width:960px;background:linear-gradient(135deg,#0a0e17,#0d1525);border:2px solid #ffaa00;border-radius:20px;padding:28px;box-shadow:0 0 60px rgba(255,170,0,0.2);">',
+                    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid rgba(255,170,0,0.15);padding-bottom:16px;flex-wrap:wrap;gap:10px;">',
+                        '<div>',
+                            '<div style="font-family:Orbitron,sans-serif;font-size:1.4rem;font-weight:900;color:#ffaa00;text-shadow:0 0 20px rgba(255,170,0,0.6);letter-spacing:.08em;">🏆 RANKED LEADERBOARD</div>',
+                            (currentUser && (currentUser.email === 'solisalex8291@gmail.com')
+                                ? '<button onclick="adminResetAllPlayers()" style="background:rgba(255,30,30,0.15);border:1px solid #ff3366;color:#ff3366;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:.7rem;font-family:Orbitron,sans-serif;letter-spacing:.05em;margin-top:4px;">🔄 RESET TEMPORADA</button>'
+                                : ''),
+                            '<div id="leaderboardSeasonLabel" style="font-size:.72rem;color:#555;margin-top:3px;letter-spacing:.05em;">Temporada actual</div>',
+                        '</div>',
+                        '<div style="display:flex;gap:8px;align-items:center;">',
+                            '<button id="lbBtnRanking" onclick="lbShowTab(\'ranking\')" style="background:rgba(255,170,0,0.2);border:1px solid #ffaa00;color:#ffaa00;border-radius:8px;padding:7px 14px;cursor:pointer;font-size:.78rem;font-family:Orbitron,sans-serif;">🏅 RANKING</button>',
+                            '<button id="lbBtnMeta" onclick="lbShowTab(\'meta\')" style="background:rgba(100,200,100,0.1);border:1px solid #4a4;color:#8f8;border-radius:8px;padding:7px 14px;cursor:pointer;font-size:.78rem;font-family:Orbitron,sans-serif;">📊 META</button>',
+                            '<button id="lbBtnRewards" onclick="lbShowRewards()" style="background:rgba(255,215,0,0.15);border:1px solid #ffd700;color:#ffd700;border-radius:8px;padding:7px 14px;cursor:pointer;font-size:.78rem;font-family:Orbitron,sans-serif;">🏆 RECOMPENSAS</button>',
+                            '<button id="leaderboardCloseBtn" style="background:rgba(255,68,102,0.2);border:2px solid #ff4466;color:#ff4466;font-size:1.1rem;width:36px;height:36px;border-radius:50%;cursor:pointer;">✕</button>',
+                        '</div>',
+                    '</div>',
+                    '<div id="leaderboardContent" style="color:#888;text-align:center;padding:3rem;font-size:.9rem;">Cargando...</div>',
+                    '<div id="leaderboardMetaContent" style="display:none;color:#888;text-align:center;padding:3rem;font-size:.9rem;">Cargando Meta...</div>',
+                    '</div>'
+                ].join('');
+                modal.querySelector('#leaderboardCloseBtn').onclick = function() { modal.style.display = 'none'; };
+            }
+            // Actualizar label de temporada
+            var slabel = modal.querySelector('#leaderboardSeasonLabel');
+            if (slabel) {
+                var sk = getCurrentSeasonKey();
+                var monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+                var parts = sk.split('-');
+                var monthLabel = parts.length === 2 ? (monthNames[parseInt(parts[1],10)-1] + ' ' + parts[0]) : sk;
+                slabel.textContent = 'Temporada ' + monthLabel + ' · Solo partidas Ranked';
+            }
+            modal.style.display = 'flex';
+            lbShowTab('ranking');
+        }
+
+        window.lbShowRewards = function() {
+            var existing = document.getElementById('_rewardsModal');
+            if (existing) { existing.remove(); return; }
+            var modal = document.createElement('div');
+            modal.id = '_rewardsModal';
+            modal.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);';
+            var SEASON_LEAGUES = [
+                { name:'Bronce',   min:0,     max:1499,  gold:'5,000',    keys:1,  emoji:'🥉', color:'#cd7f32' },
+                { name:'Plata',    min:1500,  max:2999,  gold:'10,000',   keys:1,  emoji:'🥈', color:'#C0C0C0' },
+                { name:'Oro',      min:3000,  max:4499,  gold:'20,000',   keys:2,  emoji:'🥇', color:'#FFD700' },
+                { name:'Diamante', min:4500,  max:5999,  gold:'50,000',   keys:2,  emoji:'💎', color:'#b9f2ff' },
+                { name:'Platino',  min:6000,  max:7499,  gold:'100,000',  keys:3,  emoji:'⭐', color:'#E5E4E2' },
+                { name:'Master',   min:7500,  max:9999,  gold:'200,000',  keys:5,  emoji:'👑', color:'#FFD700' },
+                { name:'Leyenda',  min:10000, max:999999, gold:'500,000', keys:10, emoji:'🔱', color:'#00ffcc' },
+            ];
+            var rows = SEASON_LEAGUES.map(function(lg) {
+                var keysStr = lg.keys > 0 ? ' + ' + lg.keys + ' 🗝️' : '';
+                return '<tr style="border-bottom:1px solid rgba(255,255,255,0.06);">' +
+                    '<td style="padding:10px 14px;font-size:1.2rem;text-align:center;">' + lg.emoji + '</td>' +
+                    '<td style="padding:10px 14px;color:' + lg.color + ';font-family:Orbitron,sans-serif;font-weight:700;font-size:.85rem;">' + lg.name + '</td>' +
+                    '<td style="padding:10px 14px;color:#aaa;font-size:.78rem;">' + lg.min.toLocaleString() + (lg.max < 999999 ? ' – ' + lg.max.toLocaleString() : '+') + ' pts</td>' +
+                    '<td style="padding:10px 14px;color:#ffd700;font-size:.78rem;">🪙 ' + lg.gold + keysStr + '</td>' +
+                '</tr>';
+            }).join('');
+            modal.innerHTML = '<div style="background:linear-gradient(160deg,#0d1420,#080e18);border:1px solid rgba(255,215,0,0.35);border-radius:16px;padding:28px 32px;max-width:520px;width:90%;box-shadow:0 0 40px rgba(255,215,0,0.12);">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">' +
+                    '<div style="font-family:Orbitron,sans-serif;font-size:1rem;color:#ffd700;letter-spacing:.08em;font-weight:700;">🏆 RECOMPENSAS DE TEMPORADA</div>' +
+                    '<button onclick="document.getElementById(\'_rewardsModal\').remove()" style="background:rgba(255,68,102,0.2);border:2px solid #ff4466;color:#ff4466;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:.9rem;line-height:1;">✕</button>' +
+                '</div>' +
+                '<p style="color:#666;font-size:.72rem;margin:0 0 16px;font-style:italic;">Las recompensas se entregan al finalizar cada temporada según tu liga más alta alcanzada.</p>' +
+                '<table style="width:100%;border-collapse:collapse;">' +
+                    '<thead><tr style="border-bottom:1px solid rgba(255,215,0,0.2);">' +
+                        '<th style="padding:6px 14px;color:#555;font-size:.68rem;text-align:center;"></th>' +
+                        '<th style="padding:6px 14px;color:#555;font-size:.68rem;text-align:left;font-family:Orbitron,sans-serif;">LIGA</th>' +
+                        '<th style="padding:6px 14px;color:#555;font-size:.68rem;text-align:left;font-family:Orbitron,sans-serif;">PUNTOS</th>' +
+                        '<th style="padding:6px 14px;color:#555;font-size:.68rem;text-align:left;font-family:Orbitron,sans-serif;">RECOMPENSA</th>' +
+                    '</tr></thead>' +
+                    '<tbody>' + rows + '</tbody>' +
+                '</table>' +
+            '</div>';
+            modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+            document.body.appendChild(modal);
+        };
+
+        window.lbShowTab = function(tab) {
+            var rankingDiv = document.getElementById('leaderboardContent');
+            var metaDiv    = document.getElementById('leaderboardMetaContent');
+            var btnR = document.getElementById('lbBtnRanking');
+            var btnM = document.getElementById('lbBtnMeta');
+            if (!rankingDiv || !metaDiv) return;
+            if (tab === 'ranking') {
+                rankingDiv.style.display = '';
+                metaDiv.style.display    = 'none';
+                if (btnR) { btnR.style.background = 'rgba(255,170,0,0.35)'; btnR.style.borderColor = '#ffcc44'; }
+                if (btnM) { btnM.style.background = 'rgba(100,200,100,0.1)'; btnM.style.borderColor = '#4a4'; }
+                loadLeaderboardData();
+            } else {
+                rankingDiv.style.display = 'none';
+                metaDiv.style.display    = '';
+                if (btnM) { btnM.style.background = 'rgba(100,200,100,0.3)'; btnM.style.borderColor = '#6f6'; }
+                if (btnR) { btnR.style.background = 'rgba(255,170,0,0.2)'; btnR.style.borderColor = '#ffaa00'; }
+                loadMetaData();
+            }
+        };
+
+        function loadLeaderboardData() {
+            var container = document.getElementById('leaderboardContent');
+            if (container) container.innerHTML = '<div style="color:#888;text-align:center;padding:2rem;">Cargando...</div>';
+            db.ref('ranked_stats').once('value', function(snap) {
+                var data = snap.val() || {};
+                var seasonKey = getCurrentSeasonKey();
+                var entries = Object.entries(data)
+                    .filter(function(e) { return !e[1].isFake; })
+                    .map(function(e) {
+                        var v = e[1];
+                        var pts = Math.max(0, v.points || 0);
+                        var atkW   = v.atkWins   || 0;
+                        var atkL   = v.atkLosses || 0;
+                        var defW   = v.defWins   || 0;
+                        var defL   = v.defLosses || 0;
+                        var totalG = atkW + defW;
+                        var totalB = atkW + atkL + defW + defL;
+                        var wr     = totalB > 0 ? Math.round((totalG / totalB) * 100) : 0;
+                        return {
+                            uid: e[0], name: v.name || e[0],
+                            points: pts, league: getLeague(pts),
+                            atkWins: atkW, atkLosses: atkL,
+                            defWins: defW, defLosses: defL,
+                            totalWins: totalG, totalLosses: atkL + defL,
+                            totalBattles: totalB, winRate: wr,
+                            atkPoints: v.atkPoints || 0,
+                            defPoints: v.defPoints || 0,
+                            currentAtkTeam: v.currentAtkTeam || [],
+                            currentDefTeam: v.currentDefTeam || [],
+                        };
+                    });
+                entries.sort(function(a, b) { return b.points - a.points || b.winRate - a.winRate; });
+                renderLeaderboard(entries);
+            });
+        }
+
+        function renderLeaderboard(entries) {
+            var container = document.getElementById('leaderboardContent');
+            if (!container) return;
+            if (!entries.length) {
+                container.innerHTML = '<div style="color:#555;text-align:center;padding:3rem;">Aún no hay partidas Ranked.<br><span style="font-size:.85rem;color:#444;">¡Sé el primero en jugar!</span></div>';
+                return;
+            }
+
+            // Liga top-3 Gran Maestro
+            var top3 = entries.filter(function(e) { return e.league.name === 'Leyenda'; }).slice(0,3);
+
+            var rows = entries.map(function(e, i) {
+                // Use league icon for position indicator
+                var _entryPts = (e && e.points) ? e.points : 0;
+                var _entryLg = typeof getLeague === 'function' ? getLeague(_entryPts) : null;
+                var medal = _entryLg ? '<span style="font-size:1.2rem;">' + _entryLg.icon + '</span>' : (i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '<span style="font-family:Orbitron,sans-serif;font-size:.8rem;color:#666;">' + (i+1) + '</span>');
+                // Colores por liga
+                var lgColors = {
+                    'Bronce':      { bg: 'rgba(180,100,30,0.10)',  border: 'rgba(205,127,50,0.40)',  glow: 'rgba(205,127,50,0.12)',  accent: '#cd7f32' },
+                    'Plata':       { bg: 'rgba(180,180,200,0.08)', border: 'rgba(192,192,192,0.35)', glow: 'rgba(192,192,192,0.10)', accent: '#c0c0c0' },
+                    'Oro':         { bg: 'rgba(255,200,0,0.09)',   border: 'rgba(255,215,0,0.40)',   glow: 'rgba(255,215,0,0.14)',   accent: '#ffd700' },
+                    'Diamante':    { bg: 'rgba(0,200,255,0.08)',   border: 'rgba(0,220,255,0.35)',   glow: 'rgba(0,200,255,0.12)',   accent: '#00d4ff' },
+                    'Campeones':     { bg: 'rgba(160,0,255,0.10)',   border: 'rgba(180,50,255,0.40)',  glow: 'rgba(160,0,255,0.16)',   accent: '#b432ff' },
+                    'Leyenda':{ bg: 'rgba(255,100,0,0.10)',   border: 'rgba(255,130,0,0.45)',   glow: 'rgba(255,100,0,0.18)',   accent: '#ff8800' },
+                };
+                var lgC = lgColors[e.league.name] || lgColors['Bronce'];
+                var bgGlow  = lgC.bg;
+                var border  = lgC.border;
+                var wrColor = e.winRate >= 60 ? '#00ff88' : e.winRate >= 40 ? '#ffaa00' : '#ff4466';
+
+                // Equipos actuales
+                var atkTeamHtml = (e.currentAtkTeam||[]).map(function(c) {
+                    return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">' +
+                        '<img src="' + getCharPortrait(c) + '" title="' + escapeHtml(c) + '" referrerpolicy="no-referrer" ' +
+                        'style="width:50px;height:50px;border-radius:7px;border:2px solid rgba(79,195,247,0.5);object-fit:cover;background:#111;" onerror="this.style.opacity=0.15">' +
+                        '<span style="font-size:.52rem;color:#4fc3f7;max-width:50px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml((c||'').split(' ')[0]) + '</span>' +
+                        '</div>';
+                }).join('');
+                var defTeamHtml = (e.currentDefTeam||[]).map(function(c) {
+                    return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">' +
+                        '<img src="' + getCharPortrait(c) + '" title="' + escapeHtml(c) + '" referrerpolicy="no-referrer" ' +
+                        'style="width:50px;height:50px;border-radius:7px;border:2px solid rgba(200,100,255,0.5);object-fit:cover;background:#111;" onerror="this.style.opacity=0.15">' +
+                        '<span style="font-size:.52rem;color:#c864ff;max-width:50px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + escapeHtml((c||'').split(' ')[0]) + '</span>' +
+                        '</div>';
+                }).join('');
+
+                return [
+                    '<div style="background:' + bgGlow + ';border:1px solid ' + border + ';border-radius:14px;padding:14px 16px;margin-bottom:9px;box-shadow:0 0 18px ' + lgC.glow + ';">',
+                    // Row 1: posición + nombre + liga + puntos
+                    '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;">',
+                        '<div style="font-size:1.4rem;min-width:30px;text-align:center;">' + medal + '</div>',
+                        '<div style="flex:1;min-width:120px;">',
+                            '<div style="font-family:Orbitron,sans-serif;font-weight:700;color:#fff;font-size:.9rem;">' + escapeHtml(e.name) + '</div>',
+                            '<div style="font-size:.72rem;color:' + lgC.accent + ';margin-top:2px;font-weight:600;">' + e.league.full + '</div>',
+                        '</div>',
+                        // Puntos globales
+                        '<div style="background:rgba(255,170,0,0.1);border:1px solid rgba(255,170,0,0.3);border-radius:8px;padding:7px 12px;text-align:center;min-width:90px;">',
+                            '<div style="font-size:.6rem;color:#ffaa00;letter-spacing:.05em;margin-bottom:3px;">⭐ PUNTOS</div>',
+                            '<div style="font-family:Orbitron,sans-serif;font-size:1rem;color:#ffaa00;font-weight:900;">' + e.points.toLocaleString() + '</div>',
+                            '<div style="font-size:.6rem;color:#888;margin-top:2px;"><span style="color:' + (e.atkPoints >= 0 ? '#4fc3f7' : '#ff4466') + ';">' + (e.atkPoints >= 0 ? '' : '') + e.atkPoints + ' atk</span> · <span style="color:#c864ff;">' + e.defPoints + ' def</span></div>',
+                        '</div>',
+                        // V/D GLOBAL eliminado por solicitud del usuario
+                    '</div>',
+                    // Row 2: equipos actuales
+                    '<div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;">',
+                        atkTeamHtml ? '<div><div style="font-size:.58rem;color:#4fc3f7;margin-bottom:5px;letter-spacing:.05em;">🗡️ EQUIPO ATAQUE</div><div style="display:flex;gap:5px;">' + atkTeamHtml + '</div></div>' : '',
+                        defTeamHtml ? '<div><div style="font-size:.58rem;color:#c864ff;margin-bottom:5px;letter-spacing:.05em;">🛡️ EQUIPO DEFENSA</div><div style="display:flex;gap:5px;">' + defTeamHtml + '</div></div>' : '',
+                    '</div>',
+                    '</div>'
+                ].join('');
+            });
+            container.innerHTML = rows.join('');
+        }
+
+        // ── Panel de Meta ──
+        function loadMetaData() {
+            var container = document.getElementById('leaderboardMetaContent');
+            if (container) container.innerHTML = '<div style="color:#888;text-align:center;padding:2rem;">Cargando Meta...</div>';
+            var seasonKey = getCurrentSeasonKey();
+            db.ref('ranked_meta/' + seasonKey).once('value', function(snap) {
+                var meta = snap.val() || {};
+                var chars = meta.chars || {};
+                var totalBattles = meta.totalBattles || 0;
+                var totalPlayers = 0;
+                db.ref('ranked_stats').once('value', function(snap2) {
+                    var players = snap2.val() || {};
+                    totalPlayers = Object.keys(players).filter(function(k) { return !players[k].isFake; }).length;
+
+                    // Normalizar nombres: fusionar 'X v2' con 'X'
+                    var normalizedChars = {};
+                    Object.entries(chars).forEach(function(e) {
+                        var rawName = e[0];
+                        // Quitar sufijo ' v2', ' v3', etc.
+                        var baseName = rawName.replace(/\s+v\d+$/i, '').trim();
+                        if (!normalizedChars[baseName]) {
+                            normalizedChars[baseName] = { used: 0, wins: 0 };
+                        }
+                        normalizedChars[baseName].used += (e[1].used || 0);
+                        normalizedChars[baseName].wins += (e[1].wins || 0);
+                        normalizedChars[baseName].mvps = (normalizedChars[baseName].mvps || 0) + (e[1].mvps || 0);
+                    });
+
+                    var entries = Object.entries(normalizedChars).map(function(e) {
+                        var c = e[1];
+                        var used = c.used || 0;
+                        var wins = c.wins || 0;
+                        var mvps = c.mvps || 0;
+                        var wr   = used > 0 ? (wins / used) * 100 : 0;
+                        var pr   = totalBattles > 0 ? Math.round((used / (totalBattles * 2)) * 100) : 0;
+                        var mvpRate = used > 0 ? Math.round((mvps / used) * 100) : 0;
+                        // ⭐ Puntuación: (partidas × winrate%) × ((MVPs/10) + 1)
+                        var base = used * (wr / 100);
+                        var mult = (mvps / 10) + 1;
+                        var id   = Math.round(base * mult * 10) / 10;
+                        return { name: e[0], used: used, wins: wins, mvps: mvps, wr: Math.round(wr), pr: Math.min(100, pr), mvpRate: mvpRate, id: id };
+                    });
+
+                    // Ordenar por Índice de Dominio por defecto
+                    entries.sort(function(a, b) { return b.id - a.id || b.used - a.used; });
+
+                    if (!entries.length) {
+                        container.innerHTML = '<div style="color:#555;text-align:center;padding:3rem;">Sin datos de Meta para esta temporada todavía.</div>';
+                        return;
+                    }
+
+                    // Estado de ordenamiento en ventana
+                    if (!window._metaSortBy) window._metaSortBy = 'wr';
+                    window._metaEntries = entries; // guardar para re-ordenar sin refetch
+                    window.renderMetaRows = function(sortBy) {
+                        window._metaSortBy = sortBy || 'id';
+                        var sorted = (window._metaEntries || []).slice();
+                        if (sortBy === 'pr')      sorted.sort(function(a,b){ return b.pr - a.pr || b.used - a.used; });
+                        else if (sortBy === 'games') sorted.sort(function(a,b){ return b.used - a.used || b.wr - a.wr; });
+                        else if (sortBy === 'wr') sorted.sort(function(a,b){ return b.wr - a.wr || b.used - a.used; });
+                        else if (sortBy === 'mvp') sorted.sort(function(a,b){ return (b.mvps||0) - (a.mvps||0) || b.used - a.used; });
+                        else                     sorted.sort(function(a,b){ return b.id - a.id || b.used - a.used; }); // default: Puntuación
+                        var rowsH = sorted.map(function(e, i) {
+                            var wrColor  = e.wr >= 60 ? '#00ff88' : e.wr >= 50 ? '#ffaa00' : e.wr >= 40 ? '#ff8844' : '#ff4466';
+                            var _mPts2 = (e && e.points) ? e.points : 0;
+                            var _mLg2 = typeof getLeague === 'function' ? getLeague(_mPts2) : null;
+                            var medal = _mLg2 ? _mLg2.icon : (i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i+1));
+                            var portrait = getCharPortrait(e.name);
+                            return [
+                                '<div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:8px 10px;margin-bottom:5px;">',
+                                    '<div style="width:30px;text-align:center;font-size:.85rem;">' + medal + '</div>',
+                                    '<img src="' + portrait + '" referrerpolicy="no-referrer" style="width:38px;height:38px;border-radius:6px;object-fit:cover;border:1px solid rgba(255,255,255,0.1);background:#111;" onerror="this.style.opacity=0.15">',
+                                    '<div style="flex:1;font-size:.82rem;color:#ddd;font-weight:600;">' + escapeHtml(e.name) + '</div>',
+                                    '<div style="width:70px;text-align:center;font-size:.78rem;color:#88ccff;">' + e.pr + '%</div>',
+                                    '<div style="width:70px;text-align:center;font-family:Orbitron,sans-serif;font-size:.82rem;font-weight:700;color:' + wrColor + ';">' + e.wr + '%</div>',
+                                    '<div style="width:55px;text-align:center;font-size:.75rem;color:#666;">' + e.used + '</div>',
+                                    '<div style="width:55px;text-align:center;font-size:.78rem;color:#ffd700;font-weight:700;">' + (e.mvps || 0) + '</div>',
+                                    '<div style="width:70px;text-align:center;font-family:Orbitron,sans-serif;font-size:.85rem;font-weight:900;color:#ffd700;">' + e.id.toFixed(1) + '</div>',
+                                '</div>'
+                            ].join('');
+                        }).join('');
+                        var rowsDiv = document.getElementById('metaRowsDiv');
+                        if (rowsDiv) rowsDiv.innerHTML = rowsH;
+                        // Actualizar estilos de botones activos
+                        ['id','wr','pr','games','mvp'].forEach(function(s) {
+                            var btn = document.getElementById('metaSort_' + s);
+                            if (btn) btn.style.background = (s === sortBy || (!sortBy && s === 'id')) ? 'rgba(100,200,100,0.35)' : 'rgba(100,200,100,0.08)';
+                        });
+                    };
+                    var headerHtml = [
+                        '<div style="margin-bottom:12px;">',
+                            '<div style="font-family:Orbitron,sans-serif;font-size:1rem;color:#8f8;margin-bottom:4px;">📊 META — Personajes más usados</div>',
+                            '<div style="font-size:.72rem;color:#555;margin-bottom:10px;">Temporada ' + seasonKey + ' · ' + totalBattles + ' batallas</div>',
+                            // Botones de orden
+                            '<div style="display:flex;gap:6px;margin-bottom:12px;">',
+                                '<span style="font-size:.65rem;color:#666;align-self:center;margin-right:4px;">Ordenar por:</span>',
+                                '<button id="metaSort_id" onclick="window.renderMetaRows(\'id\')" style="background:rgba(100,200,100,0.08);border:1px solid #4a4;color:#8f8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.7rem;">⭐ Puntuación</button>',
+                                '<button id="metaSort_wr" onclick="window.renderMetaRows(\'wr\')" style="background:rgba(100,200,100,0.08);border:1px solid #4a4;color:#8f8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.7rem;">🏆 Winrate</button>',
+                                '<button id="metaSort_pr" onclick="window.renderMetaRows(\'pr\')" style="background:rgba(100,200,100,0.08);border:1px solid #4a4;color:#8f8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.7rem;">📊 Pick Rate</button>',
+                                '<button id="metaSort_games" onclick="window.renderMetaRows(\'games\')" style="background:rgba(100,200,100,0.08);border:1px solid #4a4;color:#8f8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.7rem;">🎮 Partidas</button>',
+                                '<button id="metaSort_mvp" onclick="window.renderMetaRows(\'mvp\')" style="background:rgba(100,200,100,0.08);border:1px solid #4a4;color:#8f8;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.7rem;">🥇 MVPs</button>',
+                            '</div>',
+                        '</div>',
+                        '<div style="display:flex;gap:8px;margin-bottom:8px;font-size:.65rem;color:#555;padding:0 8px;">',
+                            '<div style="width:30px;">#</div>',
+                            '<div style="width:38px;"></div>',
+                            '<div style="flex:1;">Personaje</div>',
+                            '<div style="width:70px;text-align:center;">Pick Rate</div>',
+                            '<div style="width:70px;text-align:center;">Winrate</div>',
+                            '<div style="width:55px;text-align:center;">Partidas</div>',
+                            '<div style="width:55px;text-align:center;">🥇 MVPs</div>',
+                            '<div style="width:70px;text-align:center;">⭐ Punt.</div>',
+                        '</div>',
+                        '<div id="metaRowsDiv"></div>',
+                    ].join('');
+
+                    container.innerHTML = headerHtml;
+                    // Renderizar filas con el orden por defecto (winrate)
+                    window.renderMetaRows('id');
+                });
+            });
+        }
+
+        function getTopChars(charUsage, n) {
+            if (!charUsage) return [];
+            return Object.entries(charUsage)
+                .sort(function(a, b) { return b[1] - a[1]; })
+                .slice(0, n)
+                .map(function(e) { return e[0]; });
+        }
+
+        // ── Reset semanal (Mes actual) ──
+        function checkLeaderboardReset() {
+            db.ref('leaderboard_meta/lastSeasonKey').once('value', function(snap) {
+                var lastSeason  = snap.val() || '';
+                var thisSeason  = getCurrentSeasonKey();
+                if (lastSeason !== thisSeason) {
+                    // Nueva temporada — archivar y resetear
+                    db.ref('ranked_stats').once('value', function(archSnap) {
+                        var archive = archSnap.val() || {};
+                        if (Object.keys(archive).length > 0) {
+                            // Guardar temporada anterior como archivo
+                            db.ref('ranked_seasons/' + lastSeason).set(archive);
+                            // Aplicar decaída del 30% y reset stats de batalla (mantener puntos reducidos)
+                            var updates = {};
+                            Object.entries(archive).forEach(function(e) {
+                                var uid = e[0], v = e[1];
+                                updates[uid] = {
+                                    name: v.name,
+                                    points: Math.floor((v.points || 0) * 0.70), // 30% decay
+                                    atkPoints: 0, defPoints: 0,
+                                    atkWins: 0, atkLosses: 0,
+                                    defWins: 0, defLosses: 0,
+                                    charStats: {},
+                                    currentAtkTeam: v.currentAtkTeam || [],
+                                    currentDefTeam: v.currentDefTeam || [],
+                                    seasonKey: thisSeason,
+                                    dailyBattles: {}
+                                };
+                            });
+                            db.ref('ranked_stats').set(updates).then(function() {
+                                db.ref('leaderboard_meta/lastSeasonKey').set(thisSeason);
+                                console.log('[RANKED] Nueva temporada: ' + thisSeason + '. Puntos anteriores reducidos 30%.');
+                            });
+                        } else {
+                            db.ref('leaderboard_meta/lastSeasonKey').set(thisSeason);
+                        }
+                    });
+                }
+            });
+        }
+
+        function getCharPortrait(charName) {
+            if (typeof characterData !== 'undefined' && characterData[charName] && characterData[charName].portrait) {
+                return characterData[charName].portrait;
+            }
+            var portraits = {
+                'Madara Uchiha':        'https://i.postimg.cc/KzWJPy5j/Captura_de_pantalla_2026_02_26_134301.png',
+                'Sun Jin Woo':          'https://i.postimg.cc/3rSZSvdF/Captura_de_pantalla_2026_03_11_105214.png',
+                'Aldebaran':            'https://i.postimg.cc/PJr0LB6N/Captura_de_pantalla_2026_02_21_230603.png',
+                'Leonidas':             'https://i.postimg.cc/TYJdgC3L/Captura_de_pantalla_2026_03_06_001254.png',
+                'Min Byung':            'https://i.postimg.cc/Y9xJCpxr/Captura_de_pantalla_2026_02_22_002441.png',
+                'Rengoku':              'https://i.postimg.cc/wTWCgJY2/Captura_de_pantalla_2026_03_15_021343.png',
+                'Aspros de Gemini':     'https://i.postimg.cc/NMZcBh8m/Captura_de_pantalla_2026_02_27_201323.png',
+                'Ymir':                 'https://i.postimg.cc/D0PFfyFL/Captura_de_pantalla_2026_03_03_125024.png',
+                'Thestalos':            'https://i.postimg.cc/9f6kNBpV/Gemini_Generated_Image_ac4u14ac4u14ac4u.png',
+                'Alexstrasza':          'https://i.postimg.cc/V6F3kYFw/Captura_de_pantalla_2026_02_21_233329.png',
+                'Anakin Skywalker':     'https://i.postimg.cc/7hYjCpBh/Captura_de_pantalla_2026_02_21_231859.png',
+                'Goku':                 'https://i.postimg.cc/wMsFFbWT/Captura_de_pantalla_2026_02_26_132013.png',
+                'Ragnar Lothbrok':      'https://i.postimg.cc/9XqFNYqW/Captura_de_pantalla_2026_03_11_234717.png',
+                'Saitama':              'https://i.postimg.cc/Qtz0QrqV/Captura_de_pantalla_2026_02_26_132109.png',
+                'Ozymandias':           'https://i.postimg.cc/6qGzz1Hp/Captura_de_pantalla_2026_02_26_131502.png',
+                'Gilgamesh':            'https://i.postimg.cc/nzNJp8K7/Captura_de_pantalla_2026_02_27_201309.png',
+                'Goku Black':           'https://i.postimg.cc/SsGwxyGp/Captura_de_pantalla_2026_02_22_014009.png',
+                'Saga de Geminis':      'https://i.postimg.cc/wBvTDG7f/Captura_de_pantalla_2026_02_24_103109.png',
+                'Minato Namikaze':      'https://i.postimg.cc/qvNv9NQN/Captura_de_pantalla_2026_03_11_215715.png',
+                'Muzan Kibutsuji':      'https://i.postimg.cc/fL41fCgH/Captura_de_pantalla_2026_02_28_020016.png',
+                'Nakime':               'https://i.postimg.cc/858xm4nX/Captura_de_pantalla_2026_02_28_020047.png',
+                'Sauron':               'https://i.postimg.cc/858xm4n0/Captura_de_pantalla_2026_02_28_020119.png',
+                'Darth Vader':          'https://i.postimg.cc/63sFfc1F/Captura_de_pantalla_2026_02_28_015421.png',
+                'Lich King':            'https://i.postimg.cc/W3Rxw8ff/Captura_de_pantalla_2026_02_28_015847.png',
+                'Padme Amidala':        'https://i.postimg.cc/pV63g1B4/Whats_App_Image_2026_03_05_at_9_39_15_AM.jpg',
+                'Daenerys Targaryen':   'https://i.postimg.cc/Gm8k90V5/Whats_App_Image_2026_03_15_at_1_59_17_AM.jpg',
+                'Tamayo':               'https://i.postimg.cc/9XnsvNBS/Whats_App_Image_2026_03_05_at_9_42_52_AM.jpg',
+                'Emperador Palpatine':  'https://i.postimg.cc/DfMRtYcj/Whats_App_Image_2026_03_05_at_9_50_54_AM.jpg',
+                'Gandalf':              'https://i.postimg.cc/1RjbLYHx/Whats_App_Image_2026_03_05_at_9_53_24_AM.jpg',
+                'Doomsday':             'https://i.postimg.cc/hjJDWnn6/Captura_de_pantalla_2026_03_06_003242.png',
+                'Ikki de Fenix':        'https://i.postimg.cc/LsX6jbnD/Captura_de_pantalla_2026_02_24_103509.png',
+                'Flash':                'https://i.ibb.co/JRMKVsj5/Captura-de-pantalla-2026-03-26-174229.png',
+                'Itachi Uchiha':        'https://i.ibb.co/JRPVCpGp/Captura-de-pantalla-2026-03-26-230228.png',
+                'Shinobu Kocho':        'https://i.postimg.cc/9XnsvNBS/Whats_App_Image_2026_03_05_at_9_42_52_AM.jpg',
+                'Tanjiro Kamado':       'https://i.postimg.cc/9XnsvNBS/Whats_App_Image_2026_03_05_at_9_42_52_AM.jpg',
+            };
+            return portraits[charName] || 'https://i.postimg.cc/PJr0LB6N/Captura_de_pantalla_2026_02_21_230603.png';
+        }
+
+                // ── Defense Attack Notifications ──
+        function listenForDefenseNotifications() {
+            if (!currentUser) return;
+            db.ref('ranked_notifications/' + currentUser.uid)
+              .orderByChild('read').equalTo(false)
+              .on('child_added', function(snap) {
+                const n = snap.val();
+                if (!n) return;
+                const defended = n.defenseWon ? '✅ tu equipo resistió el ataque' : '❌ tu equipo fue derrotado';
+                showLobbyToast('🛡️ ' + (n.attackerName || 'Alguien') + ' atacó tu equipo de defensa — ' + defended);
+                snap.ref.update({ read: true });
+            });
+        }
+
+        function showLobbyToast(msg) {
+            let toast = document.getElementById('lobbyToast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'lobbyToast';
+                toast.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(10,14,23,0.95);border:1px solid #ffaa00;border-radius:12px;padding:14px 24px;color:#ffaa00;font-size:.88rem;z-index:9999;max-width:420px;text-align:center;box-shadow:0 0 24px rgba(255,170,0,0.3);transition:opacity .3s;';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = msg;
+            toast.style.opacity = '1';
+            clearTimeout(toast._hideTimer);
+            toast._hideTimer = setTimeout(function() { toast.style.opacity = '0'; }, 5000);
+        }
+
+        // ── Monthly Leaderboard Reset — last day of month at midnight ──
+        function checkLeaderboardReset() {
+            db.ref('leaderboard_meta/lastReset').once('value', function(snap) {
+                const lastReset = snap.val() || 0;
+                const now = Date.now();
+
+                // SAFETY: if lastReset is 0 (never set), initialize it to NOW and skip reset
+                // This prevents a spurious reset when the node doesn't exist
+                if (!lastReset) {
+                    db.ref('leaderboard_meta/lastReset').set(now);
+                    console.log('[RANKED] lastReset initialized — no reset triggered');
+                    return;
+                }
+
+                // Only reset on the last day of the month at midnight (00:00–01:00)
+                const nowDate = new Date(now);
+                const lastResetDate = new Date(lastReset);
+                const lastDayOfMonth = new Date(nowDate.getFullYear(), nowDate.getMonth()+1, 0).getDate();
+                const isLastDay = nowDate.getDate() === lastDayOfMonth;
+                const isMidnight = nowDate.getHours() === 0;
+                const alreadyResetThisMonth = (
+                    lastResetDate.getFullYear() === nowDate.getFullYear() &&
+                    lastResetDate.getMonth() === nowDate.getMonth()
+                );
+
+                if (isLastDay && isMidnight && !alreadyResetThisMonth) {
+                    db.ref('ranked_stats').remove().then(function() {
+                        db.ref('leaderboard_meta/lastReset').set(now);
+                        console.log('[RANKED] Monthly leaderboard reset — new season started');
+                    });
+                } else {
+                    console.log('[RANKED] No reset needed — lastDay:'+isLastDay+' midnight:'+isMidnight+' alreadyReset:'+alreadyResetThisMonth);
+                }
+            });
+        }
+
+        // ── Room management ──
+        function generateRoomCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = '';
+            for (let i = 0; i < 5; i++) code += chars[Math.floor(Math.random() * chars.length)];
+            return code;
+        }
+
+        function createOnlineRoom() {
+            if (!currentUser) return;
+            const roomId = generateRoomCode();
+            currentRoomId = roomId;
+            isRoomHost = true;
+            onlineMode = true;
+
+            db.ref('rooms/' + roomId).set({
+                host: { uid: currentUser.uid, name: currentUser.displayName, photo: currentUser.photoURL || '' },
+                guest: null,
+                status: 'waiting',
+                created: Date.now()
+            }).then(function() {
+                showScreen('waitingScreen');
+                document.getElementById('waitingRoomCode').textContent = roomId;
+                document.getElementById('waitingStatus').textContent = '⏳ Esperando oponente...';
+                listenForGuest(roomId);
+            });
+        }
+
+        function listenForGuest(roomId) {
+            roomListener = db.ref('rooms/' + roomId).on('value', function(snap) {
+                const room = snap.val();
+                if (!room) return;
+                if (room.guest && room.status === 'ready') {
+                    document.getElementById('waitingStatus').textContent = '✅ ' + room.guest.name + ' se unió! Iniciando...';
+                    setTimeout(function() { startOnlineGame(roomId, true); }, 1500);
+                }
+            });
+        }
+
+        function refreshRooms() {
+            // Populate the onlineRoomsList inside the modal (old roomsList is now hidden)
+            var list = document.getElementById('onlineRoomsList') || document.getElementById('roomsList');
+            if (!list) return;
+            list.innerHTML = '<div style="text-align:center;color:#666;padding:1.2rem;font-size:.82rem;">🔍 Buscando partidas...</div>';
+
+            db.ref('rooms').orderByChild('status').equalTo('waiting').limitToLast(10).once('value', function(snap) {
+                list.innerHTML = '';
+                const rooms = snap.val();
+                if (!rooms || Object.keys(rooms).length === 0) {
+                    list.innerHTML = '<div style="text-align:center;color:#555;padding:1.4rem;font-size:.82rem;">No hay partidas disponibles.<br><span style="color:#444;font-size:.75rem;">¡Sé el primero en crear una!</span></div>';
+                    return;
+                }
+                Object.entries(rooms).forEach(function([roomId, room]) {
+                    if (room.host && room.host.uid === currentUser.uid) return;
+                    const card = document.createElement('div');
+                    card.style.cssText = 'background:rgba(0,196,255,0.06);border:1px solid rgba(0,196,255,0.15);border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;';
+                    const hostName2 = (room.host.name || 'Jugador').replace(/</g,'&lt;');
+                    card.innerHTML = [
+                        '<div>',
+                            '<div style="font-weight:700;color:#fff;font-size:.88rem;">' + hostName2 + '</div>',
+                            '<div style="font-size:.72rem;color:#666;">Sala: <span style="color:#00c4ff;font-family:Orbitron,sans-serif;">' + roomId + '</span></div>',
+                        '</div>',
+                        '<button data-rid="' + roomId + '" style="background:linear-gradient(135deg,#003a5c,#006fa6);border:1px solid #00c4ff;color:#00c4ff;border-radius:8px;padding:7px 14px;cursor:pointer;font-size:.78rem;font-family:Orbitron,sans-serif;">UNIRSE</button>'
+                    ].join('');
+                    card.querySelector('button').addEventListener('click', function() {
+                        document.getElementById('onlineModal').style.display = 'none';
+                        joinRoom(roomId);
+                    });
+                    list.appendChild(card);
+                });
+                if (list.children.length === 0) {
+                    list.innerHTML = '<div style="text-align:center;color:#555;padding:1.4rem;font-size:.82rem;">No hay partidas de otros jugadores.</div>';
+                }
+            });
+        }
+
+
+
+
+        function joinRoom(roomId) {
+            if (!currentUser) return;
+            currentRoomId = roomId;
+            isRoomHost = false;
+            onlineMode = true;
+
+            db.ref('rooms/' + roomId + '/guest').set({
+                uid: currentUser.uid,
+                name: currentUser.displayName,
+                photo: currentUser.photoURL || ''
+            }).then(function() {
+                return db.ref('rooms/' + roomId + '/status').set('ready');
+            }).then(function() {
+                startOnlineGame(roomId, false);
+            });
+        }
+
+
+        // ── REVANCHA ONLINE ──
+        let revanchaListener = null;
+        function listenForRevanchaRequest(roomId) {
+            // Turn off any previous listener
+            if (revanchaListener) {
+                db.ref(revanchaListener).off('value');
+                revanchaListener = null;
+            }
+            const revRef = 'rooms/' + roomId + '/revancha';
+            revanchaListener = revRef;
+            db.ref(revRef).on('value', function(snap) {
+                const data = snap.val();
+                if (!data || !data.fromUid) return;
+                // If I'm the one who sent it, ignore
+                if (currentUser && data.fromUid === currentUser.uid) return;
+                if (data.status !== 'pending') return;
+
+                // Show revancha notification modal to the OTHER player
+                showRevanchaModal(data.fromName || 'Tu rival', roomId);
+            });
+        }
+
+        function showRevanchaModal(fromName, roomId) {
+            let modal = document.getElementById('revanchaRequestModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'revanchaRequestModal';
+                modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;align-items:center;justify-content:center;';
+                modal.innerHTML = [
+                    '<div style="background:linear-gradient(135deg,#0a0e17,#0d1525);border:2px solid #aa00ff;border-radius:20px;padding:2rem 2.5rem;text-align:center;max-width:360px;box-shadow:0 0 40px rgba(170,0,255,0.4);">',
+                    '<div style="font-size:2rem;margin-bottom:.5rem;">🔄</div>',
+                    '<div style="font-family:Orbitron,sans-serif;font-size:1rem;color:#aa00ff;margin-bottom:.5rem;">¡REVANCHA!</div>',
+                    '<div id="revanchaModalText" style="color:#ccc;font-size:.9rem;margin-bottom:1.5rem;"></div>',
+                    '<div style="display:flex;gap:1rem;justify-content:center;">',
+                    '<button onclick="respondRevancha(true)" style="background:linear-gradient(135deg,#003a1a,#00aa55);border:2px solid #00ff88;color:#00ff88;font-family:Orbitron,sans-serif;font-size:.85rem;padding:10px 24px;border-radius:10px;cursor:pointer;">✅ Aceptar</button>',
+                    '<button onclick="respondRevancha(false)" style="background:rgba(255,51,102,0.15);border:2px solid #ff3366;color:#ff3366;font-family:Orbitron,sans-serif;font-size:.85rem;padding:10px 24px;border-radius:10px;cursor:pointer;">❌ Rechazar</button>',
+                    '</div></div>'
+                ].join('');
+                document.body.appendChild(modal);
+            }
+            const txt = document.getElementById('revanchaModalText');
+            if (txt) txt.textContent = (fromName || 'Tu rival') + ' quiere una revancha. ¿Aceptas?';
+            modal.style.display = 'flex';
+        }
+
+        function respondRevancha(accept) {
+            const modal = document.getElementById('revanchaRequestModal');
+            if (modal) modal.style.display = 'none';
+            if (!currentRoomId) return;
+            if (accept) {
+                db.ref('rooms/' + currentRoomId + '/revancha/status').set('accepted');
+                // Also reinit from this side
+                setTimeout(function() {
+                    db.ref('rooms/' + currentRoomId + '/revancha').remove();
+                    db.ref('rooms/' + currentRoomId + '/gameState').remove();
+                    db.ref('rooms/' + currentRoomId + '/selections').remove();
+                    db.ref('rooms/' + currentRoomId + '/status').set('waiting');
+                    startOnlineGame(currentRoomId, isRoomHost);
+                }, 500);
+            } else {
+                db.ref('rooms/' + currentRoomId + '/revancha/status').set('rejected');
+                // Both go to lobby
+                setTimeout(function() {
+                    if (revanchaListener) { db.ref(revanchaListener).off(); revanchaListener = null; }
+                    goToMainMenu();
+                }, 500);
+            }
+        }
+
+        function cancelRoom() {
+            if (currentRoomId && isRoomHost) {
+                db.ref('rooms/' + currentRoomId).remove();
+            }
+            if (roomListener) { db.ref('rooms/' + currentRoomId).off('value', roomListener); roomListener = null; }
+            currentRoomId = null;
+            isRoomHost = false;
+            onlineMode = false;
+            showLobby();
+        }
+
+        function startOnlineGame(roomId, asHost) {
+            if (roomListener) { db.ref('rooms/' + roomId).off('value', roomListener); roomListener = null; }
+            onlineMode = true;
+            isRoomHost = asHost;
+            currentRoomId = roomId;
+
+            initChat(roomId);
+            listenForRevanchaRequest(roomId);
+
+            // Fetch room to check if ranked (skip char select) or normal online
+            db.ref('rooms/' + roomId).once('value', function(snap) {
+                const room = snap.val() || {};
+                const hostName  = (room.host  && room.host.name)  ? room.host.name  : 'Jugador 1';
+                const guestName = (room.guest && room.guest.name) ? room.guest.name : 'Jugador 2';
+                window._teamNames = { team1: hostName, team2: guestName };
+
+                // ── RANKED: skip char select, each player loads own attack team ──
+                if (room.ranked) {
+                    window._rankedMode = true;
+                    window._rankedPlayerTeam = asHost ? 'team1' : 'team2';
+                    window._rankedOpponentName = asHost ? guestName : hostName;
+                    // ← Guardar UID del rival para cargar sus reliquias
+                    window._opponentUid = asHost
+                        ? (room.guest && room.guest.uid ? room.guest.uid : null)
+                        : (room.host  && room.host.uid  ? room.host.uid  : null);
+                    csState.gameMode   = 'online';
+                    csState.onlineTeam = asHost ? 'team1' : 'team2';
+                    csState.phase      = 'done';
+                    csState.pendingChar = null;
+
+                    const myTeam = asHost ? 'team1' : 'team2';
+
+                    // Load MY own attack team from Firebase (avoids timing issues)
+                    getRankedTeams(function(myData) {
+                        const myAttack = (myData && myData.attack) ? myData.attack : [];
+                        // Push my picks so opponent sees I'm ready
+                        db.ref('rooms/' + roomId + '/selections').update({
+                            [myTeam + '_picks'] : myAttack,
+                            [myTeam + '_ready'] : true
+                        });
+                        _listenForRankedBothReady(roomId, asHost, hostName, guestName, myAttack);
+                    });
+                    return;
+                }
+
+                // ── NORMAL ONLINE: go to char select as before ──
+                // Set _opponentUid so loadGameRelics can fetch the rival's relics
+                window._opponentUid = asHost
+                    ? (room.guest && room.guest.uid ? room.guest.uid : null)
+                    : (room.host  && room.host.uid  ? room.host.uid  : null);
+                window._rankedPlayerTeam = asHost ? 'team1' : 'team2';
+                csState.team1 = [];
+                csState.team2 = [];
+                csState.phase = 'team1';
+                csState.pendingChar = null;
+                csState.gameMode = 'online';
+                csState.onlineTeam = asHost ? 'team1' : 'team2';
+
+                showScreen('charSelectScreen');
+
+                const lbl = document.getElementById('csPhaseLabel');
+                const myName2 = asHost ? hostName : guestName;
+                if (asHost) {
+                    if (lbl) { lbl.textContent = '🔷 ' + myName2 + ' — Elige tus 5 personajes'; lbl.className = 'cs-phase-label team1'; }
+                } else {
+                    if (lbl) { lbl.textContent = '🔶 ' + myName2 + ' — Elige tus 5 personajes'; lbl.className = 'cs-phase-label team2'; }
+                }
+                const n1 = document.getElementById('csTeamName1'); if (n1) n1.textContent = hostName;
+                const n2 = document.getElementById('csTeamName2'); if (n2) n2.textContent = guestName;
+                const h1 = document.getElementById('teamHeader1'); if (h1) h1.textContent = '🔷 ' + hostName;
+                const h2 = document.getElementById('teamHeader2'); if (h2) h2.textContent = '🔶 ' + guestName;
+                const sh1 = document.getElementById('statusHeader1'); if (sh1) sh1.textContent = '🔷 ' + hostName;
+                const sh2 = document.getElementById('statusHeader2'); if (sh2) sh2.textContent = '🔶 ' + guestName;
+
+                console.log('[OVERSTRIKE DEBUG] startOnlineGame: asHost=', asHost, '| onlineTeam=', csState.onlineTeam, '| gameMode=', csState.gameMode);
+                csInit();
+                listenForOnlineReady(roomId, csState.onlineTeam);
+            });
+        }
+
+        function _listenForRankedBothReady(roomId, asHost, hostName, guestName, myAttack) {
+            // Show connecting overlay
+            let overlay = document.getElementById('rankedConnectOverlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'rankedConnectOverlay';
+                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;';
+                overlay.innerHTML = [
+                    '<div style="font-size:2.5rem;">⚔️</div>',
+                    '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:#ffaa00;letter-spacing:.1em;">CONECTANDO CON RIVAL...</div>',
+                    '<div style="font-size:.85rem;color:#666;">Cargando equipos Ranked</div>'
+                ].join('');
+                document.body.appendChild(overlay);
+            }
+            overlay.style.display = 'flex';
+
+            const myTeam  = asHost ? 'team1' : 'team2';
+            const oppTeam = asHost ? 'team2' : 'team1';
+
+            // Poll for both sides ready — también revisar room-level hostAttack/guestAttack
+            // (para el flujo de matchmaking donde los picks se guardan en la sala, no en selections)
+            function _checkRankedStart(data, roomData) {
+                const t1Ready = data['team1_ready'];
+                const t2Ready = data['team2_ready'];
+                const t1Picks = data['team1_picks'] || (roomData && roomData.hostAttack) || [];
+                const t2Picks = data['team2_picks'] || (roomData && roomData.guestAttack) || [];
+                // Considerar listo si tiene picks aunque no tenga _ready flag
+                const t1OK = t1Ready || (t1Picks && t1Picks.length > 0);
+                const t2OK = t2Ready || (t2Picks && t2Picks.length > 0);
+                return t1OK && t2OK ? { t1Picks, t2Picks } : null;
+            }
+
+            // Cargar sala una vez para tener hostAttack/guestAttack como fallback
+            let _roomDataCache = null;
+            db.ref('rooms/' + roomId).once('value', function(roomSnap) {
+                _roomDataCache = roomSnap.val() || {};
+            });
+
+            db.ref('rooms/' + roomId + '/selections').on('value', function handler(snap) {
+                const data = snap.val() || {};
+                const myReady  = data[myTeam  + '_ready'];
+                const oppReady = data[oppTeam + '_ready'];
+
+                // Verificar también via room-level fallback (matchmaking flow)
+                const result = _checkRankedStart(data, _roomDataCache);
+                if (!result && (!myReady || !oppReady)) {
+                    // Si tengo mis picks pero el oponente aún no → también revisar sala directamente
+                    db.ref('rooms/' + roomId).once('value', function(rs) {
+                        _roomDataCache = rs.val() || {};
+                        const r2 = _checkRankedStart(data, _roomDataCache);
+                        if (r2) {
+                            db.ref('rooms/' + roomId + '/selections').off('value', handler);
+                            _launchRankedGame(r2.t1Picks, r2.t2Picks);
+                        }
+                    });
+                    return;
+                }
+                if (!result) return;
+
+                // Both ready — get picks from Firebase
+                const t1Picks = result.t1Picks;
+                const t2Picks = result.t2Picks;
+
+                // Stop listening
+                db.ref('rooms/' + roomId + '/selections').off('value', handler);
+
+                _launchRankedGame(t1Picks, t2Picks);
+            });
+
+            function _launchRankedGame(t1Picks, t2Picks) {
+                overlay.style.display = 'none';
+
+                // Build character map
+                const selectedChars = {};
+                const nameCount = {};
+                const allSelected = t1Picks.map(function(n) { return { name: n, team: 'team1' }; })
+                    .concat(t2Picks.map(function(n) { return { name: n, team: 'team2' }; }));
+                allSelected.forEach(function(entry) {
+                    const base = entry.name;
+                    nameCount[base] = (nameCount[base] || 0) + 1;
+                    const key = nameCount[base] > 1 ? base + ' v' + nameCount[base] : base;
+                    // Use window.characterData as fallback if local const is not available
+                    const _cd = (typeof characterData !== 'undefined' && characterData) ? characterData : (window.characterData || {});
+                    if (!_cd[base]) { console.warn('[Ranked] Character not found:', base); return; }
+                    const charCopy = JSON.parse(JSON.stringify(_cd[base]));
+                    charCopy.team = entry.team;
+                    charCopy.baseName = base;
+                    selectedChars[key] = charCopy;
+                });
+
+                // Hide any screens, show game
+                document.getElementById('charSelectScreen').style.display = 'none';
+                document.querySelector('.game-container').style.display = 'block';
+                applyBattleBackground(window._bossBattleData && window._bossBattleData.boss ? window._bossBattleData.boss.name : '');
+                // Hide lobby/other screens
+                ['lobbyScreen','waitingScreen','modeSelectScreen'].forEach(function(id) {
+                    const el = document.getElementById(id);
+                    if (el) el.style.display = 'none';
+                });
+
+                initGame(selectedChars);
+                gameState.gameMode = 'ranked';
+                gameState.aiTeam   = null; // both humans
+                window._teamNames  = { team1: hostName, team2: guestName };
+
+                // Update team labels
+                const th1 = document.getElementById('teamHeader1');  if (th1) th1.textContent = '🔷 ' + hostName;
+                const th2 = document.getElementById('teamHeader2');  if (th2) th2.textContent = '🔶 ' + guestName;
+                const sh1 = document.getElementById('statusHeader1'); if (sh1) sh1.textContent = '🔷 ' + hostName;
+                const sh2 = document.getElementById('statusHeader2'); if (sh2) sh2.textContent = '🔶 ' + guestName;
+                // ← Cargar reliquias del jugador y rival
+                if (typeof window.loadGameRelics === 'function') window.loadGameRelics();
+
+                addLog('🏆 RANKED: ' + hostName + ' vs ' + guestName, 'info');
+                audioManager.playRandomBattle();
+
+                // Start sync
+                setTimeout(function() {
+                    if (isRoomHost) { pushGameState(); }
+                    listenGameState();
+                    if (typeof listenLiveState === 'function') listenLiveState(); // Tiempo real
+                }, 500);
+            }
+        }
+        function listenForOnlineReady(roomId, myTeam) {
+            const opponentTeam = myTeam === 'team1' ? 'team2' : 'team1';
+            db.ref('rooms/' + roomId + '/selections').on('value', function(snap) {
+                const data = snap.val() || {};
+                const myReady = data[myTeam + '_ready'];
+                const oppReady = data[opponentTeam + '_ready'];
+
+                // Update status label only — do NOT touch panel innerHTML
+                const statusEl = document.getElementById('onlineOppStatus');
+                if (statusEl) {
+                    statusEl.textContent = oppReady ? '✅ ¡Oponente listo!' : '⏳ Oponente eligiendo...';
+                    statusEl.style.color = oppReady ? '#00ff88' : '#666';
+                }
+
+                // Both ready → load opponent picks and start
+                if (myReady && oppReady && data[opponentTeam + '_picks']) {
+                    csState[opponentTeam] = data[opponentTeam + '_picks'];
+                    db.ref('rooms/' + roomId + '/selections').off();
+                    csStartGame();
+                }
+            });
+        }
+
+        function showOnlineReadyBtn() {
+            const btn = document.getElementById('onlineReadyBtn');
+            if (btn) btn.style.display = 'flex';
+        }
+
+        function submitOnlineReady() {
+            if (!currentRoomId || !currentUser) return;
+            const myTeam = isRoomHost ? 'team1' : 'team2';
+            const myPicks = csState[myTeam];
+            if (!myPicks || myPicks.length < 5) {
+                alert('Debes elegir 5 personajes primero.');
+                return;
+            }
+            // Show waiting state
+            const innerBtn = document.getElementById('onlineReadyBtnInner');
+            if (innerBtn) {
+                innerBtn.disabled = true;
+                innerBtn.textContent = '⏳ Esperando oponente...';
+                innerBtn.style.background = 'linear-gradient(135deg,#1a1a1a,#2a2a2a)';
+                innerBtn.style.color = '#888';
+                innerBtn.style.borderColor = '#444';
+                innerBtn.style.boxShadow = 'none';
+                innerBtn.style.cursor = 'default';
+            }
+
+            db.ref('rooms/' + currentRoomId + '/selections').update({
+                [myTeam + '_picks']: myPicks,
+                [myTeam + '_ready']: true
+            });
+        }
+
+        // ── CHAT ──
+        function initChat(roomId) {
+            document.getElementById('chatToggleBtn').style.display = 'flex';
+            const chatRef = db.ref('rooms/' + roomId + '/chat');
+            chatListener = chatRef.on('child_added', function(snap) {
+                const msg = snap.val();
+                if (!msg) return;
+                const isMe = msg.uid === currentUser.uid;
+                const msgEl = document.createElement('div');
+                msgEl.className = 'chat-msg' + (isMe ? ' mine' : '');
+                msgEl.innerHTML = '<span class="chat-author">' + escapeHtml(msg.name) + '</span><br><span class="chat-text">' + escapeHtml(msg.text) + '</span>';
+                document.getElementById('chatMessages').appendChild(msgEl);
+                document.getElementById('chatMessages').scrollTop = 99999;
+
+                if (!chatOpen && !isMe) {
+                    unreadMessages++;
+                    const badge = document.getElementById('chatUnreadBadge');
+                    badge.textContent = unreadMessages;
+                    badge.style.display = 'flex';
+                }
+            });
+        }
+
+        function toggleChat() {
+            chatOpen = !chatOpen;
+            const panel = document.getElementById('chatPanel');
+            panel.style.display = chatOpen ? 'flex' : 'none';
+            if (chatOpen) {
+                unreadMessages = 0;
+                document.getElementById('chatUnreadBadge').style.display = 'none';
+                document.getElementById('chatMessages').scrollTop = 99999;
+                setTimeout(function() { document.getElementById('chatInput').focus(); }, 100);
+            }
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text || !currentRoomId || !currentUser) return;
+            input.value = '';
+            db.ref('rooms/' + currentRoomId + '/chat').push({
+                uid: currentUser.uid,
+                name: currentUser.displayName || 'Jugador',
+                text: text,
+                ts: Date.now()
+            });
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        // Show chat in local/solo mode too? No — hide unless online
+        function hideChatUI() {
+            document.getElementById('chatToggleBtn').style.display = 'none';
+            document.getElementById('chatPanel').style.display = 'none';
+            chatOpen = false;
+            if (chatListener && currentRoomId) {
+                db.ref('rooms/' + currentRoomId + '/chat').off('child_added', chatListener);
+                chatListener = null;
+            }
+        }
+
+        // ── Override csSelectMode for local modes from lobby ──
+        // (original csSelectMode is defined later — we patch after load)
+        window.addEventListener('DOMContentLoaded', function() {
+            // loginScreen shown by default, Firebase auth decides next
+        });
+
+
+        // ==================== SISTEMA ECONÓMICO ====================
+
+        // ── Inicializar datos del jugador en Firebase si es nuevo ──
+        async function initPlayerData(uid) {
+            const snap = await db.ref('users/' + uid + '/gold').once('value');
+            if (snap.val() === null) {
+                await db.ref('users/' + uid).update({
+                    gold: 0, arcane_keys: 0, attack_runes: 0,
+                    inventory: { relics: {} },
+                    characters: {}
+                });
+            }
+            // Cargar personajes desbloqueados (ej. Bolvar Fordragon)
+            const unlockedSnap = await db.ref('users/' + uid + '/unlockedCharacters').once('value');
+            window._unlockedCharacters = unlockedSnap.val() || {};
+        }
+
+        // ── Leer datos del jugador ──
+        async function getPlayerData(uid) {
+            const snap = await db.ref('users/' + uid).once('value');
+            return snap.val() || { gold: 0, arcane_keys: 0, attack_runes: 0, portal_runes: 0, inventory: { relics: {} }, characters: {} };
+        }
+
+        // ── Actualizar HUD del lobby ──
+        async function updateLobbyHUD() {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+            const data = await getPlayerData(user.uid);
+            const goldEl = document.getElementById('hud-gold');
+            const runeEl = document.getElementById('hud-runes');
+            const keyEl  = document.getElementById('hud-keys');
+            if (goldEl) goldEl.textContent = (data.gold||0).toLocaleString();
+            if (runeEl) runeEl.textContent = data.attack_runes||0;
+            const portalEl = document.getElementById('hud-portal-runes');
+            if (portalEl) portalEl.textContent = data.portal_runes||0;
+            if (keyEl)  keyEl.textContent  = data.arcane_keys||0;
+        }
+
+        // ── Agregar reliquia al inventario ──
+        async function addRelicToInventory(uid, relicName) {
+            const ref = db.ref('users/' + uid + '/inventory/relics/' + relicName);
+            const snap = await ref.once('value');
+            await ref.set((snap.val()||0) + 1);
+        }
+
+        // ── Quitar reliquia del inventario ──
+        async function removeRelicFromInventory(uid, relicName) {
+            const ref = db.ref('users/' + uid + '/inventory/relics/' + relicName);
+            const snap = await ref.once('value');
+            const cur = snap.val()||0;
+            if (cur <= 1) await ref.remove();
+            else await ref.set(cur - 1);
+        }
+
+        // ── Agregar oro ──
+        async function addGold(uid, amount) {
+            const ref = db.ref('users/' + uid + '/gold');
+            const snap = await ref.once('value');
+            await ref.set((snap.val()||0) + amount);
+        }
+
+        // ── Gastar oro (retorna true si OK) ──
+        async function spendGold(uid, amount) {
+            const ref = db.ref('users/' + uid + '/gold');
+            const snap = await ref.once('value');
+            const cur = snap.val()||0;
+            if (cur < amount) return false;
+            await ref.set(cur - amount);
+            return true;
+        }
+
+        // ── Equipar reliquia en personaje ──
+        // ── SLOT SYSTEM v2: 6 slots (2 Arma, 2 Equipacion, 2 Joya) ──
+        // Slot keys: arma1, arma2, equip1, equip2, joya1, joya2
+        // Slots 2 of each category start locked; unlock costs: 100k → 500k → 1M per char
+
+        async function getCharSlots(uid, charName) {
+            const snap = await db.ref('users/' + uid + '/characters/' + charName + '/slots_v2').once('value');
+            return snap.val() || {};
+        }
+
+        async function getSlotUnlocks(uid, charName) {
+            const snap = await db.ref('users/' + uid + '/characters/' + charName + '/slot_unlocks').once('value');
+            return snap.val() || { arma2: false, equip2: false, joya2: false };
+        }
+
+        async function unlockSlot(uid, charName, slotKey) {
+            const unlocks = await getSlotUnlocks(uid, charName);
+            const unlockedCount = Object.values(unlocks).filter(Boolean).length;
+            const cost = unlockedCount === 0 ? 100000 : unlockedCount === 1 ? 500000 : 1000000;
+            if (unlocks[slotKey]) { alert('Este slot ya está desbloqueado.'); return false; }
+            const label = unlockedCount === 0 ? '100,000' : unlockedCount === 1 ? '500,000' : '1,000,000';
+            if (!confirm('¿Desbloquear slot por ' + label + ' 🪙 de oro?')) return false;
+            const ok = await spendGold(uid, cost);
+            if (!ok) { alert('No tienes suficiente oro.'); return false; }
+            await db.ref('users/' + uid + '/characters/' + charName + '/slot_unlocks/' + slotKey).set(true);
+            alert('✅ Slot desbloqueado.');
+            return true;
+        }
+
+        async function equipRelic(uid, charName, slotKey, relicName) {
+            // Verify inventory
+            const invSnap = await db.ref('users/' + uid + '/inventory/relics/' + relicName).once('value');
+            if ((invSnap.val()||0) < 1) { alert('No tienes esta reliquia en tu inventario.'); return false; }
+
+            const relic = typeof RELICS_DATA !== 'undefined' ? RELICS_DATA[relicName] : null;
+            if (!relic) { alert('Reliquia no encontrada.'); return false; }
+
+            const cat = relic.slotCategory || (relic.slot === 'Joya' ? 'Joya' : relic.slot === 'Arco' || relic.slot === 'Escudo' ? 'Arma' : relic.slot === 'Armadura' || relic.slot === 'Botas' || relic.slot === 'Guante' || relic.slot === 'Yelmo' ? 'Equipacion' : 'Arma');
+            const subtype = relic.subtype || relic.slot;
+
+            // Verify slot matches category
+            const slotCat = slotKey.startsWith('arma') ? 'Arma' : slotKey.startsWith('equip') ? 'Equipacion' : 'Joya';
+            if (cat !== slotCat) {
+                alert('Esta reliquia es de tipo ' + cat + ' y no puede ir en un slot de ' + slotCat + '.');
+                return false;
+            }
+
+            // Check if slot is locked
+            if (slotKey === 'arma2' || slotKey === 'equip2' || slotKey === 'joya2') {
+                const unlocks = await getSlotUnlocks(uid, charName);
+                if (!unlocks[slotKey]) { alert('Este slot está bloqueado. Desbloquéalo primero.'); return false; }
+            }
+
+            const slots = await getCharSlots(uid, charName);
+
+            // Check slot is empty
+            if (slots[slotKey]) { alert('Este slot ya está ocupado. Primero remueve la reliquia actual.'); return false; }
+
+            // Duplicate check
+            if (Object.values(slots).includes(relicName)) { alert('Ya tienes esta reliquia equipada en este personaje.'); return false; }
+
+            // Rules for Arma slots
+            if (slotCat === 'Arma') {
+                const equippedArmas = ['arma1','arma2'].map(function(k){ return slots[k]; }).filter(Boolean);
+                const armaRelics = equippedArmas.map(function(r){ return RELICS_DATA[r]; }).filter(Boolean);
+                const hasArco  = armaRelics.some(function(r){ return r.subtype === 'Arco'; });
+                const hasEscudo = armaRelics.some(function(r){ return r.subtype === 'Escudo'; });
+
+                // Arco rules: if equipping arco, no other arma slot can have Arco, Arma, Escudo
+                if (subtype === 'Arco' && equippedArmas.length > 0) {
+                    alert('Un Arco ocupa el segundo slot de Arma como Equipación. No puedes tener otra Arma o Escudo con un Arco.');
+                    return false;
+                }
+                // If equipping non-arco while arco is equipped
+                if (subtype !== 'Arco' && hasArco) {
+                    alert('No puedes equipar Armas o Escudos junto con un Arco.');
+                    return false;
+                }
+                // Two shields rule
+                if (subtype === 'Escudo' && hasEscudo) {
+                    alert('No puedes equipar dos Escudos en el mismo personaje.');
+                    return false;
+                }
+            }
+
+            await db.ref('users/' + uid + '/characters/' + charName + '/slots_v2/' + slotKey).set(relicName);
+            await removeRelicFromInventory(uid, relicName);
+            await updateLobbyHUD();
+            alert('✅ ' + relicName + ' equipada en ' + charName + ' (slot ' + slotKey + ')');
+            return true;
+        }
+
+        async function removeRelic(uid, charName, slotKey) {
+            const relicRef = db.ref('users/' + uid + '/characters/' + charName + '/slots_v2/' + slotKey);
+            const snap = await relicRef.once('value');
+            const relicName = snap.val();
+            if (!relicName) { alert('No hay reliquia en este slot.'); return false; }
+            const ok = await spendGold(uid, 10000);
+            if (!ok) { alert('No tienes suficiente oro. Remover cuesta 10,000 🪙.'); return false; }
+            await relicRef.remove();
+            await addRelicToInventory(uid, relicName);
+            await updateLobbyHUD();
+            alert('✅ ' + relicName + ' removida y devuelta al inventario.');
+            return true;
+        }
+
+        // ── MIGRATION: unequip everyone and return relics to inventory ──
+        window.migrateRelicsToV2 = async function() {
+            if (!isAdmin()) { alert('Solo admins.'); return; }
+            if (!confirm('¿Migrar TODOS los jugadores al sistema de 6 slots? Esto desequipará a todos los personajes y devolverá las reliquias al inventario.')) return;
+            const usersSnap = await db.ref('users').once('value');
+            const users = usersSnap.val() || {};
+            let count = 0;
+            for (const [uid, userData] of Object.entries(users)) {
+                const chars = (userData.characters) || {};
+                for (const [charName, charData] of Object.entries(chars)) {
+                    const slots = charData.slots || {};
+                    const equipped = [slots.slot1, slots.slot2, slots.slot3].filter(Boolean);
+                    if (equipped.length === 0) continue;
+                    // Return each relic to inventory
+                    for (const relicName of equipped) {
+                        const invRef = db.ref('users/' + uid + '/inventory/relics/' + relicName);
+                        const invSnap = await invRef.once('value');
+                        await invRef.set((invSnap.val()||0) + 1);
+                        count++;
+                    }
+                    // Clear old slots
+                    await db.ref('users/' + uid + '/characters/' + charName + '/slots').remove();
+                    // Initialize new empty slots_v2
+                    await db.ref('users/' + uid + '/characters/' + charName + '/slots_v2').set({
+                        arma1: null, arma2: null, equip1: null, equip2: null, joya1: null, joya2: null
+                    });
+                    await db.ref('users/' + uid + '/characters/' + charName + '/slot_unlocks').set({
+                        arma2: false, equip2: false, joya2: false
+                    });
+                }
+            }
+            alert('✅ Migración completada. ' + count + ' reliquias devueltas a inventarios.');
+        };
+
+        // ── Abrir cofre ──
+        async function openChest(uid, chestType) {
+            // Solo Cofre Arcano disponible — cuesta 1 Llave Arcana
+            const keyRef = db.ref('users/' + uid + '/arcane_keys');
+            const keySnap = await keyRef.once('value');
+            if ((keySnap.val()||0) < 1) { alert('No tienes Llaves Arcanas.'); return; }
+            await keyRef.set((keySnap.val()||0) - 1);
+
+            // Determinar reliquia con nuevas probabilidades
+            const relic = await rollChestRelicAsync(uid, 'arcana');
+
+            // Oro aleatorio entre 5000 y 10000
+            const goldReward = Math.floor(Math.random() * 5001) + 5000;
+            await addGold(uid, goldReward);
+            await addRelicToInventory(uid, relic.name);
+
+            await updateLobbyHUD();
+            showChestOpenModal('arcana', relic, goldReward, false);
+        }
+
+        async function rollChestRelicAsync(uid, chestType) {
+            const relicsByTier = { Raro:[], Especial:[], Epico:[], Legendario:[] };
+            const eventRelicsByBoss = {};
+            if (typeof RELICS_DATA !== 'undefined') {
+                Object.entries(RELICS_DATA).forEach(function([name, r]){
+                    if (name === 'Memorex') return;
+                    if (r.isEventRelic && r.eventBoss) {
+                        eventRelicsByBoss[r.eventBoss] = eventRelicsByBoss[r.eventBoss] || [];
+                        eventRelicsByBoss[r.eventBoss].push(name);
+                    } else {
+                        (relicsByTier[r.tier] = relicsByTier[r.tier]||[]).push(name);
+                    }
+                });
+            }
+            // Pity counter
+            const now = Date.now();
+            const pitySnap = await db.ref('users/' + uid + '/arcane_pity').once('value');
+            let pityData = pitySnap.val() || { bonus: 0, lastOpenAt: 0, streak: 0 };
+            if (now - (pityData.lastOpenAt||0) > 240000) { pityData.bonus = 0; pityData.streak = 0; }
+
+            const bossData = typeof getBossData === 'function' ? await getBossData() : null;
+            const bossIsLichKing = bossData && bossData.status === 'active' && bossData.name === 'Lich King';
+            // +0.5% por cofre abierto dentro de la ventana de 4 minutos, máximo 5%
+            const perOpenBonus = 0.005;
+            const baseLegPct   = 0.005;
+            const totalLegPct  = Math.min(0.05, baseLegPct + pityData.bonus);
+            // Update pity (incrementa racha y reinicia el temporizador a 240s)
+            const newStreak = (pityData.streak || 0) + 1;
+            await db.ref('users/' + uid + '/arcane_pity').set({ bonus: pityData.bonus + perOpenBonus, lastOpenAt: now, streak: newStreak });
+
+            // New drop rates: Legendario 0.5%, Épico 5%, Runa 10%, Especial 35%, Raro 49.5%
+            const rv = Math.random();
+            let tier, bonusRuneArcana = false;
+            if (rv < totalLegPct)                      tier = 'Legendario';   // ~0.5% (+ pity)
+            else if (rv < totalLegPct + 0.05)          tier = 'Epico';        // 5%
+            else if (rv < totalLegPct + 0.05 + 0.10) { tier = 'Runa'; }      // 10% → Runa de Ataque
+            else if (rv < totalLegPct + 0.05 + 0.10 + 0.35) tier = 'Especial'; // 35%
+            else                                        tier = 'Raro';         // 49.5%
+
+            let name;
+            if (tier === 'Runa') {
+                // Drop a Runa de Ataque instead of a relic
+                await db.ref('users/' + uid + '/attack_runes').transaction(function(v){ return (v||0)+1; });
+                return { name: 'Runa de Ataque', tier: 'Runa', img: 'https://i.ibb.co/8D3s84Nw/image-53bcf67.png', isRune: true };
+            }
+            if (tier === 'Legendario' && bossIsLichKing && (eventRelicsByBoss['Lich King']||[]).length > 0) {
+                const evPool = eventRelicsByBoss['Lich King'];
+                name = evPool[Math.floor(Math.random() * evPool.length)];
+                await db.ref('users/' + uid + '/arcane_pity').set({ bonus: 0, lastOpenAt: now, streak: 0 }); // reset pity on legendary
+            } else if (tier === 'Legendario') {
+                const pool = relicsByTier['Legendario']||[];
+                name = pool.length ? pool[Math.floor(Math.random() * pool.length)] : (relicsByTier['Epico'][0]||'Anillo de la Vida');
+                await db.ref('users/' + uid + '/arcane_pity').set({ bonus: 0, lastOpenAt: now, streak: 0 }); // reset pity
+            } else {
+                const pool = relicsByTier[tier]||[];
+                name = pool.length ? pool[Math.floor(Math.random() * pool.length)] : 'Anillo de la Vida';
+            }
+            return typeof RELICS_DATA !== 'undefined' && RELICS_DATA[name] ? { name, ...RELICS_DATA[name] } : { name, tier };
+        }
+
+        // ── Lee el estado de pity del Cofre Arcano para mostrar en la UI ──
+        const ARCANE_PITY_WINDOW_MS = 240000; // 240 segundos
+        async function getArcanePityData(uid) {
+            const pitySnap = await db.ref('users/' + uid + '/arcane_pity').once('value');
+            const pityData = pitySnap.val();
+            if (!pityData || !pityData.lastOpenAt) return null;
+            const elapsed = Date.now() - pityData.lastOpenAt;
+            if (elapsed > ARCANE_PITY_WINDOW_MS || pityData.bonus <= 0) return null;
+            const msLeft = ARCANE_PITY_WINDOW_MS - elapsed;
+            return {
+                bonus: pityData.bonus,
+                streak: pityData.streak || 0,
+                msLeft: msLeft,
+                secondsLeft: Math.ceil(msLeft / 1000)
+            };
+        }
+        window.getArcanePityData = getArcanePityData;
+        window.ARCANE_PITY_WINDOW_MS = ARCANE_PITY_WINDOW_MS;
+
+        function rollChestRelic(chestType) {
+            const relicsByTier = { Raro:[], Especial:[], Epico:[], Legendario:[] };
+            if (typeof RELICS_DATA !== 'undefined') {
+                Object.entries(RELICS_DATA).forEach(function([name, r]){
+                    if (name !== 'Memorex' && !r.isEventRelic) (relicsByTier[r.tier] = relicsByTier[r.tier]||[]).push(name);
+                });
+            }
+            let tier; const r = Math.random();
+            if (chestType === 'rare')    tier = 'Raro';
+            else if (chestType === 'special') tier = r < 0.60 ? 'Raro' : 'Especial';
+            else if (chestType === 'epic')    tier = r < 0.40 ? 'Raro' : r < 0.75 ? 'Especial' : 'Epico';
+            else tier = r < 0.70 ? 'Especial' : r < 0.99 ? 'Epico' : 'Legendario';
+            const pool = (relicsByTier[tier])||[];
+            const name = pool.length ? pool[Math.floor(Math.random() * pool.length)] : 'Anillo de la Vida';
+            return typeof RELICS_DATA !== 'undefined' && RELICS_DATA[name] ? { name, ...RELICS_DATA[name] } : { name, tier };
+        }
+
+        function showChestOpenModal(chestType, relic, goldBonus, bonusRune) {
+            const tierColors = { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700', Runa:'#c864ff' };
+            const isLegendary = relic.tier === 'Legendario';
+            const isRune      = relic.isRune;
+            const color       = tierColors[relic.tier] || '#fff';
+
+            // ── Legendary: particle burst ──
+            if (isLegendary) {
+                var style = document.createElement('style');
+                style.textContent = '@keyframes legGlow{0%,100%{box-shadow:0 0 24px #ffd700,0 0 60px #ffd70088;}50%{box-shadow:0 0 50px #ffd700,0 0 120px #ffd700cc;}} @keyframes legParticle{0%{transform:translate(-50%,-50%) scale(1);opacity:1;}100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(0);opacity:0;}}';
+                document.head.appendChild(style);
+                for (var p=0; p<20; p++) {
+                    var dot = document.createElement('div');
+                    var angle = (p/20)*Math.PI*2;
+                    var dist = 80+Math.random()*120;
+                    dot.style.cssText = 'position:fixed;left:50%;top:50%;width:8px;height:8px;border-radius:50%;background:'+(['#ffd700','#ffaa00','#fffbe6','#ff8800'][p%4])+';z-index:2147483647;pointer-events:none;--tx:'+Math.round(Math.cos(angle)*dist)+'px;--ty:'+Math.round(Math.sin(angle)*dist)+'px;animation:legParticle 1.2s ease-out forwards;animation-delay:'+(p*0.04)+'s;';
+                    document.documentElement.appendChild(dot);
+                    setTimeout(function(d){d.remove();}, 1600+p*40, dot);
+                }
+            }
+
+            var imgSrc = isRune ? relic.img : (typeof RELICS_DATA!=='undefined'&&RELICS_DATA[relic.name]?RELICS_DATA[relic.name].img:'');
+            var imgStyle = isLegendary
+                ? 'width:90px;height:90px;object-fit:contain;border-radius:10px;border:3px solid #ffd700;margin:14px auto;display:block;animation:legGlow 1.5s ease-in-out infinite;'
+                : 'width:80px;height:80px;object-fit:contain;border-radius:8px;border:2px solid '+color+';margin:12px auto;display:block;';
+
+            var titleLine = isLegendary
+                ? '<div style="font-family:Orbitron,sans-serif;font-size:1.25rem;color:#ffd700;margin-bottom:8px;text-shadow:0 0 20px #ffd700,0 0 40px #ffaa00;">⭐ ¡LEGENDARIO! ⭐</div>'
+                : '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:'+color+';margin-bottom:8px;letter-spacing:.05em;">¡COFRE ABIERTO!</div>';
+
+            var imgBlock;
+            if (isRune) {
+                imgBlock = '<img src="' + imgSrc + '" style="width:90px;height:90px;object-fit:contain;border-radius:10px;border:2px solid #c864ff;margin:14px auto;display:block;">';
+            } else if (imgSrc) {
+                var imgEl = document.createElement('img');
+                imgEl.src = imgSrc;
+                imgEl.style.cssText = imgStyle;
+                imgEl.onerror = function(){ this.style.display = 'none'; };
+                imgBlock = imgEl.outerHTML;
+            } else {
+                imgBlock = '<div style="font-size:3rem;margin:12px 0;">⚔️</div>';
+            }
+
+            // ── Create portal container appended to <html> to escape ALL stacking contexts ──
+            var portal = document.createElement('div');
+            portal.id = 'chestResultPortal';
+            portal.style.cssText = [
+                'position:fixed',
+                'top:0','left:0','right:0','bottom:0',
+                'width:100%','height:100%',
+                'display:flex',
+                'align-items:center',
+                'justify-content:center',
+                'background:rgba(0,0,0,'+(isLegendary?'0.95':'0.88')+')',
+                'z-index:2147483647',
+                'pointer-events:all'
+            ].join(';');
+
+            portal.innerHTML =
+                '<div style="background:'+(isLegendary?'linear-gradient(135deg,#1a1000,#2a1800)':'linear-gradient(135deg,#060e1f,#0a1a35)')+';border:'+(isLegendary?'3px solid #ffd700':'2px solid '+color)+';border-radius:20px;padding:36px 32px;max-width:380px;width:90%;text-align:center;'+(isLegendary?'box-shadow:0 0 60px #ffd70088;':'box-shadow:0 0 30px rgba(0,0,0,.8);')+'pointer-events:all;">'+
+                '<div style="font-size:3rem;margin-bottom:8px;">'+(isLegendary?'✨':isRune?'🔮':'🎁')+'</div>'+
+                titleLine+
+                imgBlock+
+                (isRune?'<div style="font-size:.85rem;color:#c864ff;font-weight:700;margin-bottom:4px;">🔮 Runa de Ataque</div>':'')+
+                '<div style="font-family:Orbitron,sans-serif;font-size:1rem;color:#fff;font-weight:700;margin:8px 0 4px;">'+relic.name+'</div>'+
+                '<div style="font-size:.78rem;color:'+color+';font-weight:600;margin-bottom:14px;letter-spacing:.06em;">'+(isRune?'Recurso Especial':(relic.tier||'').toUpperCase())+'</div>'+
+                '<div style="display:flex;align-items:center;justify-content:center;gap:8px;background:rgba(255,170,0,0.12);border:1px solid rgba(255,170,0,0.35);border-radius:10px;padding:10px 18px;margin-bottom:20px;">'+
+                    '<span style="font-size:1.4rem;">🪙</span>'+
+                    '<span style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:#ffaa00;font-weight:700;">+ '+goldBonus.toLocaleString()+' Oro</span>'+
+                '</div>'+
+                '<button id="chestResultCloseBtn" style="background:linear-gradient(135deg,#003a1a,#00aa55);border:2px solid #00ff88;color:#00ff88;border-radius:10px;padding:12px 32px;font-family:Orbitron,sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;letter-spacing:.05em;pointer-events:all;">'+(isLegendary?'🌟 ¡INCREÍBLE!':'¡GENIAL!')+'</button>'+
+                '</div>';
+
+            // Append to <html> element — completely outside any stacking context
+            document.documentElement.appendChild(portal);
+
+            // Close button
+            document.getElementById('chestResultCloseBtn').addEventListener('click', function() {
+                var p = document.getElementById('chestResultPortal');
+                if (p) p.remove();
+            });
+        }
+
+
+        // ==================== JEFE DE SALA ====================
+
+        async function getBossData() {
+            const snap = await db.ref('weekly_boss/current').once('value');
+            return snap.val();
+        }
+        // Exponer globalmente para jefe-de-sala.js
+        window.getBossData = getBossData;
+
+        // ── CHAT NOTIFICATION LISTENER ──
+        function listenForPrivateChatNotifications() {
+            if (!currentUser) return;
+            var notifRef = db.ref('chat_notifications/' + currentUser.uid);
+            window._chatUnreadSenders = [];
+
+            // .on('value') keeps the dot updated in real time
+            notifRef.on('value', function(snap) {
+                var notifs = snap.val() || {};
+                window._chatUnreadSenders = Object.keys(notifs);
+                var dot = document.getElementById('chatNotifDot');
+                if (dot) dot.style.display = window._chatUnreadSenders.length > 0 ? 'inline-block' : 'none';
+            });
+
+            // .on('child_added') fires ONLY when a NEW notification arrives — skip initial load
+            var _initialized = false;
+            notifRef.on('child_added', function(snap) {
+                if (!_initialized) return; // skip existing notifications on page load
+                // New message arrived in real time
+                var sfx = document.getElementById('sfxChatNotif');
+                if (sfx && typeof audioManager !== 'undefined' && !audioManager.muted) {
+                    sfx.currentTime = 0; sfx.volume = 0.7; sfx.play().catch(function(){});
+                }
+            });
+
+            // Mark initialization complete after all existing children are loaded
+            notifRef.once('value', function() {
+                _initialized = true;
+            });
+        }
+
+        // ── JUGADORES EN LÍNEA + CHAT PRIVADO ──────────────────────────────
+        var _pcTarget2 = null, _pcListener2 = null;
+
+        window.loadOnlinePlayersList = function() {
+            var list = document.getElementById('onlinePlayersList');
+            if (!list) return;
+            list.innerHTML = '<div style="color:#555;font-size:.8rem;text-align:center;padding:1rem;">Cargando...</div>';
+            db.ref('presence').once('value', function(snap) {
+                var data = snap.val() || {};
+                var myUid = currentUser ? currentUser.uid : null;
+                var others = Object.entries(data).filter(function(e){ return e[0] !== myUid; });
+                list.innerHTML = '';
+                if (others.length === 0) {
+                    list.innerHTML = '<div style="color:#555;font-size:.8rem;text-align:center;padding:1.5rem;">No hay otros jugadores en línea</div>';
+                    return;
+                }
+                others.forEach(function(e) {
+                    var uid = e[0], info = e[1];
+                    var row = document.createElement('div');
+                    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(255,255,255,.04);border:1px solid rgba(0,196,255,.1);border-radius:10px;gap:10px;';
+                    var btn = document.createElement('button');
+                    var hasUnread = window._chatUnreadSenders && window._chatUnreadSenders.indexOf(uid) !== -1;
+                    btn.innerHTML = '💬 Chat' + (hasUnread ? ' <span style="display:inline-block;width:8px;height:8px;background:#ff3366;border-radius:50%;vertical-align:middle;box-shadow:0 0 5px #ff3366;"></span>' : '');
+                    btn.style.cssText = 'background:linear-gradient(135deg,#003a5c,#006fa6);border:1px solid ' + (hasUnread ? '#ff3366' : '#00c4ff') + ';color:' + (hasUnread ? '#ff3366' : '#00c4ff') + ';border-radius:8px;padding:5px 12px;cursor:pointer;font-size:.72rem;font-family:Orbitron,sans-serif;white-space:nowrap;';
+                    (function(u,n){ btn.addEventListener('click', function(){ openPrivateChatWith(u,n); }); })(uid, info.name||'Jugador');
+                    row.innerHTML = '<div style="display:flex;align-items:center;gap:8px;">' +
+                        '<span style="width:8px;height:8px;background:#00ff88;border-radius:50%;display:inline-block;flex-shrink:0;"></span>' +
+                        '<span style="font-size:.82rem;color:#ccc;">' + (info.name||'Jugador').replace(/</g,'&lt;') + '</span>' +
+                        '</div>';
+                    row.appendChild(btn);
+                    list.appendChild(row);
+                });
+            });
+        };
+
+        window.openPrivateChatWith = function(uid, name) {
+            document.getElementById('onlinePlayersModal').style.display = 'none';
+            _pcTarget2 = { uid: uid, name: name };
+            document.getElementById('privateChatTitle').textContent = '💬 ' + name;
+            document.getElementById('privateChatMessages').innerHTML = '';
+            document.getElementById('privateChatInput').value = '';
+            document.getElementById('privateChatModal').style.display = 'flex';
+            if (_pcListener2) { _pcListener2.off(); }
+            var myUid = currentUser.uid;
+            var key = [myUid, uid].sort().join('_');
+            _pcListener2 = db.ref('chats/' + key);
+            _pcListener2.on('value', function(snap) {
+                var msgs = snap.val() || {};
+                var box = document.getElementById('privateChatMessages');
+                if (!box) return;
+                box.innerHTML = '';
+                Object.values(msgs).sort(function(a,b){return a.ts-b.ts;}).forEach(function(m) {
+                    var isMe = m.from === myUid;
+                    var d = document.createElement('div');
+                    d.style.cssText = 'display:flex;flex-direction:column;align-items:' + (isMe?'flex-end':'flex-start') + ';gap:2px;';
+                    d.innerHTML = '<div style="max-width:82%;background:' + (isMe?'rgba(0,196,255,.18)':'rgba(255,255,255,.07)') + ';border:1px solid ' + (isMe?'rgba(0,196,255,.3)':'rgba(255,255,255,.1)') + ';border-radius:10px;padding:6px 10px;font-size:.78rem;color:#fff;word-break:break-word;">' + m.text.replace(/</g,'&lt;') + '</div>' +
+                        '<div style="font-size:.6rem;color:#444;">' + new Date(m.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) + '</div>';
+                    box.appendChild(d);
+                });
+                box.scrollTop = box.scrollHeight;
+                db.ref('chat_notifications/' + myUid + '/' + uid).remove();
+            });
+        };
+
+        window.sendPrivateChatMessage = function() {
+            var input = document.getElementById('privateChatInput');
+            var text = (input.value||'').trim();
+            if (!text || !_pcTarget2 || !currentUser) return;
+            var key = [currentUser.uid, _pcTarget2.uid].sort().join('_');
+            db.ref('chats/' + key).push({ from: currentUser.uid, fromName: currentUser.displayName, text: text, ts: Date.now() });
+            db.ref('chat_notifications/' + _pcTarget2.uid + '/' + currentUser.uid).set({ fromName: currentUser.displayName, lastMsg: text, ts: Date.now(), read: false });
+            input.value = '';
+        };
+        // ── END JUGADORES EN LÍNEA ──────────────────────────────────────────
+        window.unlockSlot = unlockSlot;
+        window.getCharSlots = getCharSlots;
+        window.getSlotUnlocks = getSlotUnlocks;
+
+        // ── Check if boss event has expired (7 days) and auto-distribute rewards ──
+        async function checkBossEventExpiry() {
+            try {
+                const snap = await db.ref('weekly_boss/current').once('value');
+                const boss = snap.val();
+                if (!boss || boss.status !== 'active') return;
+                if (boss.rewardsDistributed) return;
+                const sevenDays = 7 * 24 * 60 * 60 * 1000;
+                const activatedAt = boss.activatedAt || 0;
+                if (Date.now() - activatedAt >= sevenDays) {
+                    await db.ref('weekly_boss/current/status').set('expired');
+                    await distributeEndEventRewards(false);
+                    console.log('[BOSS] Evento expiró después de 7 días — recompensas distribuidas');
+                }
+            } catch(e) { console.error('[BOSS] checkBossEventExpiry:', e); }
+        }
+        window.checkBossEventExpiry = checkBossEventExpiry;
+
+        // ── Show boss reward notification modal (unclosable until claimed) ──
+        async function showBossRewardModal(uid, reward) {
+            // Don't show if already claimed
+            if (reward.claimed) return;
+
+            const bossFelled = reward.bossFelled;
+            const bossName   = reward.bossName || 'Jefe de Sala';
+            const bossHpLeft = reward.bossHpLeft || 0;
+            const ranking    = reward.ranking || [];
+            const myRank     = reward.rank || 1;
+            const multiplier = reward.multiplier || 1;
+
+            // Build ranking rows
+            const rankIcons = ['👑','🥈','🥉','4️⃣','5️⃣','6️⃣'];
+            const rankRows = ranking.map(function(r) {
+                var isMe = r.rank === myRank && r.playerName === (reward.playerName || '');
+                var style = isMe ? 'background:rgba(255,170,0,0.15);border-radius:6px;' : '';
+                return '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);' + style + '">' +
+                    '<td style="padding:7px 12px;font-size:1rem;">' + (rankIcons[r.rank-1]||r.rank) + '</td>' +
+                    '<td style="padding:7px 12px;color:' + (isMe?'#ffaa00':'#ccc') + ';font-weight:' + (isMe?'700':'400') + ';">' + r.playerName + (isMe?' (tú)':'') + '</td>' +
+                    '<td style="padding:7px 12px;color:#aaa;font-size:.8rem;">' + (r.totalDamage||0).toLocaleString() + ' HP</td>' +
+                    '<td style="padding:7px 12px;color:#ffd700;font-size:.8rem;">🪙 ' + (r.gold||0).toLocaleString() + (r.keys>0?' + '+r.keys+' 🗝️':'') + '</td>' +
+                '</tr>';
+            }).join('');
+
+            var bossStatusHtml = bossFelled
+                ? '<div style="color:#00ff99;font-size:.9rem;margin-bottom:4px;">💀 ¡' + bossName + ' fue derrotado!</div><div style="color:#aaa;font-size:.75rem;">Las recompensas se duplicaron (×2)</div>'
+                : '<div style="color:#ff6644;font-size:.9rem;margin-bottom:4px;">⏰ El evento terminó (7 días)</div><div style="color:#aaa;font-size:.75rem;">' + bossName + ' sobrevivió con ' + bossHpLeft.toLocaleString() + ' HP</div>';
+
+            var myRewardHtml = '<div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:12px;">' +
+                '<div style="background:rgba(255,215,0,0.1);border:1px solid #ffd700;border-radius:10px;padding:12px 20px;text-align:center;">' +
+                    '<div style="font-size:1.5rem;">🪙</div>' +
+                    '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:#ffd700;font-weight:700;">' + reward.gold.toLocaleString() + '</div>' +
+                    '<div style="color:#888;font-size:.7rem;">Oro</div>' +
+                '</div>' +
+                (reward.keys > 0 ? '<div style="background:rgba(100,200,255,0.1);border:1px solid #64c8ff;border-radius:10px;padding:12px 20px;text-align:center;">' +
+                    '<div style="font-size:1.5rem;">🗝️</div>' +
+                    '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:#64c8ff;font-weight:700;">' + reward.keys + '</div>' +
+                    '<div style="color:#888;font-size:.7rem;">Llaves Arcanas</div>' +
+                '</div>' : '') +
+                '<div style="background:rgba(255,100,100,0.1);border:1px solid #ff6464;border-radius:10px;padding:12px 20px;text-align:center;">' +
+                    '<div style="font-size:1.5rem;">' + (rankIcons[myRank-1]||myRank) + '</div>' +
+                    '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:#ff6464;font-weight:700;">#' + myRank + '</div>' +
+                    '<div style="color:#888;font-size:.7rem;">Posición</div>' +
+                '</div>' +
+                (reward.bolvarUnlockChance > 0 ? '<div style="background:rgba(200,100,0,0.15);border:1px solid rgba(251,146,60,0.5);border-radius:10px;padding:12px 20px;text-align:center;width:100%;">' +
+                    '<div style="font-size:1.4rem;">' + (reward.bolvarUnlocked ? '🔓' : '🔒') + '</div>' +
+                    '<div style="font-family:Orbitron,sans-serif;font-size:.85rem;color:' + (reward.bolvarUnlocked ? '#fb923c' : '#888') + ';font-weight:700;">' + (reward.bolvarUnlocked ? '¡BOLVAR FORDRAGON DESBLOQUEADO!' : 'Bolvar Fordragon no desbloqueado') + '</div>' +
+                    (reward.gogetaUnlocked !== undefined ? (
+                        '<div style="font-size:1.4rem;margin-top:4px;">' + (reward.gogetaUnlocked ? '🔓' : '🔒') + '</div>' +
+                        '<div style="font-family:Orbitron,sans-serif;font-size:.85rem;color:' + (reward.gogetaUnlocked ? '#a78bfa' : '#888') + ';font-weight:700;">' + (reward.gogetaUnlocked ? '¡GOGETA DESBLOQUEADO!' : 'Gogeta no desbloqueado') + '</div>'
+                    ) : '') +
+                    '<div style="color:#666;font-size:.65rem;">Probabilidad: ' + Math.round(reward.bolvarUnlockChance * 100) + '% (posición #' + myRank + ')</div>' +
+                '</div>' : '') +
+            '</div>';
+
+            var modal = document.createElement('div');
+            modal.id = '_bossRewardModal';
+            modal.style.cssText = 'position:fixed;inset:0;z-index:999999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.88);';
+
+            modal.innerHTML =
+                '<div style="background:linear-gradient(160deg,#0d1420,#080e18);border:2px solid rgba(255,170,0,0.4);border-radius:20px;padding:28px 28px 24px;max-width:560px;width:92%;max-height:90vh;overflow-y:auto;box-shadow:0 0 60px rgba(255,170,0,0.2);">' +
+                    // Header
+                    '<div style="text-align:center;margin-bottom:16px;">' +
+                        '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:#ffaa00;letter-spacing:.08em;font-weight:700;margin-bottom:8px;">🏆 EVENTO FINALIZADO — ' + bossName.toUpperCase() + '</div>' +
+                        bossStatusHtml +
+                    '</div>' +
+                    // My reward
+                    '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;margin-bottom:16px;">' +
+                        '<div style="font-family:Orbitron,sans-serif;font-size:.75rem;color:#888;margin-bottom:8px;letter-spacing:.08em;">TU RECOMPENSA</div>' +
+                        myRewardHtml +
+                    '</div>' +
+                    // Ranking table
+                    '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px;margin-bottom:20px;">' +
+                        '<div style="font-family:Orbitron,sans-serif;font-size:.75rem;color:#888;margin-bottom:8px;letter-spacing:.08em;">TABLA DE DAÑO</div>' +
+                        '<table style="width:100%;border-collapse:collapse;">' +
+                            '<thead><tr style="border-bottom:1px solid rgba(255,255,255,0.1);">' +
+                                '<th style="padding:5px 12px;color:#555;font-size:.65rem;text-align:left;">#</th>' +
+                                '<th style="padding:5px 12px;color:#555;font-size:.65rem;text-align:left;font-family:Orbitron,sans-serif;">JUGADOR</th>' +
+                                '<th style="padding:5px 12px;color:#555;font-size:.65rem;text-align:left;font-family:Orbitron,sans-serif;">DAÑO</th>' +
+                                '<th style="padding:5px 12px;color:#555;font-size:.65rem;text-align:left;font-family:Orbitron,sans-serif;">RECOMPENSA</th>' +
+                            '</tr></thead>' +
+                            '<tbody>' + rankRows + '</tbody>' +
+                        '</table>' +
+                    '</div>' +
+                    // Claim button (CANNOT close without clicking)
+                    '<button id="_bossClaimBtn" onclick="window._handleBossClaimReward()" style="width:100%;background:linear-gradient(135deg,#ffaa00,#ff6600);border:none;color:#000;font-family:Orbitron,sans-serif;font-size:.9rem;font-weight:700;padding:14px;border-radius:12px;cursor:pointer;letter-spacing:.06em;">🎁 RECLAMAR RECOMPENSA</button>' +
+                    '<div style="text-align:center;color:#444;font-size:.68rem;margin-top:8px;">Debes reclamar tu recompensa para continuar</div>' +
+                '</div>';
+
+            document.body.appendChild(modal);
+
+            // Handler for claim button
+            window._handleBossClaimReward = async function() {
+                var btn = document.getElementById('_bossClaimBtn');
+                if (btn) { btn.textContent = 'Reclamando...'; btn.disabled = true; btn.style.opacity = '0.6'; }
+                try {
+                    var ok = await claimBossReward(uid);
+                    if (ok) {
+                        modal.remove();
+                        delete window._handleBossClaimReward;
+                        // Show brief success toast
+                        var toast = document.createElement('div');
+                        toast.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(0,200,100,0.9);color:#000;padding:12px 24px;border-radius:10px;font-family:Orbitron,sans-serif;font-size:.85rem;font-weight:700;z-index:999999;';
+                        toast.textContent = '✅ ¡Recompensa reclamada!';
+                        document.body.appendChild(toast);
+                        setTimeout(function(){ toast.remove(); }, 3000);
+                    }
+                } catch(e) {
+                    console.error('[BOSS] claim error:', e);
+                    if (btn) { btn.textContent = '🎁 RECLAMAR RECOMPENSA'; btn.disabled = false; btn.style.opacity = '1'; }
+                }
+            };
+        }
+        window.showBossRewardModal = showBossRewardModal;
+
+        // ── Check on login if player has a pending unclaimed boss reward ──
+        async function checkPendingBossReward(uid) {
+            try {
+                // First check if event expired and distribute if needed
+                await checkBossEventExpiry();
+                // Then check if this player has a pending reward
+                const snap = await db.ref('weekly_boss/pending_rewards/' + uid).once('value');
+                const reward = snap.val();
+                if (reward && !reward.claimed) {
+                    await showBossRewardModal(uid, reward);
+                }
+            } catch(e) { console.error('[BOSS] checkPendingBossReward:', e); }
+        }
+        window.checkPendingBossReward = checkPendingBossReward;
+
+        async function attackBoss(uid, playerName, playerTeam) {
+            const boss = await getBossData();
+            if (!boss || boss.status !== 'active') { alert('No hay Jefe de Sala activo.'); return; }
+
+            // Verificar límite de 1 ataque diario
+            const today = new Date().toISOString().split('T')[0];
+            const lastRef = db.ref('weekly_boss/damage_log/' + uid + '/lastAttack');
+            const lastSnap = await lastRef.once('value');
+            if (lastSnap.val() === today) {
+                alert('Ya realizaste tu ataque diario al Jefe de Sala. Vuelve mañana.');
+                return;
+            }
+            // Iniciar combate vs Broly
+            startBossBattle(uid, playerName, playerTeam, boss);
+        }
+
+        async function registerBossDamage(uid, damageDealt) {
+            const today = new Date().toISOString().split('T')[0];
+            const logRef = db.ref('weekly_boss/damage_log/' + uid);
+            const snap = await logRef.once('value');
+            const cur = snap.val() || { totalDamage: 0, attacks: [] };
+            const newTotal = (cur.totalDamage||0) + damageDealt;
+            await logRef.update({
+                totalDamage: newTotal,
+                lastAttack: today,
+                playerName: firebase.auth().currentUser?.displayName || uid
+            });
+            // Actualizar HP global del jefe
+            const hpRef = db.ref('weekly_boss/current/hp');
+            const hpSnap = await hpRef.once('value');
+            const newHp = Math.max(0, (hpSnap.val()||0) - damageDealt);
+            await hpRef.set(newHp);
+            if (newHp <= 0) {
+                await db.ref('weekly_boss/current/status').set('defeated');
+                // ¡Jefe derrotado! — distribuir recompensas con multiplicador ×1.5
+                try { await distributeEndEventRewards(true); } catch(e) { console.error('[BOSS] Error distribuyendo recompensas:', e); }
+            }
+            // Recompensa diaria por participación
+            const goldReward = Math.floor(500 + damageDealt * 0.5);
+            await addGold(uid, goldReward);
+            await updateLobbyHUD();
+            return { newHp, goldReward };
+        }
+        // Exponer globalmente para jefe-de-sala.js
+        window.registerBossDamage = registerBossDamage;
+
+        // ==================== MERCADO ====================
+
+        async function getDailyMarket() {
+            const today = new Date().toISOString().split('T')[0];
+            const ref = db.ref('market/daily');
+            const snap = await ref.once('value');
+            const data = snap.val();
+            if (data && data.date === today) return data;
+            // Generar nuevo mercado del día
+            const newMarket = generateDailyMarket(today);
+            await ref.set(newMarket);
+            return newMarket;
+        }
+
+        function generateDailyMarket(date) {
+            const r = Math.random();
+            let tier;
+            if (r < 0.70)      tier = 'Raro';       // 70%
+            else if (r < 0.95) tier = 'Especial';   // 25%
+            else if (r < 0.995) tier = 'Epico';     // 4.5%
+            else               tier = 'Legendario'; // 0.5%
+            const pool = typeof RELICS_DATA !== 'undefined'
+                ? Object.keys(RELICS_DATA).filter(function(n){ return RELICS_DATA[n].tier === tier; })
+                : [];
+            const relicName = pool.length > 0 ? pool[Math.floor(Math.random() * pool.length)] : null;
+            const prices = typeof RELIC_MARKET_PRICES !== 'undefined' ? RELIC_MARKET_PRICES : {};
+            return {
+                date,
+                relic:       relicName ? { name: relicName, tier, price: prices[tier]||10000 } : null,
+                rune:        { price: 50000 },
+                chest_rare:  { price: 10000 },
+                chest_special: { price: 25000 },
+                chest_epic:  { price: 60000 },
+                chest_arcana: { cost_type: 'key' }
+            };
+        }
+
+        async function buyDailyItem(uid, itemType) {
+            const market = await getDailyMarket();
+            if (itemType === 'relic' && market.relic) {
+                const ok = await spendGold(uid, market.relic.price);
+                if (!ok) { alert('No tienes suficiente oro.'); return; }
+                await addRelicToInventory(uid, market.relic.name);
+                await updateLobbyHUD();
+                alert('✅ ' + market.relic.name + ' agregada a tu inventario.');
+            } else if (itemType === 'rune') {
+                const ok = await spendGold(uid, 50000);
+                if (!ok) { alert('No tienes suficiente oro.'); return; }
+                await db.ref('users/' + uid + '/attack_runes').transaction(function(v){ return (v||0)+1; });
+                await updateLobbyHUD();
+                alert('✅ Runa de Ataque agregada a tu inventario.');
+            } else if (itemType === 'portal_rune') {
+                const ok = await spendGold(uid, 100000);
+                if (!ok) { alert('No tienes suficiente oro. Necesitas 100,000 🪙'); return; }
+                await db.ref('users/' + uid + '/portal_runes').transaction(function(v){ return (v||0)+1; });
+                await updateLobbyHUD();
+                alert('✅ ¡Runa de Portal adquirida!');
+            } else if (itemType.startsWith('chest_')) {
+                const type = itemType.replace('chest_','');
+                await openChest(uid, type);
+                if (type === 'arcana' && typeof initArcanePityIndicator === 'function') initArcanePityIndicator(uid);
+            }
+        }
+
+        // ── Venta rápida de reliquia ──
+        async function quickSellRelic(uid, relicName) {
+            const relic = typeof RELICS_DATA !== 'undefined' ? RELICS_DATA[relicName] : null;
+            if (!relic) { alert('Reliquia no encontrada.'); return; }
+            const prices = typeof RELIC_QUICK_SELL !== 'undefined' ? RELIC_QUICK_SELL : {};
+            const gold = prices[relic.tier]||0;
+            if (!confirm('¿Vender ' + relicName + ' por ' + gold.toLocaleString() + ' oro?')) return;
+            await removeRelicFromInventory(uid, relicName);
+            await addGold(uid, gold);
+            await updateLobbyHUD();
+            alert('✅ Vendida por ' + gold.toLocaleString() + ' oro.');
+        }
+
+        // ── Publicar reliquia en venta pública ──
+        async function listRelicForSale(uid, relicName, price) {
+            // Verificar que solo publique 1 por día
+            const today = new Date().toISOString().split('T')[0];
+            const listingCheckRef = db.ref('users/' + uid + '/last_listing_date');
+            const checkSnap = await listingCheckRef.once('value');
+            if (checkSnap.val() === today) {
+                alert('Solo puedes publicar 1 reliquia por día en el mercado.');
+                return false;
+            }
+            const invSnap = await db.ref('users/' + uid + '/inventory/relics/' + relicName).once('value');
+            if ((invSnap.val()||0) < 1) { alert('No tienes esta reliquia.'); return false; }
+
+            const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
+            const listingRef = db.ref('market/listings').push();
+            await listingRef.set({
+                sellerId: uid,
+                sellerName: firebase.auth().currentUser?.displayName || uid,
+                relic: relicName,
+                tier: typeof RELICS_DATA !== 'undefined' ? RELICS_DATA[relicName].tier : 'Raro',
+                price,
+                listedAt: Date.now(),
+                expiresAt
+            });
+            await removeRelicFromInventory(uid, relicName);
+            await listingCheckRef.set(today);
+            alert('✅ ' + relicName + ' publicada en el mercado por ' + price.toLocaleString() + ' oro.');
+            return true;
+        }
+
+        // ── Comprar reliquia de venta pública ──
+        async function buyListedRelic(uid, listingId) {
+            const listRef = db.ref('market/listings/' + listingId);
+            const snap = await listRef.once('value');
+            const listing = snap.val();
+            if (!listing) { alert('Esta publicación ya no está disponible.'); return; }
+            if (listing.expiresAt < Date.now()) {
+                await listRef.remove();
+                await addRelicToInventory(listing.sellerId, listing.relic);
+                alert('Esta publicación expiró.');
+                return;
+            }
+            const ok = await spendGold(uid, listing.price);
+            if (!ok) { alert('No tienes suficiente oro.'); return; }
+            await addGold(listing.sellerId, listing.price);
+            await addRelicToInventory(uid, listing.relic);
+            await listRef.remove();
+            await updateLobbyHUD();
+            alert('✅ ' + listing.relic + ' comprada y agregada a tu inventario.');
+        }
+
+        // ==================== PANEL DE ADMINISTRADOR ====================
+        const ADMIN_EMAIL = 'solisalex8291@gmail.com';
+
+        function isAdmin() {
+            const user = firebase.auth().currentUser;
+            return user && user.email === ADMIN_EMAIL;
+        }
+        window.isAdmin = isAdmin;
+        window.distributeEndEventRewards = distributeEndEventRewards;
+        window.migrateRelicsToV2 = window.migrateRelicsToV2; // already set above
+
+        // ── Reset de recursos del admin (uso único desde consola) ──
+        window.adminResetMyResources = async function(goldAmount, keysAmount) {
+            if (!isAdmin()) { console.warn('No eres admin'); return; }
+            var uid = firebase.auth().currentUser.uid;
+            await db.ref('users/' + uid + '/gold').set(goldAmount || 0);
+            await db.ref('users/' + uid + '/arcane_keys').set(keysAmount || 0);
+            await updateLobbyHUD();
+            console.log('✅ Recursos reseteados: Oro=' + (goldAmount||0) + ' Llaves=' + (keysAmount||0));
+            alert('✅ Recursos actualizados: ' + (goldAmount||0) + ' oro y ' + (keysAmount||0) + ' llaves arcanas');
+        };
+        // Auto-ejecutar reset para solisalex8291: oro=0, llaves=0
+        firebase.auth().onAuthStateChanged(function(user) {
+            if (user && user.email === 'solisalex8291@gmail.com') {
+                var _resetDone = localStorage.getItem('_adminReset_20260517');
+                if (!_resetDone) {
+                    db.ref('users/' + user.uid + '/gold').set(0);
+                    db.ref('users/' + user.uid + '/arcane_keys').set(0);
+                    localStorage.setItem('_adminReset_20260517', '1');
+                    console.log('✅ Reset automático de oro y llaves aplicado');
+                }
+            }
+        });
+
+        async function adminActivateBoss(bossId, bossConfig, startDate, endDate) {
+            if (!isAdmin()) { alert('Acceso denegado.'); return; }
+            await db.ref('weekly_boss/current').set({
+                id: bossId,
+                name: bossConfig.name,
+                portrait: bossConfig.portrait,
+                hp: bossConfig.hp,
+                maxHp: bossConfig.maxHp,
+                speed: bossConfig.speed,
+                startDate, endDate,
+                status: 'active',
+                activatedBy: ADMIN_EMAIL,
+                activatedAt: Date.now()
+            });
+            // Limpiar log anterior
+            await db.ref('weekly_boss/damage_log').remove();
+            alert('✅ Evento de Jefe de Sala activado: ' + bossConfig.name);
+        }
+
+        async function adminDeactivateBoss() {
+            if (!isAdmin()) { alert('Acceso denegado.'); return; }
+            // Distribuir recompensas finales antes de cerrar el evento
+            await distributeEndEventRewards(false);
+            await db.ref('weekly_boss/current/status').set('ended');
+            alert('✅ Evento de Jefe de Sala desactivado. Recompensas distribuidas.');
+        }
+
+        // ── Distribución de recompensas al final del evento ──────────────────────
+        // bossFelled = true si el jefe fue derrotado antes de que terminara el evento (×1.5)
+        async function distributeEndEventRewards(bossFelled) {
+            const bossSnap = await db.ref('weekly_boss/current').once('value');
+            const bossInfo = bossSnap.val() || {};
+            const bossHpLeft = bossInfo.hp || 0;
+            const bossName   = bossInfo.name || 'Jefe de Sala';
+            const eventId    = bossInfo.id || ('boss_' + Date.now());
+
+            const snap = await db.ref('weekly_boss/damage_log').once('value');
+            const data = snap.val() || {};
+            const ranking = Object.entries(data)
+                .map(function([uid, d]){ return { uid: uid, playerName: d.playerName||uid, totalDamage: d.totalDamage||0 }; })
+                .sort(function(a,b){ return b.totalDamage - a.totalDamage; });
+
+            if (ranking.length === 0) return;
+
+            // No multiplier — boss defeat no longer grants extra reward
+            const rewardsByRank = [
+                { gold: 100000, keys: 5 },  // 1st — 5 llaves
+                { gold: 50000,  keys: 3 },  // 2nd — 3 llaves
+                { gold: 20000,  keys: 2 },  // 3rd — 2 llaves
+            ];
+
+            // Build full ranking snapshot for each player's notification
+            const rankingSnapshot = ranking.map(function(e, idx) {
+                var rk = idx + 1;
+                var rw2 = rk <= 3 ? rewardsByRank[rk-1] : { gold: 5000, keys: 1 };
+                return { rank: rk, playerName: e.playerName, totalDamage: e.totalDamage,
+                         gold: rw2.gold, keys: rw2.keys };
+            });
+
+            for (var i = 0; i < ranking.length; i++) {
+                var entry = ranking[i];
+                var rank  = i + 1;
+                var rw    = rank <= 3 ? rewardsByRank[rank-1] : { gold: 5000, keys: 1 };
+
+                var finalGold = rw.gold;
+                var finalKeys = rw.keys;
+
+                // ── BOLVAR FORDRAGON: probabilidad de desbloqueo por posición ──
+                var bolvarUnlockChance = 0;
+                if (bossName === 'Bolvar Fordragon' && bossFelled) {
+                    if      (rank === 1) bolvarUnlockChance = 0.30;
+                    else if (rank === 2) bolvarUnlockChance = 0.20;
+                    else if (rank === 3) bolvarUnlockChance = 0.10;
+                    else if (rank === 4) bolvarUnlockChance = 0.05;
+                    else                bolvarUnlockChance = 0.05;
+                }
+                var bolvarUnlockRoll = bolvarUnlockChance > 0 ? Math.random() : 1;
+                var bolvarUnlocked   = bolvarUnlockRoll < bolvarUnlockChance;
+
+                // ── GOGETA: probabilidad de desbloqueo por posición (evento Broly) ──
+                var gogetaUnlockChance = 0;
+                if (bossName === 'Broly' && bossFelled) {
+                    if      (rank === 1) gogetaUnlockChance = 0.30;
+                    else if (rank === 2) gogetaUnlockChance = 0.20;
+                    else if (rank === 3) gogetaUnlockChance = 0.10;
+                    else if (rank === 4) gogetaUnlockChance = 0.05;
+                    else                gogetaUnlockChance = 0.05;
+                }
+                var gogetaUnlockRoll = gogetaUnlockChance > 0 ? Math.random() : 1;
+                var gogetaUnlocked   = gogetaUnlockRoll < gogetaUnlockChance;
+
+                // ── ARTHAS MENETHIL: probabilidad de desbloqueo (evento Lich King) ──
+                var arthasUnlockChance = 0;
+                if (bossName === 'Lich King' && bossFelled) {
+                    if      (rank === 1) arthasUnlockChance = 0.30;
+                    else if (rank === 2) arthasUnlockChance = 0.20;
+                    else if (rank === 3) arthasUnlockChance = 0.10;
+                    else if (rank === 4) arthasUnlockChance = 0.05;
+                    else                arthasUnlockChance = 0.05;
+                }
+                var arthasUnlockRoll = arthasUnlockChance > 0 ? Math.random() : 1;
+                var arthasUnlocked   = arthasUnlockRoll < arthasUnlockChance;
+
+                // ── GRINDELWALD: probabilidad de desbloqueo (evento Albus Dumbledore) ──
+                var grindelwaldUnlockChance = 0;
+                if (bossName === 'Albus Dumbledore' && bossFelled) {
+                    if      (rank === 1) grindelwaldUnlockChance = 0.30;
+                    else if (rank === 2) grindelwaldUnlockChance = 0.20;
+                    else if (rank === 3) grindelwaldUnlockChance = 0.10;
+                    else                grindelwaldUnlockChance = 0.05;
+                }
+                var grindelwaldUnlockRoll = grindelwaldUnlockChance > 0 ? Math.random() : 1;
+                var grindelwaldUnlocked   = grindelwaldUnlockRoll < grindelwaldUnlockChance;
+
+                // Store claimable reward in Firebase
+                await db.ref('weekly_boss/pending_rewards/' + entry.uid).set({
+                    eventId:       eventId,
+                    bossName:      bossName,
+                    bossFelled:    bossFelled,
+                    bossHpLeft:    bossHpLeft,
+                    rank:          rank,
+                    totalDamage:   entry.totalDamage,
+                    gold:          finalGold,
+                    keys:          finalKeys,
+                    extra:         null,
+                    extraCount:    0,
+                    ranking:       rankingSnapshot,
+                    bolvarUnlocked:     bolvarUnlocked,
+                    bolvarUnlockChance: bolvarUnlockChance,
+                    gogetaUnlocked:     gogetaUnlocked,
+                    gogetaUnlockChance: gogetaUnlockChance,
+                    arthasUnlocked:     arthasUnlocked,
+                    arthasUnlockChance: arthasUnlockChance,
+                    grindelwaldUnlocked:     grindelwaldUnlocked,
+                    grindelwaldUnlockChance: grindelwaldUnlockChance,
+                    claimed:       false,
+                    createdAt:     Date.now()
+                });
+            }
+
+            // Mark event as rewards-distributed
+            await db.ref('weekly_boss/current/rewardsDistributed').set(true);
+        }
+
+        // ── Claim pending boss reward ──
+        async function claimBossReward(uid) {
+            const ref = db.ref('weekly_boss/pending_rewards/' + uid);
+            const snap = await ref.once('value');
+            const reward = snap.val();
+            if (!reward || reward.claimed) return false;
+
+            // Apply rewards
+            await addGold(uid, reward.gold || 0);
+
+            if ((reward.keys || 0) > 0) {
+                const keyRef = db.ref('users/' + uid + '/arcane_keys');
+                const ks = await keyRef.once('value');
+                await keyRef.set((ks.val()||0) + reward.keys);
+            }
+
+            if (reward.extra && reward.extraCount > 0) {
+                for (var k = 0; k < reward.extraCount; k++) {
+                    if (reward.extra === 'chest_arcana') {
+                        const kr = db.ref('users/' + uid + '/arcane_keys');
+                        const kv = await kr.once('value');
+                        await kr.set((kv.val()||0) + 1);
+                    } else {
+                        const cr = db.ref('players/' + uid + '/chests/' + reward.extra);
+                        const cv = await cr.once('value');
+                        await cr.set((cv.val()||0) + 1);
+                    }
+                }
+            }
+
+            // ── BOLVAR FORDRAGON: aplicar desbloqueo si corresponde ──
+            if (reward.bolvarUnlocked) {
+                const unlockedRef = db.ref('users/' + uid + '/unlockedCharacters/bolvar_fordragon');
+                const alreadyUnlocked = await unlockedRef.once('value');
+                if (!alreadyUnlocked.val()) {
+                    await unlockedRef.set(true);
+                    console.log('[BOLVAR] ¡Personaje desbloqueado para ' + uid + '!');
+                    setTimeout(function() {
+                        var t = document.createElement('div');
+                        t.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#c86400,#fb923c);color:#fff;padding:16px 28px;border-radius:14px;font-family:Orbitron,sans-serif;font-size:.9rem;font-weight:700;z-index:9999999;box-shadow:0 0 30px rgba(200,100,0,0.6);text-align:center;';
+                        t.innerHTML = '🔓 ¡BOLVAR FORDRAGON DESBLOQUEADO!<br><span style="font-size:.7rem;font-weight:400;opacity:.8;">Ahora puedes seleccionarlo en partidas</span>';
+                        document.body.appendChild(t);
+                        setTimeout(function(){ t.remove(); }, 5000);
+                    }, 1500);
+                }
+            }
+
+            // ── GOGETA: aplicar desbloqueo si corresponde (evento Broly) ──
+            if (reward.gogetaUnlocked) {
+                const gogetaRef = db.ref('users/' + uid + '/unlockedCharacters/gogeta');
+                const alreadyUnlocked = await gogetaRef.once('value');
+                if (!alreadyUnlocked.val()) {
+                    await gogetaRef.set(true);
+                    console.log('[GOGETA] ¡Personaje desbloqueado para ' + uid + '!');
+                    setTimeout(function() {
+                        var t = document.createElement('div');
+                        t.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1a0080,#6a00ff);color:#fff;padding:16px 28px;border-radius:14px;font-family:Orbitron,sans-serif;font-size:.9rem;font-weight:700;z-index:9999999;box-shadow:0 0 30px rgba(100,0,255,0.6);text-align:center;';
+                        t.innerHTML = '🔓 ¡GOGETA DESBLOQUEADO!<br><span style="font-size:.7rem;font-weight:400;opacity:.8;">¡La Fusión Perfecta puede unirse a tu equipo!</span>';
+                        document.body.appendChild(t);
+                        setTimeout(function(){ t.remove(); }, 5000);
+                    }, 1500);
+                }
+            }
+
+            // ── ARTHAS MENETHIL: aplicar desbloqueo si corresponde (evento Lich King) ──
+            if (reward.arthasUnlocked) {
+                const arthasRef = db.ref('users/' + uid + '/unlockedCharacters/arthas_menethil');
+                const arthasAlready = await arthasRef.once('value');
+                if (!arthasAlready.val()) {
+                    await arthasRef.set(true);
+                    console.log('[ARTHAS] ¡Personaje desbloqueado para ' + uid + '!');
+                    setTimeout(function() {
+                        var t = document.createElement('div');
+                        t.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1565c0,#4fc3f7);color:#fff;padding:16px 28px;border-radius:14px;font-family:Orbitron,sans-serif;font-size:.9rem;font-weight:700;z-index:9999999;box-shadow:0 0 30px rgba(79,195,247,0.6);text-align:center;';
+                        t.innerHTML = '🔓 ¡ARTHAS MENETHIL DESBLOQUEADO!<br><span style="font-size:.7rem;font-weight:400;opacity:.8;">El Príncipe del Escourge se une a tu ejército</span>';
+                        document.body.appendChild(t);
+                        setTimeout(function(){ t.remove(); }, 5000);
+                    }, 1500);
+                }
+            }
+
+            // ── GRINDELWALD: aplicar desbloqueo si corresponde (evento Albus Dumbledore) ──
+            if (reward.grindelwaldUnlocked) {
+                const grindRef = db.ref('users/' + uid + '/unlockedCharacters/grindelwald');
+                const grindAlready = await grindRef.once('value');
+                if (!grindAlready.val()) {
+                    await grindRef.set(true);
+                    console.log('[GRINDELWALD] ¡Personaje desbloqueado para ' + uid + '!');
+                    setTimeout(function() {
+                        var t = document.createElement('div');
+                        t.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#2d0060,#7c00cc);color:#fff;padding:16px 28px;border-radius:14px;font-family:Orbitron,sans-serif;font-size:.9rem;font-weight:700;z-index:9999999;box-shadow:0 0 30px rgba(124,0,204,0.6);text-align:center;';
+                        t.innerHTML = '🔓 ¡GRINDELWALD DESBLOQUEADO!<br><span style="font-size:.7rem;font-weight:400;opacity:.8;">El Maestro del Infierno Azul puede unirse a tu equipo</span>';
+                        document.body.appendChild(t);
+                        setTimeout(function(){ t.remove(); }, 5000);
+                    }, 1500);
+                }
+            }
+
+            // Mark as claimed
+            await ref.update({ claimed: true, claimedAt: Date.now() });
+            await updateLobbyHUD();
+            return true;
+        }
+        window.claimBossReward = claimBossReward;
+
+        // ── ADMIN: give attack runes to all players ──
+        window.adminGiveRunasAtaqueToAll = async function(amount) {
+            if (!isAdmin()) { console.warn('Not admin'); return; }
+            amount = amount || 12;
+            const snap = await db.ref('users').once('value');
+            const users = snap.val() || {};
+            let count = 0;
+            for (const uid in users) {
+                const runaRef = db.ref('users/' + uid + '/attack_runes');
+                const current = (await runaRef.once('value')).val() || 0;
+                await runaRef.set(current + amount);
+                count++;
+            }
+            console.log('[ADMIN] Gave ' + amount + ' attack_runes to ' + count + ' players');
+            alert('✅ Se dieron ' + amount + ' runas de ataque a ' + count + ' jugadores');
+        };
+
+        async function adminGetRanking() {
+            if (!isAdmin()) return [];
+            const snap = await db.ref('weekly_boss/damage_log').once('value');
+            const data = snap.val() || {};
+            return Object.entries(data)
+                .map(function([uid, d]){ return { uid, ...d }; })
+                .sort(function(a,b){ return (b.totalDamage||0) - (a.totalDamage||0); });
+        }
+
+        // Limpiar listings expirados (llamar al cargar el mercado)
+        async function cleanExpiredListings() {
+            const snap = await db.ref('market/listings').once('value');
+            const data = snap.val() || {};
+            const now = Date.now();
+            const promises = [];
+            Object.entries(data).forEach(function([id, listing]){
+                if (listing.expiresAt < now) {
+                    promises.push(
+                        db.ref('market/listings/' + id).remove().then(function(){
+                            return addRelicToInventory(listing.sellerId, listing.relic);
+                        })
+                    );
+                }
+            });
+            await Promise.all(promises);
+        }
+
+        // Inicializar al hacer login
+        firebase.auth().onAuthStateChanged(async function(user) {
+            if (user) {
+                await initPlayerData(user.uid);
+                await updateLobbyHUD();
+                await cleanExpiredListings();
+                // Verificar si hay un premio de temporada pendiente de reclamar
+                try { await checkPendingSeasonReward(user.uid); } catch(e) {}
+            }
         });
