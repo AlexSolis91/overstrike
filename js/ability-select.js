@@ -23,6 +23,18 @@
                 addLog('❌ No tienes suficientes cargas', 'info');
                 return;
             }
+            // Block enemy_dead abilities if no dead enemies available
+            if (ability.target === 'enemy_dead') {
+                const _eDeadTeam = char.team === 'team1' ? 'team2' : 'team1';
+                const _hasDeadEnemy = Object.keys(gameState.characters).some(function(n) {
+                    const c = gameState.characters[n];
+                    return c && c.team === _eDeadTeam && c.isDead;
+                });
+                if (!_hasDeadEnemy) {
+                    addLog('❌ No hay enemigos derrotados disponibles para Extracción de Sombras', 'info');
+                    return;
+                }
+            }
             // Verificar invocaciones (Arise! y similares)
             if (ability.effect === 'arise_summon' || ability.effect === 'summon_shadows') {
                 const _myShd = getSummonsBySummoner(charName).filter(s => ['Igris','Iron','Tusk','Beru','Bellion'].includes(s.name));
