@@ -6372,17 +6372,10 @@
                 let _pjDmg = _pjS && _pjS.supermanPrimeMode ? finalDamage * 2 : finalDamage;
                 applyDamageWithShield(targetName, _pjDmg, gameState.selectedCharacter);
                 if (_pjS) {
-                    if (typeof canHeal === 'function' && !canHeal(gameState.selectedCharacter)) {
-                        addLog('☀️ Quemadura Solar: ' + gameState.selectedCharacter + ' no puede recuperar HP (Puño de la Justicia)', 'debuff');
-                    } else {
-                        const _pjOldHp = _pjS.hp;
-                        _pjS.hp = Math.min(_pjS.maxHp, _pjS.hp + 2);
-                        const _pjHealed = _pjS.hp - _pjOldHp;
-                        if (_pjHealed > 0) {
-                            addLog('🦸 Puño de la Justicia: ' + _pjDmg + ' daño + ' + _pjHealed + ' HP recuperados', 'buff');
-                            if (typeof triggerPresenciaOscura === 'function') triggerPresenciaOscura(gameState.selectedCharacter);
-                            if (typeof notifyHeal === 'function') notifyHeal(gameState.selectedCharacter, _pjHealed, 'Puño de la Justicia');
-                        }
+                    const _pjHealed = applyHeal(gameState.selectedCharacter, 2, 'Puño de la Justicia');
+                    if (_pjHealed > 0) {
+                        addLog('🦸 Puño de la Justicia: ' + _pjDmg + ' daño + ' + _pjHealed + ' HP recuperados', 'buff');
+                        if (typeof triggerPresenciaOscura === 'function') triggerPresenciaOscura(gameState.selectedCharacter);
                     }
                 }
 
@@ -6885,6 +6878,19 @@
                 applyDamageWithShield(targetName, _kmDmg, charName);
                 addLog('⚫ Kamehame Ha Oscuro: ' + _kmDmg + ' daño a ' + targetName, 'damage');
                 if (Math.random() < 0.50) applyStun(targetName, 1);
+
+            } else if (ability.effect === 'vinculo_atena_seiya') {
+                // SEIYA — Vínculo de Atena v2: 5 ataques básicos ST, cada uno 50% crit independiente
+                const _vaS = gameState.characters[gameState.selectedCharacter];
+                const _vaBaseDmg = (_vaS && _vaS.abilities) ? ((_vaS.abilities.find(function(a){ return a.type==='basic'; }) || {}).damage || 1) : 1;
+                let _vaTotalDmg = 0, _vaCrits = 0;
+                for (let _vi = 0; _vi < 5; _vi++) {
+                    let _vaDmg = _vaBaseDmg;
+                    if (Math.random() < 0.5) { _vaDmg *= 2; _vaCrits++; }
+                    applyDamageWithShield(targetName, _vaDmg, gameState.selectedCharacter);
+                    _vaTotalDmg += _vaDmg;
+                }
+                addLog('⚡ Vínculo de Atena: 5 golpes — ' + _vaTotalDmg + ' daño total (' + _vaCrits + ' críticos)', 'damage');
 
             } else if (ability.effect === 'lazo_divino') {
                 applyDamageWithShield(targetName, finalDamage, charName);
@@ -11017,9 +11023,11 @@
                 if (checkGameOver()) { gameState._abilityExecuting = false; return; }
 
             } else if (ability.effect === 'rey_demonio_meliodas') {
-                // El Rey Demonio: transformación permanente +10 vel + bonus Sangrado
+                // El Rey Demonio: blocked if already transformed
                 const _rdMel = gameState.characters[gameState.selectedCharacter];
-                if (_rdMel) {
+                if (_rdMel && (_rdMel._reyDemonioActive || _rdMel.isTransformed)) {
+                    addLog('👑 El Rey Demonio: Meliodas ya está transformado', 'info');
+                } else if (_rdMel) {
                     _rdMel._reyDemonioActive = true;
                     _rdMel.speed = (_rdMel.speed || 85) + 10;
                     _rdMel.isTransformed = true;
