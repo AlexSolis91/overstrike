@@ -677,6 +677,14 @@ function applyDebuff(targetName, effectObj) {
                     return;
                 }
             }
+            // VISIÓN DE PROFETA (Grindelwald): inmune a Confusión, Posesión y Aturdimiento
+            if (target.passive && target.passive.name === 'Visión de Profeta' && effectObj.type === 'debuff') {
+                const _gBlocked = ['confusion', 'posesion', 'aturdimiento', 'mega posesion'];
+                if (_gBlocked.includes(normAccent(effectObj.name || '').toLowerCase())) {
+                    addLog('🔮 Visión de Profeta: ' + targetName + ' es inmune a ' + effectObj.name, 'buff');
+                    return;
+                }
+            }
             // NON-STACKABLE debuffs: block if target already has this debuff active
             const effNorm = normAccent(effectObj.name || '');
             if (NON_STACKABLE_DEBUFFS.includes(effNorm)) {
