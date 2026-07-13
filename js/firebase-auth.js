@@ -4096,17 +4096,31 @@
                 : '';
 
             var ov = document.createElement('div');
-            ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,'+(isLegendary?'0,0.95':'0,0.9')+';z-index:9999;display:flex;align-items:center;justify-content:center;';
-            ov.innerHTML = '<div style="background:'+(isLegendary?'linear-gradient(135deg,#1a1000,#2a1800)':'#0a1628')+';border:'+(isLegendary?'2px solid #ffd700':'2px solid '+color)+';border-radius:16px;padding:32px;max-width:400px;width:90%;text-align:center;'+(isLegendary?'box-shadow:0 0 40px #ffd70066;':'')+'">' +
-                '<div style="font-size:3rem;margin-bottom:12px;">' + (isLegendary ? '✨' : '🎁') + '</div>' +
+            ov.id = 'chestResultOverlay';
+            ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,'+(isLegendary?'0.95':'0.88')+');z-index:99999;display:flex;align-items:center;justify-content:center;';
+
+            // Image block: show actual relic image or rune icon
+            var imgBlock = '';
+            if (isRune) {
+                imgBlock = '<img src="' + imgSrc + '" style="width:90px;height:90px;object-fit:contain;border-radius:10px;border:2px solid #c864ff;margin:14px auto;display:block;">';
+            } else if (imgSrc) {
+                imgBlock = '<img src="' + imgSrc + '" style="' + imgStyle + '" onerror="this.style.display='none'">';
+            } else {
+                imgBlock = '<div style="font-size:3rem;margin:12px 0;">⚔️</div>';
+            }
+
+            ov.innerHTML = '<div style="background:'+(isLegendary?'linear-gradient(135deg,#1a1000,#2a1800)':'linear-gradient(135deg,#060e1f,#0a1a35)')+';border:'+(isLegendary?'3px solid #ffd700':'2px solid '+color)+';border-radius:20px;padding:36px 32px;max-width:380px;width:90%;text-align:center;'+(isLegendary?'box-shadow:0 0 60px #ffd70088;':'box-shadow:0 0 30px rgba(0,0,0,0.8);')+'position:relative;">' +
+                '<div style="font-size:3rem;margin-bottom:8px;">' + (isLegendary ? '✨' : isRune ? '🔮' : '🎁') + '</div>' +
                 titleLine +
-                (isRune ? '' : '<img src="' + imgSrc + '" style="' + imgStyle + '">') +
-                (isRune ? '<div style="font-size:3rem;margin:12px 0;">🔮</div>' : '') +
-                runeTitle +
-                '<div style="font-size:1rem;color:#fff;font-weight:700;margin-bottom:4px;">' + relic.name + '</div>' +
-                '<div style="font-size:.8rem;color:' + color + ';margin-bottom:12px;">' + (isRune ? 'Recurso especial' : relic.tier) + '</div>' +
-                '<div style="font-size:.8rem;color:#ffaa00;margin-bottom:16px;">+ ' + goldBonus.toLocaleString() + ' 🪙 Oro</div>' +
-                '<button onclick="this.parentElement.parentElement.remove()" style="background:linear-gradient(135deg,#003a1a,#00aa55);border:2px solid #00ff88;color:#00ff88;border-radius:8px;padding:10px 24px;font-family:Orbitron,sans-serif;cursor:pointer;">' + (isLegendary ? '🌟 ¡INCREÍBLE!' : '¡GENIAL!') + '</button>' +
+                imgBlock +
+                (isRune ? '<div style="font-size:.85rem;color:#c864ff;font-weight:700;margin-bottom:4px;">🔮 Runa de Ataque</div>' : '') +
+                '<div style="font-family:Orbitron,sans-serif;font-size:1rem;color:#fff;font-weight:700;margin:8px 0 4px;">' + relic.name + '</div>' +
+                '<div style="font-size:.78rem;color:' + color + ';font-weight:600;margin-bottom:14px;letter-spacing:.06em;">' + (isRune ? 'Recurso Especial' : (relic.tier||'').toUpperCase()) + '</div>' +
+                '<div style="display:flex;align-items:center;justify-content:center;gap:8px;background:rgba(255,170,0,0.1);border:1px solid rgba(255,170,0,0.3);border-radius:10px;padding:10px 18px;margin-bottom:20px;">' +
+                    '<span style="font-size:1.4rem;">🪙</span>' +
+                    '<span style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:#ffaa00;font-weight:700;">+ ' + goldBonus.toLocaleString() + ' Oro</span>' +
+                '</div>' +
+                '<button onclick="document.getElementById('chestResultOverlay').remove()" style="background:linear-gradient(135deg,#003a1a,#00aa55);border:2px solid #00ff88;color:#00ff88;border-radius:10px;padding:12px 32px;font-family:Orbitron,sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;letter-spacing:.05em;transition:all .2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">' + (isLegendary ? '🌟 ¡INCREÍBLE!' : '¡GENIAL!') + '</button>' +
                 '</div>';
             document.body.appendChild(ov);
         }
