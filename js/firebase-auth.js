@@ -4811,6 +4811,23 @@
                 }
             }
 
+            // ── GRINDELWALD: aplicar desbloqueo si corresponde (evento Albus Dumbledore) ──
+            if (reward.grindelwaldUnlocked) {
+                const grindRef = db.ref('users/' + uid + '/unlockedCharacters/grindelwald');
+                const grindAlready = await grindRef.once('value');
+                if (!grindAlready.val()) {
+                    await grindRef.set(true);
+                    console.log('[GRINDELWALD] ¡Personaje desbloqueado para ' + uid + '!');
+                    setTimeout(function() {
+                        var t = document.createElement('div');
+                        t.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#2d0060,#7c00cc);color:#fff;padding:16px 28px;border-radius:14px;font-family:Orbitron,sans-serif;font-size:.9rem;font-weight:700;z-index:9999999;box-shadow:0 0 30px rgba(124,0,204,0.6);text-align:center;';
+                        t.innerHTML = '🔓 ¡GRINDELWALD DESBLOQUEADO!<br><span style="font-size:.7rem;font-weight:400;opacity:.8;">El Maestro del Infierno Azul puede unirse a tu equipo</span>';
+                        document.body.appendChild(t);
+                        setTimeout(function(){ t.remove(); }, 5000);
+                    }, 1500);
+                }
+            }
+
             // Mark as claimed
             await ref.update({ claimed: true, claimedAt: Date.now() });
             await updateLobbyHUD();
