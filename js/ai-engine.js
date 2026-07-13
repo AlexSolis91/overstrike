@@ -698,6 +698,15 @@
                 function pickTarget(ab) {
                     if (ab.target === 'self' || ab.target === 'aoe') return charName;
 
+                    if (ab.target === 'enemy_dead') {
+                        // Only usable if there's a dead enemy — return null if none
+                        const _deadEnemy = Object.keys(gameState.characters).find(function(n) {
+                            const c = gameState.characters[n];
+                            return c && c.team === enemyTeam && c.isDead;
+                        });
+                        return _deadEnemy || null;
+                    }
+
                     if (ab.target === 'ally_single' || ab.target === 'ally_dead') {
                         // REVIVE: pick a dead ally
                         if (ab.effect === 'revive_ally' || ab.target === 'ally_dead') {
