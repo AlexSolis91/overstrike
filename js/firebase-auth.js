@@ -4843,12 +4843,12 @@
             const users = snap.val() || {};
             let count = 0;
             for (const uid in users) {
-                const runaRef = db.ref('users/' + uid + '/runas_ataque');
+                const runaRef = db.ref('users/' + uid + '/attack_runes');
                 const current = (await runaRef.once('value')).val() || 0;
                 await runaRef.set(current + amount);
                 count++;
             }
-            console.log('[ADMIN] Gave ' + amount + ' runas_ataque to ' + count + ' players');
+            console.log('[ADMIN] Gave ' + amount + ' attack_runes to ' + count + ' players');
             alert('✅ Se dieron ' + amount + ' runas de ataque a ' + count + ' jugadores');
         };
 
