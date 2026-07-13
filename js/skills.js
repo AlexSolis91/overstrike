@@ -6879,6 +6879,25 @@
                 addLog('⚫ Kamehame Ha Oscuro: ' + _kmDmg + ' daño a ' + targetName, 'damage');
                 if (Math.random() < 0.50) applyStun(targetName, 1);
 
+            } else if (ability.effect === 'puno_pegaso_seiya') {
+                // SEIYA — Puño de Pegaso: 1 daño + genera 1-3 cargas a un aliado aleatorio
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                const _ppAllies = Object.keys(gameState.characters).filter(function(n){
+                    const c = gameState.characters[n];
+                    return c && c.team === attacker.team && !c.isDead && c.hp > 0 && n !== gameState.selectedCharacter;
+                });
+                if (_ppAllies.length > 0) {
+                    const _ppAlly = _ppAllies[Math.floor(Math.random() * _ppAllies.length)];
+                    const _ppCharges = Math.floor(Math.random() * 3) + 1; // 1-3
+                    generateChargesInline(_ppAlly, _ppCharges);
+                    addLog('✨ Puño de Pegaso: ' + _ppAlly + ' gana ' + _ppCharges + ' carga(s)', 'buff');
+                } else {
+                    // No allies other than Seiya — give charges to self
+                    const _ppChargesSelf = Math.floor(Math.random() * 3) + 1;
+                    generateChargesInline(gameState.selectedCharacter, _ppChargesSelf);
+                    addLog('✨ Puño de Pegaso: Seiya gana ' + _ppChargesSelf + ' carga(s)', 'buff');
+                }
+
             } else if (ability.effect === 'vinculo_atena_seiya') {
                 // SEIYA — Vínculo de Atena v2: 5 ataques básicos ST, cada uno 50% crit independiente
                 const _vaS = gameState.characters[gameState.selectedCharacter];
