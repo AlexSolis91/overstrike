@@ -7065,10 +7065,7 @@
                         for (const _ohmAllyN in gameState.characters) {
                             const _ohmAlly = gameState.characters[_ohmAllyN];
                             if (!_ohmAlly || _ohmAlly.isDead || _ohmAlly.hp <= 0 || _ohmAlly.team !== _ohmMyTeam) continue;
-                            if (typeof canHeal === 'function' && !canHeal(_ohmAllyN)) { addLog('☀️ QS bloquea curación de ' + _ohmAllyN + ' (Ohm)', 'debuff'); continue; }
-                            const _ohmOldHp = _ohmAlly.hp;
-                            _ohmAlly.hp = Math.min(_ohmAlly.maxHp, _ohmAlly.hp + _ohmHealAmt);
-                            const _ohmHealed = _ohmAlly.hp - _ohmOldHp;
+                            const _ohmHealed = applyHeal(_ohmAllyN, _ohmHealAmt, 'Ohm');
                             if (_ohmHealed > 0) {
                                 addLog('✨ Ohm: ' + _ohmAllyN + ' recupera ' + _ohmHealed + ' HP (' + _ohmTotalDebuffs + ' debuffs × 1)', 'heal');
                                 if (_ohmAllyN === charName && typeof triggerShakaHealDebuff === 'function') {
