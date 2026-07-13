@@ -27,7 +27,7 @@
                     { name: 'Daga de Kamish',          type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'daga_kamish_sjw',          description: 'Causa +1 daño adicional por cada sombra invocada en tu equipo. Limpia 1 Buff activo del equipo enemigo (distribuido aleatoriamente) por cada sombra invocada.' },
                     { name: 'Autoridad del Gobernante', type: 'special', cost: 4,  chargeGain: 0, damage: 0, target: 'single', effect: 'autoridad_gobernante_sjw', description: 'Elimina todas las cargas del objetivo. Por cada carga eliminada, limpia 1 Debuff de un aliado aleatorio.' },
                     { name: 'Dominio del Monarca',      type: 'special', cost: 10, chargeGain: 0, damage: 0, target: 'self',   effect: 'dominio_monarca_sjw',      description: 'Sun Jin Woo y las sombras invocadas aumentan +1 HP Máx por cada sombra invocada. Activa inmediatamente las habilidades pasivas de todas las sombras invocadas.' },
-                    { name: 'Extracción de Sombras',   type: 'over',    cost: 15, chargeGain: 0, damage: 0, target: 'enemy_dead', effect: 'extraccion_sombras_sjw',   description: 'Solo usable sobre un enemigo ya derrotado (HP = 0). Revive al objetivo como aliado con 5 HP y 20 cargas. Su pasiva es sustituida por Explosión de Sombras: al morir causa daño = sus cargas actuales sobre un enemigo aleatorio.' }
+                    { name: 'Extracción de Sombras',   type: 'over',    cost: 15, chargeGain: 0, damage: 0, target: 'enemy_dead', effect: 'extraccion_sombras_sjw',   description: 'Solo usable sobre un enemigo ya derrotado (HP = 0). Se bloquea si no hay enemigos derrotados. Revive al objetivo como aliado con 5 HP y 20 cargas. Su pasiva es sustituida por Explosión de Sombras: al morir causa daño = sus cargas actuales sobre un enemigo aleatorio.' }
                 ]
             },
             'Aldebaran': {
@@ -530,7 +530,7 @@
                 supermanPrimeMode: false,
                 portrait: 'https://i.ibb.co/KxhjpvTZ/Captura-de-pantalla-2026-03-22-004655.png',
                 transformPortrait: 'https://i.ibb.co/gbGRNhmq/Captura-de-pantalla-2026-03-22-011451.png',
-                passive: { name: 'Hombre de Acero', description: 'Tiene Provocación y Cuerpo Perfecto permanentes. Reduce 50% el daño por golpe recibido.' },
+                passive: { name: 'Hombre de Acero', description: 'Tiene Provocación y Cuerpo Perfecto permanentes. Reduce 50% el daño por golpe recibido. Mientras Superman permanezca en Forma Prime, realiza Puño de la Justicia sobre cada enemigo al inicio de cada ronda.' },
                 abilities: [
                     { name: 'Puño de la Justicia', type: 'basic', cost: 0, chargeGain: 1, damage: 3, target: 'single', effect: 'punio_justicia_superman', description: 'Causa 3 daño. Recupera 2 HP.' },
                     { name: 'Visión de Calor', type: 'special', cost: 6, chargeGain: 0, damage: 6, target: 'single', effect: 'vision_calor_superman', description: 'Causa 6 daño. Disipa todos los Buffs y Escudo del objetivo. Aplica Quemadura Solar 3 turnos.' },
