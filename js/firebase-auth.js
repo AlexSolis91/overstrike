@@ -4122,6 +4122,25 @@
                 '</div>' +
                 '<button onclick="document.getElementById('chestResultOverlay').remove()" style="background:linear-gradient(135deg,#003a1a,#00aa55);border:2px solid #00ff88;color:#00ff88;border-radius:10px;padding:12px 32px;font-family:Orbitron,sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;letter-spacing:.05em;transition:all .2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">' + (isLegendary ? '🌟 ¡INCREÍBLE!' : '¡GENIAL!') + '</button>' +
                 '</div>';
+            // ── Close market/inventory overlays so fixed modal renders correctly ──
+            var _msEl = document.getElementById('marketScreen');
+            var _isEl = document.getElementById('inventoryScreen');
+            var _msWasOpen = _msEl && _msEl.style.display !== 'none';
+            var _isWasOpen = _isEl && _isEl.style.display !== 'none';
+            if (_msWasOpen && _msEl) _msEl.style.display = 'none';
+            if (_isWasOpen && _isEl) _isEl.style.display = 'none';
+
+            // Reopen market after modal is dismissed
+            var _origBtnClose = ov.querySelector('button');
+            if (_origBtnClose) {
+                _origBtnClose.addEventListener('click', function() {
+                    ov.remove();
+                    if (_msWasOpen && _msEl) _msEl.style.display = 'block';
+                    if (_isWasOpen && _isEl) _isEl.style.display = 'block';
+                });
+                _origBtnClose.setAttribute('onclick', ''); // Remove inline onclick, use addEventListener
+            }
+
             document.body.appendChild(ov);
         }
 
