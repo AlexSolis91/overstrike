@@ -4660,7 +4660,7 @@
                     else if (rank === 2) bolvarUnlockChance = 0.20;
                     else if (rank === 3) bolvarUnlockChance = 0.10;
                     else if (rank === 4) bolvarUnlockChance = 0.05;
-                    else                bolvarUnlockChance = 0.01;
+                    else                bolvarUnlockChance = 0.05;
                 }
                 var bolvarUnlockRoll = bolvarUnlockChance > 0 ? Math.random() : 1;
                 var bolvarUnlocked   = bolvarUnlockRoll < bolvarUnlockChance;
@@ -4672,7 +4672,7 @@
                     else if (rank === 2) gogetaUnlockChance = 0.20;
                     else if (rank === 3) gogetaUnlockChance = 0.10;
                     else if (rank === 4) gogetaUnlockChance = 0.05;
-                    else                gogetaUnlockChance = 0.01;
+                    else                gogetaUnlockChance = 0.05;
                 }
                 var gogetaUnlockRoll = gogetaUnlockChance > 0 ? Math.random() : 1;
                 var gogetaUnlocked   = gogetaUnlockRoll < gogetaUnlockChance;
@@ -4684,10 +4684,21 @@
                     else if (rank === 2) arthasUnlockChance = 0.20;
                     else if (rank === 3) arthasUnlockChance = 0.10;
                     else if (rank === 4) arthasUnlockChance = 0.05;
-                    else                arthasUnlockChance = 0.01;
+                    else                arthasUnlockChance = 0.05;
                 }
                 var arthasUnlockRoll = arthasUnlockChance > 0 ? Math.random() : 1;
                 var arthasUnlocked   = arthasUnlockRoll < arthasUnlockChance;
+
+                // ── GRINDELWALD: probabilidad de desbloqueo (evento Albus Dumbledore) ──
+                var grindelwaldUnlockChance = 0;
+                if (bossName === 'Albus Dumbledore' && bossFelled) {
+                    if      (rank === 1) grindelwaldUnlockChance = 0.30;
+                    else if (rank === 2) grindelwaldUnlockChance = 0.20;
+                    else if (rank === 3) grindelwaldUnlockChance = 0.10;
+                    else                grindelwaldUnlockChance = 0.05;
+                }
+                var grindelwaldUnlockRoll = grindelwaldUnlockChance > 0 ? Math.random() : 1;
+                var grindelwaldUnlocked   = grindelwaldUnlockRoll < grindelwaldUnlockChance;
 
                 // Store claimable reward in Firebase
                 await db.ref('weekly_boss/pending_rewards/' + entry.uid).set({
@@ -4708,6 +4719,8 @@
                     gogetaUnlockChance: gogetaUnlockChance,
                     arthasUnlocked:     arthasUnlocked,
                     arthasUnlockChance: arthasUnlockChance,
+                    grindelwaldUnlocked:     grindelwaldUnlocked,
+                    grindelwaldUnlockChance: grindelwaldUnlockChance,
                     claimed:       false,
                     createdAt:     Date.now()
                 });
