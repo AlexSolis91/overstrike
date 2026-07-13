@@ -6879,6 +6879,23 @@
                 addLog('⚫ Kamehame Ha Oscuro: ' + _kmDmg + ' daño a ' + targetName, 'damage');
                 if (Math.random() < 0.50) applyStun(targetName, 1);
 
+            } else if (ability.effect === 'pegasus_ryuseiken') {
+                // SEIYA — Pegasus Ryu Sei Ken: 5-30 daño + si elimina al objetivo, 5-15 AOE a todos los enemigos
+                const _prDmg = Math.floor(Math.random() * 26) + 5; // 5-30
+                applyDamageWithShield(targetName, _prDmg, gameState.selectedCharacter);
+                addLog('✨ Pegasus Ryu Sei Ken: ' + _prDmg + ' daño a ' + targetName, 'damage');
+                const _prTgt = gameState.characters[targetName];
+                if (_prTgt && (_prTgt.hp <= 0 || _prTgt.isDead)) {
+                    const _prAoeDmg = Math.floor(Math.random() * 11) + 5; // 5-15
+                    const _prETeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                    addLog('✨ Pegasus Ryu Sei Ken: ¡Objetivo eliminado! ' + _prAoeDmg + ' AOE a todos los enemigos', 'damage');
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _prETeam || _c.isDead || _c.hp <= 0 || _n === targetName) continue;
+                        applyDamageWithShield(_n, _prAoeDmg, gameState.selectedCharacter);
+                    }
+                }
+
             } else if (ability.effect === 'arde_cosmos_seiya') {
                 // SEIYA — ¡Arde, cosmos!: genera 2-10 cargas + turno adicional
                 const _acCharges = Math.floor(Math.random() * 9) + 2; // 2-10
@@ -6906,7 +6923,7 @@
                 }
 
             } else if (ability.effect === 'vinculo_atena_seiya') {
-                // SEIYA — Vínculo de Atena v2: 5 ataques básicos ST, cada uno 50% crit independiente
+                // SEIYA — Vínculo de Atena v2: 5 ataques básicos ST (50% crit each) + Puño de Pegaso effect per hit
                 const _vaS = gameState.characters[gameState.selectedCharacter];
                 const _vaBaseDmg = (_vaS && _vaS.abilities) ? ((_vaS.abilities.find(function(a){ return a.type==='basic'; }) || {}).damage || 1) : 1;
                 let _vaTotalDmg = 0, _vaCrits = 0;
@@ -6915,8 +6932,20 @@
                     if (Math.random() < 0.5) { _vaDmg *= 2; _vaCrits++; }
                     applyDamageWithShield(targetName, _vaDmg, gameState.selectedCharacter);
                     _vaTotalDmg += _vaDmg;
+                    // Each hit also triggers Puño de Pegaso: 1-3 cargas a un aliado aleatorio
+                    const _vaAllies = Object.keys(gameState.characters).filter(function(n){
+                        const c = gameState.characters[n];
+                        return c && c.team === (_vaS ? _vaS.team : 'team1') && !c.isDead && c.hp > 0 && n !== gameState.selectedCharacter;
+                    });
+                    if (_vaAllies.length > 0) {
+                        const _vaAlly = _vaAllies[Math.floor(Math.random() * _vaAllies.length)];
+                        const _vaCharges = Math.floor(Math.random() * 3) + 1;
+                        generateChargesInline(_vaAlly, _vaCharges);
+                    } else {
+                        generateChargesInline(gameState.selectedCharacter, Math.floor(Math.random() * 3) + 1);
+                    }
                 }
-                addLog('⚡ Vínculo de Atena: 5 golpes — ' + _vaTotalDmg + ' daño total (' + _vaCrits + ' críticos)', 'damage');
+                addLog('⚡ Vínculo de Atena: 5 golpes — ' + _vaTotalDmg + ' daño total (' + _vaCrits + ' críticos) + cargas a aliados', 'damage');
 
             } else if (ability.effect === 'lazo_divino') {
                 applyDamageWithShield(targetName, finalDamage, charName);
