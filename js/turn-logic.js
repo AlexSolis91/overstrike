@@ -1945,6 +1945,34 @@
                         addLog('☠️ Kaisel (Maldición): aplica 2 stacks de Veneno a todos los enemigos', 'debuff');
                     });
 
+                    // ── MIN BYUNG: Shadow Healing — Regeneración 20% 1T a todos los aliados al inicio de ronda ──
+                    if (typeof triggerMinByungStartOfRound === 'function') triggerMinByungStartOfRound();
+
+                    // ── IRON: +3 cargas al equipo aliado al inicio de ronda ──
+                    Object.keys(gameState.summons).forEach(function(sid) {
+                        const _ir = gameState.summons[sid];
+                        if (!_ir || _ir.name !== 'Iron' || _ir.hp <= 0) return;
+                        for (const _n in gameState.characters) {
+                            const _c = gameState.characters[_n];
+                            if (!_c || _c.team !== _ir.team || _c.isDead || _c.hp <= 0) continue;
+                            generateChargesInline(_n, 3);
+                        }
+                        addLog('🛡️ Iron (Voluntad de Acero): equipo aliado gana 3 cargas', 'buff');
+                    });
+
+                    // ── TUSK: aplica Quemadura 2HP 1T a 2 enemigos aleatorios al inicio de ronda ──
+                    Object.keys(gameState.summons).forEach(function(sid) {
+                        const _tusk = gameState.summons[sid];
+                        if (!_tusk || _tusk.name !== 'Tusk' || _tusk.hp <= 0) return;
+                        const _tuskETeam = _tusk.team === 'team1' ? 'team2' : 'team1';
+                        const _tuskEn = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c && c.team===_tuskETeam && !c.isDead && c.hp>0; });
+                        const _shuffled = _tuskEn.sort(function(){ return Math.random()-0.5; }).slice(0, 2);
+                        _shuffled.forEach(function(tgt) {
+                            applyFlatBurn(tgt, 2, 1);
+                            addLog('🔥 Tusk (Hipno de Fuego): Quemadura 2HP 1T aplicada a ' + tgt, 'debuff');
+                        });
+                    });
+
                     // ── ABSOLUTE ZERO (Sub-Zero): inicio de ronda → Megacongelación en enemigo aleatorio ──
                     for (const _szN in gameState.characters) {
                         const _szC = gameState.characters[_szN];
@@ -3202,11 +3230,29 @@
                 // Activar pasiva de Beru
                 triggerBeruPassive();
 
-                // Activar pasiva de Kamish (fin de ronda: 4 daño a todos los enemigos)
+                // Activar pasiva de Kamish (fin de ronda: 50 daño repartido)
                 if (typeof triggerKamishEndOfRound === 'function') triggerKamishEndOfRound();
                 
-                // Activar pasiva de Kaisel
+                // Activar pasiva de Kaisel (fin de ronda: -3 cargas a todos los enemigos)
                 triggerKaiselPassive();
+
+                // Bellion: 2 daño × sombras activas a un enemigo aleatorio
+                (function() {
+                    if (typeof gameState === 'undefined') return;
+                    Object.keys(gameState.summons||{}).forEach(function(sid) {
+                        const _bel = gameState.summons[sid];
+                        if (!_bel || _bel.name !== 'Bellion' || _bel.hp <= 0) return;
+                        const _belETeam = _bel.team === 'team1' ? 'team2' : 'team1';
+                        const _shadowCount = Object.values(gameState.summons).filter(function(s){ return s && s.team === _bel.team && s.hp > 0; }).length;
+                        if (_shadowCount === 0) return;
+                        const _belEn = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c && c.team===_belETeam && !c.isDead && c.hp>0; });
+                        if (_belEn.length === 0) return;
+                        const _tgt = _belEn[Math.floor(Math.random() * _belEn.length)];
+                        const _dmg = 2 * _shadowCount;
+                        applyDamageWithShield(_tgt, _dmg, 'Bellion');
+                        addLog('⚔️ Bellion (General de Ashborn): ' + _dmg + ' daño a ' + _tgt + ' (' + _shadowCount + ' sombras × 2)', 'damage');
+                    });
+                })();
 
 
                 // PHALANX (Leonidas): al inicio de ronda, limpia 2 debuffs aleatorios del equipo aliado
