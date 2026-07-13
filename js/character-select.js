@@ -680,18 +680,7 @@
                 _isEventChar: true, _eventBoss: 'Lich King'
             },
 
-                        'Albus Dumbledore': {
-                hp: 20, maxHp: 20, speed: 88, charges: 0, team: 'team1',
-                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.ibb.co/placeholder/dumbledore.jpg',
-                passive: { name: 'Maestría de la Varita de Saúco', description: 'Cuando un enemigo usa Especial u Over: Albus Dumbledore gana +30 HP Máx y +3 cargas.' },
-                abilities: [
-                    { name: 'Chispa de Saúco',          type: 'basic',   cost: 0,  chargeGain: 2, damage: 2, target: 'single', effect: 'chispa_de_sauco_dumbledore',      description: '2 daño ST. Aplica Silenciar 2T a 3 enemigos aleatorios. Genera 1-8 cargas adicionales.' },
-                    { name: 'Lamento de Fawkes',         type: 'special', cost: 5,  chargeGain: 0, damage: 0, target: 'self',   effect: 'lamento_de_fawkes_dumbledore',    description: 'Invoca a Fawkes. Aplica Regeneración 20% al equipo aliado.' },
-                    { name: 'Partis Temporus',           type: 'special', cost: 8,  chargeGain: 0, damage: 3, target: 'single', effect: 'partis_temporus_dumbledore',      description: '3 daño ST. Aplica Congelación y Aturdimiento.' },
-                    { name: 'Prisión de Agua y Fuego',  type: 'over',    cost: 15, chargeGain: 0, damage: 0, target: 'aoe',    effect: 'prision_agua_fuego_dumbledore',   description: 'AOE — Aplica Congelación y Quemadura Solar a todos los enemigos. Aplica Buff Escudo Sagrado al equipo aliado.' }
-                ]
-            },
+            
 
                         'Grindelwald': {
                 hp: 25, maxHp: 25, speed: 87, charges: 0, team: 'team1',
@@ -704,7 +693,7 @@
                     { name: 'Infierno Azul',          type: 'special', cost: 10, chargeGain: 0, damage: 1, target: 'aoe',    effect: 'infierno_azul_grindelwald',       description: 'AOE 1 daño — ignora Esquiva Área. Aplica Quemadura 3HP y Quemadura Solar a todos los enemigos. Disipa los buffs de los objetivos golpeados y genera 1 carga al equipo aliado por buff disipado.' },
                     { name: 'Apocalipsis del Bien Mayor', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'aoe',  effect: 'apocalipsis_grindelwald',         description: 'Aplica 3 efectos aleatorios de: Quemaduras 15HP a cada enemigo / 15 stacks Veneno a cada enemigo / Silenciar 3T a cada enemigo / Cura 15 HP a cada aliado / Genera 15 cargas a cada aliado.' }
                 ],
-                _isEventChar: true, _eventBoss: 'Albus Dumbledore'
+                _locked: true, _lockKey: 'grindelwald', _lockEvent: 'Albus Dumbledore'
             },
 
             'Bolvar Fordragon': {
