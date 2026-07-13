@@ -2855,22 +2855,32 @@
         }
 
         function triggerKamishEndOfRound() {
-            // Kamish: al final de cada ronda, 4 daño a todos los enemigos
+            // Kamish: al final de cada ronda, 50 daño repartido ALEATORIAMENTE entre todos los enemigos
             Object.keys(gameState.summons).forEach(function(sid) {
                 const kamish = gameState.summons[sid];
                 if (!kamish || kamish.name !== 'Kamish' || kamish.hp <= 0) return;
                 const enemyTeam = kamish.team === 'team1' ? 'team2' : 'team1';
-                addLog('👁️ Kamish (Terror de las Sombras): 4 daño a todos los enemigos', 'damage');
-                for (const n in gameState.characters) {
-                    const ch = gameState.characters[n];
-                    if (!ch || ch.team !== enemyTeam || ch.isDead || ch.hp <= 0) continue;
-                    applyDamageWithShield(n, 4, 'Kamish');
-                }
-                // También a invocaciones enemigas
-                for (const sid2 in gameState.summons) {
-                    const s = gameState.summons[sid2];
-                    if (!s || s.team !== enemyTeam || s.hp <= 0) continue;
-                    applySummonDamage(sid2, 4, 'Kamish');
+                addLog('👁️ Kamish (Terror de las Sombras): 50 daño repartido aleatoriamente entre todos los enemigos', 'damage');
+                let dmgLeft = 50;
+                for (let _ki = 0; _ki < 50 && dmgLeft > 0; _ki++) {
+                    // Build pool of living enemies (chars + summons)
+                    const pool = [];
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (_c && _c.team === enemyTeam && !_c.isDead && _c.hp > 0) pool.push({ type:'char', id:_n });
+                    }
+                    for (const _sid2 in gameState.summons) {
+                        const _s = gameState.summons[_sid2];
+                        if (_s && _s.team === enemyTeam && _s.hp > 0) pool.push({ type:'summon', id:_sid2 });
+                    }
+                    if (pool.length === 0) break;
+                    const pick = pool[Math.floor(Math.random() * pool.length)];
+                    if (pick.type === 'char') {
+                        applyDamageWithShield(pick.id, 1, 'Kamish');
+                    } else {
+                        applySummonDamage(pick.id, 1, 'Kamish');
+                    }
+                    dmgLeft--;
                 }
             });
         }
