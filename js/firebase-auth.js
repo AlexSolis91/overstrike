@@ -4066,18 +4066,17 @@
             const isRune      = relic.isRune;
             const color       = tierColors[relic.tier] || '#fff';
 
-            // ── Legendary: full-screen particle burst effect ──
+            // ── Legendary: particle burst ──
             if (isLegendary) {
                 var style = document.createElement('style');
-                style.textContent = '@keyframes legGlow{0%,100%{box-shadow:0 0 24px #ffd700,0 0 60px #ffd70088;}50%{box-shadow:0 0 50px #ffd700,0 0 120px #ffd700cc,0 0 200px #ffaa0044;}} @keyframes legSpin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}} @keyframes legParticle{0%{transform:translate(-50%,-50%) scale(1);opacity:1;}100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(0);opacity:0;}}';
+                style.textContent = '@keyframes legGlow{0%,100%{box-shadow:0 0 24px #ffd700,0 0 60px #ffd70088;}50%{box-shadow:0 0 50px #ffd700,0 0 120px #ffd700cc;}} @keyframes legParticle{0%{transform:translate(-50%,-50%) scale(1);opacity:1;}100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(0);opacity:0;}}';
                 document.head.appendChild(style);
-                // Burst particles
                 for (var p=0; p<20; p++) {
                     var dot = document.createElement('div');
                     var angle = (p/20)*Math.PI*2;
                     var dist = 80+Math.random()*120;
-                    dot.style.cssText = 'position:fixed;left:50%;top:50%;width:8px;height:8px;border-radius:50%;background:'+(['#ffd700','#ffaa00','#fffbe6','#ff8800'][p%4])+';z-index:10000;pointer-events:none;--tx:'+Math.round(Math.cos(angle)*dist)+'px;--ty:'+Math.round(Math.sin(angle)*dist)+'px;animation:legParticle 1.2s ease-out forwards;animation-delay:'+(p*0.04)+'s;';
-                    document.body.appendChild(dot);
+                    dot.style.cssText = 'position:fixed;left:50%;top:50%;width:8px;height:8px;border-radius:50%;background:'+(['#ffd700','#ffaa00','#fffbe6','#ff8800'][p%4])+';z-index:2147483647;pointer-events:none;--tx:'+Math.round(Math.cos(angle)*dist)+'px;--ty:'+Math.round(Math.sin(angle)*dist)+'px;animation:legParticle 1.2s ease-out forwards;animation-delay:'+(p*0.04)+'s;';
+                    document.documentElement.appendChild(dot);
                     setTimeout(function(d){d.remove();}, 1600+p*40, dot);
                 }
             }
@@ -4089,60 +4088,52 @@
 
             var titleLine = isLegendary
                 ? '<div style="font-family:Orbitron,sans-serif;font-size:1.25rem;color:#ffd700;margin-bottom:8px;text-shadow:0 0 20px #ffd700,0 0 40px #ffaa00;">⭐ ¡LEGENDARIO! ⭐</div>'
-                : '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:'+color+';margin-bottom:8px;">¡COFRE ABIERTO!</div>';
+                : '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:'+color+';margin-bottom:8px;letter-spacing:.05em;">¡COFRE ABIERTO!</div>';
 
-            var runeTitle = isRune
-                ? '<div style="font-size:.85rem;color:#c864ff;font-weight:700;margin-bottom:4px;">🔮 Runa de Ataque</div>'
-                : '';
+            var imgBlock = isRune
+                ? '<img src="'+imgSrc+'" style="width:90px;height:90px;object-fit:contain;border-radius:10px;border:2px solid #c864ff;margin:14px auto;display:block;">'
+                : (imgSrc ? '<img src="'+imgSrc+'" style="'+imgStyle+'" onerror="this.style.display='none'">' : '<div style="font-size:3rem;margin:12px 0;">⚔️</div>');
 
-            var ov = document.createElement('div');
-            ov.id = 'chestResultOverlay';
-            ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,'+(isLegendary?'0.95':'0.88')+');z-index:99999;display:flex;align-items:center;justify-content:center;';
+            // ── Create portal container appended to <html> to escape ALL stacking contexts ──
+            var portal = document.createElement('div');
+            portal.id = 'chestResultPortal';
+            portal.style.cssText = [
+                'position:fixed',
+                'top:0','left:0','right:0','bottom:0',
+                'width:100%','height:100%',
+                'display:flex',
+                'align-items:center',
+                'justify-content:center',
+                'background:rgba(0,0,0,'+(isLegendary?'0.95':'0.88')+')',
+                'z-index:2147483647',
+                'pointer-events:all'
+            ].join(';');
 
-            // Image block: show actual relic image or rune icon
-            var imgBlock = '';
-            if (isRune) {
-                imgBlock = '<img src="' + imgSrc + '" style="width:90px;height:90px;object-fit:contain;border-radius:10px;border:2px solid #c864ff;margin:14px auto;display:block;">';
-            } else if (imgSrc) {
-                imgBlock = '<img src="' + imgSrc + '" style="' + imgStyle + '" onerror="this.style.display='none'">';
-            } else {
-                imgBlock = '<div style="font-size:3rem;margin:12px 0;">⚔️</div>';
-            }
-
-            ov.innerHTML = '<div style="background:'+(isLegendary?'linear-gradient(135deg,#1a1000,#2a1800)':'linear-gradient(135deg,#060e1f,#0a1a35)')+';border:'+(isLegendary?'3px solid #ffd700':'2px solid '+color)+';border-radius:20px;padding:36px 32px;max-width:380px;width:90%;text-align:center;'+(isLegendary?'box-shadow:0 0 60px #ffd70088;':'box-shadow:0 0 30px rgba(0,0,0,0.8);')+'position:relative;">' +
-                '<div style="font-size:3rem;margin-bottom:8px;">' + (isLegendary ? '✨' : isRune ? '🔮' : '🎁') + '</div>' +
-                titleLine +
-                imgBlock +
-                (isRune ? '<div style="font-size:.85rem;color:#c864ff;font-weight:700;margin-bottom:4px;">🔮 Runa de Ataque</div>' : '') +
-                '<div style="font-family:Orbitron,sans-serif;font-size:1rem;color:#fff;font-weight:700;margin:8px 0 4px;">' + relic.name + '</div>' +
-                '<div style="font-size:.78rem;color:' + color + ';font-weight:600;margin-bottom:14px;letter-spacing:.06em;">' + (isRune ? 'Recurso Especial' : (relic.tier||'').toUpperCase()) + '</div>' +
-                '<div style="display:flex;align-items:center;justify-content:center;gap:8px;background:rgba(255,170,0,0.1);border:1px solid rgba(255,170,0,0.3);border-radius:10px;padding:10px 18px;margin-bottom:20px;">' +
-                    '<span style="font-size:1.4rem;">🪙</span>' +
-                    '<span style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:#ffaa00;font-weight:700;">+ ' + goldBonus.toLocaleString() + ' Oro</span>' +
-                '</div>' +
-                '<button onclick="document.getElementById('chestResultOverlay').remove()" style="background:linear-gradient(135deg,#003a1a,#00aa55);border:2px solid #00ff88;color:#00ff88;border-radius:10px;padding:12px 32px;font-family:Orbitron,sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;letter-spacing:.05em;transition:all .2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">' + (isLegendary ? '🌟 ¡INCREÍBLE!' : '¡GENIAL!') + '</button>' +
+            portal.innerHTML =
+                '<div style="background:'+(isLegendary?'linear-gradient(135deg,#1a1000,#2a1800)':'linear-gradient(135deg,#060e1f,#0a1a35)')+';border:'+(isLegendary?'3px solid #ffd700':'2px solid '+color)+';border-radius:20px;padding:36px 32px;max-width:380px;width:90%;text-align:center;'+(isLegendary?'box-shadow:0 0 60px #ffd70088;':'box-shadow:0 0 30px rgba(0,0,0,.8);')+'pointer-events:all;">'+
+                '<div style="font-size:3rem;margin-bottom:8px;">'+(isLegendary?'✨':isRune?'🔮':'🎁')+'</div>'+
+                titleLine+
+                imgBlock+
+                (isRune?'<div style="font-size:.85rem;color:#c864ff;font-weight:700;margin-bottom:4px;">🔮 Runa de Ataque</div>':'')+
+                '<div style="font-family:Orbitron,sans-serif;font-size:1rem;color:#fff;font-weight:700;margin:8px 0 4px;">'+relic.name+'</div>'+
+                '<div style="font-size:.78rem;color:'+color+';font-weight:600;margin-bottom:14px;letter-spacing:.06em;">'+(isRune?'Recurso Especial':(relic.tier||'').toUpperCase())+'</div>'+
+                '<div style="display:flex;align-items:center;justify-content:center;gap:8px;background:rgba(255,170,0,0.12);border:1px solid rgba(255,170,0,0.35);border-radius:10px;padding:10px 18px;margin-bottom:20px;">'+
+                    '<span style="font-size:1.4rem;">🪙</span>'+
+                    '<span style="font-family:Orbitron,sans-serif;font-size:1.1rem;color:#ffaa00;font-weight:700;">+ '+goldBonus.toLocaleString()+' Oro</span>'+
+                '</div>'+
+                '<button id="chestResultCloseBtn" style="background:linear-gradient(135deg,#003a1a,#00aa55);border:2px solid #00ff88;color:#00ff88;border-radius:10px;padding:12px 32px;font-family:Orbitron,sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;letter-spacing:.05em;pointer-events:all;">'+(isLegendary?'🌟 ¡INCREÍBLE!':'¡GENIAL!')+'</button>'+
                 '</div>';
-            // ── Close market/inventory overlays so fixed modal renders correctly ──
-            var _msEl = document.getElementById('marketScreen');
-            var _isEl = document.getElementById('inventoryScreen');
-            var _msWasOpen = _msEl && _msEl.style.display !== 'none';
-            var _isWasOpen = _isEl && _isEl.style.display !== 'none';
-            if (_msWasOpen && _msEl) _msEl.style.display = 'none';
-            if (_isWasOpen && _isEl) _isEl.style.display = 'none';
 
-            // Reopen market after modal is dismissed
-            var _origBtnClose = ov.querySelector('button');
-            if (_origBtnClose) {
-                _origBtnClose.addEventListener('click', function() {
-                    ov.remove();
-                    if (_msWasOpen && _msEl) _msEl.style.display = 'block';
-                    if (_isWasOpen && _isEl) _isEl.style.display = 'block';
-                });
-                _origBtnClose.setAttribute('onclick', ''); // Remove inline onclick, use addEventListener
-            }
+            // Append to <html> element — completely outside any stacking context
+            document.documentElement.appendChild(portal);
 
-            document.body.appendChild(ov);
+            // Close button
+            document.getElementById('chestResultCloseBtn').addEventListener('click', function() {
+                var p = document.getElementById('chestResultPortal');
+                if (p) p.remove();
+            });
         }
+
 
         // ==================== JEFE DE SALA ====================
 
