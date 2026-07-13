@@ -1252,6 +1252,42 @@
             if (ability.target === 'single' || ability.target === 'aoe') {
                 gameState._attackedThisTurn = true;
             }
+            // ── VISIÓN DE PROFETA (Grindelwald): cuando un ENEMIGO usa AOE → lanza Infierno Azul automáticamente ──
+            if ((ability.target === 'aoe' || ability.target === 'mt') && !passiveExecuting) {
+                const _grindAttacker = gameState.characters[gameState.selectedCharacter];
+                if (_grindAttacker) {
+                    const _grindEnemyTeam = _grindAttacker.team === 'team1' ? 'team2' : 'team1';
+                    for (const _gn in gameState.characters) {
+                        const _gc = gameState.characters[_gn];
+                        if (!_gc || _gc.team !== _grindEnemyTeam || _gc.isDead || _gc.hp <= 0) continue;
+                        if (!_gc.passive || _gc.passive.name !== 'Visión de Profeta') continue;
+                        if (gameState._grindelwaldCounterActive) break;
+                        gameState._grindelwaldCounterActive = true;
+                        passiveExecuting = true;
+                        addLog('🔮 Visión de Profeta: Grindelwald contraataca con Infierno Azul (AOE enemigo)', 'buff');
+                        // Execute Infierno Azul manually
+                        const _ibETeam = _grindAttacker.team;
+                        let _ibBuffsCleared = 0;
+                        for (const _in in gameState.characters) {
+                            const _ic = gameState.characters[_in];
+                            if (!_ic || _ic.team !== _ibETeam || _ic.isDead || _ic.hp <= 0) continue;
+                            _ic.statusEffects = (_ic.statusEffects||[]).filter(function(e){ return !e || (e.name !== 'Esquiva Area' && e.name !== 'EsquivaArea'); });
+                            applyDamageWithShield(_in, 1, _gn);
+                            applyFlatBurn(_in, 3, 2);
+                            applyDebuff(_in, { name:'Quemadura Solar', type:'debuff', duration:2, emoji:'☀️', quemaduraSolar:true });
+                            const _ib2Buffs = (_ic.statusEffects||[]).filter(function(e){ return e&&e.type==='buff'&&!e.permanent; });
+                            _ibBuffsCleared += _ib2Buffs.length;
+                            _ic.statusEffects = (_ic.statusEffects||[]).filter(function(e){ return !e||e.type!=='buff'||e.permanent; });
+                        }
+                        if (_ibBuffsCleared > 0) {
+                            for (const _an in gameState.characters) { const _ac=gameState.characters[_an]; if(!_ac||_ac.team!==_grindEnemyTeam||_ac.isDead||_ac.hp<=0) continue; generateChargesInline(_an, _ibBuffsCleared); }
+                        }
+                        passiveExecuting = false;
+                        gameState._grindelwaldCounterActive = false;
+                        break;
+                    }
+                }
+            }
             
             // Ejecutar efecto según el tipo de habilidad
             if (ability.effect === 'arise_summon') {
