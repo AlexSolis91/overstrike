@@ -3192,19 +3192,38 @@
             toast._hideTimer = setTimeout(function() { toast.style.opacity = '0'; }, 5000);
         }
 
-        // ── 30-day Leaderboard Reset ──
-        const LEADERBOARD_RESET_DAYS = 30;
+        // ── Monthly Leaderboard Reset — last day of month at midnight ──
         function checkLeaderboardReset() {
             db.ref('leaderboard_meta/lastReset').once('value', function(snap) {
                 const lastReset = snap.val() || 0;
                 const now = Date.now();
-                const daysSince = (now - lastReset) / (1000 * 60 * 60 * 24);
-                if (daysSince >= LEADERBOARD_RESET_DAYS) {
-                    // Reset all stats
+
+                // SAFETY: if lastReset is 0 (never set), initialize it to NOW and skip reset
+                // This prevents a spurious reset when the node doesn't exist
+                if (!lastReset) {
+                    db.ref('leaderboard_meta/lastReset').set(now);
+                    console.log('[RANKED] lastReset initialized — no reset triggered');
+                    return;
+                }
+
+                // Only reset on the last day of the month at midnight (00:00–01:00)
+                const nowDate = new Date(now);
+                const lastResetDate = new Date(lastReset);
+                const lastDayOfMonth = new Date(nowDate.getFullYear(), nowDate.getMonth()+1, 0).getDate();
+                const isLastDay = nowDate.getDate() === lastDayOfMonth;
+                const isMidnight = nowDate.getHours() === 0;
+                const alreadyResetThisMonth = (
+                    lastResetDate.getFullYear() === nowDate.getFullYear() &&
+                    lastResetDate.getMonth() === nowDate.getMonth()
+                );
+
+                if (isLastDay && isMidnight && !alreadyResetThisMonth) {
                     db.ref('ranked_stats').remove().then(function() {
                         db.ref('leaderboard_meta/lastReset').set(now);
-                        console.log('[RANKED] Leaderboard reset — new 30-day season started');
+                        console.log('[RANKED] Monthly leaderboard reset — new season started');
                     });
+                } else {
+                    console.log('[RANKED] No reset needed — lastDay:'+isLastDay+' midnight:'+isMidnight+' alreadyReset:'+alreadyResetThisMonth);
                 }
             });
         }
