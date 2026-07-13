@@ -1948,6 +1948,24 @@
                     // ── MIN BYUNG: Shadow Healing — Regeneración 20% 1T a todos los aliados al inicio de ronda ──
                     if (typeof triggerMinByungStartOfRound === 'function') triggerMinByungStartOfRound();
 
+                    // ── SUPERMAN FORMA PRIME: Puño de la Justicia sobre cada enemigo al inicio de cada ronda ──
+                    (function() {
+                        for (const _spN in gameState.characters) {
+                            const _spC = gameState.characters[_spN];
+                            if (!_spC || _spC.isDead || !_spC.supermanPrimeMode || !_spC.passive || _spC.passive.name !== 'Hombre de Acero') continue;
+                            const _spETeam = _spC.team === 'team1' ? 'team2' : 'team1';
+                            for (const _epN in gameState.characters) {
+                                const _epC = gameState.characters[_epN];
+                                if (!_epC || _epC.team !== _spETeam || _epC.isDead || _epC.hp <= 0) continue;
+                                const _spDmg = _spC.supermanPrimeMode ? 3 * 2 : 3; // Puño de la Justicia: 3 base, x2 en Prime
+                                applyDamageWithShield(_epN, _spDmg, _spN);
+                                addLog('🦸 Superman (Forma Prime — Hombre de Acero): Puño de la Justicia — ' + _spDmg + ' daño a ' + _epN, 'damage');
+                                // Heal Superman 2 HP (Puño de la Justicia effect)
+                                applyHeal(_spN, 2, 'Puño de la Justicia');
+                            }
+                        }
+                    })();
+
                     // ── IRON: +3 cargas al equipo aliado al inicio de ronda ──
                     Object.keys(gameState.summons).forEach(function(sid) {
                         const _ir = gameState.summons[sid];
