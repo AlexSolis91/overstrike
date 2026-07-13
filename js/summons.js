@@ -235,6 +235,10 @@
                 passiveExecuting = false;
             }
 
+            // ── MIN BYUNG: al ser eliminada genera 3 cargas a todos los aliados ──
+            if (summon.name === 'MinByung' && typeof triggerMinByungOnDeath === 'function') {
+                triggerMinByungOnDeath(summon.team);
+            }
             delete gameState.summons[summonId];
             // ── REINO DE LAS SOMBRAS (Marik): genera 3 cargas por invocación eliminada ──
             if (reason !== 'summoner_dead' && typeof _triggerMarikSummonKill === 'function') {
@@ -606,12 +610,8 @@
                         // Activar pasiva de Bellion
                         bellion.usedThisRound = true;
                         
-                        passiveExecuting = true;
-                        // Causar daño al atacante
-                        applyDamageWithShield(attackerName, 4, 'Bellion');
-                        passiveExecuting = false;
-                        
-                        addLog(`🛡️ Bellion (Pasiva) cancela ${abilityType} de ${attackerName} y causa 4 de daño`, 'buff');
+                        // Bellion: cancels the move — enemy keeps spending charges (loses them)
+                        addLog('🛡️ Bellion (General de Ashborn): cancela ' + abilityType + ' de ' + attackerName + ' (las cargas gastadas se pierden)', 'buff');
                         
                         return true; // Habilidad cancelada
                     }
@@ -2826,6 +2826,34 @@
             }
         }
 
+        // ── MIN BYUNG: Shadow Healing — inicio de ronda aplica Regeneración 20% 1T a todos los aliados ──
+        function triggerMinByungStartOfRound() {
+            Object.keys(gameState.summons).forEach(function(sid) {
+                const _mb = gameState.summons[sid];
+                if (!_mb || _mb.name !== 'MinByung' || _mb.hp <= 0) return;
+                const _mbTeam = _mb.team;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _mbTeam || _c.isDead || _c.hp <= 0) continue;
+                    // Apply Regeneración 20% 1 turno
+                    if (typeof applyBuff === 'function') {
+                        applyBuff(_n, { name: 'Regeneracion', type: 'buff', duration: 1, percent: 20, emoji: '💚' });
+                    }
+                }
+                addLog('💚 MinByung (Shadow Healing): Regeneración 20% 1T aplicada a todos los aliados', 'buff');
+            });
+        }
+
+        // ── MIN BYUNG: Al ser eliminada, genera 3 cargas a todos los aliados ──
+        function triggerMinByungOnDeath(minByungTeam) {
+            for (const _n in gameState.characters) {
+                const _c = gameState.characters[_n];
+                if (!_c || _c.team !== minByungTeam || _c.isDead || _c.hp <= 0) continue;
+                generateChargesInline(_n, 3);
+            }
+            addLog('💚 MinByung (Shadow Healing): equipo aliado gana 3 cargas (MinByung fue eliminada)', 'buff');
+        }
+
         function triggerKamishEndOfRound() {
             // Kamish: al final de cada ronda, 4 daño a todos los enemigos
             Object.keys(gameState.summons).forEach(function(sid) {
@@ -3211,8 +3239,8 @@ function applyRegeneration(targetName, amount, duration) {
             const sjwChar = gameState.characters[charName];
             if (!sjwChar || sjwChar.isDead || sjwChar.hp <= 0) return;
             const shadowPool = gameState._sjwShadowWeights || {
-                'Igris': 0.25, 'Iron': 0.25, 'Tusk': 0.20,
-                'Beru': 0.15, 'Kaisel': 0.10, 'Bellion': 0.045, 'Kamish': 0.005
+                'Igris': 0.25, 'MinByung': 0.20, 'Iron': 0.20, 'Tusk': 0.15,
+                'Beru': 0.13, 'Kaisel': 0.05, 'Bellion': 0.015, 'Kamish': 0.005
             };
             // Check if we already have max summons (5 per team)
             const teamSummons = Object.values(gameState.summons).filter(s => s && s.team === sjwChar.team);
