@@ -240,6 +240,18 @@
                 img: 'https://i.ibb.co/wFzRWMB1/descarga-2.jpg',
                 passive: 'Destello de Fawkes: Al inicio de cada ronda 80% de probabilidad de aplicar debuff Ceguera durante 1 turno sobre los enemigos. Cada vez que un enemigo falla su ataque debido a la Ceguera, Fawkes recupera 3 HP y causa 1 de daño a cada enemigo.'
             },
+            'Cría de Dragón': {
+                name: 'Cría de Dragón',
+                hp: 10, maxHp: 10, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.ibb.co/fGxPcTNL/Whats-App-Image-2026-06-26-at-12-06-13-PM.jpg',
+                passive: 'Mordedura: Al final de cada ronda causa 2 daño a un enemigo aleatorio. Al morir, su invocador genera 3 cargas.'
+            },
+            'Syrax': {
+                name: 'Syrax',
+                hp: 25, maxHp: 25, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.ibb.co/mFGR0yWs/Whats-App-Image-2026-06-26-at-12-05-29-PM.jpg',
+                passive: 'Vínculo Dorado: mientras Syrax esté vivo, Rhaenyra tiene buff Escudo Sagrado y Protección Sagrada. Cada vez que Syrax recibe un ataque, aplica Quemadura Solar al atacante. Al inicio de cada ronda, el equipo aliado gana Escudo 7 HP y Aura de Fuego.'
+            },
             'Señuelo': {
                 name: 'Señuelo',
                 hp: 5, maxHp: 5, summoner: null, team: null, statusEffects: [],
