@@ -1060,6 +1060,12 @@
                         addLog('🔨 Martillo del Alba: ' + targetName + ' pierde 2 cargas', 'debuff');
                     }
 
+                    // COLMILLO DE VASILISCO: ataques básicos aplican 1 stack de Veneno
+                    if (_rd.effect === 'vasilisco_poison' && ability && ability.type === 'basic' && _postTgt && !_postTgt.isDead) {
+                        if (typeof applyPoison === 'function') applyPoison(targetName, 1);
+                        addLog('🗡️ Colmillo de Vasilisco: 1 stack de Veneno aplicado a ' + targetName, 'debuff');
+                    }
+
                     // ESPADA NICHIRIN NEGRA: aplica Quemadura Solar al objetivo
                     if (_rd.effect === 'espada_nichirin_negra' && _postTgt && !_postTgt.isDead) {
                         if (typeof applySolarBurn === 'function') applySolarBurn(targetName, 10, 2);
@@ -6934,14 +6940,22 @@
 
             } else if (ability.effect === 'arde_cosmos_seiya') {
                 // SEIYA — ¡Arde, cosmos!: genera 2-10 cargas + turno adicional
-                // Guard against double-fire (self target calls core twice)
-                if (gameState._ardeCosmos_fired) { gameState._ardeCosmos_fired = false; return; }
-                gameState._ardeCosmos_fired = true;
-                const _acCharges = Math.floor(Math.random() * 9) + 2; // 2-10
-                generateChargesInline(gameState.selectedCharacter, _acCharges);
-                gameState._extraTurnChar = gameState.selectedCharacter;
-                addLog('🔥 ¡Arde, cosmos!: Seiya gana ' + _acCharges + ' cargas y un turno adicional', 'buff');
-                gameState._ardeCosmos_fired = false;
+                const _acAtk = gameState.characters[gameState.selectedCharacter];
+                if (_acAtk && _acAtk._ardeCosmosUsedThisRound) {
+                    addLog('🔥 ¡Arde, cosmos!: ya se usó esta ronda — bloqueado hasta la siguiente', 'info');
+                } else {
+                    // Guard against double-fire (self target calls core twice)
+                    if (gameState._ardeCosmos_fired) { gameState._ardeCosmos_fired = false; return; }
+                    gameState._ardeCosmos_fired = true;
+                    const _acCharges = Math.floor(Math.random() * 9) + 2; // 2-10
+                    generateChargesInline(gameState.selectedCharacter, _acCharges);
+                    // BUG FIX: turn-logic.js lee gameState._seiyaExtraTurn — antes se guardaba
+                    // en _extraTurnChar (nombre distinto) y el turno adicional nunca se otorgaba.
+                    gameState._seiyaExtraTurn = gameState.selectedCharacter;
+                    if (_acAtk) _acAtk._ardeCosmosUsedThisRound = true;
+                    addLog('🔥 ¡Arde, cosmos!: Seiya gana ' + _acCharges + ' cargas y un turno adicional', 'buff');
+                    gameState._ardeCosmos_fired = false;
+                }
 
             } else if (ability.effect === 'puno_pegaso_seiya') {
                 // SEIYA — Puño de Pegaso: 1 daño + genera 1-3 cargas a un aliado aleatorio
