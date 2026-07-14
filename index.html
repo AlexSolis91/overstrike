@@ -578,7 +578,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260809"></script>
+    <script src="js/firebase-auth.js?v=20260810"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -1298,7 +1298,7 @@
             'albus_dumbledore': {
                 name: 'Albus Dumbledore',
                 portrait: 'https://i.ibb.co/LX4h03vQ/image.png',
-                hp: 10000, maxHp: 10000, speed: 80,
+                hp: 20000, maxHp: 20000, speed: 80,
                 passive: { name: 'Maestría de la Varita de Saúco', description: 'Albus Dumbledore es inmune a debuffs. Cada vez que un enemigo realiza un ataque especial u Over, Albus Dumbledore se cura 30 HP y genera 3 cargas. Cada vez que un enemigo recibe daño por debuff Quemaduras, Albus Dumbledore genera 5 cargas. Al inicio de cada ronda, Albus Dumbledore genera 3 cargas por cada enemigo derrotado.' }
             },
             'arthas_menethil': {
@@ -1394,9 +1394,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260809"></script>
+    <script src="js/characters.js?v=20260810"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260809"></script>
+    <script src="js/audio-state.js?v=20260810"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2101,23 +2101,23 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260809"></script>
+    <script src="js/ai-engine.js?v=20260810"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260809"></script>
+    <script src="js/init-render.js?v=20260810"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260809"></script>
+    <script src="js/turn-logic.js?v=20260810"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260809"></script>
+    <script src="js/status-effects.js?v=20260810"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260809"></script>
+    <script src="js/debuffs.js?v=20260810"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260809"></script>
+    <script src="js/summons.js?v=20260810"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260809"></script>
+    <script src="js/ability-select.js?v=20260810"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260809"></script>
+<script src="js/skills.js?v=20260810"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260809"></script>
+    <script src="js/jefe-de-sala.js?v=20260810"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
@@ -2306,7 +2306,7 @@
                         style="background:rgba(0,150,80,0.08);border:2px solid rgba(0,150,80,0.3);border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:all .2s;">
                         <img src="https://i.ibb.co/LX4h03vQ/image.png" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #00aa55;margin-bottom:6px;" onerror="this.style.display='none'">
                         <div style="font-family:Orbitron,sans-serif;font-size:.7rem;color:#4ade80;font-weight:700;">DUMBLEDORE</div>
-                        <div style="font-size:.6rem;color:#666;margin-top:2px;">10,000 HP</div>
+                        <div style="font-size:.6rem;color:#666;margin-top:2px;">20,000 HP</div>
                         <div style="font-size:.58rem;color:#555;margin-top:1px;">Varita de Saúco</div>
                     </div>
                     <div onclick="adminSelectBoss('bolvar_fordragon',this)" id="bosscard-bolvar_fordragon"
