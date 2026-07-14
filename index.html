@@ -558,7 +558,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260727"></script>
+    <script src="js/firebase-auth.js?v=20260728"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -1374,9 +1374,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260727"></script>
+    <script src="js/characters.js?v=20260728"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260727"></script>
+    <script src="js/audio-state.js?v=20260728"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2074,23 +2074,23 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260727"></script>
+    <script src="js/ai-engine.js?v=20260728"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260727"></script>
+    <script src="js/init-render.js?v=20260728"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260727"></script>
+    <script src="js/turn-logic.js?v=20260728"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260727"></script>
+    <script src="js/status-effects.js?v=20260728"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260727"></script>
+    <script src="js/debuffs.js?v=20260728"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260727"></script>
+    <script src="js/summons.js?v=20260728"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260727"></script>
+    <script src="js/ability-select.js?v=20260728"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260727"></script>
+<script src="js/skills.js?v=20260728"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260727"></script>
+    <script src="js/jefe-de-sala.js?v=20260728"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
@@ -2449,7 +2449,7 @@
 
     <!-- ── BOTÓN FLOTANTE DE CHAT (visible durante la partida) ── -->
     <button id="gameChatFloatBtn" onclick="window.openGameChat && window.openGameChat()"
-        style="display:none;position:fixed;bottom:20px;right:20px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#003a5c,#006fa6);border:2px solid #00c4ff;color:#fff;font-size:1.4rem;cursor:pointer;z-index:9500;box-shadow:0 4px 16px rgba(0,196,255,.35);align-items:center;justify-content:center;">
+        style="display:none;position:fixed;bottom:20px;left:20px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#003a5c,#006fa6);border:2px solid #00c4ff;color:#fff;font-size:1.4rem;cursor:pointer;z-index:9500;box-shadow:0 4px 16px rgba(0,196,255,.35);align-items:center;justify-content:center;">
         <span style="position:relative;display:inline-flex;">💬<span id="gameChatDot" style="display:none;position:absolute;top:-3px;right:-6px;width:11px;height:11px;background:#ff3366;border-radius:50%;border:2px solid #0a0e17;box-shadow:0 0 6px #ff3366;"></span></span>
     </button>
 </body>
