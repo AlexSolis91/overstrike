@@ -4918,7 +4918,7 @@
                 imgBlock = '<img src="' + imgSrc + '" style="' + imgStyle + '">';
             } else {
                 imgBlock = '<div style="font-size:3rem;margin:12px 0;">⚔️</div>';
-            }/ ==================== FIREBASE CONFIG & AUTH ====================
+        // ==================== FIREBASE CONFIG & AUTH ====================
         const firebaseConfig = {
             apiKey: "AIzaSyChCFsE6F4iO97iH1ItFWCJtHU-XoA5Ruk",
             authDomain: "overstrike-game.firebaseapp.com",
