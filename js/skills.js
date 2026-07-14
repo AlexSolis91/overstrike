@@ -7082,46 +7082,24 @@
                 addLog('💥 Skill Drain: ' + finalDamage + ' AOE + robo de HP completado', 'damage');
 
             } else if (ability.effect === 'devastator_punish') {
-                // 5 daño base. Vs boss: 10-30 daño adicional. Vs normal: 10% eliminar → buffs disipados + Mega Aturdimiento
-                const _dpTgt = gameState.characters[targetName];
-                const _dpWasAlive = _dpTgt && !_dpTgt.isDead && _dpTgt.hp > 0;
+                // REWORK: daño base = HP ACTUAL de Doomsday al ejecutar el ataque (ST).
+                // 50% probabilidad de golpe crítico (daño doble). Doomsday recupera 20 HP.
+                // Aplica Debilitar 2 turnos a TODO el equipo enemigo (no solo al objetivo).
                 const _dpET = attacker.team === 'team1' ? 'team2' : 'team1';
-                const _dpIsBoss = window._bossMode && _dpTgt && _dpTgt.isBoss;
-
-                if (_dpIsBoss) {
-                    // Vs Jefe de Sala: 5 daño base + 10-30 daño adicional
-                    applyDamageWithShield(targetName, finalDamage, charName);
-                    const _dpBonusDmg = Math.floor(Math.random() * 21) + 10; // 10-30
-                    applyDamageWithShield(targetName, _dpBonusDmg, charName);
-                    addLog('💥 Devastator Punish: ' + finalDamage + ' + ' + _dpBonusDmg + ' daño al Jefe de Sala', 'damage');
-                } else {
-                    const _dpExecute = Math.random() < 0.10;
-                    let _dpDmg = finalDamage;
-                    if (_dpExecute && _dpTgt && _dpTgt.hp > 0) {
-                        _dpDmg = _dpTgt.hp;
-                        addLog('💥 Devastator Punish: ¡EJECUCIÓN! 10% activado', 'buff');
-                    }
-                    applyDamageWithShield(targetName, _dpDmg, charName);
-                    addLog('💥 Devastator Punish: ' + _dpDmg + ' daño a ' + targetName, 'damage');
-                    const _dpTgtNow = gameState.characters[targetName];
-                    if (_dpWasAlive && _dpTgtNow && (_dpTgtNow.isDead || _dpTgtNow.hp <= 0)) {
-                        let _dpTotalBufs = 0;
-                        for (const _n in gameState.characters) {
-                            const _cc = gameState.characters[_n];
-                            if (!_cc || _cc.team !== _dpET || _cc.isDead) continue;
-                            const _bufs = (_cc.statusEffects||[]).filter(e => e && e.type === 'buff' && !e.permanent && !e.passiveHidden);
-                            _cc.statusEffects = (_cc.statusEffects||[]).filter(e => !e || e.type !== 'buff' || e.permanent || e.passiveHidden);
-                            _dpTotalBufs += _bufs.length;
-                        }
-                        addLog('💥 Devastator Punish: ' + _dpTotalBufs + ' buffs disipados del equipo enemigo', 'debuff');
-                        for (const _n in gameState.characters) {
-                            const _cc = gameState.characters[_n];
-                            if (!_cc || _cc.team !== _dpET || _cc.isDead || _cc.hp <= 0 || _n === targetName) continue;
-                            applyStun(_n, 2);
-                        }
-                        addLog('💥 Devastator Punish: Mega Aturdimiento a todo el equipo enemigo', 'debuff');
-                    }
+                let _dpDmg = attacker.hp || 0;
+                const _dpCrit = Math.random() < 0.50;
+                if (_dpCrit) _dpDmg *= 2;
+                applyDamageWithShield(targetName, _dpDmg, charName);
+                addLog('💥 Devastator Punish: ' + _dpDmg + ' daño a ' + targetName + (_dpCrit ? ' (¡Golpe Crítico!)' : ''), 'damage');
+                attacker.hp = Math.min(attacker.maxHp, (attacker.hp||0) + 20);
+                addLog('💥 Devastator Punish: Doomsday recupera 20 HP', 'heal');
+                for (const _n in gameState.characters) {
+                    const _cc = gameState.characters[_n];
+                    if (!_cc || _cc.team !== _dpET || _cc.isDead || _cc.hp <= 0) continue;
+                    if (typeof applyWeaken === 'function') applyWeaken(_n, 2);
+                    else if (typeof applyDebuff === 'function') applyDebuff(_n, { name: 'Debilitar', type: 'debuff', duration: 2, emoji: '💔' });
                 }
+                addLog('💥 Devastator Punish: Debilitar 2T aplicado a todo el equipo enemigo', 'debuff');
 
             // ══════════════════════════════════════════════════════
             // ITACHI UCHIHA — handlers actualizados
