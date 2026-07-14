@@ -62,6 +62,10 @@
                             });
                             if (!_hasDeadEnemy) return false;
                         }
+                        // EL REY DEMONIO (Meliodas): la IA no debe re-seleccionarlo tras transformarse
+                        if (ab.effect === 'rey_demonio_meliodas' && (char._reyDemonioActive || char.isTransformed)) return false;
+                        // ¡ARDE, COSMOS! (Seiya): la IA no debe re-seleccionarlo en la misma ronda
+                        if (ab.effect === 'arde_cosmos_seiya' && char._ardeCosmosUsedThisRound) return false;
                         return true;
                     });
                 }
