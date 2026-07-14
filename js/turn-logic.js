@@ -85,10 +85,14 @@
                         })();
 
                         // SUN JIN WOO PASIVA: Arise! — invoca sombra aleatoria + Sigilo 1T al inicio de turno
+                        // "1 invocación por ronda": si SJW obtiene un turno extra en la misma ronda,
+                        // no debe volver a invocar (el Sigilo sí se sigue aplicando cada turno).
                         if (currentChar && currentChar.passive && currentChar.passive.name === 'Arise!') {
                             if (currentChar && !currentChar.isDead && currentChar.hp > 0) {
-                                // Invoke random shadow
-                                if (typeof triggerSJWArisePassive === 'function') triggerSJWArisePassive(currentCharName);
+                                if (!currentChar._ariseSummonedThisRound) {
+                                    if (typeof triggerSJWArisePassive === 'function') triggerSJWArisePassive(currentCharName);
+                                    currentChar._ariseSummonedThisRound = true;
+                                }
                                 // Apply Sigilo 1 turn
                                 if (typeof applyStealth === 'function') {
                                     applyStealth(currentCharName, 1);
@@ -1866,6 +1870,17 @@
                         if (_ic && _ic.passive && _ic.passive.name === 'Izanami') {
                             _ic.izanamiUsedThisRound = false;
                         }
+                    }
+                    // SEIYA (¡Arde, cosmos!): desbloquear al inicio de cada nueva ronda
+                    // (este reset se había perdido en un push anterior — repuesto)
+                    for (const _acn in gameState.characters) {
+                        const _acc = gameState.characters[_acn];
+                        if (_acc) _acc._ardeCosmosUsedThisRound = false;
+                    }
+                    // SUN JIN WOO (Arise!): desbloquear la invocación de nueva sombra cada ronda
+                    for (const _sjn in gameState.characters) {
+                        const _sjc = gameState.characters[_sjn];
+                        if (_sjc) _sjc._ariseSummonedThisRound = false;
                     }
                     // PILAR DEL AGUA (Giyu Tomioka): inicio de nueva ronda → Escudo 1HP a aliados
                     for (const _gn in gameState.characters) {
