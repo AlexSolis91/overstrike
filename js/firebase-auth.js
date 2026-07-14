@@ -4276,6 +4276,17 @@
         // ── JUGADORES EN LÍNEA + CHAT PRIVADO ──────────────────────────────
         var _pcTarget2 = null, _pcListener2 = null;
 
+        // BUG CRÍTICO: el botón ✕ del modal solo ocultaba la ventana pero nunca apagaba
+        // _pcListener2 (el listener de la conversación). Ese listener, cada vez que llegaba
+        // un mensaje nuevo, marcaba la notificación como leída automáticamente — incluso con
+        // el chat CERRADO — por eso a partir del 2do mensaje ya no sonaba ni aparecía la alerta.
+        window.closePrivateChatModal = function() {
+            var modal = document.getElementById('privateChatModal');
+            if (modal) modal.style.display = 'none';
+            if (_pcListener2) { _pcListener2.off(); _pcListener2 = null; }
+            _pcTarget2 = null;
+        };
+
         window.loadOnlinePlayersList = function() {
             var list = document.getElementById('onlinePlayersList');
             if (!list) return;
