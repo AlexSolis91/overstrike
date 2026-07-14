@@ -4138,6 +4138,11 @@
         // ── CHAT NOTIFICATION LISTENER ──
         function listenForPrivateChatNotifications() {
             if (!currentUser) return;
+            // Evita adjuntar listeners duplicados si trackOnlinePresence() se llama varias veces
+            // (esto podía causar que la campana/sonido se comportara de forma inconsistente).
+            if (window._chatNotifListenerAttached) return;
+            window._chatNotifListenerAttached = true;
+
             var notifRef = db.ref('chat_notifications/' + currentUser.uid);
             window._chatUnreadSenders = [];
 
@@ -4147,6 +4152,7 @@
                 window._chatUnreadSenders = Object.keys(notifs);
                 var dot = document.getElementById('chatNotifDot');
                 if (dot) dot.style.display = window._chatUnreadSenders.length > 0 ? 'inline-block' : 'none';
+                _updateGameChatDot();
             });
 
             // .on('child_added') fires ONLY when a NEW notification arrives — skip initial load
@@ -4165,6 +4171,35 @@
                 _initialized = true;
             });
         }
+
+        // ── Botón flotante de chat dentro de la partida ──
+        function _updateGameChatDot() {
+            var dot = document.getElementById('gameChatDot');
+            if (dot) dot.style.display = (window._chatUnreadSenders && window._chatUnreadSenders.length > 0) ? 'block' : 'none';
+        }
+
+        window.openGameChat = function() {
+            var senders = window._chatUnreadSenders || [];
+            if (senders.length > 0 && currentUser) {
+                var senderUid = senders[0];
+                db.ref('chat_notifications/' + currentUser.uid + '/' + senderUid).once('value', function(snap) {
+                    var data = snap.val() || {};
+                    window.openPrivateChatWith(senderUid, data.fromName || 'Jugador');
+                });
+            } else {
+                var modal = document.getElementById('onlinePlayersModal');
+                if (modal) modal.style.display = 'flex';
+                if (typeof window.loadOnlinePlayersList === 'function') window.loadOnlinePlayersList();
+            }
+        };
+
+        // Muestra/oculta el botón flotante solo mientras hay una partida en pantalla
+        setInterval(function() {
+            var btn = document.getElementById('gameChatFloatBtn');
+            var gc = document.querySelector('.game-container');
+            if (!btn || !gc) return;
+            btn.style.display = (gc.style.display === 'block') ? 'flex' : 'none';
+        }, 800);
 
         // ── JUGADORES EN LÍNEA + CHAT PRIVADO ──────────────────────────────
         var _pcTarget2 = null, _pcListener2 = null;
