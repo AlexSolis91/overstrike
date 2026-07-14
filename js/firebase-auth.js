@@ -3833,6 +3833,61 @@
             return true;
         }
 
+        // ── Cargar reliquias equipadas del jugador (y del rival online) en la partida activa ──
+        // BUG ENCONTRADO: esta función se llamaba desde varios flujos de inicio de partida
+        // (Solitario, Ranked, Online) pero nunca había sido definida. En Solitario/Local/Online
+        // normal la llamada no tenía guard `typeof===\'function\'`, así que lanzaba un error
+        // silencioso (atrapado por el try/catch de csStartGame) y NINGUNA reliquia del jugador
+        // se aplicaba jamás — por eso efectos como Colmillo de Vasilisco u Ojo de Serpiente
+        // nunca disparaban fuera de Jefe de Sala.
+        window.loadGameRelics = function() {
+            if (typeof gameState === 'undefined' || !gameState.characters) return;
+            var SLOT_KEYS = ['arma1', 'arma2', 'equip1', 'equip2', 'joya1', 'joya2'];
+
+            function _applyRelicStats(ch, relicName) {
+                var rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[relicName] : null;
+                if (!rd) return;
+                if (rd.hpBonus)  { ch.hp = (ch.hp||0) + rd.hpBonus; ch.maxHp = (ch.maxHp||0) + rd.hpBonus; }
+                if (rd.velBonus) { ch.speed = (ch.speed||0) + rd.velBonus; }
+                if (rd.effect === 'speed_plus5' && !ch._speedPlus5Applied) { ch.speed = (ch.speed||80) + 5; ch._speedPlus5Applied = true; }
+                if (rd.effect === 'hp_spd_plus3' && !ch._hpSpdApplied) { ch.hp = (ch.hp||0) + 3; ch.maxHp = (ch.maxHp||0) + 3; ch.speed = (ch.speed||80) + 3; ch._hpSpdApplied = true; }
+                if (rd.effect === 'hp_max_50pct' && !ch._hpMax50Applied) { var b = Math.ceil((ch.maxHp||20) * 0.5); ch.maxHp = (ch.maxHp||20) + b; ch.hp = (ch.hp||0) + b; ch._hpMax50Applied = true; }
+                if (rd.effect === 'double_heal') { ch._doubleHeal = true; }
+            }
+
+            function _loadForCharacter(charName, uid) {
+                var ch = gameState.characters[charName];
+                if (!ch || ch.equippedRelics) return; // ya cargadas — evita duplicar si se llama 2 veces
+                var baseName = ch.baseName || charName.replace(/ v\d+$/, '');
+                db.ref('users/' + uid + '/characters/' + baseName + '/slots_v2').once('value').then(function(snap) {
+                    var slotsObj = snap.val();
+                    if (!slotsObj) return;
+                    var relicNames = SLOT_KEYS.map(function(k){ return slotsObj[k]; }).filter(Boolean);
+                    if (!relicNames.length) return;
+                    ch.equippedRelics = relicNames;
+                    relicNames.forEach(function(rn) { _applyRelicStats(ch, rn); });
+                    if (typeof renderCharacters === 'function') renderCharacters();
+                }).catch(function(err) { console.warn('[loadGameRelics] Error cargando reliquias de', charName, err); });
+            }
+
+            var myTeam = gameState.myTeam || window._rankedPlayerTeam || (typeof csState !== 'undefined' && csState && csState.onlineTeam) || 'team1';
+
+            if (currentUser) {
+                Object.keys(gameState.characters).forEach(function(charName) {
+                    var c = gameState.characters[charName];
+                    if (c && c.team === myTeam) _loadForCharacter(charName, currentUser.uid);
+                });
+            }
+
+            if (window._opponentUid) {
+                var oppTeam = myTeam === 'team1' ? 'team2' : 'team1';
+                Object.keys(gameState.characters).forEach(function(charName) {
+                    var c = gameState.characters[charName];
+                    if (c && c.team === oppTeam) _loadForCharacter(charName, window._opponentUid);
+                });
+            }
+        };
+
         async function equipRelic(uid, charName, slotKey, relicName) {
             // Verify inventory
             const invSnap = await db.ref('users/' + uid + '/inventory/relics/' + relicName).once('value');
