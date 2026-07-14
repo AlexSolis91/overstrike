@@ -40,7 +40,7 @@
                     const prev = document.getElementById(this.currentTrack);
                     if (prev) { try { prev.pause(); prev.currentTime = 0; } catch(e) {} }
                 }
-                const trackNum = Math.floor(Math.random() * 5) + 1;
+                const trackNum = Math.floor(Math.random() * 8) + 1;
                 const trackId = 'audioBattle' + trackNum;
                 this.currentTrack = trackId;
                 if (this.muted) return;
@@ -53,7 +53,7 @@
             },
 
             stopBattleMusic: function() {
-                for (let i = 1; i <= 5; i++) {
+                for (let i = 1; i <= 8; i++) {
                     const el = document.getElementById('audioBattle' + i);
                     if (el) { try { el.pause(); el.currentTime = 0; } catch(e) {} }
                 }
@@ -109,10 +109,36 @@
                 } catch(e) {}
             },
 
+            // Solo debe llamarse en el cliente del jugador que GANÓ la partida
+            playVictorySfx: function() {
+                if (this.muted) return;
+                try {
+                    const sfx = document.getElementById('sfxVictory');
+                    if (sfx) {
+                        sfx.currentTime = 0;
+                        sfx.volume = 0.8;
+                        sfx.play().catch(function() {});
+                    }
+                } catch(e) {}
+            },
+
+            // Solo debe llamarse en el cliente del jugador que PERDIÓ la partida
+            playDefeatSfx: function() {
+                if (this.muted) return;
+                try {
+                    const sfx = document.getElementById('sfxDefeat');
+                    if (sfx) {
+                        sfx.currentTime = 0;
+                        sfx.volume = 0.8;
+                        sfx.play().catch(function() {});
+                    }
+                } catch(e) {}
+            },
+
             toggleMute: function() {
                 this.muted = !this.muted;
                 if (this.muted) {
-                    ['audioMenu','audioBattle1','audioBattle2','audioBattle3','audioBattle4','audioBattle5','audioSelect'].forEach(function(id) {
+                    ['audioMenu','audioBattle1','audioBattle2','audioBattle3','audioBattle4','audioBattle5','audioBattle6','audioBattle7','audioBattle8','audioSelect'].forEach(function(id) {
                         const e = document.getElementById(id);
                         if (e) e.pause();
                     });
