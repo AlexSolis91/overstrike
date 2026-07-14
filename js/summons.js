@@ -3264,8 +3264,17 @@ function applyRegeneration(targetName, amount, duration) {
                 if (rand < cumulative) { chosen = name; break; }
             }
             // Get summon data
-            const sData = summonData[chosen];
-            if (!sData) return;
+            let sData = summonData[chosen];
+            if (!sData) {
+                // BUG DE ANTES: si summonData no tenía datos para el nombre elegido, la función
+                // abortaba en silencio y Arise! simplemente no invocaba nada esa ronda.
+                // Ahora: avisar en consola y reintentar con cualquier sombra que sí tenga datos.
+                console.warn('[Arise!] summonData sin entrada para "' + chosen + '" — reintentando con otra sombra');
+                const _fallbackPool = Object.keys(shadowPool).filter(function(n){ return summonData[n]; });
+                if (_fallbackPool.length === 0) { addLog('👻 Arise! (Pasiva): error interno — sin datos de sombras disponibles', 'info'); return; }
+                chosen = _fallbackPool[Math.floor(Math.random() * _fallbackPool.length)];
+                sData = summonData[chosen];
+            }
             // Get names of summons already on the field for this summoner
             const existingNames = new Set(
                 Object.values(gameState.summons)
@@ -3274,7 +3283,7 @@ function applyRegeneration(targetName, amount, duration) {
             );
             // If chosen shadow is already on field, try to find another available one
             if (existingNames.has(chosen)) {
-                const allPool = ['Igris', 'Iron', 'Tusk', 'Beru', 'Bellion', 'Kaisel', 'Kamish'];
+                const allPool = ['Igris', 'MinByung', 'Iron', 'Tusk', 'Beru', 'Bellion', 'Kaisel', 'Kamish'];
                 const available = allPool.filter(n => !existingNames.has(n));
                 if (available.length === 0) {
                     addLog('👻 Arise! (Pasiva): ' + charName + ' ya tiene todas las sombras invocadas', 'info');
