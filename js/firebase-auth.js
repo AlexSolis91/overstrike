@@ -700,74 +700,163 @@
         let rtFilterSpec = 'all';
         let rtPendingConfirmName = null; // personaje pendiente de confirmar en ranked
 
-        // ── Tabla de roles y especialidades ──
-        const RT_CHAR_ROLES = {
-            'Madara Uchiha':        { roles: ['DPS'], specs: ['Golpe Critico','Turnos adicionales','Transformacion'] },
-            'Sun Jin Woo':          { roles: ['Invoker','Crowd Control'], specs: ['Sigilo','Generacion de Cargas','Eliminacion de Cargas','Quemaduras'] },
-            'Aldebaran':            { roles: ['Tanque','DPS'], specs: ['Provocacion','Escudo'] },
-            'Leonidas':             { roles: ['Support'], specs: ['Limpiador de Debuffs','Generacion de Cargas','Regeneracion HP','Aturdimiento'] },
-            'Min Byung':            { roles: ['Healer','Support'], specs: ['Curacion HP','Limpiador de Debuffs','Generacion de Cargas','Revividor','Esquiva Area'] },
-            'Rengoku':              { roles: ['DPS','Dotter'], specs: ['Quemaduras','Aturdimiento','Generacion de Cargas'] },
-            'Aspros de Gemini':     { roles: ['Crowd Control'], specs: ['Limpiador de Buffs','Roba Cargas','Generacion de Cargas','Esquiva Area','Confusion'] },
-            'Ymir':                 { roles: ['Tanque','Crowd Control','Support'], specs: ['Provocacion','Sangrado','Congelacion','Megacongelacion','Espinas','Golpe Critico','Limpiador de Debuffs'] },
-            'Thestalos':            { roles: ['Tanque','Dotter'], specs: ['Contraataque','Provocacion','Quemaduras','Curacion HP','Escudo Sagrado','Golpe Critico','Daño triple'] },
-            'Alexstrasza':          { roles: ['Healer','Dotter'], specs: ['Curacion HP','Escudo','Aura de Fuego','Transformacion','Regeneracion HP','Aura de Luz'] },
-            'Anakin Skywalker':     { roles: ['DPS'], specs: ['Asistir','Golpe Critico','Eliminacion de Cargas','Aturdimiento','Miedo','Transformacion','Reflejar'] },
-            'Goku':                 { roles: ['DPS'], specs: ['Contraataque','Furia','Transformacion','Eliminacion de Cargas'] },
-            'Ragnar Lothbrok':      { roles: ['DPS'], specs: ['Sangrado','Miedo'] },
-            'Saitama':              { roles: ['DPS'], specs: ['Inmunidades','Furia','Daño triple','Insta Kill'] },
-            'Ozymandias':           { roles: ['Invoker','Crowd Control'], specs: ['Quemadura Solar','Curacion HP','Eliminacion de Cargas'] },
-            'Gilgamesh':            { roles: ['DPS','Crowd Control'], specs: ['Golpe Critico','Eliminacion de Cargas','Anti Invoker','Roba Cargas'] },
-            'Goku Black':           { roles: ['DPS','Crowd Control','Invoker'], specs: ['Aura Oscura','Roba Cargas','Golpe Critico','Aturdimiento','Eliminacion de Cargas'] },
-            'Saga de Geminis':      { roles: ['DPS','Crowd Control'], specs: ['Aumento de Velocidad','Posesion','Mega Posesion'] },
-            'Minato Namikaze':      { roles: ['Crowd Control','Support'], specs: ['Esquiva Area','Celeridad','Aturdimiento','Congelacion','Posesion','Quemadura Solar','Sangrado','Miedo','Confusion','Debilitar','Silenciar','Roba Cargas','Generacion de Cargas'] },
-            'Muzan Kibutsuji':      { roles: ['DPS','Dotter'], specs: ['Curacion HP','Veneno','Transformacion'] },
-            'Nakime':               { roles: ['Crowd Control','Support'], specs: ['Confusion','Roba Cargas','Roba HP','Inmunidades'] },
-            'Sauron':               { roles: ['Tanque','DPS'], specs: ['Aturdimiento','Mega provocacion','Curacion HP','Silenciar'] },
-            'Darth Vader':          { roles: ['DPS','Crowd Control'], specs: ['Aura Oscura','Miedo','Aturdimiento','Reflejar'] },
-            'Lich King':            { roles: ['Tanque','Invoker','Crowd Control'], specs: ['Revividor','Congelacion','Aura Gelida','Roba HP','Inmunidades'] },
-            'Padme Amidala':        { roles: ['Support'], specs: ['Generacion de Cargas','Escudo','Limpiador de Debuffs'] },
-            'Daenerys Targaryen':   { roles: ['Invoker','Dotter','Healer'], specs: ['Quemaduras','Escudo Sagrado','Curacion HP','Inmunidades'] },
-            'Tamayo':               { roles: ['Support','Healer'], specs: ['Limpiador de Debuffs','Curacion HP','Regeneracion HP','Confusion'] },
-            'Emperador Palpatine':  { roles: ['Crowd Control'], specs: ['Aturdimiento','Posesion','Curacion HP','Mega Aturdimiento'] },
-            'Gandalf':              { roles: ['Healer','Support'], specs: ['Curacion HP','Provocacion','Regeneracion HP','Aura de Luz','Armadura','Inmunidades','Escudo'] },
-            'Doomsday':             { roles: ['Tanque','Crowd Control'], specs: ['Aturdimiento','Mega Aturdimiento','Curacion HP','Eliminacion de Cargas'] },
-            'Ikki de Fenix':        { roles: ['DPS','Dotter'], specs: ['Revive','Quemaduras','Eliminacion de Cargas'] },
-            'Linterna Verde':       { roles: ['Tanque','Support'], specs: ['Provocacion','Esquivar','Limpiador de Debuffs','Mega Aturdimiento','Curacion HP','Generacion de Cargas'] },
-            'Vegeta':               { roles: ['DPS'], specs: ['Transformacion','Limpiador de Buffs','Daño triple','Debilitar','Sangrado','Revive'] },
-            'Giyu Tomioka':         { roles: ['Tanque'], specs: ['Escudo','Mega Provocacion','Armadura'] },
-            'Itachi Uchiha':        { roles: ['Support','Dotter','Crowd Control'], specs: ['Posesion','Limpiador de debuffs','Quemaduras','Anti Invoker','Roba Cargas','Mega Aturdimiento','Debilitar'] },
-            'Garou':                { roles: ['DPS'], specs: ['Transformacion','Armadura','Veneno','Infectar'] },
-            'Tanjiro Kamado':       { roles: ['Support'], specs: ['Generacion de Cargas','Roba Cargas','Eliminacion de Cargas'] },
-            'The Joker':            { roles: ['Dotter','Crowd Control'], specs: ['Veneno','Aturdimiento'] },
-            'Batman':               { roles: ['Crowd Control','Support'], specs: ['Inmunidades','Aturdimiento','Roba Cargas','Esquiva Area','Silenciar','Eliminacion de Cargas'] },
-            'Superman':             { roles: ['Tanque'], specs: ['Curacion HP','Reduccion de Daño','Provocacion','Limpiador de Buffs','Quemadura Solar','Congelacion','Debilitar','Anti Invoker','Transformacion','Inmunidades'] },
-            'Kratos':               { roles: ['DPS'], specs: ['Sangrado','Mega Aturdimiento','Daño triple','Insta Kill'] },
-            'Shaka de Virgo':       { roles: ['Tanque','Healer','Support','Crowd Control'], specs: ['Provocacion','Curacion HP','Regeneracion HP','Generacion de Cargas','Mega posesion','Agotamiento'] },
-            'Varian Wrynn':         { roles: ['DPS'], specs: ['Golpe Critico','Regeneracion HP','Miedo','Aumento de Velocidad','Daño doble'] },
-            'Ivar the Boneless':    { roles: ['DPS','Support'], specs: ['Esquiva Area','Inmunidades','Reduccion de Velocidad','Aumento de Velocidad','Generacion de Cargas','Mega posesion'] },
-            'Lagertha':             { roles: ['Tanque','Support'], specs: ['Provocacion','Reflejar','Escudo','Proteccion Sagrada','Asistir'] },
-            'Shinobu Kocho':        { roles: ['Healer','Dotter','Support'], specs: ['Veneno','Curacion HP','Concentracion','Generacion de Cargas'] },
-            'Rey Brujo de Angmar':  { roles: ['Tanque','Dotter'], specs: ['Inmunidades','Provocacion','Infectar','Curacion HP','Eliminacion de Cargas'] },
-            'Flash':                { roles: ['DPS'], specs: ['Turnos adicionales','Esquiva Area','Esquivar','Roba Cargas','Golpe Critico'] },
-            'Naruto':               { roles: ['DPS'], specs: ['Transformacion','Mega Aturdimiento','Debilitar','Sangrado','Turnos Adicionales','Quemaduras'] },
-            'Jon Snow':             { roles: ['Support','Invoker'], specs: ['Esquiva Area','Revive','Mega Aturdimiento','Veneno'] },
-            'Antares':              { roles: ['DPS','Dotter'], specs: ['Quemaduras','Inmunidades','Miedo','Daño triple','Transformacion'] },
-            'Sasuke Uchiha':        { roles: ['DPS'], specs: ['Turnos adicionales','Roba Cargas','Agotamiento','Golpe Critico'] },
-            'Douma':                { roles: ['Support','Crowd Control','Invoker'], specs: ['Curacion HP','Congelacion','Megacongelacion','Generacion de Cargas'] },
-            'Jaina Proudmoore':     { roles: ['DPS','Crowd Control'], specs: ['Congelacion','Daño triple','Megacongelacion','Limpiador de Debuffs','Proteccion Sagrada','Eliminacion de Cargas','Reduccion de Velocidad'] },
-            'Gaara':                { roles: ['Support','Crowd Control'], specs: ['Aturdimiento','Reduccion de Velocidad','Anti Invoker','Daño triple','Roba Cargas','Escudo Sagrado','Insta Kill'] },
-            'Rey de la Noche':      { roles: ['Crowd Control'], specs: ['Inmunidades','Anti Invoker','Congelacion','Posesion','Megacongelacion','Revividor','Daño triple'] },
-            'Darkseid':             { roles: ['Tanque'], specs: ['Mega Provocacion','Roba HP','Golpe Critico','Anti Invoker'] },
-            'Escanor':              { roles: ['DPS','Tanque'], specs: ['Quemadura Solar','Transformacion'] },
-            'Yorichi':              { roles: ['DPS','Crowd Control'], specs: ['Quemadura Solar','Golpe Critico','Quemaduras'] },
-            'Marik Ishtar':         { roles: ['Invoker','Crowd Control'], specs: ['Quemadura Solar','Aura Oscura','Anti Invoker','Eliminacion de Cargas'] },
-            'Daemon Targaryen':     { roles: ['DPS','Dotter'], specs: ['Daño triple','Golpe Critico','Quemaduras','Limpiador de Buffs'] },
-            'Manigoldo':            { roles: ['DPS'], specs: ['Roba HP','Roba Cargas','Mega Aturdimiento'] },
-            'Kyo Kusanagi':         { roles: ['Support','Dotter'], specs: ['Aura de Fuego','Quemaduras','Silenciar','Roba HP','Roba Cargas'] },
-            'Iori Yagami':          { roles: ['DPS','Support'], specs: ['Generacion de Cargas','Aumento de Velocidad','Roba Cargas','Daño doble','Eliminacion de Cargas'] },
-            'Tirion Fordring':      { roles: ['Healer','Support'], specs: ['Proteccion Sagrada','Escudo Sagrado','Curacion HP','Generacion de Cargas','Aura de Luz','Limpiador de Debuffs','Revividor'] },
+        // ── Tabla de OVERRIDES manuales: si un personaje aparece aquí, esto reemplaza
+        // por completo lo que calcule el motor automático (rtComputeRolesSpecs) para él.
+        // Úsala solo para corregir casos puntuales mal clasificados — todo lo demás se
+        // calcula solo a partir de las habilidades/pasiva reales del personaje.
+        const RT_CHAR_ROLES_OVERRIDE = {
+            // Casos límite que no cumplen literalmente ninguna de las 8 reglas (kit de
+            // autobuff/velocidad sin curación, CC, generación de cargas a aliados, ni daño
+            // que llegue al umbral de la regla 6) — se dejan como DPS por juicio manual.
+            'Flash':          { roles: ['DPS'], specs: ['Turnos adicionales','Esquiva Area','Esquivar','Roba Cargas','Golpe Critico'] },
+            'Sasuke Uchiha':  { roles: ['DPS'], specs: ['Turnos adicionales','Roba Cargas','Agotamiento','Golpe Critico','Mega Provocacion'] },
         };
+
+        // ════════════════════════════════════════════════════════════════
+        // MOTOR AUTOMÁTICO DE CLASIFICACIÓN — Rol / Especialidad
+        // Lee la pasiva + las 4 habilidades reales de cada personaje
+        // (characterData) y calcula Rol y Especialidad aplicando las reglas
+        // acordadas. Si el personaje tiene entrada en RT_CHAR_ROLES_OVERRIDE,
+        // esa entrada gana siempre sobre lo calculado aquí.
+        // ════════════════════════════════════════════════════════════════
+        const _rtNorm = function(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); };
+
+        // Vocabulario de buffs/debuffs/mecánicas → etiqueta canónica de Especialidad.
+        // Orden importa: las variantes "Mega X" / más específicas van ANTES que la genérica.
+        const RT_SPEC_KEYWORDS = [
+            [/mega aturdimiento/, 'Mega Aturdimiento'],
+            [/\baturdimiento/, 'Aturdimiento'],
+            [/megacongelacion/, 'Megacongelacion'],
+            [/\bcongelacion/, 'Congelacion'],
+            [/mega posesion/, 'Mega Posesion'],
+            [/\bposesion/, 'Posesion'],
+            [/mega provocacion/, 'Mega Provocacion'],
+            [/\bprovocacion/, 'Provocacion'],
+            [/quemadura solar/, 'Quemadura Solar'],
+            [/quemadura/, 'Quemaduras'],
+            [/veneno/, 'Veneno'],
+            [/sangrado/, 'Sangrado'],
+            [/ceguera/, 'Ceguera'],
+            [/silenciar|silencio/, 'Silenciar'],
+            [/confusion/, 'Confusion'],
+            [/\bmiedo\b/, 'Miedo'],
+            [/debilitar/, 'Debilitar'],
+            [/escudo sagrado/, 'Escudo Sagrado'],
+            [/\bescudo\b/, 'Escudo'],
+            [/regeneracion/, 'Regeneracion HP'],
+            [/\bfuria\b/, 'Furia'],
+            [/inmune|inmunidad/, 'Inmunidades'],
+            [/sigilo/, 'Sigilo'],
+            [/reflejar|refleja /, 'Reflejar'],
+            [/aura de fuego/, 'Aura de Fuego'],
+            [/aura oscura/, 'Aura Oscura'],
+            [/aura de luz/, 'Aura de Luz'],
+            [/aura gelida/, 'Aura Gelida'],
+            [/golpe critico|critico/, 'Golpe Critico'],
+            [/dano triple/, 'Daño triple'],
+            [/dano doble/, 'Daño doble'],
+            [/turno adicional|turnos adicionales/, 'Turnos adicionales'],
+            [/transformacion|se transforma/, 'Transformacion'],
+            [/contraataque/, 'Contraataque'],
+            [/esquiva area/, 'Esquiva Area'],
+            [/esquivar|esquiva\b/, 'Esquivar'],
+            [/revividor|revive\b|revivir/, 'Revividor'],
+            [/aumento de velocidad/, 'Aumento de Velocidad'],
+            [/reduccion de velocidad/, 'Reduccion de Velocidad'],
+            [/celeridad/, 'Celeridad'],
+            [/insta[ -]?kill/, 'Insta Kill'],
+            [/infectar|infeccion/, 'Infectar'],
+            [/agotamiento/, 'Agotamiento'],
+            [/concentracion/, 'Concentracion'],
+            [/proteccion sagrada/, 'Proteccion Sagrada'],
+            [/armadura/, 'Armadura'],
+            [/(limpia|disipa).{0,15}buff/, 'Limpiador de Buffs'],
+            [/(limpia|disipa).{0,15}debuff/, 'Limpiador de Debuffs'],
+            [/roba.{0,10}carga/, 'Roba Cargas'],
+            [/elimina.{0,10}carga/, 'Eliminacion de Cargas'],
+            [/roba.{0,10}hp/, 'Roba HP'],
+            [/recupera.{0,15}hp|\bcura[r]?\b/, 'Curacion HP']
+        ];
+
+        // Palabras clave de Crowd Control (regla 4) y Dotter (regla 5)
+        const RT_CC_KEYWORDS = ['aturdimiento','posesion','congelacion','ceguera','silenciar','confusion','miedo'];
+        const RT_DOT_KEYWORDS = ['veneno','quemadura','sangrado'];
+
+        // Detecta "cura/recupera HP" dirigido a ALIADOS (no solo a sí mismo).
+        // Con límite de palabra en 'cura' para no confundir con "oscura", "curacion" de otros, etc.
+        const RT_HEAL_ALLY_PAT = /\baliado\w*[^|,.]{0,15}\b(recupera|se cura|cura\w*)|\b(recupera|cura\w*)[^|,.]{0,20}\ba\s+(cada\s+|los\s+|todos\s+los\s+)?aliado/;
+        // Detecta "genera cargas" dirigido a ALIADOS (no solo a sí mismo)
+        const RT_CHARGE_ALLY_PAT = /\baliado\w*[^|,.]{0,20}genera[^|,.]{0,15}carga|genera[^|,.]{0,25}carga[^|,.]{0,20}\baliado/;
+
+        function rtComputeRolesSpecs(name) {
+            const cd = characterData[name];
+            if (!cd) return { roles: [], specs: [] };
+
+            const passiveDesc = _rtNorm(cd.passive ? cd.passive.description : '');
+            const abilities = cd.abilities || [];
+            const allTexts = [passiveDesc].concat(abilities.map(function(a){ return _rtNorm(a.description || ''); }));
+            const fullText = allTexts.join(' | ');
+            const maxHp = cd.maxHp || cd.hp || 0;
+
+            // ── REGLA 1: Especialidad — cualquier buff/debuff/mecánica detectado en pasiva o habilidades ──
+            const specSet = new Set();
+            RT_SPEC_KEYWORDS.forEach(function(pair) {
+                if (pair[0].test(fullText)) specSet.add(pair[1]);
+            });
+
+            const roleSet = new Set();
+
+            // ── REGLA 2: Tanque — otorga Provocación/Mega Provocación Y tiene 25+ HP ──
+            if (/\bprovocacion/.test(fullText) && maxHp >= 25) roleSet.add('Tanque');
+
+            // ── REGLA 3: Healer — cura/recupera HP sobre ALIADOS (no solo a sí mismo) ──
+            const healsAllies = abilities.some(function(a) {
+                const d = _rtNorm(a.description || '');
+                const t = (a.target || '');
+                if (!/recupera.{0,20}hp|\bcura\b|curacion/.test(d)) return false;
+                if (t.indexOf('ally') !== -1 || t === 'aoe') return true;
+                return RT_HEAL_ALLY_PAT.test(d);
+            }) || RT_HEAL_ALLY_PAT.test(passiveDesc);
+            if (healsAllies) roleSet.add('Healer');
+
+            // ── REGLA 4: Crowd Control ──
+            if (RT_CC_KEYWORDS.some(function(k){ return fullText.indexOf(k) !== -1; })) roleSet.add('Crowd Control');
+
+            // ── REGLA 5: Dotter ──
+            if (RT_DOT_KEYWORDS.some(function(k){ return fullText.indexOf(k) !== -1; })) roleSet.add('Dotter');
+
+            // ── REGLA 6: DPS — básico con 3+ daño, o movimiento AOE con 5+ daño ──
+            const isDps = abilities.some(function(a) {
+                if (a.type === 'basic' && (a.damage || 0) >= 3) return true;
+                if (a.target === 'aoe' && (a.damage || 0) >= 5) return true;
+                return false;
+            });
+            if (isDps) roleSet.add('DPS');
+
+            // ── REGLA 7: Support — genera cargas para ALIADOS (no solo para sí mismo) ──
+            const givesChargesToAllies = abilities.some(function(a) {
+                const d = _rtNorm(a.description || '');
+                const t = (a.target || '');
+                if (!/genera.{0,25}carga/.test(d)) return false;
+                if (t.indexOf('ally') !== -1 || t === 'aoe') return true;
+                return RT_CHARGE_ALLY_PAT.test(d);
+            }) || RT_CHARGE_ALLY_PAT.test(passiveDesc);
+            if (givesChargesToAllies) roleSet.add('Support');
+
+            // ── REGLA 8: Invoker — invocaciones ──
+            if (/invoca/.test(fullText)) roleSet.add('Invoker');
+
+            return { roles: Array.from(roleSet), specs: Array.from(specSet) };
+        }
+
+        // Cache simple (characterData no cambia en runtime)
+        const _rtComputedCache = {};
+        function rtGetCharRoleData(name) {
+            if (RT_CHAR_ROLES_OVERRIDE[name]) return RT_CHAR_ROLES_OVERRIDE[name];
+            if (!_rtComputedCache[name]) _rtComputedCache[name] = rtComputeRolesSpecs(name);
+            return _rtComputedCache[name];
+        }
+
         let rtAttackTeam = [];   // up to 5 char names
         let rtDefenseTeam = [];  // up to 5 char names
 
@@ -889,7 +978,10 @@
         // ── Colectar todas las especialidades únicas para el filtro ──
         function rtGetAllSpecs() {
             const specs = new Set();
-            Object.values(RT_CHAR_ROLES).forEach(function(d){ (d.specs||[]).forEach(function(s){ specs.add(s); }); });
+            Object.keys(characterData).forEach(function(name) {
+                const d = rtGetCharRoleData(name);
+                (d.specs || []).forEach(function(s){ specs.add(s); });
+            });
             return Array.from(specs).sort();
         }
 
@@ -978,7 +1070,7 @@
                 if (!cd || !cd.abilities) return;
 
                 // Aplicar filtro
-                const roleData = RT_CHAR_ROLES[name];
+                const roleData = rtGetCharRoleData(name);
                 if (rtFilterRole !== 'all') {
                     if (!roleData || !roleData.roles.some(function(r){ return normF(r) === normF(rtFilterRole); })) return;
                 }
@@ -1087,7 +1179,7 @@
             const portrait = getCharPortrait(name);
             const passiveName = char.passive ? char.passive.name : '';
             const passiveDesc = char.passive ? char.passive.description : '';
-            const roleData = RT_CHAR_ROLES[name];
+            const roleData = rtGetCharRoleData(name);
             const roles = roleData ? roleData.roles.join(' · ') : '';
 
             const abilitiesHtml = (char.abilities || []).map(function(ab){
