@@ -106,8 +106,8 @@
                                        (c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'quemadura solar'; });
                             }).length;
                             if (_esQsCount > 0) {
-                                if (!hasQuemaduraSolar(charName)) currentChar.hp = Math.min(currentChar.maxHp, (currentChar.hp||0) + _esQsCount);
-                                else addLog('☀️ QS bloquea curación de ' + charName, 'debuff');
+                                if (!hasQuemaduraSolar(currentCharName)) currentChar.hp = Math.min(currentChar.maxHp, (currentChar.hp||0) + _esQsCount);
+                                else addLog('☀️ QS bloquea curación de ' + currentCharName, 'debuff');
                                 addLog('🦁 Orgullo del León: ' + currentCharName + ' recupera ' + _esQsCount + ' HP (' + _esQsCount + ' enemigos con QS)', 'heal');
                             }
                         }
@@ -233,8 +233,8 @@
                         if (currentChar.antaresTransformed && currentChar.antaresTransformTurns > 0) {
                             if (typeof canHeal !== 'function' || canHeal(currentCharName)) {
                                 const _antOldHp = currentChar.hp;
-                                if (!hasQuemaduraSolar(charName)) currentChar.hp = Math.min(currentChar.maxHp, currentChar.hp + 5);
-                            else addLog('☀️ QS bloquea la Regeneración de ' + charName, 'debuff');
+                                if (!hasQuemaduraSolar(currentCharName)) currentChar.hp = Math.min(currentChar.maxHp, currentChar.hp + 5);
+                            else addLog('☀️ QS bloquea la Regeneración de ' + currentCharName, 'debuff');
                                 if (currentChar.hp > _antOldHp) addLog('🐉 Dragon de la Destruccion: ' + currentCharName + ' recupera 5 HP', 'heal');
                             }
                             currentChar.antaresTransformTurns--;
@@ -248,8 +248,8 @@
                         // PASIVA LIMBO: Madara en Modo Rikudō regenera 1 HP por turno
                         if (((currentCharName === 'Madara Uchiha' || currentCharName.startsWith('Madara Uchiha')) || currentCharName === 'Madara Uchiha v2') && currentChar.rikudoMode && currentChar.hp > 0) {
                             const oldHp = currentChar.hp;
-                            if (!hasQuemaduraSolar(charName)) currentChar.hp = Math.min(currentChar.maxHp, currentChar.hp + 1);
-                            else addLog('☀️ QS bloquea la Regeneración de ' + charName, 'debuff');
+                            if (!hasQuemaduraSolar(currentCharName)) currentChar.hp = Math.min(currentChar.maxHp, currentChar.hp + 1);
+                            else addLog('☀️ QS bloquea la Regeneración de ' + currentCharName, 'debuff');
                             if (currentChar.hp > oldHp) {
                                 addLog(`🌀 Limbo: Madara recupera 1 HP (${currentChar.hp}/${currentChar.maxHp})`, 'heal');
                                 triggerBendicionSagrada(currentChar.team, 1);
