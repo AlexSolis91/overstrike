@@ -3665,23 +3665,29 @@
 
         // ── CHAT ──
         function initChat(roomId) {
-            document.getElementById('chatToggleBtn').style.display = 'flex';
+            // BUG CRÍTICO: chatToggleBtn/chatUnreadBadge ya no existen en el HTML (UI vieja
+            // reemplazada), así que esto lanzaba TypeError y rompía startOnlineGame ANTES de
+            // llegar a la pantalla de selección de personajes — nadie podía unirse a una sala.
+            const toggleBtn = document.getElementById('chatToggleBtn');
+            if (toggleBtn) toggleBtn.style.display = 'flex';
             const chatRef = db.ref('rooms/' + roomId + '/chat');
             chatListener = chatRef.on('child_added', function(snap) {
                 const msg = snap.val();
                 if (!msg) return;
                 const isMe = msg.uid === currentUser.uid;
-                const msgEl = document.createElement('div');
-                msgEl.className = 'chat-msg' + (isMe ? ' mine' : '');
-                msgEl.innerHTML = '<span class="chat-author">' + escapeHtml(msg.name) + '</span><br><span class="chat-text">' + escapeHtml(msg.text) + '</span>';
-                document.getElementById('chatMessages').appendChild(msgEl);
-                document.getElementById('chatMessages').scrollTop = 99999;
+                const msgsContainer = document.getElementById('chatMessages');
+                if (msgsContainer) {
+                    const msgEl = document.createElement('div');
+                    msgEl.className = 'chat-msg' + (isMe ? ' mine' : '');
+                    msgEl.innerHTML = '<span class="chat-author">' + escapeHtml(msg.name) + '</span><br><span class="chat-text">' + escapeHtml(msg.text) + '</span>';
+                    msgsContainer.appendChild(msgEl);
+                    msgsContainer.scrollTop = 99999;
+                }
 
                 if (!chatOpen && !isMe) {
                     unreadMessages++;
                     const badge = document.getElementById('chatUnreadBadge');
-                    badge.textContent = unreadMessages;
-                    badge.style.display = 'flex';
+                    if (badge) { badge.textContent = unreadMessages; badge.style.display = 'flex'; }
                 }
             });
         }
@@ -3689,17 +3695,21 @@
         function toggleChat() {
             chatOpen = !chatOpen;
             const panel = document.getElementById('chatPanel');
+            if (!panel) return;
             panel.style.display = chatOpen ? 'flex' : 'none';
             if (chatOpen) {
                 unreadMessages = 0;
-                document.getElementById('chatUnreadBadge').style.display = 'none';
-                document.getElementById('chatMessages').scrollTop = 99999;
-                setTimeout(function() { document.getElementById('chatInput').focus(); }, 100);
+                const badge = document.getElementById('chatUnreadBadge');
+                if (badge) badge.style.display = 'none';
+                const msgsContainer = document.getElementById('chatMessages');
+                if (msgsContainer) msgsContainer.scrollTop = 99999;
+                setTimeout(function() { const inp = document.getElementById('chatInput'); if (inp) inp.focus(); }, 100);
             }
         }
 
         function sendChatMessage() {
             const input = document.getElementById('chatInput');
+            if (!input) return;
             const text = input.value.trim();
             if (!text || !currentRoomId || !currentUser) return;
             input.value = '';
@@ -3717,8 +3727,10 @@
 
         // Show chat in local/solo mode too? No — hide unless online
         function hideChatUI() {
-            document.getElementById('chatToggleBtn').style.display = 'none';
-            document.getElementById('chatPanel').style.display = 'none';
+            const toggleBtn = document.getElementById('chatToggleBtn');
+            if (toggleBtn) toggleBtn.style.display = 'none';
+            const panel = document.getElementById('chatPanel');
+            if (panel) panel.style.display = 'none';
             chatOpen = false;
             if (chatListener && currentRoomId) {
                 db.ref('rooms/' + currentRoomId + '/chat').off('child_added', chatListener);
