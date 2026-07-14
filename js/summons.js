@@ -3254,7 +3254,13 @@ function applyRegeneration(targetName, amount, duration) {
             };
             // Check if we already have max summons (5 per team)
             const teamSummons = Object.values(gameState.summons).filter(s => s && s.team === sjwChar.team);
-            if (teamSummons.length >= 5) return;
+            if (teamSummons.length >= 5) {
+                // BUG: antes esto retornaba en silencio, sin ningún aviso — parecía que Arise!
+                // simplemente "no se activaba" esa ronda cuando en realidad era el límite de 5
+                // invocaciones por equipo (compartido con cualquier otro invocador aliado).
+                addLog('👻 Arise! (Pasiva): equipo al límite de 5 invocaciones — no se puede invocar esta ronda', 'info');
+                return;
+            }
             // Pick random shadow by weight
             let rand = Math.random();
             let cumulative = 0;
