@@ -53,6 +53,11 @@
                 addLog('👑 El Rey Demonio: Meliodas ya se ha transformado', 'info');
                 return;
             }
+            // ¡ARDE, COSMOS! (Seiya): bloqueado hasta el final de la ronda tras su primer uso
+            if (ability.effect === 'arde_cosmos_seiya' && char._ardeCosmosUsedThisRound) {
+                addLog('🔥 ¡Arde, cosmos!: ya se usó esta ronda — disponible en la siguiente', 'info');
+                return;
+            }
             // ANÁLISIS DE PUNTOS DÉBILES (Batman): bloquea Básicos y Over 1T
             if (ability.type === 'basic' || ability.type === 'over') {
                 const _hasAnalisis = (char.statusEffects||[]).some(function(e){
