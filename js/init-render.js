@@ -458,6 +458,12 @@
             var portraitWrap = card.querySelector('.char-portrait-wrap');
             if (!portraitWrap) return;
 
+            // SFX: sonido de escudo mágico, una vez por animación disparada
+            var sfxShield = document.getElementById('sfxShieldBuff');
+            if (sfxShield && typeof audioManager !== 'undefined' && !audioManager.muted) {
+                sfxShield.currentTime = 0; sfxShield.volume = 0.6; sfxShield.play().catch(function(){});
+            }
+
             var wRect = portraitWrap.getBoundingClientRect();
 
             // ── Positions: start centered on portrait, end at shield value (bottom-left) ──
