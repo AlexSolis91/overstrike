@@ -40,7 +40,7 @@
                     const prev = document.getElementById(this.currentTrack);
                     if (prev) { try { prev.pause(); prev.currentTime = 0; } catch(e) {} }
                 }
-                const trackNum = Math.floor(Math.random() * 8) + 1;
+                const trackNum = Math.floor(Math.random() * 11) + 1;
                 const trackId = 'audioBattle' + trackNum;
                 this.currentTrack = trackId;
                 if (this.muted) return;
@@ -53,11 +53,13 @@
             },
 
             stopBattleMusic: function() {
-                for (let i = 1; i <= 8; i++) {
+                for (let i = 1; i <= 11; i++) {
                     const el = document.getElementById('audioBattle' + i);
                     if (el) { try { el.pause(); el.currentTime = 0; } catch(e) {} }
                 }
-                if (this.currentTrack && this.currentTrack.startsWith('audioBattle')) {
+                const lkEl = document.getElementById('audioBossLichKing');
+                if (lkEl) { try { lkEl.pause(); lkEl.currentTime = 0; } catch(e) {} }
+                if (this.currentTrack && (this.currentTrack.startsWith('audioBattle') || this.currentTrack === 'audioBossLichKing')) {
                     this.currentTrack = null;
                 }
             },
@@ -138,7 +140,7 @@
             toggleMute: function() {
                 this.muted = !this.muted;
                 if (this.muted) {
-                    ['audioMenu','audioBattle1','audioBattle2','audioBattle3','audioBattle4','audioBattle5','audioBattle6','audioBattle7','audioBattle8','audioSelect'].forEach(function(id) {
+                    ['audioMenu','audioBattle1','audioBattle2','audioBattle3','audioBattle4','audioBattle5','audioBattle6','audioBattle7','audioBattle8','audioBattle9','audioBattle10','audioBattle11','audioBossLichKing','audioSelect'].forEach(function(id) {
                         const e = document.getElementById(id);
                         if (e) e.pause();
                     });
