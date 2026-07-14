@@ -201,21 +201,21 @@
             },
             'Iron': {
                 name: 'Iron',
-                hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],
+                hp: 10, maxHp: 10, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/7hZFpH5G/Captura_de_pantalla_2026_03_11_145721.png',
                 ironShield: true, ironNoST: true,
                 passive: 'Voluntad de Acero: absorbe todo el daño por golpe que fuera a recibir su invocador. Iron no puede ser seleccionado por ataques ST del enemigo. Al inicio de cada ronda el equipo aliado genera 3 cargas.'
             },
             'Tusk': {
                 name: 'Tusk',
-                hp: 6, maxHp: 6, summoner: null, team: null, statusEffects: [],
+                hp: 5, maxHp: 5, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/Wz1BQNdz/Captura_de_pantalla_2026_03_11_145950.png',
                 tuskFireHypno: true,
                 passive: 'Hipno de Fuego: Duplica el daño causado por Quemaduras sobre los enemigos. Al inicio de cada ronda aplica Quemadura 2HP de 1 turno a 2 enemigos aleatorios.'
             },
             'Beru': {
                 name: 'Beru',
-                hp: 6, maxHp: 6, summoner: null, team: null, statusEffects: [],
+                hp: 5, maxHp: 5, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/zvGs9zyZ/Captura_de_pantalla_2026_03_11_150049.png',
                 passive: 'Garras del Abismo: Al final de cada ronda causa 5 de daño en un enemigo aleatorio + 1 daño adicional por cada carga que tenga ese enemigo.'
             },
@@ -223,20 +223,20 @@
                 name: 'Bellion',
                 hp: 10, maxHp: 10, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/XqYRTjpm/Captura_de_pantalla_2026_03_11_150350.png',
-                passive: 'General de Ashborn: La primera vez por ronda que un ataque especial u Over es activado por un enemigo, cancela ese movimiento.'
+                passive: 'General de Ashborn: La primera vez por ronda que un ataque especial u Over es activado por un enemigo, cancela ese movimiento. Al final de cada ronda causa 2 de daño sobre un enemigo aleatorio por cada Sombra invocada.'
             },
             'Kaisel': {
                 name: 'Kaisel',
-                hp: 7, maxHp: 7, summoner: null, team: null, statusEffects: [],
+                hp: 10, maxHp: 10, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/GtmWZL41/Captura_de_pantalla_2026_03_11_151735.png',
-                passive: 'Maldicion de Kaisel: Al final de cada ronda reduce 3 cargas a todos los enemigos.'
+                passive: 'Maldición de Kaisel: Al final de cada ronda reduce 3 cargas de todos los enemigos. Al inicio de cada ronda aplica 2 stacks de Veneno a todos los enemigos.'
             },
             'Kamish': {
                 name: 'Kamish',
                 hp: 30, maxHp: 30, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.ibb.co/wFPCX3jV/Captura-de-pantalla-2026-04-24-141535.png',
                 kamishNoST: true,
-                passive: 'Terror de las Sombras: No puede ser seleccionado por ataques ST. Mientras esté en batalla, cualquier daño recibido por un aliado genera la misma cantidad de cargas en ese aliado. Al final de cada ronda todos los enemigos reciben 4 de daño.'
+                passive: 'Terror de las Sombras: Kamish no puede ser seleccionado como objetivo de ataques ST del enemigo. Al final de cada ronda causa 50 de daño repartido de forma aleatoria entre todos los enemigos.'
             },
             'Sindragosa': {
                 name: 'Sindragosa',
