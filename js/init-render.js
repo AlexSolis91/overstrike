@@ -446,6 +446,8 @@
         var _prevHpSnapshot = {};
         // Snapshot de cargas anterior para detectar generación de cargas
         var _prevChargesSnapshot = {};
+        // Snapshot de escudo anterior para detectar ganancia de escudo (single o multi-target, sin importar la fuente)
+        var _prevShieldSnapshot = {};
 
         // ── Shield gain animation — full JS control, no CSS animation ──────────
         window.animateShieldGain = function(charName) {
@@ -576,6 +578,16 @@
                         if (typeof _animCard === 'function') _animCard(_rcN, 'anim-charge-glow', 750);
                     }
                     _prevChargesSnapshot[_rcN] = _currCharges;
+
+                    // ── DETECCIÓN DE ESCUDO: dispara animación 🛡️ para CUALQUIER aumento de escudo,
+                    // sea single-target (applyShield) o multi-target (loops que asignan .shield directo,
+                    // como Resplandor de Gandalf o la pasiva Estratega de Odin de Ragnar) ──
+                    var _prevShield = _prevShieldSnapshot[_rcN];
+                    var _currShield = _rcC.shield || 0;
+                    if (_prevShield !== undefined && _currShield > _prevShield && !_rcC.isDead) {
+                        if (typeof window.animateShieldGain === 'function') window.animateShieldGain(_rcN);
+                    }
+                    _prevShieldSnapshot[_rcN] = _currShield;
                 }
             }
 
