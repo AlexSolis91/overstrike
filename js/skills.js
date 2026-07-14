@@ -12109,6 +12109,24 @@
             audioManager.stopBattleMusic();
             audioManager.play('audioMenu');
 
+            // ══ SONIDO DE VICTORIA/DERROTA — independiente por cliente ══
+            // Cada jugador (host/guest, o vs IA) corre showGameOver() en su propia máquina con
+            // su propio gameState.myTeam, así que cada uno decide localmente si ganó o perdió
+            // sin depender de lo que le suene al otro jugador.
+            try {
+                if (!message.includes('EMPATE')) {
+                    const _goWinnerTeam = message.includes('HUNTERS') ? 'team1' : (message.includes('REAPERS') ? 'team2' : null);
+                    if (_goWinnerTeam) {
+                        const _goMyTeam = gameState.myTeam || window._rankedPlayerTeam || (typeof csState !== 'undefined' && csState && csState.onlineTeam) || 'team1';
+                        if (_goWinnerTeam === _goMyTeam) {
+                            if (typeof audioManager.playVictorySfx === 'function') audioManager.playVictorySfx();
+                        } else {
+                            if (typeof audioManager.playDefeatSfx === 'function') audioManager.playDefeatSfx();
+                        }
+                    }
+                }
+            } catch(e) {}
+
             // ══ RANKED STATS ══
             if (typeof saveRankedResult === 'function' && window._rankedMode) {
                 try {
