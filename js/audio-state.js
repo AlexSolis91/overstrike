@@ -193,6 +193,12 @@
                 img: 'https://i.postimg.cc/T13zZdKD/Captura_de_pantalla_2026_03_11_145542.png',
                 passive: 'Comandante Rojo Sangriento: Al final de cada ronda causa 2 de daño AOE a todos los enemigos (incluyendo invocaciones). Al final de cada ronda elimina una invocación enemiga aleatoria del campo.'
             },
+            'MinByung': {
+                name: 'MinByung',
+                hp: 5, maxHp: 5, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.ibb.co/B5KzCTc4/Min-Byung-Gyu.jpg',
+                passive: 'Shadow Healing: Al inicio de cada ronda aplica Buff Regeneración 20% 1 turno sobre todos los aliados. Cuando esta invocación es eliminada, genera 3 cargas a todos los aliados.'
+            },
             'Iron': {
                 name: 'Iron',
                 hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],
