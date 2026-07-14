@@ -461,8 +461,11 @@
             // ── Positions: start centered on portrait, end at shield value (bottom-left) ──
             var centerX = wRect.left + wRect.width  * 0.50;
             var centerY = wRect.top  + wRect.height * 0.42;
-            var endX    = wRect.left + wRect.width  * 0.12;
-            var endY    = wRect.top  + wRect.height * 0.90;
+            // El overlay de HP/Escudo (.char-hp-overlay) está centrado y pegado abajo del retrato,
+            // no a la izquierda — el destino de la animación debe coincidir con esa posición real
+            // (antes iba a 12% del ancho, lo que hacía que visualmente "se fuera en dirección opuesta").
+            var endX    = wRect.left + wRect.width  * 0.50;
+            var endY    = wRect.top  + wRect.height * 0.95;
 
             // ── Sizes: start BIG (min 120px so it's always visible regardless of card size) ──
             var startFontPx = Math.max(120, Math.round(wRect.width * 1.4));
