@@ -2743,10 +2743,10 @@
             target.shield = prevShield + shieldAmount;
             if (specialEffect) target.shieldEffect = specialEffect;
             addLog('🛡️ ' + targetName + ' recibe Escudo +' + shieldAmount + ' HP (total: ' + target.shield + ' HP)', 'buff');
-            // ── Trigger shield gain animation ──
-            if (typeof window.animateShieldGain === 'function') {
-                window.animateShieldGain(targetName);
-            }
+            // La animación 🛡️ ahora la dispara la detección genérica de cambios de escudo
+            // en renderCharacters() (init-render.js) — así cubre TAMBIÉN los casos donde el
+            // escudo se asigna directo (.shield = ...) sin pasar por esta función, como
+            // Resplandor de Gandalf o la pasiva Estratega de Odin de Ragnar (multi-target).
         }
 
         
