@@ -86,6 +86,23 @@
   <source src="https://ia601904.us.archive.org/13/items/super-buu-theme-full/Super%20Buu%20Theme%20%28FULL%29.mp3" type="audio/mpeg">
 </audio>
 
+<audio id="audioBattle9" loop preload="auto">
+  <source src="https://ia903201.us.archive.org/26/items/naruto-shippuden-ost-1-track-26-keisei-gyakuten-reverse-situation_202607/Jinwoo%20Saves%20A-Rank%20Team%20_%20Solo%20Leveling%20S2%20EP5%20OST%20_%20%E4%BF%BA%E3%81%A0%E3%81%91%E3%83%AC%E3%83%99%E3%83%AB%E3%82%A2%E3%83%83%E3%83%97%E3%81%AA%E4%BB%B6%20OST%20Cover.mp3" type="audio/mpeg">
+</audio>
+
+<audio id="audioBattle10" loop preload="auto">
+  <source src="https://ia903201.us.archive.org/26/items/naruto-shippuden-ost-1-track-26-keisei-gyakuten-reverse-situation_202607/Naruto%20Shippuden%20OST%201%20-%20Track%2026%20-%20Keisei%20Gyakuten%20%28%20Reverse%20Situation%20%29.mp3" type="audio/mpeg">
+</audio>
+
+<audio id="audioBattle11" loop preload="auto">
+  <source src="https://ia903201.us.archive.org/26/items/naruto-shippuden-ost-1-track-26-keisei-gyakuten-reverse-situation_202607/One%20punch%20man%20-%20OST%20-%2035.%20Dark%20Energy.mp3" type="audio/mpeg">
+</audio>
+
+<!-- Música EXCLUSIVA del Jefe de Sala Lich King — nunca entra a la rotación aleatoria -->
+<audio id="audioBossLichKing" loop preload="auto">
+  <source src="https://ia902809.us.archive.org/6/items/01-wrath-of-the-lich-king-main-title/01%20-%20Wrath%20Of%20The%20Lich%20King%20%28Main%20Title%29.mp3" type="audio/mpeg">
+</audio>
+
 <!-- audioOverSfx: reemplazada por URL nueva -->
 <audio id="audioOverSfx" preload="auto">
   <source src="https://ia600905.us.archive.org/7/items/smash-bros-death/smash-bros-death.mp3" type="audio/mpeg">
@@ -2069,7 +2086,14 @@
 
                 // Cargar reliquias para todos los modos
                 window.loadGameRelics();
-                audioManager.playRandomBattle();
+                // Lich King tiene música exclusiva y fija — nunca entra a la rotación aleatoria
+                var _lkBossName = (csState.gameMode === 'boss' && window._bossBattleData && window._bossBattleData.boss)
+                    ? window._bossBattleData.boss.name : '';
+                if (_lkBossName === 'Lich King') {
+                    audioManager.play('audioBossLichKing');
+                } else {
+                    audioManager.playRandomBattle();
+                }
             } catch(err) {
                 console.error('Error en csStartGame:', err);
             }
