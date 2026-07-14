@@ -941,6 +941,34 @@ function applyDebuff(targetName, effectObj) {
             applyDebuff(targetName, { name, type: 'debuff', duration, emoji });
             addLog(`${emoji} ${targetName} queda aturdido por ${duration} turno${duration > 1 ? 's' : ''}`, 'damage');
             if (typeof registerCC === 'function' && gameState.selectedCharacter) registerCC(gameState.selectedCharacter);
+
+            // DOOMSDAY (Adaptación Reactiva): cada vez que se aplica Aturdimiento/Mega Aturdimiento
+            // a un enemigo suyo, Doomsday roba 3 cargas de TODOS los enemigos.
+            if (!passiveExecuting) {
+                const _dsTgt = gameState.characters[targetName];
+                if (_dsTgt) {
+                    for (const _dsN in gameState.characters) {
+                        const _dsC = gameState.characters[_dsN];
+                        if (!_dsC || _dsC.isDead || _dsC.hp <= 0 || !_dsC.passive || _dsC.passive.name !== 'Adaptación Reactiva') continue;
+                        if (_dsC.team === _dsTgt.team) continue; // Doomsday debe ser enemigo del aturdido
+                        let _dsTotalStolen = 0;
+                        Object.keys(gameState.characters).forEach(function(_en) {
+                            const _ec = gameState.characters[_en];
+                            if (!_ec || _ec.team !== _dsTgt.team || _ec.isDead || _ec.hp <= 0) return;
+                            const _stolen = Math.min(3, _ec.charges || 0);
+                            if (_stolen > 0) {
+                                _ec.charges = Math.max(0, (_ec.charges || 0) - _stolen);
+                                _dsTotalStolen += _stolen;
+                            }
+                        });
+                        if (_dsTotalStolen > 0) {
+                            _dsC.charges = Math.min(20, (_dsC.charges || 0) + _dsTotalStolen);
+                            addLog('🦴 Adaptación Reactiva: Doomsday roba ' + _dsTotalStolen + ' cargas en total de todos los enemigos (Aturdimiento aplicado a ' + targetName + ')', 'buff');
+                        }
+                        break;
+                    }
+                }
+            }
         }
 
         function applyBleed(targetName, duration) {
