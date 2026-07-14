@@ -393,12 +393,12 @@
                 hp: 30, maxHp: 30, speed: 84, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/m55KhhZd/descarga-2.jpg',
-                passive: { name: 'Adaptación Reactiva', description: 'Cada vez que recibe un golpe, recupera 2 HP. Cada vez que Doomsday recupera HP, elimina 2 cargas de un enemigo aleatorio.' },
+                passive: { name: 'Adaptación Reactiva', description: 'Cada vez que recibe un golpe, recupera 2 HP. Cada vez que Doomsday recupera HP, elimina 2 cargas de un enemigo aleatorio. Cada vez que un debuff Aturdimiento es aplicado en un enemigo, roba 3 cargas de todos los enemigos.' },
                 abilities: [
                     { name: 'Rugido del Devastador', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'rugido_devastador', description: 'Se aplica Buff Provocación. Se aplica Buff Cuerpo Perfecto.' },
                     { name: 'Smashing Strike', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'multi', effect: 'smashing_strike', description: 'Ataca 2 veces a enemigos aleatorios. Cada golpe tiene 50% de Aturdimiento.' },
                     { name: 'Skill Drain', type: 'special', cost: 7, chargeGain: 0, damage: 3, target: 'aoe', effect: 'skill_drain', description: 'Causa 3 AOE. Roba de 1 a 5 HP del enemigo golpeado por este ataque.' },
-                    { name: 'Devastator Punish', type: 'over', cost: 8, chargeGain: 0, damage: 5, target: 'single', effect: 'devastator_punish', description: 'Causa 5 daño. 10% de probabilidad de eliminar al objetivo — si lo elimina: disipa Buffs enemigos y aplica Mega Aturdimiento. Vs Jefe de Sala: causa 10-30 daño adicional en lugar del 10% KO.' }
+                    { name: 'Devastator Punish', type: 'over', cost: 12, chargeGain: 0, damage: 0, target: 'single', effect: 'devastator_punish', description: 'El daño base de este ataque es igual al HP actual de Doomsday. 50% de probabilidad de golpe crítico (daño doble). Doomsday recupera 20 HP y aplica Debilitar 2 turnos a todo el equipo enemigo.' }
                 ]
             },
             'Ikki de Fenix': {
