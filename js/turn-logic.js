@@ -2006,6 +2006,21 @@
                         });
                     });
 
+                    // ── KAISEL: aplica 2 stacks de Veneno a TODOS los enemigos al inicio de ronda ──
+                    // (esta mitad de "Maldición de Kaisel" nunca había sido implementada — solo
+                    // corría el robo de 3 cargas de fin de ronda; faltaba el veneno de inicio de ronda)
+                    Object.keys(gameState.summons).forEach(function(sid) {
+                        const _kai2 = gameState.summons[sid];
+                        if (!_kai2 || _kai2.name !== 'Kaisel' || _kai2.hp <= 0) return;
+                        const _kai2ETeam = _kai2.team === 'team1' ? 'team2' : 'team1';
+                        for (const _n in gameState.characters) {
+                            const _c = gameState.characters[_n];
+                            if (!_c || _c.team !== _kai2ETeam || _c.isDead || _c.hp <= 0) continue;
+                            if (typeof applyPoison === 'function') applyPoison(_n, 2);
+                        }
+                        addLog('☠️ Kaisel (Maldición): 2 stacks de Veneno aplicados a todo el equipo enemigo', 'debuff');
+                    });
+
                     // ── ABSOLUTE ZERO (Sub-Zero): inicio de ronda → Megacongelación en enemigo aleatorio ──
                     for (const _szN in gameState.characters) {
                         const _szC = gameState.characters[_szN];
@@ -3250,7 +3265,6 @@
                         const sigiloEff = char.statusEffects[sigiloIdx];
                         char.charges += 1;
                         addLog(`👤 ${name} genera 1 carga por Sigilo (fin de ronda)`, 'buff');
-                        triggerIgrisPassive(name);
                         // Decrementar rondas restantes
                         sigiloEff.sigiloRoundsLeft = (sigiloEff.sigiloRoundsLeft || 1) - 1;
                         if (sigiloEff.sigiloRoundsLeft <= 0) {
@@ -3259,6 +3273,19 @@
                         }
                     }
                 }
+
+                // BUG FIX: triggerIgrisPassive() estaba enganchado adentro del loop de Sigilo de arriba
+                // (solo se llamaba si el invocador de Igris todavía tenía Sigilo activo ese turno), así
+                // que la pasiva de Igris se saltaba la mayoría de las rondas. Ahora corre siempre, para
+                // cada invocador que tenga un Igris vivo en el campo — igual que Beru/Kaisel/Bellion/Kamish.
+                (function() {
+                    const _igrisSummoners = new Set();
+                    Object.keys(gameState.summons||{}).forEach(function(sid) {
+                        const s = gameState.summons[sid];
+                        if (s && s.name === 'Igris' && s.hp > 0 && s.summoner) _igrisSummoners.add(s.summoner);
+                    });
+                    _igrisSummoners.forEach(function(summonerName) { triggerIgrisPassive(summonerName); });
+                })();
                 
                 // Activar pasiva de Beru
                 triggerBeruPassive();
