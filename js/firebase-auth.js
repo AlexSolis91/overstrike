@@ -4155,16 +4155,21 @@
                 _updateGameChatDot();
             });
 
-            // .on('child_added') fires ONLY when a NEW notification arrives — skip initial load
+            // .on('child_added') fires when a NEW sender notifies for the first time.
+            // .on('child_changed') fires when the SAME sender sends another message
+            // (the node chat_notifications/{me}/{sender} is overwritten with .set(), not pushed,
+            // so a 2nd+ message from someone we haven't read yet is a "change", not an "add").
+            // Both must play the sound — skip only the initial load.
             var _initialized = false;
-            notifRef.on('child_added', function(snap) {
+            function _playChatNotifSound() {
                 if (!_initialized) return; // skip existing notifications on page load
-                // New message arrived in real time
                 var sfx = document.getElementById('sfxChatNotif');
                 if (sfx && typeof audioManager !== 'undefined' && !audioManager.muted) {
                     sfx.currentTime = 0; sfx.volume = 0.7; sfx.play().catch(function(){});
                 }
-            });
+            }
+            notifRef.on('child_added', _playChatNotifSound);
+            notifRef.on('child_changed', _playChatNotifSound);
 
             // Mark initialization complete after all existing children are loaded
             notifRef.once('value', function() {
