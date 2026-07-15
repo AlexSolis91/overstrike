@@ -6637,6 +6637,8 @@
                     triggerBeruPassive();
                 if (typeof triggerKaiselPassive === 'function' && _dmShadows.some(function(e){ return e[1].name==='Kaisel'; }))
                     triggerKaiselPassive();
+                if (typeof triggerMinByungStartOfRound === 'function' && _dmShadows.some(function(e){ return e[1].name==='MinByung'; }))
+                    triggerMinByungStartOfRound();
                 if (_dmShadows.some(function(e){ return e[1].name==='Bellion'; })) {
                     // Bellion: 2 damage per shadow to random enemy
                     const _bellCount = _dmCount;
