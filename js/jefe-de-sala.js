@@ -552,6 +552,16 @@
                       '⚔️ ATACAR AL JEFE DE SALA' +
                       '</button>',
 
+                '<button onclick="window.showBossDescriptionModal && window.showBossDescriptionModal(', "'", (boss.id||''), "'", ')" ' +
+                    'style="width:100%;padding:9px;margin-top:8px;' +
+                    'background:rgba(79,195,247,0.08);border:1px solid rgba(79,195,247,0.35);color:#4fc3f7;' +
+                    'border-radius:9px;font-family:Orbitron,sans-serif;font-size:.7rem;' +
+                    'cursor:pointer;letter-spacing:.04em;font-weight:700;transition:all .2s;" ' +
+                    'onmouseover="this.style.background=\'rgba(79,195,247,0.18)\';" ' +
+                    'onmouseout="this.style.background=\'rgba(79,195,247,0.08)\';">' +
+                    '📖 Descripción de ', (boss.name || 'Jefe de Sala'),
+                '</button>',
+
             '</div>',
             '</div>'
         );
