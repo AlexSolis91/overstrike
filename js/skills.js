@@ -2102,7 +2102,24 @@
             } else if (ability.effect === 'muzan_sangre') {
                 // SANGRE DEMONIACA: AOE 3 daño + 1 stack Veneno. Transformado: +3 cargas/stack aplicado
                 const _msETeam = attacker.team === 'team1' ? 'team2' : 'team1';
-                if (checkAndRedirectAOEMegaProv(_msETeam, finalDamage, charName)) { addLog('🩸 Sangre Demoniaca redirigida', 'info'); }
+                if (checkAndRedirectAOEMegaProv(_msETeam, finalDamage, charName)) {
+                    addLog('🩸 Sangre Demoniaca redirigida', 'info');
+                    // BUG FIX: antes, cuando el AOE se redirigía por Mega Provocación, el Veneno
+                    // se perdía por completo — nadie lo recibía, ni siquiera quien absorbió el golpe.
+                    const _msMpData = checkKamishMegaProvocation(_msETeam);
+                    if (_msMpData && _msMpData.isCharacter && typeof applyPoison === 'function') {
+                        applyPoison(_msMpData.characterName, 1);
+                        addLog('🩸 Sangre Demoniaca: 1 stack de Veneno aplicado a ' + _msMpData.characterName + ' (Mega Provocación)', 'debuff');
+                        if (attacker.muzanTransformed) {
+                            for (const _an3 in gameState.characters) {
+                                const _ac3 = gameState.characters[_an3];
+                                if (!_ac3 || _ac3.team !== attacker.team || _ac3.isDead) continue;
+                                _ac3.charges = Math.min(20, (_ac3.charges||0) + 3);
+                            }
+                            addLog('🩸 Sangre Demoniaca [Rey Demonios]: equipo aliado +3 cargas (1 stack)', 'buff');
+                        }
+                    }
+                }
                 else {
                     let _msTotalStacks = 0;
                     for (const _n in gameState.characters) {
