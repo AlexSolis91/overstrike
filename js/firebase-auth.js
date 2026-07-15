@@ -2880,6 +2880,83 @@
             lbShowTab('ranking');
         }
 
+        // ══════════════════════════════════════════════════════════════════
+        // LEADERBOARD — MODO HORDA (oleada más alta alcanzada)
+        // Infraestructura lista para cuando el modo esté implementado:
+        // updateHordaHighScore(uid, name, wave) se debe llamar cada vez que
+        // una corrida de Horda termine (el jugador es derrotado), y solo
+        // actualiza el registro si la nueva oleada supera la mejor marca previa.
+        // ══════════════════════════════════════════════════════════════════
+        async function updateHordaHighScore(uid, name, wave) {
+            if (!uid || !wave || wave <= 0) return;
+            const ref = db.ref('horda_leaderboard/' + uid);
+            const snap = await ref.once('value');
+            const cur = snap.val() || {};
+            if (wave > (cur.highestWave || 0)) {
+                await ref.set({ name: name || cur.name || uid, highestWave: wave, ts: Date.now() });
+            }
+        }
+        window.updateHordaHighScore = updateHordaHighScore;
+
+        window.showHordaLeaderboard = function() {
+            var modal = document.getElementById('hordaLeaderboardModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'hordaLeaderboardModal';
+                modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:10000;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px;box-sizing:border-box;';
+                document.body.appendChild(modal);
+                modal.innerHTML = [
+                    '<div style="width:100%;max-width:640px;background:linear-gradient(135deg,#12081a,#0d0a1f);border:2px solid #b46cff;border-radius:20px;padding:28px;box-shadow:0 0 60px rgba(160,60,255,0.2);">',
+                    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid rgba(160,60,255,0.15);padding-bottom:16px;">',
+                        '<div>',
+                            '<div style="font-family:Orbitron,sans-serif;font-size:1.3rem;font-weight:900;color:#b46cff;text-shadow:0 0 20px rgba(160,60,255,0.6);letter-spacing:.08em;">🌊 LEADERBOARD — MODO HORDA</div>',
+                            '<div style="font-size:.72rem;color:#555;margin-top:3px;letter-spacing:.05em;">Mejor oleada alcanzada por jugador</div>',
+                        '</div>',
+                        '<button onclick="document.getElementById(\'hordaLeaderboardModal\').style.display=\'none\';" style="background:rgba(255,68,102,0.2);border:2px solid #ff4466;color:#ff4466;font-size:1.1rem;width:36px;height:36px;border-radius:50%;cursor:pointer;">✕</button>',
+                    '</div>',
+                    '<div id="hordaLeaderboardContent" style="color:#888;text-align:center;padding:3rem;font-size:.9rem;">Cargando...</div>',
+                    '</div>'
+                ].join('');
+            }
+            modal.style.display = 'flex';
+            loadHordaLeaderboardData();
+        };
+
+        function loadHordaLeaderboardData() {
+            var container = document.getElementById('hordaLeaderboardContent');
+            if (container) container.innerHTML = '<div style="color:#888;text-align:center;padding:2rem;">Cargando...</div>';
+            db.ref('horda_leaderboard').once('value', function(snap) {
+                var data = snap.val() || {};
+                var entries = Object.entries(data).map(function(e) {
+                    return { uid: e[0], name: e[1].name || e[0], highestWave: e[1].highestWave || 0, ts: e[1].ts || 0 };
+                });
+                entries.sort(function(a, b) { return b.highestWave - a.highestWave || a.ts - b.ts; });
+                renderHordaLeaderboard(entries);
+            });
+        }
+
+        function renderHordaLeaderboard(entries) {
+            var container = document.getElementById('hordaLeaderboardContent');
+            if (!container) return;
+            if (!entries.length) {
+                container.innerHTML = '<div style="color:#555;text-align:center;padding:3rem;">Aún no hay corridas de Modo Horda.<br><span style="font-size:.85rem;color:#444;">¡Próximamente!</span></div>';
+                return;
+            }
+            var medals = ['🥇','🥈','🥉'];
+            var rows = entries.map(function(e, i) {
+                var medal = medals[i] || ('<span style="font-family:Orbitron,sans-serif;font-size:.8rem;color:#666;">' + (i+1) + '</span>');
+                var isMe = currentUser && e.uid === currentUser.uid;
+                return '<div style="display:flex;align-items:center;gap:14px;padding:11px 16px;border-radius:10px;margin-bottom:6px;' +
+                    'background:' + (isMe ? 'rgba(160,60,255,0.14)' : 'rgba(255,255,255,0.02)') + ';' +
+                    'border:1px solid ' + (isMe ? 'rgba(160,60,255,0.4)' : 'rgba(255,255,255,0.06)') + ';">' +
+                    '<div style="width:28px;text-align:center;font-size:1.1rem;">' + medal + '</div>' +
+                    '<div style="flex:1;color:#fff;font-size:.85rem;font-weight:' + (isMe ? '700' : '400') + ';">' + escapeHtml(e.name) + (isMe ? ' <span style="color:#b46cff;font-size:.7rem;">(tú)</span>' : '') + '</div>' +
+                    '<div style="color:#b46cff;font-family:Orbitron,sans-serif;font-weight:700;font-size:.9rem;">Oleada ' + e.highestWave + '</div>' +
+                '</div>';
+            }).join('');
+            container.innerHTML = '<div style="text-align:left;">' + rows + '</div>';
+        }
+
         window.lbShowRewards = function() {
             var existing = document.getElementById('_rewardsModal');
             if (existing) { existing.remove(); return; }
