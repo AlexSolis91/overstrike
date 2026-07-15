@@ -463,21 +463,38 @@
                     const igris = gameState.summons[igrisId];
                     if (!igris) return;
                     const enemyTeam = igris.team === 'team1' ? 'team2' : 'team1';
-                    // Comandante Rojo Sangriento: 2 dano AOE a TODOS los enemigos
+
+                    // NUEVO: elimina Buff Reflejar, Escudo Sagrado y Protección Sagrada de todos los enemigos
+                    const _igrisRemoveNames = ['reflejar', 'escudo sagrado', 'proteccion sagrada'];
+                    for (const _rn in gameState.characters) {
+                        const _rc = gameState.characters[_rn];
+                        if (!_rc || _rc.team !== enemyTeam || _rc.isDead || _rc.hp <= 0 || !_rc.statusEffects) continue;
+                        const _beforeLen = _rc.statusEffects.length;
+                        _rc.statusEffects = _rc.statusEffects.filter(function(e) {
+                            return !(e && _igrisRemoveNames.indexOf(normAccent(e.name||'')) !== -1);
+                        });
+                        if (_rc.statusEffects.length < _beforeLen) {
+                            addLog('Igris (Comandante Rojo): elimina Reflejar/Escudo Sagrado/Protección Sagrada de ' + _rn, 'debuff');
+                        }
+                    }
+
+                    // Comandante Rojo Sangriento: 2 dano AOE base + 3 adicional por cada invocación
+                    // que ESTE Igris haya eliminado en la partida (contador acumulado)
+                    const _igrisDmg = 2 + 3 * (igris.summonsEliminatedCount || 0);
                     // Temporarily disable passiveExecuting so Garou's counter can trigger
                     passiveExecuting = false;
                     for (const _n in gameState.characters) {
                         const _c = gameState.characters[_n];
                         if (!_c || _c.team !== enemyTeam || _c.isDead || _c.hp <= 0) continue;
-                        applyDamageWithShield(_n, 2, 'Igris');
+                        applyDamageWithShield(_n, _igrisDmg, 'Igris');
                     }
                     passiveExecuting = true;
                     for (const _sid in gameState.summons) {
                         const _s = gameState.summons[_sid];
                         if (!_s || _s.team !== enemyTeam || _s.hp <= 0 || _sid === igrisId) continue;
-                        applySummonDamage(_sid, 2, 'Igris');
+                        applySummonDamage(_sid, _igrisDmg, 'Igris');
                     }
-                    addLog('Igris (Comandante Rojo): 2 dano AOE a todos los enemigos', 'damage');
+                    addLog('Igris (Comandante Rojo): ' + _igrisDmg + ' daño AOE a todos los enemigos' + (igris.summonsEliminatedCount ? ' (base 2 + 3×' + igris.summonsEliminatedCount + ' invocaciones eliminadas)' : ''), 'damage');
                     // Eliminar 1 invocacion enemiga aleatoria
                     const enemySummonIds = Object.keys(gameState.summons).filter(sid => {
                         const _s = gameState.summons[sid];
@@ -487,7 +504,8 @@
                         const toElim = enemySummonIds[Math.floor(Math.random() * enemySummonIds.length)];
                         const elimName = gameState.summons[toElim] ? gameState.summons[toElim].name : 'Invocacion';
                         delete gameState.summons[toElim];
-                        addLog('Igris: Elimina a ' + elimName + ' del campo enemigo', 'damage');
+                        igris.summonsEliminatedCount = (igris.summonsEliminatedCount || 0) + 1;
+                        addLog('Igris: Elimina a ' + elimName + ' del campo enemigo (total eliminadas por este Igris: ' + igris.summonsEliminatedCount + ')', 'damage');
                     }
                 });
                 passiveExecuting = false;
