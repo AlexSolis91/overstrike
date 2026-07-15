@@ -2544,15 +2544,15 @@
                 if (defOwnerUid) {
                     db.ref('ranked_stats/' + defOwnerUid + '/points').once('value', function(oppSnap) {
                         oppLgIdx = getLeagueIndex(oppSnap.val() || 0);
-                        _finalizeSaveAttacker(cur, myRef, myUid, myName, won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLgIdx, oppLgIdx, seasonKey, todayKey, playerChars, defOwnerUid, fakeOpp, won, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, opponentChars, isDraw);
+                        _finalizeSaveAttacker(cur, myRef, myUid, myName, won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLgIdx, oppLgIdx, seasonKey, todayKey, playerChars, defOwnerUid, fakeOpp, won, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, opponentChars, isDraw, bs.perfect);
                     });
                 } else {
-                    _finalizeSaveAttacker(cur, myRef, myUid, myName, won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLgIdx, oppLgIdx, seasonKey, todayKey, playerChars, defOwnerUid, fakeOpp, won, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, opponentChars, isDraw);
+                    _finalizeSaveAttacker(cur, myRef, myUid, myName, won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLgIdx, oppLgIdx, seasonKey, todayKey, playerChars, defOwnerUid, fakeOpp, won, survivingDefenders, totalDefenders, roundsElapsed, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, opponentChars, isDraw, bs.perfect);
                 }
             });
         }
 
-        function _finalizeSaveAttacker(cur, myRef, myUid, myName, won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLgIdx, oppLgIdx, seasonKey, todayKey, playerChars, defOwnerUid, fakeOpp, atkWon, survivingDefenders, totalDefenders, roundsElapsed2, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, opponentChars, isDraw) {
+        function _finalizeSaveAttacker(cur, myRef, myUid, myName, won, survivingAllies, totalAllies, roundsElapsed, enemiesEliminated, totalEnemies, myLgIdx, oppLgIdx, seasonKey, todayKey, playerChars, defOwnerUid, fakeOpp, atkWon, survivingDefenders, totalDefenders, roundsElapsed2, attackersEliminated, totalAttackers, defHpRemaining, defHpMax, opponentChars, isDraw, isPerfect) {
             // ── Reset mensual: si el seasonKey cambió, guardar snapshot y reiniciar ──
             if (cur.seasonKey && cur.seasonKey !== seasonKey) {
                 addLog('🔄 Nueva temporada (' + seasonKey + '): puntuación reiniciada a 0', 'info');
@@ -2672,7 +2672,7 @@
                 var goldEarned = calculateMatchGold('ranked', {
                     enemiesDefeated: enemiesEliminated || 0,
                     survivingCount: survivingAllies || 0,
-                    perfect: !!bs.perfect
+                    perfect: !!isPerfect
                 });
                 if (goldEarned > 0) {
                     addPendingGold(myUid, goldEarned, { mode: 'ranked' }).then(function(totalPending) {
@@ -2681,7 +2681,7 @@
                             window.showGoldClaimModal({
                                 amount: totalPending,
                                 title: isDraw ? '🏆 Empate — Raid Diario' : (won ? '🏆 Victoria — Raid Diario' : '🏆 Derrota — Raid Diario'),
-                                subtitle: (enemiesEliminated||0) + ' enemigos derrotados · ' + (survivingAllies||0) + ' sobrevivientes' + (bs.perfect ? ' · ¡PERFECT!' : '')
+                                subtitle: (enemiesEliminated||0) + ' enemigos derrotados · ' + (survivingAllies||0) + ' sobrevivientes' + (isPerfect ? ' · ¡PERFECT!' : '')
                             });
                         }
                     });
