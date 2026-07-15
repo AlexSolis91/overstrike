@@ -247,6 +247,14 @@
                     checkPendingBossReward(currentUser.uid);
                 }
             }
+
+            // Check for gold left unclaimed from a previous match (runs once per session)
+            if (!window._pendingGoldChecked && currentUser) {
+                window._pendingGoldChecked = true;
+                if (typeof checkPendingGoldOnLogin === 'function') {
+                    checkPendingGoldOnLogin(currentUser.uid);
+                }
+            }
         }
 
         function goToLocalMode(mode) {
@@ -2657,19 +2665,26 @@
                 var modeLabel = isRaidAttack ? '⚔️ Raid' : '🔍 Rival';
                 addLog('🏆 Puntos Ranked [' + modeLabel + ']: ' + ptLabel + ' | Total: ' + cur.points, atkPoints >= 0 ? 'buff' : 'damage');
 
-                // ── ORO POR PARTIDA RANKED ──
-                // Victoria: 100 oro × personajes vivos al finalizar
-                // Derrota: 50 oro × enemigos eliminados durante la partida
-                var goldEarned = 0;
-                if (won) {
-                    goldEarned = (survivingAllies || 0) * 100;
-                    addLog('🥇 Ranked [' + modeLabel + ']: Victoria — +' + goldEarned + ' oro (' + (survivingAllies||0) + ' personajes vivos × 100)', 'buff');
-                } else if (!isDraw) {
-                    goldEarned = (enemiesEliminated || 0) * 50;
-                    addLog('🥇 Ranked [' + modeLabel + ']: Derrota — +' + goldEarned + ' oro (' + (enemiesEliminated||0) + ' enemigos eliminados × 50)', 'info');
-                }
+                // ── ORO POR PARTIDA RANKED (fórmula unificada, ya no depende de ganar/perder) ──
+                // Enemigos derrotados: random(50-100) c/u. Sobrevivientes propios: random(30-80) c/u.
+                // Perfect (todo el equipo sobrevive con 100% HP): +500. Se guarda como PENDIENTE
+                // hasta que el jugador lo reclame en la ventana de resultado.
+                var goldEarned = calculateMatchGold('ranked', {
+                    enemiesDefeated: enemiesEliminated || 0,
+                    survivingCount: survivingAllies || 0,
+                    perfect: !!bs.perfect
+                });
                 if (goldEarned > 0) {
-                    addGold(myUid, goldEarned).then(function() { updateLobbyHUD(); });
+                    addPendingGold(myUid, goldEarned, { mode: 'ranked' }).then(function(totalPending) {
+                        updateLobbyHUD();
+                        if (typeof window.showGoldClaimModal === 'function') {
+                            window.showGoldClaimModal({
+                                amount: totalPending,
+                                title: isDraw ? '🏆 Empate — Raid Diario' : (won ? '🏆 Victoria — Raid Diario' : '🏆 Derrota — Raid Diario'),
+                                subtitle: (enemiesEliminated||0) + ' enemigos derrotados · ' + (survivingAllies||0) + ' sobrevivientes' + (bs.perfect ? ' · ¡PERFECT!' : '')
+                            });
+                        }
+                    });
                 }
             });
 
@@ -3898,6 +3913,80 @@
             await ref.set((snap.val()||0) + amount);
         }
 
+        // ══════════════════════════════════════════════════════════════════
+        // SISTEMA DE ORO POR PARTIDA — Ranked y Jefe de Sala
+        // Fórmula unificada (reemplaza los cálculos anteriores):
+        //  - Enemigo derrotado: random(50-100) oro c/u — SOLO Ranked
+        //  - Personaje propio sobreviviente: random(30-80) oro c/u — ambos modos
+        //  - Daño al Jefe de Sala: daño total × 1.15 — SOLO Jefe de Sala
+        //  - Perfect (TODO el equipo sobrevive con 100% HP): +500 oro fijo
+        // El oro NO se acredita de inmediato: se guarda en "pendiente" hasta que
+        // el jugador lo reclama con el botón de la ventana de resultado (o, si
+        // cerró el juego antes de reclamar, se le vuelve a mostrar al iniciar sesión).
+        // ══════════════════════════════════════════════════════════════════
+        function calculateMatchGold(mode, opts) {
+            opts = opts || {};
+            let total = 0;
+            if (mode === 'ranked') {
+                const enemiesDefeated = opts.enemiesDefeated || 0;
+                for (let i = 0; i < enemiesDefeated; i++) total += Math.floor(Math.random() * 51) + 50; // 50-100 c/u
+            }
+            const survivors = opts.survivingCount || 0;
+            for (let i = 0; i < survivors; i++) total += Math.floor(Math.random() * 51) + 30; // 30-80 c/u
+            if (mode === 'boss') {
+                total += Math.round((opts.bossDamage || 0) * 1.15);
+            }
+            if (opts.perfect) total += 500;
+            return Math.max(0, Math.floor(total));
+        }
+        window.calculateMatchGold = calculateMatchGold;
+
+        async function addPendingGold(uid, amount, meta) {
+            if (!uid || !amount || amount <= 0) return 0;
+            const ref = db.ref('pending_gold/' + uid);
+            const snap = await ref.once('value');
+            const cur = snap.val() || { amount: 0, entries: [] };
+            const newAmount = (cur.amount || 0) + amount;
+            const entries = (cur.entries || []).slice(-19);
+            entries.push({ amount: amount, mode: (meta && meta.mode) || 'match', ts: Date.now() });
+            await ref.set({ amount: newAmount, entries: entries });
+            return newAmount;
+        }
+        window.addPendingGold = addPendingGold;
+
+        async function getPendingGold(uid) {
+            if (!uid) return 0;
+            const snap = await db.ref('pending_gold/' + uid + '/amount').once('value');
+            return snap.val() || 0;
+        }
+        window.getPendingGold = getPendingGold;
+
+        async function claimPendingGold(uid) {
+            if (!uid) return 0;
+            const ref = db.ref('pending_gold/' + uid);
+            const snap = await ref.once('value');
+            const cur = snap.val() || {};
+            const amount = cur.amount || 0;
+            if (amount <= 0) return 0;
+            await addGold(uid, amount);
+            await ref.set({ amount: 0, entries: [] });
+            await updateLobbyHUD();
+            return amount;
+        }
+        window.claimPendingGold = claimPendingGold;
+
+        // Revisa si el jugador tiene oro sin reclamar de una partida anterior (p.ej. cerró
+        // el juego sin darle a "Reclamar") y le vuelve a mostrar la ventana al iniciar sesión.
+        async function checkPendingGoldOnLogin(uid) {
+            try {
+                const amount = await getPendingGold(uid);
+                if (amount > 0 && typeof window.showGoldClaimModal === 'function') {
+                    window.showGoldClaimModal({ amount: amount, title: '🪙 Oro sin reclamar', subtitle: 'De una partida anterior que no se reclamó.' });
+                }
+            } catch (e) { console.error('[ORO] Error revisando oro pendiente:', e); }
+        }
+        window.checkPendingGoldOnLogin = checkPendingGoldOnLogin;
+
         // ── Gastar oro (retorna true si OK) ──
         async function spendGold(uid, amount) {
             const ref = db.ref('users/' + uid + '/gold');
@@ -4640,11 +4729,12 @@
                 // ¡Jefe derrotado! — distribuir recompensas con multiplicador ×1.5
                 try { await distributeEndEventRewards(true); } catch(e) { console.error('[BOSS] Error distribuyendo recompensas:', e); }
             }
-            // Recompensa diaria por participación
-            const goldReward = Math.floor(500 + damageDealt * 0.5);
-            await addGold(uid, goldReward);
+            // NOTA: el oro por daño al jefe ya NO se calcula ni se acredita aquí — ahora usa la
+            // fórmula unificada (daño×1.15 + sobrevivientes + perfect) calculada en
+            // _processBossResult (jefe-de-sala.js), que sí tiene acceso a gameState.characters
+            // para saber quién sobrevivió, y se guarda como oro PENDIENTE hasta reclamar.
             await updateLobbyHUD();
-            return { newHp, goldReward };
+            return { newHp };
         }
         // Exponer globalmente para jefe-de-sala.js
         window.registerBossDamage = registerBossDamage;
