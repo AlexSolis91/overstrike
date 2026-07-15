@@ -2543,5 +2543,54 @@
         document.getElementById('bossDescriptionModal').style.display = 'flex';
     };
     </script>
+
+    <!-- ── MODAL: Reclamar oro de partida (Ranked / Jefe de Sala / recuperación al iniciar sesión) ── -->
+    <div id="goldClaimModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:50003;align-items:center;justify-content:center;padding:20px;">
+        <div style="background:#120d02;border:2px solid #ffd700;border-radius:16px;max-width:380px;width:100%;box-shadow:0 0 40px rgba(255,215,0,.3);text-align:center;padding:26px 24px;">
+            <div id="gcm-title" style="font-family:Orbitron,sans-serif;color:#ffd700;font-weight:900;font-size:1rem;letter-spacing:.05em;margin-bottom:4px;"></div>
+            <div id="gcm-subtitle" style="color:#999;font-size:.75rem;margin-bottom:18px;"></div>
+            <div style="font-size:2.4rem;font-weight:900;color:#fff;margin-bottom:4px;">
+                <span id="gcm-amount">0</span><span style="font-size:1.1rem;color:#ffd700;margin-left:6px;">🪙</span>
+            </div>
+            <div style="color:#666;font-size:.7rem;margin-bottom:20px;">oro disponible para reclamar</div>
+            <button id="gcm-claim-btn" onclick="window._gcmClaim()"
+                style="width:100%;padding:13px;background:linear-gradient(135deg,#5c4400,#a67c00);border:2px solid #ffd700;
+                color:#ffd700;border-radius:10px;font-family:Orbitron,sans-serif;font-size:.82rem;cursor:pointer;
+                letter-spacing:.05em;font-weight:700;box-shadow:0 0 20px rgba(255,215,0,.25);">
+                💰 RECLAMAR
+            </button>
+        </div>
+    </div>
+
+    <script>
+    // Modal genérico de reclamo de oro. Reutilizado por Ranked, Jefe de Sala (vía toast propio)
+    // y la recuperación automática de oro sin reclamar al iniciar sesión.
+    window.showGoldClaimModal = function(opts) {
+        opts = opts || {};
+        if (!opts.amount || opts.amount <= 0) return;
+        document.getElementById('gcm-title').textContent = opts.title || '🪙 Oro ganado';
+        document.getElementById('gcm-subtitle').textContent = opts.subtitle || '';
+        document.getElementById('gcm-amount').textContent = opts.amount.toLocaleString();
+        var btn = document.getElementById('gcm-claim-btn');
+        btn.disabled = false;
+        btn.textContent = '💰 RECLAMAR';
+        document.getElementById('goldClaimModal').style.display = 'flex';
+    };
+
+    window._gcmClaim = async function() {
+        var btn = document.getElementById('gcm-claim-btn');
+        btn.disabled = true;
+        btn.textContent = 'Reclamando…';
+        try {
+            var uid = (typeof currentUser !== 'undefined' && currentUser) ? currentUser.uid : null;
+            var claimed = uid && typeof window.claimPendingGold === 'function' ? await window.claimPendingGold(uid) : 0;
+            btn.textContent = '✅ +' + claimed.toLocaleString() + ' oro reclamado';
+            setTimeout(function() { document.getElementById('goldClaimModal').style.display = 'none'; }, 1400);
+        } catch (e) {
+            btn.textContent = 'Error — reintenta';
+            btn.disabled = false;
+        }
+    };
+    </script>
 </body>
 </html>
