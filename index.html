@@ -361,6 +361,10 @@
                     style="width:100%;padding:.72rem 1rem;font-family:'Orbitron',sans-serif;font-size:.82rem;background:rgba(255,170,0,0.06);color:#ffaa00;border:1px solid rgba(255,170,0,0.25);border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;"
                     onmouseover="this.style.borderColor='rgba(255,170,0,.5)'" onmouseout="this.style.borderColor='rgba(255,170,0,.25)'">📊 VER LEADERBOARD</button>
 
+                <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} window.showHordaLeaderboard && window.showHordaLeaderboard()"
+                    style="width:100%;padding:.72rem 1rem;font-family:'Orbitron',sans-serif;font-size:.82rem;background:rgba(160,60,255,0.06);color:#b46cff;border:1px solid rgba(160,60,255,0.25);border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;"
+                    onmouseover="this.style.borderColor='rgba(160,60,255,.5)'" onmouseout="this.style.borderColor='rgba(160,60,255,.25)'">🌊 LEADERBOARD — MODO HORDA</button>
+
                 <div style="height:1px;background:rgba(255,255,255,.08);margin:.2rem 0;"></div>
 
                 <button onclick="document.getElementById('onlinePlayersModal').style.display='flex'; window.loadOnlinePlayersList && window.loadOnlinePlayersList(); var _m=document.getElementById('sfxModo');if(_m){_m.currentTime=0;_m.play().catch(function(){});}"
