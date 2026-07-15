@@ -193,7 +193,7 @@
                 name: 'Igris',
                 hp: 5, maxHp: 5, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/T13zZdKD/Captura_de_pantalla_2026_03_11_145542.png',
-                passive: 'Comandante Rojo Sangriento: Al final de cada ronda causa 2 de daño AOE a todos los enemigos (incluyendo invocaciones). Al final de cada ronda elimina una invocación enemiga aleatoria del campo.'
+                passive: 'Comandante Rojo Sangriento: Al final de cada ronda causa 2 de daño AOE a todos los enemigos (incluyendo invocaciones), elimina Buff Reflejar, Escudo Sagrado y Protección Sagrada de todos los enemigos, y elimina una invocación enemiga aleatoria del campo. Causa +3 de daño adicional a cada enemigo por cada invocación que este Igris haya eliminado.'
             },
             'MinByung': {
                 name: 'MinByung',
