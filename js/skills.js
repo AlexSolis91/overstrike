@@ -12168,6 +12168,8 @@
                     _bs.roundsElapsed      = gameState.currentRound || 5;
                     _bs.defHpRemaining = _allOpp.reduce(function(s,n){ var c=_chars[n]; return s+(c&&!c.isDead?c.hp:0); }, 0);
                     _bs.defHpMax       = _allOpp.reduce(function(s,n){ var c=_chars[n]; return s+(c?c.maxHp||0:0); }, 0) || 1;
+                    // PERFECT: todo el equipo propio sobrevive con 100% de su HP máximo
+                    _bs.perfect = _allAlly.length > 0 && _allAlly.every(function(n){ var c=_chars[n]; return c && !c.isDead && c.hp > 0 && c.hp === c.maxHp; });
                     saveRankedResult(winnerTeam, playerTeam, playerChars, opponentName, opponentChars, _bs);
                 } catch(e) { console.error('[RANKED] Error saving ranked result:', e); }
             }
