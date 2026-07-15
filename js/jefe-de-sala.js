@@ -304,11 +304,40 @@
                 }
             }
 
-            var goldEarned = result ? (result.goldReward || 0) : 0;
+            // ── ORO POR PARTIDA JEFE DE SALA (fórmula unificada) ──
+            // daño × 1.15 + sobrevivientes propios (random 30-80 c/u) + perfect (+500 si
+            // todo el equipo sobrevive con 100% HP). Se guarda como PENDIENTE hasta reclamar.
+            var survivingCount = 0, isPerfect = false;
+            try {
+                if (typeof gameState !== 'undefined' && gameState.characters) {
+                    var _myTeam = gameState.myTeam || 'team1';
+                    var _myChars = Object.keys(gameState.characters).filter(function(n) {
+                        var c = gameState.characters[n];
+                        return c && c.team === _myTeam && !c.isBoss;
+                    });
+                    survivingCount = _myChars.filter(function(n) {
+                        var c = gameState.characters[n];
+                        return c && !c.isDead && c.hp > 0;
+                    }).length;
+                    isPerfect = _myChars.length > 0 && _myChars.every(function(n) {
+                        var c = gameState.characters[n];
+                        return c && !c.isDead && c.hp > 0 && c.hp === c.maxHp;
+                    });
+                }
+            } catch (e) { console.error('[JEFE] Error calculando sobrevivientes:', e); }
+
+            var goldEarned = (typeof calculateMatchGold === 'function')
+                ? calculateMatchGold('boss', { bossDamage: damageDealt, survivingCount: survivingCount, perfect: isPerfect })
+                : 0;
+
+            var totalPending = 0;
+            if (goldEarned > 0 && uid && typeof addPendingGold === 'function') {
+                try { totalPending = await addPendingGold(uid, goldEarned, { mode: 'boss' }); } catch (e) { console.error('[JEFE] Error guardando oro pendiente:', e); }
+            }
 
             // Mostrar toast DESPUÉS de que aparezca la pantalla épica de resultado
             setTimeout(function () {
-                _showBossResultToast(damageDealt, goldEarned);
+                _showBossResultToast(damageDealt, totalPending, survivingCount, isPerfect);
             }, 2800);
 
         } catch (e) {
@@ -316,7 +345,7 @@
         }
     }
 
-    function _showBossResultToast(damageDealt, goldEarned) {
+    function _showBossResultToast(damageDealt, goldPending, survivingCount, isPerfect) {
         // Inyectar estilos de animación si aún no existen
         if (!document.getElementById('bossToastCSS')) {
             var style = document.createElement('style');
@@ -363,11 +392,11 @@
               + '<span style="font-size:1rem;color:#ff4444;margin-left:4px;font-weight:400;">HP</span></div>'
             : '<div style="font-size:1.2rem;color:#555;margin:8px 0;">Sin daño registrado</div>';
 
-        var goldHtml = goldEarned > 0
-            ? '<div style="font-size:.85rem;color:#ffd700;margin-bottom:14px;">+ '
-              + goldEarned.toLocaleString()
-              + ' 🪙 ganados</div>'
-            : '<div style="height:14px;margin-bottom:14px;"></div>';
+        var goldHtml = goldPending > 0
+            ? '<div style="font-size:.85rem;color:#ffd700;margin-bottom:10px;">'
+              + goldPending.toLocaleString()
+              + ' 🪙 disponibles para reclamar' + (isPerfect ? ' · ¡PERFECT!' : '') + '</div>'
+            : '<div style="height:10px;margin-bottom:10px;"></div>';
 
         toast.innerHTML = [
             '<div style="font-family:Orbitron,sans-serif;font-size:.8rem;font-weight:900;',
@@ -376,6 +405,13 @@
             '</div>',
             dmgHtml,
             goldHtml,
+            goldPending > 0
+                ? '<button id="bossToastClaimBtn" style="width:100%;padding:11px;margin-bottom:8px;' +
+                  'background:linear-gradient(135deg,#5c4400,#a67c00);border:2px solid #ffd700;color:#ffd700;' +
+                  'border-radius:9px;font-family:Orbitron,sans-serif;font-size:.78rem;cursor:pointer;' +
+                  'letter-spacing:.05em;font-weight:700;box-shadow:0 0 16px rgba(255,215,0,.25);">' +
+                  '💰 RECLAMAR ' + goldPending.toLocaleString() + ' ORO</button>'
+                : '',
             '<div style="display:flex;gap:8px;justify-content:center;">',
                 '<button id="bossToastRankBtn" ',
                     'style="background:linear-gradient(135deg,#500000,#aa0000);border:2px solid #ff4444;',
@@ -404,9 +440,26 @@
         document.getElementById('bossToastCloseBtn').addEventListener('click', function () {
             toast.remove();
         });
+        var claimBtn = document.getElementById('bossToastClaimBtn');
+        if (claimBtn) {
+            claimBtn.addEventListener('click', async function () {
+                claimBtn.disabled = true;
+                claimBtn.textContent = 'Reclamando…';
+                try {
+                    var user = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null;
+                    var uid = user ? user.uid : null;
+                    var claimed = uid && typeof window.claimPendingGold === 'function' ? await window.claimPendingGold(uid) : 0;
+                    claimBtn.textContent = '✅ +' + claimed.toLocaleString() + ' oro reclamado';
+                    claimBtn.style.opacity = '.7';
+                } catch (e) {
+                    claimBtn.textContent = 'Error al reclamar — reintenta';
+                    claimBtn.disabled = false;
+                }
+            });
+        }
 
-        // Auto-dismiss después de 15 segundos
-        setTimeout(function () { if (toast.parentNode) toast.remove(); }, 15000);
+        // Auto-dismiss después de 20 segundos (el oro pendiente no se pierde si no se reclama)
+        setTimeout(function () { if (toast.parentNode) toast.remove(); }, 20000);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
