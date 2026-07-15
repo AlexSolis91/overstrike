@@ -103,6 +103,11 @@
   <source src="https://ia902809.us.archive.org/6/items/01-wrath-of-the-lich-king-main-title/01%20-%20Wrath%20Of%20The%20Lich%20King%20%28Main%20Title%29.mp3" type="audio/mpeg">
 </audio>
 
+<!-- Música EXCLUSIVA del Jefe de Sala Albus Dumbledore — nunca entra a la rotación aleatoria -->
+<audio id="audioBossDumbledore" loop preload="auto">
+  <source src="https://ia600702.us.archive.org/32/items/2.-snape-to-malfoy-manor-harry-potter-and-the-deathly-hallows-soundtrack-pqd-zcpwy-uec/2.%20_Snape%20to%20Malfoy%20Manor_%20-%20Harry%20Potter%20and%20the%20Deathly%20Hallows%20%28soundtrack%29%20%5BPqdZcpwyUEc%5D.mp3" type="audio/mpeg">
+</audio>
+
 <!-- audioOverSfx: reemplazada por URL nueva -->
 <audio id="audioOverSfx" preload="auto">
   <source src="https://ia600905.us.archive.org/7/items/smash-bros-death/smash-bros-death.mp3" type="audio/mpeg">
@@ -1298,7 +1303,7 @@
             'albus_dumbledore': {
                 name: 'Albus Dumbledore',
                 portrait: 'https://i.ibb.co/LX4h03vQ/image.png',
-                hp: 20000, maxHp: 20000, speed: 80,
+                hp: 50000, maxHp: 50000, speed: 80,
                 passive: { name: 'Maestría de la Varita de Saúco', description: 'Albus Dumbledore es inmune a debuffs. Cada vez que un enemigo realiza un ataque especial u Over, Albus Dumbledore se cura 30 HP y genera 3 cargas. Cada vez que un enemigo recibe daño por debuff Quemaduras, Albus Dumbledore genera 5 cargas. Al inicio de cada ronda, Albus Dumbledore genera 3 cargas por cada enemigo derrotado.' }
             },
             'arthas_menethil': {
@@ -2086,11 +2091,12 @@
 
                 // Cargar reliquias para todos los modos
                 window.loadGameRelics();
-                // Lich King tiene música exclusiva y fija — nunca entra a la rotación aleatoria
-                var _lkBossName = (csState.gameMode === 'boss' && window._bossBattleData && window._bossBattleData.boss)
+                // Algunos jefes tienen música exclusiva y fija — nunca entra a la rotación aleatoria
+                var _bossMusicName = (csState.gameMode === 'boss' && window._bossBattleData && window._bossBattleData.boss)
                     ? window._bossBattleData.boss.name : '';
-                if (_lkBossName === 'Lich King') {
-                    audioManager.play('audioBossLichKing');
+                var _bossMusicMap = { 'Lich King': 'audioBossLichKing', 'Albus Dumbledore': 'audioBossDumbledore' };
+                if (_bossMusicMap[_bossMusicName]) {
+                    audioManager.play(_bossMusicMap[_bossMusicName]);
                 } else {
                     audioManager.playRandomBattle();
                 }
@@ -2306,7 +2312,7 @@
                         style="background:rgba(0,150,80,0.08);border:2px solid rgba(0,150,80,0.3);border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:all .2s;">
                         <img src="https://i.ibb.co/LX4h03vQ/image.png" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #00aa55;margin-bottom:6px;" onerror="this.style.display='none'">
                         <div style="font-family:Orbitron,sans-serif;font-size:.7rem;color:#4ade80;font-weight:700;">DUMBLEDORE</div>
-                        <div style="font-size:.6rem;color:#666;margin-top:2px;">20,000 HP</div>
+                        <div style="font-size:.6rem;color:#666;margin-top:2px;">50,000 HP</div>
                         <div style="font-size:.58rem;color:#555;margin-top:1px;">Varita de Saúco</div>
                     </div>
                     <div onclick="adminSelectBoss('bolvar_fordragon',this)" id="bosscard-bolvar_fordragon"
@@ -2479,5 +2485,63 @@
         style="display:none;position:fixed;bottom:20px;left:20px;width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#003a5c,#006fa6);border:2px solid #00c4ff;color:#fff;font-size:1.4rem;cursor:pointer;z-index:9500;box-shadow:0 4px 16px rgba(0,196,255,.35);align-items:center;justify-content:center;">
         <span style="position:relative;display:inline-flex;">💬<span id="gameChatDot" style="display:none;position:absolute;top:-3px;right:-6px;width:11px;height:11px;background:#ff3366;border-radius:50%;border:2px solid #0a0e17;box-shadow:0 0 6px #ff3366;"></span></span>
     </button>
+
+    <!-- ── MODAL: Descripción de Jefe de Sala (genérico, funciona para cualquier jefe) ── -->
+    <div id="bossDescriptionModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:50002;align-items:center;justify-content:center;padding:20px;">
+        <div style="background:#0e0509;border:2px solid #ff4444;border-radius:16px;max-width:560px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 0 40px rgba(255,68,68,.3);">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid rgba(255,68,68,.25);position:sticky;top:0;background:#0e0509;">
+                <div id="bdm-title" style="font-family:Orbitron,sans-serif;color:#ff4444;font-weight:900;font-size:1rem;letter-spacing:.05em;">📖 Descripción del Jefe</div>
+                <button onclick="document.getElementById('bossDescriptionModal').style.display='none';"
+                    style="background:rgba(255,68,68,.15);border:1px solid #ff4444;color:#ff4444;border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:.9rem;">✕</button>
+            </div>
+            <div style="padding:20px;">
+                <div style="display:flex;gap:16px;align-items:center;margin-bottom:18px;">
+                    <img id="bdm-portrait" src="" style="width:90px;height:90px;object-fit:cover;border-radius:12px;border:2px solid #ff4444;flex-shrink:0;box-shadow:0 0 20px rgba(255,68,68,.3);">
+                    <div>
+                        <div id="bdm-name" style="font-family:Orbitron,sans-serif;color:#fff;font-weight:900;font-size:1.1rem;"></div>
+                        <div id="bdm-speed" style="color:#888;font-size:.75rem;margin-top:4px;"></div>
+                    </div>
+                </div>
+                <div style="background:rgba(255,215,0,.06);border:1px solid rgba(255,215,0,.25);border-radius:10px;padding:12px 14px;margin-bottom:16px;">
+                    <div id="bdm-passive-name" style="color:#ffd700;font-weight:700;font-size:.82rem;margin-bottom:5px;"></div>
+                    <div id="bdm-passive-desc" style="color:#ccc;font-size:.76rem;line-height:1.5;"></div>
+                </div>
+                <div id="bdm-abilities"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // Motor genérico del modal de descripción de Jefe de Sala — funciona para cualquier
+    // jefe presente en BOSS_DATA/BOSS_ABILITIES sin necesitar código específico por jefe.
+    window.showBossDescriptionModal = function(bossId) {
+        var bd = (typeof BOSS_DATA !== 'undefined') ? BOSS_DATA[bossId] : null;
+        if (!bd || !bd.name) { alert('No se encontró información de este jefe.'); return; }
+        document.getElementById('bdm-title').textContent = '📖 Descripción de ' + bd.name;
+        document.getElementById('bdm-portrait').src = bd.portrait || '';
+        document.getElementById('bdm-name').textContent = bd.name;
+        document.getElementById('bdm-speed').textContent = '⚡ VEL: ' + (bd.speed || 0) + ' · ❤️ HP: ' + (bd.maxHp || 0).toLocaleString();
+        document.getElementById('bdm-passive-name').textContent = '✨ Pasiva: ' + (bd.passive ? bd.passive.name : '—');
+        document.getElementById('bdm-passive-desc').textContent = bd.passive ? bd.passive.description : '';
+
+        var abilities = (typeof BOSS_ABILITIES !== 'undefined' && BOSS_ABILITIES[bd.name]) ? BOSS_ABILITIES[bd.name] : [];
+        var TYPE_LABEL = { basic: 'BÁSICO', special: 'ESPECIAL', over: 'OVER' };
+        var TYPE_COLOR = { basic: '#4fc3f7', special: '#ff9800', over: '#ff2255' };
+        var html = abilities.map(function(a) {
+            var color = TYPE_COLOR[a.type] || '#4fc3f7';
+            var label = TYPE_LABEL[a.type] || (a.type||'').toUpperCase();
+            return '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:11px 14px;margin-bottom:10px;">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">' +
+                    '<span style="color:#fff;font-weight:700;font-size:.85rem;">' + (a.name||'') + '</span>' +
+                    '<span style="color:' + color + ';font-size:.68rem;font-weight:700;border:1px solid ' + color + ';border-radius:6px;padding:2px 7px;">' + label + (a.cost ? ' · ' + a.cost + '💎' : '') + '</span>' +
+                '</div>' +
+                '<div style="color:#aaa;font-size:.74rem;line-height:1.5;">' + (a.description||'') + '</div>' +
+            '</div>';
+        }).join('');
+        document.getElementById('bdm-abilities').innerHTML = html || '<div style="color:#666;font-size:.75rem;">Sin movimientos registrados para este jefe.</div>';
+
+        document.getElementById('bossDescriptionModal').style.display = 'flex';
+    };
+    </script>
 </body>
 </html>
