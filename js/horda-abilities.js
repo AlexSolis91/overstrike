@@ -367,14 +367,16 @@
         var caster = gameState.characters[casterName];
         if (!caster) return;
         var enemyTeam = enemyTeamOf(caster.team);
+        var totalDmg = 0;
         aliveOnTeam(enemyTeam).forEach(function (n) {
             var triple = Math.random() < 0.5;
             var dmg = (1 + (caster._hordaBasicDmgBonus || 0)) * (triple ? 3 : 1);
             applyDamageWithShield(n, dmg, casterName);
-            if (typeof applyShield === 'function') applyShield(n, dmg);
+            totalDmg += dmg;
         });
+        if (totalDmg > 0 && typeof applyShield === 'function') applyShield(casterName, totalDmg);
         generateChargesInline(casterName, 2);
-        addLog('👊 Manotazo Aplastante: daño AOE (50% triple) + Escudo a los golpeados por la misma cantidad', 'damage');
+        addLog('👊 Manotazo Aplastante: daño AOE (50% triple) — ' + casterName + ' gana Escudo por ' + totalDmg + ' (el total de daño causado)', 'damage');
     }
     function ability_giganteSpecial1(casterName) {
         var caster = gameState.characters[casterName];
