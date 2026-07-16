@@ -70,7 +70,7 @@
                 portrait: 'https://i.ibb.co/TDbWSGg9/Subscribe-for-daily-fantasy-inspiration.jpg',
                 passive: { name: 'Rugido Provocador', description: 'Efecto pasivo Provocación. Cada vez que recibe daño aplica Buff Escudo 5 HP sobre 3 aliados aleatorios (incluyéndolo).' },
                 abilities: [
-                    { name: 'Manotazo Aplastante', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'aoe', effect: 'horda_gigante_basic', description: '50% de probabilidad de daño triple a cada enemigo golpeado. Aplica Buff Escudo por la misma cantidad de daño causado a los enemigos golpeados.' },
+                    { name: 'Manotazo Aplastante', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'aoe', effect: 'horda_gigante_basic', description: '50% de probabilidad de daño triple a cada enemigo golpeado. Orco Gigante gana Buff Escudo por el total de daño causado con este ataque.' },
                     { name: 'Ondas sísmicas', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'aoe', effect: 'horda_gigante_special1', description: 'Roba 2 HP de cada enemigo golpeado por este ataque.' },
                     { name: 'Pisotón de Demolición', type: 'special', cost: 6, chargeGain: 0, damage: 4, target: 'single', effect: 'horda_gigante_special2', description: 'Disipa todos los buffs activos del objetivo y genera 3 cargas a cada aliado por cada buff disipado.' },
                     { name: 'Brutalidad', type: 'over', cost: 8, chargeGain: 4, damage: 0, target: 'single', effect: 'horda_gigante_over', description: 'Causa de 3 a 10 de daño. Los aliados se curan la misma cantidad de daño causado.' }
