@@ -2165,6 +2165,16 @@
                 passiveExecuting = false;
             })();
 
+            // ── MODO HORDA: gancho genérico "al recibir daño" (Agresion, Rugido Provocador, Fuerza descomunal, etc.) ──
+            (function() {
+                if (passiveExecuting) return;
+                const _realDmgHorda = oldHp - target.hp;
+                if (_realDmgHorda <= 0) return;
+                if (typeof window.hordaOnDamageReceived === 'function') {
+                    window.hordaOnDamageReceived(targetName, _realDmgHorda, attackerName);
+                }
+            })();
+
             // ── ICE CLON: absorb damage meant for Sub-Zero ──
             (function() {
                 if (passiveExecuting) return;
@@ -2412,6 +2422,11 @@
                 } else {
                     target.isDead = true;
                     if (typeof _animCard === 'function') _animCard(targetName, 'anim-defeat', 700);
+
+                    // ── MODO HORDA: gancho genérico "al morir" (Sed de Sangre, Aniquilacion, etc.) ──
+                    if (typeof window.hordaOnCharacterDeath === 'function') {
+                        window.hordaOnCharacterDeath(targetName);
+                    }
 
                     // ── ESTRATEGA DE ODIN (Ragnar): si aliado muere mientras Ragnar está muerto → Ragnar revive ──
                     if (targetName !== 'Ragnar Lothbrok') { // Don't trigger on Ragnar's own death
