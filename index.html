@@ -339,6 +339,10 @@
                     style="width:100%;padding:.85rem 1rem;font-family:'Orbitron',sans-serif;font-size:.88rem;background:rgba(255,51,102,0.07);color:#aaa;border:1px solid #3a1a22;border-radius:10px;cursor:pointer;transition:all .2s;"
                     onmouseover="this.style.borderColor='#ff336644';this.style.color='#ccc'" onmouseout="this.style.borderColor='#3a1a22';this.style.color='#aaa'">🤖 SOLITARIO — vs IA</button>
 
+                <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} window.hordaEnterMode && window.hordaEnterMode()"
+                    style="width:100%;padding:.85rem 1rem;font-family:'Orbitron',sans-serif;font-size:.88rem;background:rgba(160,60,255,0.09);color:#b46cff;border:1px solid rgba(160,60,255,.35);border-radius:10px;cursor:pointer;transition:all .2s;"
+                    onmouseover="this.style.borderColor='rgba(160,60,255,.7)'" onmouseout="this.style.borderColor='rgba(160,60,255,.35)'">🌊 MODO HORDA</button>
+
                 <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} showRaidLobby()"
                     style="width:100%;padding:.85rem 1rem;font-family:'Orbitron',sans-serif;font-size:.88rem;font-weight:700;background:linear-gradient(135deg,#3a2000,#7a4500);color:#ffaa00;border:2px solid #ffaa00;border-radius:10px;cursor:pointer;letter-spacing:.04em;transition:all .2s;box-shadow:0 0 10px rgba(255,170,0,.18);"
                     onmouseover="this.style.boxShadow='0 0 26px rgba(255,170,0,.55)'" onmouseout="this.style.boxShadow='0 0 10px rgba(255,170,0,.18)'">🏆 RANKED — Raid Diario</button>
@@ -1443,6 +1447,15 @@
                 if (n1) n1.textContent = myName;
                 const n2 = document.getElementById('csTeamName2');
                 if (n2) n2.textContent = 'IA';
+            } else if (mode === 'horda') {
+                const lbl = document.getElementById('csPhaseLabel');
+                lbl.textContent = '🌊 ' + myName + ' — Elige tus 5 personajes (Modo Horda)';
+                lbl.className = 'cs-phase-label team1';
+                window._teamNames = { team1: myName, team2: 'La Horda' };
+                const n1 = document.getElementById('csTeamName1');
+                if (n1) n1.textContent = myName;
+                const n2 = document.getElementById('csTeamName2');
+                if (n2) n2.textContent = 'La Horda';
             } else if (mode === 'multi') {
                 window._teamNames = { team1: 'Jugador 1', team2: 'Jugador 2' };
                 const n1 = document.getElementById('csTeamName1');
@@ -1913,6 +1926,13 @@
                             csRenderSlots();
                             setTimeout(function() { csStartGame(); }, 800);
                             return;
+                        } else if (csState.gameMode === 'horda') {
+                            csState.phase = 'done';
+                            // Placeholders — horda-battle.js los reemplaza por los Orcos reales de la oleada
+                            csState.team2 = ['_horda1','_horda2','_horda3','_horda4','_horda5'];
+                            csRenderSlots();
+                            setTimeout(function() { csStartGame(); }, 800);
+                            return;
                         } else if (csState.gameMode === 'online') {
                             csState.phase = 'done';
                             csRenderSlots();
@@ -2022,6 +2042,8 @@
                     window._teamNames = { team1: myDisplayName, team2: fakeOpp };
                 } else if (csState.gameMode === 'online') {
                     // Names already set by startOnlineGame via _teamNames
+                } else if (csState.gameMode === 'horda') {
+                    // Names already set by csSelectMode via _teamNames
                 } else {
                     window._teamNames = { team1: 'Jugador 1', team2: 'Jugador 2' };
                 }
@@ -2041,6 +2063,8 @@
                     modeLabel = '⚔️ ¡Ataque al Jefe de Sala!';
                 } else if (csState.gameMode === 'solo') {
                     modeLabel = '🤖 Modo Solitario — ¡Buena suerte contra la IA!';
+                } else if (csState.gameMode === 'horda') {
+                    modeLabel = '🌊 Modo Horda — Oleada ' + ((window._hordaCurrentWave)||1);
                 } else {
                     modeLabel = '👥 Modo Multijugador';
                 }
