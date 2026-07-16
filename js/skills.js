@@ -10202,10 +10202,10 @@
                         _dkProvDmg = _dealt;
                         _dkProvName = _n;
                     }
-                    // 80% prob +1 HP MAX
-                    if (Math.random() < 0.80 && _dkAtk) {
-                        _dkAtk.maxHp = (_dkAtk.maxHp||0) + 1;
-                        addLog('💪 Guantelete de Plasma: Doctor Doom +1 HP MAX', 'buff');
+                    // 80% prob +1 HP MAX (tope: 60 HP máximo total)
+                    if (Math.random() < 0.80 && _dkAtk && (_dkAtk.maxHp||0) < 60) {
+                        _dkAtk.maxHp = Math.min(60, (_dkAtk.maxHp||0) + 1);
+                        addLog('💪 Guantelete de Plasma: Doctor Doom +1 HP MAX (' + _dkAtk.maxHp + '/60)', 'buff');
                     }
                 }
                 // Second pass: if Provocación hit, deal bonus damage to all OTHER enemies
