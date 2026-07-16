@@ -1296,7 +1296,31 @@
             }
             
             // Ejecutar efecto según el tipo de habilidad
-            if (ability.effect === 'arise_summon') {
+
+            // MODO HORDA: snapshot de cargas antes de resolver la habilidad — usado por
+            // Warmaster (pasiva "Warmasters") para detectar generación de cargas por EFECTO
+            // (no por el chargeGain normal del movimiento) y darse turno extra.
+            if (typeof window.HORDA_CHARACTER_DATA !== 'undefined') {
+                window._hordaChargeSnapshot = {};
+                Object.keys(gameState.characters).forEach(function(n) { window._hordaChargeSnapshot[n] = gameState.characters[n].charges || 0; });
+                window._hordaChargeSnapshotActor = charName;
+                window._hordaChargeSnapshotActorGain = finalChargeGain || 0;
+            }
+
+            // MODO HORDA: un enemigo (del equipo de Orco de Elite) ejecuta un ESPECIAL → Sed de Sangre
+            if (ability.type === 'special' && typeof window.hordaOnEnemySpecialUsed === 'function') {
+                window.hordaOnEnemySpecialUsed(charName);
+            }
+
+            // ── MODO HORDA: delega efectos 'horda_*' al módulo dedicado (js/horda-abilities.js) ──
+            if (ability.effect && ability.effect.indexOf('horda_') === 0) {
+                if (typeof window.hordaExecuteAbility === 'function') {
+                    window.hordaExecuteAbility(ability, charName, targetName, attacker, finalDamage);
+                } else {
+                    console.error('[HORDA] hordaExecuteAbility no está cargado — falta js/horda-abilities.js');
+                }
+            }
+            else if (ability.effect === 'arise_summon') {
                 // SUN JIN WOO - Arise!: Invoca UNA sombra aleatoria
                 try {
                     const shadowWeights = { 'Igris': 25, 'Iron': 25, 'Tusk': 15, 'Beru': 12, 'Bellion': 5, 'Kaisel': 10 };
