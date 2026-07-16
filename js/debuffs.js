@@ -370,6 +370,16 @@ function triggerMaboroshi(targetTeam, debuffName) {
                     break;
                 }
             }
+
+            // ── ANIQUILACION (General de la Horda): 50% de limpiar cualquier debuff que reciba él mismo ──
+            if (!passiveExecuting && target.passive && target.passive.name === 'Aniquilacion') {
+                if (Math.random() < 0.5) {
+                    target.charges = Math.min(20, (target.charges||0) + 3);
+                    target.hp = Math.min(target.maxHp, (target.hp||0) + 3);
+                    addLog('👑 Aniquilacion: General de la Horda limpia ' + (effectObj.name||'debuff') + ' (+3 cargas, +3 HP)', 'buff');
+                    return;
+                }
+            }
             target.statusEffects.push(effectObj);
             // ── Notificar a SJW Arise!: +2 cargas por buff aplicado sobre ENEMIGO ──
             if (typeof notifyEnemyBuffApplied === 'function' && !passiveExecuting && effectObj && effectObj.type === 'buff') {
