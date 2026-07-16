@@ -808,4 +808,69 @@
         if (typeof renderCharacters === 'function') renderCharacters();
     };
 
+    // ══════════════════════════════════════════════════════════════════════
+    // IA DE LOS ORCOS — prioridad simple: Over > Especial > Básico
+    // (a diferencia de la IA general del juego, que usa un sistema de puntaje
+    // más sofisticado, los Orcos siempre usan el movimiento más poderoso que
+    // puedan pagar, sin importar la situación táctica)
+    // ══════════════════════════════════════════════════════════════════════
+    window.executeHordaOrcTurn = function (charName) {
+        try {
+            const char = gameState.characters[charName];
+            if (!char || char.isDead || char.hp <= 0) { endTurn(); return; }
+
+            if (char.statusEffects) {
+                const stunned = char.statusEffects.some(function (e) { return e && (normAccent(e.name || '') === 'aturdimiento' || normAccent(e.name || '') === 'mega aturdimiento'); });
+                if (stunned) { addLog('⭐ ' + charName + ' está aturdido y pierde su turno', 'damage'); endTurn(); return; }
+                if (typeof hasStatusEffect === 'function') {
+                    if (hasStatusEffect(charName, 'Mega Congelacion')) { addLog('🧊 ' + charName + ' está Mega Congelado y pierde su turno', 'damage'); endTurn(); return; }
+                    if (hasStatusEffect(charName, 'Congelacion') && Math.random() < 0.5) { addLog('❄️ ' + charName + ' está Congelado y pierde su turno', 'damage'); endTurn(); return; }
+                    if (hasStatusEffect(charName, 'Miedo') && Math.random() < 0.5) { addLog('😱 ' + charName + ' está paralizado por el Miedo', 'damage'); endTurn(); return; }
+                }
+            }
+
+            const myTeam = char.team;
+            const enemyTeam = enemyTeamOf(myTeam);
+            const enemies = aliveOnTeam(enemyTeam);
+            if (enemies.length === 0) { endTurn(); return; }
+
+            const charges = char.charges || 0;
+            // Habilidades que el Orco puede pagar ahora mismo
+            const usable = (char.abilities || []).filter(function (a) {
+                if (a.type === 'basic') return true;
+                return charges >= (a.cost || 0);
+            });
+
+            // Prioridad: Over > Especial > Básico. Si hay dos especiales usables, elige uno al azar.
+            let chosen = usable.find(function (a) { return a.type === 'over'; });
+            if (!chosen) {
+                const specials = usable.filter(function (a) { return a.type === 'special'; });
+                if (specials.length) chosen = specials[Math.floor(Math.random() * specials.length)];
+            }
+            if (!chosen) chosen = usable.find(function (a) { return a.type === 'basic'; });
+            if (!chosen) { endTurn(); return; }
+
+            const target = (chosen.target === 'single' || chosen.target === 'multi')
+                ? randomFrom(enemies)
+                : charName; // aoe/self no necesitan objetivo específico — executeAbility(charName) los maneja
+
+            addLog('🌊 [Horda] ' + charName + ' decide usar ' + chosen.name + (target !== charName ? ' sobre ' + target : ''), 'info');
+            gameState.selectedAbility = chosen;
+            gameState.adjustedCost = chosen.cost;
+
+            setTimeout(function () {
+                if (chosen.target === 'aoe' || chosen.target === 'self' || chosen.target === 'multi') {
+                    executeAbility(charName);
+                } else if (target) {
+                    executeAbility(target);
+                } else {
+                    endTurn();
+                }
+            }, chosen.type === 'over' ? 200 : 400);
+        } catch (err) {
+            console.error('[HORDA] Error en executeHordaOrcTurn:', err);
+            endTurn();
+        }
+    };
+
 })();
