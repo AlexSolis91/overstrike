@@ -108,6 +108,11 @@
   <source src="https://ia600702.us.archive.org/32/items/2.-snape-to-malfoy-manor-harry-potter-and-the-deathly-hallows-soundtrack-pqd-zcpwy-uec/2.%20_Snape%20to%20Malfoy%20Manor_%20-%20Harry%20Potter%20and%20the%20Deathly%20Hallows%20%28soundtrack%29%20%5BPqdZcpwyUEc%5D.mp3" type="audio/mpeg">
 </audio>
 
+<!-- Música EXCLUSIVA del Modo Horda — suena de principio a fin de la corrida completa, nunca se interrumpe entre oleadas -->
+<audio id="audioHordaRun" loop preload="auto">
+  <source src="https://ia601502.us.archive.org/7/items/epic-music-mix-orcs-wo-w-256-kbps-1/Epic%20Music%20Mix_%20Orcs%20%28WoW%29%20-%20%28256%20Kbps%29%20%281%29.mp3" type="audio/mpeg">
+</audio>
+
 <!-- audioOverSfx: reemplazada por URL nueva -->
 <audio id="audioOverSfx" preload="auto">
   <source src="https://ia600905.us.archive.org/7/items/smash-bros-death/smash-bros-death.mp3" type="audio/mpeg">
@@ -457,6 +462,12 @@
         </div>
     </div>
     <!-- ==================== END SUMMON INFO MODAL ==================== -->
+
+    <!-- Fondo de VIDEO exclusivo del Modo Horda — oculto salvo durante una corrida de Horda -->
+    <video id="hordaBattleVideo" autoplay loop muted playsinline
+        style="display:none;position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:-1;background:#0a0e17;">
+        <source src="https://ia600508.us.archive.org/33/items/video-project-9_202607/Video%20Project%209.mp4" type="video/mp4">
+    </video>
 
     <!-- ==================== GAME BATTLE CONTAINER ==================== -->
     <div class="game-container" id="gameContainer" style="display:none;">
@@ -2025,8 +2036,10 @@
                 });
                 document.querySelector('.game-container').style.display = 'block';
 
-                // Apply battle background (boss mode gets boss-specific bg, others get random)
-                if (typeof applyBattleBackground === 'function') {
+                // Apply battle background (boss mode gets boss-specific bg, horda gets video, others random)
+                if (csState.gameMode === 'horda') {
+                    if (typeof window.hordaShowVideoBackground === 'function') window.hordaShowVideoBackground();
+                } else if (typeof applyBattleBackground === 'function') {
                     var _bgBossName = (csState.gameMode === 'boss' && window._bossBattleData && window._bossBattleData.boss)
                         ? window._bossBattleData.boss.name : '';
                     applyBattleBackground(_bgBossName);
@@ -2123,7 +2136,11 @@
                 var _bossMusicName = (csState.gameMode === 'boss' && window._bossBattleData && window._bossBattleData.boss)
                     ? window._bossBattleData.boss.name : '';
                 var _bossMusicMap = { 'Lich King': 'audioBossLichKing', 'Albus Dumbledore': 'audioBossDumbledore' };
-                if (_bossMusicMap[_bossMusicName]) {
+                if (csState.gameMode === 'horda') {
+                    // Pista exclusiva de Modo Horda: suena de principio a fin de la CORRIDA
+                    // completa (todas las oleadas), nunca se interrumpe entre oleadas.
+                    audioManager.play('audioHordaRun');
+                } else if (_bossMusicMap[_bossMusicName]) {
                     audioManager.play(_bossMusicMap[_bossMusicName]);
                 } else {
                     audioManager.playRandomBattle();
