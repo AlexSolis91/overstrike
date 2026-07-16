@@ -12149,6 +12149,18 @@
             gameState.winner = message;
             hideContinueButton();
             updateWaitingIndicator('', false);
+
+            // ══ MODO HORDA: intercepta ANTES de tocar música/sfx — la pista exclusiva de
+            // Horda no debe cortarse entre oleadas. Solo se detiene/cambia en la derrota
+            // final (todos los personajes del jugador eliminados), decidido dentro de
+            // hordaHandleGameOver. ══
+            if (gameState.gameMode === 'horda') {
+                if (typeof window.hordaHandleGameOver === 'function') {
+                    window.hordaHandleGameOver(message);
+                }
+                return; // no mostrar la pantalla normal de victoria/derrota ni tocar audioMenu/sfx
+            }
+
             audioManager.stopBattleMusic();
             audioManager.play('audioMenu');
 
@@ -12169,14 +12181,6 @@
                     }
                 }
             } catch(e) {}
-
-            // ══ MODO HORDA: intercepta el flujo normal — oleada superada o derrota final ══
-            if (gameState.gameMode === 'horda') {
-                if (typeof window.hordaHandleGameOver === 'function') {
-                    window.hordaHandleGameOver(message);
-                }
-                return; // no mostrar la pantalla normal de victoria/derrota
-            }
 
             // ══ RANKED STATS ══
             if (typeof saveRankedResult === 'function' && window._rankedMode) {
