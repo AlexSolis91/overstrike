@@ -28,9 +28,13 @@
                     addLog('⚡ Venganza Eterna: ¡' + _saTurnChar + ' gana turno adicional!', 'buff');
                     if (typeof renderCharacters === 'function') renderCharacters();
                     // Si el personaje pertenece al equipo de la IA, ejecutar automáticamente
-                    if ((gameState.gameMode === 'solo' || gameState.gameMode === 'ranked' || gameState.gameMode === 'boss') &&
+                    if ((gameState.gameMode === 'solo' || gameState.gameMode === 'ranked' || gameState.gameMode === 'boss' || gameState.gameMode === 'horda') &&
                         gameState.aiTeam && _saC.team === gameState.aiTeam) {
-                        setTimeout(function() { executeAITurn(_saTurnChar); }, 700);
+                        if (gameState.gameMode === 'horda' && _saC.isHordaOrc && typeof window.executeHordaOrcTurn === 'function') {
+                            setTimeout(function() { window.executeHordaOrcTurn(_saTurnChar); }, 700);
+                        } else {
+                            setTimeout(function() { executeAITurn(_saTurnChar); }, 700);
+                        }
                     } else {
                         if (typeof showActionModal === 'function') showActionModal();
                     }
@@ -984,12 +988,16 @@
             }
 
             // ── IA: Si el personaje activo es del equipo de la IA, ejecutar automáticamente ──
-            if ((gameState.gameMode === 'solo' || gameState.gameMode === 'ranked' || gameState.gameMode === 'boss') && gameState.aiTeam) {
+            if ((gameState.gameMode === 'solo' || gameState.gameMode === 'ranked' || gameState.gameMode === 'boss' || gameState.gameMode === 'horda') && gameState.aiTeam) {
                 const activeChar = gameState.characters[charName];
                 if (activeChar && activeChar.team === gameState.aiTeam) {
                     // AI also fully passes through the same debuff checks above
                     // (stun, freeze, megafreeze, fear, confusion, possession already handled above)
-                    setTimeout(function() { executeAITurn(charName); }, 700);
+                    if (gameState.gameMode === 'horda' && activeChar.isHordaOrc && typeof window.executeHordaOrcTurn === 'function') {
+                        setTimeout(function() { window.executeHordaOrcTurn(charName); }, 700);
+                    } else {
+                        setTimeout(function() { executeAITurn(charName); }, 700);
+                    }
                     return;
                 }
             }
