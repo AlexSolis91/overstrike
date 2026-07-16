@@ -9,13 +9,13 @@
 (function () {
 
     // ── Tabla de recompensas del cofre misterioso ──
+    // (Runa de Portal ya NO es posible aquí — se movió a un bono del 5% al ganar Ranked)
     var CHEST_TABLE = [
         { type: 'gold',              weight: 40 },
         { type: 'relic_Raro',        weight: 30 },
         { type: 'relic_Especial',    weight: 10 },
         { type: 'arcane_key',        weight: 10 },
         { type: 'relic_Epico',       weight: 5 },
-        { type: 'portal_rune',       weight: 4.95 },
         { type: 'relic_Legendario',  weight: 0.05 }
     ];
 
@@ -43,6 +43,24 @@
         var u = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : (typeof currentUser !== 'undefined' ? currentUser : null);
         return (u && u.displayName) || 'Jugador';
     }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // FONDO DE VIDEO EXCLUSIVO DEL MODO HORDA
+    // ══════════════════════════════════════════════════════════════════════
+    window.hordaShowVideoBackground = function () {
+        var v = document.getElementById('hordaBattleVideo');
+        if (!v) return;
+        v.style.display = 'block';
+        var gc = document.querySelector('.game-container');
+        if (gc) gc.style.background = 'transparent';
+        try { v.currentTime = 0; v.play().catch(function () {}); } catch (e) {}
+    };
+    window.hordaHideVideoBackground = function () {
+        var v = document.getElementById('hordaBattleVideo');
+        if (!v) return;
+        v.style.display = 'none';
+        try { v.pause(); } catch (e) {}
+    };
 
     // ══════════════════════════════════════════════════════════════════════
     // ENTRADA AL MODO — desde el botón "🌊 MODO HORDA" del modal de Modo de Juego
@@ -73,17 +91,39 @@
             }
         }
 
-        // Nueva corrida — requiere 1 Runa de Portal
+        // Nueva corrida — requiere confirmar el uso de 1 Runa de Portal
         var runeSnap = await db.ref('users/' + uid + '/portal_runes').once('value');
         var runes = runeSnap.val() || 0;
         if (runes < 1) {
-            alert('🌀 Necesitas al menos 1 Runa de Portal para entrar al Modo Horda.\n\nPuedes conseguirlas en la tienda o como recompensa dentro del propio Modo Horda.');
+            alert('🌀 No tienes Runas de Portal para abrir el portal de los Orcos.\n\nPuedes conseguirlas en la tienda (50,000 🪙) o como recompensa (5% de probabilidad al ganar una partida Ranked).');
             return;
         }
-        window._hordaResuming = false;
-        window._hordaCurrentWave = 1;
-        window.csSelectMode('horda');
+        showPortalConfirmModal(runes);
     };
+
+    function showPortalConfirmModal(runes) {
+        var modal = ensureHordaModal('hordaPortalConfirmModal');
+        modal.innerHTML = [
+            '<div style="width:100%;max-width:400px;background:linear-gradient(135deg,#0d1220,#160a24);border:2px solid #b46cff;border-radius:20px;padding:28px;text-align:center;box-shadow:0 0 50px rgba(160,60,255,.35);">',
+                '<img src="https://i.ibb.co/Qv7MFXyj/image.png" style="width:80px;height:80px;object-fit:contain;margin:0 auto 14px;display:block;filter:drop-shadow(0 0 12px rgba(160,60,255,.6));">',
+                '<div style="font-family:Orbitron,sans-serif;font-size:1.05rem;font-weight:900;color:#b46cff;letter-spacing:.05em;margin-bottom:10px;">🌀 ABRIR PORTAL DE LOS ORCOS</div>',
+                '<div style="color:#aaa;font-size:.8rem;margin-bottom:6px;">Esto consumirá <b style="color:#b46cff;">1 Runa de Portal</b> para abrir el portal y entrar al Modo Horda.</div>',
+                '<div style="color:#666;font-size:.7rem;margin-bottom:22px;">Runas disponibles: ' + runes + '</div>',
+                '<div style="display:flex;gap:10px;">',
+                    '<button id="hordaPortalCancel" style="flex:1;padding:12px;background:rgba(255,255,255,.04);border:1px solid #333;color:#888;border-radius:10px;font-family:Orbitron,sans-serif;font-size:.78rem;cursor:pointer;">CANCELAR</button>',
+                    '<button id="hordaPortalAccept" style="flex:1;padding:12px;background:linear-gradient(135deg,#3a0a5c,#7a1aa6);border:2px solid #b46cff;color:#fff;border-radius:10px;font-family:Orbitron,sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;">✅ ACEPTAR</button>',
+                '</div>',
+            '</div>'
+        ].join('');
+        modal.style.display = 'flex';
+        document.getElementById('hordaPortalCancel').onclick = function () { modal.style.display = 'none'; };
+        document.getElementById('hordaPortalAccept').onclick = function () {
+            modal.style.display = 'none';
+            window._hordaResuming = false;
+            window._hordaCurrentWave = 1;
+            window.csSelectMode('horda');
+        };
+    }
 
     // Se llama justo después de que csStartGame arma el equipo1 por primera vez (nueva corrida)
     async function consumePortalRuneAndInitRun(team) {
@@ -165,6 +205,7 @@
 
             if (typeof renderCharacters === 'function') renderCharacters();
             if (typeof addLog === 'function') addLog('🌊 Modo Horda — Oleada ' + wave + ': ' + waveEnemies.map(function (e) { return e.orcType + ' (' + e.rank + ')'; }).join(', '), 'info');
+            showHordaWaveBanner(wave);
 
             // ── A partir de aquí, trabajo asíncrono con Firebase — solo TOCA propiedades
             // de personajes que YA existen en gameState.characters (hp/cargas/etc), nunca
@@ -231,8 +272,13 @@
     window.hordaHandleGameOver = function (message) {
         var won = message.indexOf('HUNTERS') !== -1; // el jugador siempre es team1/HUNTERS en Horda
         if (won) {
+            // Oleada superada: la música y el fondo de video de Horda NO se tocan — siguen sonando/mostrándose.
             showHordaWaveClearedModal();
         } else {
+            // Derrota final de la corrida completa: aquí sí se detiene la música y el fondo.
+            if (typeof audioManager !== 'undefined' && typeof audioManager.stopBattleMusic === 'function') audioManager.stopBattleMusic();
+            if (typeof audioManager !== 'undefined' && typeof audioManager.playDefeatSfx === 'function') audioManager.playDefeatSfx();
+            window.hordaHideVideoBackground();
             showHordaDefeatModal();
         }
     };
@@ -259,6 +305,32 @@
         document.getElementById('hordaChoiceChest').onclick = function () { resolveHordaChoice('chest'); };
     }
 
+    // Construye el HTML de una tarjeta de revelado de recompensa (con imagen + tooltip para reliquias)
+    function buildRewardRevealHtml(entry) {
+        if (entry.type === 'gold') {
+            return '<div style="font-size:2.4rem;margin-bottom:8px;">🪙</div>' +
+                '<div style="color:#ffd700;font-family:Orbitron,sans-serif;font-weight:900;font-size:1.3rem;">+' + entry.amount.toLocaleString() + ' oro</div>';
+        }
+        if (entry.type === 'arcane_key') {
+            return '<div style="font-size:2.4rem;margin-bottom:8px;">🗝️</div>' +
+                '<div style="color:#ffd700;font-family:Orbitron,sans-serif;font-weight:900;font-size:1.05rem;">+1 Llave Arcana</div>';
+        }
+        if (entry.type === 'relic') {
+            var rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[entry.relicName] : null;
+            var img = rd ? rd.img : '';
+            var desc = rd ? (entry.tier + ' — ' + (rd.desc || '')) : entry.tier;
+            return '<div style="position:relative;display:inline-block;margin-bottom:10px;" ' +
+                    'onmouseover="var t=this.querySelector(\'.hrTooltip\'); if(t) t.style.opacity=\'1\';" ' +
+                    'onmouseout="var t=this.querySelector(\'.hrTooltip\'); if(t) t.style.opacity=\'0\';">' +
+                    '<img src="' + img + '" style="width:84px;height:84px;object-fit:cover;border-radius:12px;border:2px solid #ffd700;box-shadow:0 0 16px rgba(255,215,0,.4);">' +
+                    '<div class="hrTooltip" style="opacity:0;transition:opacity .15s;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:8px;width:220px;background:#0e0509;border:1px solid #ffd700;border-radius:8px;padding:8px 10px;font-size:.68rem;color:#ccc;text-align:left;pointer-events:none;z-index:10;">' + desc + '</div>' +
+                '</div>' +
+                '<div style="color:#ffd700;font-family:Orbitron,sans-serif;font-weight:900;font-size:1rem;">' + entry.relicName + '</div>' +
+                '<div style="color:#888;font-size:.7rem;">Reliquia ' + entry.tier + '</div>';
+        }
+        return '';
+    }
+
     async function resolveHordaChoice(choice) {
         var uid = currentUid();
         var modal = document.getElementById('hordaWaveModal');
@@ -273,43 +345,45 @@
             if (typeof renderCharacters === 'function') renderCharacters();
         } else {
             var rewardType = pickChestReward();
-            var revealMsg = '';
+            var entry = { wave: wave, ts: Date.now() };
+            var logMsg = '';
+
             if (rewardType === 'gold') {
                 var amount = (Math.floor(Math.random() * 271) + 80) * wave;
                 if (typeof addPendingGold === 'function') await addPendingGold(uid, amount, { mode: 'horda' });
-                revealMsg = '🪙 +' + amount.toLocaleString() + ' oro';
+                entry.type = 'gold'; entry.amount = amount;
+                logMsg = '🪙 +' + amount.toLocaleString() + ' oro';
             } else if (rewardType === 'arcane_key') {
                 var ks = await db.ref('users/' + uid + '/arcane_keys').once('value');
                 await db.ref('users/' + uid + '/arcane_keys').set((ks.val() || 0) + 1);
-                revealMsg = '🗝️ +1 Llave Arcana';
-            } else if (rewardType === 'portal_rune') {
-                var ps = await db.ref('users/' + uid + '/portal_runes').once('value');
-                await db.ref('users/' + uid + '/portal_runes').set((ps.val() || 0) + 1);
-                revealMsg = '🌀 +1 Runa de Portal';
+                entry.type = 'arcane_key';
+                logMsg = '🗝️ +1 Llave Arcana';
             } else {
                 var tier = rewardType.replace('relic_', '');
                 var relicName = randomRelicOfTier(tier);
                 if (relicName && typeof addRelicToInventory === 'function') {
                     await addRelicToInventory(uid, relicName);
-                    revealMsg = '💎 Reliquia ' + tier + ': ' + relicName;
+                    entry.type = 'relic'; entry.relicName = relicName; entry.tier = tier;
+                    logMsg = '💎 Reliquia ' + tier + ': ' + relicName;
                 } else {
                     var fallback = (Math.floor(Math.random() * 271) + 80) * wave;
                     if (typeof addPendingGold === 'function') await addPendingGold(uid, fallback, { mode: 'horda' });
-                    revealMsg = '🪙 +' + fallback.toLocaleString() + ' oro (compensación)';
+                    entry.type = 'gold'; entry.amount = fallback;
+                    logMsg = '🪙 +' + fallback.toLocaleString() + ' oro (compensación)';
                 }
             }
+
             var runRef = db.ref('horda_runs/' + uid + '/rewardsLog');
             var logSnap = await runRef.once('value');
             var log = logSnap.val() || [];
-            log.push({ wave: wave, reward: revealMsg, ts: Date.now() });
+            log.push(entry);
             await runRef.set(log);
-            if (typeof addLog === 'function') addLog('🎁 Modo Horda — Recompensa sorpresa: ' + revealMsg, 'buff');
+            if (typeof addLog === 'function') addLog('🎁 Modo Horda — Recompensa sorpresa: ' + logMsg, 'buff');
             if (modal) {
                 modal.innerHTML = '<div style="max-width:380px;background:#160a24;border:2px solid #ffd700;border-radius:18px;padding:30px;text-align:center;">' +
-                    '<div style="font-size:2rem;margin-bottom:10px;">🎁</div>' +
-                    '<div style="color:#ffd700;font-family:Orbitron,sans-serif;font-weight:700;font-size:1rem;">' + revealMsg + '</div>' +
+                    buildRewardRevealHtml(entry) +
                     '</div>';
-                await new Promise(function (r) { setTimeout(r, 1600); });
+                await new Promise(function (r) { setTimeout(r, 1800); });
             }
         }
 
@@ -341,18 +415,20 @@
         var run = runSnap ? runSnap.val() : null;
         var log = (run && run.rewardsLog) || [];
 
-        var goldTotal = 0, relicCounts = {}, keys = 0, runes = 0;
+        var goldTotal = 0, relicCounts = {}, keys = 0;
         log.forEach(function (e) {
-            var m = /^🪙 \+([\d,]+) oro/.exec(e.reward);
-            if (m) goldTotal += parseInt(m[1].replace(/,/g, ''), 10);
-            var rm = /^💎 Reliquia (\w+): (.+)$/.exec(e.reward);
-            if (rm) relicCounts[rm[2]] = (relicCounts[rm[2]] || 0) + 1;
-            if (e.reward.indexOf('Llave Arcana') !== -1) keys++;
-            if (e.reward.indexOf('Runa de Portal') !== -1) runes++;
+            if (e.type === 'gold') goldTotal += e.amount || 0;
+            else if (e.type === 'relic') relicCounts[e.relicName] = (relicCounts[e.relicName] || 0) + 1;
+            else if (e.type === 'arcane_key') keys++;
         });
 
         var relicLines = Object.keys(relicCounts).map(function (n) {
-            return '<div style="color:#ccc;font-size:.78rem;padding:3px 0;">💎 ' + n + (relicCounts[n] > 1 ? ' ×' + relicCounts[n] : '') + '</div>';
+            var rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[n] : null;
+            var img = rd ? rd.img : '';
+            return '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;">' +
+                '<img src="' + img + '" style="width:32px;height:32px;object-fit:cover;border-radius:6px;border:1px solid rgba(255,215,0,.4);" title="' + (rd ? rd.desc : '') + '">' +
+                '<span style="color:#ccc;font-size:.78rem;">' + n + (relicCounts[n] > 1 ? ' ×' + relicCounts[n] : '') + '</span>' +
+            '</div>';
         }).join('');
 
         var modal = ensureHordaModal('hordaDefeatModal');
@@ -361,10 +437,11 @@
                 '<div style="font-family:Orbitron,sans-serif;font-size:1.2rem;font-weight:900;color:#ff4444;letter-spacing:.06em;margin-bottom:4px;">💀 CORRIDA TERMINADA</div>',
                 '<div style="color:#888;font-size:.8rem;margin-bottom:20px;">Llegaste hasta la Oleada ' + wave + '</div>',
                 '<div style="background:rgba(255,215,0,.06);border:1px solid rgba(255,215,0,.25);border-radius:12px;padding:16px;margin-bottom:16px;">',
-                    '<div style="color:#ffd700;font-family:Orbitron,sans-serif;font-size:1.4rem;font-weight:900;">' + goldTotal.toLocaleString() + ' 🪙</div>',
+                    '<div style="font-size:1.6rem;">🪙</div>',
+                    '<div style="color:#ffd700;font-family:Orbitron,sans-serif;font-size:1.4rem;font-weight:900;">' + goldTotal.toLocaleString() + '</div>',
                     '<div style="color:#888;font-size:.7rem;">oro total obtenido (ya en tu saldo pendiente — reclámalo)</div>',
                 '</div>',
-                (keys || runes ? '<div style="color:#ccc;font-size:.8rem;margin-bottom:10px;">' + (keys ? '🗝️ ' + keys + ' Llave(s) Arcana(s)  ' : '') + (runes ? '🌀 ' + runes + ' Runa(s) de Portal' : '') + '</div>' : ''),
+                (keys ? '<div style="color:#ccc;font-size:.8rem;margin-bottom:10px;">🗝️ ' + keys + ' Llave(s) Arcana(s)</div>' : ''),
                 (relicLines ? '<div style="text-align:left;margin-bottom:16px;">' + relicLines + '</div>' : ''),
                 '<button onclick="document.getElementById(\'hordaDefeatModal\').style.display=\'none\'; if(typeof showScreen===\'function\') showScreen(\'lobbyScreen\'); if(typeof showLobby===\'function\') showLobby();" ',
                     'style="width:100%;padding:13px;background:linear-gradient(135deg,#003a5c,#006fa6);border:2px solid #00c4ff;color:#00c4ff;border-radius:10px;font-family:Orbitron,sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;">',
@@ -373,8 +450,24 @@
             '</div>'
         ].join('');
         modal.style.display = 'flex';
+    }
 
-        if (typeof audioManager !== 'undefined' && typeof audioManager.stopBattleMusic === 'function') audioManager.stopBattleMusic();
+    // Banner cinematográfico de OLEADA — reutiliza EXACTAMENTE el mismo id/CSS que el
+    // banner de RONDA del juego (#roundBanner), solo con texto distinto. Como nunca se
+    // muestran los dos a la vez, es seguro reusar el mismo id.
+    function showHordaWaveBanner(wave) {
+        var existing = document.getElementById('roundBanner');
+        if (existing) existing.remove();
+        var banner = document.createElement('div');
+        banner.id = 'roundBanner';
+        banner.innerHTML = '<div style="text-align:center;position:relative;">' +
+            '<div class="round-banner-lines top"></div>' +
+            '<div class="round-text">OLEADA ' + wave + '</div>' +
+            '<div class="round-sub">· MODO HORDA ·</div>' +
+            '<div class="round-banner-lines bottom"></div>' +
+        '</div>';
+        document.body.appendChild(banner);
+        setTimeout(function () { if (banner.parentNode) banner.parentNode.removeChild(banner); }, 1650);
     }
 
     function ensureHordaModal(id) {
