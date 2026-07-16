@@ -12170,6 +12170,14 @@
                 }
             } catch(e) {}
 
+            // ══ MODO HORDA: intercepta el flujo normal — oleada superada o derrota final ══
+            if (gameState.gameMode === 'horda') {
+                if (typeof window.hordaHandleGameOver === 'function') {
+                    window.hordaHandleGameOver(message);
+                }
+                return; // no mostrar la pantalla normal de victoria/derrota
+            }
+
             // ══ RANKED STATS ══
             if (typeof saveRankedResult === 'function' && window._rankedMode) {
                 try {
