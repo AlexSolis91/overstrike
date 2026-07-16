@@ -1669,6 +1669,10 @@
         }
 
         function endTurn() {
+            // MODO HORDA: detecta generación de cargas por EFECTO (no por chargeGain normal)
+            // durante el turno que acaba de terminar — dispara el turno extra de Warmaster.
+            if (typeof window.hordaCheckWarmasterExtraTurn === 'function') window.hordaCheckWarmasterExtraTurn();
+
             gameState._miedoActive = false;
             gameState._relicEffectsActive = false;
             gameState._isCritHit = false;
@@ -1882,6 +1886,8 @@
                         const _sjc = gameState.characters[_sjn];
                         if (_sjc) _sjc._ariseSummonedThisRound = false;
                     }
+                    // MODO HORDA: gancho genérico de inicio de ronda (Orco Titan, etc.)
+                    if (typeof window.hordaOnRoundStart === 'function') window.hordaOnRoundStart();
                     // PILAR DEL AGUA (Giyu Tomioka): inicio de nueva ronda → Escudo 1HP a aliados
                     for (const _gn in gameState.characters) {
                         const _gc = gameState.characters[_gn];
@@ -2855,6 +2861,11 @@
 
         function processEndOfRoundEffects() {
             try {
+                // MODO HORDA: gancho genérico de fin de ronda (Warmasters, Fuerza descomunal,
+                // Artes de la Sangre Oscura — se ejecuta ANTES de procesar Veneno/Sangrado/etc.
+                // y antes de que expiren los buffs, para poder detectar cuáles están por expirar)
+                if (typeof window.hordaOnRoundEnd === 'function') window.hordaOnRoundEnd();
+
                 // ══════════════════════════════════════════════════════════════
                 // VENENO (stackeable) / SANGRADO (por turnos) / HEMORRAGIA (permanente)
                 // Todos se calculan y aplican AQUÍ, una sola vez al final de la ronda.
