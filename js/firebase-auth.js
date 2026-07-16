@@ -2686,6 +2686,15 @@
                         }
                     });
                 }
+                // ── BONO: 5% de probabilidad de +1 Runa de Portal al GANAR una partida Ranked ──
+                if (won && Math.random() < 0.05) {
+                    db.ref('users/' + myUid + '/portal_runes').once('value').then(function(snap) {
+                        db.ref('users/' + myUid + '/portal_runes').set((snap.val()||0) + 1).then(function() {
+                            addLog('🌀 ¡Bono de victoria! +1 Runa de Portal', 'buff');
+                            updateLobbyHUD();
+                        });
+                    });
+                }
             });
 
             // ── Guardar stats del defensor ──
@@ -4868,8 +4877,8 @@
                 await updateLobbyHUD();
                 alert('✅ Runa de Ataque agregada a tu inventario.');
             } else if (itemType === 'portal_rune') {
-                const ok = await spendGold(uid, 100000);
-                if (!ok) { alert('No tienes suficiente oro. Necesitas 100,000 🪙'); return; }
+                const ok = await spendGold(uid, 50000);
+                if (!ok) { alert('No tienes suficiente oro. Necesitas 50,000 🪙'); return; }
                 await db.ref('users/' + uid + '/portal_runes').transaction(function(v){ return (v||0)+1; });
                 await updateLobbyHUD();
                 alert('✅ ¡Runa de Portal adquirida!');
