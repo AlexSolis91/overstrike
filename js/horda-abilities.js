@@ -39,24 +39,33 @@
     // ══════════════════════════════════════════════════════════════════════
     // CREACIÓN DE PERSONAJE ENEMIGO (a partir de HORDA_CHARACTER_DATA)
     // ══════════════════════════════════════════════════════════════════════
-    window.hordaCreateEnemyCharacter = function (orcType, uniqueName, team) {
+    // Construye SOLO los datos del personaje (sin tocar gameState) — se usa para inyectar
+    // el Orco en el objeto `selectedChars` ANTES de llamar a initGame, para que quede
+    // incluido correctamente en gameState.characters y en el orden de turnos.
+    window.hordaBuildEnemyCharacterData = function (orcType) {
         var tmpl = window.HORDA_CHARACTER_DATA[orcType];
         if (!tmpl) { console.error('[HORDA] Tipo de Orco desconocido:', orcType); return null; }
-        var name = uniqueName || orcType;
         var ch = {
-            name: name,
-            hp: tmpl.hp, maxHp: tmpl.maxHp, speed: tmpl.speed, charges: 0, team: team,
+            name: orcType,
+            hp: tmpl.hp, maxHp: tmpl.maxHp, speed: tmpl.speed, charges: 0,
             statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
             portrait: tmpl.portrait,
             passive: { name: tmpl.passive.name, description: tmpl.passive.description },
             abilities: tmpl.abilities.map(function (a) { return Object.assign({}, a); }),
             isHordaOrc: true, hordaOrcType: orcType
         };
-        // RUGIDO PROVOCADOR (Orco Gigante): Provocación permanente desde el inicio
         if (tmpl.passive.name === 'Rugido Provocador') {
             ch.statusEffects.push({ name: 'Provocacion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🛡️' });
         }
-        gameState.characters[name] = ch;
+        return ch;
+    };
+
+    window.hordaCreateEnemyCharacter = function (orcType, uniqueName, team) {
+        var ch = window.hordaBuildEnemyCharacterData(orcType);
+        if (!ch) return null;
+        ch.name = uniqueName || orcType;
+        ch.team = team;
+        gameState.characters[ch.name] = ch;
         return ch;
     };
 
