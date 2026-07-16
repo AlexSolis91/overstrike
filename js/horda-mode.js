@@ -28,11 +28,111 @@
         const HORDA_RANK_TYPES = {
             'C':   ['Orco'],
             'B':   ['Alto Orco', 'Orco Gigante'],
-            'A':   ['Orco de Élite', 'Orco Arcano'],
-            'S':   ['General'],
+            'A':   ['Orco de Elite', 'Orco Arcano'],
+            'S':   ['General de la Horda'],
             'SS':  ['Warmaster'],
-            'SSS': ['Titán']
+            'SSS': ['Orco Titan']
         };
+
+        // ══════════════════════════════════════════════════════════════════
+        // FICHAS DE PERSONAJE — Orcos del Modo Horda
+        // Misma convención que characterData (js/characters.js): passive
+        // {name, description}, abilities [{name, type, cost, chargeGain,
+        // damage, target, effect, description}]. La lógica real de cada
+        // efecto vive en js/horda-abilities.js (dispatcher: ability.effect
+        // que empiece con 'horda_').
+        // ══════════════════════════════════════════════════════════════════
+        const HORDA_CHARACTER_DATA = {
+            'Orco': {
+                name: 'Orco', rank: 'C', hp: 20, maxHp: 20, speed: 82,
+                portrait: 'https://i.ibb.co/n5JLSh3/Gurrash-Earseeker.jpg',
+                passive: { name: 'Hordas', description: 'Cada vez que un personaje aliado que lleve "Orco" en su nombre realiza un ataque, genera 1 carga.' },
+                abilities: [
+                    { name: 'Tajo Sucio', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'horda_orco_basic', description: 'Aplica debuff Sangrado 1 turno sobre el objetivo.' },
+                    { name: 'Pisotón Tembloroso', type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'single', effect: 'horda_orco_special1', description: 'Aplica debuff Aturdimiento sobre el objetivo.' },
+                    { name: 'Lanzamiento de Peñasco', type: 'special', cost: 6, chargeGain: 0, damage: 4, target: 'aoe', effect: 'horda_orco_special2', description: '+1 daño adicional por cada debuff activo en el equipo enemigo.' },
+                    { name: 'Furia de la Horda', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'horda_orco_over', description: 'Sacrifica 50% de su HP actual. Todos los Orcos ejecutan aleatoriamente Tajo Sucio o Pisotón Tembloroso sobre enemigos aleatorios.' }
+                ]
+            },
+            'Alto Orco': {
+                name: 'Alto Orco', rank: 'B', hp: 20, maxHp: 20, speed: 85,
+                portrait: 'https://i.ibb.co/VpQ2vJ8v/descarga-27.jpg',
+                passive: { name: 'Agresion', description: 'Cada vez que un personaje aliado que lleve "Orco" en su nombre recibe daño, genera 2 cargas.' },
+                abilities: [
+                    { name: 'Mandoble de Hierro', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'horda_altoorco_basic', description: '+1 daño adicional por cada Orco derrotado en tu equipo. Aplica debuff Sangrado 1 turno.' },
+                    { name: 'Grito de Mandato', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'self', effect: 'horda_altoorco_special1', description: 'Aplica Buff Armadura 2 turnos y Buff Frenesí 2 turnos a todos los aliados.' },
+                    { name: 'Torbellino de Sangre', type: 'special', cost: 7, chargeGain: 0, damage: 4, target: 'aoe', effect: 'horda_altoorco_special2', description: 'Aplica debuff Debilitar 3 turnos sobre los golpeados. Golpe crítico en enemigos con Sangrado o Hemorragia.' },
+                    { name: 'Guillotina de Hierro', type: 'over', cost: 10, chargeGain: 0, damage: 10, target: 'single', effect: 'horda_altoorco_over', description: '50% de probabilidad de crítico. Si es crítico, aliados generan 10 cargas.' }
+                ]
+            },
+            'Orco Gigante': {
+                name: 'Orco Gigante', rank: 'B', hp: 25, maxHp: 25, speed: 77,
+                portrait: 'https://i.ibb.co/TDbWSGg9/Subscribe-for-daily-fantasy-inspiration.jpg',
+                passive: { name: 'Rugido Provocador', description: 'Efecto pasivo Provocación. Cada vez que recibe daño aplica Buff Escudo 5 HP sobre 3 aliados aleatorios (incluyéndolo).' },
+                abilities: [
+                    { name: 'Manotazo Aplastante', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'aoe', effect: 'horda_gigante_basic', description: '50% de probabilidad de daño triple a cada enemigo golpeado. Aplica Buff Escudo por la misma cantidad de daño causado a los enemigos golpeados.' },
+                    { name: 'Ondas sísmicas', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'aoe', effect: 'horda_gigante_special1', description: 'Roba 2 HP de cada enemigo golpeado por este ataque.' },
+                    { name: 'Pisotón de Demolición', type: 'special', cost: 6, chargeGain: 0, damage: 4, target: 'single', effect: 'horda_gigante_special2', description: 'Disipa todos los buffs activos del objetivo y genera 3 cargas a cada aliado por cada buff disipado.' },
+                    { name: 'Brutalidad', type: 'over', cost: 8, chargeGain: 4, damage: 0, target: 'single', effect: 'horda_gigante_over', description: 'Causa de 3 a 10 de daño. Los aliados se curan la misma cantidad de daño causado.' }
+                ]
+            },
+            'Orco de Elite': {
+                name: 'Orco de Elite', rank: 'A', hp: 25, maxHp: 25, speed: 91,
+                portrait: 'https://i.ibb.co/MT7sdnK/image-40bc2564.png',
+                passive: { name: 'Sed de Sangre', description: 'Cada vez que un Orco es eliminado, gana 1 turno adicional y genera 8 cargas. Cada vez que un enemigo realiza un ataque especial, gana 1 turno adicional y se aplica Buff Frenesí 2 turnos. Cada vez que aplica un debuff sobre un enemigo atacado, genera 1 carga.' },
+                abilities: [
+                    { name: 'Estocada Brutal', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'multi', effect: 'horda_elite_basic', description: 'Realiza 3 golpes sobre enemigos aleatorios. Cada golpe tiene 50% de aplicar Sangrado 1T, 50% de aplicar Debilitar 1T y 50% de aplicar Aturdimiento.' },
+                    { name: 'Rompeguardias', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'single', effect: 'horda_elite_special1', description: 'Si el objetivo no tiene cargas, causa daño crítico y aplica Mega Aturdimiento sobre 2 enemigos aleatorios.' },
+                    { name: 'Carga de la Horda', type: 'special', cost: 8, chargeGain: 0, damage: 0, target: 'self', effect: 'horda_elite_special2', description: '50% de probabilidad c/u de aplicarse Armadura, Escudo 10HP, Infectar, Aura Oscura, Aura de Fuego, Frenesí y Esquivar (2 turnos c/u). Por cada buff aplicado, ejecuta Estocada Brutal.' },
+                    { name: 'Aniquilacion Sangrienta', type: 'over', cost: 10, chargeGain: 0, damage: 5, target: 'single', effect: 'horda_elite_over', description: '50% de golpe crítico. 50% de probabilidad de daño triple.' }
+                ]
+            },
+            'Orco Arcano': {
+                name: 'Orco Arcano', rank: 'A', hp: 20, maxHp: 20, speed: 86,
+                portrait: 'https://i.ibb.co/gbH6M5yk/image-b5967684.png',
+                passive: { name: 'Artes de la Sangre Oscura', description: 'Cada vez que un Orco realiza un ataque básico, cura 2 HP a todos los Orcos aliados. Cada vez que un Buff expira en el equipo enemigo, genera 3 cargas.' },
+                abilities: [
+                    { name: 'Runa de Sangre Oscura', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'self', effect: 'horda_arcano_basic', description: 'Limpia 3 debuffs aleatorios en el equipo aliado. Cura 2 HP al aliado con menos HP. Aplica Debilitar 2 turnos en un enemigo aleatorio.' },
+                    { name: 'Maldición de la Sangre', type: 'special', cost: 4, chargeGain: 0, damage: 1, target: 'aoe', effect: 'horda_arcano_special1', description: 'Elimina 3 cargas de los enemigos golpeados. Un aliado aleatorio genera la misma cantidad de cargas eliminadas.' },
+                    { name: 'Hechizo de Sangre Arcana', type: 'special', cost: 6, chargeGain: 0, damage: 4, target: 'single', effect: 'horda_arcano_special2', description: 'Aplica Debilitar 2 turnos y Confusión 2 turnos sobre el objetivo. Un Orco aliado gana 1 turno adicional.' },
+                    { name: 'Magia de Muerte', type: 'over', cost: 8, chargeGain: 0, damage: 0, target: 'self', effect: 'horda_arcano_over', description: 'Genera 5 cargas a todos los aliados (excepto a sí mismo). Revive a un aliado aleatorio con 50% de su HP y 5 cargas, y le otorga 1 turno adicional.' }
+                ]
+            },
+            'General de la Horda': {
+                name: 'General de la Horda', rank: 'S', hp: 25, maxHp: 25, speed: 93,
+                portrait: 'https://i.ibb.co/hxTv1Nm3/image-8097f440.png',
+                passive: { name: 'Aniquilacion', description: 'Cada vez que un aliado es eliminado, hay 50% de probabilidad de sustituir su tarjeta por la de un Orco aleatorio vivo (100% HP, 0 cargas). El General tiene 50% de probabilidad de limpiar cualquier debuff que reciba; cada vez que lo hace, genera 3 cargas y se cura 3 HP.' },
+                abilities: [
+                    { name: 'Rugido de Reagrupación', type: 'basic', cost: 0, chargeGain: 1, damage: 0, target: 'self', effect: 'horda_general_basic', description: 'Aplica Buff Protección Sagrada 2 turnos sobre cada aliado. Genera 1 carga para cada aliado.' },
+                    { name: 'Ejecución de la Horda', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'single', effect: 'horda_general_special1', description: 'Todos los aliados realizan su ataque básico sobre el objetivo. Si el objetivo tiene Provocación, reduce 50% de su HP actual.' },
+                    { name: 'Carga del Estandarte', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'aoe', effect: 'horda_general_special2', description: 'Disipa todos los Buffs de los enemigos golpeados y genera 2 cargas por cada buff disipado.' },
+                    { name: 'Marcha de la Victoria', type: 'over', cost: 12, chargeGain: 0, damage: 5, target: 'aoe', effect: 'horda_general_over', description: 'Elimina a un aliado y todos los aliados (excepto el General) ejecutan su Over.' }
+                ]
+            },
+            'Warmaster': {
+                name: 'Warmaster', rank: 'SS', hp: 30, maxHp: 30, speed: 96,
+                portrait: 'https://i.ibb.co/M5MD17Wz/image-bb1fa3b9.png',
+                passive: { name: 'Warmasters', description: 'Al final de cada ronda disipa sus debuffs activos y recupera 5 HP. Cada vez que un enemigo genera cargas por un efecto de pasiva o movimiento (excepto la generación normal de cargas de sus ataques), Warmaster obtiene 1 turno adicional.' },
+                abilities: [
+                    { name: 'Danza de Sangre y Muerte', type: 'basic', cost: 0, chargeGain: 1, damage: 3, target: 'multi', effect: 'horda_warmaster_basic', description: 'Golpea a 3 enemigos aleatorios. Cada golpe tiene 50% de crítico. Cada crítico incrementa +1 el daño base de este ataque.' },
+                    { name: 'Furia de la Horda', type: 'special', cost: 5, chargeGain: 0, damage: 4, target: 'aoe', effect: 'horda_warmaster_special1', description: 'Elimina todas las invocaciones de ambos equipos. +5 daño por cada invocación eliminada a los enemigos golpeados.' },
+                    { name: 'Lanza de Oscuridad perforadora', type: 'special', cost: 7, chargeGain: 0, damage: 5, target: 'single', effect: 'horda_warmaster_special2', description: 'Ignora Escudo, Reflejar y Escudo Sagrado. Daño triple si el enemigo tiene 50% o más de su HP máximo. Si tiene debuff activo, duplica permanentemente el daño base de este movimiento.' },
+                    { name: 'Rugido de los Titanes', type: 'over', cost: 10, chargeGain: 0, damage: 10, target: 'single', effect: 'horda_warmaster_over', description: 'Aplica Mega Aturdimiento en todos los enemigos. Aliados generan 3 cargas por cada enemigo con Mega Aturdimiento.' }
+                ]
+            },
+            'Orco Titan': {
+                name: 'Orco Titan', rank: 'SSS', hp: 40, maxHp: 40, speed: 84,
+                portrait: 'https://i.ibb.co/84cdjjz2/image-d4718b71.png',
+                passive: { name: 'Fuerza descomunal', description: 'Al final de cada ronda incrementa +2 el daño de ataque básico de todos los aliados. La primera vez por ronda que recibe daño, se aplica Buff Mega Provocación 1 turno y Armadura 1 turno. Los movimientos AOE enemigos causan 50% menos daño mientras esté en batalla.' },
+                abilities: [
+                    { name: 'Impacto Colosal', type: 'basic', cost: 0, chargeGain: 2, damage: 4, target: 'single', effect: 'horda_titan_basic', description: 'Aplica Buff Mega Aturdimiento sobre el objetivo.' },
+                    { name: 'Choque Sismico', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'aoe', effect: 'horda_titan_special1', description: 'Aplica Aturdimiento sobre los golpeados. Si el enemigo ya tenía Aturdimiento, causa +7 daño adicional.' },
+                    { name: 'Furia de Titanes', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'multi', effect: 'horda_titan_special2', description: 'Golpea 1 vez a cada enemigo por cada debuff activo que tenga, con Impacto Colosal.' },
+                    { name: 'Devastacion planetaria', type: 'over', cost: 8, chargeGain: 0, damage: 0, target: 'aoe', effect: 'horda_titan_over', description: 'Causa de 5 a 20 de daño. Cada golpe tiene 10% de probabilidad de eliminar al enemigo golpeado.' }
+                ]
+            }
+        };
+        if (typeof window !== 'undefined') window.HORDA_CHARACTER_DATA = HORDA_CHARACTER_DATA;
 
         // Curvas de progresión de rango (ver documentación arriba). Devuelve un
         // número decimal donde la parte entera es el rango garantizado y la
