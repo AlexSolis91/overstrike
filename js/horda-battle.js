@@ -275,10 +275,40 @@
                                 c.isDead = st.hp <= 0;
                                 if (st.equippedRelics) c.equippedRelics = st.equippedRelics;
                             });
-                            if (typeof renderCharacters === 'function') renderCharacters();
                         }
+
+                        // Restaurar las invocaciones VIVAS del jugador de la oleada anterior
+                        // (Igris, MinByung, etc.) — initGame() ya las había reseteado a {}.
+                        if (run.summons) {
+                            Object.keys(run.summons).forEach(function (sid) {
+                                gameState.summons[sid] = run.summons[sid];
+                            });
+                        }
+
+                        if (typeof renderCharacters === 'function') renderCharacters();
                     }
                 }
+
+                // BLINDAJE: si algún personaje de team1 llegó hasta aquí sin equippedRelics
+                // cargado (condición de carrera con loadGameRelics(), asíncrona y disparada
+                // por csStartGame en la oleada 1), lo cargamos directo aquí y esperamos a que
+                // termine antes de dejar que arranque la partida — así reliquias como "Orbe de
+                // las Sombras" (bono de HP al invocar) no se pierden por llegar tarde.
+                var _hordaSlotKeys = ['arma1', 'arma2', 'equip1', 'equip2', 'joya1', 'joya2'];
+                var _hordaTeam1 = Object.keys(gameState.characters).filter(function (n) { return gameState.characters[n].team === 'team1'; });
+                await Promise.all(_hordaTeam1.map(async function (n) {
+                    var c = gameState.characters[n];
+                    if (!c || c.equippedRelics) return; // ya está cargada
+                    var baseName = c.baseName || n.replace(/ v\d+$/, '');
+                    try {
+                        var slotsSnap = await db.ref('users/' + uid + '/characters/' + baseName + '/slots_v2').once('value');
+                        var slotsObj = slotsSnap.val();
+                        if (!slotsObj) return;
+                        var relicNames = _hordaSlotKeys.map(function (k) { return slotsObj[k]; }).filter(Boolean);
+                        if (!relicNames.length) return;
+                        c.equippedRelics = relicNames;
+                    } catch (e) { /* sin conexión momentánea — no bloquear la partida por esto */ }
+                }));
             })();
         };
     })();
@@ -302,6 +332,16 @@
         });
         await db.ref('horda_runs/' + uid + '/teamState').set(teamState);
         await db.ref('horda_runs/' + uid + '/wave').set(window._hordaCurrentWave || 1);
+
+        // Persistir las invocaciones VIVAS del jugador (Igris, MinByung, etc.) — initGame()
+        // resetea gameState.summons a {} en cada oleada, así que sin esto se pierden.
+        var mySummons = {};
+        Object.keys(gameState.summons || {}).forEach(function (sid) {
+            var s = gameState.summons[sid];
+            if (s && s.team === 'team1' && s.hp > 0) mySummons[sid] = s;
+        });
+        await db.ref('horda_runs/' + uid + '/summons').set(mySummons);
+
         if (!silent) addLog('💾 Progreso de Modo Horda guardado', 'info');
     };
 
