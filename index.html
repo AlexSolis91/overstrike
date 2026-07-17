@@ -602,7 +602,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260823"></script>
+    <script src="js/firebase-auth.js?v=20260824"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -1189,18 +1189,125 @@
                 if (!rd) return;
                 const color = tierColors[rd.tier]||'#aaa';
                 const safeName = name.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-                gridHTML += '<div class="_sellRelicCard" data-name="' + safeName + '" data-tier="' + (rd.tier||'Raro') + '" data-color="' + color + '" ' +
+                const quickPrice = (typeof RELIC_QUICK_SELL !== 'undefined' ? (RELIC_QUICK_SELL[rd.tier]||0) : 0);
+                gridHTML += '<div class="_sellRelicCard" data-name="' + safeName + '" data-tier="' + (rd.tier||'Raro') + '" data-color="' + color + '" data-qty="' + qty + '" ' +
                     'onclick="window.loadSellSelectRelic(this,this.dataset.name,this.dataset.tier,this.dataset.color)" ' +
-                    'style="background:rgba(255,255,255,0.03);border:2px solid ' + color + '55;border-radius:10px;padding:10px;text-align:center;cursor:' + (canList?'pointer':'not-allowed') + ';opacity:' + (canList?'1':'0.5') + ';transition:all .2s;">' +
+                    'style="position:relative;background:rgba(255,255,255,0.03);border:2px solid ' + color + '55;border-radius:10px;padding:10px;text-align:center;cursor:' + (canList?'pointer':'not-allowed') + ';opacity:' + (canList?'1':'0.5') + ';transition:all .2s;">' +
+                    '<input type="checkbox" class="_bulkCb" title="Marcar para vender en lote (Venta Rápida)" ' +
+                        'onclick="event.stopPropagation(); window.toggleBulkSell(this,\'' + safeName.replace(/'/g,"\\'") + '\',' + qty + ')" ' +
+                        'style="position:absolute;top:6px;left:6px;width:16px;height:16px;cursor:pointer;z-index:2;">' +
                     '<img src="' + (rd.img||'') + '" style="width:48px;height:48px;object-fit:contain;border-radius:6px;" onerror="this.style.display=\'none\'">' +
                     '<div style="font-size:.65rem;color:#eee;margin-top:4px;line-height:1.3;">' + name + '</div>' +
-                    '<div style="font-size:.6rem;color:' + color + ';">×' + qty + ' · ' + rd.tier + '</div></div>';
+                    '<div style="font-size:.6rem;color:' + color + ';">×' + qty + ' · ' + rd.tier + '</div>' +
+                    '<div style="font-size:.58rem;color:#666;">⚡' + quickPrice.toLocaleString() + '/u</div>' +
+                    '<div class="_bulkQtyRow" style="display:none;align-items:center;justify-content:center;gap:4px;margin-top:6px;" onclick="event.stopPropagation()">' +
+                        '<button onclick="window.adjustBulkQty(\'' + safeName.replace(/'/g,"\\'") + '\',-1,' + qty + ')" style="width:22px;height:22px;background:rgba(255,255,255,.08);border:1px solid #555;color:#ccc;border-radius:5px;cursor:pointer;font-size:.75rem;line-height:1;">−</button>' +
+                        '<input type="number" class="_bulkQtyInput" min="1" max="' + qty + '" value="' + qty + '" ' +
+                            'onchange="window.setBulkQty(\'' + safeName.replace(/'/g,"\\'") + '\',this.value,' + qty + ')" ' +
+                            'style="width:38px;text-align:center;background:#0a1628;border:1px solid #444;color:#fff;border-radius:5px;font-size:.68rem;padding:2px;">' +
+                        '<button onclick="window.adjustBulkQty(\'' + safeName.replace(/'/g,"\\'") + '\',1,' + qty + ')" style="width:22px;height:22px;background:rgba(255,255,255,.08);border:1px solid #555;color:#ccc;border-radius:5px;cursor:pointer;font-size:.75rem;line-height:1;">+</button>' +
+                    '</div>' +
+                '</div>';
             });
             if (!gridHTML) gridHTML = '<div style="color:#555;font-size:.8rem;text-align:center;padding:16px;grid-column:1/-1;">No tienes reliquias en tu inventario.</div>';
             grid.innerHTML = headerHTML +
-                (canList ? '<div style="font-size:.72rem;color:#aaa;margin-bottom:8px;">Selecciona la reliquia que quieres publicar:</div>' : '') +
+                (canList ? '<div style="font-size:.72rem;color:#aaa;margin-bottom:8px;">Marca la casilla de cada reliquia para venderla en lote a precio fijo (Venta Rápida), o toca la tarjeta para publicarla individualmente a precio libre:</div>' : '') +
                 '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:8px;">' + gridHTML + '</div>';
+            window._bulkSellQty = {};
+            window.updateBulkSellSummary();
         }
+
+        // ── VENTA EN LOTE (checkbox + cantidad) — siempre a precio fijo (Venta Rápida) ──
+        window._bulkSellQty = window._bulkSellQty || {};
+
+        window.toggleBulkSell = function(checkbox, name, maxQty) {
+            const card = checkbox.closest('._sellRelicCard');
+            const qtyRow = card ? card.querySelector('._bulkQtyRow') : null;
+            if (checkbox.checked) {
+                window._bulkSellQty[name] = maxQty;
+                if (qtyRow) {
+                    qtyRow.style.display = 'flex';
+                    const inp = qtyRow.querySelector('._bulkQtyInput');
+                    if (inp) inp.value = maxQty;
+                }
+            } else {
+                delete window._bulkSellQty[name];
+                if (qtyRow) qtyRow.style.display = 'none';
+            }
+            window.updateBulkSellSummary();
+        };
+
+        window.adjustBulkQty = function(name, delta, maxQty) {
+            if (window._bulkSellQty[name] === undefined) return; // solo si está marcada
+            let cur = window._bulkSellQty[name] || 1;
+            cur = Math.max(1, Math.min(maxQty, cur + delta));
+            window._bulkSellQty[name] = cur;
+            const card = document.querySelector('._sellRelicCard[data-name="' + CSS.escape(name) + '"]');
+            if (card) {
+                const inp = card.querySelector('._bulkQtyInput');
+                if (inp) inp.value = cur;
+            }
+            window.updateBulkSellSummary();
+        };
+
+        window.setBulkQty = function(name, val, maxQty) {
+            if (window._bulkSellQty[name] === undefined) return;
+            let n = parseInt(val, 10) || 1;
+            n = Math.max(1, Math.min(maxQty, n));
+            window._bulkSellQty[name] = n;
+            const card = document.querySelector('._sellRelicCard[data-name="' + CSS.escape(name) + '"]');
+            if (card) {
+                const inp = card.querySelector('._bulkQtyInput');
+                if (inp) inp.value = n;
+            }
+            window.updateBulkSellSummary();
+        };
+
+        window.updateBulkSellSummary = function() {
+            const bar = document.getElementById('market-bulk-sell-bar');
+            if (!bar) return;
+            const entries = Object.entries(window._bulkSellQty || {});
+            if (!entries.length) { bar.style.display = 'none'; return; }
+            let totalItems = 0, totalGold = 0;
+            entries.forEach(function(pair) {
+                const name = pair[0], qty = pair[1];
+                const rd = typeof RELICS_DATA !== 'undefined' ? RELICS_DATA[name] : null;
+                const price = rd && typeof RELIC_QUICK_SELL !== 'undefined' ? (RELIC_QUICK_SELL[rd.tier]||0) : 0;
+                totalItems += qty;
+                totalGold += price * qty;
+            });
+            bar.style.display = 'flex';
+            const summaryEl = document.getElementById('market-bulk-sell-summary');
+            if (summaryEl) summaryEl.textContent = totalItems + ' reliquia' + (totalItems!==1?'s':'') + ' seleccionada' + (totalItems!==1?'s':'') + ' · ' + totalGold.toLocaleString() + ' 🪙';
+        };
+
+        window.confirmBulkSell = async function() {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+            const entries = Object.entries(window._bulkSellQty || {});
+            if (!entries.length) return;
+            let totalItems = 0;
+            entries.forEach(function(pair) { totalItems += pair[1]; });
+            if (!confirm('¿Vender ' + totalItems + ' reliquia' + (totalItems!==1?'s':'') + ' en lote a Venta Rápida (precio fijo)? Esta acción no se puede deshacer.')) return;
+
+            let totalGold = 0;
+            for (const [name, qty] of entries) {
+                const rd = typeof RELICS_DATA !== 'undefined' ? RELICS_DATA[name] : null;
+                const unitPrice = rd && typeof RELIC_QUICK_SELL !== 'undefined' ? (RELIC_QUICK_SELL[rd.tier]||0) : 0;
+                const ref = db.ref('users/' + user.uid + '/inventory/relics/' + name);
+                const snap = await ref.once('value');
+                const cur = snap.val() || 0;
+                const sellQty = Math.min(qty, cur);
+                const newQty = cur - sellQty;
+                if (newQty <= 0) await ref.remove(); else await ref.set(newQty);
+                totalGold += unitPrice * sellQty;
+            }
+            await addGold(user.uid, totalGold);
+            await updateLobbyHUD();
+            window._bulkSellQty = {};
+            alert('✅ Vendiste ' + totalItems + ' reliquias en lote por ' + totalGold.toLocaleString() + ' oro.');
+            loadSellTab();
+        };
 
 
         document.addEventListener('DOMContentLoaded', function(){
@@ -1418,9 +1525,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260823"></script>
+    <script src="js/characters.js?v=20260824"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260823"></script>
+    <script src="js/audio-state.js?v=20260824"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2152,26 +2259,26 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260823"></script>
+    <script src="js/ai-engine.js?v=20260824"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260823"></script>
+    <script src="js/init-render.js?v=20260824"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260823"></script>
+    <script src="js/turn-logic.js?v=20260824"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260823"></script>
+    <script src="js/status-effects.js?v=20260824"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260823"></script>
+    <script src="js/debuffs.js?v=20260824"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260823"></script>
+    <script src="js/summons.js?v=20260824"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260823"></script>
+    <script src="js/ability-select.js?v=20260824"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260823"></script>
+<script src="js/skills.js?v=20260824"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260823"></script>
-    <script src="js/horda-mode.js?v=20260823"></script>
-    <script src="js/horda-abilities.js?v=20260823"></script>
-    <script src="js/horda-battle.js?v=20260823"></script>
+    <script src="js/jefe-de-sala.js?v=20260824"></script>
+    <script src="js/horda-mode.js?v=20260824"></script>
+    <script src="js/horda-abilities.js?v=20260824"></script>
+    <script src="js/horda-battle.js?v=20260824"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
@@ -2292,6 +2399,10 @@
                 <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:20px;">
                     <div style="font-size:.85rem;color:#ccc;margin-bottom:16px;">Selecciona una reliquia de tu inventario para vender:</div>
                     <div id="market-sell-relics" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:16px;"></div>
+                    <div id="market-bulk-sell-bar" style="display:none;align-items:center;justify-content:space-between;gap:12px;background:rgba(0,255,136,0.06);border:2px solid #00ff88;border-radius:10px;padding:12px 16px;margin-bottom:16px;">
+                        <div id="market-bulk-sell-summary" style="font-size:.8rem;color:#00ff88;font-weight:700;"></div>
+                        <button onclick="window.confirmBulkSell()" style="padding:9px 18px;background:linear-gradient(135deg,#003a1a,#00aa55);border:2px solid #00ff88;color:#00ff88;border-radius:8px;font-family:Orbitron,sans-serif;font-size:.72rem;cursor:pointer;white-space:nowrap;">✅ VENDER LOTE</button>
+                    </div>
                     <div id="market-sell-form" style="display:none;">
                         <div style="font-size:.8rem;color:#ffaa00;margin-bottom:8px;" id="market-sell-selected-name"></div>
                         <div style="display:flex;gap:8px;align-items:center;">
