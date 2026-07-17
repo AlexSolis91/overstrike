@@ -465,6 +465,9 @@
 
             if (rewardType === 'gold') {
                 var amount = (Math.floor(Math.random() * 271) + 80) * wave;
+                if (typeof checkMemorexGoldBonus === 'function' && checkMemorexGoldBonus(window._hordaRunTeam || [])) {
+                    amount = Math.floor(amount * 1.5);
+                }
                 if (typeof addPendingGold === 'function') await addPendingGold(uid, amount, { mode: 'horda' });
                 entry.type = 'gold'; entry.amount = amount;
                 logMsg = '🪙 +' + amount.toLocaleString() + ' oro';
@@ -482,6 +485,9 @@
                     logMsg = '💎 Reliquia ' + tier + ': ' + relicName;
                 } else {
                     var fallback = (Math.floor(Math.random() * 271) + 80) * wave;
+                    if (typeof checkMemorexGoldBonus === 'function' && checkMemorexGoldBonus(window._hordaRunTeam || [])) {
+                        fallback = Math.floor(fallback * 1.5);
+                    }
                     if (typeof addPendingGold === 'function') await addPendingGold(uid, fallback, { mode: 'horda' });
                     entry.type = 'gold'; entry.amount = fallback;
                     logMsg = '🪙 +' + fallback.toLocaleString() + ' oro (compensación)';
