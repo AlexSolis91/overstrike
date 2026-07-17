@@ -364,6 +364,22 @@
     }
 
     // Construye el HTML de una tarjeta de revelado de recompensa (con imagen + tooltip para reliquias)
+    var HORDA_TIER_COLORS = { 'Raro': '#4fc3f7', 'Especial': '#ff9800', 'Epico': '#b46cff', 'Legendario': '#ffee00' };
+
+    window._hordaClaimGoldFromDefeat = async function () {
+        var btn = document.getElementById('hordaDefeatClaimBtn');
+        if (btn) { btn.disabled = true; btn.textContent = 'Reclamando…'; }
+        try {
+            var uid = currentUid();
+            var claimed = uid && typeof claimPendingGold === 'function' ? await claimPendingGold(uid) : 0;
+            var amountEl = document.getElementById('hordaDefeatGoldAmount');
+            if (amountEl) amountEl.textContent = '0';
+            if (btn) { btn.textContent = '✅ +' + claimed.toLocaleString() + ' reclamado'; btn.style.opacity = '.7'; }
+        } catch (e) {
+            if (btn) { btn.textContent = 'Error — reintenta'; btn.disabled = false; }
+        }
+    };
+
     function buildRewardRevealHtml(entry) {
         if (entry.type === 'gold') {
             return '<div style="font-size:2.4rem;margin-bottom:8px;">🪙</div>' +
@@ -377,13 +393,14 @@
             var rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[entry.relicName] : null;
             var img = rd ? rd.img : '';
             var desc = rd ? (entry.tier + ' — ' + (rd.desc || '')) : entry.tier;
+            var tierColor = HORDA_TIER_COLORS[entry.tier] || '#ffd700';
             return '<div style="position:relative;display:inline-block;margin-bottom:10px;" ' +
                     'onmouseover="var t=this.querySelector(\'.hrTooltip\'); if(t) t.style.opacity=\'1\';" ' +
                     'onmouseout="var t=this.querySelector(\'.hrTooltip\'); if(t) t.style.opacity=\'0\';">' +
-                    '<img src="' + img + '" style="width:84px;height:84px;object-fit:cover;border-radius:12px;border:2px solid #ffd700;box-shadow:0 0 16px rgba(255,215,0,.4);">' +
-                    '<div class="hrTooltip" style="opacity:0;transition:opacity .15s;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:8px;width:220px;background:#0e0509;border:1px solid #ffd700;border-radius:8px;padding:8px 10px;font-size:.68rem;color:#ccc;text-align:left;pointer-events:none;z-index:10;">' + desc + '</div>' +
+                    '<img src="' + img + '" style="width:84px;height:84px;object-fit:cover;border-radius:12px;border:2px solid ' + tierColor + ';box-shadow:0 0 16px ' + tierColor + '66;">' +
+                    '<div class="hrTooltip" style="opacity:0;transition:opacity .15s;position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:8px;width:220px;background:#0e0509;border:1px solid ' + tierColor + ';border-radius:8px;padding:8px 10px;font-size:.68rem;color:#ccc;text-align:left;pointer-events:none;z-index:10;">' + desc + '</div>' +
                 '</div>' +
-                '<div style="color:#ffd700;font-family:Orbitron,sans-serif;font-weight:900;font-size:1rem;">' + entry.relicName + '</div>' +
+                '<div style="color:' + tierColor + ';font-family:Orbitron,sans-serif;font-weight:900;font-size:1rem;">' + entry.relicName + '</div>' +
                 '<div style="color:#888;font-size:.7rem;">Reliquia ' + entry.tier + '</div>';
         }
         return '';
@@ -473,18 +490,21 @@
         var run = runSnap ? runSnap.val() : null;
         var log = (run && run.rewardsLog) || [];
 
-        var goldTotal = 0, relicCounts = {}, keys = 0;
+        var relicCounts = {}, keys = 0;
         log.forEach(function (e) {
-            if (e.type === 'gold') goldTotal += e.amount || 0;
-            else if (e.type === 'relic') relicCounts[e.relicName] = (relicCounts[e.relicName] || 0) + 1;
+            if (e.type === 'relic') relicCounts[e.relicName] = (relicCounts[e.relicName] || 0) + 1;
             else if (e.type === 'arcane_key') keys++;
         });
+
+        // Oro PENDIENTE real (incluye esta corrida + cualquier otro oro sin reclamar de antes)
+        var pendingGold = uid && typeof getPendingGold === 'function' ? await getPendingGold(uid) : 0;
 
         var relicLines = Object.keys(relicCounts).map(function (n) {
             var rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[n] : null;
             var img = rd ? rd.img : '';
+            var tierColor = HORDA_TIER_COLORS[rd ? rd.tier : ''] || '#ffd700';
             return '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;">' +
-                '<img src="' + img + '" style="width:32px;height:32px;object-fit:cover;border-radius:6px;border:1px solid rgba(255,215,0,.4);" title="' + (rd ? rd.desc : '') + '">' +
+                '<img src="' + img + '" style="width:32px;height:32px;object-fit:cover;border-radius:6px;border:1px solid ' + tierColor + ';" title="' + (rd ? rd.desc : '') + '">' +
                 '<span style="color:#ccc;font-size:.78rem;">' + n + (relicCounts[n] > 1 ? ' ×' + relicCounts[n] : '') + '</span>' +
             '</div>';
         }).join('');
@@ -496,8 +516,9 @@
                 '<div style="color:#888;font-size:.8rem;margin-bottom:20px;">Llegaste hasta la Oleada ' + wave + '</div>',
                 '<div style="background:rgba(255,215,0,.06);border:1px solid rgba(255,215,0,.25);border-radius:12px;padding:16px;margin-bottom:16px;">',
                     '<div style="font-size:1.6rem;">🪙</div>',
-                    '<div style="color:#ffd700;font-family:Orbitron,sans-serif;font-size:1.4rem;font-weight:900;">' + goldTotal.toLocaleString() + '</div>',
-                    '<div style="color:#888;font-size:.7rem;">oro total obtenido (ya en tu saldo pendiente — reclámalo)</div>',
+                    '<div id="hordaDefeatGoldAmount" style="color:#ffd700;font-family:Orbitron,sans-serif;font-size:1.4rem;font-weight:900;">' + pendingGold.toLocaleString() + '</div>',
+                    '<div style="color:#888;font-size:.7rem;">oro pendiente por reclamar</div>',
+                (pendingGold > 0 ? '<button id="hordaDefeatClaimBtn" onclick="window._hordaClaimGoldFromDefeat()" style="margin-top:10px;width:100%;padding:10px;background:linear-gradient(135deg,#5c4400,#a67c00);border:2px solid #ffd700;color:#ffd700;border-radius:9px;font-family:Orbitron,sans-serif;font-size:.75rem;font-weight:700;cursor:pointer;">💰 RECLAMAR</button>' : ''),
                 '</div>',
                 (keys ? '<div style="color:#ccc;font-size:.8rem;margin-bottom:10px;">🗝️ ' + keys + ' Llave(s) Arcana(s)</div>' : ''),
                 (relicLines ? '<div style="text-align:left;margin-bottom:16px;">' + relicLines + '</div>' : ''),
