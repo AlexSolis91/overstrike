@@ -1595,9 +1595,10 @@
             }
 
             // ── TORMENTA ROJA: al recibir daño por Quemadura o Veneno → 3 daño AOE al equipo enemigo ──
-            // _currentDamageSource fue seteado en status-effects.js/turn-logic.js antes de llamar a esta función
+            // _debuffDamageSource ya fue capturado al inicio de esta función (antes de limpiar el flag
+            // global) — usar esa variable local, no gameState._currentDamageSource (ya está en null aquí).
             if (remainingDamage > 0 && !passiveExecuting) {
-                var _trSrc = gameState._currentDamageSource || null;
+                var _trSrc = _debuffDamageSource || null;
                 var _trIsDOT = (_trSrc === 'Quemadura' || _trSrc === 'Veneno');
                 // También detectar por attackerName===null para compatibilidad con otros daños de debuff
                 if (!_trIsDOT && attackerName === null) {
