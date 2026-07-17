@@ -175,6 +175,36 @@
             var waveEnemies = window.hordaGenerateWaveEnemies(wave);
             var usedNames = {};
             var enemyRelicMap = {}; // nombre único -> lista de reliquias a equipar
+
+            // ── ESCALADO PROGRESIVO DE HP/VELOCIDAD POR OLEADA ──
+            // Cada 3 oleadas: +HORDA_HP_STEP HP máximo. Cada 4 oleadas: +1 velocidad.
+            // NOTA: por ahora HORDA_HP_STEP = 2 (tal como se pidió textualmente); si la
+            // fórmula real debía ser +1 por cada 3 oleadas, solo hay que cambiar esta constante.
+            var HORDA_HP_STEP = 2;
+            var hpIncrements = Math.floor(wave / 3);
+            var spdIncrements = Math.floor(wave / 4);
+            var hpBonus = hpIncrements * HORDA_HP_STEP;
+            var spdBonus = spdIncrements * 1;
+
+            // ── BUFF ALEATORIO DESDE LA OLEADA 25 (25% de probabilidad, 1 buff, 2 turnos) ──
+            var HORDA_BUFF_POOL = [
+                { name: 'Esquiva Area',       emoji: '💨' },
+                { name: 'Esquivar',           emoji: '💨' },
+                { name: 'Armadura',           emoji: '🪖' },
+                { name: 'Sigilo',             emoji: '👤' },
+                { name: 'Furia',              emoji: '🔥' },
+                { name: 'Proteccion Sagrada', emoji: '🛡️✨' },
+                { name: 'Escudo Sagrado',     emoji: '🛡️' },
+                { name: 'Cuerpo Perfecto',    emoji: '💠' },
+                { name: 'Espinas',            emoji: '🌵' },
+                { name: 'Contraataque',       emoji: '⚔️' },
+                { name: 'Celeridad',          emoji: '💨' },
+                { name: 'Aura de Fuego',      emoji: '🔥' },
+                { name: 'Aura Oscura',        emoji: '🖤' },
+                { name: 'Reflejar',           emoji: '🪞' },
+                { name: 'Intimidacion',       emoji: '😤' }
+            ];
+
             waveEnemies.forEach(function (e) {
                 var baseName = e.orcType;
                 usedNames[baseName] = (usedNames[baseName] || 0) + 1;
@@ -183,6 +213,15 @@
                 if (!chData) return;
                 chData.name = uniqueName;
                 chData.team = 'team2';
+
+                if (hpBonus > 0) { chData.hp += hpBonus; chData.maxHp += hpBonus; }
+                if (spdBonus > 0) { chData.speed += spdBonus; }
+
+                if (wave >= 25 && Math.random() < 0.25) {
+                    var chosenBuff = HORDA_BUFF_POOL[Math.floor(Math.random() * HORDA_BUFF_POOL.length)];
+                    chData.statusEffects.push({ name: chosenBuff.name, type: 'buff', duration: 2, emoji: chosenBuff.emoji });
+                }
+
                 var relicNames = Object.values(e.relics || {}).filter(Boolean);
                 if (relicNames.length) {
                     chData.equippedRelics = relicNames;
@@ -269,6 +308,25 @@
     // ══════════════════════════════════════════════════════════════════════
     // FIN DE COMBATE — enrutado desde showGameOver (skills.js)
     // ══════════════════════════════════════════════════════════════════════
+    // Reutiliza goToMainMenu() (ya oculta correctamente .game-container, el modal de fin
+    // de partida normal, resetea csState, y muestra el lobby) — antes el botón de Horda
+    // solo escondía su propio modal y dejaba .game-container superpuesto sobre el lobby.
+    window.hordaBackToLobby = function () {
+        var dm = document.getElementById('hordaDefeatModal');
+        if (dm) dm.style.display = 'none';
+        window.hordaHideVideoBackground();
+        gameState.gameMode = 'multi';
+        gameState.aiTeam = null;
+        window._hordaCurrentWave = null;
+        window._hordaRunTeam = null;
+        if (typeof goToMainMenu === 'function') {
+            goToMainMenu();
+        } else {
+            if (typeof showScreen === 'function') showScreen('lobbyScreen');
+            if (typeof showLobby === 'function') showLobby();
+        }
+    };
+
     window.hordaHandleGameOver = function (message) {
         var won = message.indexOf('HUNTERS') !== -1; // el jugador siempre es team1/HUNTERS en Horda
         if (won) {
@@ -443,7 +501,7 @@
                 '</div>',
                 (keys ? '<div style="color:#ccc;font-size:.8rem;margin-bottom:10px;">🗝️ ' + keys + ' Llave(s) Arcana(s)</div>' : ''),
                 (relicLines ? '<div style="text-align:left;margin-bottom:16px;">' + relicLines + '</div>' : ''),
-                '<button onclick="document.getElementById(\'hordaDefeatModal\').style.display=\'none\'; if(typeof showScreen===\'function\') showScreen(\'lobbyScreen\'); if(typeof showLobby===\'function\') showLobby();" ',
+                '<button onclick="window.hordaBackToLobby()" ',
                     'style="width:100%;padding:13px;background:linear-gradient(135deg,#003a5c,#006fa6);border:2px solid #00c4ff;color:#00c4ff;border-radius:10px;font-family:Orbitron,sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;">',
                     '🏠 VOLVER AL LOBBY',
                 '</button>',
