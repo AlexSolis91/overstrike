@@ -490,14 +490,16 @@
         var run = runSnap ? runSnap.val() : null;
         var log = (run && run.rewardsLog) || [];
 
-        var relicCounts = {}, keys = 0;
+        var relicCounts = {}, keys = 0, thisRunGold = 0;
         log.forEach(function (e) {
             if (e.type === 'relic') relicCounts[e.relicName] = (relicCounts[e.relicName] || 0) + 1;
             else if (e.type === 'arcane_key') keys++;
+            else if (e.type === 'gold') thisRunGold += e.amount || 0;
         });
 
         // Oro PENDIENTE real (incluye esta corrida + cualquier otro oro sin reclamar de antes)
         var pendingGold = uid && typeof getPendingGold === 'function' ? await getPendingGold(uid) : 0;
+        var otherPendingGold = Math.max(0, pendingGold - thisRunGold);
 
         var relicLines = Object.keys(relicCounts).map(function (n) {
             var rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[n] : null;
@@ -516,8 +518,10 @@
                 '<div style="color:#888;font-size:.8rem;margin-bottom:20px;">Llegaste hasta la Oleada ' + wave + '</div>',
                 '<div style="background:rgba(255,215,0,.06);border:1px solid rgba(255,215,0,.25);border-radius:12px;padding:16px;margin-bottom:16px;">',
                     '<div style="font-size:1.6rem;">🪙</div>',
-                    '<div id="hordaDefeatGoldAmount" style="color:#ffd700;font-family:Orbitron,sans-serif;font-size:1.4rem;font-weight:900;">' + pendingGold.toLocaleString() + '</div>',
-                    '<div style="color:#888;font-size:.7rem;">oro pendiente por reclamar</div>',
+                    '<div style="color:#fff;font-family:Orbitron,sans-serif;font-size:1.2rem;font-weight:900;">' + thisRunGold.toLocaleString() + '</div>',
+                    '<div style="color:#888;font-size:.68rem;margin-bottom:8px;">oro obtenido en ESTA corrida</div>',
+                    (otherPendingGold > 0 ? '<div style="color:#666;font-size:.65rem;margin-bottom:6px;">+ ' + otherPendingGold.toLocaleString() + ' 🪙 pendiente de antes</div>' : ''),
+                    '<div id="hordaDefeatGoldAmount" style="color:#ffd700;font-family:Orbitron,sans-serif;font-size:1.5rem;font-weight:900;border-top:1px solid rgba(255,215,0,.2);padding-top:8px;">' + pendingGold.toLocaleString() + ' 🪙 total a reclamar</div>',
                 (pendingGold > 0 ? '<button id="hordaDefeatClaimBtn" onclick="window._hordaClaimGoldFromDefeat()" style="margin-top:10px;width:100%;padding:10px;background:linear-gradient(135deg,#5c4400,#a67c00);border:2px solid #ffd700;color:#ffd700;border-radius:9px;font-family:Orbitron,sans-serif;font-size:.75rem;font-weight:700;cursor:pointer;">💰 RECLAMAR</button>' : ''),
                 '</div>',
                 (keys ? '<div style="color:#ccc;font-size:.8rem;margin-bottom:10px;">🗝️ ' + keys + ' Llave(s) Arcana(s)</div>' : ''),
