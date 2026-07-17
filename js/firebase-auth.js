@@ -2672,7 +2672,8 @@
                 var goldEarned = calculateMatchGold('ranked', {
                     enemiesDefeated: enemiesEliminated || 0,
                     survivingCount: survivingAllies || 0,
-                    perfect: !!isPerfect
+                    perfect: !!isPerfect,
+                    memorexBonus: checkMemorexGoldBonus(playerChars)
                 });
                 if (goldEarned > 0) {
                     addPendingGold(myUid, goldEarned, { mode: 'ranked' }).then(function(totalPending) {
@@ -4010,6 +4011,18 @@
         // el jugador lo reclama con el botón de la ventana de resultado (o, si
         // cerró el juego antes de reclamar, se le vuelve a mostrar al iniciar sesión).
         // ══════════════════════════════════════════════════════════════════
+        // MEMOREX: revisa si alguno de los personajes indicados tiene esta reliquia equipada
+        // Y sigue vivo al final de la partida — si es así, el oro total se multiplica ×1.5.
+        function checkMemorexGoldBonus(characterNames) {
+            if (!characterNames || typeof gameState === 'undefined' || !gameState.characters) return false;
+            return characterNames.some(function(n) {
+                const c = gameState.characters[n];
+                if (!c || c.isDead || c.hp <= 0) return false;
+                return (c.equippedRelics || []).indexOf('Memorex') !== -1;
+            });
+        }
+        window.checkMemorexGoldBonus = checkMemorexGoldBonus;
+
         function calculateMatchGold(mode, opts) {
             opts = opts || {};
             let total = 0;
@@ -4023,6 +4036,8 @@
                 total += Math.round((opts.bossDamage || 0) * 1.15);
             }
             if (opts.perfect) total += 500;
+            // MEMOREX: portador equipado y vivo al final de la partida → ×1.5 el oro total
+            if (opts.memorexBonus) total = total * 1.5;
             return Math.max(0, Math.floor(total));
         }
         window.calculateMatchGold = calculateMatchGold;
