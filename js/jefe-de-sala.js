@@ -307,11 +307,11 @@
             // ── ORO POR PARTIDA JEFE DE SALA (fórmula unificada) ──
             // daño × 1.15 + sobrevivientes propios (random 30-80 c/u) + perfect (+500 si
             // todo el equipo sobrevive con 100% HP). Se guarda como PENDIENTE hasta reclamar.
-            var survivingCount = 0, isPerfect = false;
+            var survivingCount = 0, isPerfect = false, _myChars = [];
             try {
                 if (typeof gameState !== 'undefined' && gameState.characters) {
                     var _myTeam = gameState.myTeam || 'team1';
-                    var _myChars = Object.keys(gameState.characters).filter(function(n) {
+                    _myChars = Object.keys(gameState.characters).filter(function(n) {
                         var c = gameState.characters[n];
                         return c && c.team === _myTeam && !c.isBoss;
                     });
@@ -327,7 +327,7 @@
             } catch (e) { console.error('[JEFE] Error calculando sobrevivientes:', e); }
 
             var goldEarned = (typeof calculateMatchGold === 'function')
-                ? calculateMatchGold('boss', { bossDamage: damageDealt, survivingCount: survivingCount, perfect: isPerfect })
+                ? calculateMatchGold('boss', { bossDamage: damageDealt, survivingCount: survivingCount, perfect: isPerfect, memorexBonus: (typeof checkMemorexGoldBonus === 'function' ? checkMemorexGoldBonus(_myChars) : false) })
                 : 0;
 
             var totalPending = 0;
