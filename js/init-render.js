@@ -668,8 +668,9 @@
                     else if (char.vegetaForm === 'ultra_ego' && char.portraitUltraEgo) _dynPortrait = char.portraitUltraEgo;
                 }
                 const activePortrait = _dynPortrait;
+                const _zoomName = name.replace(/'/g, "\\'");
                 const portraitHTML = activePortrait
-                    ? `<img class="character-portrait${isDefeated ? ' defeated-img' : ''}" src="${activePortrait}" alt="${name}" loading="eager" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="character-portrait-placeholder" style="display:none">⚔️</div>`
+                    ? `<img class="character-portrait${isDefeated ? ' defeated-img' : ''}" src="${activePortrait}" alt="${name}" loading="eager" referrerpolicy="no-referrer" style="cursor:zoom-in;" onclick="event.stopPropagation(); window.showPortraitZoom && window.showPortraitZoom('${activePortrait}','${_zoomName}')" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="character-portrait-placeholder" style="display:none">⚔️</div>`
                     : `<div class="character-portrait-placeholder">⚔️</div>`;
 
                 // Build relic icons HTML
@@ -760,7 +761,7 @@
                     '<div class="char-inner">' +
                     '<div class="char-portrait-wrap">' +
                     (activePortrait
-                        ? '<img class="character-portrait' + (isDefeated ? ' defeated-img' : '') + '" src="' + activePortrait + '" alt="' + name + '" loading="eager" referrerpolicy="no-referrer">'
+                        ? '<img class="character-portrait' + (isDefeated ? ' defeated-img' : '') + '" src="' + activePortrait + '" alt="' + name + '" loading="eager" referrerpolicy="no-referrer" style="cursor:zoom-in;" onclick="event.stopPropagation(); window.showPortraitZoom && window.showPortraitZoom(\'' + activePortrait + '\',\'' + name.replace(/'/g, "\\'") + '\')">'
                         : '<div class="character-portrait-placeholder">⚔️</div>') +
                     '<div class="char-hp-overlay">' + char.hp + '/' + char.maxHp + (char.shield > 0 ? ' 🛡️'+char.shield : '') + '</div>' +
                     '</div>' +
@@ -784,3 +785,21 @@
 
                // Ticks fired directly in applyDamageWithShield and applyHeal
         }
+
+        // ── Ver imagen del personaje en grande (click sobre su retrato en batalla) ──
+        window.showPortraitZoom = function(imgUrl, name) {
+            var modal = document.getElementById('portraitZoomModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'portraitZoomModal';
+                modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:70000;display:none;align-items:center;justify-content:center;padding:24px;cursor:zoom-out;';
+                modal.onclick = function() { modal.style.display = 'none'; };
+                document.body.appendChild(modal);
+            }
+            modal.innerHTML = '<div style="max-width:90vw;max-height:90vh;text-align:center;" onclick="event.stopPropagation()">' +
+                '<img src="' + imgUrl + '" style="max-width:100%;max-height:80vh;border-radius:14px;border:3px solid #4fc3f7;box-shadow:0 0 60px rgba(79,195,247,.4);object-fit:contain;">' +
+                '<div style="color:#fff;font-family:Orbitron,sans-serif;font-size:1rem;margin-top:12px;font-weight:700;">' + name + '</div>' +
+                '<div style="color:#777;font-size:.72rem;margin-top:4px;">(toca fuera de la imagen para cerrar)</div>' +
+            '</div>';
+            modal.style.display = 'flex';
+        };
