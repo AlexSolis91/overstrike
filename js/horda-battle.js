@@ -242,13 +242,37 @@
             gameState.aiTeam = 'team2';
             gameState.myTeam = 'team1';
 
+            // SÍNCRONO — BUG CRÍTICO CORREGIDO: antes las invocaciones (Igris, MinByung, etc.)
+            // solo se restauraban dentro del bloque async de más abajo (esperando una lectura
+            // de Firebase). Como initGame() ya no es async, el turno de Sun Jin Woo podía
+            // empezar a procesarse ANTES de que esa lectura terminara — en ese instante
+            // gameState.summons todavía estaba vacío (recién reseteado por _orig), así que
+            // Arise! no veía ningún Igris existente y invocaba uno nuevo. Milisegundos después
+            // llegaba la restauración y volvía a meter el Igris de la oleada anterior — dos
+            // Igris vivos a la vez, y así se iban acumulando oleada tras oleada.
+            // Solución: cuando la transición viene de la MISMA sesión (resolveHordaChoice ya
+            // guardó gameState.summons en una variable en memoria antes de llamar a initGame),
+            // restaurarlas aquí mismo de forma síncrona, antes de que cualquier turno arranque.
+            var _hordaSyncRestoreDone = false;
+            if (window._hordaTransientSummons) {
+                Object.keys(window._hordaTransientSummons).forEach(function (sid) {
+                    gameState.summons[sid] = window._hordaTransientSummons[sid];
+                });
+                window._hordaTransientSummons = null;
+                _hordaSyncRestoreDone = true;
+            }
+
             if (typeof renderCharacters === 'function') renderCharacters();
             if (typeof addLog === 'function') addLog('🌊 Modo Horda — Oleada ' + wave + ': ' + waveEnemies.map(function (e) { return e.orcType + ' (' + e.rank + ')'; }).join(', '), 'info');
             showHordaWaveBanner(wave);
 
             // ── A partir de aquí, trabajo asíncrono con Firebase — solo TOCA propiedades
             // de personajes que YA existen en gameState.characters (hp/cargas/etc), nunca
-            // agrega/quita claves, así que no invalida el turnOrder ya construido arriba. ──
+            // agrega/quita claves, así que no invalida el turnOrder ya construido arriba.
+            // Las invocaciones YA se restauraron síncronamente arriba si veníamos de la misma
+            // sesión; este bloque solo las restaura por Firebase para el caso de "retomar una
+            // corrida guardada tras recargar la página" (ahí sí hay tiempo de sobra, porque el
+            // jugador todavía tiene que pasar por la selección de personajes antes de pelear). ──
             (async function () {
                 var uid = currentUid();
 
@@ -278,8 +302,8 @@
                         }
 
                         // Restaurar las invocaciones VIVAS del jugador de la oleada anterior
-                        // (Igris, MinByung, etc.) — initGame() ya las había reseteado a {}.
-                        if (run.summons) {
+                        // (Igris, MinByung, etc.) — SOLO si no se hizo ya de forma síncrona arriba.
+                        if (!_hordaSyncRestoreDone && run.summons) {
                             Object.keys(run.summons).forEach(function (sid) {
                                 gameState.summons[sid] = run.summons[sid];
                             });
@@ -514,6 +538,10 @@
 
         // Iniciar la siguiente oleada re-ejecutando el flujo de batalla
         window._hordaResuming = true; // ya se consumió la runa al inicio de la corrida
+        // Capturar las invocaciones actuales EN MEMORIA (síncronamente) para que el patch de
+        // initGame las restaure de inmediato, sin esperar una lectura de Firebase — evita la
+        // condición de carrera que dejaba duplicar invocaciones (ej. 2-3 Igris a la vez).
+        window._hordaTransientSummons = JSON.parse(JSON.stringify(gameState.summons || {}));
         var team1Names = window._hordaRunTeam || Object.keys(gameState.characters).filter(function (n) { return gameState.characters[n].team === 'team1'; });
         var selectedChars = {};
         team1Names.forEach(function (n) {
