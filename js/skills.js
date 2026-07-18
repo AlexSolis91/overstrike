@@ -2,6 +2,26 @@
 
         // Aplicar daño AOE a TODOS los enemigos (personajes + invocaciones)
 
+        // Daño de ataque básico de un personaje, INCLUYENDO los bonos de reliquia que
+        // normalmente solo se aplican cuando el jugador ejecuta su básico directamente
+        // (basic_dmg_50pct, basic_dmg_plus2). Habilidades que "simulan" varios ataques
+        // básicos (Vínculo de Atena de Seiya, Diosa del Sol de Yorichi, etc.) deben usar
+        // esta función en vez de leer ability.damage crudo, para que esos bonos también
+        // se reflejen ahí — antes se perdían por completo.
+        function getBoostedBasicDamage(charName) {
+            const c = gameState.characters[charName];
+            if (!c) return 1;
+            const basicAb = (c.abilities || []).find(function(a) { return a && a.type === 'basic'; });
+            let dmg = basicAb ? (basicAb.damage || 1) : 1;
+            (c.equippedRelics || []).forEach(function(relicName) {
+                const rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[relicName] : null;
+                if (!rd) return;
+                if (rd.effect === 'basic_dmg_50pct') dmg = Math.ceil(dmg * 1.5);
+                if (rd.effect === 'basic_dmg_plus2') dmg += 2;
+            });
+            return dmg;
+        }
+
         function generateChargesInline(charName, amount) {
             if (!amount || amount <= 0) return;
             const c = gameState.characters[charName];
@@ -5992,8 +6012,7 @@
                 // YORICHI — Diosa del Sol: 6 ataques básicos con todos sus efectos (QS, Silenciar, cargas, crit)
                 const _dsAtk = gameState.characters[gameState.selectedCharacter];
                 const _dsETeam = _dsAtk ? (_dsAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
-                const _dsBasic = (_dsAtk.abilities||[]).find(function(ab){ return ab && ab.type === 'basic'; });
-                const _dsDmgBase = _dsBasic ? (_dsBasic.damage || 2) : 2;
+                const _dsDmgBase = getBoostedBasicDamage(gameState.selectedCharacter);
                 for (let _di = 0; _di < 6; _di++) {
                     const _dsEnemies = Object.keys(gameState.characters).filter(function(n){
                         const c = gameState.characters[n]; return c && c.team === _dsETeam && !c.isDead && c.hp > 0;
@@ -7022,7 +7041,7 @@
             } else if (ability.effect === 'vinculo_atena_seiya') {
                 // SEIYA — Vínculo de Atena v2: 5 ataques básicos ST (50% crit each) + Puño de Pegaso effect per hit
                 const _vaS = gameState.characters[gameState.selectedCharacter];
-                const _vaBaseDmg = (_vaS && _vaS.abilities) ? ((_vaS.abilities.find(function(a){ return a.type==='basic'; }) || {}).damage || 1) : 1;
+                const _vaBaseDmg = getBoostedBasicDamage(gameState.selectedCharacter);
                 let _vaTotalDmg = 0, _vaCrits = 0;
                 for (let _vi = 0; _vi < 5; _vi++) {
                     let _vaDmg = _vaBaseDmg;
