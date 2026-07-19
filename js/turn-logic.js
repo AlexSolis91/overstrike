@@ -2874,6 +2874,18 @@
                 // y antes de que expiren los buffs, para poder detectar cuáles están por expirar)
                 if (typeof window.hordaOnRoundEnd === 'function') window.hordaOnRoundEnd();
 
+                // ── VESTIDURA ARCANA: al final de cada ronda, el portador recupera 30% de su HP máx ──
+                for (const _vaN in gameState.characters) {
+                    const _vaC = gameState.characters[_vaN];
+                    if (!_vaC || _vaC.isDead || _vaC.hp <= 0) continue;
+                    if (!(_vaC.equippedRelics || []).includes('Vestidura Arcana')) continue;
+                    const _vaHealAmt = Math.round((_vaC.maxHp || 0) * 0.30);
+                    if (_vaHealAmt > 0 && typeof applyHeal === 'function') {
+                        applyHeal(_vaN, _vaHealAmt);
+                        addLog('🔮 Vestidura Arcana: ' + _vaN + ' recupera ' + _vaHealAmt + ' HP (30% de su HP máx)', 'heal');
+                    }
+                }
+
                 // ══════════════════════════════════════════════════════════════
                 // VENENO (stackeable) / SANGRADO (por turnos) / HEMORRAGIA (permanente)
                 // Todos se calculan y aplican AQUÍ, una sola vez al final de la ronda.
