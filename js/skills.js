@@ -11979,6 +11979,13 @@
 
         // ==================== VERIFICACIÓN FIN DEL JUEGO ====================
         function checkGameOver() {
+            // BUG CRÍTICO: esta función se llama desde decenas de puntos del código cada vez
+            // que algo podría terminar la partida (cada golpe de un AOE, cada tick de un
+            // debuff, etc.). Sin este seguro, una vez que un equipo llegaba a 0 vivos, CADA
+            // llamada posterior volvía a disparar showGameOver() de nuevo — por eso la ventana
+            // de resultado podía aparecer varias veces seguidas en la misma partida.
+            if (gameState.gameOver) return true;
+
             let team1Alive = 0;
             let team2Alive = 0;
             
