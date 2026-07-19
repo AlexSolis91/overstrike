@@ -5182,6 +5182,8 @@
                 const alreadyUnlocked = await unlockedRef.once('value');
                 if (!alreadyUnlocked.val()) {
                     await unlockedRef.set(true);
+                    if (!window._unlockedCharacters) window._unlockedCharacters = {};
+                    window._unlockedCharacters['bolvar_fordragon'] = true;
                     console.log('[BOLVAR] ¡Personaje desbloqueado para ' + uid + '!');
                     setTimeout(function() {
                         var t = document.createElement('div');
@@ -5199,6 +5201,8 @@
                 const alreadyUnlocked = await gogetaRef.once('value');
                 if (!alreadyUnlocked.val()) {
                     await gogetaRef.set(true);
+                    if (!window._unlockedCharacters) window._unlockedCharacters = {};
+                    window._unlockedCharacters['gogeta'] = true;
                     console.log('[GOGETA] ¡Personaje desbloqueado para ' + uid + '!');
                     setTimeout(function() {
                         var t = document.createElement('div');
@@ -5216,6 +5220,8 @@
                 const arthasAlready = await arthasRef.once('value');
                 if (!arthasAlready.val()) {
                     await arthasRef.set(true);
+                    if (!window._unlockedCharacters) window._unlockedCharacters = {};
+                    window._unlockedCharacters['arthas_menethil'] = true;
                     console.log('[ARTHAS] ¡Personaje desbloqueado para ' + uid + '!');
                     setTimeout(function() {
                         var t = document.createElement('div');
@@ -5233,6 +5239,8 @@
                 const grindAlready = await grindRef.once('value');
                 if (!grindAlready.val()) {
                     await grindRef.set(true);
+                    if (!window._unlockedCharacters) window._unlockedCharacters = {};
+                    window._unlockedCharacters['grindelwald'] = true;
                     console.log('[GRINDELWALD] ¡Personaje desbloqueado para ' + uid + '!');
                     setTimeout(function() {
                         var t = document.createElement('div');
