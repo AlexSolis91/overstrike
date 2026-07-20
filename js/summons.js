@@ -1100,7 +1100,7 @@
             }
 
             // BUFF ESQUIVAR (Goku UI, Sauron, etc): 50% de esquivar
-            if (attackerName !== null && !passiveExecuting) {
+            if (attackerName !== null && !passiveExecuting && !gameState._ignoreDodgeActive) {
                 if (target.hasDodge || hasStatusEffect(targetName, 'Esquivar')) {
                     if (Math.random() < 0.50) {
                         addLog('💨 ' + targetName + ' esquiva el ataque de ' + attackerName + '!', 'buff');
@@ -2182,6 +2182,24 @@
                 if (typeof window.hordaOnDamageReceived === 'function') {
                     window.hordaOnDamageReceived(targetName, _realDmgHorda, attackerName);
                 }
+            })();
+
+            // ── CAMPO: SENDERO DE LOS DIOSES (Thanatos) — al recibir daño de un golpe enemigo,
+            // cura la mitad del daño recibido y contraataca al doble de ese daño ──
+            (function() {
+                if (passiveExecuting) return;
+                if (!gameState.activeField || gameState.activeField.name !== 'Sendero de los Dioses') return;
+                if (targetName !== gameState.activeField.ownerName) return;
+                if (!attackerName || attackerName === targetName) return;
+                const _sdDmg = oldHp - target.hp;
+                if (_sdDmg <= 0) return;
+                const _sdHeal = Math.floor(_sdDmg / 2);
+                const _sdCounter = _sdDmg * 2;
+                if (_sdHeal > 0 && typeof applyHeal === 'function') applyHeal(targetName, _sdHeal, 'Sendero de los Dioses');
+                passiveExecuting = true;
+                applyDamageWithShield(attackerName, _sdCounter, targetName);
+                passiveExecuting = false;
+                addLog('🌌 Sendero de los Dioses: ' + targetName + ' recupera ' + _sdHeal + ' HP y contraataca a ' + attackerName + ' por ' + _sdCounter + ' daño', 'buff');
             })();
 
             // ── ICE CLON: absorb damage meant for Sub-Zero ──
