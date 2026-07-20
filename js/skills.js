@@ -10635,8 +10635,12 @@
                     });
                     if (!_laAlive.length) break;
                     const _laVictim = _laAlive[Math.floor(Math.random() * _laAlive.length)];
-                    gameState.characters[_laVictim].hp = 0;
-                    applyDamageWithShield(_laVictim, 0, gameState.selectedCharacter);
+                    // Dejar que applyDamageWithShield vea la transición HP>0 → HP<=0 (necesario para
+                    // que registre la muerte, dispare pasivas de "al morir" y revise fin de partida).
+                    // Poner el HP en 0 a mano ANTES de llamarla, como se hacía antes, hace que la
+                    // función crea que ya estaba muerto y se salte todo ese proceso.
+                    const _laVictimHp = gameState.characters[_laVictim].hp;
+                    applyDamageWithShield(_laVictim, _laVictimHp, gameState.selectedCharacter);
                     addLog('👻 Llamado de las Almas Malditas: ¡' + _laVictim + ' eliminado! (20 cargas acumuladas)', 'damage');
                 }
                 if (typeof renderCharacters === 'function') renderCharacters();
