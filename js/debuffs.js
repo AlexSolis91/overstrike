@@ -533,6 +533,11 @@ function applyDebuff(targetName, effectObj) {
                 addLog('✨ Maestría de la Varita de Saúco: ' + targetName + ' es inmune a debuffs', 'buff');
                 return;
             }
+            // MIRADA DEL DIOS DE LA MUERTE (Thanatos): inmune a debuffs mientras tenga 2+ contadores de Ira Divina
+            if (target.passive && target.passive.name === 'Mirada del Dios de la Muerte' && (target.iraDivinaCounters || 0) >= 2) {
+                addLog('💀 Mirada del Dios de la Muerte: Thanatos es inmune a debuffs (' + target.iraDivinaCounters + ' contadores de Ira Divina)', 'buff');
+                return;
+            }
             // CABALLERO DE LA NOCHE (Batman): inmune a efectos de movimientos especiales
             if (!passiveExecuting && gameState.selectedAbility && gameState.selectedAbility.type === 'special') {
                 if (target.passive && target.passive.name === 'Caballero de la Noche') {
