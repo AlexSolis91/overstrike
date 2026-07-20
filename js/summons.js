@@ -101,7 +101,15 @@
                     gameState.summons[summonId].hp = Math.min(gameState.summons[summonId].maxHp, (gameState.summons[summonId].hp||0) + 3);
                     addLog('🔮 Orbe de las Sombras: ' + shadowName + ' gana +3 HP máx', 'buff');
                 }
-                
+
+                // Huevo de Dragón: la invocación gana Esquiva Área permanente si el invocador tiene esta reliquia
+                if ((summoner.equippedRelics||[]).some(function(r){ return r === 'Huevo de Dragon'; })) {
+                    const _hdSummon = gameState.summons[summonId];
+                    _hdSummon.statusEffects = _hdSummon.statusEffects || [];
+                    _hdSummon.statusEffects.push({ name: 'Esquiva Area', type: 'buff', duration: 999, permanent: true, passiveHidden: false, emoji: '💨' });
+                    addLog('🐲 Huevo de Dragón: ' + shadowName + ' gana Esquiva Área', 'buff');
+                }
+
                 addLog(`👻 ${summonerName} invoca a ${shadowName}!`, 'buff');
                 // ── EL CARCELERO DE LOS MALDITOS (Bolvar PERSONAJE): +5 cargas al invocarse cualquier invocación ──
                 // Sin guardia passiveExecuting — debe dispararse siempre, incluyendo invocaciones del equipo enemigo
