@@ -2675,25 +2675,39 @@
                     perfect: !!isPerfect,
                     memorexBonus: checkMemorexGoldBonus(playerChars)
                 });
-                if (goldEarned > 0) {
-                    addPendingGold(myUid, goldEarned, { mode: 'ranked' }).then(function(totalPending) {
-                        updateLobbyHUD();
-                        if (typeof window.showGoldClaimModal === 'function') {
-                            window.showGoldClaimModal({
-                                amount: totalPending,
-                                title: isDraw ? '🏆 Empate — Raid Diario' : (won ? '🏆 Victoria — Raid Diario' : '🏆 Derrota — Raid Diario'),
-                                subtitle: (enemiesEliminated||0) + ' enemigos derrotados · ' + (survivingAllies||0) + ' sobrevivientes' + (isPerfect ? ' · ¡PERFECT!' : '')
-                            });
-                        }
+
+                // ── BONO: 5% de probabilidad de +1 Runa de Portal al GANAR una partida Ranked ──
+                var _wonPortalRune = won && Math.random() < 0.05;
+
+                function _showRankedRewardModal(totalPending) {
+                    if (typeof window.showGoldClaimModal !== 'function') return;
+                    window.showGoldClaimModal({
+                        amount: totalPending || 0,
+                        title: isDraw ? '🏆 Empate — Raid Diario' : (won ? '🏆 Victoria — Raid Diario' : '🏆 Derrota — Raid Diario'),
+                        subtitle: (enemiesEliminated||0) + ' enemigos derrotados · ' + (survivingAllies||0) + ' sobrevivientes' + (isPerfect ? ' · ¡PERFECT!' : ''),
+                        bonusItem: _wonPortalRune ? { img: 'https://i.ibb.co/Qv7MFXyj/image.png', label: '+1 Runa de Portal' } : null
                     });
                 }
-                // ── BONO: 5% de probabilidad de +1 Runa de Portal al GANAR una partida Ranked ──
-                if (won && Math.random() < 0.05) {
+
+                function _grantRankedPortalRune(callback) {
+                    if (!_wonPortalRune) { callback(); return; }
                     db.ref('users/' + myUid + '/portal_runes').once('value').then(function(snap) {
                         db.ref('users/' + myUid + '/portal_runes').set((snap.val()||0) + 1).then(function() {
                             addLog('🌀 ¡Bono de victoria! +1 Runa de Portal', 'buff');
                             updateLobbyHUD();
+                            callback();
                         });
+                    });
+                }
+
+                if (goldEarned > 0) {
+                    addPendingGold(myUid, goldEarned, { mode: 'ranked' }).then(function(totalPending) {
+                        updateLobbyHUD();
+                        _grantRankedPortalRune(function() { _showRankedRewardModal(totalPending); });
+                    });
+                } else if (_wonPortalRune) {
+                    _grantRankedPortalRune(function() {
+                        getPendingGold(myUid).then(function(pending) { _showRankedRewardModal(pending); });
                     });
                 }
             });
