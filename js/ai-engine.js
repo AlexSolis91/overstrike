@@ -710,6 +710,13 @@
                 // PICK TARGET — uses all improvements
                 // ─────────────────────────────────────────────────────────────────
                 function pickTarget(ab) {
+                    // CLEANSE_EFFECTS también se declara en scoreAbility() — son funciones hermanas
+                    // separadas (no anidadas), así que la constante de allá no es visible aquí.
+                    // Sin esta línea, esta función lanzaba "CLEANSE_EFFECTS is not defined" y
+                    // abortaba el turno completo de la IA a medias, ANTES de llegar a ejecutar el
+                    // ataque — lo que impedía que se aplicaran debuffs como Veneno o Quemadura Solar.
+                    const CLEANSE_EFFECTS = ['heal_cleanse', 'aoe_cleanse_allies', 'dispel_heal_allies',
+                        'grito_de_esparta', 'dispel_target_padme_charges'];
                     if (ab.target === 'self' || ab.target === 'aoe') return charName;
 
                     if (ab.target === 'enemy_dead') {
