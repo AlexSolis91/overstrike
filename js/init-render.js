@@ -13,6 +13,7 @@
             gameState._attackedThisTurn = false;
             gameState._miedoActive = false;
             gameState.summons = {};
+            gameState.activeField = null;
             // Clear all summons completely
             // Clear battle log
             const logEl = document.getElementById('battleLogContent');
