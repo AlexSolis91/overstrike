@@ -538,6 +538,15 @@ function applyDebuff(targetName, effectObj) {
                 addLog('💀 Mirada del Dios de la Muerte: Thanatos es inmune a debuffs (' + target.iraDivinaCounters + ' contadores de Ira Divina)', 'buff');
                 return;
             }
+            // DIREBOUNDS: el portador solo puede tener 1 debuff activo a la vez — bloquea el nuevo
+            // si ya tiene alguno (no lo reemplaza).
+            if ((target.equippedRelics||[]).includes('Direbounds')) {
+                const _dbActiveDebuffs = (target.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff'; }).length;
+                if (_dbActiveDebuffs >= 1) {
+                    addLog('🥊 Direbounds: ' + targetName + ' ya tiene un debuff activo — bloquea ' + (effectObj.name||'nuevo debuff'), 'buff');
+                    return;
+                }
+            }
             // CABALLERO DE LA NOCHE (Batman): inmune a efectos de movimientos especiales
             if (!passiveExecuting && gameState.selectedAbility && gameState.selectedAbility.type === 'special') {
                 if (target.passive && target.passive.name === 'Caballero de la Noche') {
