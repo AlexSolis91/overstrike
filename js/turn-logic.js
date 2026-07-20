@@ -1927,6 +1927,10 @@
                             _yc.isDead = true; _yc.hp = 0;
                             addLog('☯️ Sabiduría Antigua: ' + _yn + ' muere al instante — todos sus aliados han caído', 'damage');
                             if (typeof registerKill === 'function') registerKill('Sabiduría Antigua', _yn, false);
+                            // BUG CORREGIDO: esta muerte nunca revisaba si la partida había terminado —
+                            // si Yoda era el último personaje vivo de su equipo, la partida se quedaba
+                            // trabada esperando el turno de alguien de un equipo que ya no existía.
+                            if (typeof checkGameOver === 'function') checkGameOver();
                         }
                     }
 
