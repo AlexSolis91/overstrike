@@ -22,6 +22,111 @@
             return dmg;
         }
 
+        // ══════════════════════════════════════════════════════════════════
+        // THANATOS — helpers reutilizables
+        // ══════════════════════════════════════════════════════════════════
+
+        // Efecto real de Terrible Providencia. Se llama tanto si Thanatos la usa
+        // manualmente (gastando cargas, terminando turno normal por el flujo de
+        // siempre) como si se dispara sola al llegar a 5 contadores de Ira Divina
+        // (sin gastar cargas ni tocar el turno de nadie — ver triggerThanatosAutoOver).
+        window.executeThanatosTerribleProvidenciaEffect = function(casterName) {
+            const caster = gameState.characters[casterName];
+            if (!caster) return;
+            const enemyTeam = caster.team === 'team1' ? 'team2' : 'team1';
+            for (const n in gameState.characters) {
+                const c = gameState.characters[n];
+                if (!c || c.team !== enemyTeam || c.isDead || c.hp <= 0) continue;
+                const buffs = (c.statusEffects || []).filter(function(e){ return e && e.type === 'buff'; });
+                const buffCount = buffs.length;
+                c.statusEffects = (c.statusEffects || []).filter(function(e){ return !e || e.type !== 'buff'; });
+                const dmg = 10 + (buffCount * 3);
+                applyDamageWithShield(n, dmg, casterName);
+                if (typeof applyWeaken === 'function') applyWeaken(n, 3);
+                if (typeof applyDebuff === 'function') applyDebuff(n, { name: 'Miedo', type: 'debuff', duration: 3, emoji: '😱' });
+            }
+            addLog('☠️ Terrible Providencia: disipa buffs enemigos y causa daño AOE + Debilitar 3T + Miedo 3T', 'damage');
+            if (typeof renderCharacters === 'function') renderCharacters();
+        };
+
+        // Disparo automático del Over al llegar a 5 contadores de Ira Divina — es una
+        // INTERRUPCIÓN: muestra la cinemática normal del Over, pero NO pasa por
+        // executeAbility()/endTurn(), así que no consume ni sustituye ningún turno.
+        window.triggerThanatosAutoOver = function(charName) {
+            const caster = gameState.characters[charName];
+            if (!caster || caster.isDead || caster.hp <= 0) { return; }
+            addLog('💀 ¡Ira Divina alcanza 5 contadores! Thanatos ejecuta Terrible Providencia de inmediato', 'buff');
+            const _finish = function() {
+                window.executeThanatosTerribleProvidenciaEffect(charName);
+                caster._iraDivinaOverPending = false;
+            };
+            if (typeof _showOverCinematic === 'function') {
+                _showOverCinematic(charName, 'Terrible Providencia', 'thanatos_terrible_providencia', caster.team, function() {
+                    if (typeof audioManager !== 'undefined' && typeof audioManager.playOverSfx === 'function') audioManager.playOverSfx();
+                    if (typeof _animCard === 'function') _animCard(charName, 'anim-over', 700);
+                    _finish();
+                });
+            } else {
+                _finish();
+            }
+        };
+
+        // ══════════════════════════════════════════════════════════════════
+        // TOKITO — helper reutilizable (Pilar de la Niebla)
+        // Crítico (x2) contra objetivos con Confusión, triple (x3) contra objetivos con
+        // Ceguera. Si tiene ambos debuffs a la vez, prioriza el triple (mayor multiplicador).
+        // ══════════════════════════════════════════════════════════════════
+        function tokitoNieblaDamage(casterName, targetName, baseDmg) {
+            const caster = gameState.characters[casterName];
+            if (!caster || !caster.passive || caster.passive.name !== 'Pilar de la Niebla') return { dmg: baseDmg, tag: '' };
+            const hasCeguera = typeof hasStatusEffect === 'function' && hasStatusEffect(targetName, 'Ceguera');
+            const hasConfusion = typeof hasStatusEffect === 'function' && (hasStatusEffect(targetName, 'Confusion') || hasStatusEffect(targetName, 'Confusión'));
+            if (hasCeguera) return { dmg: baseDmg * 3, tag: ' (¡TRIPLE! — Ceguera)' };
+            if (hasConfusion) return { dmg: baseDmg * 2, tag: ' (¡CRÍTICO! — Confusión)' };
+            return { dmg: baseDmg, tag: '' };
+        }
+
+        // ══════════════════════════════════════════════════════════════════
+        // CAMPO / ZONA DE BATALLA — Sendero de los Dioses (Thanatos)
+        // Cambia el fondo de pantalla de la partida (cualquier modo) por N rondas.
+        // Mientras esté activo: si Thanatos recibe daño de un golpe enemigo, se cura la
+        // mitad de ese daño y contraataca al doble de ese mismo daño.
+        // ══════════════════════════════════════════════════════════════════
+        window.activateSenderoDeLosDioses = function(ownerName) {
+            const savedBg = document.body.style.backgroundImage;
+            gameState.activeField = {
+                name: 'Sendero de los Dioses',
+                ownerName: ownerName,
+                roundsRemaining: 3,
+                savedBg: savedBg
+            };
+            document.body.style.backgroundImage = "url('https://i.ibb.co/pSyTD9C/image-a72f6f83.png')";
+            document.body.style.backgroundSize = 'cover';
+            document.body.style.backgroundPosition = 'center center';
+            document.body.style.backgroundRepeat = 'no-repeat';
+            document.body.style.backgroundAttachment = 'fixed';
+            const gc = document.querySelector('.game-container');
+            if (gc) gc.style.background = 'transparent';
+        };
+
+        window.deactivateActiveField = function() {
+            if (!gameState.activeField) return;
+            document.body.style.backgroundImage = gameState.activeField.savedBg || '';
+            addLog('🌌 El Campo "' + gameState.activeField.name + '" se ha disipado — el terreno vuelve a la normalidad', 'info');
+            gameState.activeField = null;
+        };
+
+        // Se llama al final de cada ronda (processEndOfRoundEffects) para hacer avanzar/expirar el Campo activo.
+        window.tickActiveField = function() {
+            if (!gameState.activeField) return;
+            gameState.activeField.roundsRemaining--;
+            if (gameState.activeField.roundsRemaining <= 0) {
+                window.deactivateActiveField();
+            } else {
+                addLog('🌌 Campo "' + gameState.activeField.name + '": ' + gameState.activeField.roundsRemaining + ' ronda(s) restante(s)', 'info');
+            }
+        };
+
         function generateChargesInline(charName, amount) {
             if (!amount || amount <= 0) return;
             const c = gameState.characters[charName];
@@ -1004,6 +1109,32 @@
                         gameState._skeggoxExtraTurn = _atn; // reuse extra turn flag
                         addLog('⌛ Anillo del Tiempo: ' + _atn + ' +10 cargas + turno adicional (enemigo usó ' + ability.type + ')', 'buff');
                         break;
+                    }
+                }
+            }
+
+            // ── MIRADA DEL DIOS DE LA MUERTE (Thanatos): enemigo usa ESPECIAL → +1 contador "Ira Divina" ──
+            // Al llegar a 5, se consumen y Terrible Providencia se ejecuta de inmediato (interrupción,
+            // NO sustituye el turno normal de Thanatos — ver triggerThanatosAutoOver).
+            if (gameState.selectedCharacter && ability && ability.type === 'special') {
+                const _thAtk = gameState.characters[gameState.selectedCharacter];
+                if (_thAtk) {
+                    const _thDefTeam = _thAtk.team === 'team1' ? 'team2' : 'team1';
+                    for (const _thN in gameState.characters) {
+                        const _thC = gameState.characters[_thN];
+                        if (!_thC || _thC.isDead || _thC.hp <= 0 || _thC.team !== _thDefTeam) continue;
+                        if (!_thC.passive || _thC.passive.name !== 'Mirada del Dios de la Muerte') continue;
+                        _thC.iraDivinaCounters = (_thC.iraDivinaCounters || 0) + 1;
+                        addLog('💀 Mirada del Dios de la Muerte: ' + _thN + ' acumula Ira Divina (' + _thC.iraDivinaCounters + '/5)', 'buff');
+                        if (_thC.iraDivinaCounters >= 5 && !_thC._iraDivinaOverPending) {
+                            _thC._iraDivinaOverPending = true;
+                            _thC.iraDivinaCounters = 0;
+                            (function(_thNameCaptured) {
+                                setTimeout(function() {
+                                    if (typeof window.triggerThanatosAutoOver === 'function') window.triggerThanatosAutoOver(_thNameCaptured);
+                                }, 900);
+                            })(_thN);
+                        }
                     }
                 }
             }
@@ -10455,6 +10586,124 @@
                     addLog('🔥 Syrax potencia el Asedio: equipo aliado +10 HP + Quemaduras 5 HP al equipo enemigo', 'buff');
                 }
 
+
+            // ══════════════════════════════════════════════════════
+            // THANATOS — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'thanatos_castigo_divino') {
+                // CASTIGO DIVINO: +1 daño por cada Buff activo en el objetivo. Si elimina, revive a un aliado caído.
+                const _cdTgt = gameState.characters[targetName];
+                const _cdBuffCount = _cdTgt ? (_cdTgt.statusEffects||[]).filter(function(e){ return e && e.type === 'buff'; }).length : 0;
+                const _cdDmg = finalDamage + _cdBuffCount;
+                const _cdWasAlive = _cdTgt && !_cdTgt.isDead && _cdTgt.hp > 0;
+                applyDamageWithShield(targetName, _cdDmg, gameState.selectedCharacter);
+                addLog('⚔️ Castigo Divino: ' + _cdDmg + ' daño a ' + targetName + (_cdBuffCount > 0 ? ' (+' + _cdBuffCount + ' por buffs activos)' : ''), 'damage');
+                if (_cdWasAlive && _cdTgt.isDead) {
+                    const _cdCaster = gameState.characters[gameState.selectedCharacter];
+                    const _cdDeadAllies = _cdCaster ? Object.keys(gameState.characters).filter(function(n) {
+                        const c = gameState.characters[n];
+                        return c && c.team === _cdCaster.team && c.isDead;
+                    }) : [];
+                    if (_cdDeadAllies.length > 0) {
+                        const _cdRevived = _cdDeadAllies[Math.floor(Math.random() * _cdDeadAllies.length)];
+                        const _cdRC = gameState.characters[_cdRevived];
+                        _cdRC.isDead = false; _cdRC.hp = _cdRC.maxHp; _cdRC.charges = 20; _cdRC.statusEffects = [];
+                        addLog('💀 Castigo Divino: ¡' + targetName + ' eliminado! ' + _cdRevived + ' revive con 100% HP y 20 cargas', 'buff');
+                        if (typeof renderCharacters === 'function') renderCharacters();
+                    }
+                }
+
+            } else if (ability.effect === 'thanatos_llamado_almas') {
+                // LLAMADO DE LAS ALMAS MALDITAS: elimina todas las cargas enemigas. Cada 20 eliminadas → 1 enemigo eliminado.
+                const _laAtk = gameState.characters[gameState.selectedCharacter];
+                const _laTeam = _laAtk ? _laAtk.team : 'team1';
+                const _laETeam = _laTeam === 'team1' ? 'team2' : 'team1';
+                let _laTotalRemoved = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _laETeam || _c.isDead || _c.hp <= 0) continue;
+                    _laTotalRemoved += (_c.charges || 0);
+                    _c.charges = 0;
+                }
+                addLog('👻 Llamado de las Almas Malditas: ' + _laTotalRemoved + ' cargas eliminadas del equipo enemigo', 'debuff');
+                const _laKills = Math.floor(_laTotalRemoved / 20);
+                for (let _i = 0; _i < _laKills; _i++) {
+                    const _laAlive = Object.keys(gameState.characters).filter(function(n) {
+                        const c = gameState.characters[n];
+                        return c && c.team === _laETeam && !c.isDead && c.hp > 0;
+                    });
+                    if (!_laAlive.length) break;
+                    const _laVictim = _laAlive[Math.floor(Math.random() * _laAlive.length)];
+                    gameState.characters[_laVictim].hp = 0;
+                    applyDamageWithShield(_laVictim, 0, gameState.selectedCharacter);
+                    addLog('👻 Llamado de las Almas Malditas: ¡' + _laVictim + ' eliminado! (20 cargas acumuladas)', 'damage');
+                }
+                if (typeof renderCharacters === 'function') renderCharacters();
+
+            } else if (ability.effect === 'thanatos_sendero_dioses') {
+                if (typeof window.activateSenderoDeLosDioses === 'function') window.activateSenderoDeLosDioses(gameState.selectedCharacter);
+                if (typeof applyBuff === 'function') applyBuff(gameState.selectedCharacter, { name: 'Proteccion Sagrada', type: 'buff', duration: 3, emoji: '🛡️✨' });
+                addLog('🌌 Sendero de los Dioses: Campo invocado por 3 rondas. ' + gameState.selectedCharacter + ' gana Protección Sagrada 3T', 'buff');
+
+            } else if (ability.effect === 'thanatos_terrible_providencia') {
+                window.executeThanatosTerribleProvidenciaEffect(gameState.selectedCharacter);
+
+            // ══════════════════════════════════════════════════════
+            // TOKITO — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'tokito_corte_niebla') {
+                const _tnResult = tokitoNieblaDamage(gameState.selectedCharacter, targetName, finalDamage);
+                applyDamageWithShield(targetName, _tnResult.dmg, gameState.selectedCharacter);
+                addLog('🌫️ Corte de Niebla: ' + _tnResult.dmg + ' daño a ' + targetName + _tnResult.tag, 'damage');
+
+            } else if (ability.effect === 'tokito_mar_nubes') {
+                const _mnAtk = gameState.characters[gameState.selectedCharacter];
+                const _mnTeam = _mnAtk ? _mnAtk.team : 'team1';
+                const _mnETeam = _mnTeam === 'team1' ? 'team2' : 'team1';
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _mnETeam || _c.isDead || _c.hp <= 0) continue;
+                    const _mnResult = tokitoNieblaDamage(gameState.selectedCharacter, _n, finalDamage);
+                    applyDamageWithShield(_n, _mnResult.dmg, gameState.selectedCharacter);
+                    if (Math.random() < 0.5 && typeof applyConfusion === 'function') applyConfusion(_n, 2);
+                    if (Math.random() < 0.5 && typeof applyDebuff === 'function') applyDebuff(_n, { name: 'Ceguera', type: 'debuff', duration: 2, emoji: '👁️' });
+                }
+                addLog('🌫️ Mar de Nubes: daño AOE + 50% Confusión / 50% Ceguera por objetivo', 'damage');
+
+            } else if (ability.effect === 'tokito_luna_negra') {
+                const _lnAtk = gameState.characters[gameState.selectedCharacter];
+                const _lnTeam = _lnAtk ? _lnAtk.team : 'team1';
+                const _lnETeam = _lnTeam === 'team1' ? 'team2' : 'team1';
+                gameState._ignoreDodgeActive = true;
+                gameState._vortexActive = true; // ignora también Esquiva Área (mismo flag que usa Vortex)
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _lnETeam || _c.isDead || _c.hp <= 0) continue;
+                    const _lnResult = tokitoNieblaDamage(gameState.selectedCharacter, _n, finalDamage);
+                    applyDamageWithShield(_n, _lnResult.dmg, gameState.selectedCharacter);
+                }
+                gameState._ignoreDodgeActive = false;
+                addLog('🌑 Luna Negra: daño AOE ignorando Esquivar y Esquiva Área', 'damage');
+
+            } else if (ability.effect === 'tokito_septima_postura') {
+                const _spHadConfusion = hasStatusEffect(targetName, 'Confusion') || hasStatusEffect(targetName, 'Confusión');
+                const _spHadCeguera = hasStatusEffect(targetName, 'Ceguera');
+                const _spResult = tokitoNieblaDamage(gameState.selectedCharacter, targetName, finalDamage);
+                applyDamageWithShield(targetName, _spResult.dmg, gameState.selectedCharacter);
+                addLog('🗡️ Séptima Postura: Niebla Oscura: ' + _spResult.dmg + ' daño a ' + targetName + _spResult.tag, 'damage');
+                if (_spHadConfusion) {
+                    gameState._skeggoxExtraTurn = gameState.selectedCharacter;
+                    addLog('🗡️ Séptima Postura: turno adicional (objetivo tenía Confusión)', 'buff');
+                }
+                if (_spHadCeguera) {
+                    const _spCaster = gameState.characters[gameState.selectedCharacter];
+                    if (_spCaster) {
+                        _spCaster.charges = Math.min(20, (_spCaster.charges||0) + 15);
+                        addLog('🗡️ Séptima Postura: +15 cargas (objetivo tenía Ceguera)', 'buff');
+                    }
+                }
 
             // ══════════════════════════════════════════════════════
             // GOGETA — handlers
