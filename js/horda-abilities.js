@@ -704,8 +704,8 @@
         var allies = aliveOnTeam(caster.team).filter(function (n) { return n !== casterName; });
         var sacrificed = randomFrom(allies);
         if (sacrificed) {
-            gameState.characters[sacrificed].isDead = true;
-            gameState.characters[sacrificed].hp = 0;
+            var _sacHp = gameState.characters[sacrificed].hp;
+            applyDamageWithShield(sacrificed, _sacHp, casterName);
             addLog('🏳️ Marcha de la Victoria: ' + sacrificed + ' es sacrificado', 'damage');
         }
         var enemyTeam = enemyTeamOf(caster.team);
@@ -776,9 +776,17 @@
             target._hordaWarmasterLanceBase = baseDmg * 2;
             addLog('🗡️ Lanza de Oscuridad perforadora: objetivo con debuff — el daño base de este movimiento se duplica permanentemente', 'damage');
         }
-        if (target.hp <= 0 && !target.isDead && typeof applyDamageWithShield === 'function') {
-            // Forzar el flujo normal de derrota (ya se descontó el HP directo arriba)
-            applyDamageWithShield(targetName, 0, casterName);
+        if (target.hp <= 0 && !target.isDead) {
+            // Este movimiento ignora Escudo/Reflejar/Escudo Sagrado a propósito, así que no puede
+            // pasar por applyDamageWithShield para registrar la muerte (ya tiene el HP en 0, no
+            // detectaría la transición). Se replican a mano los pasos esenciales de "murió":
+            // marcar como muerto, registrar el kill (dispara pasivas de "al morir" como Sabiduría
+            // Antigua o Estratega de Odin) y revisar fin de partida — si no, la partida se queda
+            // trabada creyendo que sigue en curso aunque ya no queden enemigos vivos.
+            target.isDead = true;
+            if (typeof registerKill === 'function') registerKill(casterName, targetName, false);
+            if (typeof checkGameOver === 'function') checkGameOver();
+            if (typeof renderCharacters === 'function') renderCharacters();
         }
     }
     function ability_warmasterOver(casterName) {
@@ -845,7 +853,9 @@
             applyDamageWithShield(n, dmg, casterName);
             if (Math.random() < 0.10) {
                 var c = gameState.characters[n];
-                if (c && !c.isDead) { c.hp = 0; applyDamageWithShield(n, 0, casterName); }
+                if (c && !c.isDead && c.hp > 0) {
+                    applyDamageWithShield(n, c.hp, casterName);
+                }
                 addLog('🌋 Devastacion planetaria: ¡' + n + ' eliminado! (10%)', 'damage');
             }
         });
