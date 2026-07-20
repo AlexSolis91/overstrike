@@ -1879,6 +1879,20 @@
                                 }
                                 // Revivir como aliado si el objetivo muere
                                 if (_tgtChar.hp <= 0 || _tgtChar.isDead) {
+                                    // Capturar el equipo del atacante Y el equipo original de la víctima AHORA
+                                    // (de forma síncrona), no dentro del setTimeout — en una partida online
+                                    // cada cliente sincroniza su propia copia del estado, y para cuando el
+                                    // setTimeout diferido corre (400ms después), la referencia al atacante
+                                    // (_atkChar) podía ya no resolverse igual en el cliente de la víctima,
+                                    // haciendo que el código cayera a "mantener el equipo original" — el
+                                    // bug exacto reportado: la víctima revivía en su PROPIO equipo en vez
+                                    // del equipo de quien la eliminó.
+                                    var _frostAttackerTeam = _atkChar ? _atkChar.team : null;
+                                    var _frostVictimOriginalTeam = _tgtChar.team;
+                                    // Respaldo robusto: si no se pudo resolver el equipo del atacante,
+                                    // usar el equipo OPUESTO al de la víctima — en una batalla de 2
+                                    // equipos, quien la eliminó siempre pertenece al equipo contrario.
+                                    var _frostRevivedTeam = _frostAttackerTeam || (_frostVictimOriginalTeam === 'team1' ? 'team2' : 'team1');
                                     setTimeout(function() {
                                         var _ft = gameState.characters[targetName];
                                         if (!_ft) return;
@@ -1886,9 +1900,10 @@
                                         _ft.hp = _ft.maxHp || 20;
                                         _ft.charges = 20;
                                         _ft.statusEffects = [];
-                                        _ft.team = _atkChar ? _atkChar.team : _ft.team;
+                                        _ft.team = _frostRevivedTeam;
                                         addLog('❄️ Frostmourne: ' + targetName + ' revive como aliado con 100% HP y 20 cargas!', 'buff');
                                         if (typeof renderCharacters === 'function') renderCharacters();
+                                        if (typeof pushGameState === 'function' && typeof onlineMode !== 'undefined' && onlineMode) pushGameState();
                                     }, 400);
                                 }
                             }
