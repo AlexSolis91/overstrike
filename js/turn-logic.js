@@ -2404,6 +2404,21 @@
                         addLog('🐍 Parsel: Veneno 1T aplicado a todo el equipo enemigo', 'debuff');
                     }
 
+                    // ── ZIROCUZ: inicio de ronda → 50% Esquiva Área 2T, 50% Esquivar 2T (independientes) ──
+                    for (const _zrN in gameState.characters) {
+                        const _zrC = gameState.characters[_zrN];
+                        if (!_zrC || _zrC.isDead || _zrC.hp <= 0) continue;
+                        if (!(_zrC.equippedRelics || []).includes('Zirocuz')) continue;
+                        if (Math.random() < 0.50) {
+                            if (typeof applyBuff === 'function') applyBuff(_zrN, { name: 'Esquiva Area', type: 'buff', duration: 2, emoji: '💨' });
+                            addLog('👢 Zirocuz: ' + _zrN + ' gana Esquiva Área 2T', 'buff');
+                        }
+                        if (Math.random() < 0.50) {
+                            if (typeof applyBuff === 'function') applyBuff(_zrN, { name: 'Esquivar', type: 'buff', duration: 2, emoji: '💨' });
+                            addLog('👢 Zirocuz: ' + _zrN + ' gana Esquivar 2T', 'buff');
+                        }
+                    }
+
                     // ── PILAR DE LA NIEBLA (Tokito): inicio de ronda → 50% Esquivar 1T a cada aliado ──
                     for (const _tkN in gameState.characters) {
                         const _tkC = gameState.characters[_tkN];
@@ -2909,6 +2924,35 @@
                     if (_vaHealAmt > 0 && typeof applyHeal === 'function') {
                         applyHeal(_vaN, _vaHealAmt);
                         addLog('🔮 Vestidura Arcana: ' + _vaN + ' recupera ' + _vaHealAmt + ' HP (30% de su HP máx)', 'heal');
+                    }
+                }
+
+                // ── ZAIFER / ZIROCUZ / FAJA DE LA AGONÍA / ARMADURA DE CRIXO: efectos de fin de ronda ──
+                for (const _relN in gameState.characters) {
+                    const _relC = gameState.characters[_relN];
+                    if (!_relC || _relC.isDead || _relC.hp <= 0) continue;
+                    const _relEquipped = _relC.equippedRelics || [];
+
+                    if (_relEquipped.includes('Zaifer')) {
+                        _relC.speed = (_relC.speed || 0) + 1;
+                        addLog('💍 Zaifer: ' + _relN + ' +1 velocidad (ahora ' + _relC.speed + ')', 'buff');
+                    }
+                    if (_relEquipped.includes('Zirocuz')) {
+                        _relC.speed = (_relC.speed || 0) + 3;
+                        addLog('👢 Zirocuz: ' + _relN + ' +3 velocidad (ahora ' + _relC.speed + ')', 'buff');
+                    }
+                    if (_relEquipped.includes('Faja de la Agonia') && _relC.hp > 1) {
+                        applyDamageWithShield(_relN, 2, null);
+                        addLog('🩸 Faja de la Agonía: ' + _relN + ' pierde 2 HP', 'damage');
+                    }
+                    // ARMADURA DE CRIXO: revertir el bono temporal de +5 velocidad cuando expira
+                    if (_relC._crixoSpeedRoundsLeft) {
+                        _relC._crixoSpeedRoundsLeft--;
+                        if (_relC._crixoSpeedRoundsLeft <= 0) {
+                            _relC.speed = Math.max(0, (_relC.speed || 0) - 5);
+                            _relC._crixoSpeedRoundsLeft = 0;
+                            addLog('🛡️ Armadura de Crixo: el bono de velocidad de ' + _relN + ' expira', 'info');
+                        }
                     }
                 }
 
