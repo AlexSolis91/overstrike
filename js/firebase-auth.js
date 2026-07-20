@@ -1826,8 +1826,6 @@
 
                     if (iAmHost) {
                     const roomId = 'R_' + generateRoomCode();
-                    db.ref('ranked_queue/' + opponentUid).update({ matchedRoomId: roomId });
-                    db.ref('ranked_queue/' + myUid).remove();
                     currentRoomId = roomId; isRoomHost = true; onlineMode = true;
                     window._rankedMode = true;
                     window._rankedFromMatchmaking = true;
@@ -1838,6 +1836,11 @@
                             const oppTeams = snap2.val() || {};
                             window._teamNames = { team1: myName, team2: opponentData.name || 'Rival' };
                             window._opponentUid = opponentUid; // Guardar para cargar reliquias del rival
+                            // IMPORTANTE: crear la sala COMPLETA (con ranked:true) ANTES de avisarle
+                            // al invitado que ya puede unirse — antes se avisaba primero y se creaba
+                            // la sala después, así que el invitado a veces la leía a medio construir
+                            // (sin "ranked:true" todavía) y caía por error a selección manual de
+                            // personajes en vez de entrar directo con su equipo de Ranked.
                             db.ref('rooms/' + roomId).set({
                                 host: { uid: myUid, name: myName, photo: currentUser.photoURL || '' },
                                 guest: { uid: opponentUid, name: opponentData.name || 'Rival' },
@@ -1845,6 +1848,9 @@
                                 hostAttack: myTeams ? myTeams.attack : null,
                                 guestAttack: oppTeams ? oppTeams.attack : null
                             }).then(function() {
+                                // Ahora sí, la sala ya existe completa — avisar al invitado
+                                db.ref('ranked_queue/' + opponentUid).update({ matchedRoomId: roomId });
+                                db.ref('ranked_queue/' + myUid).remove();
                                 hideRankedSearchModal();
                                 window._rankedOpponentName = opponentData.name || 'Rival';
                                 startOnlineGame(roomId, true);
@@ -3613,7 +3619,8 @@
             showLobby();
         }
 
-        function startOnlineGame(roomId, asHost) {
+        function startOnlineGame(roomId, asHost, _retryCount) {
+            _retryCount = _retryCount || 0;
             if (roomListener) { db.ref('rooms/' + roomId).off('value', roomListener); roomListener = null; }
             onlineMode = true;
             isRoomHost = asHost;
@@ -3625,6 +3632,17 @@
             // Fetch room to check if ranked (skip char select) or normal online
             db.ref('rooms/' + roomId).once('value', function(snap) {
                 const room = snap.val() || {};
+
+                // RED DE SEGURIDAD: si esperábamos una partida Ranked (window._rankedMode ya
+                // estaba en true desde el matchmaking) pero la sala todavía no trae "ranked:true"
+                // (posible condición de carrera si la escritura de la sala no ha terminado de
+                // propagarse), reintentar la lectura unas pocas veces tras una breve espera en
+                // vez de caer directo a selección manual de personajes.
+                if (window._rankedMode && !room.ranked && _retryCount < 5) {
+                    setTimeout(function() { startOnlineGame(roomId, asHost, _retryCount + 1); }, 400);
+                    return;
+                }
+
                 const hostName  = (room.host  && room.host.name)  ? room.host.name  : 'Jugador 1';
                 const guestName = (room.guest && room.guest.name) ? room.guest.name : 'Jugador 2';
                 window._teamNames = { team1: hostName, team2: guestName };
