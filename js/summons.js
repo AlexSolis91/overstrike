@@ -247,6 +247,24 @@
             if (summon.name === 'MinByung' && typeof triggerMinByungOnDeath === 'function') {
                 triggerMinByungOnDeath(summon.team);
             }
+            // ── ANIMA VORAX: al morir una invocación del portador, drena 5 cargas de todos los enemigos ──
+            if (summon.summoner) {
+                const _avOwner = gameState.characters[summon.summoner];
+                if (_avOwner && (_avOwner.equippedRelics||[]).includes('Anima Vorax')) {
+                    const _avOwnerETeam = _avOwner.team === 'team1' ? 'team2' : 'team1';
+                    let _avDrained = 0;
+                    for (const _avEn in gameState.characters) {
+                        const _avEc = gameState.characters[_avEn];
+                        if (!_avEc || _avEc.team !== _avOwnerETeam || _avEc.isDead || _avEc.hp <= 0) continue;
+                        const _avSteal = Math.min(5, _avEc.charges || 0);
+                        if (_avSteal > 0) { _avEc.charges -= _avSteal; _avDrained += _avSteal; }
+                    }
+                    if (_avDrained > 0) {
+                        _avOwner.charges = Math.min(20, (_avOwner.charges||0) + _avDrained);
+                        addLog('🗡️ Anima Vorax: ' + summon.summoner + ' drena ' + _avDrained + ' cargas del equipo enemigo (' + summon.name + ' eliminada)', 'buff');
+                    }
+                }
+            }
             delete gameState.summons[summonId];
             // ── REINO DE LAS SOMBRAS (Marik): genera 3 cargas por invocación eliminada ──
             if (reason !== 'summoner_dead' && typeof _triggerMarikSummonKill === 'function') {
@@ -458,6 +476,60 @@
             '</div>';
             modal.style.display = 'block';
         }
+        // Activa las pasivas de todas las invocaciones vivas del equipo del portador — usada por
+        // la reliquia Anima Vorax. Replica el mismo conjunto de disparos que ya usa "Dominio del
+        // Monarca" de Sun Jin Woo, generalizado a cualquier portador con invocaciones activas.
+        function activateOwnerSummonPassives(ownerName) {
+            const owner = gameState.characters[ownerName];
+            if (!owner) return;
+            const _avShadows = Object.entries(gameState.summons || {}).filter(function(e){ return e[1] && e[1].team === owner.team && e[1].hp > 0; });
+            if (_avShadows.length === 0) return;
+            if (typeof triggerIgrisPassive === 'function' && _avShadows.some(function(e){ return e[1].name==='Igris'; }))
+                triggerIgrisPassive(ownerName);
+            if (typeof triggerBeruPassive === 'function' && _avShadows.some(function(e){ return e[1].name==='Beru'; }))
+                triggerBeruPassive();
+            if (typeof triggerKaiselPassive === 'function' && _avShadows.some(function(e){ return e[1].name==='Kaisel'; }))
+                triggerKaiselPassive();
+            if (typeof triggerMinByungStartOfRound === 'function' && _avShadows.some(function(e){ return e[1].name==='MinByung'; }))
+                triggerMinByungStartOfRound();
+            if (_avShadows.some(function(e){ return e[1].name==='Bellion'; })) {
+                const _avBellTeam = owner.team === 'team1' ? 'team2' : 'team1';
+                const _avBellEnemies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c && c.team===_avBellTeam && !c.isDead && c.hp>0; });
+                if (_avBellEnemies.length > 0) {
+                    const _avBellTgt = _avBellEnemies[Math.floor(Math.random() * _avBellEnemies.length)];
+                    applyDamageWithShield(_avBellTgt, 2, 'Bellion');
+                    addLog('⚔️ Bellion (Anima Vorax): 2 daño a ' + _avBellTgt, 'damage');
+                }
+            }
+            if (_avShadows.some(function(e){ return e[1].name==='Iron'; })) {
+                for (const _avAn in gameState.characters) {
+                    const _avAc = gameState.characters[_avAn];
+                    if (!_avAc || _avAc.team !== owner.team || _avAc.isDead || _avAc.hp <= 0) continue;
+                    generateChargesInline(_avAn, 3);
+                }
+                addLog('⚔️ Iron (Anima Vorax): equipo aliado gana 3 cargas', 'buff');
+            }
+            if (_avShadows.some(function(e){ return e[1].name==='Tusk'; })) {
+                const _avTuskTeam = owner.team === 'team1' ? 'team2' : 'team1';
+                const _avTuskEn = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c && c.team===_avTuskTeam && !c.isDead && c.hp>0; });
+                if (_avTuskEn.length > 0) {
+                    const _avTt = _avTuskEn[Math.floor(Math.random() * _avTuskEn.length)];
+                    applyFlatBurn(_avTt, 2, 1);
+                    addLog('⚔️ Tusk (Anima Vorax): Quemadura 2HP aplicada a ' + _avTt, 'debuff');
+                }
+            }
+            if (_avShadows.some(function(e){ return e[1].name==='Kamish'; })) {
+                const _avKamTeam = owner.team === 'team1' ? 'team2' : 'team1';
+                const _avKamEn = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c && c.team===_avKamTeam && !c.isDead && c.hp>0; });
+                if (_avKamEn.length > 0) {
+                    const _avKt = _avKamEn[Math.floor(Math.random() * _avKamEn.length)];
+                    applyDamageWithShield(_avKt, 10, 'Kamish');
+                    addLog('⚔️ Kamish (Anima Vorax): 10 daño a ' + _avKt, 'damage');
+                }
+            }
+            addLog('🗡️ Anima Vorax: pasivas de las invocaciones de ' + ownerName + ' activadas', 'buff');
+        }
+
         function triggerIgrisPassive(summonerName) {
             try {
                 if (passiveExecuting) return;
@@ -1630,6 +1702,31 @@
                 }
             }
 
+            // ── ALABARDA DEL SOL: si el objetivo golpeado tiene Quemaduras o Quemadura Solar → portador +8 cargas ──
+            if (remainingDamage > 0 && !passiveExecuting && attackerName) {
+                const _alsAtk = gameState.characters[attackerName];
+                if (_alsAtk && (_alsAtk.equippedRelics||[]).includes('Alabarda del Sol')) {
+                    const _alsTgt = gameState.characters[targetName];
+                    const _alsHasBurn = _alsTgt && (_alsTgt.statusEffects||[]).some(function(e){
+                        if (!e || !e.name) return false;
+                        const _n2 = normAccent(e.name);
+                        return _n2 === 'quemadura' || _n2 === 'quemaduras' || _n2.indexOf('quemadura solar') !== -1;
+                    });
+                    if (_alsHasBurn) {
+                        _alsAtk.charges = Math.min(20, (_alsAtk.charges||0) + 8);
+                        addLog('☀️ Alabarda del Sol: ' + attackerName + ' genera 8 cargas (objetivo con Quemaduras/Quemadura Solar)', 'buff');
+                    }
+                }
+            }
+
+            // ── ANIMA VORAX: cada vez que el portador causa daño, activa las pasivas de sus invocaciones ──
+            if (remainingDamage > 0 && !passiveExecuting && attackerName) {
+                const _avAtk = gameState.characters[attackerName];
+                if (_avAtk && (_avAtk.equippedRelics||[]).includes('Anima Vorax')) {
+                    if (typeof activateOwnerSummonPassives === 'function') activateOwnerSummonPassives(attackerName);
+                }
+            }
+
             // ── TORMENTA ROJA: al recibir daño por Quemadura o Veneno → 3 daño AOE al equipo enemigo ──
             // _debuffDamageSource ya fue capturado al inicio de esta función (antes de limpiar el flag
             // global) — usar esa variable local, no gameState._currentDamageSource (ya está en null aquí).
@@ -2243,6 +2340,22 @@
                 applyDamageWithShield(attackerName, _sdCounter, targetName);
                 passiveExecuting = false;
                 addLog('🌌 Sendero de los Dioses: ' + targetName + ' recupera ' + _sdHeal + ' HP y contraataca a ' + attackerName + ' por ' + _sdCounter + ' daño', 'buff');
+            })();
+
+            // ── ARMADURA DE CRIXO: al recibir golpe enemigo → Ceguera 2T al atacante + portador +5 velocidad
+            // hasta el final de la próxima ronda ──
+            (function() {
+                if (passiveExecuting) return;
+                if (!attackerName || attackerName === targetName) return;
+                const _crixoDmg = oldHp - target.hp;
+                if (_crixoDmg <= 0) return;
+                if (!(target.equippedRelics || []).includes('Armadura de Crixo')) return;
+                if (typeof applyDebuff === 'function') applyDebuff(attackerName, { name: 'Ceguera', type: 'debuff', duration: 2, emoji: '👁️' });
+                if (!target._crixoSpeedRoundsLeft) {
+                    target.speed = (target.speed || 0) + 5;
+                }
+                target._crixoSpeedRoundsLeft = 2; // se revierte al final de la PRÓXIMA ronda (ver processEndOfRoundEffects)
+                addLog('🛡️ Armadura de Crixo: ' + targetName + ' aplica Ceguera 2T a ' + attackerName + ' y gana +5 velocidad', 'buff');
             })();
 
             // ── ICE CLON: absorb damage meant for Sub-Zero ──
@@ -2989,6 +3102,19 @@
         }
 
         function registerKill(killerName, victimName, byInvocation) {
+            // ── DIREBOUNDS: cada vez que CUALQUIER personaje (aliado o enemigo) es eliminado,
+            // el portador gana 1 turno adicional y genera 15 cargas — se revisa ANTES del return
+            // temprano de abajo para que nunca se salte por falta de killerName. ──
+            if (victimName) {
+                for (const _dbN in gameState.characters) {
+                    const _dbC = gameState.characters[_dbN];
+                    if (!_dbC || _dbC.isDead || _dbC.hp <= 0) continue;
+                    if (!(_dbC.equippedRelics||[]).includes('Direbounds')) continue;
+                    _dbC.charges = Math.min(20, (_dbC.charges||0) + 15);
+                    gameState._skeggoxExtraTurn = _dbN;
+                    addLog('🥊 Direbounds: ' + _dbN + ' gana turno adicional y 15 cargas (' + victimName + ' eliminado)', 'buff');
+                }
+            }
             if (!killerName || !gameState.battleStats) return;
             _mvp('killMap', killerName);
             if (byInvocation) {
