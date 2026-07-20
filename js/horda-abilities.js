@@ -82,6 +82,10 @@
                 dmg += 2;
                 addLog('📋 Tabla de Elementos: especial +2 daño', 'buff');
             }
+            if (rd.effect === 'direbounds' && !isAoeOrMt) {
+                dmg += 5;
+                addLog('🥊 Direbounds: movimiento ST +5 daño', 'buff');
+            }
             if (rd.effect === 'double_heal') {
                 caster._doubleHeal = true;
             }
@@ -872,6 +876,12 @@
             passiveHolders(attacker.team, 'Artes de la Sangre Oscura').forEach(function () {
                 orcAlliesOf(attacker.team).forEach(function (n) { if (typeof applyHeal === 'function') applyHeal(n, 2); });
             });
+        }
+        // ── FORTALEZA DEL GUARDIÁN: si el portador ejecuta un Over → recupera 5 HP + Protección Sagrada 2T ──
+        if (attacker && ability.type === 'over' && (attacker.equippedRelics||[]).indexOf('Fortaleza del Guardian') !== -1) {
+            if (typeof applyHeal === 'function') applyHeal(charName, 5);
+            if (typeof applyBuff === 'function') applyBuff(charName, { name: 'Proteccion Sagrada', type: 'buff', duration: 2, emoji: '🛡️✨' });
+            addLog('🛡️ Fortaleza del Guardián: ' + charName + ' recupera 5 HP y gana Protección Sagrada 2T', 'buff');
         }
 
         switch (ability.effect) {
