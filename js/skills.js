@@ -143,6 +143,15 @@
                     _garouC.charges = Math.min(20, (_garouC.charges||0) + 1);
                     addLog('🐾 Cazador de Héroes: Garou +1 carga (enemigo generó cargas)', 'buff');
                 }
+
+                // ── FAJA DE LA AGONÍA: cuando un ENEMIGO genera cargas → portador +2 cargas ──
+                for (const _fajaN in gameState.characters) {
+                    const _fajaC = gameState.characters[_fajaN];
+                    if (!_fajaC || _fajaC.isDead || _fajaC.hp <= 0 || _fajaC.team === c.team) continue;
+                    if (!(_fajaC.equippedRelics||[]).includes('Faja de la Agonia')) continue;
+                    _fajaC.charges = Math.min(20, (_fajaC.charges||0) + 2);
+                    addLog('🩸 Faja de la Agonía: ' + _fajaN + ' +2 cargas (enemigo generó cargas)', 'buff');
+                }
             }
         }
         function applyAOEDamageToTeam(enemyTeam, damage, attackerName) {
@@ -1140,6 +1149,16 @@
                 }
             }
 
+            // ── FORTALEZA DEL GUARDIÁN: si el portador ejecuta un Over → recupera 5 HP + Protección Sagrada 2T ──
+            if (gameState.selectedCharacter && ability && ability.type === 'over') {
+                const _fgAtk = gameState.characters[gameState.selectedCharacter];
+                if (_fgAtk && (_fgAtk.equippedRelics||[]).includes('Fortaleza del Guardian') && !_fgAtk.isDead && _fgAtk.hp > 0) {
+                    if (typeof applyHeal === 'function') applyHeal(gameState.selectedCharacter, 5);
+                    if (typeof applyBuff === 'function') applyBuff(gameState.selectedCharacter, { name: 'Proteccion Sagrada', type: 'buff', duration: 2, emoji: '🛡️✨' });
+                    addLog('🛡️ Fortaleza del Guardián: ' + gameState.selectedCharacter + ' recupera 5 HP y gana Protección Sagrada 2T', 'buff');
+                }
+            }
+
             // ── AURA SAGRADA DISTORSIONADA (Arthas): cuando el OBJETIVO recibe un debuff del atacante → Arthas cura 3 HP al aliado con menos HP ──
             // Fire when a debuff-applying ability hits (targetName is the one who received the debuff)
             if (targetName && ability && ability.effect) {
@@ -1359,6 +1378,10 @@
                     if (_rd.effect === 'special_dmg_plus2' && ability && (ability.type === 'special' || ability.type === 'over')) {
                         finalDamage += 2;
                         addLog('📋 Tabla de Elementos: especial +2 daño', 'buff');
+                    }
+                    if (_rd.effect === 'direbounds' && ability && ability.target === 'single') {
+                        finalDamage += 5;
+                        addLog('🥊 Direbounds: movimiento ST +5 daño', 'buff');
                     }
                     if (_rd.effect === 'double_heal') {
                         attacker._doubleHeal = true;
