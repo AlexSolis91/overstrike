@@ -819,6 +819,22 @@
                     _sfxHit.currentTime = 0; _sfxHit.volume = 0.5; _sfxHit.play().catch(function(){});
                 }
             }
+            // ── ESPADA NICHIRIN NEGRA: daño doble a objetivos con Quemadura Solar ──
+            // Vive AQUÍ (no en el bloque de "bonos pre-ataque" de un solo objetivo) para que
+            // funcione en CADA golpe individual, sea un ataque de un solo objetivo o AOE/multi-golpe
+            // (antes solo se revisaba una vez contra un único objetivo, así que en un AOE como
+            // "Dragon's Fear" de Antares nunca se aplicaba a ninguno de los enemigos golpeados).
+            if (!passiveExecuting && attackerName && damage > 0) {
+                const _ennAtk = gameState.characters[attackerName];
+                if (_ennAtk && (_ennAtk.equippedRelics||[]).includes('Espada Nichirin Negra')) {
+                    const _ennTgt0 = gameState.characters[targetName];
+                    const _ennHasQS = _ennTgt0 && (_ennTgt0.statusEffects||[]).some(function(e){ return e && e.name && e.name.toLowerCase().includes('solar'); });
+                    if (_ennHasQS) {
+                        damage = damage * 2;
+                        addLog('🗡️ Espada Nichirin Negra: daño doble vs Quemadura Solar (' + damage + ')', 'buff');
+                    }
+                }
+            }
             // ── CABALLERO DE LA NOCHE (Batman): inmune a daño de movimientos especiales ──
             if (!passiveExecuting && gameState.selectedAbility && gameState.selectedAbility.type === 'special') {
                 const _batTarget = gameState.characters[targetName];
@@ -1599,6 +1615,18 @@
                         allyTeam: _dynRDChar.team,
                         enemyTeam: _dynRDChar.team === 'team1' ? 'team2' : 'team1'
                     });
+                }
+            }
+
+            // ── ESPADA NICHIRIN NEGRA: aplica Quemadura Solar tras cada golpe real (ST o AOE) ──
+            if (remainingDamage > 0 && !passiveExecuting && attackerName) {
+                const _ennAtk2 = gameState.characters[attackerName];
+                if (_ennAtk2 && (_ennAtk2.equippedRelics||[]).includes('Espada Nichirin Negra')) {
+                    const _ennTgt2 = gameState.characters[targetName];
+                    if (_ennTgt2 && !_ennTgt2.isDead) {
+                        if (typeof applySolarBurn === 'function') applySolarBurn(targetName, 10, 2);
+                        addLog('🗡️ Espada Nichirin Negra: Quemadura Solar aplicada a ' + targetName, 'debuff');
+                    }
                 }
             }
 
