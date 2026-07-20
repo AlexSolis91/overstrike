@@ -681,7 +681,7 @@
                     { name: 'Kage Bunshin no Jutsu', type: 'basic', cost: 0, chargeGain: 0, damage: 1, target: 'single', effect: 'kage_bunshin_naruto', description: 'Realiza de 1 a 4 golpes. Genera 1 carga por cada golpe acertado.' },
                     { name: 'Rasengan', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'single', effect: 'rasengan_naruto', description: 'Causa 3 daño. Si el objetivo tiene Buffs activos, aplica Mega Aturdimiento 2T.' },
                     { name: 'Futon Rasenshuriken', type: 'special', cost: 6, chargeGain: 0, damage: 5, target: 'aoe', effect: 'rasenshuriken_naruto', description: 'Causa 5 AOE. Aplica Debilitar y Sangrado a los objetivos. Naruto gana un turno adicional.' },
-                    { name: 'Voluntad de la Hoja', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'single', effect: 'voluntad_hoja_naruto', description: 'Elimina el 50% del HP del objetivo y aplica Quemadura de 5 HP por 2 turnos.' }
+                    { name: 'Voluntad de la Hoja', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'single', effect: 'voluntad_hoja_naruto', description: 'Elimina el 50% del HP del objetivo y aplica Quemadura de 5 HP por 2 turnos. Si el objetivo es un Jefe de Sala, en su lugar aplica Quemadura de 1 HP sobre el jefe por una cantidad de turnos igual al total de cargas actuales del equipo aliado.' }
                 ]
             },
 
@@ -1103,7 +1103,7 @@
                 passive: { name: 'Mirada del Dios de la Muerte', description: 'Cada vez que un enemigo ejecuta un movimiento especial, Thanatos acumula un contador "Ira Divina". Al llegar a 5 contadores, los consume y ejecuta el Over (Terrible Providencia) de inmediato, sin esperar su turno. Mientras tenga 2 o más contadores de "Ira Divina", Thanatos es inmune a debuffs.' },
                 abilities: [
                     { name: 'Castigo Divino',              type: 'basic',   cost: 0,  chargeGain: 2, damage: 2,  target: 'single', effect: 'thanatos_castigo_divino',  description: 'El daño base se incrementa +1 por cada Buff activo en el objetivo golpeado. Si este movimiento elimina al objetivo, revive a un aliado aleatorio eliminado con 100% de su HP y 20 cargas.' },
-                    { name: 'Llamado de las Almas Malditas', type: 'special', cost: 5,  chargeGain: 0, damage: 0,  target: 'aoe',    effect: 'thanatos_llamado_almas',   description: 'Elimina todas las cargas de los enemigos. Por cada 20 cargas eliminadas en total, elimina a un enemigo aleatorio.' },
+                    { name: 'Llamado de las Almas Malditas', type: 'special', cost: 5,  chargeGain: 0, damage: 0,  target: 'aoe',    effect: 'thanatos_llamado_almas',   description: 'Elimina todas las cargas de los enemigos. Por cada 20 cargas eliminadas en total, elimina a un enemigo aleatorio (no aplica a Jefe de Sala).' },
                     { name: 'Sendero de los Dioses',       type: 'special', cost: 8,  chargeGain: 0, damage: 0,  target: 'self',   effect: 'thanatos_sendero_dioses',  description: 'Invoca el Campo Sendero de los Dioses por 3 rondas. Thanatos se aplica Buff Protección Sagrada 3 turnos.' },
                     { name: 'Terrible Providencia',        type: 'over',    cost: 13, chargeGain: 0, damage: 10, target: 'aoe',    effect: 'thanatos_terrible_providencia', description: 'Disipa todos los Buffs enemigos y causa +3 daño adicional a cada enemigo por cada Buff disipado. Aplica Debilitar 3 turnos y Miedo 3 turnos a los golpeados.' }
                 ]
