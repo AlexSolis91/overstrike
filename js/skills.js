@@ -885,6 +885,7 @@
                     try {
                         db.ref('rooms/' + currentRoomId + '/liveOver').set({
                             charName: gameState.selectedCharacter,
+                            abilityName: (gameState.selectedAbility && gameState.selectedAbility.name) || '',
                             abilityEffect: (gameState.selectedAbility && gameState.selectedAbility.effect) || '',
                             abilityTarget: (gameState.selectedAbility && gameState.selectedAbility.target) || '',
                             pushedBy: currentUser.uid,
