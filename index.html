@@ -2711,7 +2711,11 @@
             <div style="font-size:2.4rem;font-weight:900;color:#fff;margin-bottom:4px;">
                 <span id="gcm-amount">0</span><span style="font-size:1.1rem;color:#ffd700;margin-left:6px;">🪙</span>
             </div>
-            <div style="color:#666;font-size:.7rem;margin-bottom:20px;">oro disponible para reclamar</div>
+            <div style="color:#666;font-size:.7rem;margin-bottom:14px;">oro disponible para reclamar</div>
+            <div id="gcm-bonus-item" style="display:none;align-items:center;justify-content:center;gap:8px;background:rgba(160,60,255,.08);border:1px solid rgba(160,60,255,.35);border-radius:10px;padding:9px 12px;margin-bottom:16px;">
+                <img id="gcm-bonus-img" src="" style="width:32px;height:32px;object-fit:contain;">
+                <span id="gcm-bonus-label" style="color:#b46cff;font-size:.78rem;font-weight:700;"></span>
+            </div>
             <button id="gcm-claim-btn" onclick="window._gcmClaim()"
                 style="width:100%;padding:13px;background:linear-gradient(135deg,#5c4400,#a67c00);border:2px solid #ffd700;
                 color:#ffd700;border-radius:10px;font-family:Orbitron,sans-serif;font-size:.82rem;cursor:pointer;
@@ -2726,10 +2730,18 @@
     // y la recuperación automática de oro sin reclamar al iniciar sesión.
     window.showGoldClaimModal = function(opts) {
         opts = opts || {};
-        if (!opts.amount || opts.amount <= 0) return;
+        if ((!opts.amount || opts.amount <= 0) && !opts.bonusItem) return;
         document.getElementById('gcm-title').textContent = opts.title || '🪙 Oro ganado';
         document.getElementById('gcm-subtitle').textContent = opts.subtitle || '';
-        document.getElementById('gcm-amount').textContent = opts.amount.toLocaleString();
+        document.getElementById('gcm-amount').textContent = (opts.amount || 0).toLocaleString();
+        var bonusEl = document.getElementById('gcm-bonus-item');
+        if (opts.bonusItem && opts.bonusItem.img) {
+            document.getElementById('gcm-bonus-img').src = opts.bonusItem.img;
+            document.getElementById('gcm-bonus-label').textContent = opts.bonusItem.label || '';
+            bonusEl.style.display = 'flex';
+        } else {
+            bonusEl.style.display = 'none';
+        }
         var btn = document.getElementById('gcm-claim-btn');
         btn.disabled = false;
         btn.textContent = '💰 RECLAMAR';
