@@ -4975,15 +4975,33 @@
                 gameState._abilityExecuting = false; renderCharacters(); renderSummons(); showContinueButton(); return;
 
             } else if (ability.effect === 'voluntad_hoja_naruto') {
-                // NARUTO — Voluntad de la Hoja: 50% HP + Quemadura 5HP 2T
+                // NARUTO — Voluntad de la Hoja: 50% HP + Quemadura 5HP 2T (vs Jefe de Sala: efecto alterno)
                 const _vlTgt = gameState.characters[targetName];
                 if (_vlTgt && !_vlTgt.isDead && _vlTgt.hp > 0) {
-                    const _vlDmg = Math.ceil(_vlTgt.hp * 0.50);
-                    applyDamageWithShield(targetName, _vlDmg, gameState.selectedCharacter);
-                    addLog('🔥 Voluntad de la Hoja: ' + _vlDmg + ' daño (50% HP) a ' + targetName, 'damage');
-                    if (!_vlTgt.isDead && _vlTgt.hp > 0) {
-                        applyFlatBurn(targetName, 5, 2);
-                        addLog('🔥 Voluntad de la Hoja: Quemadura 5HP 2T a ' + targetName, 'debuff');
+                    if (window._bossMode && _vlTgt.isBoss) {
+                        // Vs Jefe de Sala: el 50% de HP + Quemadura normal no aplica (no debe ser posible
+                        // quitarle la mitad del HP de un golpe). En su lugar: Quemadura 1 HP sobre el jefe
+                        // por la cantidad de turnos igual al total de cargas actuales del equipo aliado.
+                        const _vlCaster = gameState.characters[gameState.selectedCharacter];
+                        const _vlMyTeam = _vlCaster ? _vlCaster.team : 'team1';
+                        const _vlTotalCharges = Object.keys(gameState.characters).reduce(function(sum, n) {
+                            const c = gameState.characters[n];
+                            return sum + ((c && c.team === _vlMyTeam && !c.isDead) ? (c.charges||0) : 0);
+                        }, 0);
+                        if (_vlTotalCharges > 0) {
+                            applyFlatBurn(targetName, 1, _vlTotalCharges);
+                            addLog('🔥 Voluntad de la Hoja [Jefe]: Quemadura 1HP por ' + _vlTotalCharges + ' turnos (cargas totales del equipo aliado)', 'debuff');
+                        } else {
+                            addLog('🔥 Voluntad de la Hoja [Jefe]: el equipo aliado no tiene cargas — sin efecto', 'debuff');
+                        }
+                    } else {
+                        const _vlDmg = Math.ceil(_vlTgt.hp * 0.50);
+                        applyDamageWithShield(targetName, _vlDmg, gameState.selectedCharacter);
+                        addLog('🔥 Voluntad de la Hoja: ' + _vlDmg + ' daño (50% HP) a ' + targetName, 'damage');
+                        if (!_vlTgt.isDead && _vlTgt.hp > 0) {
+                            applyFlatBurn(targetName, 5, 2);
+                            addLog('🔥 Voluntad de la Hoja: Quemadura 5HP 2T a ' + targetName, 'debuff');
+                        }
                     }
                 }
 
@@ -10622,7 +10640,8 @@
                 for (let _i = 0; _i < _laKills; _i++) {
                     const _laAlive = Object.keys(gameState.characters).filter(function(n) {
                         const c = gameState.characters[n];
-                        return c && c.team === _laETeam && !c.isDead && c.hp > 0;
+                        // No aplica a Jefe de Sala: no debe ser posible eliminarlo con este movimiento
+                        return c && c.team === _laETeam && !c.isDead && c.hp > 0 && !(window._bossMode && c.isBoss);
                     });
                     if (!_laAlive.length) break;
                     const _laVictim = _laAlive[Math.floor(Math.random() * _laAlive.length)];
