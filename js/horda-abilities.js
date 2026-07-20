@@ -37,6 +37,80 @@
     }
 
     // ══════════════════════════════════════════════════════════════════════
+    // MODIFICADORES DE DAÑO POR RELIQUIA (pre-golpe)
+    // La mayoría de los efectos de reliquia (Sangrado al golpear, Aturdimiento,
+    // drenar cargas, turno extra, robo de cargas de Frostmourne, etc.) YA
+    // funcionan para los Orcos porque están enganchados dentro de
+    // applyDamageWithShield(), que las 32 habilidades de Horda llaman
+    // directamente. Lo que SÍ falta es el bloque de modificadores que se
+    // calculan ANTES del golpe (Espada del Triunfo, Puño de Obsidiana,
+    // Frostmourne x2, Shadowmourne, etc.) — eso vive únicamente en el motor
+    // normal de ejecución de habilidades del jugador, que los Orcos no usan.
+    // Esta función replica ese mismo bloque para que también les aplique.
+    //   abilityType: 'basic' | 'special' | 'over'
+    //   isAoeOrMt:   true si el movimiento golpea a varios objetivos (AOE/MT)
+    function hordaComputeRelicDamage(casterName, targetName, baseDamage, abilityType, isAoeOrMt) {
+        var caster = gameState.characters[casterName];
+        if (!caster || baseDamage <= 0) return baseDamage;
+        var dmg = baseDamage;
+        (caster.equippedRelics || []).forEach(function (relicName) {
+            var rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[relicName] : null;
+            if (!rd || !rd.effect) return;
+
+            if (rd.effect === 'crit_chance_bonus' && !gameState._isCritHit && Math.random() < 0.10) {
+                dmg *= 2; gameState._isCritHit = true;
+                addLog('💫 Cuerno del Caos: ¡Crítico! (+10%)', 'buff');
+            }
+            if (rd.effect === 'frostmourne') {
+                dmg = dmg * 2;
+                addLog('❄️ Frostmourne: daño duplicado (' + dmg + ')', 'buff');
+            }
+            if (rd.effect === 'varita_de_sauco' && isAoeOrMt) {
+                dmg = dmg * 2;
+                caster.hp = Math.max(1, (caster.hp || 0) - 3);
+                addLog('🪄 Varita de Saúco: daño AOE duplicado — ' + casterName + ' pierde 3 HP', 'buff');
+            }
+            if (rd.effect === 'basic_dmg_50pct' && abilityType === 'basic') {
+                dmg = Math.ceil(dmg * 1.5);
+                addLog('⚔️ Espada del Triunfo: básico +50% daño', 'buff');
+            }
+            if (rd.effect === 'basic_dmg_plus2' && abilityType === 'basic') {
+                dmg += 2;
+                addLog('⚔️ Puño de Obsidiana: básico +2 daño', 'buff');
+            }
+            if (rd.effect === 'special_dmg_plus2' && (abilityType === 'special' || abilityType === 'over')) {
+                dmg += 2;
+                addLog('📋 Tabla de Elementos: especial +2 daño', 'buff');
+            }
+            if (rd.effect === 'double_heal') {
+                caster._doubleHeal = true;
+            }
+            if (rd.effect === 'shadowmourne' && dmg > 0) {
+                if (!caster._shadowmourneCounters) caster._shadowmourneCounters = 0;
+                caster._shadowmourneCounters++;
+                var smC = caster._shadowmourneCounters;
+                dmg += 3 + smC;
+                caster.charges = Math.min(20, (caster.charges || 0) + smC);
+                if (smC >= 10 && isAoeOrMt) {
+                    dmg *= 2;
+                    addLog('💀 Shadowmourne: ' + smC + ' contadores — daño AOE/MT DOBLE (' + dmg + ' total), +' + smC + ' cargas', 'buff');
+                } else {
+                    addLog('💀 Shadowmourne: ' + smC + ' contador(es) — +' + (3 + smC) + ' daño, +' + smC + ' cargas', 'buff');
+                }
+            }
+            if (rd.effect === 'espada_nichirin_negra' && targetName) {
+                var tChar = gameState.characters[targetName];
+                var hasSolar = tChar && (tChar.statusEffects || []).some(function (e) { return e && e.name && e.name.toLowerCase().indexOf('solar') !== -1; });
+                if (hasSolar) {
+                    dmg *= 2;
+                    addLog('🗡️ Espada Nichirin Negra: daño doble vs Quemadura Solar (' + dmg + ')', 'buff');
+                }
+            }
+        });
+        return Math.max(0, Math.floor(dmg));
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
     // CREACIÓN DE PERSONAJE ENEMIGO (a partir de HORDA_CHARACTER_DATA)
     // ══════════════════════════════════════════════════════════════════════
     // Construye SOLO los datos del personaje (sin tocar gameState) — se usa para inyectar
@@ -277,15 +351,17 @@
         var caster = gameState.characters[casterName];
         if (!caster) return;
         var dmg = 2 + (caster._hordaBasicDmgBonus || 0);
+        dmg = hordaComputeRelicDamage(casterName, targetName, dmg, 'basic', false);
         applyDamageWithShield(targetName, dmg, casterName);
         if (typeof applyBleed === 'function') applyBleed(targetName, 1);
         generateChargesInline(casterName, 2);
         addLog('🪓 Tajo Sucio: ' + casterName + ' causa ' + dmg + ' daño y Sangrado 1T a ' + targetName, 'damage');
     }
     function ability_orcoSpecial1(casterName, targetName) {
-        applyDamageWithShield(targetName, 4, casterName);
+        var dmg = hordaComputeRelicDamage(casterName, targetName, 4, 'special', false);
+        applyDamageWithShield(targetName, dmg, casterName);
         if (typeof applyStun === 'function') applyStun(targetName, 1);
-        addLog('🦶 Pisotón Tembloroso: ' + casterName + ' causa 4 daño y Aturdimiento a ' + targetName, 'damage');
+        addLog('🦶 Pisotón Tembloroso: ' + casterName + ' causa ' + dmg + ' daño y Aturdimiento a ' + targetName, 'damage');
     }
     function ability_orcoSpecial2(casterName) {
         var caster = gameState.characters[casterName];
@@ -297,9 +373,12 @@
             var c = gameState.characters[n];
             debuffCount += (c.statusEffects || []).filter(function (e) { return e && e.type === 'debuff'; }).length;
         });
-        var dmg = 4 + debuffCount;
-        enemies.forEach(function (n) { applyDamageWithShield(n, dmg, casterName); });
-        addLog('🪨 Lanzamiento de Peñasco: ' + dmg + ' daño AOE (' + debuffCount + ' debuffs activos en el enemigo)', 'damage');
+        var baseDmg = 4 + debuffCount;
+        enemies.forEach(function (n) {
+            var dmg = hordaComputeRelicDamage(casterName, n, baseDmg, 'special', true);
+            applyDamageWithShield(n, dmg, casterName);
+        });
+        addLog('🪨 Lanzamiento de Peñasco: ' + baseDmg + ' daño AOE (' + debuffCount + ' debuffs activos en el enemigo)', 'damage');
     }
     function ability_orcoOver(casterName) {
         var caster = gameState.characters[casterName];
@@ -330,6 +409,7 @@
         if (!caster) return;
         var deadOrcs = orcAlliesOfDead(caster.team);
         var dmg = 2 + deadOrcs + (caster._hordaBasicDmgBonus || 0);
+        dmg = hordaComputeRelicDamage(casterName, targetName, dmg, 'basic', false);
         applyDamageWithShield(targetName, dmg, casterName);
         if (typeof applyBleed === 'function') applyBleed(targetName, 1);
         generateChargesInline(casterName, 1);
@@ -352,6 +432,7 @@
             var c = gameState.characters[n];
             var hasBleed = (c.statusEffects || []).some(function (e) { return e && (normAccent(e.name || '') === 'sangrado' || normAccent(e.name || '') === 'hemorragia'); });
             var dmg = hasBleed ? 8 : 4; // "golpe crítico" ≈ daño doble
+            dmg = hordaComputeRelicDamage(casterName, n, dmg, 'special', true);
             applyDamageWithShield(n, dmg, casterName);
             if (typeof applyWeaken === 'function') applyWeaken(n, 3);
         });
@@ -360,6 +441,7 @@
     function ability_altoOrcoOver(casterName, targetName) {
         var crit = Math.random() < 0.5;
         var dmg = crit ? 20 : 10;
+        dmg = hordaComputeRelicDamage(casterName, targetName, dmg, 'over', false);
         applyDamageWithShield(targetName, dmg, casterName);
         addLog('🔪 Guillotina de Hierro: ' + dmg + ' daño a ' + targetName + (crit ? ' (¡CRÍTICO!)' : ''), 'damage');
         if (crit) {
@@ -380,6 +462,7 @@
         aliveOnTeam(enemyTeam).forEach(function (n) {
             var triple = Math.random() < 0.5;
             var dmg = (1 + (caster._hordaBasicDmgBonus || 0)) * (triple ? 3 : 1);
+            dmg = hordaComputeRelicDamage(casterName, n, dmg, 'basic', true);
             applyDamageWithShield(n, dmg, casterName);
             totalDmg += dmg;
         });
@@ -393,8 +476,9 @@
         var enemyTeam = enemyTeamOf(caster.team);
         var totalStolen = 0;
         aliveOnTeam(enemyTeam).forEach(function (n) {
-            applyDamageWithShield(n, 2, casterName);
-            totalStolen += 2;
+            var dmg = hordaComputeRelicDamage(casterName, n, 2, 'special', true);
+            applyDamageWithShield(n, dmg, casterName);
+            totalStolen += dmg;
         });
         caster.hp = Math.min(caster.maxHp, caster.hp + totalStolen);
         addLog('🌊 Ondas sísmicas: 2 daño AOE, ' + casterName + ' roba ' + totalStolen + ' HP en total', 'damage');
@@ -402,7 +486,8 @@
     function ability_giganteSpecial2(casterName, targetName) {
         var caster = gameState.characters[casterName];
         var target = gameState.characters[targetName];
-        applyDamageWithShield(targetName, 4, casterName);
+        var dmg = hordaComputeRelicDamage(casterName, targetName, 4, 'special', false);
+        applyDamageWithShield(targetName, dmg, casterName);
         if (!target) return;
         var buffs = (target.statusEffects || []).filter(function (e) { return e && e.type === 'buff'; });
         var count = buffs.length;
@@ -410,11 +495,12 @@
         if (count > 0 && caster) {
             aliveOnTeam(caster.team).forEach(function (n) { grantCharges(n, 3 * count); });
         }
-        addLog('🦶 Pisotón de Demolición: 4 daño + disipa ' + count + ' buffs (equipo genera ' + (3 * count) + ' cargas c/u)', 'damage');
+        addLog('🦶 Pisotón de Demolición: ' + dmg + ' daño + disipa ' + count + ' buffs (equipo genera ' + (3 * count) + ' cargas c/u)', 'damage');
     }
     function ability_giganteOver(casterName, targetName) {
         var caster = gameState.characters[casterName];
         var dmg = 3 + Math.floor(Math.random() * 8); // 3-10
+        dmg = hordaComputeRelicDamage(casterName, targetName, dmg, 'over', false);
         applyDamageWithShield(targetName, dmg, casterName);
         if (caster && typeof applyHeal === 'function') {
             aliveOnTeam(caster.team).forEach(function (n) { applyHeal(n, dmg); });
@@ -432,6 +518,7 @@
             if (!enemies.length) break;
             var tgt = randomFrom(enemies);
             var dmg = 2 + (caster._hordaBasicDmgBonus || 0);
+            dmg = hordaComputeRelicDamage(casterName, tgt, dmg, 'basic', false);
             applyDamageWithShield(tgt, dmg, casterName);
             var appliedAny = false;
             if (Math.random() < 0.5) { applyBleed(tgt, 1); appliedAny = true; }
@@ -447,6 +534,7 @@
         if (!target) return;
         var noCharges = (target.charges || 0) <= 0;
         var dmg = noCharges ? 6 : 3; // "daño crítico" ≈ doble
+        dmg = hordaComputeRelicDamage(casterName, targetName, dmg, 'special', false);
         applyDamageWithShield(targetName, dmg, casterName);
         if (noCharges) {
             var caster = gameState.characters[casterName];
@@ -486,6 +574,7 @@
         var crit = Math.random() < 0.5;
         var triple = Math.random() < 0.5;
         var dmg = 5 * (crit ? 2 : 1) * (triple ? 3 : 1);
+        dmg = hordaComputeRelicDamage(casterName, targetName, dmg, 'over', false);
         applyDamageWithShield(targetName, dmg, casterName);
         addLog('☠️ Aniquilacion Sangrienta: ' + dmg + ' daño a ' + targetName + (crit ? ' (crítico)' : '') + (triple ? ' (triple)' : ''), 'damage');
     }
@@ -517,7 +606,8 @@
         var enemyTeam = enemyTeamOf(caster.team);
         var totalStolen = 0;
         aliveOnTeam(enemyTeam).forEach(function (n) {
-            applyDamageWithShield(n, 1, casterName);
+            var dmg = hordaComputeRelicDamage(casterName, n, 1, 'special', true);
+            applyDamageWithShield(n, dmg, casterName);
             var c = gameState.characters[n];
             var stolen = Math.min(3, c.charges || 0);
             c.charges = Math.max(0, (c.charges || 0) - stolen);
@@ -528,7 +618,8 @@
         addLog('🩸 Maldición de la Sangre: roba ' + totalStolen + ' cargas del equipo enemigo en total', 'damage');
     }
     function ability_arcanoSpecial2(casterName, targetName) {
-        applyDamageWithShield(targetName, 4, casterName);
+        var dmg = hordaComputeRelicDamage(casterName, targetName, 4, 'special', false);
+        applyDamageWithShield(targetName, dmg, casterName);
         if (typeof applyWeaken === 'function') applyWeaken(targetName, 2);
         if (typeof applyConfusion === 'function') applyConfusion(targetName, 2);
         var caster = gameState.characters[casterName];
@@ -576,10 +667,12 @@
             var basicAb = (c.abilities || []).find(function (a) { return a.type === 'basic'; });
             if (!basicAb) return;
             var dmg = (basicAb.damage || 0) + (c._hordaBasicDmgBonus || 0);
+            dmg = hordaComputeRelicDamage(n, targetName, dmg, 'basic', false);
             if (dmg > 0) applyDamageWithShield(targetName, dmg, n);
             if (basicAb.chargeGain) generateChargesInline(n, basicAb.chargeGain);
         });
-        applyDamageWithShield(targetName, 3, casterName);
+        var _genDmg = hordaComputeRelicDamage(casterName, targetName, 3, 'special', false);
+        applyDamageWithShield(targetName, _genDmg, casterName);
         var target = gameState.characters[targetName];
         if (target && (target.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'provocacion'; })) {
             target.hp = Math.max(0, Math.floor(target.hp * 0.5));
@@ -593,7 +686,8 @@
         var enemyTeam = enemyTeamOf(caster.team);
         var totalDisipados = 0;
         aliveOnTeam(enemyTeam).forEach(function (n) {
-            applyDamageWithShield(n, 3, casterName);
+            var dmg = hordaComputeRelicDamage(casterName, n, 3, 'special', true);
+            applyDamageWithShield(n, dmg, casterName);
             var c = gameState.characters[n];
             var buffs = (c.statusEffects || []).filter(function (e) { return e && e.type === 'buff'; });
             totalDisipados += buffs.length;
@@ -616,7 +710,10 @@
         }
         var enemyTeam = enemyTeamOf(caster.team);
         var enemies = aliveOnTeam(enemyTeam);
-        enemies.forEach(function (n) { applyDamageWithShield(n, 5, casterName); });
+        enemies.forEach(function (n) {
+            var dmg = hordaComputeRelicDamage(casterName, n, 5, 'over', true);
+            applyDamageWithShield(n, dmg, casterName);
+        });
         var remaining = aliveOnTeam(caster.team).filter(function (n) { return n !== casterName; });
         remaining.forEach(function (n) {
             var c = gameState.characters[n];
@@ -643,6 +740,7 @@
             var tgt = randomFrom(enemies);
             var crit = Math.random() < 0.5;
             var hitDmg = dmg * (crit ? 2 : 1);
+            hitDmg = hordaComputeRelicDamage(casterName, tgt, hitDmg, 'basic', false);
             applyDamageWithShield(tgt, hitDmg, casterName);
             if (crit) dmg += 1;
         }
@@ -656,7 +754,10 @@
         Object.keys(gameState.summons || {}).forEach(function (sid) { delete gameState.summons[sid]; });
         var dmg = 4 + 5 * eliminated;
         var enemyTeam = enemyTeamOf(caster.team);
-        aliveOnTeam(enemyTeam).forEach(function (n) { applyDamageWithShield(n, dmg, casterName); });
+        aliveOnTeam(enemyTeam).forEach(function (n) {
+            var hitDmg = hordaComputeRelicDamage(casterName, n, dmg, 'special', true);
+            applyDamageWithShield(n, hitDmg, casterName);
+        });
         addLog('🌪️ Furia de la Horda: elimina ' + eliminated + ' invocaciones, ' + dmg + ' daño AOE', 'damage');
     }
     function ability_warmasterSpecial2(casterName, targetName) {
@@ -666,6 +767,7 @@
         var mult = hpPct >= 0.5 ? 3 : 1;
         var baseDmg = target._hordaWarmasterLanceBase || 5;
         var dmg = baseDmg * mult;
+        dmg = hordaComputeRelicDamage(casterName, targetName, dmg, 'special', false);
         // Ignora Escudo/Reflejar/Escudo Sagrado: aplicar directo al HP, no vía applyDamageWithShield (que respeta escudo)
         target.hp = Math.max(0, target.hp - dmg);
         addLog('🗡️ Lanza de Oscuridad perforadora: ' + dmg + ' daño directo a ' + targetName + ' (ignora Escudo/Reflejar/Escudo Sagrado)', 'damage');
@@ -686,7 +788,8 @@
         var enemies = aliveOnTeam(enemyTeam);
         var count = 0;
         enemies.forEach(function (n) {
-            applyDamageWithShield(n, 10, casterName);
+            var dmg = hordaComputeRelicDamage(casterName, n, 10, 'over', true);
+            applyDamageWithShield(n, dmg, casterName);
             if (typeof applyStun === 'function') applyStun(n, 2);
             count++;
         });
@@ -699,6 +802,7 @@
         var caster = gameState.characters[casterName];
         if (!caster) return;
         var dmg = 4 + (caster._hordaBasicDmgBonus || 0);
+        dmg = hordaComputeRelicDamage(casterName, targetName, dmg, 'basic', false);
         applyDamageWithShield(targetName, dmg, casterName);
         if (typeof applyStun === 'function') applyStun(targetName, 2);
         generateChargesInline(casterName, 2);
@@ -712,6 +816,7 @@
             var c = gameState.characters[n];
             var hadStun = (c.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'aturdimiento'; });
             var dmg = 3 + (hadStun ? 7 : 0);
+            dmg = hordaComputeRelicDamage(casterName, n, dmg, 'special', true);
             applyDamageWithShield(n, dmg, casterName);
             if (typeof applyStun === 'function') applyStun(n, 1);
         });
@@ -736,6 +841,7 @@
         var enemyTeam = enemyTeamOf(caster.team);
         aliveOnTeam(enemyTeam).forEach(function (n) {
             var dmg = 5 + Math.floor(Math.random() * 16); // 5-20
+            dmg = hordaComputeRelicDamage(casterName, n, dmg, 'over', true);
             applyDamageWithShield(n, dmg, casterName);
             if (Math.random() < 0.10) {
                 var c = gameState.characters[n];
