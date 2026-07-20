@@ -98,14 +98,11 @@
                     addLog('💀 Shadowmourne: ' + smC + ' contador(es) — +' + (3 + smC) + ' daño, +' + smC + ' cargas', 'buff');
                 }
             }
-            if (rd.effect === 'espada_nichirin_negra' && targetName) {
-                var tChar = gameState.characters[targetName];
-                var hasSolar = tChar && (tChar.statusEffects || []).some(function (e) { return e && e.name && e.name.toLowerCase().indexOf('solar') !== -1; });
-                if (hasSolar) {
-                    dmg *= 2;
-                    addLog('🗡️ Espada Nichirin Negra: daño doble vs Quemadura Solar (' + dmg + ')', 'buff');
-                }
-            }
+            // NOTA: Espada Nichirin Negra ya NO se calcula aquí — ahora vive de forma genérica
+            // dentro de applyDamageWithShield (summons.js), que estas 32 habilidades ya llaman
+            // directamente, así que aplica igual sin necesidad de duplicarlo aquí (evita doble-doblar
+            // el daño). De paso, esto también arregla que los Orcos nunca aplicaban la Quemadura
+            // Solar en sí — solo tenían el bono de daño, ahora tienen el efecto completo.
         });
         return Math.max(0, Math.floor(dmg));
     }
