@@ -1095,6 +1095,34 @@
                 ]
             },
 
+            'Thanatos': {
+                hp: 25, maxHp: 25, speed: 94, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                iraDivinaCounters: 0,
+                portrait: 'https://i.ibb.co/GvGVmRDs/Thanatos-1.jpg',
+                passive: { name: 'Mirada del Dios de la Muerte', description: 'Cada vez que un enemigo ejecuta un movimiento especial, Thanatos acumula un contador "Ira Divina". Al llegar a 5 contadores, los consume y ejecuta el Over (Terrible Providencia) de inmediato, sin esperar su turno. Mientras tenga 2 o más contadores de "Ira Divina", Thanatos es inmune a debuffs.' },
+                abilities: [
+                    { name: 'Castigo Divino',              type: 'basic',   cost: 0,  chargeGain: 2, damage: 2,  target: 'single', effect: 'thanatos_castigo_divino',  description: 'El daño base se incrementa +1 por cada Buff activo en el objetivo golpeado. Si este movimiento elimina al objetivo, revive a un aliado aleatorio eliminado con 100% de su HP y 20 cargas.' },
+                    { name: 'Llamado de las Almas Malditas', type: 'special', cost: 5,  chargeGain: 0, damage: 0,  target: 'aoe',    effect: 'thanatos_llamado_almas',   description: 'Elimina todas las cargas de los enemigos. Por cada 20 cargas eliminadas en total, elimina a un enemigo aleatorio.' },
+                    { name: 'Sendero de los Dioses',       type: 'special', cost: 8,  chargeGain: 0, damage: 0,  target: 'self',   effect: 'thanatos_sendero_dioses',  description: 'Invoca el Campo Sendero de los Dioses por 3 rondas. Thanatos se aplica Buff Protección Sagrada 3 turnos.' },
+                    { name: 'Terrible Providencia',        type: 'over',    cost: 13, chargeGain: 0, damage: 10, target: 'aoe',    effect: 'thanatos_terrible_providencia', description: 'Disipa todos los Buffs enemigos y causa +3 daño adicional a cada enemigo por cada Buff disipado. Aplica Debilitar 3 turnos y Miedo 3 turnos a los golpeados.' }
+                ]
+            },
+
+            'Tokito': {
+                hp: 20, maxHp: 20, speed: 88, charges: 0, team: 'team1',
+                statusEffects: [{ name: 'Esquiva Area', type: 'buff', duration: 999, permanent: true, passiveHidden: false, emoji: '💨' }],
+                shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/dskCbGYb/image.png',
+                passive: { name: 'Pilar de la Niebla', description: 'Efecto pasivo Esquiva Área. Al inicio de cada ronda, 50% de probabilidad de aplicar Buff Esquivar a cada aliado. Si Tokito golpea un objetivo con debuff Confusión, el daño es crítico. Si golpea un objetivo con Ceguera, el daño es triple.' },
+                abilities: [
+                    { name: 'Corte de Niebla',                  type: 'basic',   cost: 0,  chargeGain: 3, damage: 3,  target: 'single', effect: 'tokito_corte_niebla',   description: '' },
+                    { name: 'Mar de Nubes',                     type: 'special', cost: 6,  chargeGain: 0, damage: 2,  target: 'aoe',     effect: 'tokito_mar_nubes',      description: '50% de probabilidad de aplicar Confusión. 50% de probabilidad de aplicar Ceguera.' },
+                    { name: 'Luna Negra',                       type: 'special', cost: 8,  chargeGain: 0, damage: 4,  target: 'aoe',     effect: 'tokito_luna_negra',     description: 'Este ataque ignora Buff Esquivar y Buff Esquiva Área.' },
+                    { name: 'Séptima Postura: Niebla Oscura',   type: 'over',    cost: 15, chargeGain: 0, damage: 12, target: 'single',  effect: 'tokito_septima_postura', description: 'Tokito gana 1 turno adicional si el objetivo tenía Confusión activa antes de este ataque. Genera 15 cargas si tenía Ceguera activa antes de este ataque.' }
+                ]
+            },
+
         };
         // ==================== RELIQUIAS ====================
         const RELICS_DATA = {
