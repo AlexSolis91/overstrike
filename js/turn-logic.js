@@ -691,9 +691,15 @@
                     _liveOverLastTs = ov.ts;
                     // Ignorar mis propios pushes
                     if (ov.pushedBy && currentUser && ov.pushedBy === currentUser.uid) return;
-                    // Reproducir animación de Over en la tarjeta del personaje que lo ejecutó
-                    if (ov.charName && typeof _animCard === 'function') {
-                        _animCard(ov.charName, 'anim-over', 700);
+                    // Reproducir la MISMA cinemática completa que ve quien ejecutó el Over
+                    // (antes solo se sincronizaba una animación mínima en la tarjeta, así que
+                    // el rival nunca veía la pantalla dramática del Over, solo quien lo usaba).
+                    var _loChar = gameState.characters[ov.charName];
+                    var _loTeam = _loChar ? _loChar.team : 'team1';
+                    if (ov.charName && typeof _showOverCinematic === 'function') {
+                        _showOverCinematic(ov.charName, ov.abilityName || '', ov.abilityEffect || '', _loTeam, function() {});
+                    } else if (ov.charName && typeof _animCard === 'function') {
+                        _animCard(ov.charName, 'anim-over', 700); // respaldo si la cinemática no está disponible
                     }
                     // Efecto de clima AOE si aplica
                     if (typeof _triggerAOEWeather === 'function' && ov.abilityTarget === 'aoe') {
