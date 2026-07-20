@@ -2394,6 +2394,21 @@
                         addLog('🐍 Parsel: Veneno 1T aplicado a todo el equipo enemigo', 'debuff');
                     }
 
+                    // ── PILAR DE LA NIEBLA (Tokito): inicio de ronda → 50% Esquivar 1T a cada aliado ──
+                    for (const _tkN in gameState.characters) {
+                        const _tkC = gameState.characters[_tkN];
+                        if (!_tkC || _tkC.isDead || _tkC.hp <= 0 || !_tkC.passive || _tkC.passive.name !== 'Pilar de la Niebla') continue;
+                        const _tkAllies = Object.keys(gameState.characters).filter(function(n){
+                            const _c = gameState.characters[n]; return _c && _c.team === _tkC.team && !_c.isDead && _c.hp > 0;
+                        });
+                        _tkAllies.forEach(function(n) {
+                            if (Math.random() < 0.50) {
+                                if (typeof applyBuff === 'function') applyBuff(n, { name: 'Esquivar', type: 'buff', duration: 1, emoji: '💨' });
+                                addLog('🌫️ Pilar de la Niebla: ' + n + ' recibe Esquivar 1T', 'buff');
+                            }
+                        });
+                    }
+
                     // ── DESTELLO DE FAWKES (Fawkes): inicio de ronda → 80% Ceguera 1T a cada enemigo ──
                     for (const _fwId in (gameState.summons||{})) {
                         const _fwS = gameState.summons[_fwId];
@@ -2873,6 +2888,7 @@
                 // Artes de la Sangre Oscura — se ejecuta ANTES de procesar Veneno/Sangrado/etc.
                 // y antes de que expiren los buffs, para poder detectar cuáles están por expirar)
                 if (typeof window.hordaOnRoundEnd === 'function') window.hordaOnRoundEnd();
+                if (typeof window.tickActiveField === 'function') window.tickActiveField();
 
                 // ── VESTIDURA ARCANA: al final de cada ronda, el portador recupera 30% de su HP máx ──
                 for (const _vaN in gameState.characters) {
