@@ -1218,11 +1218,9 @@
                         addLog('🗡️ Colmillo de Vasilisco: 1 stack de Veneno aplicado a ' + targetName, 'debuff');
                     }
 
-                    // ESPADA NICHIRIN NEGRA: aplica Quemadura Solar al objetivo
-                    if (_rd.effect === 'espada_nichirin_negra' && _postTgt && !_postTgt.isDead) {
-                        if (typeof applySolarBurn === 'function') applySolarBurn(targetName, 10, 2);
-                        addLog('🗡️ Espada Nichirin Negra: Quemadura Solar aplicada a ' + targetName, 'debuff');
-                    }
+                    // ESPADA NICHIRIN NEGRA: ahora se maneja dentro de applyDamageWithShield (summons.js)
+                    // para que funcione en cada golpe individual, no solo contra un único objetivo —
+                    // antes esto nunca se disparaba en ataques AOE/multi-golpe como Dragon's Fear de Antares.
 
                     // PALANTIR: aplica debuff Posesión al objetivo golpeado
                     if (_rd.effect === 'palantir' && _postTgt && !_postTgt.isDead) {
@@ -1383,15 +1381,7 @@
                             addLog('💀 Shadowmourne: ' + _smC + ' contador(es) — +' + (3+_smC) + ' daño total, +' + _smC + ' cargas', 'buff');
                         }
                     }
-                    // ── ESPADA NICHIRIN NEGRA: daño doble a objetivos con Quemadura Solar ──
-                    if (_rd.effect === 'espada_nichirin_negra' && finalDamage > 0 && targetName) {
-                        const _ennTgt = gameState.characters[targetName];
-                        const _ennHasQS = _ennTgt && (_ennTgt.statusEffects||[]).some(function(e){ return e && e.name && e.name.toLowerCase().includes('solar'); });
-                        if (_ennHasQS) {
-                            finalDamage *= 2;
-                            addLog('🗡️ Espada Nichirin Negra: daño doble vs Quemadura Solar (' + finalDamage + ')', 'buff');
-                        }
-                    }
+                    // ── ESPADA NICHIRIN NEGRA: ahora se maneja dentro de applyDamageWithShield (summons.js) ──
                     // ── PALANTIR: ignora Provocación y Sigilo (set flag) ──
                     if (_rd.effect === 'palantir') {
                         attacker._ignoreTauntNextAttack = true;
