@@ -406,12 +406,12 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/pvhstP12/Captura-de-pantalla-2026-04-22-111740.png',
                 transformPortrait: 'https://i.ibb.co/pvhstP12/Captura-de-pantalla-2026-04-22-111740.png',
-                passive: { name: 'Cenizas del Fenix', description: 'Revive la ronda siguiente con 100% HP y 10 cargas (genera +5 cargas al equipo aliado al revivir). Enemigos con Quemaduras activas solo pueden atacar a Ikki.' },
+                passive: { name: 'Cenizas del Fenix', description: 'Al final de la próxima ronda después de que Ikki de Fenix fue eliminado, revive con 100% de HP y 10 cargas. Cada vez que Ikki revive, genera 5 cargas para el equipo aliado.' },
                 abilities: [
-                    { name: 'Phoenix Genma Ken', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'phoenix_genma_ken_ikki', description: 'Causa 1 daño. Aplica Quemadura 2HP. 50%: si el objetivo ya tenía Quemadura, roba todas sus cargas.' },
-                    { name: 'Hou Yoku Tenshou', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'aoe', effect: 'hou_yoku_tenshou_ikki', description: 'Causa 2 AOE. Aplica Quemadura 5HP a los enemigos NO golpeados. Elimina 3 cargas a los enemigos CON Quemadura golpeados.' },
-                    { name: 'Ilusión Diabólica del Fénix', type: 'special', cost: 8, chargeGain: 0, damage: 5, target: 'single', effect: 'ilusion_diabolica_ikki', description: 'Causa 5 daño. Disipa todos los Buffs del objetivo. Por cada Buff disipado, genera 3 cargas al equipo aliado.' },
-                    { name: 'El Despertar del Fénix Inmortal', type: 'over', cost: 10, chargeGain: 0, damage: 10, target: 'single', effect: 'despertar_fenix_ikki', description: 'Causa 10 daño. Ignora Provocacion y Mega Provocacion. Si elimina al objetivo, el equipo aliado genera 10 cargas.' }
+                    { name: 'Phoenix Genma Ken', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'phoenix_genma_ken_ikki', description: 'Aplica debuff Quemaduras de 2 HP sobre el objetivo. 50%: si el objetivo ya tenía debuff Quemadura activo antes de este ataque, aplica Quemaduras 2 HP sobre cada enemigo.' },
+                    { name: 'Hou Yoku Tenshou', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'aoe', effect: 'hou_yoku_tenshou_ikki', description: 'Si el enemigo golpeado por este ataque tiene debuff Quemaduras activo, aplica Mega Posesión sobre ese enemigo.' },
+                    { name: 'Ilusión Diabólica del Fénix', type: 'special', cost: 8, chargeGain: 0, damage: 5, target: 'single', effect: 'ilusion_diabolica_ikki', description: 'Cada vez que Ikki de Fenix revive, incrementa en +3 el daño base de este ataque. Si golpea a un enemigo con Quemaduras causa 50% más de daño. Si golpea a un enemigo con Mega Posesión causa daño triple.' },
+                    { name: 'El Despertar del Fénix Inmortal', type: 'over', cost: 8, chargeGain: 0, damage: 8, target: 'single', effect: 'despertar_fenix_ikki', description: 'Causa daño crítico si el objetivo tiene debuff activo. Ignora Provocación y Mega Provocación. Si elimina al objetivo, el equipo aliado genera 8 cargas (16 si el objetivo eliminado tenía Quemaduras activo).' }
                 ]
             },
 
