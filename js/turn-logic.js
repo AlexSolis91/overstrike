@@ -3327,7 +3327,7 @@
                     }
                 }
 
-                // PASIVA CENIZAS DEL FÉNIX (Ikki): revive la PRÓXIMA ronda con 100% HP y 10 cargas
+                // PASIVA CENIZAS DEL FÉNIX (Ikki): revive al FINAL de la PRÓXIMA ronda con 100% HP y 10 cargas
                 for (const _ikkiN of ['Ikki de Fenix', 'Ikki de Fenix v2']) {
                     const ikki = gameState.characters[_ikkiN];
                     if (!ikki) continue;
@@ -3335,15 +3335,17 @@
                         // Marcar la ronda de muerte (solo una vez)
                         if (!ikki.deathRound) ikki.deathRound = gameState.currentRound;
                     }
-                    // Revivir DOS rondas después: si murió en ronda 4, revive al inicio de ronda 6
+                    // Revive al final de la ronda SIGUIENTE a la que murió: si murió en ronda 4,
+                    // revive al final de la ronda 5 (no en la 6 — antes eran 2 rondas de espera).
                     if ((ikki.isDead || ikki.hp <= 0) && ikki.deathRound &&
-                        gameState.currentRound >= ikki.deathRound + 2 && !ikki.fenixRevived) {
+                        gameState.currentRound >= ikki.deathRound + 1 && !ikki.fenixRevived) {
                         ikki.fenixRevived = true;
                         ikki.hp = ikki.maxHp; // 100% HP
                         ikki.charges = 10;    // 10 cargas
                         ikki.isDead = false;
                         ikki.statusEffects = [];
                         ikki.deathRound = null;
+                        ikki.fenixReviveCount = (ikki.fenixReviveCount || 0) + 1; // usado por Ilusión Diabólica del Fénix
                         if (!gameState.turnOrder.includes(_ikkiN)) gameState.turnOrder.push(_ikkiN);
                         addLog('🦅 ¡Cenizas del Fénix! ' + _ikkiN + ' revive con ' + ikki.hp + ' HP y 10 cargas', 'heal');
                         if (typeof _animCard === 'function') _animCard(_ikkiN, 'anim-transform', 700);
