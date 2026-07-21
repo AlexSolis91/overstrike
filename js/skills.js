@@ -8429,6 +8429,20 @@
                     if (typeof _animCard === 'function') _animCard(gameState.selectedCharacter, 'anim-charge', 500);
                     if (typeof _triggerChargePop === 'function') _triggerChargePop(gameState.selectedCharacter);
                     triggerIgrisPassive(gameState.selectedCharacter);
+
+                    // ── FAJA DE LA AGONÍA: este es el flujo principal de chargeGain del atacante.
+                    // generateChargesInline() tiene el hook pero no se llama aquí — se corrige aquí
+                    // para que la Faja reaccione cuando el EQUIPO CONTRARIO genera cargas por ataque.
+                    if (!passiveExecuting) {
+                        for (const _fajaN2 in gameState.characters) {
+                            const _fajaC2 = gameState.characters[_fajaN2];
+                            if (!_fajaC2 || _fajaC2.isDead || _fajaC2.hp <= 0) continue;
+                            if (_fajaC2.team === attacker.team) continue; // solo el equipo contrario
+                            if (!(_fajaC2.equippedRelics||[]).includes('Faja de la Agonia')) continue;
+                            _fajaC2.charges = Math.min(20, (_fajaC2.charges||0) + 2);
+                            addLog('🩸 Faja de la Agonía: ' + _fajaN2 + ' +2 cargas (' + gameState.selectedCharacter + ' generó cargas)', 'buff');
+                        }
+                    }
                 } else if (finalChargeGain > 0 && hasFear) {
                     addLog(`😱 ${gameState.selectedCharacter} no puede generar cargas (Miedo)`, 'damage');
                 }
