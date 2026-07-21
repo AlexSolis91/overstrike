@@ -1254,6 +1254,37 @@
                 addLog('🌟 The One: Escanor reduce 50% el daño recibido (' + damage + ' HP)', 'buff');
             }
 
+            // ── ORGULLO DEL LEÓN (Escanor): -2 daño recibido por cada Quemadura Solar activa en el equipo atacante ──
+            if (!passiveExecuting && damage > 0 && target.passive && target.passive.name === 'Orgullo del León') {
+                const _olgAtkerTeam = attackerName ? (gameState.characters[attackerName] ? gameState.characters[attackerName].team : null) : null;
+                if (_olgAtkerTeam && _olgAtkerTeam !== target.team) {
+                    const _olgQsActive = Object.keys(gameState.characters).filter(function(n){
+                        const c = gameState.characters[n];
+                        return c && c.team === _olgAtkerTeam && !c.isDead && c.hp > 0 &&
+                               (c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'quemadura solar'; });
+                    }).length;
+                    if (_olgQsActive > 0) {
+                        const _olgReduc = _olgQsActive * 2;
+                        damage = Math.max(0, damage - _olgReduc);
+                        addLog('🦁 Orgullo del León: daño reducido -' + _olgReduc + ' (' + _olgQsActive + ' QS activas → ' + damage + ' daño restante)', 'buff');
+                    }
+                }
+            }
+
+            // ── ORGULLO DEL LEÓN (Escanor): enemigo con QS ataca a Escanor → Mega Provocación 3T sobre Escanor ──
+            // (convierte a Escanor en el único objetivo posible los 3 turnos siguientes)
+            if (!passiveExecuting && damage > 0 && target.passive && target.passive.name === 'Orgullo del León' && attackerName) {
+                const _olgAtk = gameState.characters[attackerName];
+                const _olgAtkHasQS = _olgAtk && ((_olgAtk.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'quemadura solar'; }));
+                if (_olgAtkHasQS) {
+                    const _alreadyMegaProv = (target.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'mega provocacion'; });
+                    if (!_alreadyMegaProv) {
+                        if (typeof applyBuff === 'function') applyBuff(targetName, { name: 'Mega Provocacion', type: 'buff', duration: 3, emoji: '🔥🦁', megaProvocacion: true });
+                        addLog('🦁 Orgullo del León: ' + attackerName + ' tiene QS y ataca a Escanor → Mega Provocación 3T', 'buff');
+                    }
+                }
+            }
+
             // ── MUNDO TRANSPARENTE: si la pasiva del objetivo está bloqueada por Yorichi, saltar pasivas reactivas ──
             const _yorichiPassiveBlocked = !!(target && target._passiveBlockedByYorichi);
 
