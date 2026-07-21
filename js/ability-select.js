@@ -119,17 +119,19 @@
                 const rdnBypass = !!((_rdnAttacker && _rdnAttacker.passive && _rdnAttacker.passive.name === 'Invierno Eterno'));
                 // GOLPE GRAVE (Saitama): ignora Provocacion y MegaProvocacion
                 const golpeGraveBypass = ability.effect === 'golpe_grave';
+                // EL DESPERTAR DEL FÉNIX INMORTAL (Ikki de Fenix): ignora Provocación y MegaProvocación
+                const ikkiOverBypass = ability.effect === 'despertar_fenix_ikki';
                 // SKEGGÖX (Reliquia): ignora Provocacion y MegaProvocacion en el turno adicional
                 // El flag se mantiene activo durante la selección y se consume en el ataque (summons.js)
                 const skeggoxBypass = !!(_rdnAttacker && _rdnAttacker._ignoreTauntNextAttack);
                 // NO consumir el flag aquí — se consume después de completar el ataque del turno extra
-                const hasMegaProv = !sauronBypass && !ivarBypass && !rdnBypass && !golpeGraveBypass && !skeggoxBypass && typeof checkKamishMegaProvocation === 'function' && checkKamishMegaProvocation(enemyTeam);
-                const hasProvocacion = !sauronBypass && !ivarBypass && !rdnBypass && !golpeGraveBypass && !skeggoxBypass && !hasMegaProv && Object.keys(gameState.characters).some(function(n) {
+                const hasMegaProv = !sauronBypass && !ivarBypass && !rdnBypass && !golpeGraveBypass && !ikkiOverBypass && !skeggoxBypass && typeof checkKamishMegaProvocation === 'function' && checkKamishMegaProvocation(enemyTeam);
+                const hasProvocacion = !sauronBypass && !ivarBypass && !rdnBypass && !golpeGraveBypass && !ikkiOverBypass && !skeggoxBypass && !hasMegaProv && Object.keys(gameState.characters).some(function(n) {
                     const c = gameState.characters[n];
                     return c && c.team === enemyTeam && !c.isDead && c.hp > 0 &&
                         (c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'provocacion'; });
                 });
-                if (!hasMegaProv && !hasProvocacion && !sauronBypass && !ivarBypass && !rdnBypass && !golpeGraveBypass && !skeggoxBypass) {
+                if (!hasMegaProv && !hasProvocacion && !sauronBypass && !ivarBypass && !rdnBypass && !golpeGraveBypass && !ikkiOverBypass && !skeggoxBypass) {
                     // Check if every alive enemy has Sigilo
                     const aliveEnemies = Object.keys(gameState.characters).filter(function(n) {
                         const c = gameState.characters[n];
@@ -287,10 +289,12 @@
                 const rdnActive = !!(_rdnAtkChar && _rdnAtkChar.passive && _rdnAtkChar.passive.name === 'Invierno Eterno');
                 // GOLPE GRAVE (Saitama): ignora Provocación y MegaProvocación
                 const golpeGraveActive = !!(gameState.selectedAbility && gameState.selectedAbility.effect === 'golpe_grave');
+                // EL DESPERTAR DEL FÉNIX INMORTAL (Ikki de Fenix): ignora Provocación y MegaProvocación
+                const ikkiOverActive = !!(gameState.selectedAbility && gameState.selectedAbility.effect === 'despertar_fenix_ikki');
 
                 // VERIFICAR MEGA PROVOCACIÓN DE KAMISH/DROGON/ETC PRIMERO
                 const kamishData = checkKamishMegaProvocation(targetTeam);
-                if (kamishData && !sauronActive && !ivarActive && !rdnActive && !golpeGraveActive) {
+                if (kamishData && !sauronActive && !ivarActive && !rdnActive && !golpeGraveActive && !ikkiOverActive) {
                     if (kamishData.isCharacter) {
                         // MegaProv is on a CHARACTER (Darth Vader, Sauron, etc.)
                         const mpName = kamishData.characterName;
@@ -324,12 +328,12 @@
                 
                 // MEGA PROVOCACIÓN tiene prioridad sobre Provocación
                 // Verificar MegaProv PRIMERO — si existe, Provocación se ignora
-                const megaProvFirst = !sauronActive && !ivarActive && !rdnActive && !golpeGraveActive ? checkKamishMegaProvocation(targetTeam) : null;
+                const megaProvFirst = !sauronActive && !ivarActive && !rdnActive && !golpeGraveActive && !ikkiOverActive ? checkKamishMegaProvocation(targetTeam) : null;
 
                 // VERIFICAR PROVOCACIÓN — solo si NO hay Mega Provocación activa
                 let tauntTarget = null;
 
-                if (!sauronActive && !ivarActive && !rdnActive && !golpeGraveActive && !megaProvFirst) {
+                if (!sauronActive && !ivarActive && !rdnActive && !golpeGraveActive && !ikkiOverActive && !megaProvFirst) {
                     for (let n in gameState.characters) {
                         const c = gameState.characters[n];
                         if (!c || c.team !== targetTeam || c.isDead || c.hp <= 0) continue;
@@ -351,7 +355,7 @@
                     }
                 }
 
-                if (tauntTarget && !sauronActive && !ivarActive && !rdnActive && !golpeGraveActive && !megaProvFirst) {
+                if (tauntTarget && !sauronActive && !ivarActive && !rdnActive && !golpeGraveActive && !ikkiOverActive && !megaProvFirst) {
                     const tauntChar = gameState.characters[tauntTarget];
 
                     title.textContent = '⚠️ Provocación Activa — Debes Atacar a ' + tauntTarget;
