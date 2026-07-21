@@ -4243,8 +4243,25 @@
             // Check slot is empty
             if (slots[slotKey]) { alert('Este slot ya está ocupado. Primero remueve la reliquia actual.'); return false; }
 
-            // Duplicate check
+            // Duplicate check (en este mismo personaje)
             if (Object.values(slots).includes(relicName)) { alert('Ya tienes esta reliquia equipada en este personaje.'); return false; }
+
+            // Unicidad entre personajes: solo Armas (excepto Arco/Escudo) y Joyas pueden repetirse
+            // en distintos personajes. Equipación, Arcos y Escudos NO pueden repetirse — si ya está
+            // equipada en OTRO personaje tuyo, no se puede volver a equipar hasta quitarla de ahí.
+            const canDuplicateAcrossChars = (cat === 'Arma' && subtype !== 'Arco' && subtype !== 'Escudo') || cat === 'Joya';
+            if (!canDuplicateAcrossChars) {
+                const allCharsSnap = await db.ref('users/' + uid + '/characters').once('value');
+                const allChars = allCharsSnap.val() || {};
+                for (const _otherChar in allChars) {
+                    if (_otherChar === charName) continue;
+                    const _otherSlots = (allChars[_otherChar] && allChars[_otherChar].slots_v2) || {};
+                    if (Object.values(_otherSlots).includes(relicName)) {
+                        alert('❌ ' + relicName + ' ya está equipada en ' + _otherChar + '. Este tipo de reliquia no se puede repetir en varios personajes — quítala de ahí primero.');
+                        return false;
+                    }
+                }
+            }
 
             // Rules for Arma slots
             if (slotCat === 'Arma') {
