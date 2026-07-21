@@ -6022,36 +6022,18 @@
                         addLog('☀️ Cruel Sun: QS extendida a ' + _extra + ' (objetivo ya tenía QS)', 'debuff');
                     }
                 }
-                // Pasiva Orgullo del León: 50% ganar 1 carga al aplicar QS
-                if (_csAtk && Math.random() < 0.50) {
-                    _csAtk.charges = Math.min(20, (_csAtk.charges||0) + 1);
-                    addLog('🦁 Orgullo del León: Escanor gana 1 carga (QS aplicada)', 'buff');
-                }
+                addLog('☀️ Cruel Sun: QS 2T aplicada a ' + targetName, 'debuff');
 
-            } else if (ability.effect === 'pride_flare_escanor') {
-                // ESCANOR — Pride Flare: 3 daño + daño directo x QS activas a 3 aleatorios + cargas x QS
-                const _pfAtk = gameState.characters[gameState.selectedCharacter];
-                const _pfETeam = _pfAtk ? (_pfAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+            } else if (ability.effect === 'sacred_sword_escanor') {
+                // ESCANOR — Sacred Sword Escanor: 3 daño. Si objetivo tenía QS activa → Mega Aturdimiento. Ignora Prov/MegaProv.
+                const _ssHadQS = hasStatusEffect(targetName, 'Quemadura Solar');
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                // Contar QS activas en equipo enemigo
-                const _qsCount = Object.keys(gameState.characters).filter(function(n){
-                    const c = gameState.characters[n];
-                    return c && c.team === _pfETeam && !c.isDead && c.hp > 0 && hasStatusEffect(n, 'Quemadura Solar');
-                }).length;
-                if (_qsCount > 0) {
-                    // +1 daño directo a 3 enemigos aleatorios por cada QS
-                    const _pfEnemies = Object.keys(gameState.characters).filter(function(n){
-                        const c = gameState.characters[n]; return c && c.team === _pfETeam && !c.isDead && c.hp > 0;
-                    });
-                    const _pfTargets = _pfEnemies.sort(function(){ return Math.random()-0.5; }).slice(0, 3);
-                    _pfTargets.forEach(function(n){
-                        applyDamageWithShield(n, _qsCount, gameState.selectedCharacter);
-                        addLog('☀️ Pride Flare: ' + _qsCount + ' daño directo a ' + n + ' (' + _qsCount + ' QS activas)', 'damage');
-                    });
-                    // +3 cargas por cada QS
-                    if (_pfAtk) {
-                        _pfAtk.charges = Math.min(20, (_pfAtk.charges||0) + (_qsCount * 3));
-                        addLog('☀️ Pride Flare: +' + (_qsCount*3) + ' cargas (' + _qsCount + ' QS activas)', 'buff');
+                addLog('🗡️ Sacred Sword Escanor: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (_ssHadQS) {
+                    const _ssTgt = gameState.characters[targetName];
+                    if (_ssTgt && !_ssTgt.isDead && _ssTgt.hp > 0) {
+                        applyDebuff(targetName, { name: 'Mega Aturdimiento', type: 'debuff', duration: 1, emoji: '💫', megaStun: true });
+                        addLog('🗡️ Sacred Sword Escanor: Mega Aturdimiento aplicado a ' + targetName + ' (tenía QS)', 'debuff');
                     }
                 }
 
