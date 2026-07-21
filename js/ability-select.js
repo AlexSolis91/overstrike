@@ -120,7 +120,7 @@
                 // GOLPE GRAVE (Saitama): ignora Provocacion y MegaProvocacion
                 const golpeGraveBypass = ability.effect === 'golpe_grave';
                 // EL DESPERTAR DEL FÉNIX INMORTAL (Ikki de Fenix): ignora Provocación y MegaProvocación
-                const ikkiOverBypass = ability.effect === 'despertar_fenix_ikki';
+                const ikkiOverBypass = ability.effect === 'despertar_fenix_ikki' || ability.effect === 'sacred_sword_escanor';
                 // SKEGGÖX (Reliquia): ignora Provocacion y MegaProvocacion en el turno adicional
                 // El flag se mantiene activo durante la selección y se consume en el ataque (summons.js)
                 const skeggoxBypass = !!(_rdnAttacker && _rdnAttacker._ignoreTauntNextAttack);
@@ -290,7 +290,7 @@
                 // GOLPE GRAVE (Saitama): ignora Provocación y MegaProvocación
                 const golpeGraveActive = !!(gameState.selectedAbility && gameState.selectedAbility.effect === 'golpe_grave');
                 // EL DESPERTAR DEL FÉNIX INMORTAL (Ikki de Fenix): ignora Provocación y MegaProvocación
-                const ikkiOverActive = !!(gameState.selectedAbility && gameState.selectedAbility.effect === 'despertar_fenix_ikki');
+                const ikkiOverActive = !!(gameState.selectedAbility && (gameState.selectedAbility.effect === 'despertar_fenix_ikki' || gameState.selectedAbility.effect === 'sacred_sword_escanor'));
 
                 // VERIFICAR MEGA PROVOCACIÓN DE KAMISH/DROGON/ETC PRIMERO
                 const kamishData = checkKamishMegaProvocation(targetTeam);
