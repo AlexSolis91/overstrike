@@ -4249,7 +4249,7 @@
             // Unicidad entre personajes: solo Armas (excepto Arco/Escudo) y Joyas pueden repetirse
             // en distintos personajes. Equipación, Arcos y Escudos NO pueden repetirse — si ya está
             // equipada en OTRO personaje tuyo, no se puede volver a equipar hasta quitarla de ahí.
-            const canDuplicateAcrossChars = (cat === 'Arma' && subtype !== 'Arco' && subtype !== 'Escudo') || cat === 'Joya';
+            const canDuplicateAcrossChars = cat === 'Arma' || cat === 'Joya'; // solo Equipacion no puede repetirse
             if (!canDuplicateAcrossChars) {
                 const allCharsSnap = await db.ref('users/' + uid + '/characters').once('value');
                 const allChars = allCharsSnap.val() || {};
