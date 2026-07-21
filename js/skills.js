@@ -9160,25 +9160,28 @@
             // ══════════════════════════════════════════════════════
 
             } else if (ability.effect === 'phoenix_genma_ken_ikki') {
-                const _pgAtk = gameState.characters[gameState.selectedCharacter];
                 const _pgTgt = gameState.characters[targetName];
                 const _pgHadBurn = _pgTgt && hasStatusEffect(targetName, 'Quemadura');
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 addLog('🔥 Phoenix Genma Ken: ' + finalDamage + ' daño a ' + targetName, 'damage');
-                if (_pgTgt && !_pgTgt.isDead && _pgTgt.hp > 0) applyFlatBurn(targetName, 2, 2);
-                if (_pgHadBurn && Math.random() < 0.50 && _pgTgt && _pgAtk) {
-                    const _stolen = _pgTgt.charges||0;
-                    if (_stolen > 0) {
-                        _pgAtk.charges = Math.min(20, (_pgAtk.charges||0) + _stolen);
-                        _pgTgt.charges = 0;
-                        addLog('🔥 Phoenix Genma Ken: roba ' + _stolen + ' cargas a ' + targetName, 'buff');
+                if (_pgTgt && !_pgTgt.isDead && _pgTgt.hp > 0) {
+                    applyFlatBurn(targetName, 2, 2);
+                    addLog('🔥 Phoenix Genma Ken: Quemaduras 2HP a ' + targetName, 'debuff');
+                }
+                if (_pgHadBurn && Math.random() < 0.50) {
+                    const _pgAtk = gameState.characters[gameState.selectedCharacter];
+                    const _pgETeam = _pgAtk ? (_pgAtk.team==='team1'?'team2':'team1') : 'team2';
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _pgETeam || _c.isDead || _c.hp <= 0) continue;
+                        applyFlatBurn(_n, 2, 2);
                     }
+                    addLog('🔥 Phoenix Genma Ken: ¡el objetivo ya tenía Quemadura! Quemaduras 2HP se propagan a todo el equipo enemigo', 'debuff');
                 }
 
             } else if (ability.effect === 'hou_yoku_tenshou_ikki') {
                 const _hyAtk = gameState.characters[gameState.selectedCharacter];
                 const _hyET = _hyAtk ? (_hyAtk.team==='team1'?'team2':'team1') : 'team2';
-                const _hyHit = new Set();
                 if (checkAndRedirectAOEMegaProv(_hyET, finalDamage, gameState.selectedCharacter)) {
                     addLog('🔥 Hou Yoku Tenshou redirigido por MegaProvocacion', 'damage');
                 } else {
@@ -9186,66 +9189,62 @@
                         const _cc = gameState.characters[_n];
                         if (!_cc||_cc.team!==_hyET||_cc.isDead||_cc.hp<=0) continue;
                         if (checkAsprosAOEImmunity(_n,true)||checkMinatoAOEImmunity(_n)) continue;
+                        const _hyHadBurn = hasStatusEffect(_n, 'Quemadura');
                         applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
-                        _hyHit.add(_n);
-                        if (hasStatusEffect(_n,'Quemadura')) {
-                            gameState.characters[_n].charges = Math.max(0, (gameState.characters[_n].charges||0) - 3);
-                            addLog('🔥 Hou Yoku Tenshou: -3 cargas a ' + _n + ' (tiene Quemadura)', 'debuff');
+                        if (_hyHadBurn) {
+                            const _hyTgtAfter = gameState.characters[_n];
+                            if (_hyTgtAfter && !_hyTgtAfter.isDead && _hyTgtAfter.hp > 0) {
+                                applyDebuff(_n, { name: 'Mega Posesion', type: 'debuff', duration: 2, emoji: '👁️', megaPossession: true });
+                                addLog('🔥 Hou Yoku Tenshou: ' + _n + ' recibe Mega Posesión (tenía Quemaduras)', 'debuff');
+                            }
                         }
                     }
                 }
-                // Quemadura 5HP a los NO golpeados
-                for (const _n in gameState.characters) {
-                    const _cc = gameState.characters[_n];
-                    if (!_cc||_cc.team!==_hyET||_cc.isDead||_cc.hp<=0||_hyHit.has(_n)) continue;
-                    applyFlatBurn(_n, 5, 2);
-                }
-                addLog('🔥 Hou Yoku Tenshou: AOE + Quemadura 5HP a no golpeados', 'damage');
+                addLog('🔥 Hou Yoku Tenshou: ' + finalDamage + ' daño AOE', 'damage');
 
             } else if (ability.effect === 'ilusion_diabolica_ikki') {
                 const _idAtk = gameState.characters[gameState.selectedCharacter];
-                const _idAlly = _idAtk ? _idAtk.team : 'team1';
-                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                addLog('🔥 Ilusión Diabólica: ' + finalDamage + ' daño a ' + targetName, 'damage');
-                const _idTgt2 = gameState.characters[targetName];
-                if (_idTgt2) {
-                    const _idBufs = (_idTgt2.statusEffects||[]).filter(function(e){return e&&e.type==='buff'&&!e.permanent&&!e.passiveHidden;});
-                    _idTgt2.statusEffects = (_idTgt2.statusEffects||[]).filter(function(e){return !e||e.type!=='buff'||e.permanent||e.passiveHidden;});
-                    if (_idBufs.length > 0) {
-                        const _cg = _idBufs.length * 3;
-                        for (const _an in gameState.characters) {
-                            const _ac = gameState.characters[_an];
-                            if (!_ac||_ac.team!==_idAlly||_ac.isDead||_ac.hp<=0) continue;
-                            _ac.charges = Math.min(20, (_ac.charges||0) + _cg);
-                        }
-                        addLog('🔥 Ilusión Diabólica: ' + _idBufs.length + ' buffs disipados → +' + _cg + ' cargas al equipo', 'buff');
+                const _idReviveBonus = (_idAtk && _idAtk.fenixReviveCount) ? _idAtk.fenixReviveCount * 3 : 0;
+                let _idDmg = finalDamage + _idReviveBonus;
+                const _idTgt = gameState.characters[targetName];
+                let _idTag = '';
+                if (_idTgt) {
+                    const _idHasMegaPosesion = hasStatusEffect(targetName, 'Mega Posesion');
+                    const _idHasQuemadura = hasStatusEffect(targetName, 'Quemadura');
+                    if (_idHasMegaPosesion) {
+                        _idDmg = _idDmg * 3;
+                        _idTag = ' (¡TRIPLE! — Mega Posesión)';
+                    } else if (_idHasQuemadura) {
+                        _idDmg = Math.ceil(_idDmg * 1.5);
+                        _idTag = ' (+50% — Quemaduras)';
                     }
                 }
+                applyDamageWithShield(targetName, _idDmg, gameState.selectedCharacter);
+                addLog('🔥 Ilusión Diabólica del Fénix: ' + _idDmg + ' daño a ' + targetName + _idTag + (_idReviveBonus > 0 ? ' (+' + _idReviveBonus + ' por revivir)' : ''), 'damage');
 
             } else if (ability.effect === 'despertar_fenix_ikki') {
                 const _dfAtk = gameState.characters[gameState.selectedCharacter];
-                const _dfET = _dfAtk ? (_dfAtk.team==='team1'?'team2':'team1') : 'team2';
-                if (!_dfAtk || _dfAtk.hp <= 1) {
-                    addLog('🔥 El Despertar del Fénix: HP insuficiente para sacrificar', 'info');
-                    endTurn(); return;
+                const _dfTgt = gameState.characters[targetName];
+                const _dfHadAnyDebuff = _dfTgt && (_dfTgt.statusEffects||[]).some(function(e){ return e && e.type === 'debuff'; });
+                const _dfHadQuemadura = _dfTgt && hasStatusEffect(targetName, 'Quemadura');
+                let _dfDmg = finalDamage;
+                if (_dfHadAnyDebuff) {
+                    _dfDmg = _dfDmg * 2;
+                    addLog('🔥 El Despertar del Fénix Inmortal: ¡Crítico! (objetivo con debuff activo)', 'buff');
                 }
-                const _dfPct = 0.50 + Math.random() * 0.40;
-                const _dfSac = Math.floor(_dfAtk.hp * _dfPct);
-                _dfAtk.hp = Math.max(1, _dfAtk.hp - _dfSac);
-                addLog('🔥 El Despertar del Fénix: Ikki sacrifica ' + _dfSac + ' HP (' + Math.round(_dfPct*100) + '%)', 'damage');
-                const _dfDmg = _dfSac * 2;
-                const _dfWasAlive = gameState.characters[targetName] && !gameState.characters[targetName].isDead;
+                const _dfWasAlive = _dfTgt && !_dfTgt.isDead && _dfTgt.hp > 0;
                 applyDamageWithShield(targetName, _dfDmg, gameState.selectedCharacter);
-                addLog('🔥 El Despertar del Fénix: ' + _dfDmg + ' daño a ' + targetName, 'damage');
+                addLog('🔥 El Despertar del Fénix Inmortal: ' + _dfDmg + ' daño a ' + targetName, 'damage');
                 const _dfTgtDied = _dfWasAlive && gameState.characters[targetName] && (gameState.characters[targetName].isDead || gameState.characters[targetName].hp <= 0);
-                if (_dfTgtDied) {
-                    const _dfAOE = Math.floor(_dfDmg * 0.50);
+                if (_dfTgtDied && _dfAtk) {
+                    let _dfChargeBonus = 8;
+                    if (_dfHadQuemadura) _dfChargeBonus += 8;
                     for (const _n in gameState.characters) {
-                        const _cc = gameState.characters[_n];
-                        if (!_cc||_cc.team!==_dfET||_cc.isDead||_cc.hp<=0||_n===targetName) continue;
-                        applyDamageWithShield(_n, _dfAOE, gameState.selectedCharacter);
-                        addLog('🔥 El Despertar del Fénix: ' + _dfAOE + ' AOE a ' + _n + ' (objetivo eliminado)', 'damage');
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _dfAtk.team || _c.isDead || _c.hp <= 0) continue;
+                        _c.charges = Math.min(20, (_c.charges||0) + _dfChargeBonus);
                     }
+                    addLog('🔥 El Despertar del Fénix Inmortal: ¡' + targetName + ' eliminado! Equipo aliado genera ' + _dfChargeBonus + ' cargas' + (_dfHadQuemadura ? ' (incluye bono por Quemaduras)' : ''), 'buff');
                 }
             }
             
