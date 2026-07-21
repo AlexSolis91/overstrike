@@ -1282,16 +1282,14 @@ function applyDebuff(targetName, effectObj) {
                     addLog('☀️ Privilegio Imperial: Ozymandias genera 1 carga (QS aplicada)', 'buff');
                     break;
                 }
-                // ORGULLO DEL LEÓN (Escanor): 50% de ganar 1 carga al aplicar QS a un enemigo
+                // ORGULLO DEL LEÓN (Escanor): cada vez que se aplica QS a un enemigo → Escanor genera 1 carga (siempre, ya no 50%)
                 for (const _esn in gameState.characters) {
                     const _esc = gameState.characters[_esn];
                     if (!_esc || _esc.isDead || _esc.hp <= 0) continue;
                     if (!_esc.passive || _esc.passive.name !== 'Orgullo del León') continue;
                     if (_esc.team === target.team) continue; // Escanor enemigo del objetivo
-                    if (Math.random() < 0.50) {
-                        _esc.charges = Math.min(20, (_esc.charges||0) + 1);
-                        addLog('🦁 Orgullo del León: Escanor gana 1 carga (QS aplicada, 50%)', 'buff');
-                    }
+                    _esc.charges = Math.min(20, (_esc.charges||0) + 1);
+                    addLog('🦁 Orgullo del León: Escanor gana 1 carga (QS aplicada)', 'buff');
                     break;
                 }
                 // DRAGON ALADO DE RA: al aplicar QS, 2 daño directo a todos los enemigos
