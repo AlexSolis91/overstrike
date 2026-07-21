@@ -797,17 +797,18 @@
 
             'Escanor': {
                 hp: 30, maxHp: 30, speed: 82, charges: 0, team: 'team1',
-                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                statusEffects: [{ name: 'Provocacion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🦁' }],
+                shield: 0, shieldEffect: null, isDead: false,
                 escanorTheOneActive: false,
                 escanorTheOneRoundsLeft: 0,
                 portrait: 'https://i.ibb.co/rTzCsFQ/Captura-de-pantalla-2026-04-14-173602.png',
                 transformPortrait: 'https://i.ibb.co/h1Y44qfp/Captura-de-pantalla-2026-04-14-173813.png',
-                passive: { name: 'Orgullo del León', description: 'Enemigos con Quemadura Solar solo pueden atacar ST a Escanor. Fin de ronda: +1 HP máximo por enemigo con QS activa. Inicio de turno: +1 HP por enemigo con QS activa. 50% de ganar 1 carga al aplicar QS a un enemigo.' },
+                passive: { name: 'Orgullo del León', description: 'Efecto pasivo Provocación. Si un enemigo con Quemadura Solar activa ataca a Escanor, aplica Mega Provocación 3T sobre Escanor. El daño que Escanor fuera a recibir se reduce -2 por cada Quemadura Solar activa en el equipo enemigo. Al final de cada ronda Escanor aumenta +1 su HP máximo por cada enemigo con QS activa. Al inicio de cada ronda recupera +1 HP por cada enemigo con QS activa. Cada vez que se aplica debuff Quemadura Solar sobre un enemigo, Escanor genera 1 carga.' },
                 abilities: [
-                    { name: 'Cruel Sun', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'cruel_sun_escanor', description: 'Causa 2 daño. Aplica Quemadura Solar 2T. Si el objetivo ya tenía QS, aplica QS 2T a otros 2 enemigos aleatorios.' },
-                    { name: 'Pride Flare', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'single', effect: 'pride_flare_escanor', description: 'Causa 3 daño. +1 daño directo a 3 enemigos aleatorios por cada QS activa. +3 cargas por cada QS activa.' },
-                    { name: 'The One', type: 'special', cost: 10, chargeGain: 15, damage: 0, target: 'self', effect: 'the_one_escanor', description: 'Transformación 2 rondas. Recupera 50% HP máximo. Mientras dure: -50% daño recibido y absorbe daño dirigido a aliados.' },
-                    { name: 'Final Prominence', type: 'over', cost: 15, chargeGain: 0, damage: 5, target: 'single', effect: 'final_prominence_escanor', description: 'Escanor recupera 5 HP. Causa 5 + HP actual de Escanor de daño. 50% del daño total sobre 2 enemigos aleatorios.' }
+                    { name: 'Cruel Sun',                  type: 'basic',   cost: 0,  chargeGain: 1,  damage: 2, target: 'single', effect: 'cruel_sun_escanor',           description: 'Aplica debuff Quemadura Solar 2T sobre el objetivo. Si el objetivo ya tenía QS antes de este ataque, aplica QS 2T sobre otros 2 enemigos aleatorios.' },
+                    { name: 'Sacred Sword Escanor',       type: 'special', cost: 4,  chargeGain: 0,  damage: 3, target: 'single', effect: 'sacred_sword_escanor',         description: 'Si el objetivo ya tenía debuff Quemadura Solar activa antes de este ataque, aplica Mega Aturdimiento. Este ataque ignora Provocación y Mega Provocación.' },
+                    { name: 'The One',                    type: 'special', cost: 10, chargeGain: 15, damage: 0, target: 'self',   effect: 'the_one_escanor',             description: 'Escanor se transforma por 2 rondas. Al transformarse recupera 50% de su HP máximo. Mientras permanezca transformado: reduce 50% el daño recibido y absorbe (como Mega Provocación) cualquier daño dirigido a aliados.' },
+                    { name: 'Final Prominence',           type: 'over',    cost: 15, chargeGain: 0,  damage: 5, target: 'single', effect: 'final_prominence_escanor',    description: 'Escanor recupera 5 HP y causa +1 daño adicional por cada punto de HP actual de Escanor. Causa el 50% del daño total a 2 enemigos aleatorios.' }
                 ]
             },
 
