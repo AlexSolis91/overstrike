@@ -12317,7 +12317,9 @@
             }
 
             if (team1Alive === 0) {
-                // Si estamos en medio del loop async de Jon Snow, solo marcar y dejar que el loop lo detecte
+                // Limpiar cualquier turno extra pendiente para que no sobreviva al lobby
+                gameState._skeggoxExtraTurn = null;
+                gameState._nishanExtraTurnRolledThisTurn = false;
                 if (gameState._jonSnowLoopActive) {
                     gameState.gameOver = true;
                     gameState._jonSnowPendingWinner = '🔶 REAPERS GANAN!';
@@ -12326,6 +12328,8 @@
                 showGameOver('🔶 REAPERS GANAN!');
                 return true;
             } else if (team2Alive === 0) {
+                gameState._skeggoxExtraTurn = null;
+                gameState._nishanExtraTurnRolledThisTurn = false;
                 if (gameState._jonSnowLoopActive) {
                     gameState.gameOver = true;
                     gameState._jonSnowPendingWinner = '🔷 HUNTERS GANAN!';
@@ -12436,6 +12440,11 @@
                 if (gameStateListener) { try { db.ref('rooms/' + currentRoomId + '/gameState').off(); } catch(e) {} }
                 onlineMode = false;
                 currentRoomId = null;
+            }
+            // Limpiar cualquier turno extra pendiente que pudiera sobrevivir al lobby
+            if (typeof gameState !== 'undefined') {
+                gameState._skeggoxExtraTurn = null;
+                gameState._nishanExtraTurnRolledThisTurn = false;
             }
             // Hide game over modal and game container
             document.getElementById('gameOverModal').classList.remove('show');
