@@ -1960,11 +1960,17 @@
                             }
                             break;
 
-                        // 25% turno adicional
+                        // 25% turno adicional — la tirada se hace UNA SOLA VEZ por ataque,
+                        // aunque el movimiento golpee a varios enemigos (AOE). Sin este flag,
+                        // un AOE de 5 objetivos hacía 5 tiradas independientes, dando ~76% de
+                        // probabilidad real en vez del 25% que dice la descripción.
                         case 'extra_turn_25':
-                            if (Math.random() < 0.25 && !gameState._skeggoxExtraTurn) {
+                            if (!gameState._nishanExtraTurnRolledThisTurn && Math.random() < 0.25 && !gameState._skeggoxExtraTurn) {
+                                gameState._nishanExtraTurnRolledThisTurn = true;
                                 gameState._skeggoxExtraTurn = attackerName;
                                 addLog('✨ Sable Nishant: turno adicional para ' + attackerName + ' (25%)', 'buff');
+                            } else if (!gameState._nishanExtraTurnRolledThisTurn) {
+                                gameState._nishanExtraTurnRolledThisTurn = true; // marcar como intentado aunque no salió
                             }
                             break;
 
@@ -2073,11 +2079,14 @@
                             }
                             break;
 
-                        // Sable Nishant: 25% turno extra
+                        // Sable Nishant: 25% turno extra — una sola tirada por ataque (ver primer bloque)
                         case 'extra_turn_25':
-                            if (Math.random() < 0.25 && !gameState._skeggoxExtraTurn) {
+                            if (!gameState._nishanExtraTurnRolledThisTurn && Math.random() < 0.25 && !gameState._skeggoxExtraTurn) {
+                                gameState._nishanExtraTurnRolledThisTurn = true;
                                 gameState._skeggoxExtraTurn = attackerName;
                                 addLog('✨ Sable Nishant: ' + attackerName + ' gana turno adicional (25%)', 'buff');
+                            } else if (!gameState._nishanExtraTurnRolledThisTurn) {
+                                gameState._nishanExtraTurnRolledThisTurn = true;
                             }
                             break;
 
