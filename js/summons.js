@@ -1744,6 +1744,25 @@
                 }
             }
 
+            // ── COLMILLO DE VASILISCO: ataques básicos aplican 1 stack de Veneno por golpe real ──
+            // Movido aquí (applyDamageWithShield) por el mismo motivo que Espada Nichirin Negra:
+            // en AOEs con bucle propio (Gate of Babylon de Gilgamesh, Dragon's Fear de Antares, etc.)
+            // el bloque post-ataque de skills.js solo ve targetName = el primer objetivo clickeado,
+            // no cada enemigo golpeado, así que el Veneno nunca se aplicaba a los otros.
+            if (remainingDamage > 0 && !passiveExecuting && attackerName) {
+                const _cvAtk = gameState.characters[attackerName];
+                if (_cvAtk && (_cvAtk.equippedRelics||[]).includes('Colmillo de Vasilisco')) {
+                    const _lastAbType = gameState._lastAbilityType || (gameState.selectedAbility && gameState.selectedAbility.type);
+                    if (_lastAbType === 'basic') {
+                        const _cvTgt = gameState.characters[targetName];
+                        if (_cvTgt && !_cvTgt.isDead && _cvTgt.hp > 0) {
+                            if (typeof applyPoison === 'function') applyPoison(targetName, 1);
+                            addLog('🗡️ Colmillo de Vasilisco: 1 stack de Veneno aplicado a ' + targetName, 'debuff');
+                        }
+                    }
+                }
+            }
+
             // ── ESPADA NICHIRIN NEGRA: aplica Quemadura Solar tras cada golpe real (ST o AOE) ──
             if (remainingDamage > 0 && !passiveExecuting && attackerName) {
                 const _ennAtk2 = gameState.characters[attackerName];
