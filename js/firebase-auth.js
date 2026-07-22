@@ -4248,7 +4248,9 @@
             if (slots[slotKey]) { alert('Este slot ya está ocupado. Primero remueve la reliquia actual.'); return false; }
 
             // Duplicate check (en este mismo personaje)
-            if (Object.values(slots).includes(relicName)) { alert('Ya tienes esta reliquia equipada en este personaje.'); return false; }
+            // Armas (excepto Arco y Escudo) y Joyas pueden repetirse — un personaje puede tener 2 Espadas iguales, etc.
+            const _canRepeatSameChar = (cat === 'Arma' && subtype !== 'Arco' && subtype !== 'Escudo') || cat === 'Joya';
+            if (!_canRepeatSameChar && Object.values(slots).includes(relicName)) { alert('Ya tienes esta reliquia equipada en este personaje.'); return false; }
 
             // Nota: no hay restricción de duplicados entre personajes — el inventario ya lo
             // controla naturalmente (equipar consume la reliquia del inventario, así que si
