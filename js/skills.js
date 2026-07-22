@@ -10363,6 +10363,9 @@
                 const _dkAtk   = gameState.characters[gameState.selectedCharacter];
                 const _dkTeam  = _dkAtk ? _dkAtk.team : 'team1';
                 const _dkETeam = _dkTeam === 'team1' ? 'team2' : 'team1';
+                // Este AOE usa un bucle propio en vez del flujo estándar de ability.target==='aoe',
+                // así que el trigger de Jon Snow (El Rey Prometido) hay que llamarlo explícitamente.
+                if (typeof triggerElReyPrometido === 'function') triggerElReyPrometido(gameState.selectedCharacter);
                 let _dkProvDmg = 0;
                 let _dkProvName = null;
                 // First pass: deal AOE damage and detect Provocación victims
