@@ -559,13 +559,24 @@
     // que pueda elegir otro movimiento.
     function closeTargetModal() {
         document.getElementById('targetModal').classList.remove('show');
-        // Primero intentar volver al menú de acción (solo aplica cuando le toca turno al jugador)
-        if (typeof showActionModal === 'function') {
-            try { showActionModal(); return; } catch(e) {}
+        // Cancelar la habilidad seleccionada para que el jugador pueda elegir otra
+        if (typeof gameState !== 'undefined') {
+            gameState.selectedAbility = null;
+            gameState.adjustedCost = 0;
         }
-        // Respaldo: si showActionModal no aplica (ej. el flujo ya avanzó y no hay modal de acción
-        // disponible), mostrar el botón de Continuar Turno para que el jugador no quede trabado.
-        if (typeof showContinueButton === 'function') showContinueButton();
+        // Mostrar el menú de acción si es turno del jugador, o el botón de continuar si no
+        var _canShowAction = typeof showActionModal === 'function' &&
+            typeof gameState !== 'undefined' &&
+            gameState.selectedCharacter &&
+            gameState.characters &&
+            gameState.characters[gameState.selectedCharacter] &&
+            !gameState.characters[gameState.selectedCharacter].isDead &&
+            gameState.characters[gameState.selectedCharacter].hp > 0;
+        if (_canShowAction) {
+            showActionModal();
+        } else if (typeof showContinueButton === 'function') {
+            showContinueButton();
+        }
     }
     </script>
 
@@ -622,7 +633,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260862"></script>
+    <script src="js/firebase-auth.js?v=20260863"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -1545,9 +1556,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260862"></script>
+    <script src="js/characters.js?v=20260863"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260862"></script>
+    <script src="js/audio-state.js?v=20260863"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2279,26 +2290,26 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260862"></script>
+    <script src="js/ai-engine.js?v=20260863"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260862"></script>
+    <script src="js/init-render.js?v=20260863"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260862"></script>
+    <script src="js/turn-logic.js?v=20260863"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260862"></script>
+    <script src="js/status-effects.js?v=20260863"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260862"></script>
+    <script src="js/debuffs.js?v=20260863"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260862"></script>
+    <script src="js/summons.js?v=20260863"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260862"></script>
+    <script src="js/ability-select.js?v=20260863"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260862"></script>
+<script src="js/skills.js?v=20260863"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260862"></script>
-    <script src="js/horda-mode.js?v=20260862"></script>
-    <script src="js/horda-abilities.js?v=20260862"></script>
-    <script src="js/horda-battle.js?v=20260862"></script>
+    <script src="js/jefe-de-sala.js?v=20260863"></script>
+    <script src="js/horda-mode.js?v=20260863"></script>
+    <script src="js/horda-abilities.js?v=20260863"></script>
+    <script src="js/horda-battle.js?v=20260863"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
