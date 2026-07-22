@@ -1214,7 +1214,9 @@
             }
 
             // ── RELIQUIAS POST-ATAQUE ──────────────────────────────────────
-            if (finalDamage > 0 && attacker && (attacker.equippedRelics||[]).length > 0 && targetName) {
+            // Se corre aunque finalDamage sea 0 — algunas reliquias (Colmillo de Vasilisco)
+            // deben dispararse aunque el daño haya sido absorbido completamente por escudo.
+            if (attacker && (attacker.equippedRelics||[]).length > 0 && targetName) {
                 const _postTgt = gameState.characters[targetName];
                 const _postAtk = attacker;
                 const _postAtkTeam = _postAtk ? _postAtk.team : 'team1';
@@ -1232,7 +1234,9 @@
                     }
 
                     // COLMILLO DE VASILISCO: ataques básicos aplican 1 stack de Veneno
-                    if (_rd.effect === 'vasilisco_poison' && ability && ability.type === 'basic' && _postTgt && !_postTgt.isDead) {
+                    // Nota: se verifica _postTgt.isDead DESPUÉS del ataque, no finalDamage > 0 —
+                    // el Veneno debe aplicarse aunque el daño haya sido absorbido por escudo/reducción.
+                    if (_rd.effect === 'vasilisco_poison' && ability && ability.type === 'basic' && _postTgt && !_postTgt.isDead && _postTgt.hp > 0) {
                         if (typeof applyPoison === 'function') applyPoison(targetName, 1);
                         addLog('🗡️ Colmillo de Vasilisco: 1 stack de Veneno aplicado a ' + targetName, 'debuff');
                     }
