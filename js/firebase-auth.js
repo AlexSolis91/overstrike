@@ -49,6 +49,10 @@
                 const el = document.getElementById(s);
                 if (el) el.style.display = 'none';
             });
+            // Siempre ocultar el botón de Continuar Turno al cambiar de pantalla —
+            // evita que quede visible en el lobby si la partida terminó con un turno extra pendiente.
+            const _ctBtn = document.getElementById('floatingContinueBtn');
+            if (_ctBtn) _ctBtn.style.display = 'none';
 
             const target = document.getElementById(id);
             if (!target) return;
