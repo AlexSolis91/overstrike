@@ -1245,6 +1245,31 @@
                     // para que funcione en cada golpe individual, no solo contra un único objetivo —
                     // antes esto nunca se disparaba en ataques AOE/multi-golpe como Dragon's Fear de Antares.
 
+                    // AGUIJÓN ESMERALDA (segundo efecto): si el portador ataca a un enemigo con Veneno,
+                    // cura 1 HP a todos los aliados por cada debuff Veneno activo en ambos equipos.
+                    if (_rd.effect === 'poison_spread' && _postTgt && !_postTgt.isDead && _postTgt.hp > 0) {
+                        const _aeHasPoison = (_postTgt.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'veneno'; });
+                        if (_aeHasPoison) {
+                            // Contar venenos activos en AMBOS equipos
+                            let _aePoisonCount = 0;
+                            for (const _pn in gameState.characters) {
+                                const _pc = gameState.characters[_pn];
+                                if (!_pc || _pc.isDead || _pc.hp <= 0) continue;
+                                _aePoisonCount += (_pc.statusEffects||[]).filter(function(e){ return e && normAccent(e.name||'') === 'veneno'; }).length;
+                            }
+                            if (_aePoisonCount > 0) {
+                                const _aeHealAmt = _aePoisonCount;
+                                const _aeAllyTeam = _postAtk.team;
+                                for (const _an in gameState.characters) {
+                                    const _ac = gameState.characters[_an];
+                                    if (!_ac || _ac.team !== _aeAllyTeam || _ac.isDead || _ac.hp <= 0) continue;
+                                    if (typeof applyHeal === 'function') applyHeal(_an, _aeHealAmt);
+                                }
+                                addLog('☠️ Aguijón Esmeralda: equipo aliado cura ' + _aeHealAmt + ' HP (' + _aePoisonCount + ' venenos activos en campo)', 'heal');
+                            }
+                        }
+                    }
+
                     // PALANTIR: aplica debuff Posesión al objetivo golpeado
                     if (_rd.effect === 'palantir' && _postTgt && !_postTgt.isDead) {
                         if (typeof applyDebuff === 'function') applyDebuff(targetName, {name:'Posesion',type:'debuff',duration:2,emoji:'👁️'});
