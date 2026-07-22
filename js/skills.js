@@ -6182,8 +6182,9 @@
                         if (typeof applySilenciar === 'function') applySilenciar(_dsRand, 2);
                     }
                     // Generar cargas del básico
-                    if (_dsBasic && (_dsBasic.chargeGain||0) > 0) {
-                        _dsAtk.charges = Math.min(20, (_dsAtk.charges||0) + (_dsBasic.chargeGain||1));
+                    const _dsBasicAb = (_dsAtk && _dsAtk.abilities) ? _dsAtk.abilities.find(function(a){ return a && a.type === 'basic'; }) : null;
+                    if (_dsBasicAb && (_dsBasicAb.chargeGain||0) > 0) {
+                        _dsAtk.charges = Math.min(20, (_dsAtk.charges||0) + (_dsBasicAb.chargeGain||1));
                     }
                 }
                 addLog('🌅 Diosa del Sol: 6 ataques básicos completados', 'damage');
