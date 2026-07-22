@@ -492,6 +492,12 @@
                 const snapshot = {
                     characters: cleanForFirebase(gameState.characters),
                     summons: cleanForFirebase(gameState.summons || {}),
+                    activeField: gameState.activeField ? {
+                        name: gameState.activeField.name,
+                        ownerName: gameState.activeField.ownerName,
+                        roundsRemaining: gameState.activeField.roundsRemaining
+                        // savedBg NO se sincroniza — cada cliente guarda su propio fondo
+                    } : null,
                     currentTurnIndex: gameState.currentTurnIndex,
                     currentRound: gameState.currentRound,
                     turnsInRound: gameState.turnsInRound,
@@ -565,7 +571,24 @@
                 isSyncingState = true;
                 try {
                     // Apply remote state - deep-restore arrays
+                    // PRESERVAR equippedRelics locales: el sync sobreescribe todo el objeto del personaje
+                    // con lo del servidor, que puede tener equippedRelics=null si las reliquias todavía
+                    // no habían cargado cuando el host empujó el estado. Guardamos las reliquias que ya
+                    // teníamos cargadas localmente y las restauramos después del merge.
+                    const _savedRelics = {};
+                    for (let _srn in gameState.characters) {
+                        const _src = gameState.characters[_srn];
+                        if (_src && _src.equippedRelics && _src.equippedRelics.length > 0) {
+                            _savedRelics[_srn] = _src.equippedRelics;
+                        }
+                    }
                     gameState.characters = data.characters;
+                    // Restaurar reliquias preservadas
+                    for (let _srn2 in _savedRelics) {
+                        if (gameState.characters[_srn2] && (!gameState.characters[_srn2].equippedRelics || gameState.characters[_srn2].equippedRelics.length === 0)) {
+                            gameState.characters[_srn2].equippedRelics = _savedRelics[_srn2];
+                        }
+                    }
                     // Ensure statusEffects are proper arrays (Firebase may convert sparse arrays to objects)
                     for (let n in gameState.characters) {
                         const c = gameState.characters[n];
@@ -584,6 +607,20 @@
                     gameState.gameOver = data.gameOver;
                     gameState._mvpCharFromRoom = data.mvpChar || null; // MVP calculado por el host
                     gameState._attackedThisTurn = data._attackedThisTurn || false;
+                    // Sincronizar el Campo activo (Sendero de los Dioses, etc.)
+                    if (data.activeField) {
+                        if (!gameState.activeField) {
+                            // Campo nuevo — activarlo con el fondo correcto
+                            if (typeof window.activateSenderoDeLosDioses === 'function' && data.activeField.name === 'Sendero de los Dioses') {
+                                window.activateSenderoDeLosDioses(data.activeField.ownerName);
+                            }
+                        }
+                        if (gameState.activeField) gameState.activeField.roundsRemaining = data.activeField.roundsRemaining;
+                    } else if (gameState.activeField) {
+                        // Campo expiró en el servidor — desactivar localmente
+                        if (typeof window.deactivateActiveField === 'function') window.deactivateActiveField();
+                        else gameState.activeField = null;
+                    }
                     // Restore summons from sync
                     if (data.summons) {
                         gameState.summons = data.summons;
