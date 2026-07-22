@@ -3825,8 +3825,24 @@
                 const th2 = document.getElementById('teamHeader2');  if (th2) th2.textContent = '🔶 ' + guestName;
                 const sh1 = document.getElementById('statusHeader1'); if (sh1) sh1.textContent = '🔷 ' + hostName;
                 const sh2 = document.getElementById('statusHeader2'); if (sh2) sh2.textContent = '🔶 ' + guestName;
-                // ← Cargar reliquias del jugador y rival
-                if (typeof window.loadGameRelics === 'function') window.loadGameRelics();
+
+                // Cargar reliquias del jugador y rival.
+                // _opponentUid puede no estar seteado en el guest (scope de _listenForRankedBothReady
+                // no tiene acceso directo al room.host.uid). Lo leemos de la sala si falta.
+                function _doLoadRelics() {
+                    if (typeof window.loadGameRelics === 'function') window.loadGameRelics();
+                }
+                if (!window._opponentUid) {
+                    db.ref('rooms/' + roomId).once('value', function(rs) {
+                        const _rd = rs.val() || {};
+                        window._opponentUid = asHost
+                            ? (_rd.guest && _rd.guest.uid ? _rd.guest.uid : null)
+                            : (_rd.host  && _rd.host.uid  ? _rd.host.uid  : null);
+                        _doLoadRelics();
+                    });
+                } else {
+                    _doLoadRelics();
+                }
 
                 addLog('🏆 RANKED: ' + hostName + ' vs ' + guestName, 'info');
                 audioManager.playRandomBattle();
@@ -4186,15 +4202,18 @@
             }
 
             function _loadForCharacter(charName, uid) {
+                if (!uid) return; // sin uid no podemos cargar reliquias — evitar leer del uid incorrecto
                 var ch = gameState.characters[charName];
-                if (!ch || ch.equippedRelics) return; // ya cargadas — evita duplicar si se llama 2 veces
+                if (!ch) return;
+                // Permitir recarga si las reliquias actuales vienen de un uid diferente (asignación errónea)
+                if (ch.equippedRelics && ch._relicsLoadedFromUid === uid) return; // ya cargadas del uid correcto
                 var baseName = ch.baseName || charName.replace(/ v\d+$/, '');
                 db.ref('users/' + uid + '/characters/' + baseName + '/slots_v2').once('value').then(function(snap) {
                     var slotsObj = snap.val();
-                    if (!slotsObj) return;
+                    if (!slotsObj) { ch.equippedRelics = []; ch._relicsLoadedFromUid = uid; return; }
                     var relicNames = SLOT_KEYS.map(function(k){ return slotsObj[k]; }).filter(Boolean);
-                    if (!relicNames.length) return;
                     ch.equippedRelics = relicNames;
+                    ch._relicsLoadedFromUid = uid;
                     relicNames.forEach(function(rn) { _applyRelicStats(ch, rn); });
                     if (typeof renderCharacters === 'function') renderCharacters();
                 }).catch(function(err) { console.warn('[loadGameRelics] Error cargando reliquias de', charName, err); });
