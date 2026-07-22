@@ -1233,13 +1233,8 @@
                         addLog('🔨 Martillo del Alba: ' + targetName + ' pierde 2 cargas', 'debuff');
                     }
 
-                    // COLMILLO DE VASILISCO: ataques básicos aplican 1 stack de Veneno
-                    // Nota: se verifica _postTgt.isDead DESPUÉS del ataque, no finalDamage > 0 —
-                    // el Veneno debe aplicarse aunque el daño haya sido absorbido por escudo/reducción.
-                    if (_rd.effect === 'vasilisco_poison' && ability && ability.type === 'basic' && _postTgt && !_postTgt.isDead && _postTgt.hp > 0) {
-                        if (typeof applyPoison === 'function') applyPoison(targetName, 1);
-                        addLog('🗡️ Colmillo de Vasilisco: 1 stack de Veneno aplicado a ' + targetName, 'debuff');
-                    }
+                    // COLMILLO DE VASILISCO: ahora se maneja dentro de applyDamageWithShield (summons.js)
+                    // por el mismo motivo que Espada Nichirin Negra — funciona para ST y AOE por igual.
 
                     // ESPADA NICHIRIN NEGRA: ahora se maneja dentro de applyDamageWithShield (summons.js)
                     // para que funcione en cada golpe individual, no solo contra un único objetivo —
