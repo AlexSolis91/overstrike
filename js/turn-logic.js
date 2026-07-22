@@ -1851,6 +1851,7 @@
                     
                     gameState.currentRound++;
                     gameState.turnsInRound = 0;
+                    gameState._aguijonUsedThisRound = false; // Aguijón Esmeralda: resetear para la próxima ronda
 
                     // Reset Seiya per-round HP tracking
                     for (const _sn in gameState.characters) {
@@ -3001,21 +3002,25 @@
                             // ── ANARQUÍA (Joker): cuando enemigo sufre daño por Veneno → debuff aleatorio ──
                             if (typeof window.jokerAnarquiaOnDot === 'function') window.jokerAnarquiaOnDot(_eorN);
 
-                            // ── AGUIJÓN ESMERALDA: cuando un enemigo recibe daño por debuff Veneno → aplica 2 Stacks de Veneno a 2 enemigos aleatorios (del portador) ──
+                            // ── AGUIJÓN ESMERALDA (nuevo efecto): una vez por ronda cuando un enemigo
+                            // recibe daño por Veneno → aplica 2 stacks de Veneno a CADA enemigo.
+                            // El flag _aguijonUsedThisRound evita que se dispare más de una vez por ronda.
                             for (const _aeN in gameState.characters) {
                                 const _aeC = gameState.characters[_aeN];
                                 if (!_aeC || _aeC.isDead || _aeC.hp <= 0) continue;
                                 if (!(_aeC.equippedRelics||[]).includes('Aguijón Esmeralda')) continue;
-                                if (_aeC.team === _eorC.team) continue; // el portador debe ser enemigo del que recibió el daño
-                                const _aeTargets = Object.keys(gameState.characters).filter(function(n) {
+                                if (_aeC.team === _eorC.team) continue; // portador debe ser enemigo del que recibió el daño
+                                if (gameState._aguijonUsedThisRound) continue; // solo una vez por ronda
+                                gameState._aguijonUsedThisRound = true;
+                                const _aeAllEnemies = Object.keys(gameState.characters).filter(function(n) {
                                     const c = gameState.characters[n];
                                     return c && c.team === _eorC.team && !c.isDead && c.hp > 0;
-                                }).sort(function(){ return Math.random()-0.5; }).slice(0, 2);
-                                _aeTargets.forEach(function(n) {
+                                });
+                                _aeAllEnemies.forEach(function(n) {
                                     if (typeof applyPoison === 'function') applyPoison(n, 2);
                                 });
-                                if (_aeTargets.length > 0) {
-                                    addLog('☠️ Aguijón Esmeralda: 2 stacks de Veneno aplicados a ' + _aeTargets.join(' y '), 'debuff');
+                                if (_aeAllEnemies.length > 0) {
+                                    addLog('☠️ Aguijón Esmeralda: 2 stacks de Veneno aplicados a todo el equipo enemigo', 'debuff');
                                 }
                             }
                             if (typeof _animCard === 'function') _animCard(_eorN, 'anim-poison', 700);
