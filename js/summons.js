@@ -96,10 +96,33 @@
                 };
 
                 // Orbe de las Sombras: +3 HP máx al invocar si el invocador tiene esta reliquia
-                if ((summoner.equippedRelics||[]).some(function(r){ return r === 'Orbe de las Sombras'; })) {
-                    gameState.summons[summonId].maxHp = (gameState.summons[summonId].maxHp||15) + 3;
-                    gameState.summons[summonId].hp = Math.min(gameState.summons[summonId].maxHp, (gameState.summons[summonId].hp||0) + 3);
-                    addLog('🔮 Orbe de las Sombras: ' + shadowName + ' gana +3 HP máx', 'buff');
+                // Si equippedRelics aún no cargó (condición de carrera con la carga async de reliquias),
+                // verificar también en Firebase directamente para no perder el bono.
+                const _orbeSummonId = summonId;
+                const _orbeCheck = function(relicsArr) {
+                    if ((relicsArr||[]).some(function(r){ return r === 'Orbe de las Sombras'; })) {
+                        if (gameState.summons[_orbeSummonId]) {
+                            gameState.summons[_orbeSummonId].maxHp = (gameState.summons[_orbeSummonId].maxHp||15) + 3;
+                            gameState.summons[_orbeSummonId].hp = Math.min(gameState.summons[_orbeSummonId].maxHp, (gameState.summons[_orbeSummonId].hp||0) + 3);
+                            addLog('🔮 Orbe de las Sombras: ' + shadowName + ' gana +3 HP máx', 'buff');
+                            if (typeof renderCharacters === 'function') renderCharacters();
+                        }
+                    }
+                };
+                if ((summoner.equippedRelics||[]).length > 0) {
+                    _orbeCheck(summoner.equippedRelics);
+                } else {
+                    // Reliquias aún no cargadas — leer de Firebase
+                    const _orbeUid = typeof currentUser !== 'undefined' && currentUser ? currentUser.uid : null;
+                    const _orbeBase = summonerName.replace(/ v\d+$/, '');
+                    if (_orbeUid && typeof db !== 'undefined') {
+                        db.ref('users/' + _orbeUid + '/characters/' + _orbeBase + '/slots_v2').once('value').then(function(snap) {
+                            const slots = snap.val() || {};
+                            const relicNames = Object.values(slots).filter(Boolean);
+                            if (summoner) summoner.equippedRelics = relicNames; // cachear para futuras invocaciones
+                            _orbeCheck(relicNames);
+                        });
+                    }
                 }
 
                 // Huevo de Dragón: la invocación gana Esquiva Área permanente si el invocador tiene esta reliquia
