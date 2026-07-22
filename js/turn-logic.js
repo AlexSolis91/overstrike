@@ -1693,6 +1693,7 @@
             gameState._abilityExecuting = false; // Limpiar guard de ejecución
             // Limpiar flags por turno
             gameState._vortexActive = false; // Vortex: se limpia al finalizar cada turno
+            gameState._nishanExtraTurnRolledThisTurn = false; // Sable Nishant: resetear para que el siguiente turno tire de nuevo
             if (gameState.selectedCharacter) {
                 const _esTurnChar = gameState.characters[gameState.selectedCharacter];
                 if (_esTurnChar) {
