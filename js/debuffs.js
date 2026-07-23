@@ -387,6 +387,30 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 const _sjwExists = Object.values(gameState.characters||{}).some(function(c){ return c && c.passive && c.passive.name === 'Arise!' && c.team !== _neb_team && !c.isDead && c.hp > 0; });
                 if (_sjwExists) notifyEnemyBuffApplied(targetName);
             }
+            // ── HEREDERA LEGÍTIMA (Rhaenyra): cuando un ENEMIGO recibe un buff → invoca una Cría de Dragón (máx 5) ──
+            if (!passiveExecuting && effectObj && effectObj.type === 'buff') {
+                const _rhBuffTeam = target.team;
+                const _rhRhaeTeam = _rhBuffTeam === 'team1' ? 'team2' : 'team1';
+                for (const _rhN in gameState.characters) {
+                    const _rhC = gameState.characters[_rhN];
+                    if (!_rhC || _rhC.isDead || _rhC.hp <= 0 || !_rhC.passive) continue;
+                    if (_rhC.passive.name !== 'Heredera Legítima') continue;
+                    if (_rhC.team !== _rhRhaeTeam) continue;
+                    // Contar invocaciones activas del equipo de Rhaenyra
+                    const _rhTeamSummons = Object.values(gameState.summons||{}).filter(function(s){ return s && s.team === _rhRhaeTeam && !s.isDead && s.hp > 0; });
+                    if (_rhTeamSummons.length >= 5) break; // máximo de 5 invocaciones
+                    const _criaId = 'Cria_Dragon_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
+                    gameState.summons[_criaId] = {
+                        id: _criaId, name: 'Cría de Dragón', summoner: _rhN, team: _rhRhaeTeam,
+                        hp: 10, maxHp: 10, isDead: false, statusEffects: [],
+                        img: 'https://i.ibb.co/fGxPcTNL/Whats-App-Image-2026-06-26-at-12-06-13-PM.jpg',
+                        passive: 'Mordedura: aplica un debuff aleatorio a un enemigo al final de cada ronda. Al morir, Rhaenyra genera 3 cargas.'
+                    };
+                    if (typeof renderSummons === 'function') renderSummons();
+                    addLog('🐉 Heredera Legítima: ' + targetName + ' recibió un buff → se invoca una Cría de Dragón', 'buff');
+                    break;
+                }
+            }
             // ── VISIÓN DE PROFETA (Grindelwald): cuando un buff se aplica a un ENEMIGO, limpia ese buff + 2 más de 2 enemigos aleatorios ──
             if (!passiveExecuting && effectObj && effectObj.type === 'buff') {
                 const _gTeam = target.team; // team of the buffed char
