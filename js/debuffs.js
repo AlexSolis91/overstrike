@@ -557,6 +557,14 @@ function applyDebuff(targetName, effectObj) {
                 addLog('✨ Maestría de la Varita de Saúco: ' + targetName + ' es inmune a debuffs', 'buff');
                 return;
             }
+            // SOBERANO DE LA DESTRUCCIÓN (Skeletor): inmune a Miedo, Aturdimiento y Mega Aturdimiento
+            if (target.passive && target.passive.name === 'Soberano de la Destrucción') {
+                const _skDebuffName = normAccent(effectObj.name || '');
+                if (_skDebuffName === 'miedo' || _skDebuffName === 'aturdimiento' || _skDebuffName === 'mega aturdimiento') {
+                    addLog('💀 Soberano de la Destrucción: Skeletor es inmune a ' + effectObj.name, 'buff');
+                    return;
+                }
+            }
             // MIRADA DEL DIOS DE LA MUERTE (Thanatos): inmune a debuffs mientras tenga 2+ contadores de Ira Divina
             if (target.passive && target.passive.name === 'Mirada del Dios de la Muerte' && (target.iraDivinaCounters || 0) >= 2) {
                 addLog('💀 Mirada del Dios de la Muerte: Thanatos es inmune a debuffs (' + target.iraDivinaCounters + ' contadores de Ira Divina)', 'buff');
