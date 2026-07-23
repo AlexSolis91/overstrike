@@ -1087,12 +1087,12 @@
                 hp: 15, maxHp: 15, speed: 75, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/ZR2H9ZHp/Whats-App-Image-2026-06-26-at-11-53-04-AM.jpg',
-                passive: { name: 'Heredera Legítima', description: 'Cada vez que un enemigo reciba curación de cualquier fuente (applyHeal), 50% de probabilidad de aplicar Quemadura Solar en ese enemigo. Al inicio de cada ronda, invoca una Cría de Dragón. Cada vez que un enemigo con debuff activo utilice un movimiento, el equipo aliado genera 1 carga.' },
+                passive: { name: 'Heredera Legítima', description: 'Cada vez que un enemigo reciba curación de cualquier fuente, aplica Quemadura Solar en ese enemigo. Cada vez que un enemigo reciba un buff, invoca una Cría de Dragón (máx. 5). Cada vez que un enemigo con debuff activo utilice un movimiento, el equipo aliado genera 1 carga.' },
                 abilities: [
-                    { name: 'Derecho de Nacimiento',   type: 'basic',   cost: 0,  chargeGain: 0, damage: 0, target: 'self',   effect: 'rhae_birthright',      description: 'Por cada Cría de Dragón activa: Rhaenyra y un aliado aleatorio diferente generan 1 carga.' },
-                    { name: 'Reina Negra',             type: 'special', cost: 0,  chargeGain: 0, damage: 0, target: 'self',   effect: 'rhae_black_queen',     description: 'Cura 2 HP al equipo aliado por cada Cría de Dragón activa.' },
-                    { name: 'Fuego de Syrax',          type: 'special', cost: 10, chargeGain: 0, damage: 0, target: 'self',   effect: 'rhae_syrax_summon',    description: 'Invoca a Syrax.' },
-                    { name: 'Asedio de la Reina Negra', type: 'over',   cost: 14, chargeGain: 0, damage: 2, target: 'aoe',    effect: 'rhae_black_queen_siege', description: 'AOE 2 daño. Aplica Protección Sagrada y Escudo 5 HP al equipo aliado. Genera 2 cargas al equipo aliado por cada Cría de Dragón activa. Si Syrax está en campo: cura 10 HP al equipo aliado y aplica Quemaduras 5 HP al equipo enemigo.' }
+                    { name: 'Derecho de Nacimiento',    type: 'basic',   cost: 0,  chargeGain: 0, damage: 0, target: 'self', effect: 'rhae_birthright',        description: 'Genera 1 carga y limpia 1 debuff en Rhaenyra y en un aliado aleatorio por cada Cría de Dragón activa al ejecutar este ataque.' },
+                    { name: 'Reina Negra',              type: 'special', cost: 0,  chargeGain: 0, damage: 0, target: 'self', effect: 'rhae_black_queen',        description: 'Cura 2 HP al equipo aliado por cada Cría de Dragón activa al ejecutar este ataque.' },
+                    { name: 'Fuego de Syrax',           type: 'special', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'rhae_syrax_summon',       description: 'Invoca a Syrax.' },
+                    { name: 'Asedio de la Reina Negra', type: 'over',    cost: 14, chargeGain: 0, damage: 2, target: 'aoe',  effect: 'rhae_black_queen_siege',  description: 'AOE 2 daño. Aplica Protección Sagrada y Escudo 5 HP al equipo aliado. Genera 2 cargas al equipo aliado por cada Cría de Dragón activa. Si Syrax está en campo: cura 10 HP al equipo aliado y aplica Quemaduras 5 HP al equipo enemigo.' }
                 ]
             },
 
