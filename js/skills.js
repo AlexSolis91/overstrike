@@ -10526,7 +10526,7 @@
             // ══════════════════════════════════════════════════════
 
             } else if (ability.effect === 'rhae_birthright') {
-                // DERECHO DE NACIMIENTO: por cada Cría de Dragón activa, Rhaenyra y un aliado aleatorio generan 1 carga
+                // DERECHO DE NACIMIENTO: por cada Cría de Dragón activa → +1 carga a Rhaenyra y aliado aleatorio + limpiar 1 debuff en ambos
                 const _rbChar  = gameState.characters[gameState.selectedCharacter];
                 const _rbTeam  = _rbChar ? _rbChar.team : 'team1';
                 const _rbCrias = Object.values(gameState.summons).filter(function(s){
@@ -10539,14 +10539,30 @@
                         const _c = gameState.characters[_n]; return _c && _c.team === _rbTeam && !_c.isDead && _c.hp > 0 && _n !== gameState.selectedCharacter;
                     });
                     for (let _ci = 0; _ci < _rbCrias.length; _ci++) {
-                        // Rhaenyra +1
+                        // Rhaenyra +1 carga
                         if (_rbChar) _rbChar.charges = Math.min(20, (_rbChar.charges||0) + 1);
-                        // Random ally +1
+                        // Rhaenyra limpia 1 debuff
+                        if (_rbChar) {
+                            const _rhaeDebuffs = (_rbChar.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff'; });
+                            if (_rhaeDebuffs.length > 0) {
+                                _rbChar.statusEffects = (_rbChar.statusEffects||[]).filter(function(e){ return e !== _rhaeDebuffs[0]; });
+                                addLog('🐉 Derecho de Nacimiento: Rhaenyra limpia 1 debuff (' + _rhaeDebuffs[0].name + ')', 'buff');
+                            }
+                        }
+                        // Aliado aleatorio +1 carga + limpiar 1 debuff
                         if (_rbAllies.length > 0) {
                             const _rndAlly = _rbAllies[Math.floor(Math.random() * _rbAllies.length)];
                             const _allyC = gameState.characters[_rndAlly];
-                            if (_allyC) { _allyC.charges = Math.min(20, (_allyC.charges||0) + 1); }
-                            addLog('🐉 Derecho de Nacimiento: Rhaenyra y ' + _rndAlly + ' generan 1 carga (Cría ' + (_ci+1) + ')', 'buff');
+                            if (_allyC) {
+                                _allyC.charges = Math.min(20, (_allyC.charges||0) + 1);
+                                const _allyDebuffs = (_allyC.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff'; });
+                                if (_allyDebuffs.length > 0) {
+                                    _allyC.statusEffects = (_allyC.statusEffects||[]).filter(function(e){ return e !== _allyDebuffs[0]; });
+                                    addLog('🐉 Derecho de Nacimiento: ' + _rndAlly + ' +1 carga + limpia 1 debuff (Cría ' + (_ci+1) + ')', 'buff');
+                                } else {
+                                    addLog('🐉 Derecho de Nacimiento: Rhaenyra y ' + _rndAlly + ' generan 1 carga (Cría ' + (_ci+1) + ')', 'buff');
+                                }
+                            }
                         } else {
                             addLog('🐉 Derecho de Nacimiento: Rhaenyra genera 1 carga (Cría ' + (_ci+1) + ')', 'buff');
                         }
