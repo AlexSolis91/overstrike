@@ -3382,6 +3382,7 @@
                         if (!gameState.turnOrder.includes(_ikkiN)) gameState.turnOrder.push(_ikkiN);
                         addLog('🦅 ¡Cenizas del Fénix! ' + _ikkiN + ' revive con ' + ikki.hp + ' HP y 10 cargas', 'heal');
                         if (typeof _animCard === 'function') _animCard(_ikkiN, 'anim-transform', 700);
+                        if (typeof window.onCharacterRevived === 'function') window.onCharacterRevived(_ikkiN);
                         // +5 cargas al equipo aliado
                         for (const _an in gameState.characters) {
                             const _ac = gameState.characters[_an];
