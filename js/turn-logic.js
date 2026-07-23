@@ -2727,6 +2727,7 @@
                             _jsC.jonSnowReviveUsed = true;
                             addLog('⚔️ El Rey Prometido: ¡' + _jsN + ' revive con 15 HP y 18 cargas!', 'buff');
                             renderCharacters();
+                            if (typeof window.onCharacterRevived === 'function') window.onCharacterRevived(_jsN);
                         }
                     }
                     // Snapshot HP de todos los personajes al inicio de ronda (para Aspecto de la Vida)
