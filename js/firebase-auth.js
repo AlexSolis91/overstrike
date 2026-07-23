@@ -1988,8 +1988,9 @@
                 const sh1 = document.getElementById('statusHeader1'); if (sh1) sh1.textContent = '🔷 ' + myName;
                 const sh2 = document.getElementById('statusHeader2'); if (sh2) sh2.textContent = '🔶 ' + opponentName;
                 addLog('🏆 RANKED: ' + myName + ' vs ' + opponentName + ' (equipo de defensa)', 'info');
-                // ← Cargar reliquias del jugador y rival
-                if (typeof window.loadGameRelics === 'function') window.loadGameRelics();
+                // Cargar reliquias pasando los UIDs explícitamente para evitar perderlos
+                var _defOpUid = window._rankedDefenseOwnerUid || window._opponentUid || null;
+                if (typeof window.loadGameRelics === 'function') window.loadGameRelics(user ? user.uid : null, _defOpUid, 'team1');
                 audioManager.playRandomBattle();
             } else {
                 // Fallback: go to char select (team1 only if no attack team)
@@ -3829,19 +3830,23 @@
                 // Cargar reliquias del jugador y rival.
                 // _opponentUid puede no estar seteado en el guest (scope de _listenForRankedBothReady
                 // no tiene acceso directo al room.host.uid). Lo leemos de la sala si falta.
-                function _doLoadRelics() {
-                    if (typeof window.loadGameRelics === 'function') window.loadGameRelics();
+                function _doLoadRelics(resolvedOpUid) {
+                    var _myTeamInGame = asHost ? 'team1' : 'team2';
+                    if (typeof window.loadGameRelics === 'function') {
+                        window.loadGameRelics(null, resolvedOpUid, _myTeamInGame);
+                    }
                 }
                 if (!window._opponentUid) {
                     db.ref('rooms/' + roomId).once('value', function(rs) {
                         const _rd = rs.val() || {};
-                        window._opponentUid = asHost
+                        var resolvedOpUid = asHost
                             ? (_rd.guest && _rd.guest.uid ? _rd.guest.uid : null)
                             : (_rd.host  && _rd.host.uid  ? _rd.host.uid  : null);
-                        _doLoadRelics();
+                        window._opponentUid = resolvedOpUid;
+                        _doLoadRelics(resolvedOpUid);
                     });
                 } else {
-                    _doLoadRelics();
+                    _doLoadRelics(window._opponentUid);
                 }
 
                 addLog('🏆 RANKED: ' + hostName + ' vs ' + guestName, 'info');
