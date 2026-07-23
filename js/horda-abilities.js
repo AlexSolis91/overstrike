@@ -445,6 +445,12 @@
         dmg = hordaComputeRelicDamage(casterName, targetName, dmg, 'over', false);
         applyDamageWithShield(targetName, dmg, casterName);
         addLog('🔪 Guillotina de Hierro: ' + dmg + ' daño a ' + targetName + (crit ? ' (¡CRÍTICO!)' : ''), 'damage');
+        // Aplicar Sangrado 2 turnos al objetivo
+        var tgt = gameState.characters[targetName];
+        if (tgt && !tgt.isDead && tgt.hp > 0) {
+            if (typeof applyBleed === 'function') applyBleed(targetName, 2);
+            addLog('🔪 Guillotina de Hierro: Sangrado 2T aplicado a ' + targetName, 'debuff');
+        }
         if (crit) {
             var caster = gameState.characters[casterName];
             if (caster) {
