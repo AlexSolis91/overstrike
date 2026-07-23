@@ -52,7 +52,79 @@
         // Disparo automático del Over al llegar a 5 contadores de Ira Divina — es una
         // INTERRUPCIÓN: muestra la cinemática normal del Over, pero NO pasa por
         // executeAbility()/endTurn(), así que no consume ni sustituye ningún turno.
-        window.triggerThanatosAutoOver = function(charName) {
+        // ══════════════════════════════════════════════════════════════════
+        // SKELETOR — helpers
+        // ══════════════════════════════════════════════════════════════════
+
+        // Efecto real de El Secreto de Grayskull (AOE 10 daño + drena cargas + Miedo 3T + Confusión 3T).
+        // Se llama tanto si Skeletor lo usa manualmente (desde su turno) como automáticamente al
+        // detectar una revivida. En el caso automático NO gasta cargas ni consume turno.
+        window.executeSkeletorSecretoGrayskullEffect = function(casterName) {
+            const caster = gameState.characters[casterName];
+            if (!caster) return;
+            const enemyTeam = caster.team === 'team1' ? 'team2' : 'team1';
+            for (const n in gameState.characters) {
+                const c = gameState.characters[n];
+                if (!c || c.team !== enemyTeam || c.isDead || c.hp <= 0) continue;
+                applyDamageWithShield(n, 10, casterName);
+                const cAfter = gameState.characters[n];
+                if (cAfter && !cAfter.isDead && cAfter.hp > 0) {
+                    cAfter.charges = 0;
+                    if (typeof applyDebuff === 'function') {
+                        applyDebuff(n, { name: 'Miedo', type: 'debuff', duration: 3, emoji: '😱' });
+                        applyDebuff(n, { name: 'Confusion', type: 'debuff', duration: 3, emoji: '💫' });
+                    }
+                }
+            }
+            addLog('💀 El Secreto de Grayskull: 10 daño AOE + drena cargas + Miedo 3T + Confusión 3T a todos los enemigos', 'damage');
+            if (typeof renderCharacters === 'function') renderCharacters();
+        };
+
+        // Disparar el Over automáticamente al detectar una revivida — igual que Thanatos.
+        // El flag _grayskullAutoOverPending evita que se dispare más de una vez por evento
+        // aunque revivan múltiples personajes al mismo tiempo.
+        window.triggerSkeletorAutoOver = function(skeletorName) {
+            const caster = gameState.characters[skeletorName];
+            if (!caster || caster.isDead || caster.hp <= 0) return;
+            if (caster._grayskullAutoOverPending) return;
+            caster._grayskullAutoOverPending = true;
+            addLog('💀 ¡Alguien revivió! Skeletor ejecuta El Secreto de Grayskull de inmediato', 'buff');
+            const _finish = function() {
+                window.executeSkeletorSecretoGrayskullEffect(skeletorName);
+                caster._grayskullAutoOverPending = false;
+            };
+            if (typeof _showOverCinematic === 'function') {
+                _showOverCinematic(skeletorName, 'El Secreto de Grayskull', 'skeletor_secreto_grayskull', caster.team, function() {
+                    if (typeof audioManager !== 'undefined' && typeof audioManager.playOverSfx === 'function') audioManager.playOverSfx();
+                    if (typeof _animCard === 'function') _animCard(skeletorName, 'anim-over', 700);
+                    _finish();
+                });
+            } else {
+                _finish();
+            }
+        };
+
+        // Función centralizada que se llama CADA VEZ que cualquier personaje jugable revive.
+        // Cualquier código que reviva personajes debe llamar a esto (Fisura, Over automático, etc).
+        window.onCharacterRevived = function(revivedName) {
+            // Buscar a Skeletor en cualquier equipo
+            for (const _skN in gameState.characters) {
+                const _skC = gameState.characters[_skN];
+                if (!_skC || _skC.isDead || _skC.hp <= 0) continue;
+                if (!_skC.passive || _skC.passive.name !== 'Soberano de la Destrucción') continue;
+                // No disparar si quien revivió ES Skeletor mismo (evitar loop)
+                if (_skN === revivedName) continue;
+                // Disparar con pequeño delay para que la animación de revivir termine primero
+                (function(skName) {
+                    setTimeout(function() {
+                        if (typeof window.triggerSkeletorAutoOver === 'function') window.triggerSkeletorAutoOver(skName);
+                    }, 700);
+                })(_skN);
+                break; // Solo hay un Skeletor
+            }
+        };
+
+        function triggerThanatosAutoOver(charName) {
             const caster = gameState.characters[charName];
             if (!caster || caster.isDead || caster.hp <= 0) { return; }
             addLog('💀 ¡Ira Divina alcanza 5 contadores! Thanatos ejecuta Terrible Providencia de inmediato', 'buff');
@@ -10780,6 +10852,114 @@
                         addLog('🗡️ Séptima Postura: +15 cargas (objetivo tenía Ceguera)', 'buff');
                     }
                 }
+
+            // ══════════════════════════════════════════════════════
+            // SKELETOR — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'skeletor_mandoble') {
+                // MANDOBLE DE ALCALÁ: 2 daño + roba 1 HP por cada debuff en el equipo enemigo
+                const _skMAtk = gameState.characters[gameState.selectedCharacter];
+                const _skMETeam = _skMAtk ? (_skMAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('💀 Mandoble de Alcalá: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                // Contar debuffs activos en el equipo enemigo (todos los personajes)
+                let _skMDebuffs = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _skMETeam || _c.isDead || _c.hp <= 0) continue;
+                    _skMDebuffs += (_c.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff'; }).length;
+                }
+                if (_skMDebuffs > 0) {
+                    const _skMTgt = gameState.characters[targetName];
+                    const _skMStealDmg = _skMDebuffs;
+                    if (_skMTgt && !_skMTgt.isDead && _skMTgt.hp > 0) {
+                        _skMTgt.hp = Math.max(0, _skMTgt.hp - _skMStealDmg);
+                    }
+                    if (_skMAtk) _skMAtk.hp = Math.min(_skMAtk.maxHp, (_skMAtk.hp||0) + _skMStealDmg);
+                    addLog('💀 Mandoble de Alcalá: roba ' + _skMStealDmg + ' HP (' + _skMDebuffs + ' debuffs en el equipo enemigo)', 'damage');
+                }
+
+            } else if (ability.effect === 'skeletor_rafaga_havoc') {
+                // RÁFAGA DE HAVOC: 3 daño ST + condicional por buffs/debuffs del objetivo
+                const _skRAtk = gameState.characters[gameState.selectedCharacter];
+                const _skRETeam = _skRAtk ? (_skRAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _skRTgt = gameState.characters[targetName];
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('💀 Ráfaga de Havoc: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (_skRTgt) {
+                    const _skRBuffs = (_skRTgt.statusEffects||[]).filter(function(e){ return e && e.type === 'buff'; });
+                    const _skRDebuffs = (_skRTgt.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff'; });
+                    if (_skRBuffs.length > 0) {
+                        // Contar total de buffs en equipo enemigo
+                        let _skRTotalBuffs = 0;
+                        for (const _n in gameState.characters) {
+                            const _c = gameState.characters[_n];
+                            if (!_c || _c.team !== _skRETeam || _c.isDead || _c.hp <= 0) continue;
+                            _skRTotalBuffs += (_c.statusEffects||[]).filter(function(e){ return e && e.type === 'buff'; }).length;
+                        }
+                        const _skRBonusDmg = _skRTotalBuffs * 2;
+                        for (const _n in gameState.characters) {
+                            const _c = gameState.characters[_n];
+                            if (!_c || _c.team !== _skRETeam || _c.isDead || _c.hp <= 0) continue;
+                            applyDamageWithShield(_n, _skRBonusDmg, gameState.selectedCharacter);
+                        }
+                        addLog('💀 Ráfaga de Havoc: ¡objetivo tenía buffs! +' + _skRBonusDmg + ' daño a todo el equipo enemigo (' + _skRTotalBuffs + ' buffs totales)', 'damage');
+                    }
+                    if (_skRDebuffs.length > 0) {
+                        // Copiar todos los debuffs del objetivo a todos los demás enemigos
+                        const _skROtherEnemies = Object.keys(gameState.characters).filter(function(_n){
+                            const _c = gameState.characters[_n];
+                            return _c && _c.team === _skRETeam && !_c.isDead && _c.hp > 0 && _n !== targetName;
+                        });
+                        _skROtherEnemies.forEach(function(_n) {
+                            _skRDebuffs.forEach(function(debuff) {
+                                if (typeof applyDebuff === 'function') {
+                                    applyDebuff(_n, Object.assign({}, debuff));
+                                }
+                            });
+                        });
+                        addLog('💀 Ráfaga de Havoc: ' + _skRDebuffs.length + ' debuffs del objetivo copiados a los demás enemigos', 'debuff');
+                    }
+                }
+
+            } else if (ability.effect === 'skeletor_fisura') {
+                // FISURA DE LA MONTAÑA SERPIENTE: AOE 4 daño + 15% crit por objetivo + revivir aliado por cada crit
+                const _skFAtk = gameState.characters[gameState.selectedCharacter];
+                const _skFETeam = _skFAtk ? (_skFAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _skFMyTeam = _skFAtk ? _skFAtk.team : 'team1';
+                let _skFCrits = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _skFETeam || _c.isDead || _c.hp <= 0) continue;
+                    if (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(_n, true)) continue;
+                    const _skFIsCrit = Math.random() < 0.15;
+                    const _skFDmg = _skFIsCrit ? finalDamage * 2 : finalDamage;
+                    applyDamageWithShield(_n, _skFDmg, gameState.selectedCharacter);
+                    if (_skFIsCrit) {
+                        _skFCrits++;
+                        addLog('💀 Fisura: ¡CRÍTICO! ' + _skFDmg + ' daño a ' + _n, 'damage');
+                    } else {
+                        addLog('💀 Fisura: ' + _skFDmg + ' daño a ' + _n, 'damage');
+                    }
+                }
+                // Revivir 1 aliado eliminado por cada crítico
+                for (let _ci = 0; _ci < _skFCrits; _ci++) {
+                    const _skFDead = Object.keys(gameState.characters).filter(function(_n){
+                        const _c = gameState.characters[_n];
+                        return _c && _c.team === _skFMyTeam && _c.isDead;
+                    });
+                    if (_skFDead.length === 0) break;
+                    const _skFRevived = _skFDead[Math.floor(Math.random() * _skFDead.length)];
+                    const _skFRC = gameState.characters[_skFRevived];
+                    _skFRC.isDead = false; _skFRC.hp = _skFRC.maxHp; _skFRC.charges = 0; _skFRC.statusEffects = [];
+                    addLog('💀 Fisura: ¡crítico! ' + _skFRevived + ' revive con 100% HP', 'buff');
+                    if (typeof window.onCharacterRevived === 'function') window.onCharacterRevived(_skFRevived);
+                }
+                if (typeof renderCharacters === 'function') renderCharacters();
+
+            } else if (ability.effect === 'skeletor_secreto_grayskull') {
+                window.executeSkeletorSecretoGrayskullEffect(gameState.selectedCharacter);
 
             // ══════════════════════════════════════════════════════
             // GOGETA — handlers
