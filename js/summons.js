@@ -2783,6 +2783,36 @@
                     target.fenixRevived = false;
                 }
 
+                // SOBERANO DE LA DESTRUCCIÓN (Skeletor): al morir un aliado jugable (no invocación),
+                // 50% de revivir a ese aliado OR 50% de revivir al propio Skeletor si está eliminado.
+                if (!passiveExecuting && !target.isSummon && !target.isBoss) {
+                    const _skDeadTeam = target.team;
+                    for (const _skN in gameState.characters) {
+                        const _skC = gameState.characters[_skN];
+                        if (!_skC || !_skC.passive || _skC.passive.name !== 'Soberano de la Destrucción') continue;
+                        if (_skC.team !== _skDeadTeam) continue; // Skeletor en el mismo equipo
+
+                        if (_skC.isDead || _skC.hp <= 0) {
+                            // Skeletor también está muerto: 50% de que Skeletor reviva
+                            if (Math.random() < 0.50) {
+                                _skC.isDead = false; _skC.hp = _skC.maxHp; _skC.charges = 0; _skC.statusEffects = [];
+                                addLog('💀 Soberano de la Destrucción: ¡Skeletor revive con 100% HP!', 'buff');
+                                if (typeof window.onCharacterRevived === 'function') window.onCharacterRevived(_skN);
+                                if (typeof renderCharacters === 'function') renderCharacters();
+                            }
+                        } else {
+                            // Skeletor vivo: 50% de revivir al aliado recién eliminado
+                            if (Math.random() < 0.50 && (target.isDead || target.hp <= 0)) {
+                                target.isDead = false; target.hp = target.maxHp; target.charges = 0; target.statusEffects = [];
+                                addLog('💀 Soberano de la Destrucción: ' + targetName + ' revive con 100% HP (Skeletor)', 'buff');
+                                if (typeof window.onCharacterRevived === 'function') window.onCharacterRevived(targetName);
+                                if (typeof renderCharacters === 'function') renderCharacters();
+                            }
+                        }
+                        break;
+                    }
+                }
+
                 // PASIVA PILAR DEL INSECTO (Shinobu Kocho): al morir aplica Veneno 10T al equipo enemigo
                 if ((targetName === 'Shinobu Kocho' || targetName === 'Shinobu Kocho v2') && !passiveExecuting) {
                     passiveExecuting = true;
