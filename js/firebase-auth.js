@@ -1990,8 +1990,13 @@
                 addLog('🏆 RANKED: ' + myName + ' vs ' + opponentName + ' (equipo de defensa)', 'info');
                 // Cargar reliquias pasando los UIDs explícitamente para evitar perderlos
                 var _defOpUid = window._rankedDefenseOwnerUid || window._opponentUid || null;
-                if (typeof window.loadGameRelics === 'function') window.loadGameRelics(user ? user.uid : null, _defOpUid, 'team1');
-                audioManager.playRandomBattle();
+                var _myUidForRelics = currentUser ? currentUser.uid : null;
+                if (typeof window.loadGameRelics === 'function') window.loadGameRelics(_myUidForRelics, _defOpUid, 'team1');
+                // Detener música de menú antes de iniciar la de batalla
+                if (typeof audioManager !== 'undefined') {
+                    if (typeof audioManager.stopMenuMusic === 'function') audioManager.stopMenuMusic();
+                    audioManager.playRandomBattle();
+                }
             } else {
                 // Fallback: go to char select (team1 only if no attack team)
                 showScreen('charSelectScreen');
