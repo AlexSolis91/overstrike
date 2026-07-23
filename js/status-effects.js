@@ -680,12 +680,11 @@ function processBurnEffects(charName) {
                         if (!_rhaeC || _rhaeC.isDead || _rhaeC.hp <= 0 || !_rhaeC.passive) continue;
                         if (_rhaeC.passive.name !== 'Heredera Legítima') continue;
                         if (_rhaeC.team !== _rhaeAllyTeam) continue;
-                        if (Math.random() < 0.50) {
-                            passiveHealExecuting = true;
-                            if (typeof applySolarBurn === 'function') applySolarBurn(charName, 10, 2);
-                            addLog('🔥 Heredera Legítima: ' + charName + ' recibe Quemadura Solar (curó HP)', 'debuff');
-                            passiveHealExecuting = false;
-                        }
+                        // Siempre aplica Quemadura Solar (sin 50% de probabilidad)
+                        passiveHealExecuting = true;
+                        if (typeof applySolarBurn === 'function') applySolarBurn(charName, 10, 2);
+                        addLog('🔥 Heredera Legítima: ' + charName + ' recibe Quemadura Solar (curó HP)', 'debuff');
+                        passiveHealExecuting = false;
                         break;
                     }
                 }
