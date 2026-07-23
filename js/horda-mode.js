@@ -62,7 +62,7 @@
                     { name: 'Mandoble de Hierro', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'horda_altoorco_basic', description: '+1 daño adicional por cada Orco derrotado en tu equipo. Aplica debuff Sangrado 1 turno.' },
                     { name: 'Grito de Mandato', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'self', effect: 'horda_altoorco_special1', description: 'Aplica Buff Armadura 2 turnos y Buff Frenesí 2 turnos a todos los aliados.' },
                     { name: 'Torbellino de Sangre', type: 'special', cost: 7, chargeGain: 0, damage: 4, target: 'aoe', effect: 'horda_altoorco_special2', description: 'Aplica debuff Debilitar 3 turnos sobre los golpeados. Golpe crítico en enemigos con Sangrado o Hemorragia.' },
-                    { name: 'Guillotina de Hierro', type: 'over', cost: 10, chargeGain: 0, damage: 10, target: 'single', effect: 'horda_altoorco_over', description: '50% de probabilidad de crítico. Si es crítico, aliados generan 10 cargas.' }
+                    { name: 'Guillotina de Hierro', type: 'over', cost: 10, chargeGain: 0, damage: 10, target: 'single', effect: 'horda_altoorco_over', description: '50% de probabilidad de crítico. Si es crítico, aliados generan 10 cargas. Aplica debuff Sangrado 2 turnos.' }
                 ]
             },
             'Orco Gigante': {
