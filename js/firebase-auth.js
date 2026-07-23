@@ -4221,6 +4221,10 @@
 
             var myTeam = gameState.myTeam || window._rankedPlayerTeam || (typeof csState !== 'undefined' && csState && csState.onlineTeam) || 'team1';
 
+            // Resolver el UID del rival — puede estar en _opponentUid (ranked online) o en
+            // _rankedDefenseOwnerUid (ranked vs IA defensa). Usar el que esté disponible.
+            var resolvedOpponentUid = window._opponentUid || window._rankedDefenseOwnerUid || null;
+
             if (currentUser) {
                 Object.keys(gameState.characters).forEach(function(charName) {
                     var c = gameState.characters[charName];
@@ -4228,11 +4232,11 @@
                 });
             }
 
-            if (window._opponentUid) {
+            if (resolvedOpponentUid) {
                 var oppTeam = myTeam === 'team1' ? 'team2' : 'team1';
                 Object.keys(gameState.characters).forEach(function(charName) {
                     var c = gameState.characters[charName];
-                    if (c && c.team === oppTeam) _loadForCharacter(charName, window._opponentUid);
+                    if (c && c.team === oppTeam) _loadForCharacter(charName, resolvedOpponentUid);
                 });
             }
         };
