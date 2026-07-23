@@ -2553,30 +2553,6 @@
                         }
                     }
 
-                    // ── HEREDERA LEGÍTIMA (Rhaenyra): inicio de ronda → invoca 1 Cría de Dragón (máx 5 invocaciones por equipo) ──
-                    for (const _rhRN in gameState.characters) {
-                        const _rhRC = gameState.characters[_rhRN];
-                        if (!_rhRC || _rhRC.isDead || _rhRC.hp <= 0 || !_rhRC.passive) continue;
-                        if (_rhRC.passive.name !== 'Heredera Legítima') continue;
-                        // Count active summons on Rhaenyra's team
-                        const _rhTeamSummons = Object.values(gameState.summons).filter(function(s){ return s && s.team === _rhRC.team && !s.isDead && s.hp > 0; });
-                        if (_rhTeamSummons.length >= 5) {
-                            addLog('🐉 Heredera Legítima: máximo de 5 invocaciones alcanzado', 'info');
-                            break;
-                        }
-                        // Spawn Cría de Dragón
-                        const _criaId = 'Cria_Dragon_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
-                        gameState.summons[_criaId] = {
-                            id: _criaId, name: 'Cría de Dragón', summoner: _rhRN, team: _rhRC.team,
-                            hp: 10, maxHp: 10, isDead: false, statusEffects: [],
-                            img: 'https://i.ibb.co/fGxPcTNL/Whats-App-Image-2026-06-26-at-12-06-13-PM.jpg',
-                            passive: 'Mordedura: aplica un debuff aleatorio a un enemigo al final de cada ronda. Al morir, Rhaenyra genera 3 cargas.'
-                        };
-                        if (typeof renderSummons === 'function') renderSummons();
-                        addLog('🐉 Heredera Legítima: ' + _rhRN + ' invoca una Cría de Dragón al inicio de la ronda', 'buff');
-                        break;
-                    }
-
                     // ── VÍNCULO DORADO (Syrax): inicio de ronda → equipo aliado +7 escudo + Aura de Fuego ──
                     for (const _syraxSumId in gameState.summons) {
                         const _syraxS = gameState.summons[_syraxSumId];
