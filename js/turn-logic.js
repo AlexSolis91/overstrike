@@ -3086,27 +3086,41 @@
                     }
 
                     // ── HEMORRAGIA: 3-6 daño + pierde esa misma cantidad de cargas, cada ronda, NO expira por turnos ──
+                    // Este daño es DIRECTO — ignora Escudo Sagrado, Protección Sagrada y escudo de HP.
                     const _eorHemo = (gameState.characters[_eorN] && gameState.characters[_eorN].statusEffects || []).find(function(e){ return e && normAccent(e.name||'') === 'hemorragia'; });
                     if (_eorHemo && !_eorC.isDead && _eorC.hp > 0) {
                         const _eorHemoDmg = Math.floor(Math.random() * 4) + 3; // 3 a 6
                         gameState._currentDamageSource = 'Hemorragia'; // Visión Esmeralda
-                        applyDamageWithShield(_eorN, _eorHemoDmg, null);
+                        // Aplicar directo al HP sin pasar por applyDamageWithShield
+                        _eorC.hp = Math.max(0, _eorC.hp - _eorHemoDmg);
+                        if (_eorC.hp <= 0 && !_eorC.isDead) {
+                            _eorC.isDead = true;
+                            if (typeof registerKill === 'function') registerKill('Hemorragia', _eorN, false);
+                            if (typeof checkGameOver === 'function') checkGameOver();
+                        }
                         const _eorHemoChar = gameState.characters[_eorN];
                         if (_eorHemoChar) {
                             _eorHemoChar.charges = Math.max(0, (_eorHemoChar.charges||0) - _eorHemoDmg);
                         }
-                        addLog('🩸💀 ' + _eorN + ' recibe ' + _eorHemoDmg + ' de daño por Hemorragia y pierde ' + _eorHemoDmg + ' cargas', 'damage');
+                        addLog('🩸💀 ' + _eorN + ' recibe ' + _eorHemoDmg + ' de daño por Hemorragia y pierde ' + _eorHemoDmg + ' cargas (ignora Escudo Sagrado)', 'damage');
                         if (typeof _animCard === 'function') _animCard(_eorN, 'anim-bleed', 650);
                         if (typeof _spawnParticles === 'function') _spawnParticles(_eorN, '🩸', 4);
                     }
 
                     // ── SANGRADO: 1-2 daño al final de ronda, decrementa duración, expira al llegar a 0 ──
+                    // Este daño es DIRECTO — ignora Escudo Sagrado, Protección Sagrada y escudo de HP.
                     const _eorBleed = (gameState.characters[_eorN] && gameState.characters[_eorN].statusEffects || []).find(function(e){ return e && normAccent(e.name||'') === 'sangrado'; });
                     if (_eorBleed && !_eorC.isDead && _eorC.hp > 0) {
                         const _eorBleedDmg = Math.floor(Math.random() * 2) + 1; // 1 a 2
                         gameState._currentDamageSource = 'Sangrado'; // Visión Esmeralda
-                        applyDamageWithShield(_eorN, _eorBleedDmg, null);
-                        addLog('🩸 ' + _eorN + ' recibe ' + _eorBleedDmg + ' de daño por Sangrado', 'damage');
+                        // Aplicar directo al HP sin pasar por applyDamageWithShield
+                        _eorC.hp = Math.max(0, _eorC.hp - _eorBleedDmg);
+                        if (_eorC.hp <= 0 && !_eorC.isDead) {
+                            _eorC.isDead = true;
+                            if (typeof registerKill === 'function') registerKill('Sangrado', _eorN, false);
+                            if (typeof checkGameOver === 'function') checkGameOver();
+                        }
+                        addLog('🩸 ' + _eorN + ' recibe ' + _eorBleedDmg + ' de daño por Sangrado (ignora Escudo Sagrado)', 'damage');
                         if (typeof _animCard === 'function') _animCard(_eorN, 'anim-bleed', 650);
                         if (typeof _spawnParticles === 'function') _spawnParticles(_eorN, '🩸', 2);
                         _eorBleed.duration = (_eorBleed.duration || 1) - 1;
