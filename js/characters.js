@@ -1083,6 +1083,19 @@
                 ]
             },
 
+            'Skeletor': {
+                hp: 25, maxHp: 25, speed: 82, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/XZz34j5N/Master-Of-The-Universe.jpg',
+                passive: { name: 'Soberano de la Destrucción', description: 'Inmune a Miedo, Aturdimiento y Mega Aturdimiento. Cada vez que un aliado (jugable) es eliminado, 50% de probabilidad de que reviva con 100% HP y 0 cargas. Si Skeletor está eliminado y un aliado es eliminado, 50% de que Skeletor reviva con 100% HP y 0 cargas. Cada vez que cualquier personaje (aliado o enemigo) revive, Skeletor ejecuta El Secreto de Grayskull automáticamente (sin consumir cargas ni turno, una sola vez por evento de revivir, independientemente de cuántos revivan).' },
+                abilities: [
+                    { name: 'Mandoble de Alcalá',          type: 'basic',   cost: 0,  chargeGain: 2, damage: 2,  target: 'single', effect: 'skeletor_mandoble',       description: 'Roba 1 HP al objetivo por cada debuff activo en el equipo enemigo.' },
+                    { name: 'Ráfaga de Havoc',             type: 'special', cost: 4,  chargeGain: 0, damage: 3,  target: 'single', effect: 'skeletor_rafaga_havoc',    description: 'Si el objetivo tiene un buff activo, causa +2 daño adicional a cada enemigo por cada buff activo en el equipo enemigo. Si el objetivo tiene un debuff activo, aplica todos los debuffs del objetivo a cada uno de los demás enemigos.' },
+                    { name: 'Fisura de la Montaña Serpiente', type: 'special', cost: 6, chargeGain: 0, damage: 4, target: 'aoe',   effect: 'skeletor_fisura',          description: 'AOE 4 daño. 15% de probabilidad de golpe crítico (doble daño) por cada enemigo golpeado. Por cada crítico acertado, revive a un aliado eliminado aleatorio con 100% HP y 0 cargas.' },
+                    { name: 'El Secreto de Grayskull',     type: 'over',    cost: 10, chargeGain: 0, damage: 10, target: 'aoe',   effect: 'skeletor_secreto_grayskull', description: 'AOE 10 daño. Elimina todas las cargas de los enemigos golpeados. Aplica Miedo 3T y Confusión 3T a los enemigos golpeados.' }
+                ]
+            },
+
             'Rhaenyra Targaryen': {
                 hp: 15, maxHp: 15, speed: 75, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
