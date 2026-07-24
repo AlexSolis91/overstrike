@@ -1271,6 +1271,19 @@
                 }
             }
 
+            // ── PECHERA DE MITRIL: no recibe daño de ataques que causen más de 7 de daño ──
+            // (La protección vs eliminación directa se maneja en las habilidades individuales que eliminan sin daño)
+            if (!passiveExecuting && damage > 7 && (target.equippedRelics||[]).includes('Pechera de Mitril')) {
+                addLog('⚔️ Pechera de Mitril: ' + targetName + ' bloquea el ataque (daño ' + damage + ' > 7)', 'buff');
+                return 0;
+            }
+
+            // ── BUFF ARMADURA: reduce 50% el daño recibido ──
+            if (!passiveExecuting && damage > 0 && hasStatusEffect(targetName, 'Armadura')) {
+                damage = Math.ceil(damage / 2);
+                addLog('🛡️ Armadura: ' + targetName + ' reduce 50% el daño recibido (' + damage + ' HP)', 'buff');
+            }
+
             // ── THE ONE (Escanor): -50% daño recibido mientras esté en forma The One ──
             if (!passiveExecuting && damage > 0 && target.escanorTheOneActive) {
                 damage = Math.ceil(damage / 2);
@@ -1741,6 +1754,62 @@
                         allyTeam: _dynRDChar.team,
                         enemyTeam: _dynRDChar.team === 'team1' ? 'team2' : 'team1'
                     });
+                }
+            }
+
+            // ── CAPA ÉLFICA DE RIVENDELL: 25% de aplicar Congelación al objetivo al atacar ──
+            if (remainingDamage > 0 && !passiveExecuting && attackerName) {
+                const _ceAtk = gameState.characters[attackerName];
+                if (_ceAtk && (_ceAtk.equippedRelics||[]).includes('Capa Élfica de Rivendell')) {
+                    if (Math.random() < 0.25) {
+                        const _ceTgt = gameState.characters[targetName];
+                        if (_ceTgt && !_ceTgt.isDead && _ceTgt.hp > 0) {
+                            if (typeof applyDebuff === 'function') applyDebuff(targetName, { name: 'Congelacion', type: 'debuff', duration: 2, emoji: '🧊', freeze: true });
+                            addLog('🌿 Capa Élfica: ' + targetName + ' queda Congelado 2T (25%)', 'debuff');
+                        }
+                    }
+                }
+            }
+
+            // ── ARMADURA SAIYAN: buff Armadura permanente (aplica reducción de 50%) ──
+            // La reducción de daño ya se aplica más arriba via hasStatusEffect('Armadura').
+            // Aquí solo aseguramos que el buff esté activo al inicio de cada combate.
+
+            // ── CASCO MANDALORIANO: al recibir ataque → atacante pierde 2 cargas ──
+            if (remainingDamage > 0 && !passiveExecuting && attackerName) {
+                if ((target.equippedRelics||[]).includes('Casco Mandaloriano')) {
+                    const _cmAtk = gameState.characters[attackerName];
+                    if (_cmAtk) {
+                        _cmAtk.charges = Math.max(0, (_cmAtk.charges||0) - 2);
+                        addLog('🪖 Casco Mandaloriano: ' + attackerName + ' pierde 2 cargas', 'debuff');
+                    }
+                }
+            }
+
+            // ── TRAJE DE SAIYAMAN: al recibir daño → disipa propios debuffs ──
+            if (remainingDamage > 0 && !passiveExecuting) {
+                if ((target.equippedRelics||[]).includes('Traje de Saiyaman')) {
+                    const _tsDebuffs = (target.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff'; });
+                    if (_tsDebuffs.length > 0) {
+                        target.statusEffects = (target.statusEffects||[]).filter(function(e){ return !e || e.type !== 'debuff'; });
+                        addLog('🦸 Traje de Saiyaman: ' + targetName + ' disipa ' + _tsDebuffs.length + ' debuffs al recibir daño', 'buff');
+                    }
+                }
+            }
+
+            // ── TRAJE DE SAIYAMAN: al causar daño → Confusión a un enemigo aleatorio ──
+            if (remainingDamage > 0 && !passiveExecuting && attackerName) {
+                const _tsAtk = gameState.characters[attackerName];
+                if (_tsAtk && (_tsAtk.equippedRelics||[]).includes('Traje de Saiyaman')) {
+                    const _tsETeam = _tsAtk.team === 'team1' ? 'team2' : 'team1';
+                    const _tsEnemies = Object.keys(gameState.characters).filter(function(n){
+                        const c = gameState.characters[n]; return c && c.team === _tsETeam && !c.isDead && c.hp > 0;
+                    });
+                    if (_tsEnemies.length > 0) {
+                        const _tsTarget = _tsEnemies[Math.floor(Math.random() * _tsEnemies.length)];
+                        if (typeof applyDebuff === 'function') applyDebuff(_tsTarget, { name: 'Confusion', type: 'debuff', duration: 1, emoji: '💫' });
+                        addLog('🦸 Traje de Saiyaman: Confusión aplicada a ' + _tsTarget, 'debuff');
+                    }
                 }
             }
 
