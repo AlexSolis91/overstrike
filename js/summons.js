@@ -813,7 +813,42 @@
             return Math.max(1, count);
         }
 
-        // Pasiva de Iron: absorbe daño del invocador
+        // PASIVA CLON DE KURUMI: absorbe todo el daño dirigido a Kurumi
+        function checkKurumiClonProtection(targetName) {
+            return Object.keys(gameState.summons).find(function(id) {
+                const s = gameState.summons[id];
+                return s && s.name === 'Clon de Kurumi' && s.summoner === targetName && !s.isDead && s.hp > 0;
+            }) || null;
+        }
+
+        function redirectDamageToKurumiClon(clonId, damage, attackerName) {
+            const clon = gameState.summons[clonId];
+            if (!clon) return damage;
+            addLog('🕑 Sombra Protectora: Clon de Kurumi absorbe ' + damage + ' daño dirigido a ' + clon.summoner, 'buff');
+            applySummonDamage(clonId, damage, attackerName);
+            // Si el Clon murió tras absorber: distribuir 8 daño entre enemigos
+            if (gameState.summons[clonId] && (gameState.summons[clonId].isDead || gameState.summons[clonId].hp <= 0)) {
+                _onKurumiClonDeath(clonId, clon.team, clon.summoner);
+            }
+            return 0;
+        }
+
+        function _onKurumiClonDeath(clonId, team, summoner) {
+            const enemyTeam = team === 'team1' ? 'team2' : 'team1';
+            const enemies = Object.keys(gameState.characters).filter(function(n){
+                const c = gameState.characters[n]; return c && c.team === enemyTeam && !c.isDead && c.hp > 0;
+            });
+            if (enemies.length === 0) return;
+            // Repartir 8 puntos de daño de forma aleatoria entre los enemigos
+            let remaining = 8;
+            for (let _i = 0; _i < remaining; _i++) {
+                const _target = enemies[Math.floor(Math.random() * enemies.length)];
+                applyDamageWithShield(_target, 1, summoner);
+            }
+            addLog('🕑 Clon de Kurumi eliminado: 8 daño repartido entre los enemigos', 'damage');
+        }
+
+        // PASIVA DE IRON: absorbe daño del invocador
         function checkIronProtection(targetName) {
             // Buscar si el objetivo tiene un Iron que lo protege
             const ironSummons = Object.keys(gameState.summons).filter(id => {
@@ -1113,6 +1148,11 @@
                 const ironId = checkIronProtection(targetName);
                 if (ironId) {
                     return redirectDamageToIron(ironId, damage, attackerName);
+                }
+                // CLON DE KURUMI: absorbe todo el daño dirigido a Kurumi
+                const kurumiClonId = checkKurumiClonProtection(targetName);
+                if (kurumiClonId) {
+                    return redirectDamageToKurumiClon(kurumiClonId, damage, attackerName);
                 }
             }
             
@@ -2850,6 +2890,18 @@
                 if ((targetName === 'Ikki de Fenix' || targetName === 'Ikki de Fenix v2')) {
                     target.deathRound = gameState.currentRound;
                     target.fenixRevived = false;
+                }
+
+                // CIUDAD DE LA DEVASTACIÓN (Kurumi): al morir cualquier personaje → Kurumi gana 10 cargas
+                if (!passiveExecuting) {
+                    for (const _kuN in gameState.characters) {
+                        const _kuC = gameState.characters[_kuN];
+                        if (!_kuC || _kuC.isDead || _kuC.hp <= 0) continue;
+                        if (!_kuC.passive || _kuC.passive.name !== 'Ciudad de la Devastación') continue;
+                        _kuC.charges = Math.min(20, (_kuC.charges||0) + 10);
+                        addLog('🕑 Ciudad de la Devastación: Kurumi gana 10 cargas (' + targetName + ' eliminado)', 'buff');
+                        break;
+                    }
                 }
 
                 // SOBERANO DE LA DESTRUCCIÓN (Skeletor): al morir un aliado jugable (no invocación),
