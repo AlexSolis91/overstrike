@@ -608,18 +608,22 @@
                     gameState._mvpCharFromRoom = data.mvpChar || null; // MVP calculado por el host
                     gameState._attackedThisTurn = data._attackedThisTurn || false;
                     // Sincronizar el Campo activo (Sendero de los Dioses, etc.)
-                    if (data.activeField) {
-                        if (!gameState.activeField) {
-                            // Campo nuevo — activarlo con el fondo correcto
-                            if (typeof window.activateSenderoDeLosDioses === 'function' && data.activeField.name === 'Sendero de los Dioses') {
-                                window.activateSenderoDeLosDioses(data.activeField.ownerName);
+                    // SOLO en modo online — en Horda el snapshot no tiene activeField y
+                    // el else dispararía deactivateActiveField borrando el fondo de batalla.
+                    if (onlineMode) {
+                        if (data.activeField) {
+                            if (!gameState.activeField) {
+                                // Campo nuevo — activarlo con el fondo correcto
+                                if (typeof window.activateSenderoDeLosDioses === 'function' && data.activeField.name === 'Sendero de los Dioses') {
+                                    window.activateSenderoDeLosDioses(data.activeField.ownerName);
+                                }
                             }
+                            if (gameState.activeField) gameState.activeField.roundsRemaining = data.activeField.roundsRemaining;
+                        } else if (gameState.activeField) {
+                            // Campo expiró en el servidor — desactivar localmente
+                            if (typeof window.deactivateActiveField === 'function') window.deactivateActiveField();
+                            else gameState.activeField = null;
                         }
-                        if (gameState.activeField) gameState.activeField.roundsRemaining = data.activeField.roundsRemaining;
-                    } else if (gameState.activeField) {
-                        // Campo expiró en el servidor — desactivar localmente
-                        if (typeof window.deactivateActiveField === 'function') window.deactivateActiveField();
-                        else gameState.activeField = null;
                     }
                     // Restore summons from sync
                     if (data.summons) {
