@@ -633,7 +633,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260880"></script>
+    <script src="js/firebase-auth.js?v=20260881"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -722,6 +722,30 @@
                                     if (rd.effect === 'hp_spd_plus3' && !ch._hpSpdApplied) { ch.hp=(ch.hp||0)+3; ch.maxHp=(ch.maxHp||0)+3; ch.speed=(ch.speed||80)+3; ch._hpSpdApplied=true; }
                                     if (rd.effect === 'hp_max_50pct' && !ch._hpMax50Applied) { var _b=Math.ceil((ch.maxHp||20)*0.5); ch.maxHp=(ch.maxHp||20)+_b; ch.hp=(ch.hp||0)+_b; ch._hpMax50Applied=true; }
                                     if (rd.effect === 'double_heal') { ch._doubleHeal = true; }
+                                    // Armadura Saiyan: +10 velocidad + buff Armadura permanente
+                                    if (rd.effect === 'armadura_saiyan' && !ch._armaduraSaiyanApplied) {
+                                        ch.speed = (ch.speed||80) + 10; ch._armaduraSaiyanApplied = true;
+                                        if (!(ch.statusEffects||[]).some(function(e){ return e&&e.name==='Armadura'; }))
+                                            ch.statusEffects = (ch.statusEffects||[]).concat([{name:'Armadura',type:'buff',duration:999,permanent:true,passiveHidden:true,emoji:'🛡️'}]);
+                                    }
+                                    // Tanque de Bacta: Cuerpo Perfecto permanente
+                                    if (rd.effect === 'tanque_bacta' && !ch._tanqueBactaApplied) {
+                                        ch._tanqueBactaApplied = true;
+                                        if (!(ch.statusEffects||[]).some(function(e){ return e&&e.name==='Cuerpo Perfecto'; }))
+                                            ch.statusEffects = (ch.statusEffects||[]).concat([{name:'Cuerpo Perfecto',type:'buff',duration:999,permanent:true,passiveHidden:true,emoji:'💠'}]);
+                                    }
+                                    // Rastreador: Anticipación + Contraataque permanentes
+                                    if (rd.effect === 'rastreador' && !ch._rastreadorApplied) {
+                                        ch._rastreadorApplied = true;
+                                        if (!(ch.statusEffects||[]).some(function(e){ return e&&e.name==='Anticipación'; }))
+                                            ch.statusEffects = (ch.statusEffects||[]).concat([{name:'Anticipación',type:'buff',duration:999,permanent:true,passiveHidden:true,emoji:'👁️',anticipacion:true}]);
+                                        if (!(ch.statusEffects||[]).some(function(e){ return e&&e.name==='Contraataque'; }))
+                                            ch.statusEffects = (ch.statusEffects||[]).concat([{name:'Contraataque',type:'buff',duration:999,permanent:true,passiveHidden:true,emoji:'⚔️'}]);
+                                    }
+                                    // Radar del Dragón: invocación al inicio de partida
+                                    if (rd.effect === 'radar_dragon') {
+                                        setTimeout(function(){ if (typeof window.triggerRadarDragon === 'function') window.triggerRadarDragon(charName); }, 1200);
+                                    }
                                 });
                             }
                             if (typeof renderCharacters === 'function') renderCharacters();
@@ -1567,9 +1591,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260880"></script>
+    <script src="js/characters.js?v=20260881"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260880"></script>
+    <script src="js/audio-state.js?v=20260881"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2301,26 +2325,26 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260880"></script>
+    <script src="js/ai-engine.js?v=20260881"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260880"></script>
+    <script src="js/init-render.js?v=20260881"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260880"></script>
+    <script src="js/turn-logic.js?v=20260881"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260880"></script>
+    <script src="js/status-effects.js?v=20260881"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260880"></script>
+    <script src="js/debuffs.js?v=20260881"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260880"></script>
+    <script src="js/summons.js?v=20260881"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260880"></script>
+    <script src="js/ability-select.js?v=20260881"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260880"></script>
+<script src="js/skills.js?v=20260881"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260880"></script>
-    <script src="js/horda-mode.js?v=20260880"></script>
-    <script src="js/horda-abilities.js?v=20260880"></script>
-    <script src="js/horda-battle.js?v=20260880"></script>
+    <script src="js/jefe-de-sala.js?v=20260881"></script>
+    <script src="js/horda-mode.js?v=20260881"></script>
+    <script src="js/horda-abilities.js?v=20260881"></script>
+    <script src="js/horda-battle.js?v=20260881"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
