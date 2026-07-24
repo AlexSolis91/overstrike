@@ -1083,6 +1083,19 @@
                 ]
             },
 
+            'Kurumi Tokisaki': {
+                hp: 20, maxHp: 20, speed: 83, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/x8swjGYC/Whats-App-Image-2026-07-24-at-3-37-23-PM.jpg',
+                passive: { name: 'Ciudad de la Devastación', description: 'Cada vez que un aliado o enemigo es eliminado, Kurumi genera 10 cargas. Tiene 50% de probabilidad de esquivar cualquier debuff que fuera a aplicarse en ella. Cada vez que un debuff es aplicado (no esquivado) en Kurumi, se cura 3 HP.' },
+                abilities: [
+                    { name: 'Zafkiel', type: 'basic',   cost: 0,  chargeGain: 1, damage: 3, target: 'single', effect: 'kurumi_zafkiel',   description: 'Si Kurumi tiene 50% HP o menos, roba 50% de las cargas actuales del objetivo.' },
+                    { name: 'Aleph',   type: 'special', cost: 3,  chargeGain: 0, damage: 0, target: 'self',   effect: 'kurumi_aleph',    description: 'Aplica Concentración 2T y Protección Sagrada 2T a Kurumi y a un aliado aleatorio. Ese aliado genera 3 cargas y gana 1 turno adicional inmediatamente.' },
+                    { name: 'Het',     type: 'special', cost: 4,  chargeGain: 0, damage: 0, target: 'self',   effect: 'kurumi_het',      description: 'Invoca un Clon de Kurumi. Disipa los debuffs activos de Kurumi. No puede usarse si ya hay un Clon de Kurumi en el campo.' },
+                    { name: 'Zayin',   type: 'over',    cost: 10, chargeGain: 0, damage: 6, target: 'aoe',   effect: 'kurumi_zayin',    description: 'AOE 6 daño. Aplica Mega Congelación al enemigo con mayor HP. 50% de probabilidad de revivir a un aliado eliminado aleatorio.' }
+                ]
+            },
+
             'Skeletor': {
                 hp: 25, maxHp: 25, speed: 82, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
