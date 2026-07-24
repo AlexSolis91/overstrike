@@ -10936,6 +10936,121 @@
                 }
 
             // ══════════════════════════════════════════════════════
+            // KURUMI TOKISAKI — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'kurumi_zafkiel') {
+                // ZAFKIEL: 3 daño ST. Si Kurumi ≤50% HP, roba 50% cargas del objetivo.
+                const _kzAtk = gameState.characters[gameState.selectedCharacter];
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('🕑 Zafkiel: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (_kzAtk && _kzAtk.hp <= _kzAtk.maxHp * 0.5) {
+                    const _kzTgt = gameState.characters[targetName];
+                    if (_kzTgt && !_kzTgt.isDead && _kzTgt.hp > 0 && (_kzTgt.charges||0) > 0) {
+                        const _stolen = Math.floor((_kzTgt.charges||0) * 0.5);
+                        _kzTgt.charges = (_kzTgt.charges||0) - _stolen;
+                        _kzAtk.charges = Math.min(20, (_kzAtk.charges||0) + _stolen);
+                        addLog('🕑 Zafkiel: Kurumi roba ' + _stolen + ' cargas de ' + targetName + ' (≤50% HP)', 'buff');
+                    }
+                }
+
+            } else if (ability.effect === 'kurumi_aleph') {
+                // ALEPH: Concentración 2T + Protección Sagrada 2T a Kurumi y aliado aleatorio.
+                // Ese aliado gana 3 cargas y turno adicional inmediato.
+                const _kaAtk = gameState.characters[gameState.selectedCharacter];
+                const _kaTeam = _kaAtk ? _kaAtk.team : 'team1';
+                // Aplicar buffs a Kurumi
+                applyBuff(gameState.selectedCharacter, { name: 'Concentracion', type: 'buff', duration: 2, emoji: '🎯', concentracion: true });
+                applyBuff(gameState.selectedCharacter, { name: 'Proteccion Sagrada', type: 'buff', duration: 2, emoji: '🛡️', proteccionSagrada: true });
+                addLog('🕑 Aleph: Kurumi gana Concentración 2T y Protección Sagrada 2T', 'buff');
+                // Aliado aleatorio (no Kurumi)
+                const _kaAllies = Object.keys(gameState.characters).filter(function(n){
+                    const c = gameState.characters[n]; return c && c.team === _kaTeam && !c.isDead && c.hp > 0 && n !== gameState.selectedCharacter;
+                });
+                if (_kaAllies.length > 0) {
+                    const _kaAlly = _kaAllies[Math.floor(Math.random() * _kaAllies.length)];
+                    applyBuff(_kaAlly, { name: 'Concentracion', type: 'buff', duration: 2, emoji: '🎯', concentracion: true });
+                    applyBuff(_kaAlly, { name: 'Proteccion Sagrada', type: 'buff', duration: 2, emoji: '🛡️', proteccionSagrada: true });
+                    const _kaAllyC = gameState.characters[_kaAlly];
+                    if (_kaAllyC) _kaAllyC.charges = Math.min(20, (_kaAllyC.charges||0) + 3);
+                    addLog('🕑 Aleph: ' + _kaAlly + ' gana Concentración 2T, Protección Sagrada 2T, +3 cargas y turno adicional', 'buff');
+                    // Turno adicional inmediato — igual que Skeggox/Sable Nishant
+                    if (!gameState._skeggoxExtraTurn) {
+                        gameState._skeggoxExtraTurn = _kaAlly;
+                    }
+                }
+
+            } else if (ability.effect === 'kurumi_het') {
+                // HET: Invoca Clon de Kurumi. Disipa debuffs de Kurumi. Bloqueado si ya hay un Clon activo.
+                const _khAtk = gameState.characters[gameState.selectedCharacter];
+                const _khTeam = _khAtk ? _khAtk.team : 'team1';
+                const _clonExists = Object.values(gameState.summons).some(function(s){
+                    return s && s.name === 'Clon de Kurumi' && s.team === _khTeam && !s.isDead && s.hp > 0;
+                });
+                if (_clonExists) {
+                    addLog('🕑 Het: ya hay un Clon de Kurumi en el campo', 'info');
+                } else {
+                    const _clonId = 'KurumiClon_' + Date.now();
+                    gameState.summons[_clonId] = {
+                        id: _clonId, name: 'Clon de Kurumi', summoner: gameState.selectedCharacter, team: _khTeam,
+                        hp: 20, maxHp: 20, isDead: false, statusEffects: [],
+                        img: 'https://i.ibb.co/0RGHQJQv/Whats-App-Image-2026-07-24-at-4-36-52-PM.jpg',
+                        passive: 'Sombra Protectora: absorbe todo el daño que fuera a recibir su invocador. Al morir, causa 8 daño repartido entre todos los enemigos.'
+                    };
+                    if (typeof renderSummons === 'function') renderSummons();
+                    addLog('🕑 Het: Clon de Kurumi invocado (20 HP)', 'buff');
+                    // Disipar debuffs de Kurumi
+                    if (_khAtk) {
+                        const _khDebuffs = (_khAtk.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff' && !e.permanent; });
+                        if (_khDebuffs.length > 0) {
+                            _khAtk.statusEffects = (_khAtk.statusEffects||[]).filter(function(e){ return !e || e.type !== 'debuff' || e.permanent; });
+                            addLog('🕑 Het: Kurumi disipa ' + _khDebuffs.length + ' debuffs', 'buff');
+                        }
+                    }
+                }
+
+            } else if (ability.effect === 'kurumi_zayin') {
+                // ZAYIN: AOE 6 daño + Mega Congelación al enemigo con más HP + 50% revivir aliado eliminado
+                const _kzaAtk = gameState.characters[gameState.selectedCharacter];
+                const _kzaETeam = _kzaAtk ? (_kzaAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _kzaMyTeam = _kzaAtk ? _kzaAtk.team : 'team1';
+                // AOE daño
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _kzaETeam || _c.isDead || _c.hp <= 0) continue;
+                    if (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(_n, true)) continue;
+                    applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                    addLog('🕑 Zayin: ' + finalDamage + ' daño a ' + _n, 'damage');
+                }
+                // Mega Congelación al enemigo con más HP
+                let _kzaTopHp = -1, _kzaTopName = null;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _kzaETeam || _c.isDead || _c.hp <= 0) continue;
+                    if (_c.hp > _kzaTopHp) { _kzaTopHp = _c.hp; _kzaTopName = _n; }
+                }
+                if (_kzaTopName) {
+                    if (typeof applyDebuff === 'function') applyDebuff(_kzaTopName, { name: 'Mega Congelacion', type: 'debuff', duration: 2, emoji: '🧊❄️', megaFreeze: true });
+                    addLog('🕑 Zayin: Mega Congelación aplicada a ' + _kzaTopName + ' (mayor HP)', 'debuff');
+                }
+                // 50% revivir aliado eliminado
+                if (Math.random() < 0.50) {
+                    const _kzaDead = Object.keys(gameState.characters).filter(function(n){
+                        const c = gameState.characters[n]; return c && c.team === _kzaMyTeam && c.isDead;
+                    });
+                    if (_kzaDead.length > 0) {
+                        const _kzaRevived = _kzaDead[Math.floor(Math.random() * _kzaDead.length)];
+                        const _kzaRC = gameState.characters[_kzaRevived];
+                        _kzaRC.isDead = false; _kzaRC.hp = _kzaRC.maxHp; _kzaRC.charges = 0; _kzaRC.statusEffects = [];
+                        addLog('🕑 Zayin: ¡' + _kzaRevived + ' revive con 100% HP! (50%)', 'buff');
+                        if (typeof window.onCharacterRevived === 'function') window.onCharacterRevived(_kzaRevived);
+                        if (typeof renderCharacters === 'function') renderCharacters();
+                    } else {
+                        addLog('🕑 Zayin: 50% revivir — no hay aliados eliminados', 'info');
+                    }
+                }
+
+            // ══════════════════════════════════════════════════════
             // SKELETOR — handlers
             // ══════════════════════════════════════════════════════
 
