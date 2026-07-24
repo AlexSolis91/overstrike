@@ -124,6 +124,53 @@
             }
         };
 
+        // ══════════════════════════════════════════════════════════════════
+        // RADAR DEL DRAGÓN — invocación pasiva al inicio de partida y de ronda
+        // ══════════════════════════════════════════════════════════════════
+        window.triggerRadarDragon = function(charName) {
+            const ch = gameState.characters[charName];
+            if (!ch || ch.isDead || ch.hp <= 0) return;
+            if (!ch.passive) return; // si no tiene pasiva no puede invocar nada
+            // Intentar ejecutar la habilidad de invocación de la pasiva del portador
+            // Usamos el mismo mecanismo que las invocaciones pasivas: buscamos una habilidad
+            // cuyo efecto sea de invocación y la ejecutamos con passiveExecuting=true
+            const summonAbility = ch.abilities && ch.abilities.find(function(a){
+                return a && (a.type === 'summon' || (a.effect && a.effect.includes('summon')));
+            });
+            if (!summonAbility) return;
+            // Verificar límite de invocaciones del equipo (máx 5)
+            const teamSummons = Object.values(gameState.summons||{}).filter(function(s){ return s && s.team === ch.team && !s.isDead && s.hp > 0; });
+            if (teamSummons.length >= 5) { addLog('📡 Radar del Dragón: máximo de invocaciones alcanzado', 'info'); return; }
+            const prevSelected = gameState.selectedCharacter;
+            const prevAbility = gameState.selectedAbility;
+            passiveExecuting = true;
+            gameState.selectedCharacter = charName;
+            gameState.selectedAbility = summonAbility;
+            try { _executeAbilityCore(null); } catch(e) { console.error('[Radar del Dragón]', e); }
+            gameState.selectedCharacter = prevSelected;
+            gameState.selectedAbility = prevAbility;
+            passiveExecuting = false;
+            addLog('📡 Radar del Dragón: ' + charName + ' invoca automáticamente', 'buff');
+        };
+
+        // ══════════════════════════════════════════════════════════════════
+        // CÁPSULA DE GLICINIA — cura 2 HP al portador cuando se limpia un debuff en el equipo aliado
+        // ══════════════════════════════════════════════════════════════════
+        window.notifyDebuffCleansed = function(cleansedCharName) {
+            // Buscar el portador de Cápsula de Glicinia en el mismo equipo
+            const cleansedChar = gameState.characters[cleansedCharName];
+            if (!cleansedChar) return;
+            const team = cleansedChar.team;
+            for (const n in gameState.characters) {
+                const c = gameState.characters[n];
+                if (!c || c.isDead || c.hp <= 0 || c.team !== team) continue;
+                if (!(c.equippedRelics||[]).includes('Cápsula de Glicinia')) continue;
+                if (typeof applyHeal === 'function') applyHeal(n, 2);
+                addLog('💊 Cápsula de Glicinia: ' + n + ' se cura 2 HP (debuff limpiado en aliado)', 'heal');
+                break;
+            }
+        };
+
         function triggerThanatosAutoOver(charName) {
             const caster = gameState.characters[charName];
             if (!caster || caster.isDead || caster.hp <= 0) { return; }
@@ -763,11 +810,12 @@
                     }
                     context._disipados = (context._disipados||0) + disipados;
                     addLog('🌟 ' + charName + ' disipa ' + disipados + ' debuffs', 'buff');
+                    if (disipados > 0 && typeof window.notifyDebuffCleansed === 'function') { for (let _d=0;_d<disipados;_d++) window.notifyDebuffCleansed(charName); }
                     break;
                 }
                 case 'DISIPAR_DEBUFFS_EQUIPO': {
                     let totalDis = 0;
-                    allies.forEach(n => { const c=gameState.characters[n]; if(!c||!c.statusEffects) return; const b=c.statusEffects.filter(e=>e&&e.type==='debuff').length; c.statusEffects=c.statusEffects.filter(e=>!e||e.type!=='debuff'); totalDis+=b-c.statusEffects.filter(e=>e&&e.type==='debuff').length; });
+                    allies.forEach(n => { const c=gameState.characters[n]; if(!c||!c.statusEffects) return; const b=c.statusEffects.filter(e=>e&&e.type==='debuff').length; c.statusEffects=c.statusEffects.filter(e=>!e||e.type!=='debuff'); const d=b-c.statusEffects.filter(e=>e&&e.type==='debuff').length; totalDis+=d; if(d>0&&typeof window.notifyDebuffCleansed==='function'){for(let _d2=0;_d2<d;_d2++)window.notifyDebuffCleansed(n);} });
                     context._disipados = (context._disipados||0) + totalDis;
                     addLog('🌟 Equipo aliado disipa ' + totalDis + ' debuffs', 'buff');
                     break;
@@ -1303,6 +1351,34 @@
                     if (_rd.effect === 'martillo_del_alba' && gameState._martilloAlbaActive && _postTgt) {
                         _postTgt.charges = Math.max(0, (_postTgt.charges||0) - 2);
                         addLog('🔨 Martillo del Alba: ' + targetName + ' pierde 2 cargas', 'debuff');
+                    }
+
+                    // CRISTAL KYBER: Over ST → mismo daño en un enemigo aleatorio (una sola vez, sin eco)
+                    if (_rd.effect === 'cristal_kyber' && ability && ability.type === 'over' && (ability.target === 'single' || ability.target === 'st') && !passiveExecuting) {
+                        const _ckAtk = gameState.characters[gameState.selectedCharacter];
+                        const _ckETeam = _ckAtk ? (_ckAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                        const _ckEnemies = Object.keys(gameState.characters).filter(function(_n){
+                            const _c = gameState.characters[_n];
+                            return _c && _c.team === _ckETeam && !_c.isDead && _c.hp > 0 && _n !== targetName;
+                        });
+                        if (_ckEnemies.length > 0) {
+                            const _ckTarget = _ckEnemies[Math.floor(Math.random() * _ckEnemies.length)];
+                            passiveExecuting = true;
+                            applyDamageWithShield(_ckTarget, finalDamage, gameState.selectedCharacter);
+                            passiveExecuting = false;
+                            addLog('🔵 Cristal Kyber: eco de ' + finalDamage + ' daño a ' + _ckTarget, 'damage');
+                        }
+                    }
+
+                    // MUÑEQUERAS DE GOKU: ataque MT → 30% de ganar 1 turno adicional
+                    if (_rd.effect === 'munequeras_goku' && ability && ability.type === 'mt' && !gameState._nishanExtraTurnRolledThisTurn && !passiveExecuting) {
+                        if (!gameState._munequeras_rolled) {
+                            gameState._munequeras_rolled = true;
+                            if (Math.random() < 0.30 && !gameState._skeggoxExtraTurn) {
+                                gameState._skeggoxExtraTurn = gameState.selectedCharacter;
+                                addLog('🥊 Muñequeras de Goku: ' + gameState.selectedCharacter + ' gana 1 turno adicional (30%)', 'buff');
+                            }
+                        }
                     }
 
                     // COLMILLO DE VASILISCO: ahora se maneja dentro de applyDamageWithShield (summons.js)
@@ -8539,6 +8615,12 @@
                             _fajaC2.charges = Math.min(20, (_fajaC2.charges||0) + 2);
                             addLog('🩸 Faja de la Agonía: ' + _fajaN2 + ' +2 cargas (' + gameState.selectedCharacter + ' generó cargas)', 'buff');
                         }
+                    }
+
+                    // ── CAPA JEDI: ataques especiales del portador generan +2 cargas adicionales ──
+                    if (!passiveExecuting && attacker && (attacker.equippedRelics||[]).includes('Capa Jedi') && ability && ability.type === 'special') {
+                        attacker.charges = Math.min(20, (attacker.charges||0) + 2);
+                        addLog('🌙 Capa Jedi: ' + gameState.selectedCharacter + ' gana +2 cargas adicionales (especial)', 'buff');
                     }
                 } else if (finalChargeGain > 0 && hasFear) {
                     addLog(`😱 ${gameState.selectedCharacter} no puede generar cargas (Miedo)`, 'damage');
