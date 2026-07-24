@@ -557,6 +557,21 @@ function applyDebuff(targetName, effectObj) {
                 addLog('✨ Maestría de la Varita de Saúco: ' + targetName + ' es inmune a debuffs', 'buff');
                 return;
             }
+            // CIUDAD DE LA DEVASTACIÓN (Kurumi): 50% de esquivar cualquier debuff
+            if (target.passive && target.passive.name === 'Ciudad de la Devastación') {
+                if (Math.random() < 0.50) {
+                    addLog('🕑 Ciudad de la Devastación: Kurumi esquiva el debuff ' + (effectObj.name||''), 'buff');
+                    return;
+                }
+                // No esquivó → se cura 3 HP al recibir el debuff
+                if (typeof applyHeal === 'function') {
+                    passiveExecuting = true;
+                    applyHeal(targetName, 3);
+                    passiveExecuting = false;
+                }
+                addLog('🕑 Ciudad de la Devastación: Kurumi recibe ' + (effectObj.name||'debuff') + ' y se cura 3 HP', 'heal');
+            }
+
             // ANILLO DE PIEDRA DE MORIA: al recibir debuff → portador gana 2 cargas
             if (effectObj && effectObj.type === 'debuff' && target && (target.equippedRelics||[]).includes('Anillo de Piedra de Moria')) {
                 target.charges = Math.min(20, (target.charges||0) + 2);
