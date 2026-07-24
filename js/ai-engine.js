@@ -633,21 +633,25 @@
                     chosen = _padmeOver || _padmeSp2 || _padmeSp1 || _padmeBasic || chosen;
                 }
 
-                // ── MADARA UCHIHA: priorizar Over si disponible; si no Rikudo no está activo priorizar Modo Rikudō;
+                // ── MADARA UCHIHA: siempre priorizar Over cuando esté disponible.
+                //    Si no hay Over disponible: si Rikudō no activo → Modo Rikudō;
                 //    si Rikudo activo → Susanoo AOE > Mangekyō > Básico ──
                 if (charName === 'Madara Uchiha' || charName === 'Madara Uchiha v2') {
                     const _mChar = gameState.characters[charName];
                     const _mOver  = usable.find(ab => ab.type === 'over');
                     const _mSp    = usable.filter(ab => ab.type === 'special');
                     const _mBasic = usable.find(ab => ab.type === 'basic');
-                    if (_mChar && _mChar.rikudoMode) {
-                        // En Rikudō: Susanoo (AOE) > Mangekyō > Básico
+                    if (_mOver) {
+                        // Over disponible → siempre ejecutarlo primero
+                        chosen = _mOver;
+                    } else if (_mChar && _mChar.rikudoMode) {
+                        // En Rikudō sin Over: Susanoo (AOE) > Mangekyō > Básico
                         const _susanoo = _mSp.find(ab => ab.effect === 'susanoo' || ab.target === 'aoe');
                         const _mangekyou = _mSp.find(ab => ab.effect === 'sharingan_aoe');
                         chosen = _susanoo || _mangekyou || _mBasic || chosen;
                     } else {
-                        // Sin Rikudō: Over (transformación) si disponible
-                        chosen = _mOver || _mSp[1] || _mSp[0] || _mBasic || chosen;
+                        // Sin Rikudō ni Over: priorizar Modo Rikudō > especiales > básico
+                        chosen = _mSp[1] || _mSp[0] || _mBasic || chosen;
                     }
                 }
 
