@@ -4785,11 +4785,22 @@
                 (reward.bolvarUnlockChance > 0 ? '<div style="background:rgba(200,100,0,0.15);border:1px solid rgba(251,146,60,0.5);border-radius:10px;padding:12px 20px;text-align:center;width:100%;">' +
                     '<div style="font-size:1.4rem;">' + (reward.bolvarUnlocked ? '🔓' : '🔒') + '</div>' +
                     '<div style="font-family:Orbitron,sans-serif;font-size:.85rem;color:' + (reward.bolvarUnlocked ? '#fb923c' : '#888') + ';font-weight:700;">' + (reward.bolvarUnlocked ? '¡BOLVAR FORDRAGON DESBLOQUEADO!' : 'Bolvar Fordragon no desbloqueado') + '</div>' +
-                    (reward.gogetaUnlocked !== undefined ? (
-                        '<div style="font-size:1.4rem;margin-top:4px;">' + (reward.gogetaUnlocked ? '🔓' : '🔒') + '</div>' +
-                        '<div style="font-family:Orbitron,sans-serif;font-size:.85rem;color:' + (reward.gogetaUnlocked ? '#a78bfa' : '#888') + ';font-weight:700;">' + (reward.gogetaUnlocked ? '¡GOGETA DESBLOQUEADO!' : 'Gogeta no desbloqueado') + '</div>'
-                    ) : '') +
                     '<div style="color:#666;font-size:.65rem;">Probabilidad: ' + Math.round(reward.bolvarUnlockChance * 100) + '% (posición #' + myRank + ')</div>' +
+                '</div>' : '') +
+                (reward.gogetaUnlockChance > 0 ? '<div style="background:rgba(100,0,200,0.15);border:1px solid rgba(167,139,250,0.5);border-radius:10px;padding:12px 20px;text-align:center;width:100%;">' +
+                    '<div style="font-size:1.4rem;">' + (reward.gogetaUnlocked ? '🔓' : '🔒') + '</div>' +
+                    '<div style="font-family:Orbitron,sans-serif;font-size:.85rem;color:' + (reward.gogetaUnlocked ? '#a78bfa' : '#888') + ';font-weight:700;">' + (reward.gogetaUnlocked ? '¡GOGETA DESBLOQUEADO!' : 'Gogeta no desbloqueado') + '</div>' +
+                    '<div style="color:#666;font-size:.65rem;">Probabilidad: ' + Math.round(reward.gogetaUnlockChance * 100) + '% (posición #' + myRank + ')</div>' +
+                '</div>' : '') +
+                (reward.arthasUnlockChance > 0 ? '<div style="background:rgba(0,100,200,0.15);border:1px solid rgba(100,180,255,0.5);border-radius:10px;padding:12px 20px;text-align:center;width:100%;">' +
+                    '<div style="font-size:1.4rem;">' + (reward.arthasUnlocked ? '🔓' : '🔒') + '</div>' +
+                    '<div style="font-family:Orbitron,sans-serif;font-size:.85rem;color:' + (reward.arthasUnlocked ? '#64c8ff' : '#888') + ';font-weight:700;">' + (reward.arthasUnlocked ? '¡ARTHAS MENETHIL DESBLOQUEADO!' : 'Arthas Menethil no desbloqueado') + '</div>' +
+                    '<div style="color:#666;font-size:.65rem;">Probabilidad: ' + Math.round(reward.arthasUnlockChance * 100) + '% (posición #' + myRank + ')</div>' +
+                '</div>' : '') +
+                (reward.grindelwaldUnlockChance > 0 ? '<div style="background:rgba(0,150,100,0.15);border:1px solid rgba(100,255,180,0.5);border-radius:10px;padding:12px 20px;text-align:center;width:100%;">' +
+                    '<div style="font-size:1.4rem;">' + (reward.grindelwaldUnlocked ? '🔓' : '🔒') + '</div>' +
+                    '<div style="font-family:Orbitron,sans-serif;font-size:.85rem;color:' + (reward.grindelwaldUnlocked ? '#6fffb8' : '#888') + ';font-weight:700;">' + (reward.grindelwaldUnlocked ? '¡GRINDELWALD DESBLOQUEADO!' : 'Grindelwald no desbloqueado') + '</div>' +
+                    '<div style="color:#666;font-size:.65rem;">Probabilidad: ' + Math.round(reward.grindelwaldUnlockChance * 100) + '% (posición #' + myRank + ')</div>' +
                 '</div>' : '') +
             '</div>';
 
