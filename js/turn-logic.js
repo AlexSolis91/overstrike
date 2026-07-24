@@ -1731,6 +1731,7 @@
             // Limpiar flags por turno
             gameState._vortexActive = false; // Vortex: se limpia al finalizar cada turno
             gameState._nishanExtraTurnRolledThisTurn = false; // Sable Nishant: resetear para que el siguiente turno tire de nuevo
+            gameState._munequeras_rolled = false; // Muñequeras de Goku: resetear por turno
             if (gameState.selectedCharacter) {
                 const _esTurnChar = gameState.characters[gameState.selectedCharacter];
                 if (_esTurnChar) {
@@ -2456,6 +2457,73 @@
                             if (typeof applyBuff === 'function') applyBuff(_zrN, { name: 'Esquivar', type: 'buff', duration: 2, emoji: '💨' });
                             addLog('👢 Zirocuz: ' + _zrN + ' gana Esquivar 2T', 'buff');
                         }
+                    }
+
+                    // ── JETPACK MANDALORIANO: inicio de ronda → Esquiva Área hasta fin de ronda ──
+                    for (const _jpN in gameState.characters) {
+                        const _jpC = gameState.characters[_jpN];
+                        if (!_jpC || _jpC.isDead || _jpC.hp <= 0) continue;
+                        if (!(_jpC.equippedRelics||[]).includes('Jetpack Mandaloriano')) continue;
+                        if (typeof applyBuff === 'function') applyBuff(_jpN, { name: 'Esquiva Area', type: 'buff', duration: 1, untilRoundEnd: true, emoji: '🚀' });
+                        addLog('🚀 Jetpack Mandaloriano: ' + _jpN + ' gana Esquiva Área hasta fin de ronda', 'buff');
+                    }
+
+                    // ── CUERNO DE GONDOR: inicio de ronda → 40% Asistir a cada aliado ──
+                    for (const _cgN in gameState.characters) {
+                        const _cgC = gameState.characters[_cgN];
+                        if (!_cgC || _cgC.isDead || _cgC.hp <= 0) continue;
+                        if (!(_cgC.equippedRelics||[]).includes('Cuerno de Gondor')) continue;
+                        const _cgTeam = _cgC.team;
+                        for (const _an in gameState.characters) {
+                            const _ac = gameState.characters[_an];
+                            if (!_ac || _ac.team !== _cgTeam || _ac.isDead || _ac.hp <= 0) continue;
+                            if (Math.random() < 0.40) {
+                                if (typeof applyBuff === 'function') applyBuff(_an, { name: 'Asistir', type: 'buff', duration: 2, emoji: '🤝', asistir: true });
+                                addLog('📯 Cuerno de Gondor: ' + _an + ' gana buff Asistir', 'buff');
+                            }
+                        }
+                    }
+
+                    // ── ESTANDARTE DE ROHAN: inicio de ronda → 40% Contraataque a cada aliado ──
+                    for (const _erN in gameState.characters) {
+                        const _erC = gameState.characters[_erN];
+                        if (!_erC || _erC.isDead || _erC.hp <= 0) continue;
+                        if (!(_erC.equippedRelics||[]).includes('Estandarte de Rohan')) continue;
+                        const _erTeam = _erC.team;
+                        for (const _en2 in gameState.characters) {
+                            const _ec2 = gameState.characters[_en2];
+                            if (!_ec2 || _ec2.team !== _erTeam || _ec2.isDead || _ec2.hp <= 0) continue;
+                            if (Math.random() < 0.40) {
+                                if (typeof applyBuff === 'function') applyBuff(_en2, { name: 'Contraataque', type: 'buff', duration: 2, emoji: '⚔️' });
+                                addLog('🏳️ Estandarte de Rohan: ' + _en2 + ' gana buff Contraataque', 'buff');
+                            }
+                        }
+                    }
+
+                    // ── SEMILLAS SENZU: inicio de ronda → cura 3 HP al aliado con menos HP ──
+                    for (const _szN in gameState.characters) {
+                        const _szC = gameState.characters[_szN];
+                        if (!_szC || _szC.isDead || _szC.hp <= 0) continue;
+                        if (!(_szC.equippedRelics||[]).includes('Semillas Senzu')) continue;
+                        const _szTeam = _szC.team;
+                        let _szLowest = null, _szLowestHp = Infinity;
+                        for (const _aln in gameState.characters) {
+                            const _alc = gameState.characters[_aln];
+                            if (!_alc || _alc.team !== _szTeam || _alc.isDead || _alc.hp <= 0) continue;
+                            if (_alc.hp < _szLowestHp) { _szLowestHp = _alc.hp; _szLowest = _aln; }
+                        }
+                        if (_szLowest) {
+                            if (typeof applyHeal === 'function') applyHeal(_szLowest, 3);
+                            addLog('🌱 Semillas Senzu: ' + _szLowest + ' recupera 3 HP', 'heal');
+                        }
+                    }
+
+                    // ── RADAR DEL DRAGÓN: inicio de ronda → 1 invocación aleatoria de la pasiva del portador ──
+                    for (const _rdN in gameState.characters) {
+                        const _rdC = gameState.characters[_rdN];
+                        if (!_rdC || _rdC.isDead || _rdC.hp <= 0) continue;
+                        if (!(_rdC.equippedRelics||[]).includes('Radar del Dragón')) continue;
+                        if (typeof window.triggerRadarDragon === 'function') window.triggerRadarDragon(_rdN);
                     }
 
                     // ── PILAR DE LA NIEBLA (Tokito): inicio de ronda → 50% Esquivar 1T a cada aliado ──
@@ -3492,6 +3560,7 @@
                     if (debuffsBefore.length === 0) return;
                     c.statusEffects = (c.statusEffects || []).filter(e => !e || e.type !== 'debuff' || e.permanent);
                     addLog('💠 Cuerpo Perfecto: ' + n + ' elimina sus debuffs (' + debuffsBefore.length + ')', 'buff');
+                    if (typeof window.notifyDebuffCleansed === 'function') { debuffsBefore.forEach(function(){ window.notifyDebuffCleansed(n); }); }
                 });
 
                 // ── ORGULLO DEL LEÓN (Escanor): fin de ronda → +1 HP máximo por enemigo con QS ──
