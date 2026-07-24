@@ -557,6 +557,12 @@ function applyDebuff(targetName, effectObj) {
                 addLog('✨ Maestría de la Varita de Saúco: ' + targetName + ' es inmune a debuffs', 'buff');
                 return;
             }
+            // ANILLO DE PIEDRA DE MORIA: al recibir debuff → portador gana 2 cargas
+            if (effectObj && effectObj.type === 'debuff' && target && (target.equippedRelics||[]).includes('Anillo de Piedra de Moria')) {
+                target.charges = Math.min(20, (target.charges||0) + 2);
+                addLog('💍 Anillo de Piedra de Moria: ' + targetName + ' gana 2 cargas (recibió debuff)', 'buff');
+            }
+
             // SOBERANO DE LA DESTRUCCIÓN (Skeletor): inmune a Miedo, Aturdimiento y Mega Aturdimiento
             if (target.passive && target.passive.name === 'Soberano de la Destrucción') {
                 const _skDebuffName = normAccent(effectObj.name || '');
@@ -1314,6 +1320,19 @@ function applyDebuff(targetName, effectObj) {
                     addLog('☀️ Privilegio Imperial: Ozymandias genera 1 carga (QS aplicada)', 'buff');
                     break;
                 }
+                // ARETES HANAFUDA: al aplicar QS a un enemigo → portador gana 2 cargas
+                if (typeof gameState !== 'undefined' && gameState.characters) {
+                    for (const _ahN in gameState.characters) {
+                        const _ahC = gameState.characters[_ahN];
+                        if (!_ahC || _ahC.isDead || _ahC.hp <= 0) continue;
+                        if (!(_ahC.equippedRelics||[]).includes('Aretes Hanafuda')) continue;
+                        if (_ahC.team === target.team) continue; // portador debe ser enemigo del objetivo
+                        _ahC.charges = Math.min(20, (_ahC.charges||0) + 2);
+                        addLog('🌸 Aretes Hanafuda: ' + _ahN + ' gana 2 cargas (QS aplicada)', 'buff');
+                        break;
+                    }
+                }
+
                 // ORGULLO DEL LEÓN (Escanor): cada vez que se aplica QS a un enemigo → Escanor genera 1 carga (siempre, ya no 50%)
                 for (const _esn in gameState.characters) {
                     const _esc = gameState.characters[_esn];
