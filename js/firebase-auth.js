@@ -4209,6 +4209,28 @@
                 if (rd.effect === 'hp_spd_plus3' && !ch._hpSpdApplied) { ch.hp = (ch.hp||0) + 3; ch.maxHp = (ch.maxHp||0) + 3; ch.speed = (ch.speed||80) + 3; ch._hpSpdApplied = true; }
                 if (rd.effect === 'hp_max_50pct' && !ch._hpMax50Applied) { var b = Math.ceil((ch.maxHp||20) * 0.5); ch.maxHp = (ch.maxHp||20) + b; ch.hp = (ch.hp||0) + b; ch._hpMax50Applied = true; }
                 if (rd.effect === 'double_heal') { ch._doubleHeal = true; }
+                // Armadura Saiyan: +10 velocidad al inicio
+                if (rd.effect === 'armadura_saiyan' && !ch._armaduraSaiyanApplied) { ch.speed = (ch.speed||80) + 10; ch._armaduraSaiyanApplied = true; }
+                // Tanque de Bacta: otorga Cuerpo Perfecto permanente
+                if (rd.effect === 'tanque_bacta' && !ch._tanqueBactaApplied) {
+                    ch._tanqueBactaApplied = true;
+                    var hasCuerpo = (ch.statusEffects||[]).some(function(e){ return e && e.name === 'Cuerpo Perfecto'; });
+                    if (!hasCuerpo) ch.statusEffects = (ch.statusEffects||[]).concat([{ name: 'Cuerpo Perfecto', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '💠' }]);
+                }
+                // Armadura Saiyan: otorga Armadura permanente (reducción 50%)
+                if (rd.effect === 'armadura_saiyan' && !ch._armaduraBuff) {
+                    ch._armaduraBuff = true;
+                    var hasArmadura = (ch.statusEffects||[]).some(function(e){ return e && e.name === 'Armadura'; });
+                    if (!hasArmadura) ch.statusEffects = (ch.statusEffects||[]).concat([{ name: 'Armadura', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🛡️' }]);
+                }
+                // Rastreador: otorga Anticipación y Contraataque permanentes
+                if (rd.effect === 'rastreador' && !ch._rastreadorApplied) {
+                    ch._rastreadorApplied = true;
+                    var hasAntic = (ch.statusEffects||[]).some(function(e){ return e && e.name === 'Anticipación'; });
+                    var hasCont  = (ch.statusEffects||[]).some(function(e){ return e && e.name === 'Contraataque'; });
+                    if (!hasAntic) ch.statusEffects = (ch.statusEffects||[]).concat([{ name: 'Anticipación', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '👁️', anticipacion: true }]);
+                    if (!hasCont)  ch.statusEffects = (ch.statusEffects||[]).concat([{ name: 'Contraataque', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '⚔️' }]);
+                }
             }
 
             function _loadForCharacter(charName, uid) {
