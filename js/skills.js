@@ -4459,7 +4459,7 @@
                 addLog('👁️ Mangekyō Sharingan: Silenciar 2T a ' + targetName, 'debuff');
 
             } else if (ability.effect === 'susanoo_madara_new') {
-                // MADARA — Susanoo (nuevo): 4 daño + Buff Escudo igual al daño causado + contraataque al perder escudo
+                // MADARA — Susanoo (nuevo): 4 daño + Buff Escudo igual al daño causado + contraataque al perder escudo + QS 2T
                 const _smAtk = gameState.characters[gameState.selectedCharacter];
                 let _smDmg = finalDamage;
                 if (_smAtk && _smAtk.rikudoMode) _smDmg *= 2;
@@ -4472,6 +4472,13 @@
                     _smAtk.shield = (_smAtk.shield||0) + _smActualDmg;
                     _smAtk.shieldEffect = 'susanoo_counter_madara';
                     addLog('🛡️ Susanoo: ' + gameState.selectedCharacter + ' obtiene Escudo ' + _smActualDmg + ' HP (= daño causado)', 'buff');
+                }
+                // Quemadura Solar 2T sobre el objetivo
+                const _smTgtAfter = gameState.characters[targetName];
+                if (_smTgtAfter && !_smTgtAfter.isDead && _smTgtAfter.hp > 0) {
+                    if (typeof applySolarBurn === 'function') applySolarBurn(targetName, 10, 2);
+                    else if (typeof applyDebuff === 'function') applyDebuff(targetName, { name: 'Quemadura Solar', type: 'debuff', duration: 2, emoji: '☀️' });
+                    addLog('☀️ Susanoo: Quemadura Solar 2T aplicada a ' + targetName, 'debuff');
                 }
                 addLog('👁️ Susanoo: ' + _smDmg + ' daño a ' + targetName, 'damage');
 
@@ -9678,6 +9685,15 @@
                     if (_suAtk.rikudoMode) _suAtk.charges = Math.min(20, (_suAtk.charges || 0) + 3);
                     addLog('🌀 Susanoo: turno adicional por crítico', 'buff');
                     if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, _suAtk.team);
+                }
+                // 5. Quemadura Solar 2T sobre el objetivo (siempre, independiente del crítico)
+                const _suTgtFinal = gameState.characters[targetName];
+                if (_suTgtFinal && !_suTgtFinal.isDead && _suTgtFinal.hp > 0) {
+                    if (typeof applySolarBurn === 'function') applySolarBurn(targetName, 10, 2);
+                    else if (typeof applyDebuff === 'function') applyDebuff(targetName, { name: 'Quemadura Solar', type: 'debuff', duration: 2, emoji: '☀️' });
+                    addLog('☀️ Susanoo: Quemadura Solar 2T aplicada a ' + targetName, 'debuff');
+                }
+                if (_suCrit) {
                     gameState._abilityExecuting = false; renderCharacters(); renderSummons(); showContinueButton(); return;
                 }
 
