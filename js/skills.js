@@ -130,17 +130,44 @@
         window.triggerRadarDragon = function(charName) {
             const ch = gameState.characters[charName];
             if (!ch || ch.isDead || ch.hp <= 0) return;
-            if (!ch.passive) return; // si no tiene pasiva no puede invocar nada
-            // Intentar ejecutar la habilidad de invocación de la pasiva del portador
-            // Usamos el mismo mecanismo que las invocaciones pasivas: buscamos una habilidad
-            // cuyo efecto sea de invocación y la ejecutamos con passiveExecuting=true
+            if (!ch.passive) return;
+
+            // Verificar límite de invocaciones del equipo (máx 5)
+            const teamSummons = Object.values(gameState.summons||{}).filter(function(s){ return s && s.team === ch.team && !s.isDead && s.hp > 0; });
+            if (teamSummons.length >= 5) { addLog('📡 Radar del Dragón: máximo de invocaciones alcanzado', 'info'); return; }
+
+            // Cada invocador tiene su propia función de invocación pasiva —
+            // identificar por pasiva y llamar directamente sin pasar por _executeAbilityCore
+            const passiveName = ch.passive.name || '';
+
+            if (passiveName === 'Arise!') {
+                // Sun Jin Woo: invocar una sombra aleatoria via triggerSJWArisePassive
+                if (typeof triggerSJWArisePassive === 'function') {
+                    triggerSJWArisePassive(charName);
+                    addLog('📡 Radar del Dragón: ' + charName + ' invoca una Sombra (Arise!)', 'buff');
+                }
+                return;
+            }
+
+            if (passiveName === 'Heredera Legítima') {
+                // Rhaenyra: invocar una Cría de Dragón directamente
+                const _criaId = 'Cria_Dragon_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
+                gameState.summons[_criaId] = {
+                    id: _criaId, name: 'Cría de Dragón', summoner: charName, team: ch.team,
+                    hp: 10, maxHp: 10, isDead: false, statusEffects: [],
+                    img: 'https://i.ibb.co/fGxPcTNL/Whats-App-Image-2026-06-26-at-12-06-13-PM.jpg',
+                    passive: 'Mordedura: aplica un debuff aleatorio a un enemigo al final de cada ronda. Al morir, Rhaenyra genera 3 cargas.'
+                };
+                if (typeof renderSummons === 'function') renderSummons();
+                addLog('📡 Radar del Dragón: ' + charName + ' invoca una Cría de Dragón (Heredera Legítima)', 'buff');
+                return;
+            }
+
+            // Fallback genérico: buscar habilidad de tipo summon en abilities
             const summonAbility = ch.abilities && ch.abilities.find(function(a){
                 return a && (a.type === 'summon' || (a.effect && a.effect.includes('summon')));
             });
             if (!summonAbility) return;
-            // Verificar límite de invocaciones del equipo (máx 5)
-            const teamSummons = Object.values(gameState.summons||{}).filter(function(s){ return s && s.team === ch.team && !s.isDead && s.hp > 0; });
-            if (teamSummons.length >= 5) { addLog('📡 Radar del Dragón: máximo de invocaciones alcanzado', 'info'); return; }
             const prevSelected = gameState.selectedCharacter;
             const prevAbility = gameState.selectedAbility;
             passiveExecuting = true;
