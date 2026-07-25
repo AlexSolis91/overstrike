@@ -2034,8 +2034,36 @@
                         addLog('☠️ Kaisel (Maldición): aplica 2 stacks de Veneno a todos los enemigos', 'debuff');
                     });
 
-                    // ── MIN BYUNG: Shadow Healing — Regeneración 20% 1T a todos los aliados al inicio de ronda ──
+                    // ── MIN BYUNG: Shadow Healing — Regeneración 20% 1T + cura 2 HP a todos los aliados al inicio de ronda ──
                     if (typeof triggerMinByungStartOfRound === 'function') triggerMinByungStartOfRound();
+
+                    // ── JIMA (SJW): Recluse of the Deep Sea — +2 velocidad permanente + Escudo 10 HP a 2 aliados aleatorios ──
+                    if (typeof triggerJimaStartOfRound === 'function') triggerJimaStartOfRound();
+
+                    // ── IRON (SJW): Voluntad de Acero — equipo aliado +3 cargas al inicio de ronda ──
+                    (function() {
+                        Object.keys(gameState.summons).forEach(function(iid) {
+                            const _iron = gameState.summons[iid];
+                            if (!_iron || _iron.name !== 'Iron' || _iron.hp <= 0) return;
+                            for (const _ian in gameState.characters) {
+                                const _iac = gameState.characters[_ian];
+                                if (!_iac || _iac.team !== _iron.team || _iac.isDead || _iac.hp <= 0) continue;
+                                if (typeof generateChargesInline === 'function') generateChargesInline(_ian, 3);
+                            }
+                            addLog('🛡️ Iron (Voluntad de Acero): equipo aliado gana 3 cargas (inicio de ronda)', 'buff');
+                        });
+                    })();
+
+                    // ── TUSK (SJW): Himno de Fuego — Quemaduras 2HP en 2 enemigos aleatorios al inicio de ronda ──
+                    (function() {
+                        Object.keys(gameState.summons).forEach(function(tid) {
+                            const _tusk = gameState.summons[tid];
+                            if (!_tusk || _tusk.name !== 'Tusk' || _tusk.hp <= 0) return;
+                            const _tETeam = _tusk.team === 'team1' ? 'team2' : 'team1';
+                            const _tEnemies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c && c.team===_tETeam && !c.isDead && c.hp>0; }).sort(function(){ return Math.random()-0.5; }).slice(0, 2);
+                            _tEnemies.forEach(function(_te){ if (typeof applyFlatBurn === 'function') applyFlatBurn(_te, 2, 1); addLog('🔥 Tusk (Himno de Fuego): Quemaduras 2HP 1T a ' + _te + ' (inicio de ronda)', 'debuff'); });
+                        });
+                    })();
 
                     // ── SUPERMAN FORMA PRIME: Puño de la Justicia sobre cada enemigo al inicio de cada ronda ──
                     (function() {
@@ -3509,6 +3537,7 @@
 
                 // Activar pasiva de Kamish (fin de ronda: 50 daño repartido)
                 if (typeof triggerKamishEndOfRound === 'function') triggerKamishEndOfRound();
+                if (typeof triggerGreedEndOfRound === 'function') triggerGreedEndOfRound();
                 
                 // Activar pasiva de Kaisel (fin de ronda: -3 cargas a todos los enemigos)
                 triggerKaiselPassive();
