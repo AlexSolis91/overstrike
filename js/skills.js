@@ -3600,6 +3600,7 @@
                 // Milagro de la vida — coste actualizado a 10 cargas
                 reviveAlly(targetName);
                 addLog('✨ Milagro de la Vida: ' + targetName + ' revive con 100% HP y 10 cargas', 'buff');
+                if (typeof window.onCharacterRevived === 'function') window.onCharacterRevived(targetName);
                 
             } else if (ability.effect === 'damage_and_heal') {
                 // Great Horn - Daño + Curación
@@ -10835,6 +10836,7 @@
                         const _cdRC = gameState.characters[_cdRevived];
                         _cdRC.isDead = false; _cdRC.hp = _cdRC.maxHp; _cdRC.charges = 20; _cdRC.statusEffects = [];
                         addLog('💀 Castigo Divino: ¡' + targetName + ' eliminado! ' + _cdRevived + ' revive con 100% HP y 20 cargas', 'buff');
+                        if (typeof window.onCharacterRevived === 'function') window.onCharacterRevived(_cdRevived);
                         if (typeof renderCharacters === 'function') renderCharacters();
                     }
                 }
@@ -11764,6 +11766,7 @@
                     _rev.charges = 20;
                     _rev.statusEffects = (_rev.statusEffects||[]).filter(function(e){ return !e || e.type !== 'debuff'; });
                     addLog('👁️ Gedō Rinne Tensei: ¡' + _revName + ' revive con ' + _rev.hp + ' HP y 20 cargas!', 'heal');
+                    if (typeof window.onCharacterRevived === 'function') window.onCharacterRevived(_revName);
                     // Recalculate turn order to include revived character
                     if (typeof calculateTurnOrder === 'function') calculateTurnOrder();
                 } else {
