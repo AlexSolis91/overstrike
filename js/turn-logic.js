@@ -1736,6 +1736,12 @@
             gameState._vortexActive = false; // Vortex: se limpia al finalizar cada turno
             gameState._nishanExtraTurnRolledThisTurn = false; // Sable Nishant: resetear para que el siguiente turno tire de nuevo
             gameState._munequeras_rolled = false; // Muñequeras de Goku: resetear por turno
+            // Limpiar el flag de Over automático de Skeletor como failsafe
+            // (si el Over se interrumpió, el flag podría quedar en true bloqueando futuros disparos)
+            for (const _skFn in gameState.characters) {
+                const _skFc = gameState.characters[_skFn];
+                if (_skFc && _skFc._grayskullAutoOverPending) _skFc._grayskullAutoOverPending = false;
+            }
             if (gameState.selectedCharacter) {
                 const _esTurnChar = gameState.characters[gameState.selectedCharacter];
                 if (_esTurnChar) {
@@ -2342,6 +2348,7 @@
                             _vc.isDead = false; _vc.hp = Math.ceil(_vc.maxHp * 0.50); _vc.charges = 10; _vc.statusEffects = [];
                             addLog('💥 Explosión Final: ¡' + _vn + ' revive con ' + _vc.hp + ' HP y 10 cargas!', 'buff');
                             renderCharacters();
+                            if (typeof window.onCharacterRevived === 'function') window.onCharacterRevived(_vn);
                         }
                     }
                     // ── SABAKU TAISŌ (Gaara): countdown de revivir en 2 rondas ──
