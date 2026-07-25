@@ -1239,7 +1239,7 @@
         // Precios de reliquias en el mercado
         const RELIC_MARKET_PRICES = { 'Raro': 10000, 'Especial': 25000, 'Epico': 60000, 'Legendario': 150000 };
         // Precio de venta rápida
-        const RELIC_QUICK_SELL = { 'Raro': 1000, 'Especial': 10000, 'Epico': 20000, 'Legendario': 100000 };
+        const RELIC_QUICK_SELL = { 'Raro': 1000, 'Especial': 5000, 'Epico': 10000, 'Legendario': 100000 };
         // Costo de remover reliquia equipada
         const RELIC_REMOVE_COST = 10000;
 
