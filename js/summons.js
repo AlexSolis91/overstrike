@@ -507,49 +507,60 @@
             if (!owner) return;
             const _avShadows = Object.entries(gameState.summons || {}).filter(function(e){ return e[1] && e[1].team === owner.team && e[1].hp > 0; });
             if (_avShadows.length === 0) return;
+
+            // IGRIS: fin de ronda — 2 daño AOE + elimina 1 invocación enemiga
             if (typeof triggerIgrisPassive === 'function' && _avShadows.some(function(e){ return e[1].name==='Igris'; }))
                 triggerIgrisPassive(ownerName);
+
+            // BERU: fin de ronda — 5 daño + 1 por carga a un enemigo aleatorio
             if (typeof triggerBeruPassive === 'function' && _avShadows.some(function(e){ return e[1].name==='Beru'; }))
                 triggerBeruPassive();
+
+            // KAISEL: fin de ronda — reduce 3 cargas a todos los enemigos
             if (typeof triggerKaiselPassive === 'function' && _avShadows.some(function(e){ return e[1].name==='Kaisel'; }))
                 triggerKaiselPassive();
-            if (typeof triggerMinByungStartOfRound === 'function' && _avShadows.some(function(e){ return e[1].name==='MinByung'; }))
-                triggerMinByungStartOfRound();
+
+            // MINBYUNG: inicio de ronda — Regeneración 20% 1T + cura 2 HP (llamado en inicio de ronda separado)
+
+            // BELLION: fin de ronda — 2 daño por cada sombra invocada sobre un enemigo aleatorio
             if (_avShadows.some(function(e){ return e[1].name==='Bellion'; })) {
                 const _avBellTeam = owner.team === 'team1' ? 'team2' : 'team1';
                 const _avBellEnemies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c && c.team===_avBellTeam && !c.isDead && c.hp>0; });
                 if (_avBellEnemies.length > 0) {
                     const _avBellTgt = _avBellEnemies[Math.floor(Math.random() * _avBellEnemies.length)];
-                    applyDamageWithShield(_avBellTgt, 2, 'Bellion');
-                    addLog('⚔️ Bellion (Anima Vorax): 2 daño a ' + _avBellTgt, 'damage');
+                    const _avBellShadowCount = _avShadows.length;
+                    const _avBellDmg = 2 * _avBellShadowCount;
+                    applyDamageWithShield(_avBellTgt, _avBellDmg, 'Bellion');
+                    addLog('⚔️ Bellion (General de Ashborn): ' + _avBellDmg + ' daño a ' + _avBellTgt + ' (2 × ' + _avBellShadowCount + ' sombras)', 'damage');
                 }
             }
+
+            // IRON: inicio de ronda — equipo aliado +3 cargas (llamado en inicio de ronda separado, aquí también fin de ronda vía Anima Vorax)
             if (_avShadows.some(function(e){ return e[1].name==='Iron'; })) {
                 for (const _avAn in gameState.characters) {
                     const _avAc = gameState.characters[_avAn];
                     if (!_avAc || _avAc.team !== owner.team || _avAc.isDead || _avAc.hp <= 0) continue;
                     generateChargesInline(_avAn, 3);
                 }
-                addLog('⚔️ Iron (Anima Vorax): equipo aliado gana 3 cargas', 'buff');
+                addLog('⚔️ Iron (Voluntad de Acero): equipo aliado gana 3 cargas', 'buff');
             }
+
+            // TUSK: inicio de ronda — Quemaduras 2HP a 2 enemigos aleatorios (en inicio de ronda)
+            // fin de ronda vía Anima Vorax:
             if (_avShadows.some(function(e){ return e[1].name==='Tusk'; })) {
                 const _avTuskTeam = owner.team === 'team1' ? 'team2' : 'team1';
                 const _avTuskEn = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c && c.team===_avTuskTeam && !c.isDead && c.hp>0; });
                 if (_avTuskEn.length > 0) {
                     const _avTt = _avTuskEn[Math.floor(Math.random() * _avTuskEn.length)];
                     applyFlatBurn(_avTt, 2, 1);
-                    addLog('⚔️ Tusk (Anima Vorax): Quemadura 2HP aplicada a ' + _avTt, 'debuff');
+                    addLog('⚔️ Tusk (Himno de Fuego): Quemadura 2HP aplicada a ' + _avTt, 'debuff');
                 }
             }
-            if (_avShadows.some(function(e){ return e[1].name==='Kamish'; })) {
-                const _avKamTeam = owner.team === 'team1' ? 'team2' : 'team1';
-                const _avKamEn = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c && c.team===_avKamTeam && !c.isDead && c.hp>0; });
-                if (_avKamEn.length > 0) {
-                    const _avKt = _avKamEn[Math.floor(Math.random() * _avKamEn.length)];
-                    applyDamageWithShield(_avKt, 10, 'Kamish');
-                    addLog('⚔️ Kamish (Anima Vorax): 10 daño a ' + _avKt, 'damage');
-                }
-            }
+
+            // KAMISH: fin de ronda — 50 daño repartido (llamado en triggerKamishEndOfRound)
+            // GREED: fin de ronda — manejado en triggerGreedEndOfRound
+            // JIMA: inicio de ronda — manejado en triggerJimaStartOfRound
+
             addLog('🗡️ Anima Vorax: pasivas de las invocaciones de ' + ownerName + ' activadas', 'buff');
         }
 
@@ -687,7 +698,7 @@
             passiveExecuting = false;
         }
 
-        // Pasiva de Kaisel: aplica debuff aleatorio a 2 enemigos al final de ronda
+        // Pasiva de Kaisel: fin de ronda → reduce 3 cargas a todos los enemigos
         function triggerKaiselPassive() {
             if (passiveExecuting) return;
             Object.keys(gameState.summons).forEach(function(kaisId) {
@@ -695,14 +706,93 @@
                 if (!kais || kais.name !== 'Kaisel' || kais.hp <= 0) return;
                 passiveExecuting = true;
                 const enemyTeam = kais.team === 'team1' ? 'team2' : 'team1';
-                // Maldicion de Kaisel: reduce 3 cargas a TODOS los enemigos
+                // Maldición de Kaisel: reduce 3 cargas a TODOS los enemigos
                 for (const _n in gameState.characters) {
                     const _c = gameState.characters[_n];
                     if (!_c || _c.team !== enemyTeam || _c.isDead || _c.hp <= 0) continue;
                     _c.charges = Math.max(0, (_c.charges||0) - 3);
-                    addLog('Kaisel (Maldicion): ' + _n + ' pierde 3 cargas', 'debuff');
+                    addLog('🐉 Kaisel (Maldición): ' + _n + ' pierde 3 cargas', 'debuff');
                 }
                 passiveExecuting = false;
+            });
+        }
+
+        // Kaisel: inicio de ronda → 2 stacks de Veneno a todos los enemigos
+        function triggerKaiselStartOfRound() {
+            Object.keys(gameState.summons).forEach(function(kaisId) {
+                const kais = gameState.summons[kaisId];
+                if (!kais || kais.name !== 'Kaisel' || kais.hp <= 0) return;
+                const enemyTeam = kais.team === 'team1' ? 'team2' : 'team1';
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== enemyTeam || _c.isDead || _c.hp <= 0) continue;
+                    if (typeof applyPoison === 'function') applyPoison(_n, 2);
+                }
+                addLog('🐉 Kaisel (Maldición): 2 stacks de Veneno aplicados a todos los enemigos', 'debuff');
+            });
+        }
+
+        // Greed: fin de ronda → 50% Sangrado 1T + 50% Miedo 1T a cada enemigo + 1 daño por debuff del equipo enemigo
+        function triggerGreedEndOfRound() {
+            Object.keys(gameState.summons).forEach(function(gid) {
+                const greed = gameState.summons[gid];
+                if (!greed || greed.name !== 'Greed' || greed.hp <= 0) return;
+                const enemyTeam = greed.team === 'team1' ? 'team2' : 'team1';
+                // 50% Sangrado + 50% Miedo a cada enemigo
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== enemyTeam || _c.isDead || _c.hp <= 0) continue;
+                    if (Math.random() < 0.50) {
+                        if (typeof applyBleed === 'function') applyBleed(_n, 1);
+                        else if (typeof applyDebuff === 'function') applyDebuff(_n, { name: 'Sangrado', type: 'debuff', duration: 1, emoji: '🩸' });
+                        addLog('🩸 Greed (Sed de Sangre): Sangrado 1T aplicado a ' + _n + ' (50%)', 'debuff');
+                    }
+                    if (Math.random() < 0.50) {
+                        if (typeof applyDebuff === 'function') applyDebuff(_n, { name: 'Miedo', type: 'debuff', duration: 1, emoji: '😱' });
+                        addLog('😱 Greed (Sed de Sangre): Miedo 1T aplicado a ' + _n + ' (50%)', 'debuff');
+                    }
+                }
+                // 1 daño directo a cada enemigo por cada debuff activo en el equipo enemigo
+                let totalDebuffs = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== enemyTeam || _c.isDead || _c.hp <= 0) continue;
+                    totalDebuffs += (_c.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff'; }).length;
+                }
+                if (totalDebuffs > 0) {
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== enemyTeam || _c.isDead || _c.hp <= 0) continue;
+                        _c.hp = Math.max(0, _c.hp - totalDebuffs); // daño directo
+                        if (_c.hp <= 0 && !_c.isDead) { _c.isDead = true; if (typeof checkGameOver === 'function') checkGameOver(); }
+                    }
+                    addLog('🩸 Greed (Sed de Sangre): ' + totalDebuffs + ' daño directo a cada enemigo (' + totalDebuffs + ' debuffs activos en el equipo enemigo)', 'damage');
+                }
+            });
+        }
+
+        // Jima: inicio de ronda → +2 velocidad permanente a cada aliado jugable + Escudo 10 HP a 2 aliados aleatorios
+        function triggerJimaStartOfRound() {
+            Object.keys(gameState.summons).forEach(function(jid) {
+                const jima = gameState.summons[jid];
+                if (!jima || jima.name !== 'Jima' || jima.hp <= 0) return;
+                const allyTeam = jima.team;
+                // +2 velocidad permanente a cada aliado jugable
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== allyTeam || _c.isDead || _c.hp <= 0) continue;
+                    _c.speed = (_c.speed||80) + 2;
+                }
+                addLog('🌊 Jima (Recluse of the Deep Sea): todos los aliados ganan +2 velocidad permanente', 'buff');
+                // Escudo 10 HP a 2 aliados aleatorios
+                const _jimaAllies = Object.keys(gameState.characters).filter(function(_n){
+                    const _c = gameState.characters[_n]; return _c && _c.team === allyTeam && !_c.isDead && _c.hp > 0;
+                }).sort(function(){ return Math.random()-0.5; }).slice(0, 2);
+                _jimaAllies.forEach(function(_n){
+                    const _c = gameState.characters[_n];
+                    if (_c) { _c.shield = (_c.shield||0) + 10; }
+                    addLog('🌊 Jima (Recluse of the Deep Sea): Escudo 10 HP aplicado a ' + _n, 'buff');
+                });
             });
         }
 
@@ -3285,12 +3375,14 @@
                 for (const _n in gameState.characters) {
                     const _c = gameState.characters[_n];
                     if (!_c || _c.team !== _mbTeam || _c.isDead || _c.hp <= 0) continue;
-                    // Apply Regeneración 20% 1 turno
+                    // Buff Regeneración 20% HP máximo 1 turno
                     if (typeof applyBuff === 'function') {
                         applyBuff(_n, { name: 'Regeneracion', type: 'buff', duration: 1, percent: 20, emoji: '💚' });
                     }
+                    // Cura 2 HP (applyheal)
+                    if (typeof applyHeal === 'function') applyHeal(_n, 2);
                 }
-                addLog('💚 MinByung (Shadow Healing): Regeneración 20% 1T aplicada a todos los aliados', 'buff');
+                addLog('💚 MinByung (Shadow Healing): Regeneración 20% 1T + cura 2 HP a todos los aliados', 'buff');
             });
         }
 
