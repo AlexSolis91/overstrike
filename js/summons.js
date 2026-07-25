@@ -520,7 +520,17 @@
             if (typeof triggerKaiselPassive === 'function' && _avShadows.some(function(e){ return e[1].name==='Kaisel'; }))
                 triggerKaiselPassive();
 
-            // MINBYUNG: inicio de ronda — Regeneración 20% 1T + cura 2 HP (llamado en inicio de ronda separado)
+            // MINBYUNG: Shadow Healing — Regeneración 20% + cura 2 HP a todos los aliados
+            if (typeof triggerMinByungStartOfRound === 'function' && _avShadows.some(function(e){ return e[1].name==='MinByung'; }))
+                triggerMinByungStartOfRound();
+
+            // JIMA: Recluse of the Deep Sea — +2 velocidad permanente + Escudo 10 HP a 2 aliados
+            if (typeof triggerJimaStartOfRound === 'function' && _avShadows.some(function(e){ return e[1].name==='Jima'; }))
+                triggerJimaStartOfRound();
+
+            // KAISEL: inicio — 2 stacks de Veneno a todos los enemigos
+            if (typeof triggerKaiselStartOfRound === 'function' && _avShadows.some(function(e){ return e[1].name==='Kaisel'; }))
+                triggerKaiselStartOfRound();
 
             // BELLION: fin de ronda — 2 daño por cada sombra invocada sobre un enemigo aleatorio
             if (_avShadows.some(function(e){ return e[1].name==='Bellion'; })) {
