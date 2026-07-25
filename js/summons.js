@@ -501,78 +501,68 @@
         }
         // Activa las pasivas de todas las invocaciones vivas del equipo del portador — usada por
         // la reliquia Anima Vorax. Replica el mismo conjunto de disparos que ya usa "Dominio del
-        // Monarca" de Sun Jin Woo, generalizado a cualquier portador con invocaciones activas.
+        // activateOwnerSummonPassives: activa las pasivas de TODAS las invocaciones del portador.
+        // Universal para cualquier invocador (SJW, Marik, Ozymandias, Rhaenyra, etc.)
+        // y para invocaciones nuevas que se agreguen en el futuro.
         function activateOwnerSummonPassives(ownerName) {
             const owner = gameState.characters[ownerName];
             if (!owner) return;
-            const _avShadows = Object.entries(gameState.summons || {}).filter(function(e){ return e[1] && e[1].team === owner.team && e[1].hp > 0; });
+            const _avShadows = Object.entries(gameState.summons || {}).filter(function(e){
+                return e[1] && e[1].team === owner.team && e[1].hp > 0;
+            });
             if (_avShadows.length === 0) return;
+            const enemyTeam = owner.team === 'team1' ? 'team2' : 'team1';
 
-            // IGRIS: fin de ronda — 2 daño AOE + elimina 1 invocación enemiga
-            if (typeof triggerIgrisPassive === 'function' && _avShadows.some(function(e){ return e[1].name==='Igris'; }))
-                triggerIgrisPassive(ownerName);
-
-            // BERU: fin de ronda — 5 daño + 1 por carga a un enemigo aleatorio
-            if (typeof triggerBeruPassive === 'function' && _avShadows.some(function(e){ return e[1].name==='Beru'; }))
-                triggerBeruPassive();
-
-            // KAISEL: fin de ronda — reduce 3 cargas a todos los enemigos
-            if (typeof triggerKaiselPassive === 'function' && _avShadows.some(function(e){ return e[1].name==='Kaisel'; }))
-                triggerKaiselPassive();
-
-            // MINBYUNG: Shadow Healing — Regeneración 20% + cura 2 HP a todos los aliados
-            if (typeof triggerMinByungStartOfRound === 'function' && _avShadows.some(function(e){ return e[1].name==='MinByung'; }))
-                triggerMinByungStartOfRound();
-
-            // JIMA: Recluse of the Deep Sea — +2 velocidad permanente + Escudo 10 HP a 2 aliados
-            if (typeof triggerJimaStartOfRound === 'function' && _avShadows.some(function(e){ return e[1].name==='Jima'; }))
-                triggerJimaStartOfRound();
-
-            // KAISEL: inicio — 2 stacks de Veneno a todos los enemigos
-            if (typeof triggerKaiselStartOfRound === 'function' && _avShadows.some(function(e){ return e[1].name==='Kaisel'; }))
-                triggerKaiselStartOfRound();
-
-            // BELLION: fin de ronda — 2 daño por cada sombra invocada sobre un enemigo aleatorio
-            if (_avShadows.some(function(e){ return e[1].name==='Bellion'; })) {
-                const _avBellTeam = owner.team === 'team1' ? 'team2' : 'team1';
-                const _avBellEnemies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c && c.team===_avBellTeam && !c.isDead && c.hp>0; });
-                if (_avBellEnemies.length > 0) {
-                    const _avBellTgt = _avBellEnemies[Math.floor(Math.random() * _avBellEnemies.length)];
-                    const _avBellShadowCount = _avShadows.length;
-                    const _avBellDmg = 2 * _avBellShadowCount;
-                    applyDamageWithShield(_avBellTgt, _avBellDmg, 'Bellion');
-                    addLog('⚔️ Bellion (General de Ashborn): ' + _avBellDmg + ' daño a ' + _avBellTgt + ' (2 × ' + _avBellShadowCount + ' sombras)', 'damage');
+            _avShadows.forEach(function(entry) {
+                const summon = entry[1];
+                switch (summon.name) {
+                    case 'Igris':
+                        if (typeof triggerIgrisPassive === 'function') triggerIgrisPassive(ownerName);
+                        break;
+                    case 'Beru':
+                        if (typeof triggerBeruPassive === 'function') triggerBeruPassive();
+                        break;
+                    case 'Kaisel':
+                        if (typeof triggerKaiselPassive === 'function') triggerKaiselPassive();
+                        if (typeof triggerKaiselStartOfRound === 'function') triggerKaiselStartOfRound();
+                        break;
+                    case 'MinByung':
+                        if (typeof triggerMinByungStartOfRound === 'function') triggerMinByungStartOfRound();
+                        break;
+                    case 'Jima':
+                        if (typeof triggerJimaStartOfRound === 'function') triggerJimaStartOfRound();
+                        break;
+                    case 'Greed':
+                        if (typeof triggerGreedEndOfRound === 'function') triggerGreedEndOfRound();
+                        break;
+                    case 'Bellion': {
+                        const _bellEn = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===enemyTeam&&!c.isDead&&c.hp>0; });
+                        if (_bellEn.length > 0) {
+                            const _bt = _bellEn[Math.floor(Math.random()*_bellEn.length)];
+                            const _bd = 2 * _avShadows.length;
+                            applyDamageWithShield(_bt, _bd, 'Bellion');
+                            addLog('Bellion (General de Ashborn): ' + _bd + ' dano a ' + _bt + ' (2 x ' + _avShadows.length + ' sombras)', 'damage');
+                        }
+                        break;
+                    }
+                    case 'Iron':
+                        for (const _ian in gameState.characters) { const _iac=gameState.characters[_ian]; if(!_iac||_iac.team!==owner.team||_iac.isDead||_iac.hp<=0) continue; generateChargesInline(_ian,3); }
+                        addLog('Iron (Voluntad de Acero): equipo aliado gana 3 cargas', 'buff');
+                        break;
+                    case 'Tusk': {
+                        const _tEn = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===enemyTeam&&!c.isDead&&c.hp>0; }).sort(function(){ return Math.random()-0.5; }).slice(0,2);
+                        _tEn.forEach(function(_te){ if(typeof applyFlatBurn==='function') applyFlatBurn(_te,2,1); addLog('Tusk (Himno de Fuego): Quemaduras 2HP 1T a '+_te,'debuff'); });
+                        break;
+                    }
+                    default:
+                        // Invocacion generica: el log general al final es suficiente
+                        break;
                 }
-            }
+            });
 
-            // IRON: inicio de ronda — equipo aliado +3 cargas (llamado en inicio de ronda separado, aquí también fin de ronda vía Anima Vorax)
-            if (_avShadows.some(function(e){ return e[1].name==='Iron'; })) {
-                for (const _avAn in gameState.characters) {
-                    const _avAc = gameState.characters[_avAn];
-                    if (!_avAc || _avAc.team !== owner.team || _avAc.isDead || _avAc.hp <= 0) continue;
-                    generateChargesInline(_avAn, 3);
-                }
-                addLog('⚔️ Iron (Voluntad de Acero): equipo aliado gana 3 cargas', 'buff');
-            }
-
-            // TUSK: inicio de ronda — Quemaduras 2HP a 2 enemigos aleatorios (en inicio de ronda)
-            // fin de ronda vía Anima Vorax:
-            if (_avShadows.some(function(e){ return e[1].name==='Tusk'; })) {
-                const _avTuskTeam = owner.team === 'team1' ? 'team2' : 'team1';
-                const _avTuskEn = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c && c.team===_avTuskTeam && !c.isDead && c.hp>0; });
-                if (_avTuskEn.length > 0) {
-                    const _avTt = _avTuskEn[Math.floor(Math.random() * _avTuskEn.length)];
-                    applyFlatBurn(_avTt, 2, 1);
-                    addLog('⚔️ Tusk (Himno de Fuego): Quemadura 2HP aplicada a ' + _avTt, 'debuff');
-                }
-            }
-
-            // KAMISH: fin de ronda — 50 daño repartido (llamado en triggerKamishEndOfRound)
-            // GREED: fin de ronda — manejado en triggerGreedEndOfRound
-            // JIMA: inicio de ronda — manejado en triggerJimaStartOfRound
-
-            addLog('🗡️ Anima Vorax: pasivas de las invocaciones de ' + ownerName + ' activadas', 'buff');
+            addLog('Anima Vorax: pasivas de las invocaciones de ' + ownerName + ' activadas', 'buff');
         }
+
 
         function triggerIgrisPassive(summonerName) {
             try {
