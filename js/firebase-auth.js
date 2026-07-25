@@ -4424,7 +4424,7 @@
                     }
                 });
             }
-            // Pity counter
+            // Pity counter (TEMPORALMENTE DESHABILITADO — mantener el código para reactivar)
             const now = Date.now();
             const pitySnap = await db.ref('users/' + uid + '/arcane_pity').once('value');
             let pityData = pitySnap.val() || { bonus: 0, lastOpenAt: 0, streak: 0 };
@@ -4432,13 +4432,17 @@
 
             const bossData = typeof getBossData === 'function' ? await getBossData() : null;
             const bossIsLichKing = bossData && bossData.status === 'active' && bossData.name === 'Lich King';
-            // +0.5% por cofre abierto dentro de la ventana de 4 minutos, máximo 5%
+            // Sistema progresivo DESHABILITADO: usar tasa base fija sin bonus acumulado.
+            // Para reactivar: cambiar _PITY_DISABLED a false y descomentar la línea de totalLegPct con bonus.
+            const _PITY_DISABLED = true;
             const perOpenBonus = 0.005;
             const baseLegPct   = 0.005;
-            const totalLegPct  = Math.min(0.05, baseLegPct + pityData.bonus);
+            const totalLegPct  = _PITY_DISABLED ? baseLegPct : Math.min(0.05, baseLegPct + pityData.bonus);
             // Update pity (incrementa racha y reinicia el temporizador a 240s)
             const newStreak = (pityData.streak || 0) + 1;
-            await db.ref('users/' + uid + '/arcane_pity').set({ bonus: pityData.bonus + perOpenBonus, lastOpenAt: now, streak: newStreak });
+            if (!_PITY_DISABLED) {
+                await db.ref('users/' + uid + '/arcane_pity').set({ bonus: pityData.bonus + perOpenBonus, lastOpenAt: now, streak: newStreak });
+            }
 
             // New drop rates: Legendario 0.5%, Épico 5%, Runa 10%, Especial 35%, Raro 49.5%
             const rv = Math.random();
