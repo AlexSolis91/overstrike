@@ -1311,11 +1311,12 @@
                 }
             }
 
-            // ── PECHERA DE MITRIL: no recibe daño de ataques que causen más de 7 de daño ──
-            // (La protección vs eliminación directa se maneja en las habilidades individuales que eliminan sin daño)
-            if (!passiveExecuting && damage > 7 && (target.equippedRelics||[]).includes('Pechera de Mitril')) {
-                addLog('⚔️ Pechera de Mitril: ' + targetName + ' bloquea el ataque (daño ' + damage + ' > 7)', 'buff');
-                return 0;
+            // ── PECHERA DE MITRIL: si el ataque causa 5+ daño → 50% de no recibirlo ──
+            if (!passiveExecuting && damage >= 5 && (target.equippedRelics||[]).includes('Pechera de Mitril')) {
+                if (Math.random() < 0.50) {
+                    addLog('⚔️ Pechera de Mitril: ' + targetName + ' evita ' + damage + ' de daño (50%)', 'buff');
+                    return 0;
+                }
             }
 
             // ── BUFF ARMADURA: reduce 50% el daño recibido ──
