@@ -633,7 +633,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260887"></script>
+    <script src="js/firebase-auth.js?v=20260888"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -1591,9 +1591,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260887"></script>
+    <script src="js/characters.js?v=20260888"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260887"></script>
+    <script src="js/audio-state.js?v=20260888"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -1885,11 +1885,13 @@
 
         const SUMMON_CATALOGUE = {
             'Igris':    { hp: 5,  maxHp: 5,  img: 'https://i.postimg.cc/T13zZdKD/Captura_de_pantalla_2026_03_11_145542.png', passive: 'Comandante Rojo Sangriento: Al final de cada ronda causa 2 de daño a todos los enemigos (incluyendo invocaciones enemigas). Al final de cada ronda elimina una Invocación del equipo enemigo.' },
-            'MinByung': { hp: 5,  maxHp: 5,  img: 'https://i.ibb.co/B5KzCTc4/Min-Byung-Gyu.jpg',                              passive: 'Shadow Healing: Al inicio de cada ronda aplica Buff Regeneración 20% 1 turno sobre todos los aliados. Cuando esta invocación es eliminada, genera 3 cargas a todos los aliados.' },
+            'MinByung': { hp: 5,  maxHp: 5,  img: 'https://i.ibb.co/B5KzCTc4/Min-Byung-Gyu.jpg',                              passive: 'Shadow Healing: Al inicio de cada ronda aplica Buff Regeneración 20% HP máximo 1 turno sobre todos los aliados y cura 2 HP a todos los aliados. Cuando esta invocación es eliminada, genera 3 cargas a todos los aliados.' },
             'Iron':     { hp: 10, maxHp: 10, img: 'https://i.postimg.cc/7hZFpH5G/Captura_de_pantalla_2026_03_11_145721.png', passive: 'Voluntad de Acero: absorbe todo el daño por golpe que fuera a recibir su invocador. Iron no puede ser seleccionado por ataques ST del enemigo. Al inicio de cada ronda el equipo aliado genera 3 cargas.' },
-            'Tusk':     { hp: 5,  maxHp: 5,  img: 'https://i.postimg.cc/Wz1BQNdz/Captura_de_pantalla_2026_03_11_145950.png', passive: 'Hipno de Fuego: duplica el daño causado por Quemaduras sobre los enemigos. Al inicio de cada ronda aplica Quemadura 2HP 1 turno a 2 enemigos aleatorios.' },
+            'Greed':    { hp: 5,  maxHp: 5,  img: 'https://i.ibb.co/3w81XzG/Greed.jpg',                                       passive: 'Sed de Sangre: Al final de cada ronda 50% de probabilidad de aplicar Sangrado 1T a cada enemigo. 50% de probabilidad de aplicar Miedo 1T a cada enemigo. Al final de cada ronda causa 1 daño directo a cada enemigo por cada debuff activo en el equipo enemigo.' },
+            'Jima':     { hp: 10, maxHp: 10, img: 'https://i.ibb.co/zVR4RLBz/descarga-32.jpg',                                passive: 'Recluse of the Deep Sea: Al inicio de cada ronda incrementa +2 la velocidad de cada aliado (permanente). Al inicio de cada ronda aplica Escudo de 10 HP en 2 aliados aleatorios.' },
+            'Tusk':     { hp: 5,  maxHp: 5,  img: 'https://i.postimg.cc/Wz1BQNdz/Captura_de_pantalla_2026_03_11_145950.png', passive: 'Himno de Fuego: Duplica el daño causado por debuff Quemaduras sobre los enemigos. Al inicio de cada ronda aplica Quemaduras de 2HP 1 turno sobre 2 enemigos aleatorios.' },
             'Beru':     { hp: 5,  maxHp: 5,  img: 'https://i.postimg.cc/zvGs9zyZ/Captura_de_pantalla_2026_03_11_150049.png', passive: 'Garras del Abismo: Al final de cada ronda causa 5 de daño a un enemigo aleatorio +1 daño adicional por cada carga que tenga ese enemigo.' },
-            'Bellion':  { hp: 10, maxHp: 10, img: 'https://i.postimg.cc/XqYRTjpm/Captura_de_pantalla_2026_03_11_150350.png', passive: 'General de Ashborn: La primera vez por ronda que un especial u Over enemigo es activado, cancela ese movimiento (el enemigo pierde las cargas gastadas). Al final de cada ronda causa 2 de daño sobre un enemigo aleatorio por cada sombra invocada.' },
+            'Bellion':  { hp: 10, maxHp: 10, img: 'https://i.postimg.cc/XqYRTjpm/Captura_de_pantalla_2026_03_11_150350.png', passive: 'General de Ashborn: La primera vez por ronda que un especial u Over enemigo es activado, cancela ese movimiento. Al final de cada ronda causa 2 de daño sobre un enemigo aleatorio por cada sombra invocada.' },
             'Kaisel':   { hp: 10, maxHp: 10, img: 'https://i.postimg.cc/GtmWZL41/Captura_de_pantalla_2026_03_11_151735.png', passive: 'Maldición de Kaisel: Al final de cada ronda reduce 3 cargas de todos los enemigos. Al inicio de cada ronda aplica 2 stacks de Veneno a todos los enemigos.' },
             'Kamish':   { hp: 30, maxHp: 30, img: 'https://i.ibb.co/wFPCX3jV/Captura-de-pantalla-2026-04-24-141535.png', passive: 'Terror de las Sombras: Kamish no puede ser seleccionado como objetivo de ataques ST del enemigo. Al final de cada ronda causa 50 de daño repartido aleatoriamente entre todos los enemigos.' },
             'Sindragosa': { hp: 10, passive: 'Se invoca con Mega Provocación. Genera 1 carga a todo el equipo aliado cada vez que recibe daño.' },
@@ -2325,26 +2327,26 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260887"></script>
+    <script src="js/ai-engine.js?v=20260888"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260887"></script>
+    <script src="js/init-render.js?v=20260888"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260887"></script>
+    <script src="js/turn-logic.js?v=20260888"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260887"></script>
+    <script src="js/status-effects.js?v=20260888"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260887"></script>
+    <script src="js/debuffs.js?v=20260888"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260887"></script>
+    <script src="js/summons.js?v=20260888"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260887"></script>
+    <script src="js/ability-select.js?v=20260888"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260887"></script>
+<script src="js/skills.js?v=20260888"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260887"></script>
-    <script src="js/horda-mode.js?v=20260887"></script>
-    <script src="js/horda-abilities.js?v=20260887"></script>
-    <script src="js/horda-battle.js?v=20260887"></script>
+    <script src="js/jefe-de-sala.js?v=20260888"></script>
+    <script src="js/horda-mode.js?v=20260888"></script>
+    <script src="js/horda-abilities.js?v=20260888"></script>
+    <script src="js/horda-battle.js?v=20260888"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
