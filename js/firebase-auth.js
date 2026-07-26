@@ -960,21 +960,18 @@
         }
 
         function rtRender() {
-            rtRenderSlots('attack',  'rtAttackSlots',  rtAttackTeam,  '#4fc3f7');
-            rtRenderSlots('defense', 'rtDefenseSlots', rtDefenseTeam, '#c864ff');
+            _rtRenderSlots('attack',  'rtAttackSlots',  rtAttackTeam,  '#4fc3f7');
+            _rtRenderSlots('defense', 'rtDefenseSlots', rtDefenseTeam, '#c864ff');
             rtRenderGrid();
         }
 
-        // Alias para compatibilidad con el nuevo sistema
+        // Alias sin args para el nuevo sistema (llamado desde _rtLoadConfig)
         function rtRenderSlots() {
-            if (arguments.length === 0) {
-                // Llamado sin args desde el nuevo sistema
-                var _r = rtRenderSlots;
-                _r('attack',  'rtAttackSlots',  rtAttackTeam,  '#4fc3f7');
-                _r('defense', 'rtDefenseSlots', rtDefenseTeam, '#c864ff');
-                return;
-            }
-            const container = document.getElementById(containerId);
+            _rtRenderSlots('attack',  'rtAttackSlots',  rtAttackTeam,  '#4fc3f7');
+            _rtRenderSlots('defense', 'rtDefenseSlots', rtDefenseTeam, '#c864ff');
+        }
+
+        function _rtRenderSlots(teamType, containerId, team, color) {
             if (!container) return;
             container.innerHTML = '';
             for (let i = 0; i < 5; i++) {
