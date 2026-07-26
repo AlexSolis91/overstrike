@@ -243,7 +243,7 @@
             <!-- Logo: sin emoji, pegado a la izquierda -->
             <div style="display:flex;flex-direction:column;gap:2px;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;white-space:nowrap;">OVERSTRIKE</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260899</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260900</div>
             </div>
 
             <!-- HUD: empujado todo a la derecha junto al botón mute -->
@@ -566,26 +566,23 @@
             gameState.selectedAbility = null;
             gameState.adjustedCost = 0;
         }
-        // Intentar showActionModal primero
-        var _shown = false;
-        if (typeof showActionModal === 'function' &&
-            typeof gameState !== 'undefined' &&
-            gameState.selectedCharacter &&
-            gameState.characters &&
-            gameState.characters[gameState.selectedCharacter] &&
-            !gameState.characters[gameState.selectedCharacter].isDead &&
-            gameState.characters[gameState.selectedCharacter].hp > 0) {
-            try { showActionModal(); _shown = true; } catch(e) {}
-        }
-        if (_shown) return;
-        // Fallback 1: showContinueButton (ahora global)
-        if (typeof window.showContinueButton === 'function') {
-            try { window.showContinueButton(); _shown = true; } catch(e) {}
-        }
-        if (_shown) return;
-        // Fallback 2 absoluto: mostrar el botón DOM directamente
+        // Crear/mostrar el botón de Continuar Turno directamente — no depende de selectedCharacter
+        // que puede ser null cuando se cierra el modal
         var _btn = document.getElementById('floatingContinueBtn');
-        if (_btn) { _btn.style.display = 'block'; }
+        if (!_btn) {
+            _btn = document.createElement('button');
+            _btn.id = 'floatingContinueBtn';
+            _btn.style.cssText = 'position:fixed;bottom:28px;right:28px;background:linear-gradient(135deg,var(--primary-glow,#00d9ff),var(--secondary-glow,#7b2fff));border:none;color:#0a0e17;font-family:Orbitron,sans-serif;font-size:1.1em;font-weight:700;padding:16px 32px;border-radius:50px;cursor:pointer;z-index:996;box-shadow:0 0 28px rgba(0,217,255,0.55);letter-spacing:0.05em;';
+            _btn.onclick = function() {
+                this.style.display = 'none';
+                if (typeof continueTurn === 'function') continueTurn();
+            };
+            document.body.appendChild(_btn);
+        }
+        var _charName = (typeof gameState !== 'undefined' && gameState.selectedCharacter) ? gameState.selectedCharacter : '';
+        var _round = (typeof gameState !== 'undefined' && gameState.currentRound) ? gameState.currentRound : 1;
+        _btn.innerHTML = '▶ Continuar Turno' + (_charName ? '<br><span style="font-size:0.65em;opacity:0.75;font-weight:400;">RONDA ' + _round + ' · ' + _charName + '</span>' : '');
+        _btn.style.display = 'block';
     }
     </script>
 
@@ -642,7 +639,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260899"></script>
+    <script src="js/firebase-auth.js?v=20260900"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -1602,9 +1599,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260899"></script>
+    <script src="js/characters.js?v=20260900"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260899"></script>
+    <script src="js/audio-state.js?v=20260900"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2338,26 +2335,26 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260899"></script>
+    <script src="js/ai-engine.js?v=20260900"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260899"></script>
+    <script src="js/init-render.js?v=20260900"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260899"></script>
+    <script src="js/turn-logic.js?v=20260900"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260899"></script>
+    <script src="js/status-effects.js?v=20260900"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260899"></script>
+    <script src="js/debuffs.js?v=20260900"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260899"></script>
+    <script src="js/summons.js?v=20260900"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260899"></script>
+    <script src="js/ability-select.js?v=20260900"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260899"></script>
+<script src="js/skills.js?v=20260900"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260899"></script>
-    <script src="js/horda-mode.js?v=20260899"></script>
-    <script src="js/horda-abilities.js?v=20260899"></script>
-    <script src="js/horda-battle.js?v=20260899"></script>
+    <script src="js/jefe-de-sala.js?v=20260900"></script>
+    <script src="js/horda-mode.js?v=20260900"></script>
+    <script src="js/horda-abilities.js?v=20260900"></script>
+    <script src="js/horda-battle.js?v=20260900"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
