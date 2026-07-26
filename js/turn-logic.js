@@ -425,6 +425,9 @@
 
         function hideWaitingForOpponent() { updateWaitingIndicator('', false); }
 
+        // Exponer globalmente para que closeTargetModal (index.html) pueda llamarla
+        window.showContinueButton = showContinueButton;
+
         function hideContinueButton() {
             const btn = document.getElementById('floatingContinueBtn');
             if (btn) btn.style.display = 'none';
