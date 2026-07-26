@@ -874,14 +874,21 @@
 
         function showRankedTeamScreen() {
             if (!currentUser) return;
-            // Load saved teams from Firebase
-            db.ref('ranked_teams/' + currentUser.uid).once('value', function(snap) {
-                const data = snap.val() || {};
-                rtAttackTeam  = (data.attack  || []).slice();
-                rtDefenseTeam = (data.defense || []).slice();
-                document.getElementById('rankedTeamScreen').style.display = 'block';
-                rtRender();
-                // Inject "Probar vs IA" button if not already present
+            document.getElementById('rankedTeamScreen').style.display = 'block';
+            document.getElementById('rtTeamEditor').style.display = 'none';
+            document.getElementById('rtActiveConfigHeader').style.display = 'none';
+            document.getElementById('rtEmptyState').style.display = 'none';
+            _rtLoadConfigs(function(configs) {
+                var ids = Object.keys(configs);
+                document.getElementById('rtEmptyState').style.display = ids.length === 0 ? 'block' : 'none';
+                _rtRenderConfigList();
+                // Cargar la config activa automáticamente si existe
+                if (_rtActiveId && configs[_rtActiveId]) {
+                    _rtLoadConfig(_rtActiveId);
+                } else if (ids.length === 1) {
+                    _rtLoadConfig(ids[0]);
+                }
+                rtRenderGrid();
                 rtInjectTestButton();
             });
         }
@@ -958,7 +965,15 @@
             rtRenderGrid();
         }
 
-        function rtRenderSlots(teamType, containerId, team, color) {
+        // Alias para compatibilidad con el nuevo sistema
+        function rtRenderSlots() {
+            if (arguments.length === 0) {
+                // Llamado sin args desde el nuevo sistema
+                var _r = rtRenderSlots;
+                _r('attack',  'rtAttackSlots',  rtAttackTeam,  '#4fc3f7');
+                _r('defense', 'rtDefenseSlots', rtDefenseTeam, '#c864ff');
+                return;
+            }
             const container = document.getElementById(containerId);
             if (!container) return;
             container.innerHTML = '';
@@ -1305,23 +1320,183 @@
             _launchRankedVsIAWithTeam(attack, defense, playerName + ' (Defensa — Prueba)');
         }
 
+        // ══════════════════════════════════════════════════════
+        // SISTEMA DE MÚLTIPLES CONFIGURACIONES RANKED (máx 5)
+        // ══════════════════════════════════════════════════════
+        var _rtConfigs    = {};   // { id: { name, attack, defense, ts } }
+        var _rtActiveId   = null; // id de la config activa para jugar
+        var _rtEditingId  = null; // id de la config actualmente en el editor
+
+        function _rtShowMsg(msg, isError) {
+            var el = document.getElementById('rankedTeamSaveMsg');
+            if (!el) return;
+            el.textContent = msg;
+            el.style.color = isError ? '#ff6688' : '#00ff88';
+            el.style.borderColor = isError ? '#ff3366' : '#00ff88';
+            el.style.background = isError ? 'rgba(255,51,102,0.1)' : 'rgba(0,255,136,0.1)';
+            el.style.display = 'block';
+            setTimeout(function() { el.style.display = 'none'; }, 3000);
+        }
+
+        function _rtLoadConfigs(cb) {
+            if (!currentUser) { cb({}); return; }
+            db.ref('ranked_teams_v2/' + currentUser.uid).once('value', function(snap) {
+                var data = snap.val() || {};
+                _rtConfigs  = data.configs || {};
+                _rtActiveId = data.active  || null;
+
+                // ── Migración: si no hay configs v2 pero sí hay el equipo antiguo ──
+                if (Object.keys(_rtConfigs).length === 0) {
+                    db.ref('ranked_teams/' + currentUser.uid).once('value', function(oldSnap) {
+                        var old = oldSnap.val();
+                        if (old && old.attack && old.defense) {
+                            // Pedir nombre al usuario para esta configuración migrada
+                            var migName = prompt('Tienes un equipo guardado anteriormente. ¿Cómo quieres llamar a esa configuración?\n(Ej: Mi equipo principal)', 'Equipo principal');
+                            if (!migName) migName = 'Equipo principal';
+                            var migId = 'cfg_' + Date.now();
+                            _rtConfigs[migId] = { name: migName, attack: old.attack, defense: old.defense, ts: Date.now() };
+                            _rtActiveId = migId;
+                            _rtSaveToFirebase(function() { cb(_rtConfigs); });
+                        } else {
+                            cb(_rtConfigs);
+                        }
+                    });
+                } else {
+                    cb(_rtConfigs);
+                }
+            });
+        }
+
+        function _rtSaveToFirebase(cb) {
+            if (!currentUser) return;
+            db.ref('ranked_teams_v2/' + currentUser.uid).set({ configs: _rtConfigs, active: _rtActiveId }).then(function() {
+                if (cb) cb();
+            });
+        }
+
+        function _rtRenderConfigList() {
+            var list = document.getElementById('rtConfigList');
+            var newBtn = document.getElementById('rtNewConfigBtn');
+            if (!list) return;
+            list.innerHTML = '';
+            var ids = Object.keys(_rtConfigs);
+            ids.forEach(function(id) {
+                var cfg = _rtConfigs[id];
+                var isActive  = (id === _rtActiveId);
+                var isEditing = (id === _rtEditingId);
+                var btn = document.createElement('button');
+                btn.style.cssText = 'padding:8px 16px; border-radius:10px; cursor:pointer; font-family:Orbitron,sans-serif; font-size:.72rem; font-weight:700; letter-spacing:.04em; transition:all .2s; border:2px solid ' + (isActive ? '#00ff88' : isEditing ? '#4fc3f7' : 'rgba(255,255,255,0.15)') + '; background:' + (isActive ? 'rgba(0,255,136,0.12)' : isEditing ? 'rgba(79,195,247,0.12)' : 'rgba(255,255,255,0.05)') + '; color:' + (isActive ? '#00ff88' : isEditing ? '#4fc3f7' : '#aaa') + ';';
+                btn.innerHTML = (isActive ? '⭐ ' : '') + (cfg.name || 'Sin nombre');
+                btn.onclick = function() { _rtLoadConfig(id); };
+                list.appendChild(btn);
+            });
+            if (newBtn) newBtn.style.display = ids.length >= 5 ? 'none' : '';
+        }
+
+        function _rtLoadConfig(id) {
+            var cfg = _rtConfigs[id];
+            if (!cfg) return;
+            _rtEditingId = id;
+            rtAttackTeam  = (cfg.attack  || []).concat(Array(5).fill(null)).slice(0, 5);
+            rtDefenseTeam = (cfg.defense || []).concat(Array(5).fill(null)).slice(0, 5);
+            document.getElementById('rtConfigNameInput').value = cfg.name || '';
+            document.getElementById('rtActiveConfigHeader').style.display = 'flex';
+            document.getElementById('rtTeamEditor').style.display = 'block';
+            document.getElementById('rtEmptyState').style.display = 'none';
+            rtRenderSlots();
+            _rtRenderConfigList();
+        }
+
+        function rtCreateNewConfig() {
+            if (Object.keys(_rtConfigs).length >= 5) {
+                _rtShowMsg('⚠️ Ya tienes 5 configuraciones (máximo permitido).', true); return;
+            }
+            var name = prompt('Nombre para la nueva configuración:\n(Ej: Dot Quemaduras, Invocación, Control...)', '');
+            if (name === null) return;
+            if (!name.trim()) name = 'Configuración ' + (Object.keys(_rtConfigs).length + 1);
+            var id = 'cfg_' + Date.now();
+            _rtConfigs[id] = { name: name.trim(), attack: [], defense: [], ts: Date.now() };
+            _rtEditingId = id;
+            rtAttackTeam  = Array(5).fill(null);
+            rtDefenseTeam = Array(5).fill(null);
+            document.getElementById('rtConfigNameInput').value = name.trim();
+            document.getElementById('rtActiveConfigHeader').style.display = 'flex';
+            document.getElementById('rtTeamEditor').style.display = 'block';
+            document.getElementById('rtEmptyState').style.display = 'none';
+            rtRenderSlots();
+            _rtRenderConfigList();
+        }
+
+        function rtRenameConfig() {
+            if (!_rtEditingId || !_rtConfigs[_rtEditingId]) return;
+            var newName = document.getElementById('rtConfigNameInput').value.trim();
+            if (!newName) { _rtShowMsg('⚠️ El nombre no puede estar vacío.', true); return; }
+            _rtConfigs[_rtEditingId].name = newName;
+            _rtSaveToFirebase(function() { _rtRenderConfigList(); _rtShowMsg('✅ Nombre actualizado'); });
+        }
+
+        function rtDeleteConfig() {
+            if (!_rtEditingId) return;
+            var cfg = _rtConfigs[_rtEditingId];
+            if (!confirm('¿Eliminar la configuración "' + (cfg ? cfg.name : '') + '"?\nEsta acción no se puede deshacer.')) return;
+            delete _rtConfigs[_rtEditingId];
+            if (_rtActiveId === _rtEditingId) _rtActiveId = Object.keys(_rtConfigs)[0] || null;
+            _rtEditingId = null;
+            rtAttackTeam  = Array(5).fill(null);
+            rtDefenseTeam = Array(5).fill(null);
+            document.getElementById('rtActiveConfigHeader').style.display = 'none';
+            document.getElementById('rtTeamEditor').style.display = 'none';
+            document.getElementById('rtEmptyState').style.display = Object.keys(_rtConfigs).length === 0 ? 'block' : 'none';
+            _rtSaveToFirebase(function() { _rtRenderConfigList(); _rtShowMsg('✅ Configuración eliminada'); });
+        }
+
+        function rtSetActive() {
+            if (!_rtEditingId) return;
+            var cfg = _rtConfigs[_rtEditingId];
+            if (!cfg || !cfg.attack || cfg.attack.filter(Boolean).length < 5 || !cfg.defense || cfg.defense.filter(Boolean).length < 5) {
+                _rtShowMsg('⚠️ Guarda primero los equipos completos (5 personajes en cada uno).', true); return;
+            }
+            _rtActiveId = _rtEditingId;
+            _rtSaveToFirebase(function() { _rtRenderConfigList(); _rtShowMsg('⭐ Esta configuración se usará en Ranked'); });
+        }
+
         function saveRankedTeams() {
             if (!currentUser) return;
-            const attack  = rtAttackTeam.filter(Boolean);
-            const defense = rtDefenseTeam.filter(Boolean);
-            if (attack.length < 5) { alert('El Equipo de Ataque necesita 5 personajes.'); return; }
+            if (!_rtEditingId) { _rtShowMsg('⚠️ Selecciona o crea una configuración primero.', true); return; }
+            var attack  = rtAttackTeam.filter(Boolean);
+            var defense = rtDefenseTeam.filter(Boolean);
+            if (attack.length < 5)  { alert('El Equipo de Ataque necesita 5 personajes.');  return; }
             if (defense.length < 5) { alert('El Equipo de Defensa necesita 5 personajes.'); return; }
-            const data = { attack: attack, defense: defense, uid: currentUser.uid, name: currentUser.displayName || 'Jugador', ts: Date.now() };
-            db.ref('ranked_teams/' + currentUser.uid).set(data).then(function() {
-                const msg = document.getElementById('rankedTeamSaveMsg');
-                if (msg) { msg.textContent = '✅ Equipos guardados correctamente'; msg.style.display = 'block'; setTimeout(function() { msg.style.display = 'none'; }, 3000); }
+            _rtConfigs[_rtEditingId].attack  = attack;
+            _rtConfigs[_rtEditingId].defense = defense;
+            _rtConfigs[_rtEditingId].ts      = Date.now();
+            // Si solo hay 1 config, marcarla activa automáticamente
+            if (Object.keys(_rtConfigs).length === 1) _rtActiveId = _rtEditingId;
+            _rtSaveToFirebase(function() {
+                // Compatibilidad: también escribir en ranked_teams/{uid} con la config activa
+                var active = _rtConfigs[_rtActiveId];
+                if (active) {
+                    db.ref('ranked_teams/' + currentUser.uid).set({ attack: active.attack, defense: active.defense, uid: currentUser.uid, name: currentUser.displayName || 'Jugador', ts: Date.now() });
+                }
+                _rtRenderConfigList();
+                _rtShowMsg('✅ Equipos guardados correctamente');
             });
         }
 
         function getRankedTeams(callback) {
             if (!currentUser) { callback(null); return; }
-            db.ref('ranked_teams/' + currentUser.uid).once('value', function(snap) {
-                callback(snap.val());
+            // Primero intentar con v2, fallback a v1
+            db.ref('ranked_teams_v2/' + currentUser.uid + '/active').once('value', function(activeSnap) {
+                var activeId = activeSnap.val();
+                if (activeId) {
+                    db.ref('ranked_teams_v2/' + currentUser.uid + '/configs/' + activeId).once('value', function(cfgSnap) {
+                        callback(cfgSnap.val());
+                    });
+                } else {
+                    db.ref('ranked_teams/' + currentUser.uid).once('value', function(snap) {
+                        callback(snap.val());
+                    });
+                }
             });
         }
 
