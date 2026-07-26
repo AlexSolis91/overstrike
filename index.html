@@ -243,7 +243,7 @@
             <!-- Logo: sin emoji, pegado a la izquierda -->
             <div style="display:flex;flex-direction:column;gap:2px;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;white-space:nowrap;">OVERSTRIKE</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260898</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260899</div>
             </div>
 
             <!-- HUD: empujado todo a la derecha junto al botón mute -->
@@ -562,15 +562,12 @@
     // que pueda elegir otro movimiento.
     function closeTargetModal() {
         document.getElementById('targetModal').classList.remove('show');
-        // Cancelar la habilidad seleccionada para que el jugador pueda elegir otra
         if (typeof gameState !== 'undefined') {
             gameState.selectedAbility = null;
             gameState.adjustedCost = 0;
         }
-        // Intentar mostrar el menú de acción, con showContinueButton como garantía de fallback.
-        // showContinueButton se llama SIEMPRE después, para asegurar que el botón esté visible
-        // si showActionModal falla o no corresponde en este punto del flujo.
-        var _actionShown = false;
+        // Intentar showActionModal primero
+        var _shown = false;
         if (typeof showActionModal === 'function' &&
             typeof gameState !== 'undefined' &&
             gameState.selectedCharacter &&
@@ -578,11 +575,17 @@
             gameState.characters[gameState.selectedCharacter] &&
             !gameState.characters[gameState.selectedCharacter].isDead &&
             gameState.characters[gameState.selectedCharacter].hp > 0) {
-            try { showActionModal(); _actionShown = true; } catch(e) {}
+            try { showActionModal(); _shown = true; } catch(e) {}
         }
-        if (!_actionShown && typeof showContinueButton === 'function') {
-            showContinueButton();
+        if (_shown) return;
+        // Fallback 1: showContinueButton (ahora global)
+        if (typeof window.showContinueButton === 'function') {
+            try { window.showContinueButton(); _shown = true; } catch(e) {}
         }
+        if (_shown) return;
+        // Fallback 2 absoluto: mostrar el botón DOM directamente
+        var _btn = document.getElementById('floatingContinueBtn');
+        if (_btn) { _btn.style.display = 'block'; }
     }
     </script>
 
@@ -639,7 +642,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260898"></script>
+    <script src="js/firebase-auth.js?v=20260899"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -1599,9 +1602,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260898"></script>
+    <script src="js/characters.js?v=20260899"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260898"></script>
+    <script src="js/audio-state.js?v=20260899"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2335,26 +2338,26 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260898"></script>
+    <script src="js/ai-engine.js?v=20260899"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260898"></script>
+    <script src="js/init-render.js?v=20260899"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260898"></script>
+    <script src="js/turn-logic.js?v=20260899"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260898"></script>
+    <script src="js/status-effects.js?v=20260899"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260898"></script>
+    <script src="js/debuffs.js?v=20260899"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260898"></script>
+    <script src="js/summons.js?v=20260899"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260898"></script>
+    <script src="js/ability-select.js?v=20260899"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260898"></script>
+<script src="js/skills.js?v=20260899"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260898"></script>
-    <script src="js/horda-mode.js?v=20260898"></script>
-    <script src="js/horda-abilities.js?v=20260898"></script>
-    <script src="js/horda-battle.js?v=20260898"></script>
+    <script src="js/jefe-de-sala.js?v=20260899"></script>
+    <script src="js/horda-mode.js?v=20260899"></script>
+    <script src="js/horda-abilities.js?v=20260899"></script>
+    <script src="js/horda-battle.js?v=20260899"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
