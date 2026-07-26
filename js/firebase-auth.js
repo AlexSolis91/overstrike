@@ -972,6 +972,7 @@
         }
 
         function _rtRenderSlots(teamType, containerId, team, color) {
+            const container = document.getElementById(containerId);
             if (!container) return;
             container.innerHTML = '';
             for (let i = 0; i < 5; i++) {
