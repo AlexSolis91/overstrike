@@ -1221,7 +1221,7 @@
                     '</div>';
             }).join('');
 
-            overlay.innerHTML = '<div style="background:linear-gradient(135deg,#0a0f1e,#0d1425);border:2px solid ' + teamColor + ';border-radius:16px;padding:24px;max-width:520px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 0 40px rgba(0,0,0,0.8);">' +
+            overlay.innerHTML = '<div id="rtConfirmBox" style="background:linear-gradient(135deg,#0a0f1e,#0d1425);border:2px solid ' + teamColor + ';border-radius:16px;padding:24px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 0 40px rgba(0,0,0,0.8);">' +
                 // Hero row
                 '<div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:16px;">' +
                 '<img src="' + portrait + '" style="width:90px;height:90px;border-radius:12px;object-fit:cover;border:2px solid ' + teamColor + ';flex-shrink:0;" referrerpolicy="no-referrer">' +
@@ -1237,7 +1237,17 @@
                     '<div style="font-size:.72rem;color:#ccc;line-height:1.4;">' + escapeHtml(passiveDesc) + '</div>' +
                     '</div>' : '') +
                 // Habilidades
-                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">' + abilitiesHtml + '</div>' +
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">' + abilitiesHtml + '</div>' +
+                // ── RELIQUIAS (panel editable inline) ──
+                '<div style="border:1px solid rgba(79,195,247,0.2);border-radius:12px;padding:14px;margin-bottom:14px;background:rgba(0,20,40,0.4);">' +
+                '<div style="font-family:Orbitron,sans-serif;font-size:.72rem;color:#4fc3f7;margin-bottom:10px;letter-spacing:.06em;">🔮 RELIQUIAS EQUIPADAS</div>' +
+                '<div id="rtInlineRelicSlots" style="display:flex;flex-direction:column;gap:6px;">Cargando...</div>' +
+                '<div id="rtInlineRelicPicker" style="display:none;margin-top:10px;">' +
+                '<div style="font-size:.7rem;color:#aaa;margin-bottom:6px;">Selecciona una reliquia del inventario:</div>' +
+                '<div id="rtInlineRelicGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px;max-height:200px;overflow-y:auto;"></div>' +
+                '<button onclick="document.getElementById(\'rtInlineRelicPicker\').style.display=\'none\'" style="margin-top:8px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.2);color:#aaa;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:.7rem;">Cancelar</button>' +
+                '</div>' +
+                '</div>' +
                 // Pregunta
                 '<div style="text-align:center;font-size:.85rem;color:#ddd;margin-bottom:14px;">¿Añadir <strong style="color:' + teamColor + ';">' + escapeHtml(name) + '</strong> a <strong style="color:' + teamColor + ';">' + teamLabel + '</strong>?</div>' +
                 // Botones
@@ -1246,6 +1256,151 @@
                 '<button onclick="rtConfirmChar(false)" style="flex:1;padding:12px;background:rgba(255,51,102,0.1);border:2px solid #ff3366;color:#ff3366;border-radius:12px;font-family:Orbitron,sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;letter-spacing:.05em;">❌ No, cancelar</button>' +
                 '</div>' +
                 '</div>';
+
+            // Cargar reliquias del personaje de forma asíncrona
+            (function(_charName) {
+                var _user = firebase.auth().currentUser;
+                if (!_user || typeof db === 'undefined') {
+                    var el = document.getElementById('rtInlineRelicSlots');
+                    if (el) el.innerHTML = '<div style="color:#555;font-size:.75rem;">Inicia sesión para ver reliquias</div>';
+                    return;
+                }
+                var _uid = _user.uid;
+                var _tierColors = { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700' };
+                var _baseName = _charName.replace(/ v\d+$/, '');
+                var _SLOTS = [
+                    { key:'arma1',  label:'⚔️ Arma 1',       cat:'Arma',       locked:false },
+                    { key:'arma2',  label:'⚔️ Arma 2',       cat:'Arma',       locked:true  },
+                    { key:'equip1', label:'🛡️ Equipación 1', cat:'Equipacion', locked:false },
+                    { key:'equip2', label:'🛡️ Equipación 2', cat:'Equipacion', locked:true  },
+                    { key:'joya1',  label:'💎 Joya 1',        cat:'Joya',       locked:false },
+                    { key:'joya2',  label:'💎 Joya 2',        cat:'Joya',       locked:true  },
+                ];
+
+                function _rtRenderInlineRelics(slotsV2, unlocks) {
+                    var container = document.getElementById('rtInlineRelicSlots');
+                    if (!container) return;
+                    container.innerHTML = '';
+                    var unlockedCount = Object.values(unlocks).filter(Boolean).length;
+                    var nextCost = unlockedCount === 0 ? '100,000' : unlockedCount === 1 ? '500,000' : '1,000,000';
+
+                    _SLOTS.forEach(function(cfg) {
+                        var isLocked = cfg.key === 'arma1' || cfg.key === 'equip1' || cfg.key === 'joya1' ? false : !unlocks[cfg.key];
+                        var equipped = slotsV2[cfg.key];
+                        var rd = equipped && typeof RELICS_DATA !== 'undefined' ? RELICS_DATA[equipped] : null;
+                        var color = rd ? (_tierColors[rd.tier]||'#aaa') : isLocked ? '#333' : 'rgba(255,255,255,0.1)';
+                        var row = document.createElement('div');
+                        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;border:1px solid ' + color + ';background:rgba(255,255,255,0.02);' + (isLocked ? 'opacity:.55;' : '');
+
+                        var labelEl = document.createElement('div');
+                        labelEl.style.cssText = 'font-size:.6rem;color:#555;font-family:Orbitron,sans-serif;min-width:70px;';
+                        labelEl.textContent = cfg.label;
+                        row.appendChild(labelEl);
+
+                        if (isLocked) {
+                            var lockInfo = document.createElement('div');
+                            lockInfo.style.cssText = 'flex:1;font-size:.68rem;color:#444;';
+                            lockInfo.textContent = 'Bloqueado — ' + nextCost + ' 🪙';
+                            row.appendChild(lockInfo);
+                            var unlockBtn = document.createElement('button');
+                            unlockBtn.style.cssText = 'background:rgba(255,170,0,0.1);border:1px solid #ffaa00;color:#ffaa00;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:.62rem;white-space:nowrap;';
+                            unlockBtn.textContent = '🔓 Desbloquear';
+                            unlockBtn.onclick = function() {
+                                unlockSlot(_uid, _baseName, cfg.key).then(function(ok) {
+                                    if (ok) {
+                                        db.ref('users/'+_uid+'/characters/'+_baseName).once('value').then(function(snap) {
+                                            var d = snap.val() || {};
+                                            _rtRenderInlineRelics(d.slots_v2||{}, d.slot_unlocks||{});
+                                        });
+                                    }
+                                });
+                            };
+                            row.appendChild(unlockBtn);
+                        } else if (equipped && rd) {
+                            var img = document.createElement('img');
+                            img.src = rd.img; img.style.cssText = 'width:32px;height:32px;object-fit:contain;border-radius:6px;';
+                            row.appendChild(img);
+                            var info = document.createElement('div');
+                            info.style.cssText = 'flex:1;min-width:0;';
+                            info.innerHTML = '<div style="font-size:.72rem;color:#fff;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + equipped + '</div>' +
+                                '<div style="font-size:.6rem;color:' + color + ';">' + rd.tier + ' · ' + (rd.subtype||'') + '</div>';
+                            row.appendChild(info);
+                            var removeBtn = document.createElement('button');
+                            removeBtn.style.cssText = 'background:rgba(255,51,102,0.1);border:1px solid #ff3366;color:#ff3366;border-radius:6px;padding:4px 7px;cursor:pointer;font-size:.6rem;white-space:nowrap;';
+                            removeBtn.innerHTML = 'Remover<br><span style="color:#ffaa00;font-size:.55rem;">10k 🪙</span>';
+                            removeBtn.onclick = function() {
+                                removeRelic(_uid, _baseName, cfg.key).then(function(ok) {
+                                    if (ok) {
+                                        db.ref('users/'+_uid+'/characters/'+_baseName).once('value').then(function(snap) {
+                                            var d = snap.val() || {};
+                                            _rtRenderInlineRelics(d.slots_v2||{}, d.slot_unlocks||{});
+                                        });
+                                    }
+                                });
+                            };
+                            row.appendChild(removeBtn);
+                        } else {
+                            var emptyInfo = document.createElement('div');
+                            emptyInfo.style.cssText = 'flex:1;font-size:.68rem;color:rgba(255,255,255,0.25);';
+                            emptyInfo.textContent = 'Vacío — ' + cfg.cat;
+                            row.appendChild(emptyInfo);
+                            var equipBtn = document.createElement('button');
+                            equipBtn.style.cssText = 'background:rgba(79,195,247,0.1);border:1px solid #4fc3f7;color:#4fc3f7;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.65rem;';
+                            equipBtn.textContent = 'Equipar';
+                            equipBtn.onclick = function() {
+                                // Abrir el picker inline
+                                var picker = document.getElementById('rtInlineRelicPicker');
+                                var grid = document.getElementById('rtInlineRelicGrid');
+                                if (!picker || !grid) return;
+                                picker.style.display = 'block';
+                                grid.innerHTML = '';
+                                var _slotKey = cfg.key;
+                                var _slotCat = cfg.cat;
+                                db.ref('users/'+_uid+'/inventory/relics').once('value').then(function(invSnap) {
+                                    var inv = invSnap.val() || {};
+                                    var hasAny = false;
+                                    Object.entries(inv).forEach(function(entry) {
+                                        var rName = entry[0], qty = entry[1];
+                                        if (!qty || qty <= 0) return;
+                                        var rRd = typeof RELICS_DATA !== 'undefined' ? RELICS_DATA[rName] : null;
+                                        if (!rRd) return;
+                                        if ((rRd.slotCategory || rRd.slot) !== _slotCat) return;
+                                        hasAny = true;
+                                        var tc = _tierColors[rRd.tier]||'#aaa';
+                                        var card = document.createElement('div');
+                                        card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid '+tc+';border-radius:8px;padding:7px;text-align:center;cursor:pointer;';
+                                        card.title = rRd.desc || rName;
+                                        card.innerHTML = '<img src="'+rRd.img+'" style="width:40px;height:40px;object-fit:contain;border-radius:5px;"><div style="font-size:.6rem;color:#ccc;margin-top:3px;">'+rName+'</div><div style="font-size:.57rem;color:'+tc+';">'+rRd.tier+'</div><div style="font-size:.57rem;color:#555;">×'+qty+'</div>';
+                                        card.onclick = function() {
+                                            equipRelic(_uid, _baseName, _slotKey, rName).then(function(ok) {
+                                                if (ok) {
+                                                    picker.style.display = 'none';
+                                                    db.ref('users/'+_uid+'/characters/'+_baseName).once('value').then(function(snap) {
+                                                        var d = snap.val() || {};
+                                                        _rtRenderInlineRelics(d.slots_v2||{}, d.slot_unlocks||{});
+                                                    });
+                                                }
+                                            });
+                                        };
+                                        grid.appendChild(card);
+                                    });
+                                    if (!hasAny) grid.innerHTML = '<div style="color:#555;font-size:.75rem;text-align:center;grid-column:1/-1;padding:12px;">No tienes reliquias de tipo '+_slotCat+' disponibles.</div>';
+                                });
+                            };
+                            row.appendChild(equipBtn);
+                        }
+                        container.appendChild(row);
+                    });
+                }
+
+                db.ref('users/'+_uid+'/characters/'+_baseName).once('value').then(function(snap) {
+                    var d = snap.val() || {};
+                    _rtRenderInlineRelics(d.slots_v2||{}, d.slot_unlocks||{});
+                }).catch(function() {
+                    var el = document.getElementById('rtInlineRelicSlots');
+                    if (el) el.innerHTML = '<div style="color:#555;font-size:.75rem;">Error al cargar reliquias</div>';
+                });
+            })(name);
         }
 
         function rtCloseConfirm() {
