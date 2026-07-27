@@ -243,7 +243,7 @@
             <!-- Logo: sin emoji, pegado a la izquierda -->
             <div style="display:flex;flex-direction:column;gap:2px;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;white-space:nowrap;">OVERSTRIKE</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260916</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260917</div>
             </div>
 
             <!-- HUD: empujado todo a la derecha junto al botón mute -->
@@ -660,7 +660,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260916"></script>
+    <script src="js/firebase-auth.js?v=20260917"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -1548,27 +1548,28 @@
         };
         window.BOSS_DATA = BOSS_DATA;
 
+        var _adminSelectedBoss = 'broly'; // boss seleccionado actualmente en el panel admin
+
         function adminSelectBoss(bossId, el) {
-            var sel = document.getElementById('admin-boss-select');
-            if (sel) sel.value = bossId;
+            _adminSelectedBoss = bossId;
             // Reset visual de todas las tarjetas
+            var origBorders = {
+                'broly':'2px solid rgba(255,68,68,0.3)', 'lich_king':'2px solid rgba(100,0,200,0.3)',
+                'albus_dumbledore':'2px solid rgba(0,150,80,0.3)', 'bolvar_fordragon':'2px solid rgba(200,100,0,0.3)',
+                'balrog':'2px solid rgba(180,20,20,0.3)'
+            };
+            var origBgs = {
+                'broly':'rgba(255,68,68,0.08)', 'lich_king':'rgba(100,0,200,0.08)',
+                'albus_dumbledore':'rgba(0,150,80,0.08)', 'bolvar_fordragon':'rgba(200,100,0,0.08)',
+                'balrog':'rgba(180,20,20,0.08)'
+            };
             ['broly','lich_king','albus_dumbledore','bolvar_fordragon','balrog'].forEach(function(id) {
                 var c = document.getElementById('bosscard-' + id);
                 if (!c) return;
-                var origBorders = {
-                    'broly':'2px solid rgba(255,68,68,0.3)', 'lich_king':'2px solid rgba(100,0,200,0.3)',
-                    'albus_dumbledore':'2px solid rgba(0,150,80,0.3)', 'bolvar_fordragon':'2px solid rgba(200,100,0,0.3)',
-                    'balrog':'2px solid rgba(180,20,20,0.3)'
-                };
-                var origBgs = {
-                    'broly':'rgba(255,68,68,0.08)', 'lich_king':'rgba(100,0,200,0.08)',
-                    'albus_dumbledore':'rgba(0,150,80,0.08)', 'bolvar_fordragon':'rgba(200,100,0,0.08)',
-                    'balrog':'rgba(180,20,20,0.08)'
-                };
                 c.style.border = origBorders[id] || '2px solid rgba(255,255,255,0.2)';
                 c.style.background = origBgs[id] || 'rgba(255,255,255,0.05)';
             });
-            // Highlight seleccionado
+            // Highlight seleccionado en dorado
             var selected = document.getElementById('bosscard-' + bossId) || el;
             if (selected) {
                 selected.style.border = '2px solid #ffd700';
@@ -1617,23 +1618,19 @@
 
         async function adminActivateBossUI() {
             if (!isAdmin()) { alert('Acceso denegado.'); return; }
-            var bossId = document.getElementById('admin-boss-select').value;
-            if (!bossId) { alert('Selecciona un jefe de sala primero.'); return; }
+            var bossId = _adminSelectedBoss || 'broly';
             var bossConfig = typeof BOSS_DATA !== 'undefined' ? BOSS_DATA[bossId] : null;
             if (!bossConfig) { alert('Jefe "' + bossId + '" no encontrado en BOSS_DATA.'); return; }
-            // Recalcular fechas por si acaso no se llenaron (ej. el panel estaba oculto al llamar adminUpdateBossDates)
+            // Calcular fechas
             adminUpdateBossDates();
-            var startDate = document.getElementById('admin-start-date').value;
-            var endDate   = document.getElementById('admin-end-date').value;
-            if (!startDate || !endDate) {
-                // Fallback: calcular directamente
-                var days = parseInt((document.getElementById('admin-boss-duration')||{}).value) || 7;
-                var pad = function(n){ return String(n).padStart(2,'0'); };
-                var fmt = function(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes()); };
-                var now = new Date();
-                startDate = fmt(now);
-                endDate   = fmt(new Date(now.getTime() + days * 24 * 60 * 60 * 1000));
-            }
+            var startEl = document.getElementById('admin-start-date');
+            var endEl   = document.getElementById('admin-end-date');
+            var pad = function(n){ return String(n).padStart(2,'0'); };
+            var fmt = function(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes()); };
+            var now  = new Date();
+            var days = parseInt((document.getElementById('admin-boss-duration')||{value:'7'}).value) || 7;
+            var startDate = (startEl && startEl.value) ? startEl.value : fmt(now);
+            var endDate   = (endEl   && endEl.value)   ? endEl.value   : fmt(new Date(now.getTime() + days*86400000));
             try {
                 await adminActivateBoss(bossId, bossConfig, startDate, endDate);
                 adminLoadActiveBoss();
@@ -1658,9 +1655,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260916"></script>
+    <script src="js/characters.js?v=20260917"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260916"></script>
+    <script src="js/audio-state.js?v=20260917"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2457,26 +2454,26 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260916"></script>
+    <script src="js/ai-engine.js?v=20260917"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260916"></script>
+    <script src="js/init-render.js?v=20260917"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260916"></script>
+    <script src="js/turn-logic.js?v=20260917"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260916"></script>
+    <script src="js/status-effects.js?v=20260917"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260916"></script>
+    <script src="js/debuffs.js?v=20260917"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260916"></script>
+    <script src="js/summons.js?v=20260917"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260916"></script>
+    <script src="js/ability-select.js?v=20260917"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260916"></script>
+<script src="js/skills.js?v=20260917"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260916"></script>
-    <script src="js/horda-mode.js?v=20260916"></script>
-    <script src="js/horda-abilities.js?v=20260916"></script>
-    <script src="js/horda-battle.js?v=20260916"></script>
+    <script src="js/jefe-de-sala.js?v=20260917"></script>
+    <script src="js/horda-mode.js?v=20260917"></script>
+    <script src="js/horda-abilities.js?v=20260917"></script>
+    <script src="js/horda-battle.js?v=20260917"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
