@@ -1409,6 +1409,49 @@
                 }
             }
 
+            // ── NARSIL: +2 daño por reliquia Legendaria enemiga, +1 por Épica ──
+            if (!passiveExecuting && damage > 0 && attackerName) {
+                const _narA = gameState.characters[attackerName];
+                if (_narA && (_narA.equippedRelics||[]).includes('Narsil')) {
+                    const _narETeam = _narA.team === 'team1' ? 'team2' : 'team1';
+                    let _narBonus = 0;
+                    for (const _en in gameState.characters) {
+                        const _ec = gameState.characters[_en];
+                        if (!_ec || _ec.team !== _narETeam) continue;
+                        (_ec.equippedRelics||[]).forEach(function(rn) {
+                            const rd = typeof RELICS_DATA!=='undefined' ? RELICS_DATA[rn] : null;
+                            if (!rd) return;
+                            if (rd.tier==='Legendario') _narBonus += 2;
+                            else if (rd.tier==='Epico') _narBonus += 1;
+                        });
+                    }
+                    if (_narBonus > 0) { damage += _narBonus; addLog('⚔️ Narsil: +' + _narBonus + ' daño (reliquias enemigas)', 'buff'); }
+                }
+            }
+
+            // ── SANGRE DE NUMENOR (Aragorn): bono crítico acumulado por contadores de Grito ──
+            // El bono se aplica como probabilidad adicional de doblar el daño
+            if (!passiveExecuting && damage > 0 && attackerName && (gameState._aragornCritBonus||0) > 0) {
+                const _aragAtk = gameState.characters[attackerName];
+                if (_aragAtk) {
+                    // Buscar si el atacante es del equipo de Aragorn
+                    const _aragN = Object.keys(gameState.characters).find(function(_n){
+                        const _c = gameState.characters[_n]; return _c && _c.team === _aragAtk.team && _c.passive && _c.passive.name === 'Sangre de Numenor';
+                    });
+                    if (_aragN && Math.random() < (gameState._aragornCritBonus||0)) {
+                        damage *= 2;
+                        addLog('⚔️ Sangre de Numenor: ¡CRÍTICO! (+' + Math.round((gameState._aragornCritBonus||0)*100) + '% bonus)', 'buff');
+                        // Bono de +2 daño al equipo aliado
+                        const _aragTeam = _aragAtk.team;
+                        for (const _an in gameState.characters) {
+                            const _ac = gameState.characters[_an];
+                            if (!_ac || _ac.team !== _aragTeam || _ac.isDead) continue;
+                            _ac._aragornDmgBonus = Math.min(1.0, ((_ac._aragornDmgBonus||0) + 0.02)); // máx 100%
+                        }
+                    }
+                }
+            }
+
             // ── BUFF ARMADURA: reduce 50% el daño recibido ──
             if (!passiveExecuting && damage > 0 && hasStatusEffect(targetName, 'Armadura')) {
                 damage = Math.ceil(damage / 2);
@@ -2992,6 +3035,24 @@
                         _kuC.charges = Math.min(20, (_kuC.charges||0) + 10);
                         addLog('🕑 Ciudad de la Devastación: Kurumi gana 10 cargas (' + targetName + ' eliminado)', 'buff');
                         break;
+                    }
+                }
+
+                // SANGRE DE NUMENOR (Aragorn): cuando un ALIADO muere → Aragorn y un aliado aleatorio ejecutan su Over
+                if (!passiveExecuting) {
+                    const _deadChar = gameState.characters[targetName];
+                    const _deadTeam = _deadChar ? _deadChar.team : null;
+                    if (_deadTeam) {
+                        // Buscar Aragorn en el mismo equipo que el muerto
+                        const _aragornN = Object.keys(gameState.characters).find(function(_n){
+                            const _c = gameState.characters[_n];
+                            return _c && !_c.isDead && _c.hp > 0 && _c.team === _deadTeam && _c.passive && _c.passive.name === 'Sangre de Numenor';
+                        });
+                        if (_aragornN && _aragornN !== targetName) {
+                            setTimeout(function() {
+                                if (typeof _triggerAragornOverOnDeath === 'function') _triggerAragornOverOnDeath(_aragornN, _deadTeam);
+                            }, 500);
+                        }
                     }
                 }
 
