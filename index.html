@@ -108,6 +108,11 @@
   <source src="https://ia600702.us.archive.org/32/items/2.-snape-to-malfoy-manor-harry-potter-and-the-deathly-hallows-soundtrack-pqd-zcpwy-uec/2.%20_Snape%20to%20Malfoy%20Manor_%20-%20Harry%20Potter%20and%20the%20Deathly%20Hallows%20%28soundtrack%29%20%5BPqdZcpwyUEc%5D.mp3" type="audio/mpeg">
 </audio>
 
+<!-- Música EXCLUSIVA del Jefe de Sala Balrog — nunca entra a la rotación aleatoria -->
+<audio id="audioBossBalrog" loop preload="auto">
+  <source src="https://ia600709.us.archive.org/15/items/the-lord-of-the-rings-the-balrog-song-mv-mcof0ku4_zBLxCRT3/the-lord-of-the-rings-the-balrog-song-mv-mcof0ku4_zBLxCRT3.mp3" type="audio/mpeg">
+</audio>
+
 <!-- Música EXCLUSIVA del Modo Horda — suena de principio a fin de la corrida completa, nunca se interrumpe entre oleadas -->
 <audio id="audioHordaRun" loop preload="auto">
   <source src="https://ia601502.us.archive.org/7/items/epic-music-mix-orcs-wo-w-256-kbps-1/Epic%20Music%20Mix_%20Orcs%20%28WoW%29%20-%20%28256%20Kbps%29%20%281%29.mp3" type="audio/mpeg">
@@ -243,7 +248,7 @@
             <!-- Logo: sin emoji, pegado a la izquierda -->
             <div style="display:flex;flex-direction:column;gap:2px;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;white-space:nowrap;">OVERSTRIKE</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260917</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260918</div>
             </div>
 
             <!-- HUD: empujado todo a la derecha junto al botón mute -->
@@ -660,7 +665,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260917"></script>
+    <script src="js/firebase-auth.js?v=20260918"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -1655,9 +1660,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260917"></script>
+    <script src="js/characters.js?v=20260918"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260917"></script>
+    <script src="js/audio-state.js?v=20260918"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2437,7 +2442,7 @@
                 // Algunos jefes tienen música exclusiva y fija — nunca entra a la rotación aleatoria
                 var _bossMusicName = (csState.gameMode === 'boss' && window._bossBattleData && window._bossBattleData.boss)
                     ? window._bossBattleData.boss.name : '';
-                var _bossMusicMap = { 'Lich King': 'audioBossLichKing', 'Albus Dumbledore': 'audioBossDumbledore' };
+                var _bossMusicMap = { 'Lich King': 'audioBossLichKing', 'Albus Dumbledore': 'audioBossDumbledore', 'Balrog': 'audioBossBalrog' };
                 if (csState.gameMode === 'horda') {
                     // Pista exclusiva de Modo Horda: suena de principio a fin de la CORRIDA
                     // completa (todas las oleadas), nunca se interrumpe entre oleadas.
@@ -2454,26 +2459,26 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260917"></script>
+    <script src="js/ai-engine.js?v=20260918"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260917"></script>
+    <script src="js/init-render.js?v=20260918"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260917"></script>
+    <script src="js/turn-logic.js?v=20260918"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260917"></script>
+    <script src="js/status-effects.js?v=20260918"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260917"></script>
+    <script src="js/debuffs.js?v=20260918"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260917"></script>
+    <script src="js/summons.js?v=20260918"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260917"></script>
+    <script src="js/ability-select.js?v=20260918"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260917"></script>
+<script src="js/skills.js?v=20260918"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260917"></script>
-    <script src="js/horda-mode.js?v=20260917"></script>
-    <script src="js/horda-abilities.js?v=20260917"></script>
-    <script src="js/horda-battle.js?v=20260917"></script>
+    <script src="js/jefe-de-sala.js?v=20260918"></script>
+    <script src="js/horda-mode.js?v=20260918"></script>
+    <script src="js/horda-abilities.js?v=20260918"></script>
+    <script src="js/horda-battle.js?v=20260918"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
