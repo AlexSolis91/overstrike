@@ -198,6 +198,53 @@
             }
         };
 
+        // ARAGORN — Over automático al morir un aliado (Sangre de Numenor)
+        window._triggerAragornOverOnDeath = function(aragornName, allyTeam) {
+            const _aragorn = gameState.characters[aragornName];
+            if (!_aragorn || _aragorn.isDead || _aragorn.hp <= 0) return;
+            // Aragorn ejecuta su Over
+            const _aragornOver = (_aragorn.abilities||[]).find(function(a){ return a&&a.type==='over'; });
+            // Aliado aleatorio con Over
+            const _alliesWithOver = Object.keys(gameState.characters).filter(function(_n){
+                const _c = gameState.characters[_n];
+                return _c && !_c.isDead && _c.hp > 0 && _c.team === allyTeam && _n !== aragornName &&
+                    (_c.abilities||[]).some(function(a){ return a&&a.type==='over'; });
+            });
+            const _allyName = _alliesWithOver.length > 0 ? _alliesWithOver[Math.floor(Math.random()*_alliesWithOver.length)] : null;
+            addLog('⚔️ Sangre de Numenor: ' + aragornName + ' y ' + (_allyName||'sin aliado') + ' ejecutan su Over automáticamente', 'buff');
+            // Ejecutar Over de Aragorn
+            if (_aragornOver) {
+                const _prevSelected = gameState.selectedCharacter;
+                const _prevAbility  = gameState.selectedAbility;
+                gameState.selectedCharacter = aragornName;
+                gameState.selectedAbility   = _aragornOver;
+                passiveExecuting = true;
+                // Seleccionar target AOE automáticamente (no necesita targetName)
+                try { _executeAbilityCore(null); } catch(e) { console.error('[Aragorn Over]', e); }
+                passiveExecuting = false;
+                gameState.selectedCharacter = _prevSelected;
+                gameState.selectedAbility   = _prevAbility;
+            }
+            // Over del aliado aleatorio
+            if (_allyName) {
+                const _allyC = gameState.characters[_allyName];
+                const _allyOver = (_allyC?.abilities||[]).find(function(a){ return a&&a.type==='over'; });
+                if (_allyOver) {
+                    setTimeout(function() {
+                        const _p2 = gameState.selectedCharacter;
+                        const _a2 = gameState.selectedAbility;
+                        gameState.selectedCharacter = _allyName;
+                        gameState.selectedAbility   = _allyOver;
+                        passiveExecuting = true;
+                        try { _executeAbilityCore(null); } catch(e) { console.error('[Aragorn ally Over]', e); }
+                        passiveExecuting = false;
+                        gameState.selectedCharacter = _p2;
+                        gameState.selectedAbility   = _a2;
+                    }, 800);
+                }
+            }
+        };
+
         function triggerThanatosAutoOver(charName) {
             const caster = gameState.characters[charName];
             if (!caster || caster.isDead || caster.hp <= 0) { return; }
@@ -9534,6 +9581,40 @@
                 }
             }
 
+            // VALARAUKAR (Balrog BOSS): cuando un enemigo usa Especial → +2 cargas; Over → +5 cargas
+            if (ability && (ability.type === 'special' || ability.type === 'over') && !passiveExecuting) {
+                const _vkAtk = gameState.characters[gameState.selectedCharacter];
+                if (_vkAtk) {
+                    const _vkDefTeam = _vkAtk.team === 'team1' ? 'team2' : 'team1';
+                    for (const _vkN in gameState.characters) {
+                        const _vkC = gameState.characters[_vkN];
+                        if (!_vkC || _vkC.isDead || _vkC.hp <= 0 || _vkC.team !== _vkDefTeam) continue;
+                        if (!_vkC.passive || _vkC.passive.name !== 'Valaraukar') continue;
+                        const _vkGain = ability.type === 'over' ? 5 : 2;
+                        _vkC.charges = Math.min(20, (_vkC.charges||0) + _vkGain);
+                        addLog('🔥 Valaraukar: Balrog gana +' + _vkGain + ' cargas (enemigo usó ' + ability.type + ')', 'buff');
+                        break;
+                    }
+                }
+            }
+
+            // NARSIL (Reliquia): cuando un enemigo usa Over → portador gana turno adicional
+            if (ability && ability.type === 'over' && !passiveExecuting) {
+                const _narAtk = gameState.characters[gameState.selectedCharacter];
+                if (_narAtk) {
+                    const _narDefTeam = _narAtk.team === 'team1' ? 'team2' : 'team1';
+                    for (const _narN in gameState.characters) {
+                        const _narC = gameState.characters[_narN];
+                        if (!_narC || _narC.isDead || _narC.hp <= 0 || _narC.team !== _narDefTeam) continue;
+                        if (!(_narC.equippedRelics||[]).includes('Narsil')) continue;
+                        if (!gameState._skeggoxExtraTurn) {
+                            gameState._skeggoxExtraTurn = _narN;
+                            addLog('⚔️ Narsil: ' + _narN + ' gana turno adicional (enemigo usó Over)', 'buff');
+                        }
+                    }
+                }
+            }
+
             // PHALANX (Leonidas): recupera 3 HP cuando un enemigo usa especial/over
             if (ability && (ability.type === 'special' || ability.type === 'over') && !passiveExecuting) {
                 const _plAtk = gameState.characters[gameState.selectedCharacter];
@@ -10576,6 +10657,98 @@
                 if (typeof renderSummons    === 'function') renderSummons();
 
             // ══════════════════════════════════════════════════════
+            // BALROG (BOSS) — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'azote_sombra_balrog') {
+                // AZOTE DE SOMBRA: 4 ST + efectos condicionales según debuffs del objetivo
+                const _asbAtk = gameState.characters[gameState.selectedCharacter];
+                const _asbTgt = gameState.characters[targetName];
+                const _asbHasBurn    = _asbTgt && (hasStatusEffect(targetName,'Quemadura')||hasStatusEffect(targetName,'Quemaduras'));
+                const _asbHasFear    = _asbTgt && hasStatusEffect(targetName,'Miedo');
+                const _asbHasWeaken  = _asbTgt && (hasStatusEffect(targetName,'Debilitar')||hasStatusEffect(targetName,'Debilidad'));
+                let _asbDmg = finalDamage;
+                // 50% crítico si tiene Miedo
+                const _asbCrit = _asbHasFear && Math.random() < 0.50;
+                if (_asbCrit) { _asbDmg *= 2; addLog('🔥 Azote de Sombra: ¡CRÍTICO! (objetivo tenía Miedo)', 'damage'); }
+                applyDamageWithShield(targetName, _asbDmg, gameState.selectedCharacter);
+                addLog('🔥 Azote de Sombra: ' + _asbDmg + ' daño a ' + targetName, 'damage');
+                // Recuperar 10 HP si tenía Quemaduras
+                if (_asbHasBurn && _asbAtk) {
+                    _asbAtk.hp = Math.min(_asbAtk.maxHp||999999, (_asbAtk.hp||0) + 10);
+                    addLog('🔥 Azote de Sombra: Balrog recupera 10 HP (objetivo tenía Quemaduras)', 'heal');
+                }
+                // +4 cargas si tenía Debilitar
+                if (_asbHasWeaken && _asbAtk) {
+                    _asbAtk.charges = Math.min(20, (_asbAtk.charges||0) + 4);
+                    addLog('🔥 Azote de Sombra: +4 cargas (objetivo tenía Debilitar)', 'buff');
+                }
+
+            } else if (ability.effect === 'latigo_fuego_balrog') {
+                // LÁTIGO DE FUEGO: 4 ST + 2 daño por debuff en equipo enemigo. Si mata: +20 cargas
+                const _lfbAtk  = gameState.characters[gameState.selectedCharacter];
+                const _lfbTgtC = gameState.characters[targetName];
+                const _lfbETeam = _lfbAtk ? (_lfbAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                let _lfbDebuffs = 0;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _lfbETeam) continue;
+                    _lfbDebuffs += (_c.statusEffects||[]).filter(function(e){ return e&&e.type==='debuff'; }).length;
+                }
+                const _lfbTotal = finalDamage + (_lfbDebuffs * 2);
+                const _lfbHpBefore = _lfbTgtC ? _lfbTgtC.hp : 0;
+                applyDamageWithShield(targetName, _lfbTotal, gameState.selectedCharacter);
+                addLog('🔥 Látigo de Fuego: ' + _lfbTotal + ' daño a ' + targetName + ' (' + finalDamage + ' base + ' + (_lfbDebuffs*2) + ' por ' + _lfbDebuffs + ' debuffs)', 'damage');
+                const _lfbDead = !gameState.characters[targetName] || gameState.characters[targetName].isDead || gameState.characters[targetName].hp <= 0;
+                if (_lfbDead && _lfbAtk) {
+                    _lfbAtk.charges = Math.min(20, (_lfbAtk.charges||0) + 20);
+                    addLog('🔥 Látigo de Fuego: ¡objetivo eliminado! Balrog gana 20 cargas', 'buff');
+                }
+
+            } else if (ability.effect === 'rugido_abismo_balrog') {
+                // RUGIDO DEL ABISMO: 3 AOE + drena cargas (1 daño adicional por carga drenada). Frenesí 2T + Armadura 2T
+                const _rabAtk  = gameState.characters[gameState.selectedCharacter];
+                const _rabETeam = _rabAtk ? (_rabAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _rabETeam || _c.isDead || _c.hp <= 0) continue;
+                    if (typeof checkAsprosAOEImmunity==='function' && checkAsprosAOEImmunity(_n, true)) continue;
+                    const _drained = _c.charges || 0;
+                    _c.charges = 0;
+                    const _bonus = _drained;
+                    applyDamageWithShield(_n, finalDamage + _bonus, gameState.selectedCharacter);
+                    addLog('🔥 Rugido del Abismo: ' + (finalDamage+_bonus) + ' daño a ' + _n + ' (' + _drained + ' cargas drenadas)', 'damage');
+                }
+                if (_rabAtk) {
+                    if (typeof applyBuff==='function') {
+                        applyBuff(gameState.selectedCharacter, {name:'Frenesi',type:'buff',duration:2,emoji:'💢'});
+                        applyBuff(gameState.selectedCharacter, {name:'Armadura',type:'buff',duration:2,emoji:'🛡️'});
+                    }
+                    addLog('🔥 Rugido del Abismo: Balrog gana Frenesí 2T y Armadura 2T', 'buff');
+                }
+
+            } else if (ability.effect === 'furia_valaraukar_balrog') {
+                // FURIA DEL VALARAUKAR: 30 AOE. 50% crítico. Si sobrevive → Quemaduras 10HP
+                const _fvbAtk  = gameState.characters[gameState.selectedCharacter];
+                const _fvbETeam = _fvbAtk ? (_fvbAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _fvbCrit = Math.random() < 0.50;
+                const _fvbDmg  = _fvbCrit ? finalDamage * 2 : finalDamage;
+                if (_fvbCrit) addLog('🔥 Furia del Valaraukar: ¡CRÍTICO! (50%)', 'damage');
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _fvbETeam || _c.isDead || _c.hp <= 0) continue;
+                    if (typeof checkAsprosAOEImmunity==='function' && checkAsprosAOEImmunity(_n, true)) continue;
+                    applyDamageWithShield(_n, _fvbDmg, gameState.selectedCharacter);
+                    const _cAfter = gameState.characters[_n];
+                    if (_cAfter && !_cAfter.isDead && _cAfter.hp > 0) {
+                        // Sobrevivió → Quemaduras 10HP
+                        if (typeof applyDebuff==='function') applyDebuff(_n, {name:'Quemaduras',type:'debuff',duration:2,dmg:10,emoji:'🔥'});
+                        addLog('🔥 Furia del Valaraukar: ' + _n + ' sobrevive → Quemaduras 10HP', 'debuff');
+                    }
+                    addLog('🔥 Furia del Valaraukar: ' + _fvbDmg + ' daño a ' + _n, 'damage');
+                }
+
+            // ══════════════════════════════════════════════════════
             // DOCTOR DOOM — handlers
             // ══════════════════════════════════════════════════════
 
@@ -10977,6 +11150,111 @@
                     if (_spCaster) {
                         _spCaster.charges = Math.min(20, (_spCaster.charges||0) + 15);
                         addLog('🗡️ Séptima Postura: +15 cargas (objetivo tenía Ceguera)', 'buff');
+                    }
+                }
+
+            // ══════════════════════════════════════════════════════
+            // ARAGORN — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'aragorn_anduril') {
+                // ANDÚRIL: 1 daño + 3 por cada buff/debuff del objetivo. +2 cargas equipo aliado por reliquia equipada del objetivo
+                const _aaAtk = gameState.characters[gameState.selectedCharacter];
+                const _aaTgt = gameState.characters[targetName];
+                const _aaEffects = _aaTgt ? (_aaTgt.statusEffects||[]).filter(function(e){ return e&&(e.type==='buff'||e.type==='debuff'); }).length : 0;
+                const _aaTotalDmg = finalDamage + (_aaEffects * 3);
+                applyDamageWithShield(targetName, _aaTotalDmg, gameState.selectedCharacter);
+                addLog('⚔️ Andúril: ' + _aaTotalDmg + ' daño a ' + targetName + ' (' + finalDamage + ' base + ' + (_aaEffects*3) + ' por ' + _aaEffects + ' efectos)', 'damage');
+                // +2 cargas equipo aliado por reliquia equipada del objetivo
+                const _aaRelics = (_aaTgt ? (_aaTgt.equippedRelics||[]) : []).length;
+                if (_aaRelics > 0 && _aaAtk) {
+                    const _aaGain = _aaRelics * 2;
+                    const _aaTeam = _aaAtk.team;
+                    for (const _an in gameState.characters) {
+                        const _ac = gameState.characters[_an];
+                        if (!_ac || _ac.isDead || _ac.hp <= 0 || _ac.team !== _aaTeam) continue;
+                        _ac.charges = Math.min(20, (_ac.charges||0) + _aaGain);
+                    }
+                    addLog('⚔️ Andúril: equipo aliado +' + _aaGain + ' cargas (' + _aaRelics + ' reliquias del objetivo)', 'buff');
+                }
+
+            } else if (ability.effect === 'aragorn_montaraz') {
+                // ESTRATEGIA DE MONTARAZ: MT 3 daño, 4 golpes. Debuff aleatorio por golpe. Si alguno no aplica debuff → +5 cargas + turno extra
+                const _amAtk = gameState.characters[gameState.selectedCharacter];
+                const _amTgt = gameState.characters[targetName];
+                const _amDebuffPool = [
+                    {name:'Sangrado',type:'debuff',duration:2,emoji:'🩸'},{name:'Veneno',type:'debuff',duration:2,emoji:'☠️',stacks:1},
+                    {name:'Quemadura',type:'debuff',duration:2,emoji:'🔥',dmg:2},{name:'Miedo',type:'debuff',duration:1,emoji:'😱'},
+                    {name:'Confusion',type:'debuff',duration:1,emoji:'💫'},{name:'Debilitar',type:'debuff',duration:1,emoji:'⬇️'},
+                    {name:'Ceguera',type:'debuff',duration:1,emoji:'👁️'},{name:'Congelacion',type:'debuff',duration:1,emoji:'🧊'}
+                ];
+                let _amAnyFailed = false;
+                for (let _gi = 0; _gi < 4; _gi++) {
+                    if (!_amTgt || _amTgt.isDead || _amTgt.hp <= 0) break;
+                    applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                    addLog('⚔️ Montaraz: golpe ' + (_gi+1) + ' — ' + finalDamage + ' daño a ' + targetName, 'damage');
+                    // Debuff aleatorio
+                    const _amDebuff = _amDebuffPool[Math.floor(Math.random() * _amDebuffPool.length)];
+                    const _amBefore = (_amTgt.statusEffects||[]).length;
+                    if (typeof applyDebuff==='function') applyDebuff(targetName, Object.assign({}, _amDebuff));
+                    const _amAfter = (gameState.characters[targetName]?.statusEffects||[]).length;
+                    if (_amAfter === _amBefore) { _amAnyFailed = true; addLog('⚔️ Montaraz: golpe ' + (_gi+1) + ' no aplicó debuff', 'info'); }
+                    else addLog('⚔️ Montaraz: ' + _amDebuff.name + ' aplicado a ' + targetName, 'debuff');
+                }
+                if (_amAnyFailed && _amAtk) {
+                    _amAtk.charges = Math.min(20, (_amAtk.charges||0) + 5);
+                    if (!gameState._skeggoxExtraTurn) gameState._skeggoxExtraTurn = gameState.selectedCharacter;
+                    addLog('⚔️ Montaraz: algún golpe no aplicó debuff → +5 cargas y turno extra para Aragorn', 'buff');
+                }
+
+            } else if (ability.effect === 'aragorn_grito_guerra') {
+                // GRITO DE GUERRA DEL VERDADERO REY: AOE 5. +1 contador Grito permanente. Por contador: equipo aliado +10% crítico
+                const _agwAtk = gameState.characters[gameState.selectedCharacter];
+                const _agwETeam = _agwAtk ? (_agwAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _agwETeam || _c.isDead || _c.hp <= 0) continue;
+                    if (typeof checkAsprosAOEImmunity==='function' && checkAsprosAOEImmunity(_n, true)) continue;
+                    applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                    addLog('⚔️ Grito de Guerra: ' + finalDamage + ' daño a ' + _n, 'damage');
+                }
+                if (_agwAtk) {
+                    _agwAtk._gritoCount = (_agwAtk._gritoCount||0) + 1;
+                    // El bono de crítico se aplica en el flujo de daño via gameState._aragornCritBonus
+                    gameState._aragornCritBonus = (_agwAtk._gritoCount) * 0.10;
+                    addLog('⚔️ Grito de Guerra: contador Grito = ' + _agwAtk._gritoCount + ' → equipo aliado +' + Math.round(gameState._aragornCritBonus*100) + '% crítico', 'buff');
+                }
+
+            } else if (ability.effect === 'aragorn_ejercito') {
+                // EJÉRCITO DEL INFRAMUNDO: AOE 7, ignora Esquiva Área. +5 por cada muerto. Si mata, revive aliado
+                const _aeAtk = gameState.characters[gameState.selectedCharacter];
+                const _aeETeam = _aeAtk ? (_aeAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _aeMyTeam = _aeAtk ? _aeAtk.team : 'team1';
+                // Contar muertos en ambos equipos
+                let _aeDead = 0;
+                for (const _n in gameState.characters) { if (gameState.characters[_n] && gameState.characters[_n].isDead) _aeDead++; }
+                const _aeTotalDmg = finalDamage + (_aeDead * 5);
+                let _aeKilledEnemy = false;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _aeETeam || _c.isDead || _c.hp <= 0) continue;
+                    // Ignora Esquiva Área → no llamar checkAsprosAOEImmunity
+                    const _hpBefore = _c.hp;
+                    applyDamageWithShield(_n, _aeTotalDmg, gameState.selectedCharacter);
+                    addLog('⚔️ Ejército del Inframundo: ' + _aeTotalDmg + ' daño a ' + _n + ' (base + ' + (_aeDead*5) + ' por ' + _aeDead + ' muertos)', 'damage');
+                    const _cAfter = gameState.characters[_n];
+                    if (_cAfter && (_cAfter.isDead || _cAfter.hp <= 0)) _aeKilledEnemy = true;
+                }
+                // Si mató un enemigo → revivir aliado aleatorio eliminado
+                if (_aeKilledEnemy) {
+                    const _aeDeadAllies = Object.keys(gameState.characters).filter(function(_n){ const _c=gameState.characters[_n]; return _c&&_c.team===_aeMyTeam&&_c.isDead; });
+                    if (_aeDeadAllies.length > 0) {
+                        const _revived = _aeDeadAllies[Math.floor(Math.random()*_aeDeadAllies.length)];
+                        const _rc = gameState.characters[_revived];
+                        _rc.isDead = false; _rc.hp = _rc.maxHp; _rc.charges = 0; _rc.statusEffects = [];
+                        addLog('⚔️ Ejército del Inframundo: ¡' + _revived + ' revive con 100% HP!', 'buff');
+                        if (typeof window.onCharacterRevived==='function') window.onCharacterRevived(_revived);
+                        if (typeof renderCharacters==='function') renderCharacters();
                     }
                 }
 
