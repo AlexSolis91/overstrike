@@ -1940,6 +1940,23 @@
             await db.ref().update(updates);
             _tradeMyOfferId = offerId;
             _tradeShowCreateMsg('✅ Oferta publicada correctamente.', false);
+            // Notificar a todos los demás jugadores
+            (async function() {
+                var giveRd = _tradeGiveSelected.type==='relic' && typeof RELICS_DATA!=='undefined' ? RELICS_DATA[_tradeGiveSelected.name] : null;
+                var tierLabel = giveRd ? (' ['+giveRd.tier+']') : '';
+                var wantNames = _tradeWantSelected.map(function(w){ return w.name; }).join(', ');
+                var notifMsg = '🤝 ' + (user.displayName||'Un jugador') + ' ofrece ' + _tradeGiveSelected.name + tierLabel + ' a cambio de: ' + wantNames + '. ¡Revisa el Mercado → Intercambio!';
+                var allUsersSnap = await db.ref('users').once('value');
+                var updates = {};
+                allUsersSnap.forEach(function(child) {
+                    if (child.key === user.uid) return; // no notificar al propio publicador
+                    var notifRef = db.ref('users/'+child.key+'/notifications').push();
+                    updates['users/'+child.key+'/notifications/'+notifRef.key] = {
+                        type: 'trade_new', msg: notifMsg, ts: Date.now(), read: false
+                    };
+                });
+                if (Object.keys(updates).length > 0) await db.ref().update(updates);
+            })();
             initTradeTab();
         };
 
@@ -4857,8 +4874,8 @@
             }
             list.innerHTML = '';
             notifs.forEach(function(n) {
-                const icons = { trade_completed:'🤝', ranked_defense_win:'🛡️', ranked_defense_loss:'⚔️', general:'📢' };
-                const colors = { trade_completed:'#4fc3f7', ranked_defense_win:'#00ff88', ranked_defense_loss:'#ff6688', general:'#ffaa00' };
+                const icons = { trade_completed:'🤝', trade_new:'🏷️', ranked_defense_win:'🛡️', ranked_defense_loss:'⚔️', general:'📢' };
+                const colors = { trade_completed:'#4fc3f7', trade_new:'#00ff88', ranked_defense_win:'#00ff88', ranked_defense_loss:'#ff6688', general:'#ffaa00' };
                 const icon  = icons[n.type]  || '📢';
                 const color = colors[n.type] || '#ffaa00';
                 const date  = new Date(n.ts||0).toLocaleDateString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
