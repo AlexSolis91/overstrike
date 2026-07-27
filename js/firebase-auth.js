@@ -193,9 +193,14 @@
         var LICH_KING_BACKGROUND = 'https://i.ibb.co/Txt7q1bY/descarga-8.jpg';
 
         function applyBattleBackground(bossName) {
-            var url = (bossName && bossName.toLowerCase().includes('lich'))
-                ? LICH_KING_BACKGROUND
-                : BATTLE_BACKGROUNDS[Math.floor(Math.random() * BATTLE_BACKGROUNDS.length)];
+            var url;
+            if (bossName && bossName.toLowerCase().includes('lich')) {
+                url = LICH_KING_BACKGROUND;
+            } else if (bossName && bossName.toLowerCase().includes('balrog')) {
+                url = 'https://i.ibb.co/xtDHKpfM/image-2371f397.png';
+            } else {
+                url = BATTLE_BACKGROUNDS[Math.floor(Math.random() * BATTLE_BACKGROUNDS.length)];
+            }
             // Set body background — game-container is transparent so it shows through
             document.body.style.backgroundImage = 'url(' + url + ')';
             document.body.style.backgroundSize = 'cover';
