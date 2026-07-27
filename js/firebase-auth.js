@@ -710,6 +710,24 @@
         let rtPickingSlot = -1;
         let rtFilterRole = 'all';
         let rtFilterSpec = 'all';
+        let rtFilterRelic = ''; // búsqueda por nombre de reliquia
+        // Cache de reliquias equipadas por personaje { charName: [relicName, ...] }
+        let _rtRelicCache = null;
+
+        async function _rtLoadRelicCache() {
+            if (_rtRelicCache) return _rtRelicCache;
+            const user = firebase.auth ? firebase.auth().currentUser : null;
+            if (!user || typeof db === 'undefined') { _rtRelicCache = {}; return _rtRelicCache; }
+            const snap = await db.ref('users/' + user.uid + '/characters').once('value');
+            const chars = snap.val() || {};
+            _rtRelicCache = {};
+            Object.keys(chars).forEach(function(charName) {
+                const slots = chars[charName].slots_v2 || {};
+                const relics = Object.values(slots).filter(Boolean);
+                if (relics.length > 0) _rtRelicCache[charName] = relics;
+            });
+            return _rtRelicCache;
+        }
         let rtPendingConfirmName = null; // personaje pendiente de confirmar en ranked
 
         // ── Tabla de OVERRIDES manuales: si un personaje aparece aquí, esto reemplaza
@@ -1061,6 +1079,29 @@
             specSel.onchange = function(){ rtFilterSpec = this.value; rtRenderGrid(); };
             wrap.appendChild(specSel);
 
+            // Buscador por reliquia equipada
+            const sep2 = document.createElement('span');
+            sep2.style.cssText = 'width:1px;height:20px;background:rgba(255,255,255,0.1);';
+            wrap.appendChild(sep2);
+
+            const relicLabel = document.createElement('span');
+            relicLabel.textContent = '🔮 Reliquia:';
+            relicLabel.style.cssText = 'font-size:.75rem;color:#aaa;font-family:Orbitron,sans-serif;white-space:nowrap;';
+            wrap.appendChild(relicLabel);
+
+            const relicInput = document.createElement('input');
+            relicInput.id = 'rtFilterRelicInput';
+            relicInput.type = 'text';
+            relicInput.placeholder = 'Nombre de reliquia...';
+            relicInput.value = rtFilterRelic;
+            relicInput.style.cssText = 'background:#0a1628;border:1px solid #ffd700;color:#ffd700;border-radius:8px;padding:5px 10px;font-size:.75rem;font-family:Orbitron,sans-serif;outline:none;min-width:150px;';
+            relicInput.oninput = function() {
+                rtFilterRelic = this.value.trim();
+                _rtRelicCache = null; // invalidar cache al escribir
+                rtRenderGrid();
+            };
+            wrap.appendChild(relicInput);
+
             // Contador
             const counter = document.createElement('span');
             counter.id = 'rtFilterCounter';
@@ -1079,8 +1120,10 @@
             // Sincronizar selects con estado actual
             const rs = document.getElementById('rtFilterRolSel');
             const ss = document.getElementById('rtFilterSpecSel');
+            const ri = document.getElementById('rtFilterRelicInput');
             if (rs) rs.value = rtFilterRole;
             if (ss) ss.value = rtFilterSpec;
+            if (ri) ri.value = rtFilterRelic;
 
             grid.innerHTML = '';
             const usedAttack  = new Set(rtAttackTeam.filter(Boolean));
@@ -1089,12 +1132,31 @@
 
             let shown = 0;
             const normF = function(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); };
+            const relicQuery = normF(rtFilterRelic);
 
+            // Si hay búsqueda de reliquia, cargar cache y re-render
+            if (relicQuery) {
+                _rtLoadRelicCache().then(function(cache) {
+                    _rtDoRenderGrid(grid, usedAttack, usedDefense, allUsed, normF, relicQuery, cache, shown);
+                });
+                return;
+            }
+            _rtDoRenderGrid(grid, usedAttack, usedDefense, allUsed, normF, '', {}, shown);
+        }
+
+        function _rtDoRenderGrid(grid, usedAttack, usedDefense, allUsed, normF, relicQuery, relicCache, shown) {
             Object.keys(characterData).forEach(function(name) {
                 const cd = characterData[name];
                 if (!cd || !cd.abilities) return;
 
-                // Aplicar filtro
+                // Filtro de reliquia
+                if (relicQuery) {
+                    const baseName = name.replace(/ v\d+$/, '');
+                    const charRelics = (relicCache[name] || relicCache[baseName] || []).map(function(r){ return normF(r); });
+                    if (!charRelics.some(function(r){ return r.includes(relicQuery); })) return;
+                }
+
+                // Aplicar filtro de rol/especialidad
                 const roleData = rtGetCharRoleData(name);
                 if (rtFilterRole !== 'all') {
                     if (!roleData || !roleData.roles.some(function(r){ return normF(r) === normF(rtFilterRole); })) return;
