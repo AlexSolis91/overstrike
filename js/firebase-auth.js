@@ -4865,11 +4865,14 @@
             const list = document.getElementById('notifList');
             if (!list) return;
             list.innerHTML = '<div style="text-align:center;color:#444;font-size:.75rem;padding:20px;">Cargando...</div>';
-            const snap = await db.ref('users/'+uid+'/notifications').orderByChild('ts').limitToLast(30).once('value');
+            // Solo cargar las NO leídas
+            const snap = await db.ref('users/'+uid+'/notifications').orderByChild('read').equalTo(false).once('value');
             const notifs = [];
-            snap.forEach(function(c){ notifs.unshift({ id:c.key, ...c.val() }); });
+            snap.forEach(function(c){ notifs.push({ id:c.key, ...c.val() }); });
+            // Ordenar de más reciente a más antigua
+            notifs.sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
             if (notifs.length === 0) {
-                list.innerHTML = '<div style="text-align:center;color:#444;font-size:.75rem;padding:30px;">Sin notificaciones</div>';
+                list.innerHTML = '<div style="text-align:center;color:#444;font-size:.75rem;padding:30px;">Sin notificaciones nuevas</div>';
                 return;
             }
             list.innerHTML = '';
@@ -4880,26 +4883,30 @@
                 const color = colors[n.type] || '#ffaa00';
                 const date  = new Date(n.ts||0).toLocaleDateString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
                 const card  = document.createElement('div');
-                card.style.cssText = 'background:'+(n.read?'rgba(255,255,255,0.02)':'rgba(79,195,247,0.05)')+';border:1px solid '+(n.read?'rgba(255,255,255,0.07)':color.replace(')',',0.3)').replace('rgb','rgba'))+';border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .15s;';
+                card.style.cssText = 'background:rgba(79,195,247,0.05);border:1px solid '+color.replace(')',',0.3)').replace('rgb','rgba')+';border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .15s;';
                 card.innerHTML =
                     '<div style="display:flex;align-items:flex-start;gap:8px;">' +
                     '<span style="font-size:1.1rem;flex-shrink:0;">'+icon+'</span>' +
                     '<div style="flex:1;min-width:0;">' +
                     '<div style="font-size:.75rem;color:#fff;line-height:1.4;margin-bottom:3px;">'+n.msg+'</div>' +
-                    '<div style="font-size:.6rem;color:#555;">'+date+'</div>' +
+                    '<div style="font-size:.6rem;color:#555;">'+date+' · <span style="color:'+color+';">Toca para marcar como leída</span></div>' +
                     '</div>' +
-                    (!n.read?'<div style="width:7px;height:7px;background:'+color+';border-radius:50%;flex-shrink:0;margin-top:4px;"></div>':'') +
+                    '<div style="width:7px;height:7px;background:'+color+';border-radius:50%;flex-shrink:0;margin-top:4px;"></div>' +
                     '</div>';
                 card.onclick = async function() {
-                    if (!n.read) {
-                        await db.ref('users/'+uid+'/notifications/'+n.id+'/read').set(true);
-                        n.read = true;
-                        card.style.background = 'rgba(255,255,255,0.02)';
-                        card.style.borderColor = 'rgba(255,255,255,0.07)';
-                        var dot = card.querySelector('div[style*="border-radius:50%"]');
-                        if (dot) dot.remove();
-                        _notifUpdateBadge(uid);
-                    }
+                    await db.ref('users/'+uid+'/notifications/'+n.id+'/read').set(true);
+                    // Animar y eliminar del DOM
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateX(20px)';
+                    card.style.transition = 'opacity .25s, transform .25s';
+                    setTimeout(function() {
+                        card.remove();
+                        // Si no quedan notificaciones mostrar mensaje vacío
+                        if (list.children.length === 0) {
+                            list.innerHTML = '<div style="text-align:center;color:#444;font-size:.75rem;padding:30px;">Sin notificaciones nuevas</div>';
+                        }
+                    }, 250);
+                    _notifUpdateBadge(uid);
                 };
                 list.appendChild(card);
             });
@@ -4908,12 +4915,21 @@
         window.markAllNotifsRead = async function() {
             const user = firebase.auth().currentUser;
             if (!user) return;
-            const snap = await db.ref('users/'+user.uid+'/notifications').once('value');
+            const snap = await db.ref('users/'+user.uid+'/notifications').orderByChild('read').equalTo(false).once('value');
             const updates = {};
-            snap.forEach(function(c){ if (!c.val().read) updates['users/'+user.uid+'/notifications/'+c.key+'/read'] = true; });
+            snap.forEach(function(c){ updates['users/'+user.uid+'/notifications/'+c.key+'/read'] = true; });
             if (Object.keys(updates).length > 0) await db.ref().update(updates);
             _notifUpdateBadge(user.uid);
-            _notifLoadInbox(user.uid);
+            // Limpiar DOM con animación
+            const list = document.getElementById('notifList');
+            if (list) {
+                list.style.opacity = '0';
+                list.style.transition = 'opacity .2s';
+                setTimeout(function(){
+                    list.innerHTML = '<div style="text-align:center;color:#444;font-size:.75rem;padding:30px;">Sin notificaciones nuevas</div>';
+                    list.style.opacity = '1';
+                }, 200);
+            }
         };
 
         // ── Enviar notificación de defensa ranked ──
