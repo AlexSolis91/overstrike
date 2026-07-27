@@ -3492,6 +3492,10 @@
                     type: 'defense_attacked', attackerName: myName, attackerUid: myUid,
                     defenseWon: !won, ts: Date.now(), read: false
                 });
+                // ── Notificación en el buzón nuevo del lobby ──
+                if (typeof window.sendRankedDefenseNotif === 'function') {
+                    window.sendRankedDefenseNotif(defOwnerUid, !won, myName);
+                }
             }
 
             // Calcular MVP — solo del equipo ganador
@@ -4773,6 +4777,8 @@
             // Cargar personajes desbloqueados (ej. Bolvar Fordragon)
             const unlockedSnap = await db.ref('users/' + uid + '/unlockedCharacters').once('value');
             window._unlockedCharacters = unlockedSnap.val() || {};
+            // Cargar badge de notificaciones
+            _notifUpdateBadge(uid);
         }
 
         // ── Leer datos del jugador ──
@@ -4794,7 +4800,132 @@
             const portalEl = document.getElementById('hud-portal-runes');
             if (portalEl) portalEl.textContent = data.portal_runes||0;
             if (keyEl)  keyEl.textContent  = data.arcane_keys||0;
+            // Actualizar badge de notificaciones
+            _notifUpdateBadge(user.uid);
         }
+
+        // ══════════════════════════════════════════════════════════════════
+        // BUZÓN DE NOTIFICACIONES
+        // Firebase path: /users/{uid}/notifications/{notifId}
+        // Estructura: { type, msg, ts, read }
+        // Tipos: 'trade_completed' | 'ranked_defense_win' | 'ranked_defense_loss' | 'general'
+        // ══════════════════════════════════════════════════════════════════
+
+        var _notifInboxOpen = false;
+        var _notifListener  = null;
+
+        async function _notifUpdateBadge(uid) {
+            if (!uid) return;
+            const snap = await db.ref('users/'+uid+'/notifications').orderByChild('read').equalTo(false).once('value');
+            const unread = snap.numChildren();
+            const badge = document.getElementById('notifBadge');
+            const bell  = document.getElementById('notifBellBtn');
+            if (!badge) return;
+            if (unread > 0) {
+                badge.textContent = unread > 9 ? '9+' : unread;
+                badge.style.display = 'flex';
+                if (bell) bell.style.background = 'rgba(255,51,102,0.2)';
+                if (bell) bell.style.borderColor = '#ff3366';
+            } else {
+                badge.style.display = 'none';
+                if (bell) bell.style.background = 'rgba(255,255,255,0.06)';
+                if (bell) bell.style.borderColor = 'rgba(255,255,255,0.2)';
+            }
+        }
+
+        window.toggleNotifInbox = async function() {
+            const panel = document.getElementById('notifInbox');
+            if (!panel) return;
+            _notifInboxOpen = !_notifInboxOpen;
+            panel.style.display = _notifInboxOpen ? 'flex' : 'none';
+            if (_notifInboxOpen) {
+                const user = firebase.auth().currentUser;
+                if (user) await _notifLoadInbox(user.uid);
+            }
+        };
+
+        async function _notifLoadInbox(uid) {
+            const list = document.getElementById('notifList');
+            if (!list) return;
+            list.innerHTML = '<div style="text-align:center;color:#444;font-size:.75rem;padding:20px;">Cargando...</div>';
+            const snap = await db.ref('users/'+uid+'/notifications').orderByChild('ts').limitToLast(30).once('value');
+            const notifs = [];
+            snap.forEach(function(c){ notifs.unshift({ id:c.key, ...c.val() }); });
+            if (notifs.length === 0) {
+                list.innerHTML = '<div style="text-align:center;color:#444;font-size:.75rem;padding:30px;">Sin notificaciones</div>';
+                return;
+            }
+            list.innerHTML = '';
+            notifs.forEach(function(n) {
+                const icons = { trade_completed:'🤝', ranked_defense_win:'🛡️', ranked_defense_loss:'⚔️', general:'📢' };
+                const colors = { trade_completed:'#4fc3f7', ranked_defense_win:'#00ff88', ranked_defense_loss:'#ff6688', general:'#ffaa00' };
+                const icon  = icons[n.type]  || '📢';
+                const color = colors[n.type] || '#ffaa00';
+                const date  = new Date(n.ts||0).toLocaleDateString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+                const card  = document.createElement('div');
+                card.style.cssText = 'background:'+(n.read?'rgba(255,255,255,0.02)':'rgba(79,195,247,0.05)')+';border:1px solid '+(n.read?'rgba(255,255,255,0.07)':color.replace(')',',0.3)').replace('rgb','rgba'))+';border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .15s;';
+                card.innerHTML =
+                    '<div style="display:flex;align-items:flex-start;gap:8px;">' +
+                    '<span style="font-size:1.1rem;flex-shrink:0;">'+icon+'</span>' +
+                    '<div style="flex:1;min-width:0;">' +
+                    '<div style="font-size:.75rem;color:#fff;line-height:1.4;margin-bottom:3px;">'+n.msg+'</div>' +
+                    '<div style="font-size:.6rem;color:#555;">'+date+'</div>' +
+                    '</div>' +
+                    (!n.read?'<div style="width:7px;height:7px;background:'+color+';border-radius:50%;flex-shrink:0;margin-top:4px;"></div>':'') +
+                    '</div>';
+                card.onclick = async function() {
+                    if (!n.read) {
+                        await db.ref('users/'+uid+'/notifications/'+n.id+'/read').set(true);
+                        n.read = true;
+                        card.style.background = 'rgba(255,255,255,0.02)';
+                        card.style.borderColor = 'rgba(255,255,255,0.07)';
+                        var dot = card.querySelector('div[style*="border-radius:50%"]');
+                        if (dot) dot.remove();
+                        _notifUpdateBadge(uid);
+                    }
+                };
+                list.appendChild(card);
+            });
+        }
+
+        window.markAllNotifsRead = async function() {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+            const snap = await db.ref('users/'+user.uid+'/notifications').once('value');
+            const updates = {};
+            snap.forEach(function(c){ if (!c.val().read) updates['users/'+user.uid+'/notifications/'+c.key+'/read'] = true; });
+            if (Object.keys(updates).length > 0) await db.ref().update(updates);
+            _notifUpdateBadge(user.uid);
+            _notifLoadInbox(user.uid);
+        };
+
+        // ── Enviar notificación de defensa ranked ──
+        window.sendRankedDefenseNotif = async function(defenderUid, won, attackerName) {
+            if (!defenderUid || typeof db === 'undefined') return;
+            var msg = won
+                ? '🛡️ ¡Defensa exitosa! '+attackerName+' atacó tu equipo ranked y fue derrotado.'
+                : '⚔️ Defensa caída. '+attackerName+' venció a tu equipo ranked.';
+            await db.ref('users/'+defenderUid+'/notifications').push({
+                type: won ? 'ranked_defense_win' : 'ranked_defense_loss',
+                msg: msg, ts: Date.now(), read: false
+            });
+            // Actualizar badge si el defensor está en el lobby
+            const user = firebase.auth().currentUser;
+            if (user && user.uid === defenderUid) _notifUpdateBadge(defenderUid);
+        };
+
+        // ── Cerrar panel al hacer click fuera ──
+        document.addEventListener('click', function(e) {
+            if (!_notifInboxOpen) return;
+            var panel = document.getElementById('notifInbox');
+            var bell  = document.getElementById('notifBellBtn');
+            if (panel && !panel.contains(e.target) && bell && !bell.contains(e.target)) {
+                _notifInboxOpen = false;
+                panel.style.display = 'none';
+            }
+        });
+
+
 
         // ── Agregar reliquia al inventario ──
         async function addRelicToInventory(uid, relicName) {
