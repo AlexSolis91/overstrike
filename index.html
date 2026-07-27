@@ -243,7 +243,7 @@
             <!-- Logo: sin emoji, pegado a la izquierda -->
             <div style="display:flex;flex-direction:column;gap:2px;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;white-space:nowrap;">OVERSTRIKE</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260911</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260910</div>
             </div>
 
             <!-- HUD: empujado todo a la derecha junto al botón mute -->
@@ -660,7 +660,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260911"></script>
+    <script src="js/firebase-auth.js?v=20260912"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -1627,9 +1627,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260911"></script>
+    <script src="js/characters.js?v=20260912"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260911"></script>
+    <script src="js/audio-state.js?v=20260912"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2426,26 +2426,26 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260911"></script>
+    <script src="js/ai-engine.js?v=20260912"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260911"></script>
+    <script src="js/init-render.js?v=20260912"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260911"></script>
+    <script src="js/turn-logic.js?v=20260912"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260911"></script>
+    <script src="js/status-effects.js?v=20260912"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260911"></script>
+    <script src="js/debuffs.js?v=20260912"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260911"></script>
+    <script src="js/summons.js?v=20260912"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260911"></script>
+    <script src="js/ability-select.js?v=20260912"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260911"></script>
+<script src="js/skills.js?v=20260912"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260911"></script>
-    <script src="js/horda-mode.js?v=20260911"></script>
-    <script src="js/horda-abilities.js?v=20260911"></script>
-    <script src="js/horda-battle.js?v=20260911"></script>
+    <script src="js/jefe-de-sala.js?v=20260912"></script>
+    <script src="js/horda-mode.js?v=20260912"></script>
+    <script src="js/horda-abilities.js?v=20260912"></script>
+    <script src="js/horda-battle.js?v=20260912"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
@@ -2695,7 +2695,7 @@
                 <h3 style="font-family:Orbitron,sans-serif;color:#ffd700;font-size:.9rem;margin:0 0 14px;">⚔️ ACTIVAR JEFE DE SALA</h3>
 
                 <!-- Cards de jefes disponibles -->
-                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin-bottom:14px;" id="admin-boss-cards">
+                <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px;" id="admin-boss-cards">
                     <!-- Broly -->
                     <div onclick="adminSelectBoss('broly',this)" id="bosscard-broly"
                         style="background:rgba(255,68,68,0.08);border:2px solid rgba(255,68,68,0.3);border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:all .2s;">
