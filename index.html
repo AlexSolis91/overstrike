@@ -243,7 +243,7 @@
             <!-- Logo: sin emoji, pegado a la izquierda -->
             <div style="display:flex;flex-direction:column;gap:2px;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;white-space:nowrap;">OVERSTRIKE</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260902</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260903</div>
             </div>
 
             <!-- HUD: empujado todo a la derecha junto al botón mute -->
@@ -642,7 +642,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260902"></script>
+    <script src="js/firebase-auth.js?v=20260903"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -1602,9 +1602,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260902"></script>
+    <script src="js/characters.js?v=20260903"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260902"></script>
+    <script src="js/audio-state.js?v=20260903"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -1812,12 +1812,71 @@
             }
         }
 
+        let csRelicFilter = ''; // filtro por nombre de reliquia en pantalla de personajes
+        let _csRelicCache = null; // cache de reliquias por personaje
+
+        async function _csLoadRelicCache() {
+            if (_csRelicCache) return _csRelicCache;
+            const user = firebase && firebase.auth ? firebase.auth().currentUser : null;
+            if (!user || typeof db === 'undefined') { _csRelicCache = {}; return _csRelicCache; }
+            const snap = await db.ref('users/' + user.uid + '/characters').once('value');
+            const chars = snap.val() || {};
+            _csRelicCache = {};
+            Object.keys(chars).forEach(function(charName) {
+                const slots = chars[charName].slots_v2 || {};
+                const relics = Object.values(slots).filter(Boolean);
+                if (relics.length > 0) _csRelicCache[charName] = relics;
+            });
+            return _csRelicCache;
+        }
+
         function csRenderGrid() {
             const grid = document.getElementById('csGrid');
             grid.innerHTML = '';
 
+            // Inyectar buscador de reliquia si no existe
+            const wrap = grid.closest('.cs-grid-wrap');
+            if (wrap && !document.getElementById('csRelicSearchBar')) {
+                const bar = document.createElement('div');
+                bar.id = 'csRelicSearchBar';
+                bar.style.cssText = 'display:flex;align-items:center;gap:8px;padding:8px 12px;margin-bottom:8px;background:rgba(0,10,25,0.6);border-radius:10px;border:1px solid rgba(255,215,0,0.2);';
+                bar.innerHTML = '<span style="font-size:.75rem;color:#aaa;font-family:Orbitron,sans-serif;white-space:nowrap;">🔮 Reliquia:</span>' +
+                    '<input id="csRelicFilterInput" type="text" placeholder="Filtrar por reliquia equipada..." style="flex:1;background:rgba(0,0,0,0.4);border:1px solid #ffd700;color:#ffd700;border-radius:6px;padding:5px 10px;font-size:.75rem;font-family:Orbitron,sans-serif;outline:none;">' +
+                    '<button onclick="document.getElementById(\'csRelicFilterInput\').value=\'\';csRelicFilter=\'\';_csRelicCache=null;csRenderGrid();" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:#aaa;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:.7rem;">✕</button>' +
+                    '<span id="csRelicFilterCount" style="font-size:.68rem;color:#555;white-space:nowrap;"></span>';
+                wrap.insertBefore(bar, grid);
+                document.getElementById('csRelicFilterInput').oninput = function() {
+                    csRelicFilter = this.value.trim();
+                    _csRelicCache = null;
+                    csRenderGrid();
+                };
+            }
+
+            // Si hay filtro de reliquia, cargar cache y re-render async
+            const _csRelicQuery = csRelicFilter.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+            if (_csRelicQuery) {
+                _csLoadRelicCache().then(function(cache) {
+                    _csDoRenderGrid(grid, _csRelicQuery, cache);
+                });
+                return;
+            }
+            _csDoRenderGrid(grid, '', {});
+        }
+
+        function _csDoRenderGrid(grid, relicQuery, relicCache) {
+            grid.innerHTML = '';
+            let shownCount = 0;
+
             for (const name in characterData) {
                 try {
+                    // Filtro de reliquia
+                    if (relicQuery) {
+                        const baseName = name.replace(/ v\d+$/, '');
+                        const charRelics = ((relicCache[name] || relicCache[baseName]) || []).map(function(r){ return r.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); });
+                        if (!charRelics.some(function(r){ return r.includes(relicQuery); })) continue;
+                    }
+
+                    shownCount++;
                     const char = characterData[name];
                     if (!char || !char.abilities) continue;
 
@@ -1892,6 +1951,10 @@
                     console.error('Error renderizando carta de', name, err);
                 }
             }
+
+            // Actualizar contador de resultados
+            const counter = document.getElementById('csRelicFilterCount');
+            if (counter) counter.textContent = relicQuery ? shownCount + ' personaje(s) con esa reliquia' : '';
         }
 
         const SUMMON_CATALOGUE = {
@@ -2338,26 +2401,26 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260902"></script>
+    <script src="js/ai-engine.js?v=20260903"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260902"></script>
+    <script src="js/init-render.js?v=20260903"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260902"></script>
+    <script src="js/turn-logic.js?v=20260903"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260902"></script>
+    <script src="js/status-effects.js?v=20260903"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260902"></script>
+    <script src="js/debuffs.js?v=20260903"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260902"></script>
+    <script src="js/summons.js?v=20260903"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260902"></script>
+    <script src="js/ability-select.js?v=20260903"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260902"></script>
+<script src="js/skills.js?v=20260903"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260902"></script>
-    <script src="js/horda-mode.js?v=20260902"></script>
-    <script src="js/horda-abilities.js?v=20260902"></script>
-    <script src="js/horda-battle.js?v=20260902"></script>
+    <script src="js/jefe-de-sala.js?v=20260903"></script>
+    <script src="js/horda-mode.js?v=20260903"></script>
+    <script src="js/horda-abilities.js?v=20260903"></script>
+    <script src="js/horda-battle.js?v=20260903"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
