@@ -1096,6 +1096,19 @@
                 ]
             },
 
+            'Aragorn': {
+                hp: 25, maxHp: 25, speed: 81, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/Wv8TnQVX/Whats-App-Image-2026-07-27-at-2-05-35-PM-1.jpg',
+                passive: { name: 'Sangre de Numenor', description: 'Efecto pasivo Anticipación. Cuando un aliado muere, Aragorn y un aliado aleatorio ejecutan su Over automáticamente. Cada crítico de Aragorn o un aliado aumenta +2 el daño base del equipo aliado (máx +100%).' },
+                abilities: [
+                    { name:'Andúril',                      type:'basic',   cost:0,  chargeGain:1, damage:1, target:'single', effect:'aragorn_anduril',         description:'1 daño + 3 por cada buff y debuff activo en el objetivo. Genera +2 cargas a todo el equipo aliado por cada reliquia equipada del objetivo.' },
+                    { name:'Estrategia de Montaraz',       type:'special', cost:5,  chargeGain:0, damage:3, target:'mt',     effect:'aragorn_montaraz',        description:'MT 3 daño, 4 golpes. Aplica debuff aleatorio por golpe. Si algún golpe no aplica debuff: Aragorn gana 5 cargas y turno adicional.' },
+                    { name:'Grito de Guerra del Verdadero Rey', type:'special', cost:7, chargeGain:0, damage:5, target:'aoe', effect:'aragorn_grito_guerra',  description:'AOE 5 daño. +1 contador de Grito permanente. Por cada contador, el equipo aliado gana +10% de probabilidad de crítico.' },
+                    { name:'Ejército del Inframundo',      type:'over',    cost:12, chargeGain:0, damage:7, target:'aoe',    effect:'aragorn_ejercito',        description:'AOE 7 daño, ignora Esquiva Área. +5 daño por cada personaje muerto (ambos equipos). Si un enemigo muere, revive un aliado aleatorio con 100% HP y 0 cargas.' }
+                ]
+            },
+
             'Skeletor': {
                 hp: 25, maxHp: 25, speed: 82, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
@@ -1215,6 +1228,7 @@
             'Zirocuz':                { tier:'Epico',     slotCategory:'Equipacion', subtype:'Botas',    slot:'Botas',   img:'https://i.ibb.co/bgZ63ZQc/Captura-de-pantalla-2026-07-20-161251.png',   effect:'zirocuz',            desc:'Incrementa +3 velocidad al final de cada ronda. Al inicio de cada ronda: 50% de aplicar Esquiva Área 2T, y 50% de aplicar Esquivar 2T (independientes).' },
 
             // ── NUEVAS RELIQUIAS ────────────────────────────────────────────────
+            'Narsil':             { tier:'Legendario', slotCategory:'Arma',       subtype:'Espada',     slot:'Arma',       img:'https://i.ibb.co/p65fjPP7/image-5e1b93d6.png',      effect:'narsil',               desc:'Turno adicional cada vez que un enemigo ejecuta un Over. +2 daño base por reliquia Legendaria enemiga y +1 por Épica. Inmune a Miedo, Posesión, Mega Posesión, Aturdimiento y Mega Aturdimiento.' },
             'Casco Mandaloriano':     { tier:'Raro',      slotCategory:'Equipacion', subtype:'Yelmo',      slot:'Yelmo',      img:'https://i.ibb.co/fB3N4Yv/image-6ba883f.png',        effect:'casco_mandalorian',    desc:'Cada vez que el portador recibe un ataque, elimina 2 cargas del atacante.' },
             'Capa Jedi':              { tier:'Raro',      slotCategory:'Equipacion', subtype:'Vestidura',  slot:'Armadura',   img:'https://i.ibb.co/0RmV2Mn6/image-82015782.png',      effect:'capa_jedi',            desc:'Los ataques especiales del portador generan 2 cargas adicionales al portador.' },
             'Jetpack Mandaloriano':   { tier:'Especial',  slotCategory:'Equipacion', subtype:'Jetpack',    slot:'Botas',      img:'https://i.ibb.co/kzyZcW1/image-d16280f8.png',       effect:'jetpack_mandalorian',  desc:'Al inicio de cada ronda el portador gana Esquiva Área hasta el final de esa ronda.' },
