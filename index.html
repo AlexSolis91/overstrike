@@ -660,7 +660,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260912"></script>
+    <script src="js/firebase-auth.js?v=20260913"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -1550,10 +1550,10 @@
 
         function adminSelectBoss(bossId, el) {
             document.getElementById('admin-boss-select').value = bossId;
-            // Highlight selected card
-            document.querySelectorAll('#admin-boss-cards > div').forEach(function(c) {
-                c.style.border = '2px solid rgba(255,68,68,0.3)';
-                c.style.background = 'rgba(255,68,68,0.08)';
+            // Highlight selected card — buscar en todos los divs con id bosscard-*
+            document.querySelectorAll('[id^="bosscard-"]').forEach(function(c) {
+                c.style.border = c.style.border.replace('#ffd700','rgba(255,255,255,0.2)');
+                c.style.background = c.style.background.replace('rgba(255,215,0,0.12)','rgba(0,0,0,0.1)');
             });
             if (el) {
                 el.style.border = '2px solid #ffd700';
@@ -1627,9 +1627,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260912"></script>
+    <script src="js/characters.js?v=20260913"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260912"></script>
+    <script src="js/audio-state.js?v=20260913"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2426,26 +2426,26 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260912"></script>
+    <script src="js/ai-engine.js?v=20260913"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260912"></script>
+    <script src="js/init-render.js?v=20260913"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260912"></script>
+    <script src="js/turn-logic.js?v=20260913"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260912"></script>
+    <script src="js/status-effects.js?v=20260913"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260912"></script>
+    <script src="js/debuffs.js?v=20260913"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260912"></script>
+    <script src="js/summons.js?v=20260913"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260912"></script>
+    <script src="js/ability-select.js?v=20260913"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260912"></script>
+<script src="js/skills.js?v=20260913"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260912"></script>
-    <script src="js/horda-mode.js?v=20260912"></script>
-    <script src="js/horda-abilities.js?v=20260912"></script>
-    <script src="js/horda-battle.js?v=20260912"></script>
+    <script src="js/jefe-de-sala.js?v=20260913"></script>
+    <script src="js/horda-mode.js?v=20260913"></script>
+    <script src="js/horda-abilities.js?v=20260913"></script>
+    <script src="js/horda-battle.js?v=20260913"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
@@ -2694,48 +2694,51 @@
             <div style="background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.2);border-radius:12px;padding:20px;margin-bottom:16px;">
                 <h3 style="font-family:Orbitron,sans-serif;color:#ffd700;font-size:.9rem;margin:0 0 14px;">⚔️ ACTIVAR JEFE DE SALA</h3>
 
-                <!-- Cards de jefes disponibles -->
-                <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:14px;" id="admin-boss-cards">
+                <!-- Cards de jefes disponibles: 3 en fila 1, 2 en fila 2 -->
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px;" id="admin-boss-cards">
                     <!-- Broly -->
                     <div onclick="adminSelectBoss('broly',this)" id="bosscard-broly"
-                        style="background:rgba(255,68,68,0.08);border:2px solid rgba(255,68,68,0.3);border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:all .2s;">
-                        <img src="https://i.ibb.co/wrhphbYm/image.jpg" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #ff4444;margin-bottom:6px;" onerror="this.style.display='none'">
-                        <div style="font-family:Orbitron,sans-serif;font-size:.7rem;color:#ff4444;font-weight:700;">BROLY</div>
-                        <div style="font-size:.6rem;color:#666;margin-top:2px;">10,000 HP</div>
-                        <div style="font-size:.58rem;color:#555;margin-top:1px;">Legendario SS</div>
+                        style="background:rgba(255,68,68,0.08);border:2px solid rgba(255,68,68,0.3);border-radius:10px;padding:8px;text-align:center;cursor:pointer;transition:all .2s;">
+                        <img src="https://i.ibb.co/wrhphbYm/image.jpg" style="width:50px;height:50px;object-fit:cover;border-radius:8px;border:2px solid #ff4444;margin-bottom:4px;" onerror="this.style.display='none'">
+                        <div style="font-family:Orbitron,sans-serif;font-size:.65rem;color:#ff4444;font-weight:700;">BROLY</div>
+                        <div style="font-size:.55rem;color:#666;margin-top:1px;">10,000 HP</div>
+                        <div style="font-size:.52rem;color:#555;">Legendario SS</div>
                     </div>
                     <!-- Lich King -->
                     <div onclick="adminSelectBoss('lich_king',this)" id="bosscard-lich_king"
-                        style="background:rgba(100,0,200,0.08);border:2px solid rgba(100,0,200,0.3);border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:all .2s;">
-                        <img src="https://i.ibb.co/q365QSyQ/PS.jpg" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #6400c8;margin-bottom:6px;" onerror="this.style.display='none'">
-                        <div style="font-family:Orbitron,sans-serif;font-size:.7rem;color:#a855f7;font-weight:700;">LICH KING</div>
-                        <div style="font-size:.6rem;color:#666;margin-top:2px;">15,000 HP</div>
-                        <div style="font-size:.58rem;color:#555;margin-top:1px;">Rey de la Muerte</div>
+                        style="background:rgba(100,0,200,0.08);border:2px solid rgba(100,0,200,0.3);border-radius:10px;padding:8px;text-align:center;cursor:pointer;transition:all .2s;">
+                        <img src="https://i.ibb.co/q365QSyQ/PS.jpg" style="width:50px;height:50px;object-fit:cover;border-radius:8px;border:2px solid #6400c8;margin-bottom:4px;" onerror="this.style.display='none'">
+                        <div style="font-family:Orbitron,sans-serif;font-size:.65rem;color:#a855f7;font-weight:700;">LICH KING</div>
+                        <div style="font-size:.55rem;color:#666;margin-top:1px;">15,000 HP</div>
+                        <div style="font-size:.52rem;color:#555;">Rey de la Muerte</div>
                     </div>
+                    <!-- Dumbledore -->
                     <div onclick="adminSelectBoss('albus_dumbledore',this)" id="bosscard-albus_dumbledore"
-                        style="background:rgba(0,150,80,0.08);border:2px solid rgba(0,150,80,0.3);border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:all .2s;">
-                        <img src="https://i.ibb.co/LX4h03vQ/image.png" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #00aa55;margin-bottom:6px;" onerror="this.style.display='none'">
-                        <div style="font-family:Orbitron,sans-serif;font-size:.7rem;color:#4ade80;font-weight:700;">DUMBLEDORE</div>
-                        <div style="font-size:.6rem;color:#666;margin-top:2px;">50,000 HP</div>
-                        <div style="font-size:.58rem;color:#555;margin-top:1px;">Varita de Saúco</div>
+                        style="background:rgba(0,150,80,0.08);border:2px solid rgba(0,150,80,0.3);border-radius:10px;padding:8px;text-align:center;cursor:pointer;transition:all .2s;">
+                        <img src="https://i.ibb.co/LX4h03vQ/image.png" style="width:50px;height:50px;object-fit:cover;border-radius:8px;border:2px solid #00aa55;margin-bottom:4px;" onerror="this.style.display='none'">
+                        <div style="font-family:Orbitron,sans-serif;font-size:.65rem;color:#4ade80;font-weight:700;">DUMBLEDORE</div>
+                        <div style="font-size:.55rem;color:#666;margin-top:1px;">50,000 HP</div>
+                        <div style="font-size:.52rem;color:#555;">Varita de Saúco</div>
                     </div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px;">
+                    <!-- Bolvar -->
                     <div onclick="adminSelectBoss('bolvar_fordragon',this)" id="bosscard-bolvar_fordragon"
-                        style="background:rgba(200,100,0,0.08);border:2px solid rgba(200,100,0,0.3);border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:all .2s;">
-                        <img src="https://i.ibb.co/prMkQpBk/Whats-App-Image-2026-06-22-at-2-24-27-PM.jpg" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #c86400;margin-bottom:6px;" onerror="this.style.display='none'">
-                        <div style="font-family:Orbitron,sans-serif;font-size:.7rem;color:#fb923c;font-weight:700;">BOLVAR</div>
-                        <div style="font-size:.6rem;color:#666;margin-top:2px;">100,000 HP</div>
-                        <div style="font-size:.58rem;color:#555;margin-top:1px;">Rey de los Muertos</div>
+                        style="background:rgba(200,100,0,0.08);border:2px solid rgba(200,100,0,0.3);border-radius:10px;padding:8px;text-align:center;cursor:pointer;transition:all .2s;">
+                        <img src="https://i.ibb.co/prMkQpBk/Whats-App-Image-2026-06-22-at-2-24-27-PM.jpg" style="width:50px;height:50px;object-fit:cover;border-radius:8px;border:2px solid #c86400;margin-bottom:4px;" onerror="this.style.display='none'">
+                        <div style="font-family:Orbitron,sans-serif;font-size:.65rem;color:#fb923c;font-weight:700;">BOLVAR</div>
+                        <div style="font-size:.55rem;color:#666;margin-top:1px;">100,000 HP</div>
+                        <div style="font-size:.52rem;color:#555;">Rey de los Muertos</div>
                     </div>
-
+                    <!-- Balrog -->
                     <div onclick="adminSelectBoss('balrog',this)" id="bosscard-balrog"
-                        style="background:rgba(180,20,20,0.08);border:2px solid rgba(180,20,20,0.3);border-radius:10px;padding:10px;text-align:center;cursor:pointer;transition:all .2s;">
-                        <img src="https://i.ibb.co/nsGvCCPZ/image-594f3a6b.png" style="width:60px;height:60px;object-fit:cover;border-radius:8px;border:2px solid #b41414;margin-bottom:6px;" onerror="this.style.display='none'">
-                        <div style="font-family:Orbitron,sans-serif;font-size:.7rem;color:#ff4444;font-weight:700;">BALROG</div>
-                        <div style="font-size:.6rem;color:#666;margin-top:2px;">100,000 HP</div>
-                        <div style="font-size:.58rem;color:#555;margin-top:1px;">Valaraukar</div>
+                        style="background:rgba(180,20,20,0.08);border:2px solid rgba(180,20,20,0.3);border-radius:10px;padding:8px;text-align:center;cursor:pointer;transition:all .2s;">
+                        <img src="https://i.ibb.co/nsGvCCPZ/image-594f3a6b.png" style="width:50px;height:50px;object-fit:cover;border-radius:8px;border:2px solid #b41414;margin-bottom:4px;" onerror="this.style.display='none'">
+                        <div style="font-family:Orbitron,sans-serif;font-size:.65rem;color:#ff4444;font-weight:700;">BALROG</div>
+                        <div style="font-size:.55rem;color:#666;margin-top:1px;">100,000 HP</div>
+                        <div style="font-size:.52rem;color:#555;">Valaraukar</div>
                     </div>
-
-                <input type="hidden" id="admin-boss-select" value="broly">
+                </div>
 
                 <!-- Duración: 7 días automático, con opción de override -->
                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.15);border-radius:8px;padding:10px 14px;">
