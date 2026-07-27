@@ -1106,7 +1106,8 @@
                     { name:'Estrategia de Montaraz',       type:'special', cost:5,  chargeGain:0, damage:3, target:'mt',     effect:'aragorn_montaraz',        description:'MT 3 daño, 4 golpes. Aplica debuff aleatorio por golpe. Si algún golpe no aplica debuff: Aragorn gana 5 cargas y turno adicional.' },
                     { name:'Grito de Guerra del Verdadero Rey', type:'special', cost:7, chargeGain:0, damage:5, target:'aoe', effect:'aragorn_grito_guerra',  description:'AOE 5 daño. +1 contador de Grito permanente. Por cada contador, el equipo aliado gana +10% de probabilidad de crítico.' },
                     { name:'Ejército del Inframundo',      type:'over',    cost:12, chargeGain:0, damage:7, target:'aoe',    effect:'aragorn_ejercito',        description:'AOE 7 daño, ignora Esquiva Área. +5 daño por cada personaje muerto (ambos equipos). Si un enemigo muere, revive un aliado aleatorio con 100% HP y 0 cargas.' }
-                ]
+                ],
+                _isEventChar: true, _eventBoss: 'Balrog'
             },
 
             'Skeletor': {
