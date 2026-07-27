@@ -2691,6 +2691,22 @@
                         break;
                     }
 
+                    // ── VALARAUKAR (Balrog BOSS): inicio de ronda → 50% Miedo 1T / 50% Quemaduras 3HP / 50% Debilitar 1T a cada enemigo ──
+                    for (const _balN in gameState.characters) {
+                        const _balC = gameState.characters[_balN];
+                        if (!_balC || _balC.isDead || _balC.hp <= 0 || !_balC.passive) continue;
+                        if (_balC.passive.name !== 'Valaraukar') continue;
+                        const _balETeam = _balC.team === 'team1' ? 'team2' : 'team1';
+                        for (const _en in gameState.characters) {
+                            const _ec = gameState.characters[_en];
+                            if (!_ec || _ec.isDead || _ec.hp <= 0 || _ec.team !== _balETeam) continue;
+                            if (Math.random() < 0.50) { if (typeof applyDebuff==='function') applyDebuff(_en, {name:'Miedo',type:'debuff',duration:1,emoji:'😱'}); addLog('🔥 Valaraukar: Miedo 1T aplicado a '+_en, 'debuff'); }
+                            if (Math.random() < 0.50) { if (typeof applyDebuff==='function') applyDebuff(_en, {name:'Quemaduras',type:'debuff',duration:2,dmg:3,emoji:'🔥'}); addLog('🔥 Valaraukar: Quemaduras 3HP aplicadas a '+_en, 'debuff'); }
+                            if (Math.random() < 0.50) { if (typeof applyDebuff==='function') applyDebuff(_en, {name:'Debilitar',type:'debuff',duration:1,emoji:'⬇️'}); addLog('🔥 Valaraukar: Debilitar 1T aplicado a '+_en, 'debuff'); }
+                        }
+                        break;
+                    }
+
                     // ── ÚLTIMO REY DE LOS MUERTOS (Bolvar BOSS): inicio de ronda → 3 buffs aleatorios en Bolvar ──
                     for (const _brvRN in gameState.characters) {
                         const _brvRC = gameState.characters[_brvRN];
