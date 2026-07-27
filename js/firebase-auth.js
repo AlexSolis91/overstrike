@@ -1177,7 +1177,7 @@
                 const portrait  = getCharPortrait(name);
 
                 // ── PERSONAJES CON DESBLOQUEO (ej. Bolvar Fordragon) ──
-                const _rtLockedChars = { 'Bolvar Fordragon': 'bolvar_fordragon', 'Gogeta': 'gogeta', 'Arthas Menethil': 'arthas_menethil', 'Grindelwald': 'grindelwald' };
+                const _rtLockedChars = { 'Bolvar Fordragon': 'bolvar_fordragon', 'Gogeta': 'gogeta', 'Arthas Menethil': 'arthas_menethil', 'Grindelwald': 'grindelwald', 'Aragorn': 'aragorn' };
                 const _rtLockKey = _rtLockedChars[name];
                 const _rtIsLocked = _rtLockKey && !(window._unlockedCharacters && window._unlockedCharacters[_rtLockKey]);
 
