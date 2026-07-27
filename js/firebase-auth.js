@@ -5749,6 +5749,11 @@
                     '<div style="font-family:Orbitron,sans-serif;font-size:.85rem;color:' + (reward.grindelwaldUnlocked ? '#6fffb8' : '#888') + ';font-weight:700;">' + (reward.grindelwaldUnlocked ? '¡GRINDELWALD DESBLOQUEADO!' : 'Grindelwald no desbloqueado') + '</div>' +
                     '<div style="color:#666;font-size:.65rem;">Probabilidad: ' + Math.round(reward.grindelwaldUnlockChance * 100) + '% (posición #' + myRank + ')</div>' +
                 '</div>' : '') +
+                (reward.aragornUnlockChance > 0 ? '<div style="background:rgba(100,150,50,0.15);border:1px solid rgba(150,220,100,0.5);border-radius:10px;padding:12px 20px;text-align:center;width:100%;">' +
+                    '<div style="font-size:1.4rem;">' + (reward.aragornUnlocked ? '🔓' : '🔒') + '</div>' +
+                    '<div style="font-family:Orbitron,sans-serif;font-size:.85rem;color:' + (reward.aragornUnlocked ? '#96dc64' : '#888') + ';font-weight:700;">' + (reward.aragornUnlocked ? '¡ARAGORN DESBLOQUEADO!' : 'Aragorn no desbloqueado') + '</div>' +
+                    '<div style="color:#666;font-size:.65rem;">Probabilidad: ' + Math.round(reward.aragornUnlockChance * 100) + '% (posición #' + myRank + ')</div>' +
+                '</div>' : '') +
             '</div>';
 
             var modal = document.createElement('div');
@@ -6149,6 +6154,17 @@
                 var grindelwaldUnlockRoll = grindelwaldUnlockChance > 0 ? Math.random() : 1;
                 var grindelwaldUnlocked   = grindelwaldUnlockRoll < grindelwaldUnlockChance;
 
+                // ── ARAGORN: probabilidad de desbloqueo (evento Balrog) ──
+                var aragornUnlockChance = 0;
+                if (bossName === 'Balrog' && bossFelled) {
+                    if      (rank === 1) aragornUnlockChance = 0.30;
+                    else if (rank === 2) aragornUnlockChance = 0.20;
+                    else if (rank === 3) aragornUnlockChance = 0.10;
+                    else                aragornUnlockChance = 0.05;
+                }
+                var aragornUnlockRoll = aragornUnlockChance > 0 ? Math.random() : 1;
+                var aragornUnlocked   = aragornUnlockRoll < aragornUnlockChance;
+
                 // Store claimable reward in Firebase
                 await db.ref('weekly_boss/pending_rewards/' + entry.uid).set({
                     eventId:       eventId,
@@ -6170,6 +6186,8 @@
                     arthasUnlockChance: arthasUnlockChance,
                     grindelwaldUnlocked:     grindelwaldUnlocked,
                     grindelwaldUnlockChance: grindelwaldUnlockChance,
+                    aragornUnlocked:     aragornUnlocked,
+                    aragornUnlockChance: aragornUnlockChance,
                     claimed:       false,
                     createdAt:     Date.now()
                 });
@@ -6279,6 +6297,25 @@
                         var t = document.createElement('div');
                         t.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#2d0060,#7c00cc);color:#fff;padding:16px 28px;border-radius:14px;font-family:Orbitron,sans-serif;font-size:.9rem;font-weight:700;z-index:9999999;box-shadow:0 0 30px rgba(124,0,204,0.6);text-align:center;';
                         t.innerHTML = '🔓 ¡GRINDELWALD DESBLOQUEADO!<br><span style="font-size:.7rem;font-weight:400;opacity:.8;">El Maestro del Infierno Azul puede unirse a tu equipo</span>';
+                        document.body.appendChild(t);
+                        setTimeout(function(){ t.remove(); }, 5000);
+                    }, 1500);
+                }
+            }
+
+            // ── ARAGORN: aplicar desbloqueo si corresponde (evento Balrog) ──
+            if (reward.aragornUnlocked) {
+                const aragRef = db.ref('users/' + uid + '/unlockedCharacters/aragorn');
+                const aragAlready = await aragRef.once('value');
+                if (!aragAlready.val()) {
+                    await aragRef.set(true);
+                    if (!window._unlockedCharacters) window._unlockedCharacters = {};
+                    window._unlockedCharacters['aragorn'] = true;
+                    console.log('[ARAGORN] ¡Personaje desbloqueado para ' + uid + '!');
+                    setTimeout(function() {
+                        var t = document.createElement('div');
+                        t.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1a3a0a,#4a8c1c);color:#fff;padding:16px 28px;border-radius:14px;font-family:Orbitron,sans-serif;font-size:.9rem;font-weight:700;z-index:9999999;box-shadow:0 0 30px rgba(74,140,28,0.6);text-align:center;';
+                        t.innerHTML = '🔓 ¡ARAGORN DESBLOQUEADO!<br><span style="font-size:.7rem;font-weight:400;opacity:.8;">El Verdadero Rey del Gondor se une a tu ejército</span>';
                         document.body.appendChild(t);
                         setTimeout(function(){ t.remove(); }, 5000);
                     }, 1500);
