@@ -572,6 +572,24 @@ function applyDebuff(targetName, effectObj) {
                 addLog('🕑 Ciudad de la Devastación: Kurumi recibe ' + (effectObj.name||'debuff') + ' y se cura 3 HP', 'heal');
             }
 
+            // NARSIL: inmune a Miedo, Posesión, Mega Posesión, Aturdimiento y Mega Aturdimiento
+            if ((target.equippedRelics||[]).includes('Narsil')) {
+                const _narImm = ['Miedo','Posesion','Posesión','Mega Posesion','Mega Posesión','Aturdimiento','Mega Aturdimiento'];
+                if (effectObj && _narImm.some(function(i){ return (effectObj.name||'').toLowerCase().includes(i.toLowerCase()); })) {
+                    addLog('⚔️ Narsil: ' + targetName + ' es inmune a ' + effectObj.name, 'buff');
+                    return;
+                }
+            }
+
+            // VALARAUKAR (Balrog BOSS): inmune a Quemaduras, Aturdimiento, Mega Aturdimiento, Congelación, Megacongelación, Posesión, Mega Posesión, Confusión y Miedo
+            if (target.passive && target.passive.name === 'Valaraukar') {
+                const _vkImm = ['Quemadura','Aturdimiento','Mega Aturdimiento','Congelacion','Congelación','Megacongelacion','Posesion','Posesión','Mega Posesion','Confusion','Confusión','Miedo'];
+                if (effectObj && _vkImm.some(function(i){ return (effectObj.name||'').toLowerCase().includes(i.toLowerCase()); })) {
+                    addLog('🔥 Valaraukar: Balrog es inmune a ' + effectObj.name, 'buff');
+                    return;
+                }
+            }
+
             // ANILLO DE PIEDRA DE MORIA: al recibir debuff → portador gana 2 cargas
             if (effectObj && effectObj.type === 'debuff' && target && (target.equippedRelics||[]).includes('Anillo de Piedra de Moria')) {
                 target.charges = Math.min(20, (target.charges||0) + 2);
