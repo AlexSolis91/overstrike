@@ -243,7 +243,7 @@
             <!-- Logo: sin emoji, pegado a la izquierda -->
             <div style="display:flex;flex-direction:column;gap:2px;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;white-space:nowrap;">OVERSTRIKE</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260905</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260906</div>
             </div>
 
             <!-- HUD: empujado todo a la derecha junto al botón mute -->
@@ -642,7 +642,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260905"></script>
+    <script src="js/firebase-auth.js?v=20260906"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -1099,13 +1099,14 @@
 
         // ── Mercado ──
         function showMarketTab(tab) {
-            ['daily','listings','sell'].forEach(function(t){
+            ['daily','listings','sell','trade'].forEach(function(t){
                 const el = document.getElementById('market-' + t + '-tab');
                 if (el) el.style.display = t === tab ? 'block' : 'none';
             });
             if (tab === 'daily') loadDailyMarket();
             if (tab === 'listings') loadListings();
             if (tab === 'sell') loadSellTab();
+            if (tab === 'trade') initTradeTab();
         }
 
         async function loadDailyMarket() {
@@ -1602,9 +1603,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260905"></script>
+    <script src="js/characters.js?v=20260906"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260905"></script>
+    <script src="js/audio-state.js?v=20260906"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2401,26 +2402,26 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260905"></script>
+    <script src="js/ai-engine.js?v=20260906"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260905"></script>
+    <script src="js/init-render.js?v=20260906"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260905"></script>
+    <script src="js/turn-logic.js?v=20260906"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260905"></script>
+    <script src="js/status-effects.js?v=20260906"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260905"></script>
+    <script src="js/debuffs.js?v=20260906"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260905"></script>
+    <script src="js/summons.js?v=20260906"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260905"></script>
+    <script src="js/ability-select.js?v=20260906"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260905"></script>
+<script src="js/skills.js?v=20260906"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260905"></script>
-    <script src="js/horda-mode.js?v=20260905"></script>
-    <script src="js/horda-abilities.js?v=20260905"></script>
-    <script src="js/horda-battle.js?v=20260905"></script>
+    <script src="js/jefe-de-sala.js?v=20260906"></script>
+    <script src="js/horda-mode.js?v=20260906"></script>
+    <script src="js/horda-abilities.js?v=20260906"></script>
+    <script src="js/horda-battle.js?v=20260906"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
@@ -2560,6 +2561,7 @@
                 <button onclick="showMarketTab('daily')" style="flex:1;padding:8px;font-family:Orbitron,sans-serif;font-size:.7rem;background:rgba(255,170,0,0.2);border:2px solid #ffaa00;color:#ffaa00;border-radius:8px;cursor:pointer;">📅 TIENDA DIARIA</button>
                 <button onclick="showMarketTab('listings')" style="flex:1;padding:8px;font-family:Orbitron,sans-serif;font-size:.7rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.2);color:#ccc;border-radius:8px;cursor:pointer;">🔄 PUBLICACIONES</button>
                 <button onclick="showMarketTab('sell')" style="flex:1;padding:8px;font-family:Orbitron,sans-serif;font-size:.7rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.2);color:#ccc;border-radius:8px;cursor:pointer;">💰 VENDER</button>
+                <button onclick="showMarketTab('trade')" style="flex:1;padding:8px;font-family:Orbitron,sans-serif;font-size:.7rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.2);color:#ccc;border-radius:8px;cursor:pointer;">🤝 INTERCAMBIO</button>
             </div>
             <div id="market-daily-tab">
                 <div id="market-daily-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;"></div>
@@ -2590,6 +2592,53 @@
                     </div>
                 </div>
             </div>
+
+            <!-- ==================== TAB INTERCAMBIO ==================== -->
+            <div id="market-trade-tab" style="display:none;">
+                <!-- Mis Ofertas activas -->
+                <div id="trade-my-offer-box" style="display:none;background:rgba(255,170,0,0.06);border:1px solid rgba(255,170,0,0.3);border-radius:14px;padding:16px;margin-bottom:16px;">
+                    <div style="font-family:Orbitron,sans-serif;font-size:.75rem;color:#ffaa00;margin-bottom:10px;letter-spacing:.06em;">⭐ MI OFERTA ACTIVA</div>
+                    <div id="trade-my-offer-content"></div>
+                    <button onclick="cancelMyTradeOffer()" style="margin-top:10px;background:rgba(255,51,102,0.12);border:1px solid #ff3366;color:#ff3366;border-radius:8px;padding:6px 16px;cursor:pointer;font-size:.75rem;">🗑️ Cancelar oferta</button>
+                </div>
+
+                <!-- Crear nueva oferta -->
+                <div id="trade-create-box" style="background:rgba(0,10,25,0.6);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:20px;margin-bottom:20px;">
+                    <div style="font-family:Orbitron,sans-serif;font-size:.78rem;color:#4fc3f7;margin-bottom:14px;letter-spacing:.06em;">➕ NUEVA OFERTA DE INTERCAMBIO</div>
+
+                    <!-- Lo que das -->
+                    <div style="margin-bottom:14px;">
+                        <div style="font-size:.72rem;color:#aaa;margin-bottom:6px;">📦 <strong>Yo doy:</strong> (1 ítem — reliquia o runa)</div>
+                        <input id="trade-give-search" type="text" placeholder="Buscar reliquia o runa..." oninput="tradeFilterGive(this.value)" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.15);color:#fff;border-radius:8px;padding:7px 12px;font-size:.78rem;margin-bottom:8px;box-sizing:border-box;outline:none;">
+                        <div id="trade-give-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px;max-height:200px;overflow-y:auto;"></div>
+                        <div id="trade-give-selected" style="display:none;margin-top:8px;padding:8px 12px;background:rgba(79,195,247,0.1);border:1px solid #4fc3f7;border-radius:8px;font-size:.78rem;color:#4fc3f7;display:flex;align-items:center;gap:8px;"></div>
+                    </div>
+
+                    <!-- Lo que pides -->
+                    <div style="margin-bottom:16px;">
+                        <div style="font-size:.72rem;color:#aaa;margin-bottom:6px;">🎯 <strong>A cambio pido:</strong> (máx. 3 ítems — reliquias o runas)</div>
+                        <input id="trade-want-search" type="text" placeholder="Buscar reliquia o runa..." oninput="tradeFilterWant(this.value)" style="width:100%;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.15);color:#fff;border-radius:8px;padding:7px 12px;font-size:.78rem;margin-bottom:8px;box-sizing:border-box;outline:none;">
+                        <div id="trade-want-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px;max-height:200px;overflow-y:auto;"></div>
+                        <div id="trade-want-selected" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+                    </div>
+
+                    <div id="trade-create-msg" style="display:none;font-size:.75rem;margin-bottom:8px;padding:8px 12px;border-radius:8px;"></div>
+                    <button onclick="publishTradeOffer()" style="width:100%;padding:12px;background:linear-gradient(135deg,#001a40,#0055cc);border:2px solid #4fc3f7;color:#4fc3f7;border-radius:10px;font-family:Orbitron,sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;letter-spacing:.05em;">📢 PUBLICAR INTERCAMBIO</button>
+                </div>
+
+                <!-- Ofertas disponibles -->
+                <div>
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                        <div style="font-family:Orbitron,sans-serif;font-size:.78rem;color:#c864ff;letter-spacing:.06em;">🌐 INTERCAMBIOS DISPONIBLES</div>
+                        <input id="trade-browse-search" type="text" placeholder="Buscar por nombre de ítem..." oninput="tradeFilterBrowse(this.value)" style="flex:1;background:rgba(0,0,0,0.4);border:1px solid rgba(200,100,255,0.3);color:#fff;border-radius:8px;padding:6px 10px;font-size:.75rem;outline:none;">
+                        <button onclick="loadTradeOffers()" style="background:rgba(200,100,255,0.1);border:1px solid #c864ff;color:#c864ff;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:.72rem;">🔄</button>
+                    </div>
+                    <div id="trade-offers-list" style="display:flex;flex-direction:column;gap:10px;">
+                        <div style="text-align:center;color:#444;font-size:.8rem;padding:20px;">Cargando ofertas...</div>
+                    </div>
+                </div>
+            </div>
+            <!-- ==================== END TAB INTERCAMBIO ==================== -->
         </div>
     </div>
 
