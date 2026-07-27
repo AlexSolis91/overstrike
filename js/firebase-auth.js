@@ -1715,7 +1715,374 @@
             });
         }
 
-        function hasRankedTeams(callback) {
+        // ══════════════════════════════════════════════════════════════════
+        // SISTEMA DE INTERCAMBIO
+        // Firebase path: /trade_offers/{offerId}
+        // Estructura: { id, uid, userName, give:{type,name,qty:1}, want:[{type,name,qty}],
+        //               status:'open'|'completed'|'cancelled', ts, completedBy }
+        // ══════════════════════════════════════════════════════════════════
+
+        var _tradeGiveSelected  = null;   // { type:'relic'|'runa', name }
+        var _tradeWantSelected  = [];     // [{ type, name }]  máx 3
+        var _tradeAllItems      = null;   // cache de todos los ítems disponibles para dar/pedir
+        var _tradeBrowseQuery   = '';
+        var _tradeMyOfferId     = null;   // id de la oferta activa del jugador
+
+        // ── Construir catálogo de ítems (reliquias + runas) ──
+        function _tradeBuildCatalog() {
+            if (_tradeAllItems) return _tradeAllItems;
+            _tradeAllItems = [];
+            // Reliquias
+            if (typeof RELICS_DATA !== 'undefined') {
+                Object.keys(RELICS_DATA).forEach(function(name) {
+                    var rd = RELICS_DATA[name];
+                    _tradeAllItems.push({ type:'relic', name:name, img:rd.img||'', tier:rd.tier||'Raro', desc:rd.desc||'' });
+                });
+            }
+            // Runas
+            var RUNA_LIST = [
+                { name:'Runa de Ataque',    img:'https://i.ibb.co/ymhZtRyq/Captura-de-pantalla-2026-03-13-103855.png' },
+                { name:'Runa de Defensa',   img:'https://i.ibb.co/kVfTLvBB/Captura-de-pantalla-2026-03-13-103950.png' },
+                { name:'Runa de Portal',    img:'https://i.ibb.co/tpYnD4PZ/Captura-de-pantalla-2026-03-13-104032.png' },
+                { name:'Runa de Velocidad', img:'https://i.ibb.co/pvsxY1LW/Captura-de-pantalla-2026-03-13-104117.png' },
+            ];
+            RUNA_LIST.forEach(function(r) {
+                _tradeAllItems.push({ type:'runa', name:r.name, img:r.img, tier:'Runa', desc:'' });
+            });
+            return _tradeAllItems;
+        }
+
+        // ── Normalizar texto para búsqueda ──
+        function _tradeNorm(s) { return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+
+        // ── Tarjeta de ítem para los grids ──
+        function _tradeItemCard(item, onClick, selected) {
+            var tierColors = { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700', Runa:'#00ff88' };
+            var c = document.createElement('div');
+            c.style.cssText = 'border:2px solid '+(selected?'#00ff88':(tierColors[item.tier]||'#aaa'))+';border-radius:10px;padding:6px;text-align:center;cursor:pointer;background:'+(selected?'rgba(0,255,136,0.1)':'rgba(255,255,255,0.03)')+';transition:all .15s;';
+            c.title = item.name + (item.desc ? '\n'+item.desc : '');
+            c.innerHTML = '<img src="'+item.img+'" style="width:44px;height:44px;object-fit:contain;border-radius:6px;display:block;margin:0 auto 4px;" onerror="this.style.display=\'none\'">' +
+                '<div style="font-size:.58rem;color:#ccc;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+item.name+'</div>' +
+                '<div style="font-size:.52rem;color:'+(tierColors[item.tier]||'#aaa')+';">'+item.tier+'</div>';
+            c.onclick = onClick;
+            return c;
+        }
+
+        // ── Render grid de dar ──
+        function _tradeRenderGiveGrid(query, userInv) {
+            var grid = document.getElementById('trade-give-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+            var items = _tradeBuildCatalog();
+            var q = _tradeNorm(query||'');
+            var shown = 0;
+            items.forEach(function(item) {
+                if (q && !_tradeNorm(item.name).includes(q)) return;
+                // Verificar que el jugador tenga el ítem
+                var has = false;
+                if (item.type === 'relic') has = userInv.relics && (userInv.relics[item.name]||0) > 0;
+                if (item.type === 'runa')  has = userInv.runas && (userInv.runas[item.name.replace('Runa de ','').toLowerCase()]||0) > 0;
+                if (!has) return;
+                shown++;
+                var sel = _tradeGiveSelected && _tradeGiveSelected.name === item.name;
+                var card = _tradeItemCard(item, function() {
+                    _tradeGiveSelected = { type:item.type, name:item.name };
+                    var selDiv = document.getElementById('trade-give-selected');
+                    if (selDiv) {
+                        selDiv.style.display = 'flex';
+                        selDiv.innerHTML = '<img src="'+item.img+'" style="width:28px;height:28px;object-fit:contain;border-radius:4px;">' +
+                            '<span>'+item.name+'</span>' +
+                            '<span style="margin-left:auto;font-size:.62rem;color:#888;cursor:pointer;" onclick="_tradeGiveSelected=null;document.getElementById(\'trade-give-selected\').style.display=\'none\';_tradeRenderGiveGrid(document.getElementById(\'trade-give-search\').value,window._tradeUserInv||{})">✕</span>';
+                    }
+                    _tradeRenderGiveGrid(document.getElementById('trade-give-search').value, window._tradeUserInv||{});
+                }, sel);
+                grid.appendChild(card);
+            });
+            if (shown === 0) grid.innerHTML = '<div style="color:#555;font-size:.75rem;grid-column:1/-1;text-align:center;padding:10px;">'+(q?'Sin resultados para "'+query+'"':'No tienes ítems disponibles')+'</div>';
+        }
+
+        // ── Render grid de pedir ──
+        function _tradeRenderWantGrid(query) {
+            var grid = document.getElementById('trade-want-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+            var items = _tradeBuildCatalog();
+            var q = _tradeNorm(query||'');
+            var shown = 0;
+            items.forEach(function(item) {
+                if (q && !_tradeNorm(item.name).includes(q)) return;
+                shown++;
+                var sel = _tradeWantSelected.some(function(w){ return w.name===item.name; });
+                var card = _tradeItemCard(item, function() {
+                    var idx = _tradeWantSelected.findIndex(function(w){ return w.name===item.name; });
+                    if (idx >= 0) {
+                        _tradeWantSelected.splice(idx, 1);
+                    } else {
+                        if (_tradeWantSelected.length >= 3) { _tradeShowCreateMsg('Máximo 3 ítems a pedir.', true); return; }
+                        _tradeWantSelected.push({ type:item.type, name:item.name });
+                    }
+                    _tradeRenderWantSelected();
+                    _tradeRenderWantGrid(document.getElementById('trade-want-search').value);
+                }, sel);
+                grid.appendChild(card);
+            });
+            if (shown === 0) grid.innerHTML = '<div style="color:#555;font-size:.75rem;grid-column:1/-1;text-align:center;padding:10px;">'+(q?'Sin resultados para "'+query+'"':'Sin ítems disponibles')+'</div>';
+        }
+
+        function _tradeRenderWantSelected() {
+            var div = document.getElementById('trade-want-selected');
+            if (!div) return;
+            div.innerHTML = '';
+            _tradeWantSelected.forEach(function(item, i) {
+                var rd = (item.type==='relic' && typeof RELICS_DATA!=='undefined') ? RELICS_DATA[item.name] : null;
+                var img = rd ? rd.img : 'https://i.ibb.co/tpYnD4PZ/Captura-de-pantalla-2026-03-13-104032.png';
+                var chip = document.createElement('div');
+                chip.style.cssText = 'display:flex;align-items:center;gap:5px;background:rgba(200,100,255,0.1);border:1px solid #c864ff;border-radius:8px;padding:4px 8px;font-size:.7rem;color:#fff;';
+                chip.innerHTML = '<img src="'+img+'" style="width:20px;height:20px;object-fit:contain;border-radius:3px;">'+item.name+'<span style="cursor:pointer;color:#ff6688;margin-left:4px;" onclick="(function(i){_tradeWantSelected.splice(i,1);_tradeRenderWantSelected();_tradeRenderWantGrid(document.getElementById(\'trade-want-search\').value);})('+i+')">✕</span>';
+                div.appendChild(chip);
+            });
+        }
+
+        function _tradeShowCreateMsg(msg, isErr) {
+            var el = document.getElementById('trade-create-msg');
+            if (!el) return;
+            el.textContent = msg;
+            el.style.display = 'block';
+            el.style.color = isErr ? '#ff6688' : '#00ff88';
+            el.style.background = isErr ? 'rgba(255,51,102,0.1)' : 'rgba(0,255,136,0.08)';
+            el.style.border = '1px solid '+(isErr?'#ff3366':'#00ff88');
+            setTimeout(function(){ el.style.display='none'; }, 3500);
+        }
+
+        window.tradeFilterGive = function(q) { _tradeRenderGiveGrid(q, window._tradeUserInv||{}); };
+        window.tradeFilterWant = function(q) { _tradeRenderWantGrid(q); };
+        window.tradeFilterBrowse = function(q) { _tradeBrowseQuery=q; _tradeRenderOffersList(window._tradeOffersCache||[]); };
+
+        // ── Inicializar tab de intercambio ──
+        async function initTradeTab() {
+            var user = firebase.auth().currentUser;
+            if (!user) return;
+            _tradeBuildCatalog();
+            // Cargar inventario del jugador
+            var invSnap = await db.ref('users/'+user.uid+'/inventory').once('value');
+            var inv = invSnap.val() || {};
+            var runaSnap = await db.ref('users/'+user.uid+'/runas').once('value');
+            var runas = runaSnap.val() || {};
+            window._tradeUserInv = { relics: inv.relics||{}, runas: runas };
+            // Ver si tiene oferta activa
+            var myOfferSnap = await db.ref('trade_offers').orderByChild('uid').equalTo(user.uid).once('value');
+            var myOffers = myOfferSnap.val() || {};
+            var myActive = Object.entries(myOffers).find(function(e){ return e[1].status==='open'; });
+            if (myActive) {
+                _tradeMyOfferId = myActive[0];
+                _tradeRenderMyOffer(myActive[1]);
+                document.getElementById('trade-create-box').style.display = 'none';
+            } else {
+                _tradeMyOfferId = null;
+                document.getElementById('trade-my-offer-box').style.display = 'none';
+                document.getElementById('trade-create-box').style.display = 'block';
+            }
+            // Reset selección
+            _tradeGiveSelected = null;
+            _tradeWantSelected = [];
+            document.getElementById('trade-give-selected').style.display = 'none';
+            _tradeRenderWantSelected();
+            _tradeRenderGiveGrid('', window._tradeUserInv);
+            _tradeRenderWantGrid('');
+            loadTradeOffers();
+        }
+
+        function _tradeRenderMyOffer(offer) {
+            var box = document.getElementById('trade-my-offer-box');
+            var content = document.getElementById('trade-my-offer-content');
+            if (!box || !content) return;
+            box.style.display = 'block';
+            var giveRd = offer.give.type==='relic' && typeof RELICS_DATA!=='undefined' ? RELICS_DATA[offer.give.name] : null;
+            var giveImg = giveRd ? giveRd.img : '';
+            var wantHtml = (offer.want||[]).map(function(w){ var rd=w.type==='relic'&&typeof RELICS_DATA!=='undefined'?RELICS_DATA[w.name]:null; return '<span style="background:rgba(200,100,255,0.1);border:1px solid #c864ff;border-radius:6px;padding:3px 8px;font-size:.72rem;color:#fff;display:inline-flex;align-items:center;gap:4px;">'+(rd?'<img src="'+rd.img+'" style="width:16px;height:16px;object-fit:contain;border-radius:2px;">':'')+w.name+'</span>'; }).join(' ');
+            content.innerHTML = '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">' +
+                '<div style="font-size:.75rem;color:#aaa;">Doy:</div>' +
+                (giveImg?'<img src="'+giveImg+'" style="width:36px;height:36px;object-fit:contain;border-radius:6px;">':'') +
+                '<strong style="color:#fff;font-size:.8rem;">'+offer.give.name+'</strong>' +
+                '<div style="font-size:.75rem;color:#aaa;margin:0 4px;">→ Quiero:</div>' +
+                wantHtml + '</div>';
+        }
+
+        // ── Publicar oferta ──
+        window.publishTradeOffer = async function() {
+            var user = firebase.auth().currentUser;
+            if (!user) { _tradeShowCreateMsg('Debes iniciar sesión.', true); return; }
+            if (_tradeMyOfferId) { _tradeShowCreateMsg('Ya tienes una oferta activa. Cancélala primero.', true); return; }
+            if (!_tradeGiveSelected) { _tradeShowCreateMsg('Selecciona el ítem que vas a dar.', true); return; }
+            if (_tradeWantSelected.length === 0) { _tradeShowCreateMsg('Selecciona al menos 1 ítem a cambio.', true); return; }
+            // Verificar que tiene el ítem
+            var inv = window._tradeUserInv || {};
+            var hasGive = false;
+            if (_tradeGiveSelected.type==='relic') hasGive = (inv.relics||{})[_tradeGiveSelected.name] > 0;
+            if (_tradeGiveSelected.type==='runa')  hasGive = (inv.runas||{})[_tradeGiveSelected.name.replace('Runa de ','').toLowerCase()] > 0;
+            if (!hasGive) { _tradeShowCreateMsg('No tienes ese ítem en tu inventario.', true); return; }
+            // Reservar el ítem (quitarlo del inventario)
+            var updates = {};
+            if (_tradeGiveSelected.type==='relic') {
+                var curQty = (inv.relics||{})[_tradeGiveSelected.name] || 0;
+                updates['users/'+user.uid+'/inventory/relics/'+_tradeGiveSelected.name] = curQty - 1;
+            } else {
+                var runaKey = _tradeGiveSelected.name.replace('Runa de ','').toLowerCase();
+                var curRuna = (inv.runas||{})[runaKey] || 0;
+                updates['users/'+user.uid+'/runas/'+runaKey] = curRuna - 1;
+            }
+            var offerId = db.ref('trade_offers').push().key;
+            updates['trade_offers/'+offerId] = {
+                id: offerId, uid: user.uid, userName: user.displayName || 'Jugador',
+                give: _tradeGiveSelected, want: _tradeWantSelected,
+                status: 'open', ts: Date.now()
+            };
+            await db.ref().update(updates);
+            _tradeMyOfferId = offerId;
+            _tradeShowCreateMsg('✅ Oferta publicada correctamente.', false);
+            initTradeTab();
+        };
+
+        // ── Cancelar mi oferta ──
+        window.cancelMyTradeOffer = async function() {
+            if (!_tradeMyOfferId) return;
+            if (!confirm('¿Cancelar tu oferta y recuperar el ítem?')) return;
+            var user = firebase.auth().currentUser;
+            if (!user) return;
+            var snap = await db.ref('trade_offers/'+_tradeMyOfferId).once('value');
+            var offer = snap.val();
+            if (!offer || offer.status !== 'open') { alert('Esta oferta ya no está disponible.'); return; }
+            var updates = {};
+            updates['trade_offers/'+_tradeMyOfferId+'/status'] = 'cancelled';
+            // Devolver el ítem al inventario
+            if (offer.give.type==='relic') {
+                var invSnap = await db.ref('users/'+user.uid+'/inventory/relics/'+offer.give.name).once('value');
+                updates['users/'+user.uid+'/inventory/relics/'+offer.give.name] = (invSnap.val()||0) + 1;
+            } else {
+                var runaKey2 = offer.give.name.replace('Runa de ','').toLowerCase();
+                var runaSnap2 = await db.ref('users/'+user.uid+'/runas/'+runaKey2).once('value');
+                updates['users/'+user.uid+'/runas/'+runaKey2] = (runaSnap2.val()||0) + 1;
+            }
+            await db.ref().update(updates);
+            _tradeMyOfferId = null;
+            initTradeTab();
+        };
+
+        // ── Cargar ofertas disponibles ──
+        window.loadTradeOffers = async function() {
+            var list = document.getElementById('trade-offers-list');
+            if (!list) return;
+            list.innerHTML = '<div style="text-align:center;color:#444;font-size:.8rem;padding:20px;">Cargando...</div>';
+            var snap = await db.ref('trade_offers').orderByChild('status').equalTo('open').once('value');
+            var offers = [];
+            snap.forEach(function(child){ offers.push(child.val()); });
+            window._tradeOffersCache = offers;
+            _tradeRenderOffersList(offers);
+        };
+
+        function _tradeRenderOffersList(offers) {
+            var list = document.getElementById('trade-offers-list');
+            var user = firebase.auth().currentUser;
+            if (!list) return;
+            var q = _tradeNorm(_tradeBrowseQuery);
+            var filtered = offers.filter(function(o) {
+                if (!q) return true;
+                if (_tradeNorm(o.give.name).includes(q)) return true;
+                if ((o.want||[]).some(function(w){ return _tradeNorm(w.name).includes(q); })) return true;
+                return false;
+            });
+            if (filtered.length === 0) { list.innerHTML = '<div style="text-align:center;color:#444;font-size:.8rem;padding:30px;">No hay ofertas disponibles'+(_tradeBrowseQuery?' para "'+_tradeBrowseQuery+'"':'')+'</div>'; return; }
+            list.innerHTML = '';
+            filtered.forEach(function(offer) {
+                var isOwn = user && offer.uid === user.uid;
+                var card = document.createElement('div');
+                card.style.cssText = 'background:rgba(0,10,25,0.6);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;';
+                var giveRd = offer.give.type==='relic'&&typeof RELICS_DATA!=='undefined'?RELICS_DATA[offer.give.name]:null;
+                var giveImg = giveRd?giveRd.img:'';
+                var wantHtml = (offer.want||[]).map(function(w){ var rd=w.type==='relic'&&typeof RELICS_DATA!=='undefined'?RELICS_DATA[w.name]:null; return '<span style="background:rgba(200,100,255,0.08);border:1px solid rgba(200,100,255,0.4);border-radius:6px;padding:3px 8px;font-size:.7rem;color:#fff;display:inline-flex;align-items:center;gap:3px;">'+(rd?'<img src="'+rd.img+'" style="width:14px;height:14px;object-fit:contain;border-radius:2px;">':'')+w.name+'</span>'; }).join('');
+                var tierColor = (giveRd && { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700' }[giveRd.tier]) || '#aaa';
+                card.innerHTML = (giveImg?'<img src="'+giveImg+'" style="width:50px;height:50px;object-fit:contain;border-radius:8px;border:1px solid '+tierColor+';">':'') +
+                    '<div style="flex:1;min-width:0;">' +
+                    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">' +
+                    '<span style="font-size:.82rem;color:#fff;font-weight:600;">'+offer.give.name+'</span>' +
+                    '<span style="font-size:.6rem;color:#555;">por '+offer.userName+'</span>' +
+                    (isOwn?'<span style="font-size:.6rem;background:rgba(255,170,0,0.15);border:1px solid #ffaa00;color:#ffaa00;border-radius:4px;padding:1px 5px;">Mi oferta</span>':'')+'</div>' +
+                    '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="font-size:.68rem;color:#888;">A cambio:</span>'+wantHtml+'</div></div>' +
+                    (!isOwn?'<button onclick="acceptTradeOffer(\''+offer.id+'\')" style="background:linear-gradient(135deg,#001a40,#0055cc);border:2px solid #4fc3f7;color:#4fc3f7;border-radius:8px;padding:8px 16px;cursor:pointer;font-family:Orbitron,sans-serif;font-size:.68rem;white-space:nowrap;">🤝 Intercambiar</button>':'');
+                list.appendChild(card);
+            });
+        }
+
+        // ── Aceptar una oferta ──
+        window.acceptTradeOffer = async function(offerId) {
+            var user = firebase.auth().currentUser;
+            if (!user) { alert('Debes iniciar sesión.'); return; }
+            var snap = await db.ref('trade_offers/'+offerId).once('value');
+            var offer = snap.val();
+            if (!offer || offer.status !== 'open') { alert('Esta oferta ya no está disponible.'); loadTradeOffers(); return; }
+            if (offer.uid === user.uid) { alert('No puedes aceptar tu propia oferta.'); return; }
+            // Verificar que el aceptante tiene todos los ítems pedidos
+            var invSnap2 = await db.ref('users/'+user.uid+'/inventory').once('value');
+            var inv2 = invSnap2.val() || {};
+            var runaSnap3 = await db.ref('users/'+user.uid+'/runas').once('value');
+            var runas3 = runaSnap3.val() || {};
+            var missing = [];
+            for (var i=0; i<offer.want.length; i++) {
+                var w = offer.want[i];
+                if (w.type==='relic') { if (!((inv2.relics||{})[w.name]>0)) missing.push(w.name); }
+                if (w.type==='runa')  { if (!((runas3||{})[w.name.replace('Runa de ','').toLowerCase()]>0)) missing.push(w.name); }
+            }
+            if (missing.length > 0) { alert('Te faltan estos ítems para este intercambio:\n• '+missing.join('\n• ')); return; }
+            if (!confirm('¿Confirmar intercambio?\n\nDarás: '+offer.want.map(function(w){return w.name;}).join(', ')+'\nRecibirás: '+offer.give.name)) return;
+            // Ejecutar el intercambio en una transacción
+            var updates = {};
+            updates['trade_offers/'+offerId+'/status'] = 'completed';
+            updates['trade_offers/'+offerId+'/completedBy'] = user.uid;
+            updates['trade_offers/'+offerId+'/completedAt'] = Date.now();
+            // Aceptante da los ítems pedidos y recibe el ítem ofrecido
+            offer.want.forEach(function(w) {
+                if (w.type==='relic') {
+                    var cur = (inv2.relics||{})[w.name]||0;
+                    updates['users/'+user.uid+'/inventory/relics/'+w.name] = cur - 1;
+                    // Publicador recibe
+                    updates['users/'+offer.uid+'/inventory/relics/'+w.name] = db.ServerValue ? null : null; // se hace por separado
+                } else {
+                    var rk = w.name.replace('Runa de ','').toLowerCase();
+                    updates['users/'+user.uid+'/runas/'+rk] = (runas3[rk]||0) - 1;
+                }
+            });
+            // Aceptante recibe el ítem que el publicador ofreció
+            if (offer.give.type==='relic') {
+                var curAcc = (inv2.relics||{})[offer.give.name]||0;
+                updates['users/'+user.uid+'/inventory/relics/'+offer.give.name] = curAcc + 1;
+            } else {
+                var rk2 = offer.give.name.replace('Runa de ','').toLowerCase();
+                updates['users/'+user.uid+'/runas/'+rk2] = (runas3[rk2]||0) + 1;
+            }
+            await db.ref().update(updates);
+            // Dar al publicador los ítems pedidos (segunda escritura porque necesita leer su inventario)
+            for (var j=0; j<offer.want.length; j++) {
+                var ww = offer.want[j];
+                if (ww.type==='relic') {
+                    var pubInvSnap = await db.ref('users/'+offer.uid+'/inventory/relics/'+ww.name).once('value');
+                    await db.ref('users/'+offer.uid+'/inventory/relics/'+ww.name).set((pubInvSnap.val()||0)+1);
+                } else {
+                    var rk3 = ww.name.replace('Runa de ','').toLowerCase();
+                    var pubRunaSnap = await db.ref('users/'+offer.uid+'/runas/'+rk3).once('value');
+                    await db.ref('users/'+offer.uid+'/runas/'+rk3).set((pubRunaSnap.val()||0)+1);
+                }
+            }
+            // Notificación al publicador
+            await db.ref('users/'+offer.uid+'/notifications').push({
+                type:'trade_completed', msg:'🤝 Tu intercambio de '+offer.give.name+' fue aceptado por '+(user.displayName||'un jugador')+'. Revisa tu inventario.',
+                ts: Date.now(), read: false
+            });
+            alert('✅ ¡Intercambio completado! Revisa tu inventario.');
+            updateLobbyHUD();
+            loadTradeOffers();
+        };
+
+        async function hasRankedTeams(callback) {
             getRankedTeams(function(data) {
                 callback(data && data.attack && data.attack.length >= 5 && data.defense && data.defense.length >= 5);
             });
