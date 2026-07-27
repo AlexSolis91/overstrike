@@ -243,7 +243,7 @@
             <!-- Logo: sin emoji, pegado a la izquierda -->
             <div style="display:flex;flex-direction:column;gap:2px;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;white-space:nowrap;">OVERSTRIKE</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260913</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260914</div>
             </div>
 
             <!-- HUD: empujado todo a la derecha junto al botón mute -->
@@ -660,7 +660,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260913"></script>
+    <script src="js/firebase-auth.js?v=20260914"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -1548,13 +1548,25 @@
         };
         window.BOSS_DATA = BOSS_DATA;
 
+        // Colores originales de cada tarjeta de boss
+        var _bossCardStyles = {
+            'broly':            { border:'2px solid rgba(255,68,68,0.3)',   bg:'rgba(255,68,68,0.08)' },
+            'lich_king':        { border:'2px solid rgba(100,0,200,0.3)',   bg:'rgba(100,0,200,0.08)' },
+            'albus_dumbledore': { border:'2px solid rgba(0,150,80,0.3)',    bg:'rgba(0,150,80,0.08)' },
+            'bolvar_fordragon': { border:'2px solid rgba(200,100,0,0.3)',   bg:'rgba(200,100,0,0.08)' },
+            'balrog':           { border:'2px solid rgba(180,20,20,0.3)',   bg:'rgba(180,20,20,0.08)' },
+        };
+
         function adminSelectBoss(bossId, el) {
             document.getElementById('admin-boss-select').value = bossId;
-            // Highlight selected card — buscar en todos los divs con id bosscard-*
-            document.querySelectorAll('[id^="bosscard-"]').forEach(function(c) {
-                c.style.border = c.style.border.replace('#ffd700','rgba(255,255,255,0.2)');
-                c.style.background = c.style.background.replace('rgba(255,215,0,0.12)','rgba(0,0,0,0.1)');
+            // Reset todos los cards a su color original
+            Object.keys(_bossCardStyles).forEach(function(id) {
+                var card = document.getElementById('bosscard-' + id);
+                if (!card) return;
+                card.style.border = _bossCardStyles[id].border;
+                card.style.background = _bossCardStyles[id].bg;
             });
+            // Highlight el seleccionado en dorado
             if (el) {
                 el.style.border = '2px solid #ffd700';
                 el.style.background = 'rgba(255,215,0,0.12)';
@@ -1627,9 +1639,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260913"></script>
+    <script src="js/characters.js?v=20260914"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260913"></script>
+    <script src="js/audio-state.js?v=20260914"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2426,26 +2438,26 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260913"></script>
+    <script src="js/ai-engine.js?v=20260914"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260913"></script>
+    <script src="js/init-render.js?v=20260914"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260913"></script>
+    <script src="js/turn-logic.js?v=20260914"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260913"></script>
+    <script src="js/status-effects.js?v=20260914"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260913"></script>
+    <script src="js/debuffs.js?v=20260914"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260913"></script>
+    <script src="js/summons.js?v=20260914"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260913"></script>
+    <script src="js/ability-select.js?v=20260914"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260913"></script>
+<script src="js/skills.js?v=20260914"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260913"></script>
-    <script src="js/horda-mode.js?v=20260913"></script>
-    <script src="js/horda-abilities.js?v=20260913"></script>
-    <script src="js/horda-battle.js?v=20260913"></script>
+    <script src="js/jefe-de-sala.js?v=20260914"></script>
+    <script src="js/horda-mode.js?v=20260914"></script>
+    <script src="js/horda-abilities.js?v=20260914"></script>
+    <script src="js/horda-battle.js?v=20260914"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
