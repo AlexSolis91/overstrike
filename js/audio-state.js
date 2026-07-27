@@ -63,7 +63,7 @@
                 if (dbEl) { try { dbEl.pause(); dbEl.currentTime = 0; } catch(e) {} }
                 const hrEl = document.getElementById('audioHordaRun');
                 if (hrEl) { try { hrEl.pause(); hrEl.currentTime = 0; } catch(e) {} }
-                if (this.currentTrack && (this.currentTrack.startsWith('audioBattle') || this.currentTrack === 'audioBossLichKing' || this.currentTrack === 'audioBossDumbledore' || this.currentTrack === 'audioHordaRun')) {
+                if (this.currentTrack && (this.currentTrack.startsWith('audioBattle') || this.currentTrack === 'audioBossLichKing' || this.currentTrack === 'audioBossDumbledore' || this.currentTrack === 'audioBossBalrog' || this.currentTrack === 'audioHordaRun')) {
                     this.currentTrack = null;
                 }
             },
@@ -144,7 +144,7 @@
             toggleMute: function() {
                 this.muted = !this.muted;
                 if (this.muted) {
-                    ['audioMenu','audioBattle1','audioBattle2','audioBattle3','audioBattle4','audioBattle5','audioBattle6','audioBattle7','audioBattle8','audioBattle9','audioBattle10','audioBattle11','audioBossLichKing','audioBossDumbledore','audioHordaRun','audioSelect'].forEach(function(id) {
+                    ['audioMenu','audioBattle1','audioBattle2','audioBattle3','audioBattle4','audioBattle5','audioBattle6','audioBattle7','audioBattle8','audioBattle9','audioBattle10','audioBattle11','audioBossLichKing','audioBossDumbledore','audioBossBalrog','audioHordaRun','audioSelect'].forEach(function(id) {
                         const e = document.getElementById(id);
                         if (e) e.pause();
                     });
