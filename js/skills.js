@@ -11039,7 +11039,7 @@
                     gameState.summons[_clonId] = {
                         id: _clonId, name: 'Clon de Kurumi', summoner: gameState.selectedCharacter, team: _khTeam,
                         hp: 20, maxHp: 20, isDead: false, statusEffects: [],
-                        img: 'https://i.ibb.co/0RGHQJQv/Whats-App-Image-2026-07-24-at-4-36-52-PM.jpg',
+                        img: 'https://i.ibb.co/spQG6Ryv/Whats-App-Image-2026-07-24-at-4-36-52-PM.jpg',
                         passive: 'Sombra Protectora: absorbe todo el daño que fuera a recibir su invocador. Al morir, causa 8 daño repartido entre todos los enemigos.'
                     };
                     if (typeof renderSummons === 'function') renderSummons();
