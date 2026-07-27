@@ -36,8 +36,13 @@
     // BOSS_ABILITIES — abilities por boss (mapeadas por nombre)
     // ─────────────────────────────────────────────────────────────────────────
     var BOSS_ABILITIES = {
+        'Balrog': [
+            { name:'Azote de Sombra',     type:'basic',   cost:0,  chargeGain:2, damage:4,  target:'single', effect:'azote_sombra_balrog',      description:'4 daño ST. Si el objetivo tiene Quemaduras, Balrog recupera 10 HP. Si tiene Miedo, 50% de crítico. Si tiene Debilitar, genera 4 cargas adicionales.' },
+            { name:'Látigo de Fuego',     type:'special', cost:5,  chargeGain:0, damage:4,  target:'single', effect:'latigo_fuego_balrog',      description:'4 daño + 2 daño adicional por cada debuff activo en el equipo enemigo. Si el objetivo muere, Balrog genera 20 cargas.' },
+            { name:'Rugido del Abismo',   type:'special', cost:5,  chargeGain:0, damage:3,  target:'aoe',    effect:'rugido_abismo_balrog',     description:'3 daño AOE. Elimina las cargas de los objetivos y causa 1 daño adicional por cada carga eliminada. Balrog gana Frenesí 2T y Armadura 2T.' },
+            { name:'Furia del Valaraukar',type:'over',    cost:20, chargeGain:5, damage:30, target:'aoe',    effect:'furia_valaraukar_balrog',   description:'30 daño AOE. 50% de crítico. Si el enemigo sobrevive, recibe Quemaduras 10HP.' }
+        ],
         'Broly': [
-            { name:'Eraser Cannon', type:'basic',   cost:0,  chargeGain:3, damage:3,  target:'single', effect:'eraser_cannon_broly',           description:'3 daño ST. Si genera cargas dobles al objetivo, duplica la generación de cargas.' },
             { name:'Onda de Destrucción', type:'special', cost:8, chargeGain:0, damage:5, target:'aoe', effect:'onda_destruccion_broly',        description:'5 daño AOE. Si todos los enemigos tienen debuffs, +2 daño adicional.' },
             { name:'Liberación de Energía', type:'special', cost:10, chargeGain:0, damage:7, target:'aoe', effect:'liberacion_energia_broly',   description:'7 daño AOE. Aplica Sangrado 2HP 2T a todos los enemigos.' },
             { name:'Omega Bláster', type:'over', cost:20, chargeGain:0, damage:20, target:'single', effect:'omega_blaster_broly',               description:'20 daño ST. Roba TODAS las cargas enemigas. +1 daño por carga robada a 2 enemigos.' }
@@ -67,6 +72,10 @@
     // BOSS_DEFAULT_PASSIVES — pasiva por defecto si Firebase no envía boss.passive
     // ─────────────────────────────────────────────────────────────────────────
     var BOSS_DEFAULT_PASSIVES = {
+        'Balrog': {
+            name: 'Valaraukar',
+            description: 'Inmune a Quemaduras, Aturdimiento, Mega Aturdimiento, Congelación, Megacongelación, Posesión, Mega Posesión, Confusión y Miedo. Al inicio de cada ronda 50% de aplicar Miedo 1T a cada enemigo, 50% de Quemaduras 3HP, 50% de Debilitar 1T. Cada vez que un enemigo usa especial Balrog genera 2 cargas; si usa Over, genera 5 cargas.'
+        },
         'Albus Dumbledore': {
             name: 'Maestría de la Varita de Saúco',
             description: 'Albus Dumbledore es inmune a debuffs. Cada vez que un enemigo realiza un ataque especial u Over, Albus Dumbledore se cura 30 HP y genera 3 cargas. Cada vez que un enemigo recibe daño por debuff Quemaduras, Albus Dumbledore genera 5 cargas. Al inicio de cada ronda, Albus Dumbledore genera 3 cargas por cada enemigo derrotado.'
