@@ -61,6 +61,8 @@
                 if (lkEl) { try { lkEl.pause(); lkEl.currentTime = 0; } catch(e) {} }
                 const dbEl = document.getElementById('audioBossDumbledore');
                 if (dbEl) { try { dbEl.pause(); dbEl.currentTime = 0; } catch(e) {} }
+                const balEl = document.getElementById('audioBossBalrog');
+                if (balEl) { try { balEl.pause(); balEl.currentTime = 0; } catch(e) {} }
                 const hrEl = document.getElementById('audioHordaRun');
                 if (hrEl) { try { hrEl.pause(); hrEl.currentTime = 0; } catch(e) {} }
                 if (this.currentTrack && (this.currentTrack.startsWith('audioBattle') || this.currentTrack === 'audioBossLichKing' || this.currentTrack === 'audioBossDumbledore' || this.currentTrack === 'audioBossBalrog' || this.currentTrack === 'audioHordaRun')) {
