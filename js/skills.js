@@ -1180,6 +1180,10 @@
                 ? (gameState._gmOverrideFinalDamage) : (ability.damage);
             gameState._gmOverrideFinalDamage = null;
             let finalChargeGain = ability.chargeGain;
+            // ARCO DEL KITAN: +_arcoDmgBonus al daño del básico (acumulado por debuffs enemigos disipados)
+            if (ability.type === 'basic' && attacker && (attacker._arcoDmgBonus||0) > 0) {
+                finalDamage += attacker._arcoDmgBonus;
+            }
             // ESPÍRITU DEL HÉROE (Saitama): +accumulated bonus on basic attacks
             if (ability.type === 'basic' && attacker.passive && attacker.passive.name === 'Espíritu del Héroe') {
                 finalChargeGain = (ability.chargeGain || 1) + (attacker.saitamaBasicChargeBonus || 0);
