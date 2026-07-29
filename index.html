@@ -248,7 +248,7 @@
             <!-- Logo: sin emoji, pegado a la izquierda -->
             <div style="display:flex;flex-direction:column;gap:2px;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;white-space:nowrap;">OVERSTRIKE</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260934</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260935</div>
             </div>
 
             <!-- HUD: empujado todo a la derecha junto al botón mute -->
@@ -649,7 +649,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260934"></script>
+    <script src="js/firebase-auth.js?v=20260935"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -760,9 +760,37 @@
                                     }
                                     // Radar del Dragón: invocación al inicio de partida
                                     if (rd.effect === 'radar_dragon') {
-                                        // Delay de 2000ms para asegurar que gameState, summons y
-                                        // triggerSJWArisePassive estén completamente inicializados
                                         setTimeout(function(){ if (typeof window.triggerRadarDragon === 'function') window.triggerRadarDragon(charName); }, 2000);
+                                    }
+                                    // Uniforme de Cazademonios: Anticipación permanente
+                                    if (rd.effect === 'uniforme_cazademonios' && !ch._uniformeCaza) {
+                                        ch._uniformeCaza = true;
+                                        if (!(ch.statusEffects||[]).some(function(e){ return e&&e.name==='Anticipación'; }))
+                                            ch.statusEffects = (ch.statusEffects||[]).concat([{name:'Anticipación',type:'buff',duration:999,permanent:true,passiveHidden:true,emoji:'👁️',anticipacion:true}]);
+                                    }
+                                    // Haori de Roca: Provocación + Anticipación permanentes
+                                    if (rd.effect === 'haori_roca' && !ch._haoriRoca) {
+                                        ch._haoriRoca = true;
+                                        if (!(ch.statusEffects||[]).some(function(e){ return e&&e.name==='Provocacion'; }))
+                                            ch.statusEffects = (ch.statusEffects||[]).concat([{name:'Provocacion',type:'buff',duration:999,permanent:true,passiveHidden:true,emoji:'🛡️'}]);
+                                        if (!(ch.statusEffects||[]).some(function(e){ return e&&e.name==='Anticipación'; }))
+                                            ch.statusEffects = (ch.statusEffects||[]).concat([{name:'Anticipación',type:'buff',duration:999,permanent:true,passiveHidden:true,emoji:'👁️',anticipacion:true}]);
+                                    }
+                                    // Fulgor Argénteo: Protección Sagrada permanente
+                                    if (rd.effect === 'fulgor_argenteo' && !ch._fulgorArgenteo) {
+                                        ch._fulgorArgenteo = true;
+                                        if (!(ch.statusEffects||[]).some(function(e){ return e&&e.name==='Proteccion Sagrada'; }))
+                                            ch.statusEffects = (ch.statusEffects||[]).concat([{name:'Proteccion Sagrada',type:'buff',duration:999,permanent:true,passiveHidden:true,emoji:'✨'}]);
+                                    }
+                                    // Talismán de Hermes: +3 velocidad al equipo aliado al inicio
+                                    if (rd.effect === 'talisman_hermes' && !ch._talismanHermes) {
+                                        ch._talismanHermes = true;
+                                        // Aplicar a todos los aliados
+                                        var _thTeam = ch.team;
+                                        for (var _thn in gameState.characters) {
+                                            var _thc = gameState.characters[_thn];
+                                            if (_thc && _thc.team === _thTeam) _thc.speed = (_thc.speed||80) + 3;
+                                        }
                                     }
                                 });
                             }
@@ -1644,9 +1672,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260934"></script>
+    <script src="js/characters.js?v=20260935"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260934"></script>
+    <script src="js/audio-state.js?v=20260935"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2443,26 +2471,26 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260934"></script>
+    <script src="js/ai-engine.js?v=20260935"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260934"></script>
+    <script src="js/init-render.js?v=20260935"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260934"></script>
+    <script src="js/turn-logic.js?v=20260935"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260934"></script>
+    <script src="js/status-effects.js?v=20260935"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260934"></script>
+    <script src="js/debuffs.js?v=20260935"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260934"></script>
+    <script src="js/summons.js?v=20260935"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260934"></script>
+    <script src="js/ability-select.js?v=20260935"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260934"></script>
+<script src="js/skills.js?v=20260935"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260934"></script>
-    <script src="js/horda-mode.js?v=20260934"></script>
-    <script src="js/horda-abilities.js?v=20260934"></script>
-    <script src="js/horda-battle.js?v=20260934"></script>
+    <script src="js/jefe-de-sala.js?v=20260935"></script>
+    <script src="js/horda-mode.js?v=20260935"></script>
+    <script src="js/horda-abilities.js?v=20260935"></script>
+    <script src="js/horda-battle.js?v=20260935"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
