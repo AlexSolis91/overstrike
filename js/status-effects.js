@@ -564,6 +564,25 @@ function processBurnEffects(charName) {
                     }
                 }
             }
+            // FRAGMENTO DE LA LUZ: cuando un ENEMIGO se cura → escudo 2HP a todos los aliados del portador
+            if (_actual > 0 && !passiveExecuting && _ch) {
+                for (const _flN in gameState.characters) {
+                    const _flC = gameState.characters[_flN];
+                    if (!_flC || _flC.isDead || _flC.hp <= 0) continue;
+                    if (!(_flC.equippedRelics||[]).includes('Fragmento de la Luz')) continue;
+                    // Solo activa si el curado es del equipo ENEMIGO del portador
+                    if (_flC.team === _ch.team) continue;
+                    // Dar escudo 2HP a todos los aliados del portador
+                    for (const _aln in gameState.characters) {
+                        const _alc = gameState.characters[_aln];
+                        if (!_alc || _alc.team !== _flC.team || _alc.isDead || _alc.hp <= 0) continue;
+                        _alc.shield = (_alc.shield||0) + 2;
+                    }
+                    addLog('💎 Fragmento de la Luz: ' + _flN + ' — equipo aliado gana Escudo 2HP (enemigo se curó)', 'buff');
+                    break;
+                }
+            }
+
             // ADAPTACION REACTIVA: disparar cuando Doomsday recupera HP por curación
             if (_actual > 0 && typeof triggerAdaptacionReactivaHeal === 'function') {
                 triggerAdaptacionReactivaHeal(charName);
