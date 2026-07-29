@@ -3899,12 +3899,14 @@
                 var medal = _entryLg ? '<span style="font-size:1.2rem;">' + _entryLg.icon + '</span>' : (i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '<span style="font-family:Orbitron,sans-serif;font-size:.8rem;color:#666;">' + (i+1) + '</span>');
                 // Colores por liga
                 var lgColors = {
-                    'Bronce':      { bg: 'rgba(180,100,30,0.10)',  border: 'rgba(205,127,50,0.40)',  glow: 'rgba(205,127,50,0.12)',  accent: '#cd7f32' },
-                    'Plata':       { bg: 'rgba(180,180,200,0.08)', border: 'rgba(192,192,192,0.35)', glow: 'rgba(192,192,192,0.10)', accent: '#c0c0c0' },
-                    'Oro':         { bg: 'rgba(255,200,0,0.09)',   border: 'rgba(255,215,0,0.40)',   glow: 'rgba(255,215,0,0.14)',   accent: '#ffd700' },
-                    'Diamante':    { bg: 'rgba(0,200,255,0.08)',   border: 'rgba(0,220,255,0.35)',   glow: 'rgba(0,200,255,0.12)',   accent: '#00d4ff' },
-                    'Campeones':     { bg: 'rgba(160,0,255,0.10)',   border: 'rgba(180,50,255,0.40)',  glow: 'rgba(160,0,255,0.16)',   accent: '#b432ff' },
-                    'Leyenda':{ bg: 'rgba(231,76,60,0.10)',    border: 'rgba(231,76,60,0.45)',    glow: 'rgba(231,76,60,0.18)',    accent: '#e74c3c' },
+                    'Bronce':    { bg: 'rgba(180,100,30,0.10)',  border: 'rgba(205,127,50,0.40)',  glow: 'rgba(205,127,50,0.12)',  accent: '#cd7f32' },
+                    'Plata':     { bg: 'rgba(180,180,200,0.08)', border: 'rgba(192,192,192,0.35)', glow: 'rgba(192,192,192,0.10)', accent: '#c0c0c0' },
+                    'Oro':       { bg: 'rgba(255,200,0,0.09)',   border: 'rgba(255,215,0,0.40)',   glow: 'rgba(255,215,0,0.14)',   accent: '#ffd700' },
+                    'Platino':   { bg: 'rgba(255,140,0,0.09)',   border: 'rgba(255,140,0,0.40)',   glow: 'rgba(255,140,0,0.14)',   accent: '#ff8c00' },
+                    'Diamante':  { bg: 'rgba(0,200,255,0.08)',   border: 'rgba(0,220,255,0.35)',   glow: 'rgba(0,200,255,0.12)',   accent: '#00d4ff' },
+                    'Campeones': { bg: 'rgba(160,0,255,0.10)',   border: 'rgba(180,50,255,0.40)',  glow: 'rgba(160,0,255,0.16)',   accent: '#b432ff' },
+                    'Master':    { bg: 'rgba(0,229,255,0.09)',   border: 'rgba(0,229,255,0.40)',   glow: 'rgba(0,229,255,0.14)',   accent: '#00e5ff' },
+                    'Leyenda':   { bg: 'rgba(231,76,60,0.10)',   border: 'rgba(231,76,60,0.45)',   glow: 'rgba(231,76,60,0.18)',   accent: '#e74c3c' },
                 };
                 var lgC = lgColors[e.league.name] || lgColors['Bronce'];
                 var bgGlow  = lgC.bg;
