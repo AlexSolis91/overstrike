@@ -492,27 +492,46 @@
         // ── PASIVA FALANGE (Leonidas): 2 cargas a aliado aleatorio cuando enemigo usa Special ──
         
         function triggerAnticipacion(attackerName, attackerTeam) {
-            // Anticipacion: when enemy gains extra turn, chars with this buff fire 3 basics on attacker
-            // Yoda has PASIVA Anticipacion (permanent, no buff needed)
+            // Anticipacion: cuando un enemigo gana turno adicional, personajes con este buff
+            // ejecutan 3 ataques básicos COMPLETOS (daño + efectos + cargas) sobre ese enemigo
+            // ANTES de que el turno adicional se ejecute.
             const defenderTeam = attackerTeam === 'team1' ? 'team2' : 'team1';
             Object.keys(gameState.characters).forEach(function(n) {
                 const c = gameState.characters[n];
                 if (!c || c.isDead || c.hp <= 0) return;
                 if (c.team !== defenderTeam) return;
-                // Check: has Anticipacion buff OR has Sabiduría Antigua passive (Yoda)
-                const hasAnticipacion = hasStatusEffect(n, 'Anticipacion') ||
+                const hasAnticipacion = hasStatusEffect(n, 'Anticipacion') || hasStatusEffect(n, 'Anticipación') ||
                     (c.passive && c.passive.name === 'Sabiduría Antigua');
                 if (!hasAnticipacion) return;
-                const basic = c.abilities && c.abilities.find(function(a) { return a.type === 'basic'; });
+                const basic = c.abilities && c.abilities.find(function(a) { return a && a.type === 'basic'; });
                 if (!basic) return;
                 if (passiveExecuting) return;
+                // Verificar que el objetivo sigue vivo antes de atacar
+                const target = gameState.characters[attackerName];
+                if (!target || target.isDead || target.hp <= 0) return;
+                addLog('⚡ Anticipación: ' + n + ' ejecuta 3 ataques básicos sobre ' + attackerName + ' (turno adicional interceptado)', 'buff');
+                const _prevChar = gameState.selectedCharacter;
+                const _prevAb   = gameState.selectedAbility;
+                const _prevTgt  = gameState.selectedTarget;
                 passiveExecuting = true;
-                addLog('⚡ Anticipación: ' + n + ' ejecuta 3 ataques básicos sobre ' + attackerName, 'buff');
                 for (let hit = 0; hit < 3; hit++) {
-                    applyDamageWithShield(attackerName, basic.damage || 1, n);
-                    c.charges = Math.min(20, (c.charges || 0) + (basic.chargeGain || 1));
+                    // Verificar que el objetivo sigue vivo en cada golpe
+                    const _tgt = gameState.characters[attackerName];
+                    if (!_tgt || _tgt.isDead || _tgt.hp <= 0) {
+                        addLog('⚡ Anticipación: ' + attackerName + ' fue eliminado — turno adicional cancelado', 'buff');
+                        break;
+                    }
+                    gameState.selectedCharacter = n;
+                    gameState.selectedAbility   = basic;
+                    gameState._abilityExecuting  = false;
+                    passiveExecuting = false; // permitir que _executeAbilityCore corra efectos
+                    try { _executeAbilityCore(attackerName); } catch(e) { console.error('[Anticipación golpe '+(hit+1)+']', e); }
+                    passiveExecuting = true;
                 }
                 passiveExecuting = false;
+                gameState.selectedCharacter = _prevChar;
+                gameState.selectedAbility   = _prevAb;
+                gameState.selectedTarget    = _prevTgt;
             });
         }
         function triggerFalange(attackerTeam) {
