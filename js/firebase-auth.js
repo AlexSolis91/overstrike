@@ -5160,13 +5160,12 @@
             }
 
             function _loadForCharacter(charName, uid) {
-                if (!uid) return; // sin uid no podemos cargar reliquias — evitar leer del uid incorrecto
+                if (!uid) return Promise.resolve();
                 var ch = gameState.characters[charName];
-                if (!ch) return;
-                // Permitir recarga si las reliquias actuales vienen de un uid diferente (asignación errónea)
-                if (ch.equippedRelics && ch._relicsLoadedFromUid === uid) return; // ya cargadas del uid correcto
+                if (!ch) return Promise.resolve();
+                if (ch.equippedRelics && ch._relicsLoadedFromUid === uid) return Promise.resolve();
                 var baseName = ch.baseName || charName.replace(/ v\d+$/, '');
-                db.ref('users/' + uid + '/characters/' + baseName + '/slots_v2').once('value').then(function(snap) {
+                return db.ref('users/' + uid + '/characters/' + baseName + '/slots_v2').once('value').then(function(snap) {
                     var slotsObj = snap.val();
                     if (!slotsObj) { ch.equippedRelics = []; ch._relicsLoadedFromUid = uid; return; }
                     var relicNames = SLOT_KEYS.map(function(k){ return slotsObj[k]; }).filter(Boolean);
@@ -5183,10 +5182,12 @@
             // _rankedDefenseOwnerUid (ranked vs IA defensa). Usar el que esté disponible.
             var resolvedOpponentUid = window._opponentUid || window._rankedDefenseOwnerUid || null;
 
+            var _relicPromises = [];
+
             if (currentUser) {
                 Object.keys(gameState.characters).forEach(function(charName) {
                     var c = gameState.characters[charName];
-                    if (c && c.team === myTeam) _loadForCharacter(charName, currentUser.uid);
+                    if (c && c.team === myTeam) _relicPromises.push(_loadForCharacter(charName, currentUser.uid));
                 });
             }
 
@@ -5194,18 +5195,18 @@
                 var oppTeam = myTeam === 'team1' ? 'team2' : 'team1';
                 Object.keys(gameState.characters).forEach(function(charName) {
                     var c = gameState.characters[charName];
-                    if (c && c.team === oppTeam) _loadForCharacter(charName, resolvedOpponentUid);
+                    if (c && c.team === oppTeam) _relicPromises.push(_loadForCharacter(charName, resolvedOpponentUid));
                 });
             }
 
-            // Recalcular el orden de turnos después de que todas las reliquias se carguen
-            // (las reliquias de velocidad como Alas de Mercurio modifican .speed y deben
-            //  reflejarse en el turno order antes de que empiece la partida)
-            setTimeout(function() {
+            // Recalcular el orden de turnos DESPUÉS de que TODAS las reliquias se carguen
+            // Esto garantiza que bonos de velocidad (Alas de Mercurio etc) se reflejen correctamente
+            Promise.all(_relicPromises).then(function() {
                 if (typeof calculateTurnOrder === 'function') {
                     calculateTurnOrder();
+                    if (typeof renderTurnOrder === 'function') renderTurnOrder();
                 }
-            }, 1500);
+            });
         };
 
         async function equipRelic(uid, charName, slotKey, relicName) {
