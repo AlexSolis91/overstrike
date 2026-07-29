@@ -5139,6 +5139,27 @@
                 if (rd.effect === 'double_heal') { ch._doubleHeal = true; }
                 // Armadura Saiyan: +10 velocidad al inicio
                 if (rd.effect === 'armadura_saiyan' && !ch._armaduraSaiyanApplied) { ch.speed = (ch.speed||80) + 10; ch._armaduraSaiyanApplied = true; }
+                // Uniforme de Cazademonios: Anticipación permanente
+                if (rd.effect === 'uniforme_cazademonios' && !ch._uniformeCaza) {
+                    ch._uniformeCaza = true;
+                    if (!(ch.statusEffects||[]).some(function(e){ return e&&e.name==='Anticipación'; }))
+                        ch.statusEffects = (ch.statusEffects||[]).concat([{name:'Anticipación',type:'buff',duration:999,permanent:true,passiveHidden:true,emoji:'👁️',anticipacion:true}]);
+                }
+                // Haori de Roca: Provocación + Anticipación permanentes
+                if (rd.effect === 'haori_roca' && !ch._haoriRoca) {
+                    ch._haoriRoca = true;
+                    if (!(ch.statusEffects||[]).some(function(e){ return e&&e.name==='Provocacion'; }))
+                        ch.statusEffects = (ch.statusEffects||[]).concat([{name:'Provocacion',type:'buff',duration:999,permanent:true,passiveHidden:true,emoji:'🛡️'}]);
+                    if (!(ch.statusEffects||[]).some(function(e){ return e&&e.name==='Anticipación'; }))
+                        ch.statusEffects = (ch.statusEffects||[]).concat([{name:'Anticipación',type:'buff',duration:999,permanent:true,passiveHidden:true,emoji:'👁️',anticipacion:true}]);
+                }
+                // Fulgor Argénteo: Protección Sagrada permanente
+                if (rd.effect === 'fulgor_argenteo' && !ch._fulgorArgenteo) {
+                    ch._fulgorArgenteo = true;
+                    if (!(ch.statusEffects||[]).some(function(e){ return e&&e.name==='Proteccion Sagrada'; }))
+                        ch.statusEffects = (ch.statusEffects||[]).concat([{name:'Proteccion Sagrada',type:'buff',duration:999,permanent:true,passiveHidden:true,emoji:'✨'}]);
+                }
+                // Talismán de Hermes: +3 velocidad a TODO el equipo aliado al inicio (se aplica después en loadGameRelics)
                 // Tanque de Bacta: otorga Cuerpo Perfecto permanente
                 if (rd.effect === 'tanque_bacta' && !ch._tanqueBactaApplied) {
                     ch._tanqueBactaApplied = true;
