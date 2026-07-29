@@ -387,6 +387,32 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 const _sjwExists = Object.values(gameState.characters||{}).some(function(c){ return c && c.passive && c.passive.name === 'Arise!' && c.team !== _neb_team && !c.isDead && c.hp > 0; });
                 if (_sjwExists) notifyEnemyBuffApplied(targetName);
             }
+
+            // ── ARCO DEL KITAN: una vez por ronda, cuando un ENEMIGO recibe un buff → ataque básico sobre ese enemigo ──
+            if (!passiveExecuting && effectObj && effectObj.type === 'buff') {
+                const _akETeam = target.team;
+                const _akAllyTeam = _akETeam === 'team1' ? 'team2' : 'team1';
+                for (const _akN in gameState.characters) {
+                    const _akC = gameState.characters[_akN];
+                    if (!_akC || _akC.isDead || _akC.hp <= 0 || _akC.team !== _akAllyTeam) continue;
+                    if (!(_akC.equippedRelics||[]).includes('Arco del Kitan')) continue;
+                    if (_akC._arcoKitanUsedThisRound) break; // una vez por ronda
+                    _akC._arcoKitanUsedThisRound = true;
+                    const _akBasic = (_akC.abilities||[]).find(function(a){ return a&&a.type==='basic'; });
+                    if (!_akBasic) break;
+                    const _prevSel = gameState.selectedCharacter;
+                    const _prevAb  = gameState.selectedAbility;
+                    gameState.selectedCharacter = _akN;
+                    gameState.selectedAbility   = _akBasic;
+                    passiveExecuting = true;
+                    try { _executeAbilityCore(targetName); } catch(e) { console.error('[Arco del Kitan]', e); }
+                    passiveExecuting = false;
+                    gameState.selectedCharacter = _prevSel;
+                    gameState.selectedAbility   = _prevAb;
+                    addLog('🏹 Arco del Kitan: ' + _akN + ' ejecuta básico sobre ' + targetName + ' (enemigo recibió buff)', 'buff');
+                    break;
+                }
+            }
             // ── HEREDERA LEGÍTIMA (Rhaenyra): cuando un ENEMIGO recibe un buff → invoca una Cría de Dragón (máx 5) ──
             if (!passiveExecuting && effectObj && effectObj.type === 'buff') {
                 const _rhBuffTeam = target.team;
