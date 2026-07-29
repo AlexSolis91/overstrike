@@ -2995,8 +2995,8 @@
             { name:'Plata',    min:1500,  max:2999,  gold:10000,   keys:1,  emoji:'🥈', color:'#C0C0C0' },
             { name:'Oro',      min:3000,  max:4499,  gold:20000,   keys:2,  emoji:'🥇', color:'#FFD700' },
             { name:'Diamante', min:4500,  max:5999,  gold:50000,   keys:2,  emoji:'💎', color:'#b9f2ff' },
-            { name:'Platino',  min:6000,  max:7499,  gold:100000,  keys:3,  emoji:'⭐', color:'#E5E4E2' },
-            { name:'Master',   min:7500,  max:9999,  gold:200000,  keys:5,  emoji:'👑', color:'#cc00ff' },
+            { name:'Platino',  min:6000,  max:7499,  gold:100000,  keys:3,  emoji:'⭐', color:'#ff8c00' },
+            { name:'Master',   min:7500,  max:9999,  gold:200000,  keys:5,  emoji:'👑', color:'#00e5ff' },
             { name:'Leyenda',  min:10000, max:999999, gold:500000, keys:10, emoji:'🔱', color:'#e74c3c' },
         ];
         window.RANKED_LEAGUES = RANKED_LEAGUES;
@@ -3791,8 +3791,8 @@
                 { name:'Plata',    min:1500,  max:2999,  gold:'10,000',   keys:1,  emoji:'🥈', color:'#C0C0C0' },
                 { name:'Oro',      min:3000,  max:4499,  gold:'20,000',   keys:2,  emoji:'🥇', color:'#FFD700' },
                 { name:'Diamante', min:4500,  max:5999,  gold:'50,000',   keys:2,  emoji:'💎', color:'#b9f2ff' },
-                { name:'Platino',  min:6000,  max:7499,  gold:'100,000',  keys:3,  emoji:'⭐', color:'#E5E4E2' },
-                { name:'Master',   min:7500,  max:9999,  gold:'200,000',  keys:5,  emoji:'👑', color:'#cc00ff' },
+                { name:'Platino',  min:6000,  max:7499,  gold:'100,000',  keys:3,  emoji:'⭐', color:'#ff8c00' },
+                { name:'Master',   min:7500,  max:9999,  gold:'200,000',  keys:5,  emoji:'👑', color:'#00e5ff' },
                 { name:'Leyenda',  min:10000, max:999999, gold:'500,000', keys:10, emoji:'🔱', color:'#e74c3c' },
             ];
             var rows = SEASON_LEAGUES.map(function(lg) {
