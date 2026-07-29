@@ -5200,9 +5200,10 @@
             }
 
             // Recalcular el orden de turnos DESPUÉS de que TODAS las reliquias se carguen
-            // Esto garantiza que bonos de velocidad (Alas de Mercurio etc) se reflejen correctamente
             Promise.all(_relicPromises).then(function() {
-                if (typeof calculateTurnOrder === 'function') {
+                window._relicsReady = true;
+                // Si el juego ya arrancó (no está esperando), recalcular igual
+                if (!gameState._waitingForRelics && typeof calculateTurnOrder === 'function') {
                     calculateTurnOrder();
                     if (typeof renderTurnOrder === 'function') renderTurnOrder();
                 }
