@@ -295,7 +295,7 @@
                     startTurn();
                 }
             }, 100);
-            // Timeout de seguridad: si las reliquias tardan más de 5s, arrancar de todos modos
+            // Timeout de seguridad: si las reliquias tardan más de 2.5s, arrancar de todos modos
             setTimeout(function() {
                 if (gameState._waitingForRelics) {
                     clearInterval(_turnStartInterval);
@@ -304,7 +304,7 @@
                     renderTurnOrder();
                     startTurn();
                 }
-            }, 5000);
+            }, 2500);
         }
 
         // ==================== CÁLCULO DE ORDEN DE TURNOS ====================
