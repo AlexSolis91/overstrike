@@ -281,8 +281,30 @@
             renderCharacters();
             renderTurnOrder();
             
-            // Comenzar el primer turno
-            startTurn();
+            // Comenzar el primer turno — diferido hasta que loadGameRelics aplique los bonos de velocidad
+            // window._relicsReady se pone a true por loadGameRelics cuando termina el Promise.all
+            gameState._waitingForRelics = true;
+            window._relicsReady = false;
+            var _turnStartInterval = setInterval(function() {
+                if (window._relicsReady || !gameState._waitingForRelics) {
+                    clearInterval(_turnStartInterval);
+                    gameState._waitingForRelics = false;
+                    // Recalcular con velocidades actualizadas por reliquias
+                    calculateTurnOrder();
+                    renderTurnOrder();
+                    startTurn();
+                }
+            }, 100);
+            // Timeout de seguridad: si las reliquias tardan más de 5s, arrancar de todos modos
+            setTimeout(function() {
+                if (gameState._waitingForRelics) {
+                    clearInterval(_turnStartInterval);
+                    gameState._waitingForRelics = false;
+                    calculateTurnOrder();
+                    renderTurnOrder();
+                    startTurn();
+                }
+            }, 5000);
         }
 
         // ==================== CÁLCULO DE ORDEN DE TURNOS ====================
