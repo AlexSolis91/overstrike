@@ -1409,6 +1409,15 @@
                 }
             }
 
+            // ── FILO DEL ABISMO: ataques AOE +5 daño en enemigos con buffs activos ──
+            if (!passiveExecuting && damage > 0 && attackerName && ability && ability.target === 'aoe') {
+                const _fdaAtk = gameState.characters[attackerName];
+                if (_fdaAtk && (_fdaAtk.equippedRelics||[]).includes('Filo del Abismo')) {
+                    const _tgtBufs = (target.statusEffects||[]).filter(function(e){ return e&&e.type==='buff'; }).length;
+                    if (_tgtBufs > 0) { damage += 5; addLog('🪓 Filo del Abismo: +5 daño a ' + targetName + ' (tiene ' + _tgtBufs + ' buffs)', 'buff'); }
+                }
+            }
+
             // ── NARSIL: +2 daño por reliquia Legendaria enemiga, +1 por Épica ──
             if (!passiveExecuting && damage > 0 && attackerName) {
                 const _narA = gameState.characters[attackerName];
@@ -1948,6 +1957,33 @@
             // ── ARMADURA SAIYAN: buff Armadura permanente (aplica reducción de 50%) ──
             // La reducción de daño ya se aplica más arriba via hasStatusEffect('Armadura').
             // Aquí solo aseguramos que el buff esté activo al inicio de cada combate.
+
+            // ── CADENA DE GYOMEI: al recibir daño → gana Escudo igual al daño recibido ──
+            if (remainingDamage > 0 && !passiveExecuting) {
+                if ((target.equippedRelics||[]).includes('Cadena de Gyomei')) {
+                    target.shield = (target.shield||0) + remainingDamage;
+                    addLog('⛓️ Cadena de Gyomei: ' + targetName + ' gana ' + remainingDamage + ' HP de Escudo', 'buff');
+                }
+            }
+
+            // ── SANGRE DE SANEMI: al recibir golpe → Confusión al atacante + 25% Aturdimiento a cada enemigo ──
+            if (remainingDamage > 0 && !passiveExecuting && attackerName) {
+                if ((target.equippedRelics||[]).includes('Sangre de Sanemi')) {
+                    // Confusión al atacante
+                    if (typeof applyDebuff==='function') applyDebuff(attackerName, {name:'Confusion',type:'debuff',duration:1,emoji:'💫'});
+                    addLog('🩸 Sangre de Sanemi: Confusión aplicada a ' + attackerName, 'debuff');
+                    // 25% Aturdimiento independiente a cada enemigo
+                    const _ssETeam = target.team === 'team1' ? 'team2' : 'team1';
+                    for (const _ssN in gameState.characters) {
+                        const _ssC = gameState.characters[_ssN];
+                        if (!_ssC || _ssC.team !== _ssETeam || _ssC.isDead || _ssC.hp <= 0) continue;
+                        if (Math.random() < 0.25) {
+                            if (typeof applyDebuff==='function') applyDebuff(_ssN, {name:'Aturdimiento',type:'debuff',duration:1,emoji:'⭐'});
+                            addLog('🩸 Sangre de Sanemi: Aturdimiento aplicado a ' + _ssN + ' (25%)', 'debuff');
+                        }
+                    }
+                }
+            }
 
             // ── CASCO MANDALORIANO: al recibir ataque → atacante pierde 2 cargas ──
             if (remainingDamage > 0 && !passiveExecuting && attackerName) {
@@ -3024,6 +3060,27 @@
                 if ((targetName === 'Ikki de Fenix' || targetName === 'Ikki de Fenix v2')) {
                     target.deathRound = gameState.currentRound;
                     target.fenixRevived = false;
+                }
+
+                // TALISMÁN DE HERMES: al morir un enemigo → equipo aliado +1 velocidad
+                if (!passiveExecuting) {
+                    const _deadC = gameState.characters[targetName];
+                    const _deadTeam = _deadC ? _deadC.team : null;
+                    if (_deadTeam) {
+                        const _allyTeam = _deadTeam === 'team1' ? 'team2' : 'team1';
+                        for (const _thN in gameState.characters) {
+                            const _thC = gameState.characters[_thN];
+                            if (!_thC || _thC.team !== _allyTeam || _thC.isDead || _thC.hp <= 0) continue;
+                            if (!(_thC.equippedRelics||[]).includes('Talismán de Hermes')) continue;
+                            // +1 velocidad a todo el equipo aliado
+                            for (const _an in gameState.characters) {
+                                const _ac = gameState.characters[_an];
+                                if (_ac && _ac.team === _allyTeam && !_ac.isDead) _ac.speed = (_ac.speed||80) + 1;
+                            }
+                            addLog('⚡ Talismán de Hermes: equipo aliado +1 velocidad (' + targetName + ' eliminado)', 'buff');
+                            break;
+                        }
+                    }
                 }
 
                 // CIUDAD DE LA DEVASTACIÓN (Kurumi): al morir cualquier personaje → Kurumi gana 10 cargas
