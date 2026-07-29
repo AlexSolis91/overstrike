@@ -1736,9 +1736,11 @@
             gameState._isCritHit = false;
             gameState._abilityExecuting = false; // Limpiar guard de ejecución
             // Limpiar flags por turno
-            gameState._vortexActive = false; // Vortex: se limpia al finalizar cada turno
-            gameState._nishanExtraTurnRolledThisTurn = false; // Sable Nishant: resetear para que el siguiente turno tire de nuevo
-            gameState._munequeras_rolled = false; // Muñequeras de Goku: resetear por turno
+            gameState._vortexActive = false;
+            gameState._nishanExtraTurnRolledThisTurn = false;
+            gameState._munequeras_rolled = false;
+            // Reset Arco del Kitan (una vez por ronda)
+            for (const _akrN in gameState.characters) { const _akrC = gameState.characters[_akrN]; if (_akrC) _akrC._arcoKitanUsedThisRound = false; }
             // Limpiar el flag de Over automático de Skeletor como failsafe
             // (si el Over se interrumpió, el flag podría quedar en true bloqueando futuros disparos)
             for (const _skFn in gameState.characters) {
@@ -2498,6 +2500,32 @@
                         if (Math.random() < 0.50) {
                             if (typeof applyBuff === 'function') applyBuff(_zrN, { name: 'Esquivar', type: 'buff', duration: 2, emoji: '💨' });
                             addLog('👢 Zirocuz: ' + _zrN + ' gana Esquivar 2T', 'buff');
+                        }
+                    }
+
+                    // ── VACUNA DE GLICINIA: inicio de ronda → disipa debuffs del portador y un aliado aleatorio ──
+                    for (const _vgN in gameState.characters) {
+                        const _vgC = gameState.characters[_vgN];
+                        if (!_vgC || _vgC.isDead || _vgC.hp <= 0) continue;
+                        if (!(_vgC.equippedRelics||[]).includes('Vacuna de Glicinia')) continue;
+                        // Disipar debuffs del portador
+                        const _vgOwnDebuffs = (_vgC.statusEffects||[]).filter(function(e){ return e&&e.type==='debuff'&&!e.permanent; });
+                        if (_vgOwnDebuffs.length > 0) {
+                            _vgC.statusEffects = (_vgC.statusEffects||[]).filter(function(e){ return !e||e.type!=='debuff'||e.permanent; });
+                            addLog('💊 Vacuna de Glicinia: ' + _vgN + ' disipa sus propios debuffs (' + _vgOwnDebuffs.length + ')', 'buff');
+                            _vgOwnDebuffs.forEach(function(){ if (typeof window.notifyDebuffCleansed==='function') window.notifyDebuffCleansed(_vgN); });
+                        }
+                        // Aliado aleatorio
+                        const _vgAllies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===_vgC.team&&!c.isDead&&c.hp>0&&n!==_vgN; });
+                        if (_vgAllies.length > 0) {
+                            const _vgAlly = _vgAllies[Math.floor(Math.random()*_vgAllies.length)];
+                            const _vgAllyC = gameState.characters[_vgAlly];
+                            const _vgAllyDebuffs = (_vgAllyC.statusEffects||[]).filter(function(e){ return e&&e.type==='debuff'&&!e.permanent; });
+                            if (_vgAllyDebuffs.length > 0) {
+                                _vgAllyC.statusEffects = (_vgAllyC.statusEffects||[]).filter(function(e){ return !e||e.type!=='debuff'||e.permanent; });
+                                addLog('💊 Vacuna de Glicinia: ' + _vgAlly + ' disipa sus debuffs (' + _vgAllyDebuffs.length + ')', 'buff');
+                                _vgAllyDebuffs.forEach(function(){ if (typeof window.notifyDebuffCleansed==='function') window.notifyDebuffCleansed(_vgAlly); });
+                            }
                         }
                     }
 
