@@ -5197,6 +5197,15 @@
                     if (c && c.team === oppTeam) _loadForCharacter(charName, resolvedOpponentUid);
                 });
             }
+
+            // Recalcular el orden de turnos después de que todas las reliquias se carguen
+            // (las reliquias de velocidad como Alas de Mercurio modifican .speed y deben
+            //  reflejarse en el turno order antes de que empiece la partida)
+            setTimeout(function() {
+                if (typeof calculateTurnOrder === 'function') {
+                    calculateTurnOrder();
+                }
+            }, 1500);
         };
 
         async function equipRelic(uid, charName, slotKey, relicName) {
