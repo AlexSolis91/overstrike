@@ -315,6 +315,13 @@
                 if (!s || s.team === attackerTeam || s.hp <= 0) continue;
                 applySummonDamage(sid, damage, attackerName);
             }
+            // Limpiar cualquier invocación que quedó con hp <= 0 sin ser removida
+            for (let sid in gameState.summons) {
+                const s = gameState.summons[sid];
+                if (s && s.hp <= 0 && !s._skipDeathPassive) {
+                    removeSummon(sid, 'derrotado');
+                }
+            }
         }
 
         function applySummonDamage(summonId, damage, attackerName = null) {
@@ -414,6 +421,15 @@
             
             team1Container.innerHTML = '';
             team2Container.innerHTML = '';
+
+            // Limpiar invocaciones con hp <= 0 que no fueron eliminadas correctamente
+            Object.keys(gameState.summons).forEach(function(sid) {
+                const s = gameState.summons[sid];
+                if (s && (s.hp <= 0 || s.isDead)) {
+                    console.warn('[renderSummons] limpiando invocación fantasma:', s.name, sid);
+                    delete gameState.summons[sid];
+                }
+            });
             
             const team1Summons = [];
             const team2Summons = [];
