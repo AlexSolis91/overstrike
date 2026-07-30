@@ -3092,23 +3092,33 @@
                 return;
             }
 
+            // Ordenar por puntos para identificar el Campeón (Top 1 Leyenda)
+            players.sort(function(a,b){ return b.points - a.points; });
+            var championUid = null;
+            if (players.length > 0 && getLeagueForPoints(players[0].points) && getLeagueForPoints(players[0].points).name === 'Leyenda') {
+                championUid = players[0].uid;
+                console.log('[Season] Campeón de la temporada:', players[0].name, players[0].points, 'pts');
+            }
+
             for (var i = 0; i < players.length; i++) {
                 var p = players[i];
                 var league = getLeagueForPoints(p.points);
                 if (!league || league.gold === 0) continue;
+                var isChampionPlayer = p.uid === championUid;
 
                 var reward = {
-                    season:      seasonKey,
-                    league:      league.name,
-                    leagueEmoji: league.emoji,
-                    points:      p.points,
-                    gold:        league.gold,
-                    keys:        league.keys || 0,
-                    ts:          Date.now(),
-                    claimed:     false
+                    season:        seasonKey,
+                    league:        league.name,
+                    leagueEmoji:   league.emoji,
+                    points:        p.points,
+                    gold:          league.gold,
+                    keys:          league.keys || 0,
+                    championKey:   isChampionPlayer ? 1 : 0,
+                    ts:            Date.now(),
+                    claimed:       false
                 };
                 await db.ref('users/' + p.uid + '/season_reward_pending').set(reward);
-                console.log('[Season] Recompensa pendiente para', p.name, '— liga:', league.name, p.points, 'pts');
+                console.log('[Season] Recompensa pendiente para', p.name, '— liga:', league.name, p.points, 'pts', isChampionPlayer ? '👑 CAMPEÓN' : '');
             }
 
             await db.ref('season_rewards_distributed').set(seasonKey);
@@ -3125,6 +3135,43 @@
             showSeasonRewardModal(uid, reward);
         }
         window.checkPendingSeasonReward = checkPendingSeasonReward;
+
+        // Verificar si hay recompensa de Horda pendiente
+        async function checkPendingHordaReward(uid) {
+            var snap = await db.ref('users/' + uid + '/horda_reward_pending').once('value');
+            var reward = snap.val();
+            if (!reward || reward.claimed) return;
+            showHordaRewardModal(uid, reward);
+        }
+        window.checkPendingHordaReward = checkPendingHordaReward;
+
+        function showHordaRewardModal(uid, reward) {
+            var existing = document.getElementById('hordaRewardModal');
+            if (existing) existing.remove();
+            var overlay = document.createElement('div');
+            overlay.id = 'hordaRewardModal';
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:999999;display:flex;align-items:center;justify-content:center;';
+            var card = document.createElement('div');
+            card.style.cssText = 'background:linear-gradient(135deg,#0a0e17,#0d1a25);border:2px solid #b46cff;border-radius:20px;padding:36px 40px;text-align:center;max-width:420px;width:90%;box-shadow:0 0 40px rgba(180,108,255,0.3);';
+            card.innerHTML = '<div style="font-size:3rem;margin-bottom:12px;">🌊</div>' +
+                '<div style="font-family:Orbitron,sans-serif;color:#b46cff;font-size:1.1rem;font-weight:700;margin-bottom:6px;">CAMPEÓN MODO HORDA</div>' +
+                '<div style="color:#aaa;font-size:.85rem;margin-bottom:20px;">Temporada <strong style="color:#fff">' + (reward.season||'') + '</strong> — Alcanzaste la <strong style="color:#b46cff">Oleada ' + reward.wave + '</strong></div>' +
+                '<div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:16px;margin-bottom:24px;">' +
+                '<div style="font-family:Orbitron,sans-serif;color:#ffd700;font-size:.8rem;margin-bottom:12px;">🎁 RECOMPENSA OBTENIDA</div>' +
+                '<div style="color:#b46cff;font-size:1.2rem;font-weight:700;">+1 🌊 Llave de la Horda</div>' +
+                '<div style="color:#aaa;font-size:.72rem;margin-top:4px;">Úsala para abrir el Cofre de la Horda</div>' +
+                '</div>' +
+                '<button id="claimHordaRewardBtn" style="display:block;width:100%;padding:14px 24px;background:linear-gradient(135deg,#4a0080,#9932cc);border:none;border-radius:12px;color:#fff;font-family:Orbitron,sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;">✅ RECLAMAR RECOMPENSA</button>';
+            overlay.appendChild(card);
+            document.body.appendChild(overlay);
+            card.querySelector('#claimHordaRewardBtn').onclick = async function() {
+                await db.ref('users/' + uid + '/horda_reward_pending/claimed').set(true);
+                var hkSnap = await db.ref('users/' + uid + '/horda_keys').once('value');
+                await db.ref('users/' + uid + '/horda_keys').set((hkSnap.val()||0) + 1);
+                overlay.remove();
+                updateLobbyHUD();
+            };
+        }
 
         function showSeasonRewardModal(uid, reward) {
             var existing = document.getElementById('seasonRewardModal');
@@ -3181,6 +3228,17 @@
                 rewardBox.appendChild(keysDiv);
             }
 
+            if (reward.championKey > 0) {
+                var champKeyDiv = document.createElement('div');
+                champKeyDiv.style.cssText = 'color:#ffd700;font-size:1.1rem;margin-top:6px;font-weight:700;';
+                champKeyDiv.textContent = '+1 👑 Llave de Campeones';
+                var champKeyDesc = document.createElement('div');
+                champKeyDesc.style.cssText = 'color:#aaa;font-size:.72rem;margin-top:2px;';
+                champKeyDesc.textContent = '¡Fuiste el Campeón de la Temporada!';
+                rewardBox.appendChild(champKeyDiv);
+                rewardBox.appendChild(champKeyDesc);
+            }
+
             var btn = document.createElement('button');
             btn.textContent = '✅ RECLAMAR RECOMPENSA';
             btn.style.cssText = 'display:block;width:100%;padding:14px 24px;background:linear-gradient(135deg,#00c4ff,#0077ff);border:none;border-radius:12px;color:#fff;font-family:Orbitron,sans-serif;font-size:.95rem;font-weight:700;letter-spacing:.05em;cursor:pointer;pointer-events:all;margin-top:8px;';
@@ -3220,6 +3278,12 @@
                 await db.ref('users/' + uid + '/arcane_keys').set(currentKeys + reward.keys);
             }
 
+            // Apply Llave de Campeones
+            if (reward.championKey > 0) {
+                var champSnap = await db.ref('users/' + uid + '/champion_keys').once('value');
+                await db.ref('users/' + uid + '/champion_keys').set((champSnap.val() || 0) + reward.championKey);
+            }
+
             // Update local state if available
             if (typeof DB !== 'undefined') {
                 var localGold = (DB.get('gold') || 0) + (reward.gold || 0);
@@ -3257,6 +3321,51 @@
                     if (snap.val() !== prevSeasonKey) {
                         distributeSeasonRewardsForKey(prevSeasonKey).catch(console.error);
                     }
+                });
+
+                // ── Step 1b: Distribuir Llave de la Horda al Top 1 de Horda (si no se hizo) ──
+                db.ref('horda_season_reward_distributed').once('value').then(function(hdSnap) {
+                    if (hdSnap.val() === prevSeasonKey) return;
+                    db.ref('horda_leaderboard').once('value').then(function(hSnap) {
+                        var hData = hSnap.val() || {};
+                        var hEntries = Object.entries(hData).map(function(e){ return { uid:e[0], name:e[1].name, highestWave:e[1].highestWave||0 }; });
+                        hEntries.sort(function(a,b){ return b.highestWave - a.highestWave; });
+                        if (hEntries.length === 0) { db.ref('horda_season_reward_distributed').set(prevSeasonKey); return; }
+                        var top1 = hEntries[0];
+                        db.ref('users/' + top1.uid + '/horda_reward_pending').set({
+                            season: prevSeasonKey, wave: top1.highestWave,
+                            hordaKey: 1, ts: Date.now(), claimed: false
+                        }).then(function() {
+                            db.ref('horda_season_reward_distributed').set(prevSeasonKey);
+                            console.log('[Horda] Llave de la Horda entregada a', top1.name, 'oleada', top1.highestWave);
+                        });
+                    });
+                });
+
+                // ── Step 1c: Reset Leaderboard Horda + guardar récords históricos ──
+                db.ref('horda_season_reset').once('value').then(function(hrSnap) {
+                    if (hrSnap.val() === curSeasonKey) return;
+                    db.ref('horda_leaderboard').once('value').then(function(hSnap) {
+                        var hData = hSnap.val() || {};
+                        var updates = {};
+                        Object.entries(hData).forEach(function(entry) {
+                            var uid = entry[0], d = entry[1];
+                            if (!d || !d.highestWave) return;
+                            // Guardar récord histórico si supera el anterior
+                            var recPath = 'horda_records/' + uid;
+                            db.ref(recPath).once('value').then(function(recSnap) {
+                                var cur = recSnap.val() || {};
+                                if (d.highestWave > (cur.highestWave || 0)) {
+                                    db.ref(recPath).set({ name: d.name||uid, highestWave: d.highestWave, season: prevSeasonKey, ts: Date.now() });
+                                }
+                            });
+                        });
+                        // Reset leaderboard de temporada
+                        db.ref('horda_leaderboard').remove().then(function() {
+                            db.ref('horda_season_reset').set(curSeasonKey);
+                            console.log('[Horda] Leaderboard reseteado para temporada', curSeasonKey);
+                        });
+                    });
                 });
 
                 // ── Step 2: Mass-reset all players to 0 (if not done for current season) ──
@@ -3721,6 +3830,50 @@
         }
         window.updateHordaHighScore = updateHordaHighScore;
 
+        window.showHordaRecords = function() {
+            var existing = document.getElementById('hordaRecordsModal');
+            if (existing) { existing.remove(); return; }
+            var modal = document.createElement('div');
+            modal.id = 'hordaRecordsModal';
+            modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.93);z-index:10001;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px;box-sizing:border-box;';
+            var box = document.createElement('div');
+            box.style.cssText = 'width:100%;max-width:600px;background:linear-gradient(135deg,#0d0818,#0a0f1a);border:2px solid #ffd700;border-radius:20px;padding:28px;box-shadow:0 0 60px rgba(255,215,0,0.15);';
+            box.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid rgba(255,215,0,0.2);padding-bottom:16px;">' +
+                '<div>' +
+                '<div style="font-family:Orbitron,sans-serif;font-size:1.2rem;font-weight:900;color:#ffd700;letter-spacing:.08em;">🏆 RÉCORDS HISTÓRICOS — HORDA</div>' +
+                '<div style="font-size:.72rem;color:#555;margin-top:3px;">Mejor marca de todos los tiempos por jugador</div>' +
+                '</div>' +
+                '<button onclick="document.getElementById(\'hordaRecordsModal\').remove()" style="background:rgba(255,68,102,0.2);border:2px solid #ff4466;color:#ff4466;font-size:1.1rem;width:36px;height:36px;border-radius:50%;cursor:pointer;">✕</button>' +
+                '</div>' +
+                '<div id="hordaRecordsContent" style="color:#888;text-align:center;padding:2rem;">Cargando...</div>';
+            modal.appendChild(box);
+            document.body.appendChild(modal);
+            // Cargar récords
+            db.ref('horda_records').once('value', function(snap) {
+                var data = snap.val() || {};
+                var entries = Object.entries(data).map(function(e) {
+                    return { uid:e[0], name:e[1].name||e[0], highestWave:e[1].highestWave||0, season:e[1].season||'', ts:e[1].ts||0 };
+                }).sort(function(a,b){ return b.highestWave - a.highestWave || a.ts - b.ts; });
+                var container = document.getElementById('hordaRecordsContent');
+                if (!container) return;
+                if (!entries.length) { container.innerHTML = '<div style="color:#555;padding:2rem;text-align:center;">Sin récords aún.</div>'; return; }
+                var medals = ['🥇','🥈','🥉'];
+                container.innerHTML = entries.map(function(e, i) {
+                    var isMe = currentUser && e.uid === currentUser.uid;
+                    return '<div style="display:flex;align-items:center;gap:14px;padding:11px 16px;border-radius:10px;margin-bottom:6px;' +
+                        'background:' + (isMe ? 'rgba(255,215,0,0.08)' : 'rgba(255,255,255,0.02)') + ';' +
+                        'border:1px solid ' + (isMe ? 'rgba(255,215,0,0.4)' : 'rgba(255,255,255,0.06)') + ';">' +
+                        '<div style="width:28px;text-align:center;font-size:1.1rem;">' + (medals[i] || (i+1)) + '</div>' +
+                        '<div style="flex:1;color:#fff;font-size:.85rem;font-weight:' + (isMe?'700':'400') + ';">' + escapeHtml(e.name) + (isMe?' <span style="color:#ffd700;font-size:.7rem;">(tú)</span>':'') + '</div>' +
+                        '<div style="text-align:right;">' +
+                        '<div style="color:#b46cff;font-family:Orbitron,sans-serif;font-weight:700;font-size:.9rem;">Oleada ' + e.highestWave + '</div>' +
+                        (e.season ? '<div style="color:#555;font-size:.62rem;margin-top:2px;">Temp. ' + e.season + '</div>' : '') +
+                        '</div>' +
+                        '</div>';
+                }).join('');
+            });
+        };
+
         window.showHordaLeaderboard = function() {
             var modal = document.getElementById('hordaLeaderboardModal');
             if (!modal) {
@@ -3733,9 +3886,12 @@
                     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid rgba(160,60,255,0.15);padding-bottom:16px;">',
                         '<div>',
                             '<div style="font-family:Orbitron,sans-serif;font-size:1.3rem;font-weight:900;color:#b46cff;text-shadow:0 0 20px rgba(160,60,255,0.6);letter-spacing:.08em;">🌊 LEADERBOARD — MODO HORDA</div>',
-                            '<div style="font-size:.72rem;color:#555;margin-top:3px;letter-spacing:.05em;">Mejor oleada alcanzada por jugador</div>',
+                            '<div style="font-size:.72rem;color:#555;margin-top:3px;letter-spacing:.05em;">Mejor oleada alcanzada · Temporada actual</div>',
                         '</div>',
-                        '<button onclick="document.getElementById(\'hordaLeaderboardModal\').style.display=\'none\';" style="background:rgba(255,68,102,0.2);border:2px solid #ff4466;color:#ff4466;font-size:1.1rem;width:36px;height:36px;border-radius:50%;cursor:pointer;">✕</button>',
+                        '<div style="display:flex;gap:8px;align-items:center;">',
+                            '<button onclick="window.showHordaRecords()" style="background:rgba(180,108,255,0.15);border:1px solid #b46cff;color:#b46cff;font-size:.7rem;padding:6px 10px;border-radius:8px;cursor:pointer;font-family:Orbitron,sans-serif;">🏆 RÉCORDS</button>',
+                            '<button onclick="document.getElementById(\'hordaLeaderboardModal\').style.display=\'none\';" style="background:rgba(255,68,102,0.2);border:2px solid #ff4466;color:#ff4466;font-size:1.1rem;width:36px;height:36px;border-radius:50%;cursor:pointer;">✕</button>',
+                        '</div>',
                     '</div>',
                     '<div id="hordaLeaderboardContent" style="color:#888;text-align:center;padding:3rem;font-size:.9rem;">Cargando...</div>',
                     '</div>'
@@ -3893,10 +4049,12 @@
             var top3 = entries.filter(function(e) { return e.league.name === 'Leyenda'; }).slice(0,3);
 
             var rows = entries.map(function(e, i) {
-                // Use league icon for position indicator
+                var isChampion = i === 0 && e.league && e.league.name === 'Leyenda';
                 var _entryPts = (e && e.points) ? e.points : 0;
                 var _entryLg = typeof getLeague === 'function' ? getLeague(_entryPts) : null;
-                var medal = _entryLg ? '<span style="font-size:1.2rem;">' + _entryLg.icon + '</span>' : (i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '<span style="font-family:Orbitron,sans-serif;font-size:.8rem;color:#666;">' + (i+1) + '</span>');
+                var medal = isChampion
+                    ? '<span style="font-size:1.5rem;filter:drop-shadow(0 0 8px #ffd700);">👑</span>'
+                    : (_entryLg ? '<span style="font-size:1.2rem;">' + _entryLg.icon + '</span>' : (i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '<span style="font-family:Orbitron,sans-serif;font-size:.8rem;color:#666;">' + (i+1) + '</span>'));
                 // Colores por liga
                 var lgColors = {
                     'Bronce':    { bg: 'rgba(180,100,30,0.10)',  border: 'rgba(205,127,50,0.40)',  glow: 'rgba(205,127,50,0.12)',  accent: '#cd7f32' },
@@ -3904,11 +4062,12 @@
                     'Oro':       { bg: 'rgba(255,200,0,0.09)',   border: 'rgba(255,215,0,0.40)',   glow: 'rgba(255,215,0,0.14)',   accent: '#ffd700' },
                     'Platino':   { bg: 'rgba(255,140,0,0.09)',   border: 'rgba(255,140,0,0.40)',   glow: 'rgba(255,140,0,0.14)',   accent: '#ff8c00' },
                     'Diamante':  { bg: 'rgba(0,200,255,0.08)',   border: 'rgba(0,220,255,0.35)',   glow: 'rgba(0,200,255,0.12)',   accent: '#00d4ff' },
-                    'Campeones': { bg: 'rgba(160,0,255,0.10)',   border: 'rgba(180,50,255,0.40)',  glow: 'rgba(160,0,255,0.16)',   accent: '#b432ff' },
                     'Master':    { bg: 'rgba(191,0,255,0.09)',   border: 'rgba(191,0,255,0.40)',   glow: 'rgba(191,0,255,0.14)',   accent: '#bf00ff' },
                     'Leyenda':   { bg: 'rgba(231,76,60,0.10)',   border: 'rgba(231,76,60,0.45)',   glow: 'rgba(231,76,60,0.18)',   accent: '#e74c3c' },
                 };
-                var lgC = lgColors[e.league.name] || lgColors['Bronce'];
+                var lgC = isChampion
+                    ? { bg: 'rgba(255,215,0,0.08)', border: 'rgba(255,215,0,0.7)', glow: 'rgba(255,215,0,0.25)', accent: '#ffd700' }
+                    : (lgColors[e.league.name] || lgColors['Bronce']);
                 var bgGlow  = lgC.bg;
                 var border  = lgC.border;
                 var wrColor = e.winRate >= 60 ? '#00ff88' : e.winRate >= 40 ? '#ffaa00' : '#ff4466';
@@ -3929,13 +4088,17 @@
                         '</div>';
                 }).join('');
 
+                var championBanner = isChampion
+                    ? '<div style="text-align:center;margin-bottom:8px;padding:6px;background:linear-gradient(90deg,rgba(255,215,0,0.05),rgba(255,215,0,0.18),rgba(255,215,0,0.05));border-radius:8px;font-family:Orbitron,sans-serif;font-size:.7rem;font-weight:700;color:#ffd700;letter-spacing:.1em;text-shadow:0 0 10px #ffd700;">👑 CAMPEÓN DE LA TEMPORADA</div>'
+                    : '';
                 return [
-                    '<div style="background:' + bgGlow + ';border:1px solid ' + border + ';border-radius:14px;padding:14px 16px;margin-bottom:9px;box-shadow:0 0 18px ' + lgC.glow + ';">',
+                    '<div style="background:' + bgGlow + ';border:' + (isChampion ? '2px' : '1px') + ' solid ' + border + ';border-radius:14px;padding:14px 16px;margin-bottom:9px;box-shadow:0 0 ' + (isChampion ? '32px' : '18px') + ' ' + lgC.glow + (isChampion ? ',0 0 60px rgba(255,215,0,0.15)' : '') + ';">',
+                    championBanner,
                     // Row 1: posición + nombre + liga + puntos
                     '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;">',
                         '<div style="font-size:1.4rem;min-width:30px;text-align:center;">' + medal + '</div>',
                         '<div style="flex:1;min-width:120px;">',
-                            '<div style="font-family:Orbitron,sans-serif;font-weight:700;color:#fff;font-size:.9rem;">' + escapeHtml(e.name) + '</div>',
+                            '<div style="font-family:Orbitron,sans-serif;font-weight:700;color:' + (isChampion ? '#ffd700' : '#fff') + ';font-size:.9rem;">' + escapeHtml(e.name) + '</div>',
                             '<div style="font-size:.72rem;color:' + lgC.accent + ';margin-top:2px;font-weight:600;">' + e.league.full + '</div>',
                         '</div>',
                         // Puntos globales
@@ -4803,6 +4966,8 @@
             window._unlockedCharacters = unlockedSnap.val() || {};
             // Cargar badge de notificaciones
             _notifUpdateBadge(uid);
+            // Verificar recompensa de Horda pendiente
+            checkPendingHordaReward(uid).catch(function(){});
         }
 
         // ── Leer datos del jugador ──
@@ -4826,6 +4991,13 @@
             if (keyEl)  keyEl.textContent  = data.arcane_keys||0;
             // Actualizar badge de notificaciones
             _notifUpdateBadge(user.uid);
+            // Actualizar llaves de Campeón y Horda
+            var champEl = document.getElementById('hud-champion-keys');
+            var hordaEl = document.getElementById('hud-horda-keys');
+            if (champEl || hordaEl) {
+                db.ref('users/' + user.uid + '/champion_keys').once('value').then(function(s){ if(champEl) champEl.textContent = s.val()||0; });
+                db.ref('users/' + user.uid + '/horda_keys').once('value').then(function(s){ if(hordaEl) hordaEl.textContent = s.val()||0; });
+            }
         }
 
         // ══════════════════════════════════════════════════════════════════
