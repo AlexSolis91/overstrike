@@ -2854,7 +2854,6 @@
             { name: 'Platino',   min: 6000,  max: 7499,  icon: '⭐',  subs: ['III','II','I'] },
             { name: 'Master',    min: 7500,  max: 9999,  icon: '👑',  subs: ['III','II','I'] },
             { name: 'Leyenda',   min: 10000, max: 999999,icon: '🔱',  subs: ['III','II','I'] },
-            { name: 'Campeones', min: 11000, max: 14999, icon: '👑',  subs: [] },
             { name: 'Leyenda',   min: 15000, max: Infinity, icon: '🔱', subs: [] }
         ];
 
@@ -4089,10 +4088,12 @@
                 }).join('');
 
                 var championBanner = isChampion
-                    ? '<div style="text-align:center;margin-bottom:8px;padding:6px;background:linear-gradient(90deg,rgba(255,215,0,0.05),rgba(255,215,0,0.18),rgba(255,215,0,0.05));border-radius:8px;font-family:Orbitron,sans-serif;font-size:.7rem;font-weight:700;color:#ffd700;letter-spacing:.1em;text-shadow:0 0 10px #ffd700;">👑 CAMPEÓN DE LA TEMPORADA</div>'
+                    ? '<div style="text-align:center;margin-bottom:10px;padding:8px 12px;background:linear-gradient(90deg,rgba(255,170,0,0),rgba(255,215,0,0.25),rgba(255,170,0,0));border-radius:10px;font-family:Orbitron,sans-serif;font-size:.78rem;font-weight:900;color:#ffd700;letter-spacing:.18em;text-shadow:0 0 16px #ffd700,0 0 32px #ffaa00;">👑 &nbsp; C A M P E Ó N &nbsp; 👑</div>'
                     : '';
                 return [
-                    '<div style="background:' + bgGlow + ';border:' + (isChampion ? '2px' : '1px') + ' solid ' + border + ';border-radius:14px;padding:14px 16px;margin-bottom:9px;box-shadow:0 0 ' + (isChampion ? '32px' : '18px') + ' ' + lgC.glow + (isChampion ? ',0 0 60px rgba(255,215,0,0.15)' : '') + ';">',
+                    isChampion
+                        ? '<div style="position:relative;background:linear-gradient(135deg,rgba(40,25,0,0.95),rgba(20,12,0,0.98));border:2px solid #ffd700;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 0 0 1px rgba(255,170,0,0.3),0 0 24px rgba(255,215,0,0.35),0 0 60px rgba(255,170,0,0.15),inset 0 0 40px rgba(255,215,0,0.04);">'
+                        : '<div style="background:' + bgGlow + ';border:1px solid ' + border + ';border-radius:14px;padding:14px 16px;margin-bottom:9px;box-shadow:0 0 18px ' + lgC.glow + ';">',
                     championBanner,
                     // Row 1: posición + nombre + liga + puntos
                     '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px;">',
