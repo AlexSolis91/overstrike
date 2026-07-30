@@ -388,6 +388,25 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 if (_sjwExists) notifyEnemyBuffApplied(targetName);
             }
 
+            // ── VESTIDURA ARCANA: cuando un ENEMIGO recibe un buff → portador roba 3 HP a ese enemigo ──
+            if (!passiveExecuting && effectObj && effectObj.type === 'buff') {
+                const _vaETeam = target.team;
+                const _vaAllyTeam = _vaETeam === 'team1' ? 'team2' : 'team1';
+                for (const _vaN in gameState.characters) {
+                    const _vaC = gameState.characters[_vaN];
+                    if (!_vaC || _vaC.isDead || _vaC.hp <= 0 || _vaC.team !== _vaAllyTeam) continue;
+                    if (!(_vaC.equippedRelics||[]).includes('Vestidura Arcana')) continue;
+                    // Robar 3 HP al enemigo
+                    const _vaSteal = Math.min(3, target.hp||0);
+                    if (_vaSteal > 0) {
+                        target.hp = Math.max(0, (target.hp||0) - _vaSteal);
+                        _vaC.hp = Math.min(_vaC.maxHp, (_vaC.hp||0) + _vaSteal);
+                        addLog('✨ Vestidura Arcana: ' + _vaN + ' roba 3 HP a ' + targetName + ' (recibió buff)', 'buff');
+                    }
+                    break;
+                }
+            }
+
             // ── ARCO DEL KITAN: una vez por ronda, cuando un ENEMIGO recibe un buff → ataque básico sobre ese enemigo ──
             if (!passiveExecuting && effectObj && effectObj.type === 'buff') {
                 const _akETeam = target.team;
