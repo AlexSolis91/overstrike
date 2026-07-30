@@ -1410,11 +1410,14 @@
             }
 
             // ── FILO DEL ABISMO: ataques AOE +5 daño en enemigos con buffs activos ──
-            if (!passiveExecuting && damage > 0 && attackerName && ability && ability.target === 'aoe') {
-                const _fdaAtk = gameState.characters[attackerName];
-                if (_fdaAtk && (_fdaAtk.equippedRelics||[]).includes('Filo del Abismo')) {
-                    const _tgtBufs = (target.statusEffects||[]).filter(function(e){ return e&&e.type==='buff'; }).length;
-                    if (_tgtBufs > 0) { damage += 5; addLog('🪓 Filo del Abismo: +5 daño a ' + targetName + ' (tiene ' + _tgtBufs + ' buffs)', 'buff'); }
+            if (!passiveExecuting && damage > 0 && attackerName) {
+                const _fdaAb = gameState.selectedAbility;
+                if (_fdaAb && _fdaAb.target === 'aoe') {
+                    const _fdaAtk = gameState.characters[attackerName];
+                    if (_fdaAtk && (_fdaAtk.equippedRelics||[]).includes('Filo del Abismo')) {
+                        const _tgtBufs = (target.statusEffects||[]).filter(function(e){ return e&&e.type==='buff'; }).length;
+                        if (_tgtBufs > 0) { damage += 5; addLog('🪓 Filo del Abismo: +5 daño a ' + targetName + ' (tiene ' + _tgtBufs + ' buffs)', 'buff'); }
+                    }
                 }
             }
 
