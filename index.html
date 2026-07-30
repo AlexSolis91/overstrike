@@ -248,7 +248,7 @@
             <!-- Logo: sin emoji, pegado a la izquierda -->
             <div style="display:flex;flex-direction:column;gap:2px;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;white-space:nowrap;">OVERSTRIKE</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260940</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260941</div>
             </div>
 
             <!-- HUD: empujado todo a la derecha junto al botón mute -->
@@ -659,7 +659,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260940"></script>
+    <script src="js/firebase-auth.js?v=20260941"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -1152,7 +1152,6 @@
             if (tab === 'listings') loadListings();
             if (tab === 'sell') loadSellTab();
             if (tab === 'trade') initTradeTab();
-            if (tab === 'cofres') loadCofresTab();
         }
 
         async function loadCofresTab() {
@@ -1207,7 +1206,7 @@
             }
             // Actualizar contadores del HUD y del tab
             updateLobbyHUD();
-            loadCofresTab();
+            loadDailyMarket();
         };
 
         async function loadDailyMarket() {
@@ -1238,6 +1237,28 @@
                 '<div style="font-size:.68rem;color:#4fc3f7;margin-bottom:8px;">Runa Especial</div>' +
                 '<div style="font-size:.75rem;color:#ffaa00;margin-bottom:10px;">50,000 🪙</div>' +
                 '<button onclick="buyDailyItem(\'' + user.uid + '\',\'portal_rune\')" style="width:100%;padding:7px;background:linear-gradient(135deg,#00204a,#004080);border:2px solid #4fc3f7;color:#4fc3f7;border-radius:8px;font-size:.75rem;cursor:pointer;font-family:Orbitron,sans-serif;font-weight:700;">⚡ COMPRAR</button>' +
+                '</div>';
+
+            // ── 3. Cofre de Campeones ──
+            var champKeys = 0;
+            try { var ckSnap = await db.ref('users/' + user.uid + '/champion_keys').once('value'); champKeys = ckSnap.val()||0; } catch(e){}
+            grid.innerHTML += '<div id="champion-chest-card" style="background:linear-gradient(135deg,rgba(40,25,0,0.7),rgba(15,8,0,0.9));border:2px solid #ffd700;border-radius:14px;padding:18px;text-align:center;box-shadow:0 0 16px rgba(255,215,0,0.15);">' +
+                '<img src="https://i.ibb.co/mVGBLzLZ/Gemini-Generated-Image-ehhcuoehhcuoehhc.png" style="width:80px;height:80px;object-fit:contain;margin:0 auto 10px;display:block;">' +
+                '<div style="font-size:.82rem;color:#ffd700;font-weight:700;margin-bottom:4px;font-family:Orbitron,sans-serif;">Cofre de Campeones</div>' +
+                '<div style="font-size:.68rem;color:#888;margin-bottom:8px;">1 reliquia Legendaria</div>' +
+                '<div style="font-size:.75rem;color:#ffd700;margin-bottom:10px;">1 👑 Llave de Campeones <span style="color:' + (champKeys>0?'#00ff88':'#ff4466') + ';">(' + champKeys + ' disponibles)</span></div>' +
+                '<button onclick="openCofre('champion')" style="width:100%;padding:7px;background:linear-gradient(135deg,#2a1800,#8b6914);border:2px solid #ffd700;color:#ffd700;border-radius:8px;font-size:.75rem;cursor:pointer;font-family:Orbitron,sans-serif;font-weight:700;">👑 ABRIR</button>' +
+                '</div>';
+
+            // ── 4. Cofre de la Horda ──
+            var hordaKeys = 0;
+            try { var hkSnap = await db.ref('users/' + user.uid + '/horda_keys').once('value'); hordaKeys = hkSnap.val()||0; } catch(e){}
+            grid.innerHTML += '<div id="horda-chest-card" style="background:linear-gradient(135deg,rgba(10,0,30,0.7),rgba(5,0,20,0.9));border:2px solid #b46cff;border-radius:14px;padding:18px;text-align:center;box-shadow:0 0 16px rgba(180,108,255,0.15);">' +
+                '<img src="https://i.ibb.co/JWv5xqqt/Gemini-Generated-Image-9yg6vs9yg6vs9yg6.png" style="width:80px;height:80px;object-fit:contain;margin:0 auto 10px;display:block;">' +
+                '<div style="font-size:.82rem;color:#b46cff;font-weight:700;margin-bottom:4px;font-family:Orbitron,sans-serif;">Cofre de la Horda</div>' +
+                '<div style="font-size:.68rem;color:#888;margin-bottom:8px;">1 reliquia Legendaria</div>' +
+                '<div style="font-size:.75rem;color:#b46cff;margin-bottom:10px;">1 🌊 Llave de la Horda <span style="color:' + (hordaKeys>0?'#00ff88':'#ff4466') + ';">(' + hordaKeys + ' disponibles)</span></div>' +
+                '<button onclick="openCofre('horda')" style="width:100%;padding:7px;background:linear-gradient(135deg,#0a0020,#4a0080);border:2px solid #b46cff;color:#b46cff;border-radius:8px;font-size:.75rem;cursor:pointer;font-family:Orbitron,sans-serif;font-weight:700;">🌊 ABRIR</button>' +
                 '</div>';
 
             if (typeof initArcanePityIndicator === 'function') initArcanePityIndicator(user.uid);
@@ -1738,9 +1759,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260940"></script>
+    <script src="js/characters.js?v=20260941"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260940"></script>
+    <script src="js/audio-state.js?v=20260941"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2537,26 +2558,26 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260940"></script>
+    <script src="js/ai-engine.js?v=20260941"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260940"></script>
+    <script src="js/init-render.js?v=20260941"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260940"></script>
+    <script src="js/turn-logic.js?v=20260941"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260940"></script>
+    <script src="js/status-effects.js?v=20260941"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260940"></script>
+    <script src="js/debuffs.js?v=20260941"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260940"></script>
+    <script src="js/summons.js?v=20260941"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260940"></script>
+    <script src="js/ability-select.js?v=20260941"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260940"></script>
+<script src="js/skills.js?v=20260941"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260940"></script>
-    <script src="js/horda-mode.js?v=20260940"></script>
-    <script src="js/horda-abilities.js?v=20260940"></script>
-    <script src="js/horda-battle.js?v=20260940"></script>
+    <script src="js/jefe-de-sala.js?v=20260941"></script>
+    <script src="js/horda-mode.js?v=20260941"></script>
+    <script src="js/horda-abilities.js?v=20260941"></script>
+    <script src="js/horda-battle.js?v=20260941"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
@@ -2697,7 +2718,6 @@
                 <button onclick="showMarketTab('listings')" style="flex:1;padding:8px;font-family:Orbitron,sans-serif;font-size:.7rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.2);color:#ccc;border-radius:8px;cursor:pointer;">🔄 PUBLICACIONES</button>
                 <button onclick="showMarketTab('sell')" style="flex:1;padding:8px;font-family:Orbitron,sans-serif;font-size:.7rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.2);color:#ccc;border-radius:8px;cursor:pointer;">💰 VENDER</button>
                 <button onclick="showMarketTab('trade')" style="flex:1;padding:8px;font-family:Orbitron,sans-serif;font-size:.7rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.2);color:#ccc;border-radius:8px;cursor:pointer;">🤝 INTERCAMBIO</button>
-                <button onclick="showMarketTab('cofres')" style="flex:1;padding:8px;font-family:Orbitron,sans-serif;font-size:.7rem;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.4);color:#ffd700;border-radius:8px;cursor:pointer;">📦 COFRES</button>
             </div>
             <div id="market-daily-tab">
                 <div id="market-daily-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;"></div>
@@ -2706,37 +2726,7 @@
                 <div id="market-listings-list" style="display:flex;flex-direction:column;gap:10px;"></div>
             </div>
 
-            <!-- ==================== TAB COFRES ==================== -->
-            <div id="market-cofres-tab" style="display:none;">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-                    <!-- Cofre de Campeones -->
-                    <div style="background:linear-gradient(135deg,rgba(40,25,0,0.8),rgba(20,12,0,0.9));border:2px solid #ffd700;border-radius:16px;padding:20px;text-align:center;box-shadow:0 0 24px rgba(255,215,0,0.2);">
-                        <div style="font-size:3rem;margin-bottom:8px;">📦</div>
-                        <div style="font-family:Orbitron,sans-serif;font-size:.95rem;font-weight:900;color:#ffd700;margin-bottom:6px;">COFRE DE CAMPEONES</div>
-                        <div style="font-size:.72rem;color:#aaa;margin-bottom:14px;line-height:1.5;">Contiene 1 reliquia Legendaria exclusiva del Campeón.<br>Requiere 1 Llave de Campeones 👑</div>
-                        <div style="font-size:.7rem;color:#ffd700;margin-bottom:12px;background:rgba(255,215,0,0.06);border-radius:8px;padding:8px;">
-                            <div style="font-weight:700;margin-bottom:4px;">Reliquias posibles:</div>
-                            <div style="color:#ccc;">Ergonos · Frostmourne · Varita de Saúco · Anillo del Tiempo</div>
-                        </div>
-                        <div id="champion-keys-count" style="font-size:.8rem;color:#888;margin-bottom:10px;">Llaves: 0</div>
-                        <button onclick="openCofre('champion')" style="width:100%;padding:10px;background:linear-gradient(135deg,#2a1800,#8b6914);border:2px solid #ffd700;color:#ffd700;border-radius:10px;font-family:Orbitron,sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;letter-spacing:.05em;">👑 ABRIR COFRE</button>
-                    </div>
-                    <!-- Cofre de la Horda -->
-                    <div style="background:linear-gradient(135deg,rgba(10,0,30,0.8),rgba(5,0,20,0.9));border:2px solid #b46cff;border-radius:16px;padding:20px;text-align:center;box-shadow:0 0 24px rgba(180,108,255,0.2);">
-                        <div style="font-size:3rem;margin-bottom:8px;">🌊</div>
-                        <div style="font-family:Orbitron,sans-serif;font-size:.95rem;font-weight:900;color:#b46cff;margin-bottom:6px;">COFRE DE LA HORDA</div>
-                        <div style="font-size:.72rem;color:#aaa;margin-bottom:14px;line-height:1.5;">Contiene 1 reliquia Legendaria exclusiva de la Horda.<br>Requiere 1 Llave de la Horda 🌊</div>
-                        <div style="font-size:.7rem;color:#b46cff;margin-bottom:12px;background:rgba(180,108,255,0.06);border-radius:8px;padding:8px;">
-                            <div style="font-weight:700;margin-bottom:4px;">Reliquias posibles:</div>
-                            <div style="color:#ccc;">Zenit · Vestidura Arcana · Shadowmourne · Anima Vorax · Direbounds</div>
-                        </div>
-                        <div id="horda-keys-count" style="font-size:.8rem;color:#888;margin-bottom:10px;">Llaves: 0</div>
-                        <button onclick="openCofre('horda')" style="width:100%;padding:10px;background:linear-gradient(135deg,#0a0020,#4a0080);border:2px solid #b46cff;color:#b46cff;border-radius:10px;font-family:Orbitron,sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;letter-spacing:.05em;">🌊 ABRIR COFRE</button>
-                    </div>
-                </div>
-                <div id="cofre-result" style="display:none;margin-top:20px;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:20px;text-align:center;"></div>
-            </div>
-            <!-- ==================== END TAB COFRES ==================== -->
+            
             <div id="market-sell-tab" style="display:none;">
                 <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:20px;">
                     <div style="font-size:.85rem;color:#ccc;margin-bottom:16px;">Selecciona una reliquia de tu inventario para vender:</div>
