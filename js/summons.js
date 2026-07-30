@@ -2326,7 +2326,7 @@
                             }
                             break;
 
-                        // Duplica generación de cargas del básico + equipo genera igual
+                        // Duplica generación de cargas del básico + equipo genera igual + ST aplica Megacongelación
                         case 'ergonos_basic':
                             if (gameState._lastAbilityType === 'basic' && (gameState._lastAbilityChargeGain||0) > 0 && _atkChar) {
                                 var _ergGain1 = gameState._lastAbilityChargeGain;
@@ -2338,6 +2338,18 @@
                                         _c.charges = Math.min(20, (_c.charges||0) + _ergGain1);
                                 });
                                 addLog('⚡ Ergonos: +' + _ergGain1 + ' cargas a todo el equipo (básico)', 'buff');
+                            }
+                            // ST: Megacongelación al objetivo + Congelación a 2 enemigos aleatorios
+                            if (gameState._lastAbilityType === 'basic' && gameState._lastAbilityTarget === 'single' && _atkChar && !passiveExecuting) {
+                                if (typeof applyDebuff === 'function') {
+                                    applyDebuff(targetName, { name:'Megacongelacion', type:'debuff', duration:2, emoji:'🧊❄️' });
+                                    addLog('⚡ Ergonos: Megacongelación aplicada a ' + targetName, 'debuff');
+                                    // 2 enemigos aleatorios reciben Congelación
+                                    const _ergETeam = _atkChar.team === 'team1' ? 'team2' : 'team1';
+                                    const _ergOthers = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===_ergETeam&&!c.isDead&&c.hp>0&&n!==targetName; });
+                                    const _ergShuffle = _ergOthers.sort(function(){ return Math.random()-0.5; }).slice(0,2);
+                                    _ergShuffle.forEach(function(n){ applyDebuff(n, { name:'Congelacion', type:'debuff', duration:1, emoji:'🧊' }); addLog('⚡ Ergonos: Congelación aplicada a ' + n, 'debuff'); });
+                                }
                             }
                             break;
 
