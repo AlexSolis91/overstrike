@@ -1046,7 +1046,11 @@
                     if (gameState.gameMode === 'horda' && activeChar.isHordaOrc && typeof window.executeHordaOrcTurn === 'function') {
                         setTimeout(function() { window.executeHordaOrcTurn(charName); }, 700);
                     } else {
-                        setTimeout(function() { executeAITurn(charName); }, 700);
+                        setTimeout(function() {
+                            if (typeof window.executeAITurn === 'function') window.executeAITurn(charName);
+                            else if (typeof executeAITurn === 'function') executeAITurn(charName);
+                            else { console.error('executeAITurn not found'); if(typeof showContinueButton==='function') showContinueButton(); }
+                        }, 700);
                     }
                     return;
                 }
