@@ -911,4 +911,6 @@
                 endTurn();
             }
         }
+        // Exponer globalmente para que turn-logic.js pueda llamarla
+        window.executeAITurn = executeAITurn;
         // ==================== FIN IA ENGINE ====================
