@@ -5326,12 +5326,7 @@
                     if (!(ch.statusEffects||[]).some(function(e){ return e&&e.name==='Anticipación'; }))
                         ch.statusEffects = (ch.statusEffects||[]).concat([{name:'Anticipación',type:'buff',duration:999,permanent:true,passiveHidden:true,emoji:'👁️',anticipacion:true}]);
                 }
-                // Fulgor Argénteo: Protección Sagrada permanente
-                if (rd.effect === 'fulgor_argenteo' && !ch._fulgorArgenteo) {
-                    ch._fulgorArgenteo = true;
-                    if (!(ch.statusEffects||[]).some(function(e){ return e&&e.name==='Proteccion Sagrada'; }))
-                        ch.statusEffects = (ch.statusEffects||[]).concat([{name:'Proteccion Sagrada',type:'buff',duration:999,permanent:true,passiveHidden:true,emoji:'✨'}]);
-                }
+                // Fulgor Argénteo: efecto ahora es inicio de ronda (ver turn-logic.js)
                 // Talismán de Hermes: +3 velocidad a TODO el equipo aliado al inicio (se aplica después en loadGameRelics)
                 // Tanque de Bacta: otorga Cuerpo Perfecto permanente
                 if (rd.effect === 'tanque_bacta' && !ch._tanqueBactaApplied) {
