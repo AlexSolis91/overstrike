@@ -2507,6 +2507,15 @@
                         }
                     }
 
+                    // ── FULGOR ARGÉNTEO: inicio de ronda → Protección Sagrada 2T ──
+                    for (const _faN in gameState.characters) {
+                        const _faC = gameState.characters[_faN];
+                        if (!_faC || _faC.isDead || _faC.hp <= 0) continue;
+                        if (!(_faC.equippedRelics||[]).includes('Fulgor Argénteo')) continue;
+                        if (typeof applyBuff === 'function') applyBuff(_faN, {name:'Proteccion Sagrada', type:'buff', duration:2, emoji:'✨'});
+                        addLog('✨ Fulgor Argénteo: ' + _faN + ' gana Protección Sagrada 2T', 'buff');
+                    }
+
                     // ── VACUNA DE GLICINIA: inicio de ronda → disipa debuffs del portador y un aliado aleatorio ──
                     for (const _vgN in gameState.characters) {
                         const _vgC = gameState.characters[_vgN];
