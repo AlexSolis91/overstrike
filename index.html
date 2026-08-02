@@ -248,7 +248,7 @@
             <!-- Logo: sin emoji, pegado a la izquierda -->
             <div style="display:flex;flex-direction:column;gap:2px;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;white-space:nowrap;">OVERSTRIKE</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260945</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260946</div>
             </div>
 
             <!-- HUD: empujado todo a la derecha junto al botón mute -->
@@ -265,6 +265,10 @@
                 <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} window.showInventoryScreen && window.showInventoryScreen(); setTimeout(function(){ window.showInvTab && window.showInvTab('characters'); }, 100);"
                     style="font-family:Orbitron,sans-serif;font-size:.72rem;font-weight:700;padding:.42rem 1rem;background:linear-gradient(135deg,#0a1a2e,#1a3a5c);color:#4fc3f7;border:1.5px solid #4fc3f7;border-radius:8px;cursor:pointer;letter-spacing:.05em;transition:all .2s;"
                     onmouseover="this.style.boxShadow='0 0 12px rgba(79,195,247,.55)'" onmouseout="this.style.boxShadow='none'">👤 PERSONAJES</button>
+                <!-- Relicario -->
+                <button onclick="window.showRelicario()"
+                    style="font-family:Orbitron,sans-serif;font-size:.72rem;font-weight:700;padding:.42rem 1rem;background:linear-gradient(135deg,#0a1a0a,#1a4a1a);color:#00ff88;border:1.5px solid #00ff88;border-radius:8px;cursor:pointer;letter-spacing:.05em;transition:all .2s;"
+                    onmouseover="this.style.boxShadow='0 0 12px rgba(0,255,136,.55)'" onmouseout="this.style.boxShadow='none'">🔮 RELICARIO</button>
                 <!-- Separador -->
                 <div style="width:1px;height:24px;background:rgba(255,255,255,.12);"></div>
                 <!-- Oro -->
@@ -659,7 +663,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260945"></script>
+    <script src="js/firebase-auth.js?v=20260946"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -1746,9 +1750,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260945"></script>
+    <script src="js/characters.js?v=20260946"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260945"></script>
+    <script src="js/audio-state.js?v=20260946"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2545,26 +2549,26 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260945"></script>
+    <script src="js/ai-engine.js?v=20260946"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260945"></script>
+    <script src="js/init-render.js?v=20260946"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260945"></script>
+    <script src="js/turn-logic.js?v=20260946"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260945"></script>
+    <script src="js/status-effects.js?v=20260946"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260945"></script>
+    <script src="js/debuffs.js?v=20260946"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260945"></script>
+    <script src="js/summons.js?v=20260946"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260945"></script>
+    <script src="js/ability-select.js?v=20260946"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260945"></script>
+<script src="js/skills.js?v=20260946"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260945"></script>
-    <script src="js/horda-mode.js?v=20260945"></script>
-    <script src="js/horda-abilities.js?v=20260945"></script>
-    <script src="js/horda-battle.js?v=20260945"></script>
+    <script src="js/jefe-de-sala.js?v=20260946"></script>
+    <script src="js/horda-mode.js?v=20260946"></script>
+    <script src="js/horda-abilities.js?v=20260946"></script>
+    <script src="js/horda-battle.js?v=20260946"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
@@ -3151,6 +3155,124 @@
         <div style="text-align:center;color:#444;font-size:.75rem;padding:20px;">Cargando...</div>
     </div>
 </div>
+<!-- ==================== RELICARIO ==================== -->
+<div id="relicarioScreen" style="display:none;position:fixed;inset:0;background:linear-gradient(rgba(2,8,20,0.97),rgba(2,8,20,0.97));z-index:5500;overflow-y:auto;padding:20px;box-sizing:border-box;">
+    <div style="max-width:1100px;margin:0 auto;">
+        <!-- Header -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <div>
+                <div style="font-family:Orbitron,sans-serif;font-size:1.4rem;font-weight:900;color:#00ff88;text-shadow:0 0 20px rgba(0,255,136,0.4);">🔮 RELICARIO</div>
+                <div style="font-size:.75rem;color:#555;margin-top:3px;">Catálogo completo de reliquias</div>
+            </div>
+            <button onclick="document.getElementById('relicarioScreen').style.display='none'" style="background:rgba(255,51,102,0.15);border:2px solid #ff3366;color:#ff3366;border-radius:10px;padding:8px 18px;cursor:pointer;font-family:Orbitron,sans-serif;font-size:.78rem;">✕ CERRAR</button>
+        </div>
+        <!-- Filtros -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;background:rgba(0,10,20,0.6);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:14px;">
+            <input id="relicario-search" type="text" placeholder="🔍 Buscar por nombre..." oninput="window.renderRelicario()" style="flex:2;min-width:160px;background:rgba(0,0,0,0.4);border:1px solid rgba(0,255,136,0.3);color:#fff;border-radius:8px;padding:7px 12px;font-size:.78rem;outline:none;">
+            <select id="relicario-slot" onchange="window.renderRelicario()" style="flex:1;min-width:120px;background:#070f1a;border:1px solid rgba(255,255,255,0.15);color:#ccc;border-radius:8px;padding:7px 10px;font-size:.78rem;">
+                <option value="">Tipo (todos)</option>
+                <option value="Arma">⚔️ Arma</option>
+                <option value="Equipacion">🛡️ Equipación</option>
+                <option value="Joya">💎 Joya</option>
+            </select>
+            <select id="relicario-subtype" onchange="window.renderRelicario()" style="flex:1;min-width:130px;background:#070f1a;border:1px solid rgba(255,255,255,0.15);color:#ccc;border-radius:8px;padding:7px 10px;font-size:.78rem;">
+                <option value="">Categoría (todas)</option>
+            </select>
+            <select id="relicario-tier" onchange="window.renderRelicario()" style="flex:1;min-width:130px;background:#070f1a;border:1px solid rgba(255,255,255,0.15);color:#ccc;border-radius:8px;padding:7px 10px;font-size:.78rem;">
+                <option value="">Rareza (todas)</option>
+                <option value="Raro">⚪ Raro</option>
+                <option value="Especial">🔵 Especial</option>
+                <option value="Epico">🟣 Épico</option>
+                <option value="Legendario">🟡 Legendario</option>
+            </select>
+            <button onclick="document.getElementById('relicario-search').value='';document.getElementById('relicario-slot').value='';document.getElementById('relicario-subtype').value='';document.getElementById('relicario-tier').value='';window.renderRelicario()" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.15);color:#aaa;border-radius:8px;padding:7px 14px;cursor:pointer;font-size:.75rem;">✕ Limpiar</button>
+            <span id="relicario-count" style="align-self:center;font-size:.72rem;color:#555;margin-left:4px;"></span>
+        </div>
+        <!-- Grid -->
+        <div id="relicario-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px;"></div>
+    </div>
+</div>
+
+<!-- Modal detalle de reliquia -->
+<div id="relicarioDetailModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:6000;display:none;align-items:center;justify-content:center;">
+    <div id="relicarioDetailBox" style="background:linear-gradient(135deg,#080f1e,#0d1a2e);border-radius:16px;padding:28px;max-width:400px;width:90%;box-shadow:0 0 40px rgba(0,0,0,0.8);position:relative;">
+        <button onclick="document.getElementById('relicarioDetailModal').style.display='none'" style="position:absolute;top:12px;right:12px;background:none;border:none;color:#ff3366;font-size:1.2rem;cursor:pointer;">✕</button>
+        <div id="relicarioDetailContent"></div>
+    </div>
+</div>
+
+<script>
+window.showRelicario = function() {
+    document.getElementById('relicarioScreen').style.display = 'block';
+    // Poblar categorías únicas
+    if (typeof RELICS_DATA !== 'undefined') {
+        var subtypes = [...new Set(Object.values(RELICS_DATA).map(function(r){ return r.subtype||r.slot||''; }).filter(Boolean))].sort();
+        var sel = document.getElementById('relicario-subtype');
+        sel.innerHTML = '<option value="">Categoría (todas)</option>' + subtypes.map(function(s){ return '<option value="'+s+'">'+s+'</option>'; }).join('');
+    }
+    window.renderRelicario();
+};
+
+window.renderRelicario = function() {
+    if (typeof RELICS_DATA === 'undefined') return;
+    var search  = (document.getElementById('relicario-search').value||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    var slot    = document.getElementById('relicario-slot').value;
+    var subtype = document.getElementById('relicario-subtype').value;
+    var tier    = document.getElementById('relicario-tier').value;
+    var tierColors = { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700' };
+    var tierBorders = { Raro:'rgba(170,170,170,0.3)', Especial:'rgba(79,195,247,0.4)', Epico:'rgba(200,100,255,0.4)', Legendario:'rgba(255,215,0,0.5)' };
+    var grid = document.getElementById('relicario-grid');
+    grid.innerHTML = '';
+    var count = 0;
+    Object.entries(RELICS_DATA).forEach(function(entry) {
+        var name = entry[0], r = entry[1];
+        if (!r || !r.tier) return;
+        var norm = function(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); };
+        if (search && !norm(name).includes(search) && !norm(r.desc||'').includes(search)) return;
+        if (slot && r.slotCategory !== slot) return;
+        if (subtype && r.subtype !== subtype && r.slot !== subtype) return;
+        if (tier && r.tier !== tier) return;
+        count++;
+        var color = tierColors[r.tier] || '#aaa';
+        var border = tierBorders[r.tier] || 'rgba(255,255,255,0.1)';
+        var card = document.createElement('div');
+        card.style.cssText = 'background:rgba(255,255,255,0.03);border:1.5px solid '+border+';border-radius:10px;padding:8px;text-align:center;cursor:pointer;transition:all .15s;';
+        card.onmouseover = function(){ this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.5)'; };
+        card.onmouseout  = function(){ this.style.transform=''; this.style.boxShadow=''; };
+        card.onclick = function(){ window.showRelicDetail(name); };
+        card.innerHTML =
+            '<img src="'+(r.img||'')+'" onerror="this.style.opacity=0.2" style="width:56px;height:56px;object-fit:contain;border-radius:8px;display:block;margin:0 auto 6px;">' +
+            '<div style="font-size:.6rem;color:#ccc;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+name+'">'+name+'</div>' +
+            '<div style="font-size:.55rem;color:'+color+';margin-top:2px;">'+r.tier+'</div>';
+        grid.appendChild(card);
+    });
+    var countEl = document.getElementById('relicario-count');
+    if (countEl) countEl.textContent = count + ' reliquia' + (count !== 1 ? 's' : '');
+};
+
+window.showRelicDetail = function(name) {
+    if (typeof RELICS_DATA === 'undefined') return;
+    var r = RELICS_DATA[name];
+    if (!r) return;
+    var tierColors = { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700' };
+    var color = tierColors[r.tier] || '#aaa';
+    var modal = document.getElementById('relicarioDetailModal');
+    var content = document.getElementById('relicarioDetailContent');
+    content.innerHTML =
+        '<div style="text-align:center;margin-bottom:16px;">' +
+        '<img src="'+(r.img||'')+'" onerror="this.style.opacity=0.2" style="width:90px;height:90px;object-fit:contain;border-radius:12px;border:2px solid '+color+';display:block;margin:0 auto 12px;">' +
+        '<div style="font-family:Orbitron,sans-serif;font-size:1.1rem;font-weight:900;color:'+color+';text-shadow:0 0 12px '+color+'44;margin-bottom:4px;">'+name+'</div>' +
+        '<div style="display:inline-flex;gap:8px;flex-wrap:wrap;justify-content:center;">' +
+        '<span style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:6px;padding:3px 10px;font-size:.68rem;color:'+color+';">'+r.tier+'</span>' +
+        (r.slotCategory ? '<span style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:6px;padding:3px 10px;font-size:.68rem;color:#aaa;">'+r.slotCategory+'</span>' : '') +
+        (r.subtype ? '<span style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:6px;padding:3px 10px;font-size:.68rem;color:#aaa;">'+r.subtype+'</span>' : '') +
+        '</div></div>' +
+        '<div style="background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px;">' +
+        '<div style="font-size:.8rem;color:#ddd;line-height:1.6;">'+(r.desc||'Sin descripción.')+'</div>' +
+        '</div>';
+    modal.style.display = 'flex';
+};
+</script>
 
 </body>
 </html>
