@@ -1669,6 +1669,20 @@
             
             // Consumir cargas
             attacker.charges = Math.max(0, (attacker.charges||0) - adjustedCost);
+
+            // ── REACTOR NUCLEAR (Gipsy Danger): cuando un ENEMIGO consume cargas → Gipsy gana Escudo HP igual a cargas consumidas ──
+            if (adjustedCost > 0 && !passiveExecuting) {
+                const _rnDefTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                for (const _rnN in gameState.characters) {
+                    const _rnC = gameState.characters[_rnN];
+                    if (!_rnC || _rnC.isDead || _rnC.hp <= 0 || _rnC.team !== _rnDefTeam) continue;
+                    if (!_rnC.passive || _rnC.passive.name !== 'Reactor Nuclear') continue;
+                    _rnC.shield = (_rnC.shield||0) + adjustedCost;
+                    addLog('⚙️ Reactor Nuclear: Gipsy gana Escudo +' + adjustedCost + ' HP (enemigo usó ' + adjustedCost + ' cargas)', 'buff');
+                    break;
+                }
+            }
+
             // Marcar que el personaje activo realizó un ataque (para romper Sigilo)
             if (ability.target === 'single' || ability.target === 'aoe') {
                 gameState._attackedThisTurn = true;
@@ -11381,7 +11395,115 @@
             // SKELETOR — handlers
             // ══════════════════════════════════════════════════════
 
-            } else if (ability.effect === 'skeletor_mandoble') {
+            // ══════════════════════════════════════════════════════
+            // GIPSY DANGER — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'gipsy_espada_cadena') {
+                // ESPADA DE CADENA: 2 ST. 50% triple daño. Gipsy gana Escudo igual al daño causado.
+                const _gecAtk = gameState.characters[gameState.selectedCharacter];
+                const _gecTgt = gameState.characters[targetName];
+                let _gecDmg = finalDamage;
+                const _gecTriple = Math.random() < 0.50;
+                if (_gecTriple) { _gecDmg = finalDamage * 3; addLog('⚙️ Espada de Cadena: ¡Daño triple!', 'buff'); }
+                applyDamageWithShield(targetName, _gecDmg, gameState.selectedCharacter);
+                addLog('⚙️ Espada de Cadena: ' + _gecDmg + ' daño a ' + targetName, 'damage');
+                // Gipsy gana Escudo igual al daño causado
+                if (_gecAtk) {
+                    _gecAtk.shield = (_gecAtk.shield||0) + _gecDmg;
+                    addLog('⚙️ Espada de Cadena: Gipsy gana Escudo ' + _gecDmg + ' HP', 'buff');
+                }
+
+            } else if (ability.effect === 'gipsy_canon_plasma') {
+                // CAÑÓN DE PLASMA: AOE 2 daño. 50% Aturdimiento por enemigo. Por cada Aturdimiento en equipo enemigo → Gipsy +5 Escudo
+                const _gcpAtk = gameState.characters[gameState.selectedCharacter];
+                const _gcpETeam = _gcpAtk ? (_gcpAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _gcpETeam || _c.isDead || _c.hp <= 0) continue;
+                    if (typeof checkAsprosAOEImmunity==='function' && checkAsprosAOEImmunity(_n, true)) continue;
+                    applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                    addLog('⚙️ Cañón de Plasma: ' + finalDamage + ' daño a ' + _n, 'damage');
+                    if (Math.random() < 0.50) {
+                        if (typeof applyDebuff==='function') applyDebuff(_n, {name:'Aturdimiento',type:'debuff',duration:1,emoji:'⭐'});
+                        addLog('⚙️ Cañón de Plasma: Aturdimiento aplicado a ' + _n, 'debuff');
+                    }
+                }
+                // +5 Escudo por cada Aturdimiento en equipo enemigo
+                if (_gcpAtk) {
+                    let _gcpStuns = 0;
+                    for (const _n in gameState.characters) {
+                        const _c = gameState.characters[_n];
+                        if (!_c || _c.team !== _gcpETeam) continue;
+                        _gcpStuns += (_c.statusEffects||[]).filter(function(e){ return e&&(e.name==='Aturdimiento'||e.name==='Mega Aturdimiento'); }).length;
+                    }
+                    if (_gcpStuns > 0) {
+                        _gcpAtk.shield = (_gcpAtk.shield||0) + (_gcpStuns * 5);
+                        addLog('⚙️ Cañón de Plasma: Gipsy gana Escudo +' + (_gcpStuns*5) + ' HP (' + _gcpStuns + ' Aturdimientos en equipo enemigo)', 'buff');
+                    }
+                }
+
+            } else if (ability.effect === 'gipsy_rafaga_reactor') {
+                // RÁFAGA DE REACTOR MÚLTIPLE: 2-5 ataques básicos Espada de Cadena sobre el objetivo. Gipsy gana Armadura 3T + Provocación 3T.
+                const _grrAtk = gameState.characters[gameState.selectedCharacter];
+                const _grrHits = 2 + Math.floor(Math.random() * 4); // 2 a 5
+                addLog('⚙️ Ráfaga de Reactor: ' + _grrHits + ' ataques Espada de Cadena sobre ' + targetName, 'buff');
+                const _grrBasic = (_grrAtk&&_grrAtk.abilities||[]).find(function(a){ return a&&a.effect==='gipsy_espada_cadena'; });
+                for (let _gi = 0; _gi < _grrHits; _gi++) {
+                    const _tgt = gameState.characters[targetName];
+                    if (!_tgt || _tgt.isDead || _tgt.hp <= 0) break;
+                    const _prevSel = gameState.selectedCharacter;
+                    const _prevAb  = gameState.selectedAbility;
+                    gameState.selectedAbility = _grrBasic || ability;
+                    passiveExecuting = true;
+                    try { _executeAbilityCore(targetName); } catch(e){}
+                    passiveExecuting = false;
+                    gameState.selectedCharacter = _prevSel;
+                    gameState.selectedAbility   = _prevAb;
+                }
+                if (_grrAtk) {
+                    if (typeof applyBuff==='function') {
+                        applyBuff(gameState.selectedCharacter, {name:'Armadura',type:'buff',duration:3,emoji:'🛡️'});
+                        applyBuff(gameState.selectedCharacter, {name:'Provocacion',type:'buff',duration:3,emoji:'🦁'});
+                    }
+                    addLog('⚙️ Ráfaga de Reactor: Gipsy gana Armadura 3T y Provocación 3T', 'buff');
+                }
+
+            } else if (ability.effect === 'gipsy_purga_reactor') {
+                // PURGA DEL REACTOR: AOE 8 daño. Por cada HP de escudo activo → 1% eliminación (máx 50%). 50% Mega Aturdimiento.
+                const _gprAtk = gameState.characters[gameState.selectedCharacter];
+                const _gprETeam = _gprAtk ? (_gprAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _gprShield = _gprAtk ? (_gprAtk.shield||0) : 0;
+                const _gprInstantChance = Math.min(0.50, _gprShield * 0.01);
+                const _gprIsBoss = typeof window._bossMode !== 'undefined' && window._bossMode;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _gprETeam || _c.isDead || _c.hp <= 0) continue;
+                    if (typeof checkAsprosAOEImmunity==='function' && checkAsprosAOEImmunity(_n, true)) continue;
+                    applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                    addLog('⚙️ Purga del Reactor: ' + finalDamage + ' daño a ' + _n, 'damage');
+                    // Eliminación instantánea (no aplica a Jefes de Sala)
+                    if (!_gprIsBoss && _gprInstantChance > 0 && Math.random() < _gprInstantChance) {
+                        const _cAfter = gameState.characters[_n];
+                        if (_cAfter && !_cAfter.isDead && _cAfter.hp > 0) {
+                            _cAfter.hp = 0; _cAfter.isDead = true;
+                            addLog('⚙️ Purga del Reactor: ¡' + _n + ' eliminado instantáneamente! (' + Math.round(_gprInstantChance*100) + '%)', 'damage');
+                            if (typeof checkAndHandleDeath==='function') checkAndHandleDeath(_n);
+                        }
+                    }
+                    // 50% Mega Aturdimiento
+                    if (Math.random() < 0.50) {
+                        const _cNow = gameState.characters[_n];
+                        if (_cNow && !_cNow.isDead && _cNow.hp > 0) {
+                            if (typeof applyDebuff==='function') applyDebuff(_n, {name:'Mega Aturdimiento',type:'debuff',duration:1,emoji:'💫'});
+                            addLog('⚙️ Purga del Reactor: Mega Aturdimiento aplicado a ' + _n, 'debuff');
+                        }
+                    }
+                }
+
+            // ══════════════════════════════════════════════════════
+            // SKELETOR — handlers
+            // ══════════════════════════════════════════════════════
                 // MANDOBLE DE ALCALÁ: 2 daño + roba 1 HP por cada debuff en el equipo enemigo
                 const _skMAtk = gameState.characters[gameState.selectedCharacter];
                 const _skMETeam = _skMAtk ? (_skMAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
