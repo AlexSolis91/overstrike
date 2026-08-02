@@ -202,9 +202,7 @@
         window._triggerAragornOverOnDeath = function(aragornName, allyTeam) {
             const _aragorn = gameState.characters[aragornName];
             if (!_aragorn || _aragorn.isDead || _aragorn.hp <= 0) return;
-            // Aragorn ejecuta su Over
             const _aragornOver = (_aragorn.abilities||[]).find(function(a){ return a&&a.type==='over'; });
-            // Aliado aleatorio con Over
             const _alliesWithOver = Object.keys(gameState.characters).filter(function(_n){
                 const _c = gameState.characters[_n];
                 return _c && !_c.isDead && _c.hp > 0 && _c.team === allyTeam && _n !== aragornName &&
@@ -212,35 +210,45 @@
             });
             const _allyName = _alliesWithOver.length > 0 ? _alliesWithOver[Math.floor(Math.random()*_alliesWithOver.length)] : null;
             addLog('⚔️ Sangre de Numenor: ' + aragornName + ' y ' + (_allyName||'sin aliado') + ' ejecutan su Over automáticamente', 'buff');
-            // Ejecutar Over de Aragorn
-            if (_aragornOver) {
-                const _prevSelected = gameState.selectedCharacter;
-                const _prevAbility  = gameState.selectedAbility;
-                gameState.selectedCharacter = aragornName;
-                gameState.selectedAbility   = _aragornOver;
+
+            function _execOver(name, over) {
+                const _prev  = gameState.selectedCharacter;
+                const _prev2 = gameState.selectedAbility;
+                gameState.selectedCharacter = name;
+                gameState.selectedAbility   = over;
                 passiveExecuting = true;
-                // Seleccionar target AOE automáticamente (no necesita targetName)
-                try { _executeAbilityCore(null); } catch(e) { console.error('[Aragorn Over]', e); }
+                try { _executeAbilityCore(null); } catch(e) { console.error('[Aragorn Over ' + name + ']', e); }
                 passiveExecuting = false;
-                gameState.selectedCharacter = _prevSelected;
-                gameState.selectedAbility   = _prevAbility;
+                gameState.selectedCharacter = _prev;
+                gameState.selectedAbility   = _prev2;
             }
-            // Over del aliado aleatorio
-            if (_allyName) {
-                const _allyC = gameState.characters[_allyName];
-                const _allyOver = (_allyC?.abilities||[]).find(function(a){ return a&&a.type==='over'; });
+
+            // Secuencia: cinemática Aragorn → Over Aragorn → cinemática aliado → Over aliado
+            const _showCinematic = typeof window._showOverCinematic === 'function'
+                ? window._showOverCinematic : (n,a,e,t,cb) => { if(cb) setTimeout(cb,100); };
+
+            if (_aragornOver) {
+                _showCinematic(aragornName, _aragornOver.name, _aragornOver.effect, allyTeam, function() {
+                    _execOver(aragornName, _aragornOver);
+                    if (_allyName) {
+                        const _allyC    = gameState.characters[_allyName];
+                        const _allyOver = (_allyC&&_allyC.abilities||[]).find(function(a){ return a&&a.type==='over'; });
+                        if (_allyOver) {
+                            setTimeout(function() {
+                                _showCinematic(_allyName, _allyOver.name, _allyOver.effect, allyTeam, function() {
+                                    _execOver(_allyName, _allyOver);
+                                });
+                            }, 400);
+                        }
+                    }
+                });
+            } else if (_allyName) {
+                const _allyC    = gameState.characters[_allyName];
+                const _allyOver = (_allyC&&_allyC.abilities||[]).find(function(a){ return a&&a.type==='over'; });
                 if (_allyOver) {
-                    setTimeout(function() {
-                        const _p2 = gameState.selectedCharacter;
-                        const _a2 = gameState.selectedAbility;
-                        gameState.selectedCharacter = _allyName;
-                        gameState.selectedAbility   = _allyOver;
-                        passiveExecuting = true;
-                        try { _executeAbilityCore(null); } catch(e) { console.error('[Aragorn ally Over]', e); }
-                        passiveExecuting = false;
-                        gameState.selectedCharacter = _p2;
-                        gameState.selectedAbility   = _a2;
-                    }, 800);
+                    _showCinematic(_allyName, _allyOver.name, _allyOver.effect, allyTeam, function() {
+                        _execOver(_allyName, _allyOver);
+                    });
                 }
             }
         };
