@@ -2741,15 +2741,20 @@
                         const _gdOver = (_gdC.abilities||[]).find(function(a){ return a&&a.type==='over'; });
                         if (!_gdOver) continue;
                         addLog('⚙️ Reactor Nuclear: Gipsy ejecuta Purga del Reactor automáticamente (Escudo=' + _gdC.shield + ' HP ≥ 30)', 'buff');
-                        const _gdPrev = gameState.selectedCharacter;
-                        const _gdPrevAb = gameState.selectedAbility;
-                        gameState.selectedCharacter = _gdN;
-                        gameState.selectedAbility   = _gdOver;
-                        passiveExecuting = true;
-                        try { _executeAbilityCore(null); } catch(e) { console.error('[Gipsy Reactor Over]', e); }
-                        passiveExecuting = false;
-                        gameState.selectedCharacter = _gdPrev;
-                        gameState.selectedAbility   = _gdPrevAb;
+                        // Mostrar animación cinemática primero, luego ejecutar el Over
+                        (function(_name, _over, _team) {
+                            _showOverCinematic(_name, _over.name, _over.effect, _team, function() {
+                                const _gdPrev   = gameState.selectedCharacter;
+                                const _gdPrevAb = gameState.selectedAbility;
+                                gameState.selectedCharacter = _name;
+                                gameState.selectedAbility   = _over;
+                                passiveExecuting = true;
+                                try { _executeAbilityCore(null); } catch(e) { console.error('[Gipsy Reactor Over]', e); }
+                                passiveExecuting = false;
+                                gameState.selectedCharacter = _gdPrev;
+                                gameState.selectedAbility   = _gdPrevAb;
+                            });
+                        })(_gdN, _gdOver, _gdC.team);
                         break;
                     }
 
@@ -4360,3 +4365,6 @@
         }
 
         // ==================== END OVER CINEMATIC ====================
+        // Exponer globalmente para auto-Overs pasivos
+        window._showOverCinematic      = _showOverCinematic;
+        window._showOverCinematicAsync = _showOverCinematicAsync;
