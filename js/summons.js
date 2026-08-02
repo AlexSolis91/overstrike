@@ -1977,6 +1977,14 @@
             // La reducción de daño ya se aplica más arriba via hasStatusEffect('Armadura').
             // Aquí solo aseguramos que el buff esté activo al inicio de cada combate.
 
+            // ── REACTOR NUCLEAR (Gipsy Danger): al recibir daño → +2 cargas ──
+            if (remainingDamage > 0 && !passiveExecuting) {
+                if (target && target.passive && target.passive.name === 'Reactor Nuclear' && !target.isDead && target.hp > 0) {
+                    target.charges = Math.min(20, (target.charges||0) + 2);
+                    addLog('⚙️ Reactor Nuclear: Gipsy genera 2 cargas al recibir daño', 'buff');
+                }
+            }
+
             // ── CADENA DE GYOMEI: al recibir daño → gana Escudo igual al daño recibido ──
             if (remainingDamage > 0 && !passiveExecuting) {
                 if ((target.equippedRelics||[]).includes('Cadena de Gyomei')) {
