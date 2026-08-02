@@ -1110,6 +1110,19 @@
                 _isEventChar: true, _eventBoss: 'Balrog'
             },
 
+            'Gipsy Danger': {
+                hp: 30, maxHp: 30, speed: 74, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/Y4NT2kzS/Whats-App-Image-2026-07-31-at-9-00-49-PM.jpg',
+                passive: { name: 'Reactor Nuclear', description: 'Cada vez que recibe daño genera 2 cargas. Cada vez que un enemigo consume cargas para ejecutar un movimiento, Gipsy gana Escudo HP equivalente a las cargas consumidas. Al final de cada ronda, si Gipsy tiene 30 o más HP de Escudo, ejecuta Purga del Reactor (Over) sobre todos los enemigos automáticamente (sin costo de cargas).' },
+                abilities: [
+                    { name: 'Espada de Cadena',          type: 'basic',   cost: 0,  chargeGain: 2, damage: 2, target: 'single', effect: 'gipsy_espada_cadena',    description: 'ST 2 daño. Gipsy gana Escudo HP igual al daño causado. 50% probabilidad de causar daño triple (6 en lugar de 2).' },
+                    { name: 'Cañón de Plasma',           type: 'special', cost: 4,  chargeGain: 0, damage: 2, target: 'aoe',    effect: 'gipsy_canon_plasma',     description: 'AOE 2 daño. 50% de probabilidad de aplicar Aturdimiento al enemigo golpeado. Por cada Aturdimiento activo en el equipo enemigo, Gipsy gana Escudo 5 HP.' },
+                    { name: 'Ráfaga de Reactor Múltiple',type: 'special', cost: 6,  chargeGain: 0, damage: 2, target: 'mt',     effect: 'gipsy_rafaga_reactor',   description: 'Ejecuta entre 2 y 5 ataques básicos Espada de Cadena sobre el objetivo (aplican daño, efecto y cargas). Gipsy gana Armadura 3T y Provocación 3T.' },
+                    { name: 'Purga del Reactor',         type: 'over',    cost: 12, chargeGain: 0, damage: 8, target: 'aoe',    effect: 'gipsy_purga_reactor',    description: 'AOE 8 daño. Por cada HP de Escudo activo en Gipsy, +1% probabilidad de eliminar al enemigo golpeado (máx. 50%, independiente por enemigo, no aplica a Jefes de Sala). 50% probabilidad de aplicar Mega Aturdimiento a cada enemigo golpeado.' }
+                ]
+            },
+
             'Skeletor': {
                 hp: 25, maxHp: 25, speed: 82, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
