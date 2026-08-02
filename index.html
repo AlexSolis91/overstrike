@@ -248,7 +248,7 @@
             <!-- Logo: sin emoji, pegado a la izquierda -->
             <div style="display:flex;flex-direction:column;gap:2px;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;white-space:nowrap;">OVERSTRIKE</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260947</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260948</div>
             </div>
 
             <!-- HUD: empujado todo a la derecha junto al botón mute -->
@@ -663,7 +663,7 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260947"></script>
+    <script src="js/firebase-auth.js?v=20260948"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -1011,6 +1011,54 @@
             document.getElementById('equip-char-name').textContent = '⚔️ ' + charName;
             document.getElementById('equipCharScreen').style.display = 'block';
             document.getElementById('equip-relic-picker').style.display = 'none';
+
+            // ── Poblar ficha del personaje ──
+            const cd = typeof characterData !== 'undefined' ? characterData[charName] : null;
+            if (cd) {
+                const portrait = typeof getCharPortrait === 'function' ? getCharPortrait(charName) : (cd.portrait||'');
+                document.getElementById('equip-char-portrait').src = portrait;
+                document.getElementById('equip-char-title').textContent = charName;
+                // Stats
+                const statsEl = document.getElementById('equip-char-stats');
+                statsEl.innerHTML =
+                    '<span style="background:rgba(255,80,80,0.12);border:1px solid rgba(255,80,80,0.3);border-radius:6px;padding:2px 8px;color:#ff8080;">❤️ ' + (cd.maxHp||cd.hp||'?') + ' HP</span>' +
+                    '<span style="background:rgba(79,195,247,0.12);border:1px solid rgba(79,195,247,0.3);border-radius:6px;padding:2px 8px;color:#4fc3f7;">⚡ VEL ' + (cd.speed||'?') + '</span>';
+                // Pasiva
+                const passiveEl = document.getElementById('equip-char-passive');
+                if (cd.passive) {
+                    passiveEl.innerHTML = '<div style="font-size:.65rem;color:#ffaa00;font-weight:700;margin-bottom:3px;">✨ PASIVA: ' + (cd.passive.name||'') + '</div>' +
+                        '<div style="font-size:.68rem;color:#ccc;line-height:1.4;">' + (cd.passive.description||'') + '</div>';
+                    passiveEl.style.display = 'block';
+                } else {
+                    passiveEl.style.display = 'none';
+                }
+                // Habilidades
+                const abilitiesEl = document.getElementById('equip-char-abilities');
+                abilitiesEl.innerHTML = '';
+                const typeColors = { basic:'#aaa', special:'#4fc3f7', over:'#ffd700' };
+                const typeLabels = { basic:'BÁSICO', special:'ESPECIAL', over:'OVER' };
+                (cd.abilities||[]).forEach(function(ab) {
+                    if (!ab) return;
+                    const c = typeColors[ab.type]||'#aaa';
+                    const div = document.createElement('div');
+                    div.style.cssText = 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-left:3px solid '+c+';border-radius:8px;padding:8px 10px;';
+                    div.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px;">' +
+                        '<span style="font-size:.72rem;font-weight:700;color:#fff;">' + (ab.name||'') + '</span>' +
+                        '<div style="display:flex;gap:5px;align-items:center;">' +
+                        '<span style="font-size:.6rem;color:'+c+';font-family:Orbitron,sans-serif;">' + (typeLabels[ab.type]||'') + '</span>' +
+                        (ab.cost > 0 ? '<span style="font-size:.6rem;background:rgba(255,170,0,0.1);border:1px solid rgba(255,170,0,0.3);border-radius:4px;padding:1px 5px;color:#ffaa00;">⚡'+ab.cost+'</span>' : '') +
+                        '</div></div>' +
+                        '<div style="font-size:.65rem;color:#aaa;line-height:1.4;">' + (ab.description||'') + '</div>';
+                    abilitiesEl.appendChild(div);
+                });
+            } else {
+                document.getElementById('equip-char-portrait').src = '';
+                document.getElementById('equip-char-title').textContent = charName;
+                document.getElementById('equip-char-stats').innerHTML = '';
+                document.getElementById('equip-char-passive').style.display = 'none';
+                document.getElementById('equip-char-abilities').innerHTML = '';
+            }
+
             await renderEquipSlots(charName, uid);
         }
 
@@ -1750,9 +1798,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260947"></script>
+    <script src="js/characters.js?v=20260948"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260947"></script>
+    <script src="js/audio-state.js?v=20260948"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2549,26 +2597,26 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260947"></script>
+    <script src="js/ai-engine.js?v=20260948"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260947"></script>
+    <script src="js/init-render.js?v=20260948"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260947"></script>
+    <script src="js/turn-logic.js?v=20260948"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260947"></script>
+    <script src="js/status-effects.js?v=20260948"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260947"></script>
+    <script src="js/debuffs.js?v=20260948"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260947"></script>
+    <script src="js/summons.js?v=20260948"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260947"></script>
+    <script src="js/ability-select.js?v=20260948"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260947"></script>
+<script src="js/skills.js?v=20260948"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260947"></script>
-    <script src="js/horda-mode.js?v=20260947"></script>
-    <script src="js/horda-abilities.js?v=20260947"></script>
-    <script src="js/horda-battle.js?v=20260947"></script>
+    <script src="js/jefe-de-sala.js?v=20260948"></script>
+    <script src="js/horda-mode.js?v=20260948"></script>
+    <script src="js/horda-abilities.js?v=20260948"></script>
+    <script src="js/horda-battle.js?v=20260948"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
@@ -2683,15 +2731,40 @@
 
     <!-- ==================== EQUIPAR PERSONAJE ==================== -->
     <div id="equipCharScreen" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.97);z-index:5100;overflow-y:auto;padding:20px;box-sizing:border-box;">
-        <div style="max-width:600px;margin:0 auto;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <div style="max-width:900px;margin:0 auto;">
+            <!-- Header -->
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
                 <h2 id="equip-char-name" style="font-family:Orbitron,sans-serif;color:#4fc3f7;font-size:1.1rem;margin:0;">Personaje</h2>
-                <button onclick="document.getElementById('equipCharScreen').style.display='none'" style="background:rgba(255,51,102,0.2);border:1px solid #ff3366;color:#ff3366;border-radius:8px;padding:6px 16px;cursor:pointer;font-size:.75rem;">✕</button>
+                <button onclick="document.getElementById('equipCharScreen').style.display='none'" style="background:rgba(255,51,102,0.2);border:1px solid #ff3366;color:#ff3366;border-radius:8px;padding:6px 16px;cursor:pointer;font-size:.75rem;">✕ CERRAR</button>
             </div>
-            <div id="equip-slots-container" style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;"></div>
-            <div id="equip-relic-picker" style="display:none;">
-                <div style="font-family:Orbitron,sans-serif;color:#ffaa00;font-size:.8rem;margin-bottom:12px;">ELIGE UNA RELIQUIA</div>
-                <div id="equip-relic-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;"></div>
+
+            <!-- Layout: ficha a la izquierda, reliquias a la derecha -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
+
+                <!-- COLUMNA IZQUIERDA: ficha del personaje -->
+                <div id="equip-char-ficha" style="background:rgba(0,10,25,0.7);border:1px solid rgba(79,195,247,0.2);border-radius:14px;padding:16px;">
+                    <!-- Portrait + stats básicos -->
+                    <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:14px;">
+                        <img id="equip-char-portrait" src="" style="width:90px;height:90px;object-fit:cover;border-radius:12px;border:2px solid #4fc3f7;flex-shrink:0;" referrerpolicy="no-referrer">
+                        <div style="flex:1;min-width:0;">
+                            <div id="equip-char-title" style="font-family:Orbitron,sans-serif;font-size:1rem;font-weight:900;color:#4fc3f7;margin-bottom:6px;"></div>
+                            <div id="equip-char-stats" style="display:flex;gap:10px;flex-wrap:wrap;font-size:.72rem;"></div>
+                        </div>
+                    </div>
+                    <!-- Pasiva -->
+                    <div id="equip-char-passive" style="background:rgba(255,170,0,0.07);border:1px solid rgba(255,170,0,0.2);border-radius:10px;padding:10px 12px;margin-bottom:12px;"></div>
+                    <!-- Habilidades -->
+                    <div id="equip-char-abilities" style="display:flex;flex-direction:column;gap:8px;"></div>
+                </div>
+
+                <!-- COLUMNA DERECHA: slots de reliquias -->
+                <div>
+                    <div id="equip-slots-container" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;"></div>
+                    <div id="equip-relic-picker" style="display:none;">
+                        <div style="font-family:Orbitron,sans-serif;color:#ffaa00;font-size:.8rem;margin-bottom:10px;">ELIGE UNA RELIQUIA</div>
+                        <div id="equip-relic-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;max-height:350px;overflow-y:auto;"></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
