@@ -539,22 +539,20 @@
     function ability_eliteSpecial1(casterName, targetName) {
         var target = gameState.characters[targetName];
         if (!target) return;
-        var noCharges = (target.charges || 0) <= 0;
-        var dmg = noCharges ? 6 : 3; // "daño crítico" ≈ doble
+        // Nuevo efecto: daño = 25% del HP actual del enemigo con MAYOR HP
+        var casterChar = gameState.characters[casterName];
+        var enemyTeam = casterChar ? enemyTeamOf(casterChar.team) : null;
+        var maxHpEnemy = 0;
+        if (enemyTeam) {
+            aliveOnTeam(enemyTeam).forEach(function(n) {
+                var c = gameState.characters[n];
+                if (c && (c.hp||0) > maxHpEnemy) maxHpEnemy = c.hp;
+            });
+        }
+        var dmg = Math.max(1, Math.floor(maxHpEnemy * 0.25));
         dmg = hordaComputeRelicDamage(casterName, targetName, dmg, 'special', false);
         applyDamageWithShield(targetName, dmg, casterName);
-        if (noCharges) {
-            var caster = gameState.characters[casterName];
-            var enemyTeam = caster ? enemyTeamOf(caster.team) : null;
-            var enemies = enemyTeam ? aliveOnTeam(enemyTeam) : [];
-            for (var i = 0; i < 2 && enemies.length; i++) {
-                var e = enemies.splice(Math.floor(Math.random() * enemies.length), 1)[0];
-                if (typeof applyStun === 'function') applyStun(e, 2);
-            }
-            addLog('💢 Rompeguardias: ¡objetivo sin cargas! Crítico + Mega Aturdimiento a 2 enemigos aleatorios', 'damage');
-        } else {
-            addLog('💢 Rompeguardias: ' + dmg + ' daño a ' + targetName, 'damage');
-        }
+        addLog('💢 Rompeguardias: ' + dmg + ' daño a ' + targetName + ' (25% del HP del enemigo más fuerte: ' + maxHpEnemy + ' HP)', 'damage');
     }
     function ability_eliteSpecial2(casterName) {
         var caster = gameState.characters[casterName];
@@ -855,18 +853,19 @@
         if (!caster) return;
         var enemyTeam = enemyTeamOf(caster.team);
         aliveOnTeam(enemyTeam).forEach(function (n) {
-            var dmg = 5 + Math.floor(Math.random() * 16); // 5-20
-            dmg = hordaComputeRelicDamage(casterName, n, dmg, 'over', true);
-            applyDamageWithShield(n, dmg, casterName);
-            if (Math.random() < 0.10) {
-                var c = gameState.characters[n];
-                if (c && !c.isDead && c.hp > 0) {
-                    applyDamageWithShield(n, c.hp, casterName);
-                }
-                addLog('🌋 Devastacion planetaria: ¡' + n + ' eliminado! (10%)', 'damage');
-            }
+            var c = gameState.characters[n];
+            if (!c) return;
+            // Daño base: entre 5 y 20
+            var dmg = 5 + Math.floor(Math.random() * 16);
+            // Daño adicional: entre 10% y 50% del HP actual del enemigo golpeado
+            var bonusPct = 0.10 + Math.random() * 0.40; // 10% a 50%
+            var bonusDmg = Math.max(1, Math.floor((c.hp||0) * bonusPct));
+            var totalDmg = dmg + bonusDmg;
+            totalDmg = hordaComputeRelicDamage(casterName, n, totalDmg, 'over', true);
+            applyDamageWithShield(n, totalDmg, casterName);
+            addLog('🌋 Devastación Planetaria: ' + totalDmg + ' daño a ' + n + ' (' + dmg + ' base + ' + bonusDmg + ' = ' + Math.round(bonusPct*100) + '% HP actual)', 'damage');
         });
-        addLog('🌋 Devastacion planetaria: 5-20 daño AOE a todos los enemigos', 'damage');
+        addLog('🌋 Devastación Planetaria: AOE 5-20 daño + 10%-50% del HP actual del enemigo', 'damage');
     }
 
     // ══════════════════════════════════════════════════════════════════════
