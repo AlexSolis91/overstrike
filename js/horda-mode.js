@@ -82,7 +82,7 @@
                 passive: { name: 'Sed de Sangre', description: 'Cada vez que un Orco es eliminado, gana 1 turno adicional y genera 8 cargas. Cada vez que un enemigo realiza un ataque especial, gana 1 turno adicional y se aplica Buff Frenesí 2 turnos. Cada vez que aplica un debuff sobre un enemigo atacado, genera 1 carga.' },
                 abilities: [
                     { name: 'Estocada Brutal', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'multi', effect: 'horda_elite_basic', description: 'Realiza 3 golpes sobre enemigos aleatorios. Cada golpe tiene 50% de aplicar Sangrado 1T, 50% de aplicar Debilitar 1T y 50% de aplicar Aturdimiento.' },
-                    { name: 'Rompeguardias', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'single', effect: 'horda_elite_special1', description: 'Si el objetivo no tiene cargas, causa daño crítico y aplica Mega Aturdimiento sobre 2 enemigos aleatorios.' },
+                    { name: 'Rompeguardias', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'single', effect: 'horda_elite_special1', description: 'ST 3 daño. Causa daño equivalente al 25% del HP actual del enemigo con mayor HP.' },
                     { name: 'Carga de la Horda', type: 'special', cost: 8, chargeGain: 0, damage: 0, target: 'self', effect: 'horda_elite_special2', description: '50% de probabilidad c/u de aplicarse Armadura, Escudo 10HP, Infectar, Aura Oscura, Aura de Fuego, Frenesí y Esquivar (2 turnos c/u). Por cada buff aplicado, ejecuta Estocada Brutal.' },
                     { name: 'Aniquilacion Sangrienta', type: 'over', cost: 10, chargeGain: 0, damage: 5, target: 'single', effect: 'horda_elite_over', description: '50% de golpe crítico. 50% de probabilidad de daño triple.' }
                 ]
@@ -128,7 +128,7 @@
                     { name: 'Impacto Colosal', type: 'basic', cost: 0, chargeGain: 2, damage: 4, target: 'single', effect: 'horda_titan_basic', description: 'Aplica Buff Mega Aturdimiento sobre el objetivo.' },
                     { name: 'Choque Sismico', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'aoe', effect: 'horda_titan_special1', description: 'Aplica Aturdimiento sobre los golpeados. Si el enemigo ya tenía Aturdimiento, causa +7 daño adicional.' },
                     { name: 'Furia de Titanes', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'multi', effect: 'horda_titan_special2', description: 'Golpea 1 vez a cada enemigo por cada debuff activo que tenga, con Impacto Colosal.' },
-                    { name: 'Devastacion planetaria', type: 'over', cost: 8, chargeGain: 0, damage: 0, target: 'aoe', effect: 'horda_titan_over', description: 'Causa de 5 a 20 de daño. Cada golpe tiene 10% de probabilidad de eliminar al enemigo golpeado.' }
+                    { name: 'Devastacion planetaria', type: 'over', cost: 8, chargeGain: 0, damage: 0, target: 'aoe', effect: 'horda_titan_over', description: 'AOE entre 5 y 20 de daño base. Causa entre un 10% y 50% de daño adicional sobre el HP actual de cada enemigo golpeado.' }
                 ]
             }
         };
