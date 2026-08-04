@@ -2491,6 +2491,8 @@
                 // Layout especial "Jefe de Sala": jefe arriba centrado, equipo abajo en fila
                 var _battleArenaEl = document.querySelector('.battle-arena');
                 if (_battleArenaEl) _battleArenaEl.classList.toggle('boss-mode', csState.gameMode === 'boss');
+                // Layout "manos de cartas": equipo rival arriba, equipo propio abajo, ambos en fila
+                if (_battleArenaEl) _battleArenaEl.classList.toggle('hand-mode', csState.gameMode === 'ranked');
 
                 // Apply battle background (boss mode gets boss-specific bg, horda gets video, others random)
                 if (csState.gameMode === 'horda') {
