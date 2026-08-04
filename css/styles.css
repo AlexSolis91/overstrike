@@ -2997,6 +2997,27 @@
             gap: 6px;
             width: 100%;
         }
+        /* Tarjetas de invocaciones más grandes en hand-mode */
+        .battle-arena.hand-mode .summon-card-mini {
+            max-width: 240px !important;
+            padding: 8px 12px !important;
+            gap: 10px !important;
+            border-radius: 12px !important;
+        }
+        .battle-arena.hand-mode .summon-card-mini img,
+        .battle-arena.hand-mode .summon-card-mini > div:first-child {
+            width: 56px !important;
+            height: 56px !important;
+        }
+        .battle-arena.hand-mode .summon-card-mini > div:last-child > div:first-child {
+            font-size: 0.95rem !important;
+        }
+        .battle-arena.hand-mode .summon-card-mini > div:last-child > div:last-child {
+            font-size: 0.8rem !important;
+        }
+        .battle-arena.hand-mode .summon-card-mini > div:last-child > div[style*="height:5px"] {
+            height: 8px !important;
+        }
         /* Tarjetas más grandes que el modo Jefe de Sala — tipo carta uniforme */
         .battle-arena.hand-mode .character-card {
             width: 168px;
@@ -3054,8 +3075,8 @@
             position: absolute;
             top: 44px;
             right: 8px;
-            width: 210px;
-            max-height: 26vh;
+            bottom: 12px;
+            width: 220px;
             padding: 8px;
             gap: 4px;
             background: rgba(4,8,16,0.78);
@@ -3071,7 +3092,7 @@
             top: 44px;
             left: 8px;
             bottom: 12px;
-            width: 280px;
+            width: 300px;
             padding: 14px;
             font-size: 1.05em;
             background: rgba(4,8,16,0.82);
@@ -3082,13 +3103,12 @@
         }
         @media (max-width: 900px) {
             .battle-arena.hand-mode .center-column {
-                width: 140px;
-                max-height: 22vh;
+                width: 150px;
                 font-size: 0.82em;
             }
             .battle-arena.hand-mode #handModeInfoPanel {
                 top: 44px;
-                width: 190px;
+                width: 200px;
                 font-size: 0.88em;
                 padding: 10px;
             }
