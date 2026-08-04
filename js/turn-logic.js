@@ -1269,7 +1269,7 @@
                 const img = document.createElement('img');
                 img.src = portrait; img.alt = name;
                 img.style.cssText = isEmbedded
-                    ? 'width:100%;max-width:220px;height:220px;object-fit:cover;object-position:top center;border-radius:12px;border:2px solid ' + teamColor + ';flex-shrink:0;'
+                    ? 'width:100%;max-width:280px;height:280px;object-fit:cover;object-position:top center;border-radius:12px;border:2px solid ' + teamColor + ';flex-shrink:0;'
                     : 'width:80px;height:80px;object-fit:contain;border-radius:10px;border:2px solid ' + teamColor + ';flex-shrink:0;';
                 img.onerror = function() { this.style.display='none'; };
                 header.appendChild(img);
@@ -1286,6 +1286,24 @@
             teamTag.textContent = teamLabel;
             teamTag.style.cssText = 'opacity:0.7;margin-bottom:8px;font-size:' + (isEmbedded ? '0.95em' : '0.75em') + ';';
             meta.appendChild(teamTag);
+
+            // Reliquias equipadas — justo arriba de la barra de HP
+            if (char.equippedRelics && char.equippedRelics.length > 0 && typeof RELICS_DATA !== 'undefined') {
+                const relWrap = document.createElement('div');
+                relWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;justify-content:' + (isEmbedded ? 'center' : 'flex-start') + ';margin-bottom:10px;';
+                char.equippedRelics.forEach(function(relicName) {
+                    const rd = RELICS_DATA[relicName];
+                    const relIconSize = isEmbedded ? '40px' : '28px';
+                    const relIcon = document.createElement('img');
+                    relIcon.src = rd && rd.img ? rd.img : '';
+                    relIcon.alt = relicName;
+                    relIcon.title = relicName + (rd && rd.desc ? (' — ' + rd.desc) : '');
+                    relIcon.style.cssText = 'width:' + relIconSize + ';height:' + relIconSize + ';object-fit:cover;border-radius:6px;border:1px solid rgba(255,215,0,0.4);background:rgba(255,215,0,0.08);';
+                    relIcon.onerror = function() { this.style.display = 'none'; };
+                    relWrap.appendChild(relIcon);
+                });
+                meta.appendChild(relWrap);
+            }
 
             // Stats grid
             const stats = [
