@@ -2868,13 +2868,19 @@
         .battle-arena.boss-mode #team2Col .boss-card {
             width: min(32vw, 300px);
         }
-        .battle-arena.boss-mode #team2Col .boss-portrait,
+        .battle-arena.boss-mode #team2Col .boss-card:has(video.boss-portrait) {
+            width: min(24vw, 240px);
+        }
+        .battle-arena.boss-mode #team2Col img.boss-portrait,
         .battle-arena.boss-mode #team2Col .boss-portrait-placeholder {
             height: min(26vh, 220px);
         }
-        /* El video del jefe debe verse completo (sin recortar), a diferencia
-           de la imagen estática que sí rellena el cuadro con object-fit:cover */
+        /* El video del jefe usa proporción vertical real (sin recortar ni barras negras)
+           en vez de un cuadro fijo tipo imagen estática */
         .battle-arena.boss-mode #team2Col video.boss-portrait {
+            height: auto;
+            aspect-ratio: 9 / 16;
+            max-height: min(46vh, 420px);
             object-fit: contain;
             background: #000;
         }
