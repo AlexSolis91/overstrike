@@ -2729,3 +2729,94 @@
         #team2Col .boss-card {
             width: 350px;
         }
+
+        /* ═══ BOSS-MODE ARENA — jefe arriba centrado, equipo abajo en fila ═══ */
+        .battle-arena.boss-mode {
+            display: flex;
+            flex-direction: column;
+        }
+        .battle-arena.boss-mode #team1Col {
+            order: 2;
+            flex: 0 0 auto;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 6px;
+            padding: 6px 8px 84px 8px;
+            overflow-x: auto;
+            overflow-y: hidden;
+            height: auto;
+        }
+        .battle-arena.boss-mode #team1Col #teamHeader1 {
+            display: none;
+        }
+        .battle-arena.boss-mode #team1Col #team1Characters {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 6px;
+            width: 100%;
+        }
+        .battle-arena.boss-mode #team1Col .character-card {
+            width: 132px;
+            flex-shrink: 0;
+        }
+        .battle-arena.boss-mode #team1Col .character-portrait,
+        .battle-arena.boss-mode #team1Col .character-portrait-placeholder {
+            width: 100%;
+            height: 88px;
+        }
+        .battle-arena.boss-mode #team1Col .character-portrait-row {
+            margin-bottom: 2px;
+        }
+        .battle-arena.boss-mode #team2Col {
+            order: 1;
+            flex: 1 1 auto;
+            padding-top: 40px;
+            padding-bottom: 4px;
+            min-height: 0;
+        }
+        .battle-arena.boss-mode #team2Col:has(.boss-card) {
+            padding-top: 40px;
+        }
+        .battle-arena.boss-mode #team2Col .boss-card {
+            width: min(48vw, 420px);
+        }
+        .battle-arena.boss-mode #team2Col .boss-portrait,
+        .battle-arena.boss-mode #team2Col .boss-portrait-placeholder {
+            height: min(40vh, 340px);
+        }
+        /* Panel de turno + log: se convierte en ficha flotante en la esquina
+           para no ocupar espacio horizontal entre jefe y equipo */
+        .battle-arena.boss-mode .center-column {
+            position: absolute;
+            top: 44px;
+            left: 8px;
+            width: 210px;
+            max-height: 46vh;
+            padding: 8px;
+            gap: 4px;
+            background: rgba(4,8,16,0.78);
+            border: 1px solid rgba(0,196,255,0.18);
+            border-radius: 10px;
+            z-index: 5;
+            overflow-y: auto;
+        }
+        @media (max-width: 900px) {
+            .battle-arena.boss-mode .center-column {
+                width: 150px;
+                max-height: 34vh;
+                font-size: 0.85em;
+            }
+            .battle-arena.boss-mode #team1Col .character-card {
+                width: 100px;
+            }
+            .battle-arena.boss-mode #team1Col .character-portrait,
+            .battle-arena.boss-mode #team1Col .character-portrait-placeholder {
+                height: 68px;
+            }
+        }
+
