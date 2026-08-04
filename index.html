@@ -2491,12 +2491,6 @@
                 // Layout especial "Jefe de Sala": jefe arriba centrado, equipo abajo en fila
                 var _battleArenaEl = document.querySelector('.battle-arena');
                 if (_battleArenaEl) _battleArenaEl.classList.toggle('boss-mode', csState.gameMode === 'boss');
-                // Layout "manos de cartas" (Ranked): equipo rival arriba, equipo propio abajo, ambos en fila.
-                // RANKED_HAND_LAYOUT_ENABLED: cambia a false (o pide "layout clásico de ranked") para
-                // volver instantáneamente al layout anterior (grid de 3 columnas) sin borrar este código.
-                var RANKED_HAND_LAYOUT_ENABLED = true;
-                var _isRankedBattle = !!(window._rankedMode || window._rankedFromMatchmaking);
-                if (_battleArenaEl) _battleArenaEl.classList.toggle('hand-mode', RANKED_HAND_LAYOUT_ENABLED && _isRankedBattle);
 
                 // Apply battle background (boss mode gets boss-specific bg, horda gets video, others random)
                 if (csState.gameMode === 'horda') {
@@ -2591,6 +2585,12 @@
                         addLog('🏆 RANKED: ' + (currentUser ? currentUser.displayName || 'Jugador' : 'Jugador') + ' vs ' + window._rankedFakeOpponent, 'info');
                     }
                 }
+                // Layout "manos de cartas" (Ranked): equipo rival arriba, equipo propio abajo, ambos en fila.
+                // Se aplica AQUÍ (no antes) porque gameState.gameMode todavía no valía 'ranked' arriba.
+                // RANKED_HAND_LAYOUT_ENABLED: cambia a false (o pide "layout clásico de ranked") para
+                // volver instantáneamente al layout anterior (grid de 3 columnas) sin borrar este código.
+                var RANKED_HAND_LAYOUT_ENABLED = true;
+                if (_battleArenaEl) _battleArenaEl.classList.toggle('hand-mode', RANKED_HAND_LAYOUT_ENABLED && gameState.gameMode === 'ranked');
 
                 // Cargar reliquias para todos los modos
                 window.loadGameRelics();
