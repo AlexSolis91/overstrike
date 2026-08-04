@@ -3897,19 +3897,32 @@
                 if (typeof applyAOEToSummons === 'function') applyAOEToSummons(_rpETeam, finalDamage, charName);
                 addLog('👑 Rey Pagano: ' + finalDamage + ' daño AOE + Sangrado al equipo enemigo', 'damage');
 
-            // ── ÁGUILA DE SANGRE V2 (ST 10; <50% HP → elimina; si muere → aliado +10 cargas) ──
+            // ── ÁGUILA DE SANGRE V2 (ST 10; <50% HP → elimina [no en Jefes de Sala];
+            //    si muere → aliado +10 cargas; vs Jefe de Sala con Sangrado → crítico,
+            //    vs Jefe de Sala con Hemorragia → daño triple) ──
             } else if (ability.effect === 'aguila_sangre_v2') {
                 const _asTgt = gameState.characters[targetName];
                 if (_asTgt && !_asTgt.isDead) {
                     const _asHpPct = _asTgt.hp / (_asTgt.maxHp || 1);
-                    if (_asHpPct < 0.50) {
-                        // Instant kill
+                    if (!_asTgt.isBoss && _asHpPct < 0.50) {
+                        // Instant kill (no aplica en Jefes de Sala)
                         _asTgt.hp = 0; _asTgt.isDead = true;
                         addLog('🦅 Águila de Sangre: ' + targetName + ' tenía menos del 50% HP → ELIMINADO', 'damage');
                         if (typeof registerKill === 'function') registerKill(charName, targetName, false);
                     } else {
-                        applyDamageWithShield(targetName, finalDamage, charName);
-                        addLog('🦅 Águila de Sangre: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                        // Contra Jefes de Sala: Sangrado → daño crítico (x2), Hemorragia → daño triple (x3)
+                        let _asDmgMult = 1;
+                        let _asDmgTag = '';
+                        if (_asTgt.isBoss) {
+                            const _asEffects = _asTgt.statusEffects || [];
+                            const _asHasHemorragia = _asEffects.some(function(e){ return e && e.name === 'Hemorragia'; });
+                            const _asHasSangrado = _asEffects.some(function(e){ return e && e.name === 'Sangrado'; });
+                            if (_asHasHemorragia) { _asDmgMult = 3; _asDmgTag = ' (¡daño TRIPLE por Hemorragia!)'; }
+                            else if (_asHasSangrado) { _asDmgMult = 2; _asDmgTag = ' (¡golpe CRÍTICO por Sangrado!)'; }
+                        }
+                        const _asFinalDmg = finalDamage * _asDmgMult;
+                        applyDamageWithShield(targetName, _asFinalDmg, charName);
+                        addLog('🦅 Águila de Sangre: ' + _asFinalDmg + ' daño a ' + targetName + _asDmgTag, 'damage');
                     }
                     // If target died (either way), grant 10 charges to random ally
                     const _asNowDead = gameState.characters[targetName];
