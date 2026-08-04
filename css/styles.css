@@ -136,6 +136,9 @@
             background: transparent;
             z-index: 1;
         }
+        #handModeInfoPanel {
+            display: none;
+        }
 
         .team-column {
             display: flex;
@@ -2948,7 +2951,9 @@
         .battle-arena.hand-mode #team1Col {
             order: 3;
             justify-content: flex-end;
-            padding: 6px 8px 84px 8px;
+            padding: 6px 8px 18px 8px;
+            /* Empuja la mano del jugador hasta el borde inferior real de la pantalla */
+            margin-top: auto;
         }
         .battle-arena.hand-mode #team2Col {
             order: 1;
@@ -2972,9 +2977,19 @@
         .battle-arena.hand-mode #team2Characters {
             align-items: flex-start;
         }
-        .battle-arena.hand-mode #team1Summons,
-        .battle-arena.hand-mode #team2Summons {
+        /* Invocaciones del jugador: arriba de sus propias cartas ("primera línea de fuego") */
+        .battle-arena.hand-mode #team1Summons {
             order: -1;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+        }
+        /* Invocaciones del rival: DEBAJO de sus cartas (no arriba) */
+        .battle-arena.hand-mode #team2Summons {
+            order: 1;
             display: flex;
             flex-direction: row;
             flex-wrap: nowrap;
@@ -3038,9 +3053,9 @@
         .battle-arena.hand-mode .center-column {
             position: absolute;
             top: 44px;
-            left: 8px;
+            right: 8px;
             width: 210px;
-            max-height: 40vh;
+            max-height: 26vh;
             padding: 8px;
             gap: 4px;
             background: rgba(4,8,16,0.78);
@@ -3049,11 +3064,32 @@
             z-index: 5;
             overflow-y: auto;
         }
+        /* Panel de información del personaje bajo el cursor — a la derecha, debajo del log */
+        .battle-arena.hand-mode #handModeInfoPanel {
+            display: block;
+            position: absolute;
+            top: calc(44px + 26vh + 8px);
+            right: 8px;
+            bottom: 12px;
+            width: 210px;
+            padding: 10px;
+            background: rgba(4,8,16,0.82);
+            border: 1px solid rgba(0,196,255,0.18);
+            border-radius: 10px;
+            z-index: 5;
+            overflow-y: auto;
+        }
         @media (max-width: 900px) {
             .battle-arena.hand-mode .center-column {
                 width: 140px;
-                max-height: 30vh;
+                max-height: 22vh;
                 font-size: 0.82em;
+            }
+            .battle-arena.hand-mode #handModeInfoPanel {
+                top: calc(44px + 22vh + 8px);
+                width: 140px;
+                font-size: 0.8em;
+                padding: 8px;
             }
             .battle-arena.hand-mode .character-card {
                 width: 108px;
