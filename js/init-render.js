@@ -741,9 +741,11 @@
                         '<div style="height:3px;width:100%;background:linear-gradient(90deg,transparent,' + _bossColor + ',transparent);border-radius:10px 10px 0 0;"></div>' +
                         // Portrait
                         '<div class="boss-portrait-wrap">' +
-                        (activePortrait
-                            ? '<img class="boss-portrait' + (isDefeated ? ' defeated-img' : '') + '" src="' + activePortrait + '" alt="' + name + '" loading="eager" referrerpolicy="no-referrer">'
-                            : '<div class="boss-portrait-placeholder">👹</div>') +
+                        (char.portraitVideo
+                            ? '<video class="boss-portrait' + (isDefeated ? ' defeated-img' : '') + '" src="' + char.portraitVideo + '" autoplay loop muted playsinline></video>'
+                            : (activePortrait
+                                ? '<img class="boss-portrait' + (isDefeated ? ' defeated-img' : '') + '" src="' + activePortrait + '" alt="' + name + '" loading="eager" referrerpolicy="no-referrer">'
+                                : '<div class="boss-portrait-placeholder">👹</div>')) +
                         // Name overlay on portrait
                         '<div class="boss-name-overlay" style="background:linear-gradient(to top,rgba(0,0,0,0.92) 0%,rgba(0,0,0,0.6) 50%,transparent 100%);">' +
                         '<div style="font-family:Orbitron,sans-serif;font-size:.82rem;font-weight:700;color:' + _bossColor + ';letter-spacing:.05em;text-shadow:0 0 10px ' + _bossColor + ';margin-bottom:2px;">' + name + '</div>' +
