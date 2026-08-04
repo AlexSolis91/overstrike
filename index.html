@@ -1665,7 +1665,7 @@
                 overVideo: 'https://ia600706.us.archive.org/8/items/video-project-10-1_202608/Video%20Project%2010%20%281%29.mp4',
                 overSound: 'https://ia601801.us.archive.org/6/items/grito-de-brolysuper-plantilla-v-m-rubxzbhxa-y/grito%20de%20broly%28super%29%20plantilla_v%20%5BmRUBxzbhxaY%5D.mp3',
                 hp: 100000, maxHp: 100000, speed: 95,
-                passive: { name: 'Legendario Super Sayajin', description: 'Cada vez que recibe daño, genera 3 cargas. Genera N cargas al inicio de la ronda N. 25% de probabilidad de esquivar Debuffs.' }
+                passive: { name: 'Legendario Super Sayajin', description: 'Cada vez que recibe daño, genera 3 cargas. Genera N cargas al inicio de la ronda N. 25% de probabilidad de esquivar Debuffs. Al final de cada ronda tiene un 30% de probabilidad (a cada personaje individualmente) de causar 2 de daño (se va incrementando +2 de daño por cada ronda). Al final de cada ronda Broly incrementa en +2 su velocidad. Al inicio de cada ronda hay un 50% de probabilidad de limpiar cada debuff activo en Broly.' }
             },
             'lich_king': {
                 name: 'Lich King',
@@ -3031,7 +3031,7 @@
                             <span style="font-size:.68rem;color:#aaa;">⚡ VEL 95</span>
                         </div>
                         <div style="font-size:.63rem;color:#666;margin-top:4px;line-height:1.4;">
-                            <span style="color:#ff8844;">Pasiva:</span> Cada vez que recibe daño, genera 3 cargas. Genera N cargas al inicio de la ronda N. 25% de probabilidad de esquivar Debuffs.
+                            <span style="color:#ff8844;">Pasiva:</span> Cada vez que recibe daño, genera 3 cargas. Genera N cargas al inicio de la ronda N. 25% de esquivar Debuffs. Fin de ronda: 30% c/u de causar daño creciente (+2/ronda) y Broly +2 VEL. Inicio de ronda: 50% de limpiar cada debuff en Broly.
                         </div>
                     </div>
                 </div>
@@ -3039,19 +3039,19 @@
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px;margin-bottom:14px;">
                     <div style="background:rgba(255,255,255,0.04);border-radius:7px;padding:6px 8px;">
                         <div style="font-size:.62rem;color:#4fc3f7;font-weight:700;">BÁSICO — Eraser Cannon</div>
-                        <div style="font-size:.6rem;color:#777;margin-top:2px;">DMG 3 · ST · 2 cargas</div>
+                        <div style="font-size:.6rem;color:#777;margin-top:2px;">DMG 3 · ST · 50% doble cargas</div>
                     </div>
                     <div style="background:rgba(255,255,255,0.04);border-radius:7px;padding:6px 8px;">
-                        <div style="font-size:.62rem;color:#c864ff;font-weight:700;">ESPECIAL — Escudo Energía</div>
-                        <div style="font-size:.6rem;color:#777;margin-top:2px;">SELF · Escudo 5HP + Concentración</div>
+                        <div style="font-size:.62rem;color:#c864ff;font-weight:700;">ESPECIAL — Onda de Destrucción</div>
+                        <div style="font-size:.6rem;color:#777;margin-top:2px;">DMG 6 · ST · +200% daño/buff disipado</div>
                     </div>
                     <div style="background:rgba(255,255,255,0.04);border-radius:7px;padding:6px 8px;">
                         <div style="font-size:.62rem;color:#c864ff;font-weight:700;">ESPECIAL — Liberación</div>
-                        <div style="font-size:.6rem;color:#777;margin-top:2px;">DMG 5 · AOE · +4 cargas/esquiva</div>
+                        <div style="font-size:.6rem;color:#777;margin-top:2px;">DMG 5 · AOE · 50% +4 cargas/golpe</div>
                     </div>
                     <div style="background:rgba(255,255,255,0.04);border-radius:7px;padding:6px 8px;">
                         <div style="font-size:.62rem;color:#ffd700;font-weight:700;">OVER — Omega Bláster</div>
-                        <div style="font-size:.6rem;color:#777;margin-top:2px;">DMG 20 · Roba cargas enemigas</div>
+                        <div style="font-size:.6rem;color:#777;margin-top:2px;">DMG 20 · Roba cargas + 10% HP máx enemigo</div>
                     </div>
                 </div>
                 <!-- Duración -->
