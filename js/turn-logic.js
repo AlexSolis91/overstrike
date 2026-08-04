@@ -2328,6 +2328,22 @@
                             const _brolyRoundCharges = gameState.currentRound; // Ronda 1→1, Ronda 2→2, etc.
                             _brolyC.charges = Math.min(20, (_brolyC.charges || 0) + _brolyRoundCharges);
                             addLog('💚 Legendario Super Sayajin: Broly genera ' + _brolyRoundCharges + ' cargas al inicio de la ronda ' + gameState.currentRound + ' (' + _brolyC.charges + '/20)', 'buff');
+                            // 50% de probabilidad de limpiar CADA debuff activo en Broly (individualmente)
+                            if (_brolyC.statusEffects && _brolyC.statusEffects.length > 0) {
+                                const _brolyKept = [];
+                                let _brolyCleared = 0;
+                                _brolyC.statusEffects.forEach(function(_brEff) {
+                                    if (_brEff && _brEff.type === 'debuff' && Math.random() < 0.50) {
+                                        _brolyCleared++;
+                                    } else {
+                                        _brolyKept.push(_brEff);
+                                    }
+                                });
+                                if (_brolyCleared > 0) {
+                                    _brolyC.statusEffects = _brolyKept;
+                                    addLog('💚 Legendario Super Sayajin: Broly limpia ' + _brolyCleared + ' debuff(s) (inicio de ronda, 50% c/u)', 'buff');
+                                }
+                            }
                         }
                     }
                     // ── MONARCA DE LOS DEMONIOS (Baran): inicio de ronda → Frenzied Slash automático ──
@@ -3306,6 +3322,28 @@
 
                 // ── PASIVAS DINÁMICAS: fin de ronda ──
                 if (typeof runDynamicPassives === 'function') runDynamicPassives('AL_FINAL_DE_RONDA');
+
+                // ── LEGENDARIO SUPER SAYAJIN (Broly): fin de ronda →
+                //    1) 30% de probabilidad (por personaje, individualmente) de causar daño
+                //       creciente (+2 por ronda: ronda1=2, ronda2=4, ronda3=6...)
+                //    2) Broly gana +2 de velocidad ──
+                for (const _brEorN in gameState.characters) {
+                    const _brEorC = gameState.characters[_brEorN];
+                    if (!_brEorC || _brEorC.isDead || _brEorC.hp <= 0) continue;
+                    if (_brEorC.isBoss && _brEorC.passive && _brEorC.passive.name === 'Legendario Super Sayajin') {
+                        const _brEorDmg = 2 * gameState.currentRound;
+                        for (const _brEorTn in gameState.characters) {
+                            const _brEorT = gameState.characters[_brEorTn];
+                            if (!_brEorT || _brEorT.isDead || _brEorT.hp <= 0 || _brEorT.isBoss) continue;
+                            if (Math.random() < 0.30) {
+                                applyDamageWithShield(_brEorTn, _brEorDmg, _brEorN);
+                                addLog('💚 Legendario Super Sayajin: ' + _brEorTn + ' recibe ' + _brEorDmg + ' daño (fin de ronda, 30%)', 'damage');
+                            }
+                        }
+                        _brEorC.speed = (_brEorC.speed || 0) + 2;
+                        addLog('💚 Legendario Super Sayajin: Broly gana +2 de velocidad (fin de ronda, ' + _brEorC.speed + ' total)', 'buff');
+                    }
+                }
 
                 // ── MORDEDURA (Cría de Dragón): fin de ronda → aplica debuff aleatorio a enemigo aleatorio ──
                 for (const _criaSumId in gameState.summons) {
