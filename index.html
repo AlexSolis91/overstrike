@@ -98,6 +98,11 @@
   <source src="https://ia903201.us.archive.org/26/items/naruto-shippuden-ost-1-track-26-keisei-gyakuten-reverse-situation_202607/One%20punch%20man%20-%20OST%20-%2035.%20Dark%20Energy.mp3" type="audio/mpeg">
 </audio>
 
+<!-- Música EXCLUSIVA del Jefe de Sala Broly — nunca entra a la rotación aleatoria -->
+<audio id="audioBossBroly" loop preload="auto">
+  <source src="https://dn710806.ca.archive.org/0/items/dragon-ball-super-brolys-transformation-theme-hq-epic-cover-cxw-jtgg-hiew/Dragon%20Ball%20Super%20-%20Broly%27s%20Transformation%20Theme%20%28HQ%20Epic%20Cover%29%20%5BcxwJtggHIew%5D.mp3" type="audio/mpeg">
+</audio>
+
 <!-- Música EXCLUSIVA del Jefe de Sala Lich King — nunca entra a la rotación aleatoria -->
 <audio id="audioBossLichKing" loop preload="auto">
   <source src="https://ia902809.us.archive.org/6/items/01-wrath-of-the-lich-king-main-title/01%20-%20Wrath%20Of%20The%20Lich%20King%20%28Main%20Title%29.mp3" type="audio/mpeg">
@@ -2580,7 +2585,7 @@
                 // Algunos jefes tienen música exclusiva y fija — nunca entra a la rotación aleatoria
                 var _bossMusicName = (csState.gameMode === 'boss' && window._bossBattleData && window._bossBattleData.boss)
                     ? window._bossBattleData.boss.name : '';
-                var _bossMusicMap = { 'Lich King': 'audioBossLichKing', 'Albus Dumbledore': 'audioBossDumbledore', 'Balrog': 'audioBossBalrog' };
+                var _bossMusicMap = { 'Broly': 'audioBossBroly', 'Lich King': 'audioBossLichKing', 'Albus Dumbledore': 'audioBossDumbledore', 'Balrog': 'audioBossBalrog' };
                 if (csState.gameMode === 'horda') {
                     // Pista exclusiva de Modo Horda: suena de principio a fin de la CORRIDA
                     // completa (todas las oleadas), nunca se interrumpe entre oleadas.
