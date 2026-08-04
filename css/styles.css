@@ -2245,6 +2245,19 @@
             animation: ocBgFade 3.2s ease forwards;
             overflow: hidden;
         }
+        /* Ventana flotante para el clip de video exclusivo de un Over (ej. Broly) */
+        #overCinematic.oc-video-wrap {
+            background: rgba(0,0,0,0.88);
+            animation: none;
+        }
+        .oc-video {
+            max-width: min(720px, 86vw);
+            max-height: 80vh;
+            border-radius: 14px;
+            border: 3px solid rgba(0,255,120,0.6);
+            box-shadow: 0 0 60px rgba(0,255,120,0.35);
+            background: #000;
+        }
         @keyframes ocBgFade {
             0%   { background: rgba(0,0,0,0); }
             12%  { background: rgba(0,0,0,0.92); }
