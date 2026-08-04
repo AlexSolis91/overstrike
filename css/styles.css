@@ -2879,7 +2879,7 @@
            en vez de un cuadro fijo tipo imagen estática */
         .battle-arena.boss-mode #team2Col video.boss-portrait {
             height: auto;
-            aspect-ratio: 20 / 28;
+            aspect-ratio: 20 / 26;
             max-height: min(46vh, 420px);
             object-fit: contain;
             background: #000;
