@@ -4308,13 +4308,18 @@
                 vidContainer.id = 'overCinematic';
                 vidContainer.className = 'oc-video-wrap';
                 vidContainer.innerHTML = `
-                    <video class="oc-video" src="${char.overVideo}" autoplay playsinline></video>`;
+                    <video class="oc-video" src="${char.overVideo}" autoplay playsinline></video>` +
+                    (char.overSound
+                        ? `<audio class="oc-audio" src="${char.overSound}" autoplay></audio>`
+                        : '');
                 document.body.appendChild(vidContainer);
 
+                const _audEl = vidContainer.querySelector('.oc-audio');
                 let _ocDone = false;
                 const _ocFinish = function() {
                     if (_ocDone) return;
                     _ocDone = true;
+                    if (_audEl) { try { _audEl.pause(); } catch(e) {} }
                     if (vidContainer.parentNode) vidContainer.parentNode.removeChild(vidContainer);
                     if (callback) callback();
                 };
