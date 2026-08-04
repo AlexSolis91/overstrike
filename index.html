@@ -2980,6 +2980,11 @@
                     style="width:100%;margin-top:8px;padding:9px;background:rgba(79,195,247,0.08);border:1px solid rgba(79,195,247,0.4);color:#4fc3f7;border-radius:8px;font-size:.72rem;cursor:pointer;font-family:Orbitron,sans-serif;">
                     🩹 CORREGIR HP DEL JEFE ACTIVO (sin resetear ranking)
                 </button>
+                <!-- Sincroniza portada/video/nombre/velocidad del jefe ACTIVO con BOSS_DATA -->
+                <button onclick="if(confirm('¿Actualizar portada, video y nombre del jefe activo con los valores actuales de BOSS_DATA?')){ var _bid2=(window._adminSelectedBoss||'broly'); window.adminSyncActiveBossVisuals(_bid2); }"
+                    style="width:100%;margin-top:6px;padding:9px;background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.4);color:#00ff88;border-radius:8px;font-size:.72rem;cursor:pointer;font-family:Orbitron,sans-serif;">
+                    🖼️ ACTUALIZAR PORTADA/VIDEO DEL JEFE ACTIVO
+                </button>
             </div>
             <div style="background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.2);border-radius:12px;padding:20px;">
                 <h3 style="font-family:Orbitron,sans-serif;color:#ffd700;font-size:.9rem;margin:0 0 12px;">📊 RANKING ACTUAL</h3>
