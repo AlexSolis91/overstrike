@@ -2485,6 +2485,9 @@
                     if (el2) el2.style.display = 'none';
                 });
                 document.querySelector('.game-container').style.display = 'block';
+                // Layout especial "Jefe de Sala": jefe arriba centrado, equipo abajo en fila
+                var _battleArenaEl = document.querySelector('.battle-arena');
+                if (_battleArenaEl) _battleArenaEl.classList.toggle('boss-mode', csState.gameMode === 'boss');
 
                 // Apply battle background (boss mode gets boss-specific bg, horda gets video, others random)
                 if (csState.gameMode === 'horda') {
