@@ -2971,6 +2971,11 @@
                     <button onclick="adminActivateBossUI()" style="flex:2;padding:11px;background:linear-gradient(135deg,#003a1a,#00aa55);border:2px solid #00ff88;color:#00ff88;border-radius:9px;font-family:Orbitron,sans-serif;font-size:.78rem;cursor:pointer;font-weight:700;">✅ ACTIVAR EVENTO</button>
                     <button onclick="adminDeactivateBoss()" style="flex:1;padding:11px;background:rgba(255,51,102,0.1);border:2px solid #ff3366;color:#ff3366;border-radius:9px;font-family:Orbitron,sans-serif;font-size:.78rem;cursor:pointer;">🛑 DETENER</button>
                 </div>
+                <!-- Corrige el HP máximo del jefe ACTIVO sin resetear el ranking de daño -->
+                <button onclick="if(confirm('¿Corregir el HP del jefe activo al valor actual de su ficha en BOSS_DATA? El daño acumulado por los jugadores se preserva.')){ var _bid=(window._adminSelectedBoss||'broly'); var _bc=(typeof BOSS_DATA!=='undefined')?BOSS_DATA[_bid]:null; if(_bc && _bc.maxHp){ window.adminFixActiveBossMaxHp(_bc.maxHp); } else { alert('Selecciona un jefe válido arriba primero.'); } }"
+                    style="width:100%;margin-top:8px;padding:9px;background:rgba(79,195,247,0.08);border:1px solid rgba(79,195,247,0.4);color:#4fc3f7;border-radius:8px;font-size:.72rem;cursor:pointer;font-family:Orbitron,sans-serif;">
+                    🩹 CORREGIR HP DEL JEFE ACTIVO (sin resetear ranking)
+                </button>
             </div>
             <div style="background:rgba(255,215,0,0.05);border:1px solid rgba(255,215,0,0.2);border-radius:12px;padding:20px;">
                 <h3 style="font-family:Orbitron,sans-serif;color:#ffd700;font-size:.9rem;margin:0 0 12px;">📊 RANKING ACTUAL</h3>
