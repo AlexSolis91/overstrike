@@ -2928,3 +2928,144 @@
             }
         }
 
+        /* ═══ HAND-MODE ARENA (Ranked) — equipo rival arriba, equipo propio abajo,
+           ambos en fila horizontal tipo "mano de cartas" ═══════════════════════ */
+        .battle-arena.hand-mode {
+            display: flex;
+            flex-direction: column;
+        }
+        .battle-arena.hand-mode #team1Col,
+        .battle-arena.hand-mode #team2Col {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            height: auto;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+        .battle-arena.hand-mode #team1Col {
+            order: 3;
+            justify-content: flex-end;
+            padding: 6px 8px 84px 8px;
+        }
+        .battle-arena.hand-mode #team2Col {
+            order: 1;
+            justify-content: flex-start;
+            padding: 44px 8px 6px 8px;
+        }
+        .battle-arena.hand-mode #teamHeader1,
+        .battle-arena.hand-mode #teamHeader2 {
+            display: none;
+        }
+        .battle-arena.hand-mode #team1Characters,
+        .battle-arena.hand-mode #team2Characters {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 8px;
+            width: 100%;
+        }
+        .battle-arena.hand-mode #team2Characters {
+            align-items: flex-start;
+        }
+        .battle-arena.hand-mode #team1Summons,
+        .battle-arena.hand-mode #team2Summons {
+            order: -1;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            justify-content: center;
+            gap: 6px;
+            width: 100%;
+        }
+        /* Tarjetas más grandes que el modo Jefe de Sala — tipo carta uniforme */
+        .battle-arena.hand-mode .character-card {
+            width: 168px;
+            height: 236px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .battle-arena.hand-mode .char-inner {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 0;
+            gap: 0;
+            flex: 1;
+            min-height: 0;
+        }
+        .battle-arena.hand-mode .char-portrait-wrap {
+            width: 100%;
+            flex-shrink: 0;
+        }
+        .battle-arena.hand-mode .character-portrait,
+        .battle-arena.hand-mode .character-portrait-placeholder {
+            width: 100%;
+            height: 148px;
+        }
+        .battle-arena.hand-mode .char-portrait-wrap .char-hp-overlay {
+            display: none;
+        }
+        .battle-arena.hand-mode .char-body {
+            flex: 1;
+            min-height: 0;
+            padding: 5px 7px 6px;
+            gap: 3px;
+            justify-content: flex-start;
+        }
+        .battle-arena.hand-mode .char-name-badge {
+            max-width: 108px;
+            font-size: 0.74rem;
+        }
+        .battle-arena.hand-mode .char-speed-badge {
+            font-size: 0.64rem;
+        }
+        .battle-arena.hand-mode .char-bar-val {
+            font-size: 0.64rem;
+            width: 34px;
+        }
+        .battle-arena.hand-mode .char-relics,
+        .battle-arena.hand-mode .char-effects-row {
+            display: none;
+        }
+        /* Panel de turno + log: ficha flotante para no robar espacio horizontal */
+        .battle-arena.hand-mode .center-column {
+            position: absolute;
+            top: 44px;
+            left: 8px;
+            width: 210px;
+            max-height: 40vh;
+            padding: 8px;
+            gap: 4px;
+            background: rgba(4,8,16,0.78);
+            border: 1px solid rgba(0,196,255,0.18);
+            border-radius: 10px;
+            z-index: 5;
+            overflow-y: auto;
+        }
+        @media (max-width: 900px) {
+            .battle-arena.hand-mode .center-column {
+                width: 140px;
+                max-height: 30vh;
+                font-size: 0.82em;
+            }
+            .battle-arena.hand-mode .character-card {
+                width: 108px;
+                height: 156px;
+            }
+            .battle-arena.hand-mode .character-portrait,
+            .battle-arena.hand-mode .character-portrait-placeholder {
+                height: 92px;
+            }
+            .battle-arena.hand-mode .char-name-badge {
+                max-width: 66px;
+                font-size: 0.62rem;
+            }
+        }
+
