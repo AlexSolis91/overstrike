@@ -1232,11 +1232,13 @@
             showContinueButton();
         }
 
-        function showCharInfo(name) {
+        function showCharInfo(name, targetContentId) {
             const char = gameState.characters[name];
             if (!char) return;
-            const panel = document.getElementById('charInfoPanel');
-            const content = document.getElementById('charInfoContent');
+            const isEmbedded = !!targetContentId;
+            const panel = isEmbedded ? null : document.getElementById('charInfoPanel');
+            const content = document.getElementById(targetContentId || 'charInfoContent');
+            if (!content) return;
             content.innerHTML = '';
 
             // Colores por equipo
@@ -1377,14 +1379,15 @@
                 content.appendChild(abDiv);
             });
 
-            // Botón cerrar
-            const closeBtn = document.createElement('button');
-            closeBtn.textContent = '✕ Cerrar';
-            closeBtn.style.cssText = 'width:100%;margin-top:8px;padding:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:rgba(255,255,255,0.7);font-family:Orbitron,sans-serif;font-size:0.8em;cursor:pointer;';
-            closeBtn.onclick = closeCharInfo;
-            content.appendChild(closeBtn);
-
-            panel.style.display = 'flex';
+            if (!isEmbedded) {
+                // Botón cerrar (solo en el modal emergente, no en el panel embebido de hand-mode)
+                const closeBtn = document.createElement('button');
+                closeBtn.textContent = '✕ Cerrar';
+                closeBtn.style.cssText = 'width:100%;margin-top:8px;padding:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:10px;color:rgba(255,255,255,0.7);font-family:Orbitron,sans-serif;font-size:0.8em;cursor:pointer;';
+                closeBtn.onclick = closeCharInfo;
+                content.appendChild(closeBtn);
+                panel.style.display = 'flex';
+            }
         }
 
         function closeCharInfo() {
@@ -1401,6 +1404,16 @@
                 const card = e.target.closest('[data-charname]');
                 if (card && card.dataset.charname && !e.target.closest('.action-modal') && !e.target.closest('.turn-confirm-modal')) {
                     showCharInfo(card.dataset.charname);
+                }
+            });
+            // Panel de info embebido en el layout "manos de cartas" (Ranked): se actualiza
+            // al pasar el cursor sobre cualquier tarjeta, sin necesidad de hacer click.
+            document.addEventListener('mouseover', function(e) {
+                const arena = document.querySelector('.battle-arena.hand-mode');
+                if (!arena) return;
+                const card = e.target.closest('[data-charname]');
+                if (card && card.dataset.charname && arena.contains(card)) {
+                    showCharInfo(card.dataset.charname, 'handModeInfoContent');
                 }
             });
         });
