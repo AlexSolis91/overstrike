@@ -43,9 +43,10 @@
             { name:'Furia del Valaraukar',type:'over',    cost:20, chargeGain:5, damage:30, target:'aoe',    effect:'furia_valaraukar_balrog',   description:'30 daño AOE. 50% de crítico. Si el enemigo sobrevive, recibe Quemaduras 10HP.' }
         ],
         'Broly': [
-            { name:'Onda de Destrucción', type:'special', cost:8, chargeGain:0, damage:5, target:'aoe', effect:'onda_destruccion_broly',        description:'5 daño AOE. Si todos los enemigos tienen debuffs, +2 daño adicional.' },
-            { name:'Liberación de Energía', type:'special', cost:10, chargeGain:0, damage:7, target:'aoe', effect:'liberacion_energia_broly',   description:'7 daño AOE. Aplica Sangrado 2HP 2T a todos los enemigos.' },
-            { name:'Omega Bláster', type:'over', cost:20, chargeGain:0, damage:20, target:'single', effect:'omega_blaster_broly',               description:'20 daño ST. Roba TODAS las cargas enemigas. +1 daño por carga robada a 2 enemigos.' }
+            { name:'Eraser Cannon', type:'basic', cost:0, chargeGain:2, damage:3, target:'single', effect:'eraser_cannon_broly',                description:'3 daño ST. 50% de probabilidad de generar el doble de cargas.' },
+            { name:'Onda de Destrucción', type:'special', cost:8, chargeGain:0, damage:6, target:'single', effect:'onda_destruccion_broly',       description:'6 daño ST. Antes de golpear, disipa todos los buffs del objetivo. Por cada buff disipado, +200% de daño.' },
+            { name:'Liberación de Energía', type:'special', cost:10, chargeGain:0, damage:5, target:'aoe', effect:'liberacion_energia_broly',   description:'5 daño AOE. 50% de probabilidad de generar 4 cargas por cada enemigo golpeado.' },
+            { name:'Omega Bláster', type:'over', cost:20, chargeGain:0, damage:20, target:'single', effect:'omega_blaster_broly',               description:'20 daño ST. Roba TODAS las cargas enemigas. +1 daño por carga robada a 2 enemigos aleatorios. Daño adicional a un enemigo aleatorio igual al 10% del HP actual del enemigo con más HP.' }
         ],
         'Lich King': [
             { name:'Robar Alma',               type:'basic',   cost:0,  chargeGain:3, damage:2,  target:'single', effect:'robar_alma_lich',                    description:'2 daño ST. 50% probabilidad de robar 2 cargas del objetivo.' },
@@ -217,7 +218,7 @@
                 overSound:    boss.overSound || '',
                 passive:      boss.passive  || (typeof BOSS_DEFAULT_PASSIVES !== 'undefined' && BOSS_DEFAULT_PASSIVES[bossKey]) || {
                     name: 'Legendario Super Sayajin',
-                    description: 'Cada vez que recibe daño, genera 3 cargas. Genera N cargas al inicio de la ronda N. 25% de probabilidad de esquivar Debuffs.'
+                    description: 'Cada vez que recibe daño, genera 3 cargas. Genera N cargas al inicio de la ronda N. 25% de probabilidad de esquivar Debuffs. Al final de cada ronda tiene un 30% de probabilidad (a cada personaje individualmente) de causar 2 de daño (se va incrementando +2 de daño por cada ronda). Al final de cada ronda Broly incrementa en +2 su velocidad. Al inicio de cada ronda hay un 50% de probabilidad de limpiar cada debuff activo en Broly.'
                 },
                 abilities:    boss.abilities ||
                     (typeof BOSS_ABILITIES !== 'undefined' && BOSS_ABILITIES[bossKey]
