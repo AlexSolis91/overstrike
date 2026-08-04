@@ -214,6 +214,7 @@
                 portrait:     boss.portrait || '',
                 portraitVideo: boss.portraitVideo || '',
                 overVideo:    boss.overVideo || '',
+                overSound:    boss.overSound || '',
                 passive:      boss.passive  || (typeof BOSS_DEFAULT_PASSIVES !== 'undefined' && BOSS_DEFAULT_PASSIVES[bossKey]) || {
                     name: 'Legendario Super Sayajin',
                     description: 'Cada vez que recibe daño, genera 3 cargas. Genera N cargas al inicio de la ronda N. 25% de probabilidad de esquivar Debuffs.'
