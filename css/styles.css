@@ -2738,12 +2738,12 @@
         .battle-arena.boss-mode #team1Col {
             order: 2;
             flex: 0 0 auto;
-            flex-direction: row;
-            flex-wrap: nowrap;
-            justify-content: center;
-            align-items: flex-end;
-            gap: 6px;
-            padding: 6px 8px 84px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 4px;
+            padding: 6px 0 84px 0;
             overflow-x: auto;
             overflow-y: hidden;
             height: auto;
@@ -2751,7 +2751,20 @@
         .battle-arena.boss-mode #team1Col #teamHeader1 {
             display: none;
         }
+        /* Invocaciones del jugador: en "primera línea de fuego", justo encima
+           de las tarjetas de personajes */
+        .battle-arena.boss-mode #team1Col #team1Summons {
+            order: 1;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 6px;
+            width: 100%;
+        }
         .battle-arena.boss-mode #team1Col #team1Characters {
+            order: 2;
             display: flex;
             flex-direction: row;
             flex-wrap: nowrap;
