@@ -2764,6 +2764,57 @@
             width: 132px;
             flex-shrink: 0;
         }
+        /* Tarjetas uniformes tipo "carta de personaje" — mismo ancho y alto para todas,
+           sin importar longitud del nombre, cantidad de reliquias, etc. */
+        .battle-arena.boss-mode #team1Col .character-card {
+            height: 186px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .battle-arena.boss-mode #team1Col .char-inner {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 0;
+            gap: 0;
+            flex: 1;
+            min-height: 0;
+        }
+        .battle-arena.boss-mode #team1Col .char-portrait-wrap {
+            width: 100%;
+            flex-shrink: 0;
+        }
+        .battle-arena.boss-mode #team1Col .char-portrait-wrap .char-hp-overlay {
+            display: none;
+        }
+        .battle-arena.boss-mode #team1Col .char-body {
+            flex: 1;
+            min-height: 0;
+            padding: 4px 6px 5px;
+            gap: 2px;
+            justify-content: flex-start;
+        }
+        .battle-arena.boss-mode #team1Col .char-toprow {
+            gap: 3px;
+        }
+        .battle-arena.boss-mode #team1Col .char-name-badge {
+            max-width: 84px;
+            font-size: 0.66rem;
+        }
+        .battle-arena.boss-mode #team1Col .char-speed-badge {
+            font-size: 0.58rem;
+            padding: 1px 4px;
+        }
+        .battle-arena.boss-mode #team1Col .char-bar-val {
+            font-size: 0.58rem;
+            width: 30px;
+        }
+        .battle-arena.boss-mode #team1Col .char-relics,
+        .battle-arena.boss-mode #team1Col .char-effects-row {
+            display: none;
+        }
+
         .battle-arena.boss-mode #team1Col .character-portrait,
         .battle-arena.boss-mode #team1Col .character-portrait-placeholder {
             width: 100%;
@@ -2812,11 +2863,16 @@
                 font-size: 0.85em;
             }
             .battle-arena.boss-mode #team1Col .character-card {
-                width: 100px;
+                width: 96px;
+                height: 148px;
             }
             .battle-arena.boss-mode #team1Col .character-portrait,
             .battle-arena.boss-mode #team1Col .character-portrait-placeholder {
                 height: 68px;
+            }
+            .battle-arena.boss-mode #team1Col .char-name-badge {
+                max-width: 64px;
+                font-size: 0.6rem;
             }
         }
 
