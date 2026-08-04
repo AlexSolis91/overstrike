@@ -4346,18 +4346,30 @@
                 vidContainer.id = 'overCinematic';
                 vidContainer.className = 'oc-video-wrap';
                 vidContainer.innerHTML = `
-                    <video class="oc-video" src="${char.overVideo}" autoplay playsinline></video>` +
-                    (char.overSound
-                        ? `<audio class="oc-audio" src="${char.overSound}" autoplay></audio>`
-                        : '');
+                    <video class="oc-video" src="${char.overVideo}" autoplay playsinline></video>`;
                 document.body.appendChild(vidContainer);
 
-                const _audEl = vidContainer.querySelector('.oc-audio');
+                // El audio se maneja INDEPENDIENTE del video: se agrega aparte al body
+                // (no dentro de vidContainer) para que siga sonando completo aunque la
+                // ventana del video ya se haya cerrado y la batalla continúe.
+                if (char.overSound) {
+                    const _audEl = document.createElement('audio');
+                    _audEl.className = 'oc-audio';
+                    _audEl.src = char.overSound;
+                    _audEl.autoplay = true;
+                    document.body.appendChild(_audEl);
+                    _audEl.addEventListener('ended', function() {
+                        if (_audEl.parentNode) _audEl.parentNode.removeChild(_audEl);
+                    });
+                    _audEl.addEventListener('error', function() {
+                        if (_audEl.parentNode) _audEl.parentNode.removeChild(_audEl);
+                    });
+                }
+
                 let _ocDone = false;
                 const _ocFinish = function() {
                     if (_ocDone) return;
                     _ocDone = true;
-                    if (_audEl) { try { _audEl.pause(); } catch(e) {} }
                     if (vidContainer.parentNode) vidContainer.parentNode.removeChild(vidContainer);
                     if (callback) callback();
                 };
