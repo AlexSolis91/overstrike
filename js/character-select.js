@@ -176,7 +176,7 @@
                     { name: 'Furia Vikinga',     type: 'basic',   cost: 0,  chargeGain: 2, damage: 2,  target: 'single', effect: 'furia_vikinga_v2',    description: 'Aplica Sangrado. Si el objetivo tenía Hemorragia activa antes del ataque, Ragnar y un aliado aleatorio generan 5 cargas.' },
                     { name: 'Rey Pagano',         type: 'special', cost: 5,  chargeGain: 0, damage: 4,  target: 'aoe',    effect: 'rey_pagano_v2',      description: 'AOE 4 daño + Sangrado. Si el enemigo tenía Sangrado activo antes del ataque, aplica Miedo.' },
                     { name: 'Tormenta del Norte', type: 'special', cost: 6,  chargeGain: 0, damage: 1,  target: 'mt',     effect: 'tormenta_norte_v3',  description: '10 golpes MT + Sangrado. Por cada Sangrado que se convierta en Hemorragia: equipo aliado +3 HP de escudo.' },
-                    { name: 'Águila de Sangre',   type: 'over',    cost: 10, chargeGain: 0, damage: 10, target: 'single', effect: 'aguila_sangre_v2',   description: 'ST 10 daño. Si objetivo tiene menos del 50% HP, lo elimina. Si muere por este ataque, un aliado aleatorio gana 10 cargas.' }
+                    { name: 'Águila de Sangre',   type: 'over',    cost: 10, chargeGain: 0, damage: 10, target: 'single', effect: 'aguila_sangre_v2',   description: 'ST 10 daño. Si el objetivo tiene menos del 50% de vida, lo elimina (no aplica en Jefes de Sala). Si el enemigo es derrotado por este ataque, un aliado aleatorio gana 10 cargas. Contra un Jefe de Sala con Sangrado, este ataque causa daño crítico; con Hemorragia, causa daño triple.' }
                 ]
             },
             'Saitama': {
