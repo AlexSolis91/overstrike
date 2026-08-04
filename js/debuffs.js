@@ -602,6 +602,13 @@ function applyDebuff(targetName, effectObj) {
                 addLog('✨ Maestría de la Varita de Saúco: ' + targetName + ' es inmune a debuffs', 'buff');
                 return;
             }
+            // LEGENDARIO SUPER SAYAJIN (Broly): 25% de esquivar cualquier debuff
+            if (target.passive && target.passive.name === 'Legendario Super Sayajin') {
+                if (Math.random() < 0.25) {
+                    addLog('💚 Legendario Super Sayajin: Broly esquiva el debuff ' + (effectObj.name||''), 'buff');
+                    return;
+                }
+            }
             // CIUDAD DE LA DEVASTACIÓN (Kurumi): 50% de esquivar cualquier debuff
             if (target.passive && target.passive.name === 'Ciudad de la Devastación') {
                 if (Math.random() < 0.50) {
