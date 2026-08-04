@@ -194,7 +194,9 @@
 
         function applyBattleBackground(bossName) {
             var url;
-            if (bossName && bossName.toLowerCase().includes('lich')) {
+            if (bossName && bossName.toLowerCase().includes('broly')) {
+                url = 'https://i.ibb.co/qX6qw9H/image-740dd3cc.png';
+            } else if (bossName && bossName.toLowerCase().includes('lich')) {
                 url = LICH_KING_BACKGROUND;
             } else if (bossName && bossName.toLowerCase().includes('balrog')) {
                 url = 'https://i.ibb.co/xtDHKpfM/image-2371f397.png';
