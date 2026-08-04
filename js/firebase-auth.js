@@ -6256,6 +6256,7 @@
                 name: bossConfig.name,
                 portrait: bossConfig.portrait,
                 portraitVideo: bossConfig.portraitVideo || null,
+                overVideo: bossConfig.overVideo || null,
                 hp: bossConfig.hp,
                 maxHp: bossConfig.maxHp,
                 speed: bossConfig.speed,
@@ -6298,6 +6299,7 @@
                 name: bc.name,
                 portrait: bc.portrait,
                 portraitVideo: bc.portraitVideo || null,
+                overVideo: bc.overVideo || null,
                 speed: bc.speed
             });
             alert('✅ Datos visuales del jefe actualizados (portada/video/nombre/velocidad).');
