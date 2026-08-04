@@ -3064,12 +3064,12 @@
             z-index: 5;
             overflow-y: auto;
         }
-        /* Panel de información del personaje bajo el cursor — a la derecha, debajo del log */
+        /* Panel de información del personaje bajo el cursor — a la IZQUIERDA de la pantalla */
         .battle-arena.hand-mode #handModeInfoPanel {
             display: block;
             position: absolute;
-            top: calc(44px + 26vh + 8px);
-            right: 8px;
+            top: 44px;
+            left: 8px;
             bottom: 12px;
             width: 210px;
             padding: 10px;
@@ -3086,7 +3086,7 @@
                 font-size: 0.82em;
             }
             .battle-arena.hand-mode #handModeInfoPanel {
-                top: calc(44px + 22vh + 8px);
+                top: 44px;
                 width: 140px;
                 font-size: 0.8em;
                 padding: 8px;
