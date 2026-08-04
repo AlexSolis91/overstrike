@@ -6255,6 +6255,7 @@
                 id: bossId,
                 name: bossConfig.name,
                 portrait: bossConfig.portrait,
+                portraitVideo: bossConfig.portraitVideo || null,
                 hp: bossConfig.hp,
                 maxHp: bossConfig.maxHp,
                 speed: bossConfig.speed,
@@ -6281,6 +6282,25 @@
             await db.ref('weekly_boss/current/maxHp').set(newMaxHp);
             await db.ref('weekly_boss/current/hp').set(newHp);
             alert('✅ HP del jefe corregido: ' + newHp.toLocaleString() + ' / ' + newMaxHp.toLocaleString() + ' (daño acumulado preservado: ' + damageDealt.toLocaleString() + ')');
+            if (typeof window.loadBossScreen === 'function') window.loadBossScreen();
+        };
+
+        // Sincroniza portrait/portraitVideo/name/speed del jefe ACTIVO con su ficha
+        // actual en BOSS_DATA, sin tocar hp/maxHp/damage_log (usa adminFixActiveBossMaxHp para eso).
+        window.adminSyncActiveBossVisuals = async function(bossId) {
+            if (typeof isAdmin === 'function' && !isAdmin()) { alert('Acceso denegado.'); return; }
+            const bc = (typeof BOSS_DATA !== 'undefined') ? BOSS_DATA[bossId] : null;
+            if (!bc) { alert('Jefe "' + bossId + '" no encontrado en BOSS_DATA.'); return; }
+            const snap = await db.ref('weekly_boss/current').once('value');
+            const current = snap.val();
+            if (!current) { alert('No hay evento de Jefe de Sala activo.'); return; }
+            await db.ref('weekly_boss/current').update({
+                name: bc.name,
+                portrait: bc.portrait,
+                portraitVideo: bc.portraitVideo || null,
+                speed: bc.speed
+            });
+            alert('✅ Datos visuales del jefe actualizados (portada/video/nombre/velocidad).');
             if (typeof window.loadBossScreen === 'function') window.loadBossScreen();
         };
 
