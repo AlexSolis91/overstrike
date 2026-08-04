@@ -10275,6 +10275,24 @@
                         addLog('💚 Omega Bláster: +' + _bonusDmg + ' daño a ' + n + ' (cargas robadas)', 'damage');
                     });
                 }
+                // Daño adicional sobre un enemigo aleatorio = 10% del HP actual del enemigo
+                // con más HP del equipo rival (calculado ANTES de aplicar este daño extra)
+                const _obAliveEnemies = Object.keys(gameState.characters).filter(function(n){
+                    const _c = gameState.characters[n]; return _c && _c.team===_obET && !_c.isDead && _c.hp>0;
+                });
+                if (_obAliveEnemies.length > 0) {
+                    let _obHighestHp = 0;
+                    _obAliveEnemies.forEach(function(n){
+                        const _c = gameState.characters[n];
+                        if ((_c.hp||0) > _obHighestHp) _obHighestHp = _c.hp||0;
+                    });
+                    const _obExtraDmg = Math.round(_obHighestHp * 0.10);
+                    if (_obExtraDmg > 0) {
+                        const _obRandTarget = _obAliveEnemies[Math.floor(Math.random() * _obAliveEnemies.length)];
+                        applyDamageWithShield(_obRandTarget, _obExtraDmg, gameState.selectedCharacter);
+                        addLog('💚 Omega Bláster: +' + _obExtraDmg + ' daño adicional a ' + _obRandTarget + ' (10% del HP del enemigo con más vida)', 'damage');
+                    }
+                }
 
             // ══════════════════════════════════════════════════════
             // LICH KING — handlers
