@@ -1261,26 +1261,30 @@
 
             // Header row
             const header = document.createElement('div');
-            header.style.cssText = 'display:flex;gap:16px;align-items:flex-start;margin-bottom:16px;';
+            header.style.cssText = isEmbedded
+                ? 'display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:14px;'
+                : 'display:flex;gap:16px;align-items:flex-start;margin-bottom:16px;';
 
             if (portrait) {
                 const img = document.createElement('img');
                 img.src = portrait; img.alt = name;
-                img.style.cssText = 'width:80px;height:80px;object-fit:contain;border-radius:10px;border:2px solid ' + teamColor + ';flex-shrink:0;';
+                img.style.cssText = isEmbedded
+                    ? 'width:100%;max-width:220px;height:220px;object-fit:cover;object-position:top center;border-radius:12px;border:2px solid ' + teamColor + ';flex-shrink:0;'
+                    : 'width:80px;height:80px;object-fit:contain;border-radius:10px;border:2px solid ' + teamColor + ';flex-shrink:0;';
                 img.onerror = function() { this.style.display='none'; };
                 header.appendChild(img);
             }
 
             const meta = document.createElement('div');
-            meta.style.flex = '1';
+            meta.style.cssText = isEmbedded ? 'flex:1;width:100%;text-align:center;' : 'flex:1;';
             const nameEl = document.createElement('div');
             nameEl.textContent = name;
-            nameEl.style.cssText = 'font-family:Orbitron,sans-serif;font-size:1.1em;font-weight:700;color:' + teamColor + ';margin-bottom:6px;';
+            nameEl.style.cssText = 'font-family:Orbitron,sans-serif;font-weight:700;color:' + teamColor + ';margin-bottom:6px;font-size:' + (isEmbedded ? '1.35em' : '1.1em') + ';';
             meta.appendChild(nameEl);
 
             const teamTag = document.createElement('div');
             teamTag.textContent = teamLabel;
-            teamTag.style.cssText = 'font-size:0.75em;opacity:0.7;margin-bottom:8px;';
+            teamTag.style.cssText = 'opacity:0.7;margin-bottom:8px;font-size:' + (isEmbedded ? '0.95em' : '0.75em') + ';';
             meta.appendChild(teamTag);
 
             // Stats grid
@@ -1293,14 +1297,14 @@
 
             stats.forEach(([label, val, pct, barColor]) => {
                 const row = document.createElement('div');
-                row.style.cssText = 'margin-bottom:4px;';
+                row.style.cssText = 'margin-bottom:' + (isEmbedded ? '7px' : '4px') + ';';
                 const lbl = document.createElement('div');
-                lbl.style.cssText = 'display:flex;justify-content:space-between;font-size:0.8em;';
+                lbl.style.cssText = 'display:flex;justify-content:space-between;font-size:' + (isEmbedded ? '0.95em' : '0.8em') + ';';
                 lbl.innerHTML = '<span style="opacity:0.75">' + label + '</span><span style="font-weight:600">' + val + '</span>';
                 row.appendChild(lbl);
                 if (pct !== null) {
                     const barWrap = document.createElement('div');
-                    barWrap.style.cssText = 'height:4px;background:rgba(255,255,255,0.1);border-radius:2px;margin-top:2px;';
+                    barWrap.style.cssText = 'height:' + (isEmbedded ? '6px' : '4px') + ';background:rgba(255,255,255,0.1);border-radius:2px;margin-top:2px;';
                     const bar = document.createElement('div');
                     bar.style.cssText = 'height:100%;width:' + Math.max(0,Math.min(100,pct)) + '%;background:' + barColor + ';border-radius:2px;transition:width 0.3s;';
                     barWrap.appendChild(bar); row.appendChild(barWrap);
@@ -1316,7 +1320,7 @@
                 fx.style.cssText = 'margin-bottom:12px;';
                 const fxTitle = document.createElement('div');
                 fxTitle.textContent = '⚡ EFECTOS ACTIVOS';
-                fxTitle.style.cssText = 'font-size:0.7em;opacity:0.6;letter-spacing:0.1em;margin-bottom:6px;';
+                fxTitle.style.cssText = 'opacity:0.6;letter-spacing:0.1em;margin-bottom:6px;font-size:' + (isEmbedded ? '0.8em' : '0.7em') + ';';
                 fx.appendChild(fxTitle);
                 const fxWrap = document.createElement('div');
                 fxWrap.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;';
@@ -1324,7 +1328,7 @@
                     const tag = document.createElement('span');
                     const subStr = d.sub !== '' ? ' (' + d.sub + ')' : '';
                     tag.textContent = d.emoji + ' ' + d.label + subStr;
-                    tag.style.cssText = 'font-size:0.7em;padding:3px 8px;border-radius:12px;border:1px solid ' + (d.type==='buff'?'rgba(0,255,136,0.4)':'rgba(255,60,60,0.4)') + ';background:' + (d.type==='buff'?'rgba(0,255,136,0.1)':'rgba(255,60,60,0.1)') + ';';
+                    tag.style.cssText = 'padding:3px 8px;border-radius:12px;border:1px solid ' + (d.type==='buff'?'rgba(0,255,136,0.4)':'rgba(255,60,60,0.4)') + ';background:' + (d.type==='buff'?'rgba(0,255,136,0.1)':'rgba(255,60,60,0.1)') + ';font-size:' + (isEmbedded ? '0.82em' : '0.7em') + ';';
                     fxWrap.appendChild(tag);
                 });
                 fx.appendChild(fxWrap);
@@ -1337,11 +1341,11 @@
                 pBox.style.cssText = 'background:rgba(255,170,0,0.1);border:1px solid rgba(255,170,0,0.3);border-radius:10px;padding:10px;margin-bottom:12px;';
                 const pTitle = document.createElement('div');
                 pTitle.textContent = '✨ PASIVA: ' + char.passive.name;
-                pTitle.style.cssText = 'font-size:0.8em;color:var(--warning);font-weight:600;margin-bottom:4px;';
+                pTitle.style.cssText = 'color:var(--warning);font-weight:600;margin-bottom:4px;font-size:' + (isEmbedded ? '0.95em' : '0.8em') + ';';
                 pBox.appendChild(pTitle);
                 const pDesc = document.createElement('div');
                 pDesc.textContent = char.passive.description || '';
-                pDesc.style.cssText = 'font-size:0.75em;opacity:0.8;line-height:1.4;';
+                pDesc.style.cssText = 'opacity:0.85;line-height:1.5;font-size:' + (isEmbedded ? '0.88em' : '0.75em') + ';';
                 pBox.appendChild(pDesc);
                 content.appendChild(pBox);
             }
@@ -1349,7 +1353,7 @@
             // Movimientos
             const movTitle = document.createElement('div');
             movTitle.textContent = '⚔️ MOVIMIENTOS';
-            movTitle.style.cssText = 'font-size:0.7em;opacity:0.6;letter-spacing:0.1em;margin-bottom:8px;';
+            movTitle.style.cssText = 'opacity:0.6;letter-spacing:0.1em;margin-bottom:8px;font-size:' + (isEmbedded ? '0.8em' : '0.7em') + ';';
             content.appendChild(movTitle);
 
             (char.abilities || []).forEach(ab => {
@@ -1359,21 +1363,21 @@
                 abHeader.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;';
                 const abName = document.createElement('span');
                 abName.textContent = ab.name || '';
-                abName.style.cssText = 'font-weight:600;font-size:0.85em;';
+                abName.style.cssText = 'font-weight:600;font-size:' + (isEmbedded ? '1em' : '0.85em') + ';';
                 const abType = document.createElement('span');
                 abType.textContent = (ab.type||'').toUpperCase();
                 const typeColors = {basic:'rgba(0,217,255,0.7)',special:'rgba(170,0,255,0.7)',over:'rgba(255,140,0,0.7)'};
-                abType.style.cssText = 'font-size:0.65em;padding:2px 8px;border-radius:10px;background:' + (typeColors[ab.type]||'rgba(255,255,255,0.2)') + ';letter-spacing:0.05em;';
+                abType.style.cssText = 'padding:2px 8px;border-radius:10px;background:' + (typeColors[ab.type]||'rgba(255,255,255,0.2)') + ';letter-spacing:0.05em;font-size:' + (isEmbedded ? '0.78em' : '0.65em') + ';';
                 abHeader.appendChild(abName); abHeader.appendChild(abType);
                 abDiv.appendChild(abHeader);
                 const abCost = document.createElement('div');
                 abCost.textContent = '💎 ' + (ab.cost || 0) + ' cargas';
-                abCost.style.cssText = 'font-size:0.72em;opacity:0.6;margin-bottom:4px;';
+                abCost.style.cssText = 'opacity:0.6;margin-bottom:4px;font-size:' + (isEmbedded ? '0.85em' : '0.72em') + ';';
                 abDiv.appendChild(abCost);
                 if (ab.description) {
                     const abDesc = document.createElement('div');
                     abDesc.textContent = ab.description;
-                    abDesc.style.cssText = 'font-size:0.75em;opacity:0.8;line-height:1.4;';
+                    abDesc.style.cssText = 'opacity:0.85;line-height:1.5;font-size:' + (isEmbedded ? '0.88em' : '0.75em') + ';';
                     abDiv.appendChild(abDesc);
                 }
                 content.appendChild(abDiv);
