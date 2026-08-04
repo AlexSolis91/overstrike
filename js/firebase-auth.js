@@ -6268,6 +6268,22 @@
             alert('✅ Evento de Jefe de Sala activado: ' + bossConfig.name);
         }
 
+        // Corrige el maxHp del jefe ACTUALMENTE activo sin resetear el daño acumulado
+        // (útil cuando se cambia el HP en BOSS_DATA después de que el evento ya inició).
+        // Recalcula el HP restante preservando el daño real ya infligido por los jugadores.
+        window.adminFixActiveBossMaxHp = async function(newMaxHp) {
+            if (typeof isAdmin === 'function' && !isAdmin()) { alert('Acceso denegado.'); return; }
+            const snap = await db.ref('weekly_boss/current').once('value');
+            const current = snap.val();
+            if (!current) { alert('No hay evento de Jefe de Sala activo.'); return; }
+            const damageDealt = (current.maxHp || 0) - (current.hp || 0);
+            const newHp = Math.max(0, newMaxHp - damageDealt);
+            await db.ref('weekly_boss/current/maxHp').set(newMaxHp);
+            await db.ref('weekly_boss/current/hp').set(newHp);
+            alert('✅ HP del jefe corregido: ' + newHp.toLocaleString() + ' / ' + newMaxHp.toLocaleString() + ' (daño acumulado preservado: ' + damageDealt.toLocaleString() + ')');
+            if (typeof window.loadBossScreen === 'function') window.loadBossScreen();
+        };
+
         async function adminDeactivateBoss() {
             if (!isAdmin()) { alert('Acceso denegado.'); return; }
             // Distribuir recompensas finales antes de cerrar el evento
