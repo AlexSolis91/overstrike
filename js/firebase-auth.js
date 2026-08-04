@@ -2764,6 +2764,12 @@
                 window._teamNames = { team1: myName, team2: opponentName };
                 gameState.gameMode = 'ranked';
                 gameState.aiTeam = 'team2';
+                // Layout "manos de cartas" (Ranked): equipo rival arriba, equipo propio abajo, ambos en fila.
+                // RANKED_HAND_LAYOUT_ENABLED: cambia a false (o pide "layout clásico de ranked") para
+                // volver instantáneamente al layout anterior (grid de 3 columnas) sin borrar este código.
+                var RANKED_HAND_LAYOUT_ENABLED = true;
+                var _handModeArenaEl = document.querySelector('.battle-arena');
+                if (_handModeArenaEl) _handModeArenaEl.classList.toggle('hand-mode', RANKED_HAND_LAYOUT_ENABLED);
                 const th1 = document.getElementById('teamHeader1'); if (th1) th1.textContent = '🔷 ' + myName;
                 const th2 = document.getElementById('teamHeader2'); if (th2) th2.textContent = '🔶 ' + opponentName;
                 const sh1 = document.getElementById('statusHeader1'); if (sh1) sh1.textContent = '🔷 ' + myName;
