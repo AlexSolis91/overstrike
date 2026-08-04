@@ -2597,7 +2597,26 @@
                     // completa (todas las oleadas), nunca se interrumpe entre oleadas.
                     audioManager.play('audioHordaRun');
                 } else if (_bossMusicMap[_bossMusicName]) {
-                    audioManager.play(_bossMusicMap[_bossMusicName]);
+                    var _bossTrackId = _bossMusicMap[_bossMusicName];
+                    audioManager.play(_bossTrackId);
+                    // Salvaguarda: si la pista exclusiva del jefe falla o se queda
+                    // "atascada" cargando (problema de red/CDN), caer a rotación aleatoria
+                    // en vez de quedarse en silencio.
+                    (function(trackId) {
+                        var _bt = document.getElementById(trackId);
+                        if (!_bt) return;
+                        var _fallbackDone = false;
+                        var _fallback = function() {
+                            if (_fallbackDone || audioManager.currentTrack !== trackId) return;
+                            if (_bt.readyState > 0 || !_bt.paused) return; // ya cargó/está sonando, no hace falta
+                            _fallbackDone = true;
+                            console.warn('Pista exclusiva del jefe (' + trackId + ') no cargó — usando rotación aleatoria.');
+                            audioManager.playRandomBattle();
+                        };
+                        _bt.addEventListener('error', _fallback, { once: true });
+                        _bt.addEventListener('stalled', function() { setTimeout(_fallback, 3000); }, { once: true });
+                        setTimeout(_fallback, 6000);
+                    })(_bossTrackId);
                 } else {
                     audioManager.playRandomBattle();
                 }
