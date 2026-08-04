@@ -4301,6 +4301,33 @@
             const char = gameState.characters[charName];
             if (!char) { if (callback) callback(); return; }
 
+            // ── VIDEO OVER: si el personaje tiene un clip exclusivo para su Over,
+            // se reproduce en una ventana flotante en vez de la cinemática estándar ──
+            if (char.overVideo) {
+                const vidContainer = document.createElement('div');
+                vidContainer.id = 'overCinematic';
+                vidContainer.className = 'oc-video-wrap';
+                vidContainer.innerHTML = `
+                    <video class="oc-video" src="${char.overVideo}" autoplay playsinline></video>`;
+                document.body.appendChild(vidContainer);
+
+                let _ocDone = false;
+                const _ocFinish = function() {
+                    if (_ocDone) return;
+                    _ocDone = true;
+                    if (vidContainer.parentNode) vidContainer.parentNode.removeChild(vidContainer);
+                    if (callback) callback();
+                };
+                const _vidEl = vidContainer.querySelector('.oc-video');
+                if (_vidEl) {
+                    _vidEl.addEventListener('ended', _ocFinish);
+                    _vidEl.addEventListener('error', _ocFinish);
+                }
+                // Salvaguarda: si el video no dispara 'ended' (falla de red, etc.), continuar igual
+                setTimeout(_ocFinish, 8000);
+                return;
+            }
+
             // Color por equipo
             const teamColor = team === 'team1' ? '#00c4ff' : '#ff4466';
 
