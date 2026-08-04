@@ -2869,19 +2869,27 @@
             width: min(32vw, 300px);
         }
         .battle-arena.boss-mode #team2Col .boss-card:has(video.boss-portrait) {
-            width: min(24vw, 240px);
+            width: fit-content;
+            max-width: 90vw;
         }
         .battle-arena.boss-mode #team2Col img.boss-portrait,
         .battle-arena.boss-mode #team2Col .boss-portrait-placeholder {
             height: min(26vh, 220px);
         }
-        /* El video del jefe usa proporción vertical real (sin recortar ni barras negras)
-           en vez de un cuadro fijo tipo imagen estática */
+        /* El video del jefe se muestra a su relación de aspecto NATURAL (sin recortar
+           ni forzar un ratio adivinado): se fija la altura y el ancho se calcula solo
+           a partir del video, y la tarjeta se ajusta ("width:fit-content") a ese ancho
+           real — así nunca quedan barras negras sin importar la proporción del clip. */
+        .battle-arena.boss-mode #team2Col .boss-portrait-wrap:has(video.boss-portrait) {
+            width: fit-content;
+            margin: 0 auto;
+        }
         .battle-arena.boss-mode #team2Col video.boss-portrait {
-            height: auto;
-            aspect-ratio: 20 / 26;
-            max-height: min(46vh, 420px);
+            width: auto;
+            height: min(46vh, 420px);
+            max-width: 86vw;
             object-fit: contain;
+            display: block;
             background: #000;
         }
         /* Panel de turno + log: se convierte en ficha flotante en la esquina
