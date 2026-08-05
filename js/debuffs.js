@@ -841,6 +841,17 @@ function applyDebuff(targetName, effectObj) {
                     return;
                 }
             }
+            // TOPE DE QUEMADURA EN JEFES DE SALA: relíquias como Pyrofagos duplican TODAS las
+            // quemaduras activas cada vez que se activan (crecimiento exponencial: N→2N→4N...),
+            // lo que puede generar decenas de miles de stacks y trabar el juego. Se limita el
+            // total de quemadura en un Jefe de Sala a 1000 stacks/HP.
+            if (target.isBoss && (effNorm === 'quemadura')) {
+                const _burnCapMax = 1000;
+                const _currentBurnCount = target.statusEffects.filter(function(e){ return e && normAccent(e.name||'') === 'quemadura'; }).length;
+                if (_currentBurnCount >= _burnCapMax) {
+                    return; // Ya está en el tope, no se agregan más stacks
+                }
+            }
             target.statusEffects.push(effectObj);
 
             // ── PASIVAS DINÁMICAS: AL_RECIBIR_DEBUFF ──
