@@ -1969,34 +1969,6 @@
             // ══════════════════════════════════════════════════════
             // SAGA (handlers legacy — mantener compatibilidad)
             // ══════════════════════════════════════════════════════
-                // Explosión de Galaxias: 10 AOE + 30% crit por objetivo
-                const _egTeam = attacker.team === 'team1' ? 'team2' : 'team1';
-                const _critChance = ability.critChance || 0.30;
-                let _egLog = [];
-                                // MEGA PROVOCACIÓN
-                if (checkAndRedirectAOEMegaProv(_egTeam, finalDamage, gameState.selectedCharacter)) {
-                    addLog('⛓️ explosion_galaxias: AOE redirigido por Mega Provocación', 'damage');
-                } else {
-                for (let _n in gameState.characters) {
-                    const _c = gameState.characters[_n];
-                    if (_c && _c.team === _egTeam && !_c.isDead && _c.hp > 0) {
-                        if (checkAsprosAOEImmunity(_n, true) || checkMinatoAOEImmunity(_n)) { addLog('🌟 ' + _n + ' esquiva el AOE (Esquiva Área)', 'buff'); continue; }
-                        const _isCrit = Math.random() < _critChance;
-                        const _dmg = _isCrit ? finalDamage * 2 : finalDamage;
-                        applyDamageWithShield(_n, _dmg, gameState.selectedCharacter);
-                        _egLog.push(_n + (_isCrit ? ' 💥CRIT(' + _dmg + ')' : '(' + _dmg + ')'));
-                    }
-                }
-                }
-                // Also drain 1 charge per enemy (keeping original bonus from Onda de Fuerza flavor)
-                for (let _n in gameState.characters) {
-                    const _c = gameState.characters[_n];
-                    if (_c && _c.team === _egTeam && !_c.isDead && _c.hp > 0 && _c.charges > 0) {
-                        _c.charges = Math.max(0, _c.charges - 1);
-                    }
-                }
-                applyAOEToSummons(_egTeam, finalDamage, gameState.selectedCharacter);
-                addLog('💥 Explosión de Galaxias: ' + _egLog.join(', '), 'damage');
             } else if (ability.effect === 'genro_maoken') {
                 // Genrō Maō Ken: 3 AOE + 50% Posesión por objetivo
                 const _gmTeam = attacker.team === 'team1' ? 'team2' : 'team1';
