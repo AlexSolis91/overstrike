@@ -652,6 +652,15 @@
 
                 // Portrait dinámico por forma (Goku y Naruto)
                 let _dynPortrait = char.portrait || char.transformPortrait || char.transformationPortrait || '';
+                // Portrait dinámico por reliquia equipada (aplica a cualquier personaje con relicPortraits)
+                if (char.relicPortraits && char.equippedRelics && char.equippedRelics.length > 0) {
+                    for (const _rpRelicName in char.relicPortraits) {
+                        if (char.equippedRelics.includes(_rpRelicName)) {
+                            _dynPortrait = char.relicPortraits[_rpRelicName];
+                            break;
+                        }
+                    }
+                }
                 if ((name === 'Goku' || name === 'Goku v2') && char.gokuForm) {
                     if (char.gokuForm === 'ss1' && char.portraitSS1) _dynPortrait = char.portraitSS1;
                     else if (char.gokuForm === 'ss3' && char.portraitSS3) _dynPortrait = char.portraitSS3;
