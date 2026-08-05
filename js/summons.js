@@ -2012,6 +2012,17 @@
                 }
             }
 
+            // ── MABOROSHI NO SHINKIRŌ (Saga): 50% de aplicar Posesión en cada ataque ──
+            if (!passiveExecuting && targetName && attacker && attacker.passive && attacker.passive.name === 'Maboroshi no Shinkirō') {
+                if (Math.random() < 0.50) {
+                    const _tgtNow = gameState.characters[targetName];
+                    if (_tgtNow && !_tgtNow.isDead && _tgtNow.hp > 0 && typeof applyDebuff === 'function') {
+                        applyDebuff(targetName, {name:'Posesion', type:'debuff', duration:2, emoji:'🟣'});
+                        addLog('⛓️ Maboroshi no Shinkirō: Posesión aplicada a ' + targetName + ' (50%)', 'debuff');
+                    }
+                }
+            }
+
             // ── CASCO MANDALORIANO: al recibir ataque → atacante pierde 2 cargas ──
             if (remainingDamage > 0 && !passiveExecuting && attackerName) {
                 if ((target.equippedRelics||[]).includes('Casco Mandaloriano')) {
