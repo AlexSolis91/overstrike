@@ -55,14 +55,16 @@ function triggerMaboroshi(targetTeam, debuffName) {
             if (!debuffName) return;
             const norm = (debuffName || '').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
             if (norm !== 'posesion' && norm !== 'mega posesion') return;
-            // Find any character with Maboroshi no Shinkiro passive on the OPPOSING team
             for (const sagaName in gameState.characters) {
                 const saga = gameState.characters[sagaName];
                 if (!saga || saga.isDead || saga.hp <= 0) continue;
-                if (saga.team === targetTeam) continue; // Must be on the ATTACKER's team
-                if (!saga.passive || saga.passive.name !== 'Maboroshi no Shinkiro') continue;
+                if (saga.team === targetTeam) continue;
+                if (!saga.passive) continue;
+                const pname = saga.passive.name || '';
+                // Aceptar nombre con o sin acento (rework)
+                if (pname !== 'Maboroshi no Shinkiro' && pname !== 'Maboroshi no Shinkirō') continue;
                 saga.charges = Math.min(20, (saga.charges || 0) + 3);
-                addLog('🌌 Maboroshi no Shinkiro: ' + sagaName + ' genera 3 cargas (' + debuffName + ' aplicado a enemigo)', 'buff');
+                addLog('🌌 ' + pname + ': ' + sagaName + ' genera 3 cargas (' + debuffName + ' aplicado a enemigo)', 'buff');
                 break;
             }
         }        // ==================== APLICADORES DE DEBUFFS ====================
