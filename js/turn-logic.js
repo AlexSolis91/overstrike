@@ -1255,9 +1255,18 @@
                                   ((name === 'Anakin Skywalker' || name === 'Anakin Skywalker v2') && char.darkSideAwakened) ||
                                   ((name === 'Muzan Kibutsuji' || name === 'Muzan Kibutsuji v2') && char.muzanTransformed) ||
                                   ((name === 'Garou') && char.garouKaijuMode);
-            const portrait = (isTransformed && (char.transformPortrait || char.transformationPortrait))
+            let portrait = (isTransformed && (char.transformPortrait || char.transformationPortrait))
                 ? (char.transformPortrait || char.transformationPortrait)
                 : (char.portrait || char.transformPortrait || char.transformationPortrait || '');
+            // Portrait dinámico por reliquia equipada (aplica a cualquier personaje con relicPortraits)
+            if (char.relicPortraits && char.equippedRelics && char.equippedRelics.length > 0) {
+                for (const _rpRelicName in char.relicPortraits) {
+                    if (char.equippedRelics.includes(_rpRelicName)) {
+                        portrait = char.relicPortraits[_rpRelicName];
+                        break;
+                    }
+                }
+            }
 
             // Header row
             const header = document.createElement('div');
@@ -1458,9 +1467,18 @@
                                        (char.muzanTransformed && (charName === 'Muzan Kibutsuji' || charName === 'Muzan Kibutsuji v2')) ||
                                        (char._reyDemonioActive && (charName === 'Meliodas' || charName === 'Meliodas v2')) ||
                                        (char.garouKaijuMode && charName === 'Garou');
-            const modalPortrait = (isTransformedModal && (char.transformPortrait || char.transformationPortrait))
+            let modalPortrait = (isTransformedModal && (char.transformPortrait || char.transformationPortrait))
                 ? (char.transformPortrait || char.transformationPortrait)
                 : (char.portrait || char.transformPortrait || char.transformationPortrait || '');
+            // Portrait dinámico por reliquia equipada (aplica a cualquier personaje con relicPortraits)
+            if (char.relicPortraits && char.equippedRelics && char.equippedRelics.length > 0) {
+                for (const _rpRelicNameM in char.relicPortraits) {
+                    if (char.equippedRelics.includes(_rpRelicNameM)) {
+                        modalPortrait = char.relicPortraits[_rpRelicNameM];
+                        break;
+                    }
+                }
+            }
             if (modalPortrait) {
                 portraitImg.src = modalPortrait;
                 portraitImg.alt = charName;
