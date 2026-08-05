@@ -232,15 +232,15 @@
                 ]
             },
             'Saga de Geminis': {
-                hp: 20, maxHp: 20, speed: 91, charges: 0, team: 'team2',
+                hp: 20, maxHp: 20, speed: 91, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/wBvTDG7f/Captura_de_pantalla_2026_02_24_103109.png',
-                passive: { name: 'Maboroshi no Shinkiro', description: 'Cada vez que se aplica un debuff Posesion o Mega Posesion sobre un enemigo, genera 3 cargas.' },
+                portrait: 'https://i.ibb.co/ZRfxvqYF/descarga-37.jpg',
+                passive: { name: 'Maboroshi no Shinkirō', description: 'Todos los ataques de Saga tienen 50% de probabilidad de aplicar Posesión sobre el objetivo. Cada vez que un enemigo realiza un ataque especial, Saga ejecuta Genrō Maō Ken automáticamente (daño completo, efectos y cargas). Cada vez que se aplica Posesión o Mega Posesión sobre cualquier enemigo, Saga genera 3 cargas.' },
                 abilities: [
-                    { name: 'Shingun Ken', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'speed_up_self', description: 'Causa 1 de daño. Aumenta 1 punto la Velocidad de Saga de Géminis. 50% de probabilidad de aplicar Posesión sobre el enemigo golpeado.' },
-                    { name: 'Genrō Maō Ken', type: 'special', cost: 4, chargeGain: 0, damage: 3, target: 'aoe', effect: 'genro_maoken', description: 'Causa 3 AOE. 50% de aplicar debuff Posesión sobre el enemigo golpeado.' },
-                    { name: 'Kōsoku Ken', type: 'special', cost: 7, chargeGain: 0, damage: 1, target: 'single', effect: 'speed_bonus_damage', description: 'Causa 1 de daño +1 adicional por cada punto de diferencia de velocidad superior sobre el enemigo. Aplica Mega Posesión sobre el enemigo golpeado.' },
-                    { name: 'Explosión de Galaxias', type: 'over', cost: 15, chargeGain: 0, damage: 10, target: 'aoe', effect: 'explosion_galaxias', critChance: 0.30, description: 'Causa 10 AOE. 30% probabilidad de crítico.' }
+                    { name: 'Shingun Ken',         type: 'basic',   cost: 0,  chargeGain: 2, damage: 2,  target: 'single', effect: 'saga_shingun_ken',     description: 'ST 2 daño. Saga gana +2 de velocidad permanentemente. El objetivo pierde -2 de velocidad permanentemente.' },
+                    { name: 'Genrō Maō Ken',      type: 'special', cost: 4,  chargeGain: 0, damage: 2,  target: 'aoe',    effect: 'saga_genro_maoken',   description: 'AOE 2 daño. Roba 3 cargas de cada enemigo golpeado. Causa daño triple en enemigos con Posesión activa. 50% de probabilidad de aplicar Confusión 2T a cada enemigo golpeado.' },
+                    { name: 'Kōsoku Ken',         type: 'special', cost: 5,  chargeGain: 0, damage: 1,  target: 'single', effect: 'saga_kosoku_ken',      description: 'ST 1 daño + 1 daño adicional por cada punto de velocidad que Saga supere al objetivo. Aplica Mega Posesión sobre el objetivo.' },
+                    { name: 'Explosión de Galaxias', type: 'over', cost: 15, chargeGain: 0, damage: 10, target: 'aoe',    effect: 'saga_explosion_galaxias', description: 'AOE 10 daño. Si el enemigo tiene 50% o menos de su HP máx antes de recibir el golpe, es eliminado instantáneamente (no aplica a Jefes de Sala). Contra Jefes de Sala multiplica el daño por un factor aleatorio entre x2 y x10. Saga gana 1 turno adicional.' }
                 ]
             },
 
