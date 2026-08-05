@@ -1323,26 +1323,8 @@
             display: flex;
             flex-direction: column;
             gap: 5px;
-            overflow-y: auto;
-            overflow-x: hidden;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(0,196,255,0.3) transparent;
-        }
-        #team1Characters::-webkit-scrollbar, #team2Characters::-webkit-scrollbar { width: 3px; }
-        #team1Characters::-webkit-scrollbar-thumb, #team2Characters::-webkit-scrollbar-thumb { background: rgba(0,196,255,0.3); border-radius: 3px; }
-
-        /* El portrait SIEMPRE mantiene su tamaño — nunca se comprime */
-        .character-portrait {
-            width: 80px !important;
-            height: 100px !important;
-            min-width: 80px !important;
-            min-height: 100px !important;
-            flex-shrink: 0 !important;
         }
 
-        /* Eliminar la regla que reducía el portrait con 7+ personajes */
-        .team-column:has(.character-card:nth-child(7)) .char-inner { padding: 4px 6px 3px 6px; }
-        .team-column:has(.character-card:nth-child(7)) .character-portrait { width: 80px !important; height: 100px !important; }
         /* ==================== CHARACTER SELECT SCREEN ==================== */
         #charSelectScreen {
             position: fixed;
