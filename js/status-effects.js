@@ -218,6 +218,17 @@ function processBurnEffects(charName) {
             }
             const burnEffects = char.statusEffects.filter(e => e && e.name === 'Quemadura');
             if (burnEffects.length === 0) return;
+            // Salvaguarda: si por alguna razón ya se acumularon más de 1000 stacks de Quemadura
+            // en un Jefe de Sala (ej. partidas iniciadas antes de este límite), se recortan aquí
+            // para evitar que el juego se trabe procesando un arreglo gigante.
+            if (char.isBoss && burnEffects.length > 1000) {
+                let _burnTrimCount = burnEffects.length - 1000;
+                char.statusEffects = char.statusEffects.filter(function(e) {
+                    if (e && e.name === 'Quemadura' && _burnTrimCount > 0) { _burnTrimCount--; return false; }
+                    return true;
+                });
+                burnEffects.length = 1000;
+            }
             // Support both flat HP (new) and percent (legacy)
             let damage = 0;
             burnEffects.forEach(function(b) {
