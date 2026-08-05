@@ -977,6 +977,7 @@
                 hp: 20, maxHp: 20, speed: 85, charges: 0,
                 portrait: 'https://i.ibb.co/B2Lq7WJ0/image.png',
                 transformPortrait: 'https://i.ibb.co/FvS9MSm/image.png',
+                relicPortraits: { 'Shadowmourne': 'https://i.ibb.co/S4bTtG5z/Whats-App-Image-2026-08-04-at-5-44-27-PM.jpg' },
                 passive: { name: 'Pecado de la Ira', description: 'Contraataque: genera 2 cargas cada vez que Meliodas o un aliado ejecuta un contraataque. Cuando un aliado recibe un debuff, aplica ese mismo debuff en un enemigo aleatorio.' },
                 abilities: [
                     { name: 'Lost Vayne',          type: 'basic',   cost: 0,  chargeGain: 1, damage: 2, target: 'single', effect: 'lost_vayne_meliodas',     description: 'Causa 2 daño. Aplica Sangrado al objetivo. Si Meliodas tiene Provocación activa, cura 3 HP a Meliodas.' },
