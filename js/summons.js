@@ -2290,15 +2290,22 @@
                             if (_tgtChar && !passiveExecuting) {
                                 const _burns = (_tgtChar.statusEffects||[]).filter(function(e){ return e && (e.name === 'Quemadura' || e.name === 'quemadura'); });
                                 if (_burns.length > 0) {
-                                    // Duplicar: añadir una copia de cada Quemadura existente
-                                    _burns.forEach(function(b){
+                                    // Tope de 1000 stacks de Quemadura en Jefes de Sala (evita crecimiento
+                                    // exponencial 1→2→4→8... que puede trabar el juego con relíquias como esta)
+                                    const _pyBurnCapMax = 1000;
+                                    const _pyBurnsToAdd = _tgtChar.isBoss
+                                        ? Math.max(0, Math.min(_burns.length, _pyBurnCapMax - _burns.length))
+                                        : _burns.length;
+                                    // Duplicar: añadir una copia de cada Quemadura existente (hasta el tope)
+                                    for (let _pyI = 0; _pyI < _pyBurnsToAdd; _pyI++) {
+                                        const b = _burns[_pyI];
                                         if (typeof applyDebuff === 'function') {
                                             applyDebuff(targetName, Object.assign({}, b, { duration: b.duration || 2 }));
                                         } else {
                                             _tgtChar.statusEffects.push(Object.assign({}, b));
                                         }
-                                    });
-                                    addLog('🔥 Pyrophagos: Quemaduras de ' + targetName + ' duplicadas (+' + _burns.length + ' stack(s))', 'debuff');
+                                    }
+                                    addLog('🔥 Pyrophagos: Quemaduras de ' + targetName + ' duplicadas (+' + _pyBurnsToAdd + ' stack(s))', 'debuff');
                                     // +3 daño adicional
                                     passiveExecuting = true;
                                     applyDamageWithShield(targetName, 3, attackerName);
