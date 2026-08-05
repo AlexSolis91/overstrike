@@ -1876,7 +1876,99 @@
                 applyFear(targetName, ability.fearDuration || 2);
                 addLog(`😱 ${gameState.selectedCharacter} infunde Miedo en ${targetName}`, 'damage');
 
-            } else if (ability.effect === 'explosion_galaxias') {
+            // ══════════════════════════════════════════════════════
+            // SAGA DE GEMINIS (rework) — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'saga_shingun_ken') {
+                // SHINGUN KEN: 2 ST. Saga +2 vel. Objetivo -2 vel. 50% Posesión (pasiva).
+                const _sskAtk = gameState.characters[gameState.selectedCharacter];
+                const _sskTgt = gameState.characters[targetName];
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('⛓️ Shingun Ken: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                if (_sskAtk) { _sskAtk.speed = (_sskAtk.speed||91) + 2; addLog('⛓️ Shingun Ken: Saga +2 velocidad (ahora ' + _sskAtk.speed + ')', 'buff'); }
+                if (_sskTgt && !_sskTgt.isDead) { _sskTgt.speed = Math.max(1, (_sskTgt.speed||80) - 2); addLog('⛓️ Shingun Ken: ' + targetName + ' -2 velocidad (ahora ' + _sskTgt.speed + ')', 'debuff'); }
+
+            } else if (ability.effect === 'saga_genro_maoken') {
+                // GENRŌ MAŌ KEN: AOE 2. Roba 3 cargas. Triple daño en poseídos. 50% Confusión 2T.
+                const _sgmAtk = gameState.characters[gameState.selectedCharacter];
+                const _sgmETeam = _sgmAtk ? (_sgmAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _sgmETeam || _c.isDead || _c.hp <= 0) continue;
+                    if (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(_n, true)) continue;
+                    // Triple daño si tiene Posesión
+                    const _hasPosesion = (_c.statusEffects||[]).some(function(e){ return e && (e.name==='Posesion'||e.name==='Posesión'||e.name==='Mega Posesion'||e.name==='Mega Posesión'); });
+                    const _dmg = _hasPosesion ? finalDamage * 3 : finalDamage;
+                    applyDamageWithShield(_n, _dmg, gameState.selectedCharacter);
+                    addLog('⛓️ Genrō Maō Ken: ' + _dmg + ' daño a ' + _n + (_hasPosesion ? ' (triple - Posesión)' : ''), 'damage');
+                    // Robar 3 cargas
+                    const _stolen = Math.min(3, _c.charges||0);
+                    _c.charges = Math.max(0, (_c.charges||0) - _stolen);
+                    if (_sgmAtk && _stolen > 0) { _sgmAtk.charges = Math.min(20, (_sgmAtk.charges||0) + _stolen); addLog('⛓️ Genrō Maō Ken: roba ' + _stolen + ' cargas de ' + _n, 'buff'); }
+                    // 50% Confusión 2T
+                    if (Math.random() < 0.50 && !_c.isDead && _c.hp > 0) {
+                        if (typeof applyDebuff === 'function') applyDebuff(_n, {name:'Confusion', type:'debuff', duration:2, emoji:'💫'});
+                        addLog('⛓️ Genrō Maō Ken: Confusión 2T aplicada a ' + _n, 'debuff');
+                    }
+                }
+
+            } else if (ability.effect === 'saga_kosoku_ken') {
+                // KŌSOKU KEN: ST. 1 + diferencia de vel. Mega Posesión.
+                const _skkAtk = gameState.characters[gameState.selectedCharacter];
+                const _skkTgt = gameState.characters[targetName];
+                const _sagaSpd = _skkAtk ? (_skkAtk.speed||91) : 91;
+                const _tgtSpd  = _skkTgt  ? (_skkTgt.speed||80)  : 80;
+                const _diff   = Math.max(0, _sagaSpd - _tgtSpd);
+                const _kkDmg  = finalDamage + _diff;
+                applyDamageWithShield(targetName, _kkDmg, gameState.selectedCharacter);
+                addLog('⛓️ Kōsoku Ken: ' + _kkDmg + ' daño a ' + targetName + ' (1 base + ' + _diff + ' por diferencia de vel: ' + _sagaSpd + ' vs ' + _tgtSpd + ')', 'damage');
+                if (typeof applyDebuff === 'function') {
+                    const _tgtNow = gameState.characters[targetName];
+                    if (_tgtNow && !_tgtNow.isDead && _tgtNow.hp > 0) {
+                        applyDebuff(targetName, {name:'Mega Posesion', type:'debuff', duration:2, emoji:'🟣'});
+                        addLog('⛓️ Kōsoku Ken: Mega Posesión aplicada a ' + targetName, 'debuff');
+                    }
+                }
+
+            } else if (ability.effect === 'saga_explosion_galaxias') {
+                // EXPLOSIÓN DE GALAXIAS: AOE 10. Si HP ≤ 50% → eliminado (no jefes). Vs jefe x2-x10. Turno extra.
+                const _segAtk = gameState.characters[gameState.selectedCharacter];
+                const _segETeam = _segAtk ? (_segAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _segIsBoss = typeof window._bossMode !== 'undefined' && window._bossMode;
+                for (const _n in gameState.characters) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.team !== _segETeam || _c.isDead || _c.hp <= 0) continue;
+                    if (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(_n, true)) continue;
+                    const _hpBefore = _c.hp;
+                    const _maxHp   = _c.maxHp || _c.hp;
+                    // Vs Jefe de Sala: multiplicador x2-x10
+                    if (_segIsBoss) {
+                        const _mult = 2 + Math.floor(Math.random() * 9); // 2 a 10
+                        const _bossDmg = finalDamage * _mult;
+                        applyDamageWithShield(_n, _bossDmg, gameState.selectedCharacter);
+                        addLog('⛓️ Explosión de Galaxias: ' + _bossDmg + ' daño al Jefe (x' + _mult + ' multiplicador)', 'damage');
+                    } else {
+                        applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                        addLog('⛓️ Explosión de Galaxias: ' + finalDamage + ' daño a ' + _n, 'damage');
+                        // Eliminación si tenía ≤ 50% HP ANTES del golpe
+                        if (_hpBefore <= _maxHp * 0.50) {
+                            const _cNow = gameState.characters[_n];
+                            if (_cNow && !_cNow.isDead && _cNow.hp > 0) {
+                                _cNow.hp = 0; _cNow.isDead = true;
+                                addLog('⛓️ Explosión de Galaxias: ¡' + _n + ' eliminado! (tenía ≤ 50% HP)', 'damage');
+                                if (typeof checkAndHandleDeath === 'function') checkAndHandleDeath(_n);
+                            }
+                        }
+                    }
+                }
+                // Turno adicional
+                if (!gameState._skeggoxExtraTurn) { gameState._skeggoxExtraTurn = gameState.selectedCharacter; }
+                addLog('⛓️ Explosión de Galaxias: Saga gana turno adicional', 'buff');
+
+            // ══════════════════════════════════════════════════════
+            // SAGA (handlers legacy — mantener compatibilidad)
+            // ══════════════════════════════════════════════════════
                 // Explosión de Galaxias: 10 AOE + 30% crit por objetivo
                 const _egTeam = attacker.team === 'team1' ? 'team2' : 'team1';
                 const _critChance = ability.critChance || 0.30;
@@ -9615,6 +9707,32 @@
                         _adc.charges = Math.min(20, (_adc.charges||0) + 3);
                         addLog('✨ Maestría de la Varita de Saúco: ' + _adn + ' recupera 30 HP y gana 3 cargas (especial/over enemigo)', 'heal');
                         passiveExecuting = false;
+                        break;
+                    }
+                }
+            }
+
+            // ── MABOROSHI NO SHINKIRŌ (Saga): cuando ENEMIGO usa especial → Saga ejecuta Genrō Maō Ken ──
+            if (ability && ability.type === 'special' && !passiveExecuting) {
+                const _msAtk = gameState.characters[gameState.selectedCharacter];
+                if (_msAtk) {
+                    const _msDefTeam = _msAtk.team === 'team1' ? 'team2' : 'team1';
+                    for (const _msN in gameState.characters) {
+                        const _msC = gameState.characters[_msN];
+                        if (!_msC || _msC.isDead || _msC.hp <= 0 || _msC.team !== _msDefTeam) continue;
+                        if (!_msC.passive || _msC.passive.name !== 'Maboroshi no Shinkirō') continue;
+                        const _msGenro = (_msC.abilities||[]).find(function(a){ return a && a.effect === 'saga_genro_maoken'; });
+                        if (!_msGenro) break;
+                        addLog('⛓️ Maboroshi no Shinkirō: Saga ejecuta Genrō Maō Ken automáticamente (enemigo usó especial)', 'buff');
+                        const _msPrev  = gameState.selectedCharacter;
+                        const _msPrevA = gameState.selectedAbility;
+                        gameState.selectedCharacter = _msN;
+                        gameState.selectedAbility   = _msGenro;
+                        passiveExecuting = true;
+                        try { _executeAbilityCore(null); } catch(e) { console.error('[Saga Genro auto]', e); }
+                        passiveExecuting = false;
+                        gameState.selectedCharacter = _msPrev;
+                        gameState.selectedAbility   = _msPrevA;
                         break;
                     }
                 }
