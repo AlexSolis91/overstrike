@@ -742,8 +742,45 @@
                     const _bossChPct  = Math.min(1, (char.charges||0) / 20);
                     const _bossSfx    = renderStatusEffects(char);
 
+                    const _bossCardId = 'char-' + name.replace(/\s+/g,'-');
+
+                    // Evitar reconstruir el <video>/<img> del retrato en cada render: si ya
+                    // existe la tarjeta con el MISMO video/imagen, solo se actualizan los
+                    // valores dinamicos (HP, cargas, efectos) sin tocar el DOM del retrato,
+                    // para que el video no se reinicie/parpadee en cada actualizacion.
+                    const _existingBossCard = document.getElementById(_bossCardId);
+                    const _existingPortraitEl = _existingBossCard ? _existingBossCard.querySelector('.boss-portrait, .boss-portrait-placeholder') : null;
+                    const _existingPortraitSrc = _existingPortraitEl ? _existingPortraitEl.getAttribute('src') : null;
+                    const _canPatchInPlace = _existingBossCard && _existingPortraitEl &&
+                        ((char.portraitVideo && _existingPortraitEl.tagName === 'VIDEO' && _existingPortraitSrc === char.portraitVideo) ||
+                         (!char.portraitVideo && _existingPortraitEl.tagName === 'IMG' && _existingPortraitSrc === activePortrait));
+
+                    if (_canPatchInPlace) {
+                        const _hpFillEl = _existingBossCard.querySelector('.boss-bar-row:nth-of-type(1) .boss-bar-fill');
+                        const _hpTextEl = _existingBossCard.querySelector('.boss-bar-row:nth-of-type(1) span:last-child');
+                        if (_hpFillEl) { _hpFillEl.style.width = (_bossHpPct*100).toFixed(1) + '%'; _hpFillEl.style.background = 'linear-gradient(90deg,' + _bossHpCls + ',' + _bossHpCls + 'aa)'; }
+                        if (_hpTextEl) { _hpTextEl.textContent = char.hp.toLocaleString() + '/' + char.maxHp.toLocaleString(); }
+                        const _chFillEl = _existingBossCard.querySelector('.boss-bar-row:nth-of-type(2) .boss-bar-fill');
+                        const _chTextEl = _existingBossCard.querySelector('.boss-bar-row:nth-of-type(2) span:last-child');
+                        if (_chFillEl) { _chFillEl.style.width = (_bossChPct*100).toFixed(1) + '%'; _chFillEl.style.background = 'linear-gradient(90deg,' + (_bossChPct>=1?'#cc44ff':'#0088cc') + ',' + (_bossChPct>=1?'#aa22ee':'#00c8ff') + ')'; }
+                        if (_chTextEl) { _chTextEl.textContent = (char.charges||0); }
+                        let _effectsWrap = _existingBossCard.querySelector('.boss-effects');
+                        if (_bossSfx) {
+                            if (!_effectsWrap) {
+                                _effectsWrap = document.createElement('div');
+                                _effectsWrap.className = 'boss-effects';
+                                _existingBossCard.appendChild(_effectsWrap);
+                            }
+                            _effectsWrap.innerHTML = _bossSfx;
+                        } else if (_effectsWrap) {
+                            _effectsWrap.remove();
+                        }
+                        _existingBossCard.classList.toggle('defeated', !!isDefeated);
+                        continue;
+                    }
+
                     const _bossCard = '<div class="character-card boss-card ' + (isDefeated ? 'defeated' : '') + '"' +
-                        ' id="char-' + name.replace(/\s+/g,'-') + '"' +
+                        ' id="' + _bossCardId + '"' +
                         ' data-charname="' + name + '"' +
                         ' style="border-color:' + _bossColor + ';box-shadow:0 0 18px ' + _bossGlow + ',0 0 40px ' + _bossGlow2 + ',inset 0 0 20px ' + _bossGlow2 + ';background:linear-gradient(160deg,rgba(8,12,22,0.97),rgba(4,8,18,0.99));">' +
                         // Top glow bar
