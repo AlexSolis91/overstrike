@@ -4486,6 +4486,17 @@
 
             document.body.appendChild(container);
 
+            // Reproducir overSound si el personaje tiene uno (funciona con o sin overVideo)
+            if (char.overSound) {
+                const _audEl = document.createElement('audio');
+                _audEl.className = 'oc-audio';
+                _audEl.src = char.overSound;
+                _audEl.autoplay = true;
+                document.body.appendChild(_audEl);
+                _audEl.addEventListener('ended', function() { if (_audEl.parentNode) _audEl.parentNode.removeChild(_audEl); });
+                _audEl.addEventListener('error', function() { if (_audEl.parentNode) _audEl.parentNode.removeChild(_audEl); });
+            }
+
             // Después de 3.2s remover y ejecutar callback
             setTimeout(function() {
                 if (container.parentNode) container.parentNode.removeChild(container);
