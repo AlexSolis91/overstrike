@@ -235,6 +235,7 @@
                 hp: 20, maxHp: 20, speed: 91, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/ZRfxvqYF/descarga-37.jpg',
+                overSound: 'https://ia600908.us.archive.org/21/items/galaxian-explosion-saga-kanon-e-integra_4V7DZHZD/galaxian-explosion-saga-kanon-e-integra_4V7DZHZD.mp3',
                 passive: { name: 'Maboroshi no Shinkirō', description: 'Todos los ataques de Saga tienen 50% de probabilidad de aplicar Posesión sobre el objetivo. Cada vez que un enemigo realiza un ataque especial, Saga ejecuta Genrō Maō Ken automáticamente (daño completo, efectos y cargas). Cada vez que se aplica Posesión o Mega Posesión sobre cualquier enemigo, Saga genera 3 cargas.' },
                 abilities: [
                     { name: 'Shingun Ken',         type: 'basic',   cost: 0,  chargeGain: 2, damage: 2,  target: 'single', effect: 'saga_shingun_ken',     description: 'ST 2 daño. Saga gana +2 de velocidad permanentemente. El objetivo pierde -2 de velocidad permanentemente.' },
