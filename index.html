@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OVERSTRIKE - 5v5 RPG Battle v4.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css?v=20260972">
+    <link rel="stylesheet" href="css/styles.css?v=20260973">
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -253,7 +253,7 @@
             <!-- Logo: sin emoji, pegado a la izquierda -->
             <div style="display:flex;flex-direction:column;gap:2px;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;white-space:nowrap;">OVERSTRIKE</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260972</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20260973</div>
             </div>
 
             <!-- HUD: empujado todo a la derecha junto al botón mute -->
@@ -277,6 +277,13 @@
                 <button onclick="window.showRelicario()"
                     style="font-family:Orbitron,sans-serif;font-size:.72rem;font-weight:700;padding:.42rem 1rem;background:linear-gradient(135deg,#0a1a0a,#1a4a1a);color:#00ff88;border:1.5px solid #00ff88;border-radius:8px;cursor:pointer;letter-spacing:.05em;transition:all .2s;"
                     onmouseover="this.style.boxShadow='0 0 12px rgba(0,255,136,.55)'" onmouseout="this.style.boxShadow='none'">🔮 RELICARIO</button>
+                <!-- Misiones -->
+                <div style="position:relative;">
+                    <button onclick="window.showMissionsModal && window.showMissionsModal()"
+                        style="font-family:Orbitron,sans-serif;font-size:.72rem;font-weight:700;padding:.42rem 1rem;background:linear-gradient(135deg,#1a1a00,#4a4a00);color:#ffe14f;border:1.5px solid #ffe14f;border-radius:8px;cursor:pointer;letter-spacing:.05em;transition:all .2s;"
+                        onmouseover="this.style.boxShadow='0 0 12px rgba(255,225,79,.55)'" onmouseout="this.style.boxShadow='none'">🎯 MISIONES</button>
+                    <div id="missionsBadge" style="display:none;position:absolute;top:-6px;right:-6px;width:14px;height:14px;border-radius:50%;background:#ff3366;border:2px solid #0a0e17;box-shadow:0 0 8px rgba(255,51,102,0.9);animation:arcaneEventPulse 1.2s infinite;pointer-events:none;z-index:50;"></div>
+                </div>
                 <!-- Separador -->
                 <div style="width:1px;height:24px;background:rgba(255,255,255,.12);"></div>
                 <!-- Oro -->
@@ -681,8 +688,8 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20260972"></script>
-    <script src="js/arcane-event.js?v=20260972"></script>
+    <script src="js/firebase-auth.js?v=20260973"></script>
+    <script src="js/arcane-event.js?v=20260973"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen() {
@@ -1822,9 +1829,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20260972"></script>
+    <script src="js/characters.js?v=20260973"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20260972"></script>
+    <script src="js/audio-state.js?v=20260973"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2649,26 +2656,27 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20260972"></script>
+    <script src="js/ai-engine.js?v=20260973"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20260972"></script>
+    <script src="js/init-render.js?v=20260973"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20260972"></script>
+    <script src="js/turn-logic.js?v=20260973"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20260972"></script>
+    <script src="js/status-effects.js?v=20260973"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20260972"></script>
+    <script src="js/debuffs.js?v=20260973"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20260972"></script>
+    <script src="js/summons.js?v=20260973"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20260972"></script>
+    <script src="js/ability-select.js?v=20260973"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20260972"></script>
+<script src="js/skills.js?v=20260973"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20260972"></script>
-    <script src="js/horda-mode.js?v=20260972"></script>
-    <script src="js/horda-abilities.js?v=20260972"></script>
-    <script src="js/horda-battle.js?v=20260972"></script>
+    <script src="js/jefe-de-sala.js?v=20260973"></script>
+    <script src="js/horda-mode.js?v=20260973"></script>
+    <script src="js/horda-abilities.js?v=20260973"></script>
+    <script src="js/horda-battle.js?v=20260973"></script>
+    <script src="js/missions.js?v=20260973"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
