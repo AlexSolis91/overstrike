@@ -764,17 +764,21 @@
                         const _chTextEl = _existingBossCard.querySelector('.boss-bar-row:nth-of-type(2) span:last-child');
                         if (_chFillEl) { _chFillEl.style.width = (_bossChPct*100).toFixed(1) + '%'; _chFillEl.style.background = 'linear-gradient(90deg,' + (_bossChPct>=1?'#cc44ff':'#0088cc') + ',' + (_bossChPct>=1?'#aa22ee':'#00c8ff') + ')'; }
                         if (_chTextEl) { _chTextEl.textContent = (char.charges||0); }
-                        let _effectsWrap = _existingBossCard.querySelector('.boss-effects');
+                        // Actualizar tooltip de efectos (no la tarjeta visible)
+                        let _tooltipEl = _existingBossCard.querySelector('.boss-effects-tooltip');
                         if (_bossSfx) {
-                            if (!_effectsWrap) {
-                                _effectsWrap = document.createElement('div');
-                                _effectsWrap.className = 'boss-effects';
-                                _existingBossCard.appendChild(_effectsWrap);
+                            if (!_tooltipEl) {
+                                _tooltipEl = document.createElement('div');
+                                _tooltipEl.className = 'boss-effects-tooltip';
+                                _existingBossCard.querySelector('.boss-portrait-wrap').appendChild(_tooltipEl);
                             }
-                            _effectsWrap.innerHTML = _bossSfx;
-                        } else if (_effectsWrap) {
-                            _effectsWrap.remove();
+                            _tooltipEl.innerHTML = '<div style="font-family:Orbitron,sans-serif;font-size:.6rem;color:#aaa;margin-bottom:6px;letter-spacing:.05em;">EFECTOS ACTIVOS</div>' + _bossSfx;
+                        } else if (_tooltipEl) {
+                            _tooltipEl.remove();
                         }
+                        // Eliminar boss-effects visibles si quedaron del render anterior
+                        const _oldEffects = _existingBossCard.querySelector('.boss-effects');
+                        if (_oldEffects) _oldEffects.remove();
                         _existingBossCard.classList.toggle('defeated', !!isDefeated);
                         continue;
                     }
@@ -797,6 +801,8 @@
                         '<div style="font-family:Orbitron,sans-serif;font-size:.82rem;font-weight:700;color:' + _bossColor + ';letter-spacing:.05em;text-shadow:0 0 10px ' + _bossColor + ';margin-bottom:2px;">' + name + '</div>' +
                         '<div style="font-size:.62rem;color:#aaa;">⚡ ' + char.speed + ' &nbsp;|&nbsp; 💀 JEFE DE SALA</div>' +
                         '</div>' +
+                        // Tooltip de efectos (visible solo al hacer hover sobre el portrait)
+                        (_bossSfx ? '<div class="boss-effects-tooltip"><div style="font-family:Orbitron,sans-serif;font-size:.6rem;color:#aaa;margin-bottom:6px;letter-spacing:.05em;">EFECTOS ACTIVOS</div>' + _bossSfx + '</div>' : '') +
                         '</div>' +
                         // HP bar (full width)
                         '<div class="boss-bars">' +
@@ -816,8 +822,6 @@
                         '<span style="font-size:.65rem;color:#ddd;min-width:30px;text-align:right;">' + (char.charges||0) + '</span>' +
                         '</div>' +
                         '</div>' +
-                        // Status effects
-                        (_bossSfx ? '<div class="boss-effects">' + _bossSfx + '</div>' : '') +
                         '</div>';
 
                     container.innerHTML += _bossCard;
