@@ -2392,8 +2392,12 @@
                                     if (_atkChar) _atkChar.charges = Math.min(20, (_atkChar.charges||0) + _frostSteal);
                                     addLog('❄️ Frostmourne: robadas ' + _frostSteal + ' cargas de ' + targetName, 'buff');
                                 }
-                                // Revivir como aliado si el objetivo muere
-                                if (_tgtChar.hp <= 0 || _tgtChar.isDead) {
+                                // Revivir como aliado si el objetivo muere — EXCEPTO en Modo Horda: los
+                                // enemigos ahí son Orcos de plantilla (sin set de habilidades ni estructura
+                                // de personaje jugable), así que "revivirlos como aliado" corrompía el
+                                // estado justo cuando la oleada intentaba cerrarse, dejando el juego
+                                // trabado con la Horda ya sin personajes vivos pero sin avanzar de oleada.
+                                if ((_tgtChar.hp <= 0 || _tgtChar.isDead) && gameState.gameMode !== 'horda') {
                                     // Capturar el equipo del atacante Y el equipo original de la víctima AHORA
                                     // (de forma síncrona), no dentro del setTimeout — en una partida online
                                     // cada cliente sincroniza su propia copia del estado, y para cuando el
