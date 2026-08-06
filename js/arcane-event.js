@@ -238,4 +238,31 @@
     }
     _hookAuth();
 
+    // ── DEBUG/ADMIN: forzar un evento activo AHORA MISMO (solo para pruebas) ──
+    // Uso en consola: adminForceArcaneEvent()            → 60 min, bonus aleatorio
+    //                 adminForceArcaneEvent(5)            → 5 min, bonus aleatorio
+    //                 adminForceArcaneEvent(5, 0.025)      → 5 min, bonus fijo +2.5%
+    // Se guarda en Firebase igual que un evento real, así que se ve para TODOS los
+    // jugadores conectados y también dispara la notificación de buzón normalmente.
+    window.adminForceArcaneEvent = async function (durationMinutes, bonusPct) {
+        if (typeof isAdmin === 'function' && !isAdmin()) { console.warn('[arcane-event] Solo admin puede forzar el evento.'); return null; }
+        if (typeof db === 'undefined') { console.warn('[arcane-event] Firebase no disponible.'); return null; }
+        var now = Date.now();
+        var dur = (durationMinutes || 60) * 60000;
+        var bonus = bonusPct || BONUS_OPTIONS[Math.floor(Math.random() * BONUS_OPTIONS.length)];
+        var weekId = getWeekId(new Date());
+        var monday = getMondayOfWeek(new Date());
+        var slot = { id: 'debug' + now, day: new Date().getDay(), start: now, end: now + dur, bonusPct: bonus };
+        var ref = db.ref('events/arcane_boost/' + weekId);
+        var snap = await ref.once('value');
+        var sched = snap.val() || { weekId: weekId, generatedAt: now, slots: [] };
+        sched.slots = sched.slots || [];
+        sched.slots.push(slot);
+        await ref.set(sched);
+        _scheduleCache[weekId] = sched;
+        _tickArcaneEventUI();
+        console.log('✅ [arcane-event] Evento forzado activo por ' + (durationMinutes || 60) + ' min con bonus +' + (bonus * 100).toFixed(1) + '%:', slot);
+        return slot;
+    };
+
 })();
