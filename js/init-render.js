@@ -790,9 +790,9 @@
                         // Top glow bar
                         '<div style="height:3px;width:100%;background:linear-gradient(90deg,transparent,' + _bossColor + ',transparent);border-radius:10px 10px 0 0;"></div>' +
                         // Portrait
-                        '<div class="boss-portrait-wrap">' +
+                        '<div class="boss-portrait-wrap" onmouseenter="this.classList.add(\'tt-active\')" onmouseleave="this.classList.remove(\'tt-active\')">' +
                         (char.portraitVideo
-                            ? '<video class="boss-portrait' + (isDefeated ? ' defeated-img' : '') + '" src="' + char.portraitVideo + '" autoplay loop muted playsinline onloadedmetadata="var _bc=this.closest(\'.boss-card\'); if(_bc && !_bc.dataset.widthLocked){ var _w=this.offsetHeight*(this.videoWidth/this.videoHeight); if(_w>0){ _bc.style.width=Math.round(_w)+\'px\'; _bc.dataset.widthLocked=\'1\'; } }"></video>'
+                            ? '<video class="boss-portrait' + (isDefeated ? ' defeated-img' : '') + '" src="' + char.portraitVideo + '" autoplay loop muted playsinline></video>'
                             : (activePortrait
                                 ? '<img class="boss-portrait' + (isDefeated ? ' defeated-img' : '') + '" src="' + activePortrait + '" alt="' + name + '" loading="eager" referrerpolicy="no-referrer">'
                                 : '<div class="boss-portrait-placeholder">👹</div>')) +
