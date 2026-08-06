@@ -2560,6 +2560,31 @@
             gap: 2px;
             padding: 0 8px 5px;
         }
+        /* ── VENTANA DE ESTADO GLOBAL (buffs/debuffs) ──────────────────────────
+           Se activa al pasar el cursor sobre el botón "Continuar Turno"
+           (agrega la clase show-status-tooltips al <body>). Se muestra una
+           ventana por tarjeta, como overlay DENTRO de la propia tarjeta
+           (.character-card ya tiene position:relative + overflow:hidden), para
+           evitar el mismo problema de recorte que tuvo el tooltip del jefe. */
+        .char-status-tooltip {
+            display: none;
+            position: absolute;
+            inset: 0;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 8px;
+            background: linear-gradient(135deg, rgba(4,8,18,0.96), rgba(8,12,28,0.97));
+            z-index: 30;
+            overflow-y: auto;
+            pointer-events: none;
+        }
+        body.show-status-tooltips .char-status-tooltip,
+        body.show-status-tooltips .boss-portrait-wrap .boss-effects-tooltip {
+            display: flex;
+            flex-direction: column;
+        }
         .char-shield-bar {
             position: absolute;
             top: 0; left: 0; right: 0;
