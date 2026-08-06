@@ -3589,7 +3589,7 @@
                     enemiesDefeated: enemiesEliminated || 0,
                     survivingCount: survivingAllies || 0,
                     perfect: !!isPerfect,
-                    memorexBonus: checkMemorexGoldBonus(playerChars)
+                    memorexCarriers: countMemorexCarriers(playerChars)
                 });
 
                 // ── BONO: 5% de probabilidad de +1 Runa de Portal al GANAR una partida Ranked ──
@@ -5192,17 +5192,17 @@
         // el jugador lo reclama con el botón de la ventana de resultado (o, si
         // cerró el juego antes de reclamar, se le vuelve a mostrar al iniciar sesión).
         // ══════════════════════════════════════════════════════════════════
-        // MEMOREX: revisa si alguno de los personajes indicados tiene esta reliquia equipada
-        // Y sigue vivo al final de la partida — si es así, el oro total se multiplica ×1.5.
-        function checkMemorexGoldBonus(characterNames) {
-            if (!characterNames || typeof gameState === 'undefined' || !gameState.characters) return false;
-            return characterNames.some(function(n) {
+        // MEMOREX: cuenta cuántos personajes indicados tienen esta reliquia equipada Y siguen
+        // vivos al final de la partida — cada portador vivo suma su propio bono independiente.
+        function countMemorexCarriers(characterNames) {
+            if (!characterNames || typeof gameState === 'undefined' || !gameState.characters) return 0;
+            return characterNames.filter(function(n) {
                 const c = gameState.characters[n];
                 if (!c || c.isDead || c.hp <= 0) return false;
                 return (c.equippedRelics || []).indexOf('Memorex') !== -1;
-            });
+            }).length;
         }
-        window.checkMemorexGoldBonus = checkMemorexGoldBonus;
+        window.countMemorexCarriers = countMemorexCarriers;
 
         function calculateMatchGold(mode, opts) {
             opts = opts || {};
@@ -5217,8 +5217,12 @@
                 total += Math.round((opts.bossDamage || 0) * 1.15);
             }
             if (opts.perfect) total += 500;
-            // MEMOREX: portador equipado y vivo al final de la partida → ×1.5 el oro total
-            if (opts.memorexBonus) total = total * 1.5;
+            // MEMOREX: subtotal = enemigos + sobrevivientes + perfect (todo lo anterior).
+            // Cada portador de Memorex vivo al final suma +75% de ESE subtotal (no acumulativo
+            // entre sí — todos se calculan sobre el mismo subtotal original, no en cadena).
+            // Ej: subtotal 1000 con 3 portadores vivos → 1000 + 750 + 750 + 750 = 3250.
+            const memorexCarriers = opts.memorexCarriers || 0;
+            if (memorexCarriers > 0) total += total * 0.75 * memorexCarriers;
             return Math.max(0, Math.floor(total));
         }
         window.calculateMatchGold = calculateMatchGold;
