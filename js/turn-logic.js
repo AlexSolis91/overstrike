@@ -367,10 +367,12 @@
                 btn.onmouseover = function() {
                     this.style.transform = 'scale(1.07)';
                     this.style.boxShadow = '0 0 44px rgba(0,217,255,0.85)';
+                    document.body.classList.add('show-status-tooltips');
                 };
                 btn.onmouseout = function() {
                     this.style.transform = 'scale(1)';
                     this.style.boxShadow = '0 0 28px rgba(0,217,255,0.55)';
+                    document.body.classList.remove('show-status-tooltips');
                 };
                 btn.onclick = function() {
                     hideContinueButton();
@@ -827,8 +829,8 @@
                 'font-size:1.1em','font-weight:700','padding:16px 32px','border-radius:50px',
                 'cursor:pointer','z-index:996','box-shadow:0 0 28px rgba(0,217,255,0.55)',
                 'transition:all 0.2s ease','letter-spacing:0.05em'].join(';');
-            btn.onmouseover = function() { this.style.transform='scale(1.07)'; };
-            btn.onmouseout = function() { this.style.transform='scale(1)'; };
+            btn.onmouseover = function() { this.style.transform='scale(1.07)'; document.body.classList.add('show-status-tooltips'); };
+            btn.onmouseout = function() { this.style.transform='scale(1)'; document.body.classList.remove('show-status-tooltips'); };
             btn.onclick = function() { hideContinueButton(); continueTurn(); };
             document.body.appendChild(btn);
             return btn;
