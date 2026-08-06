@@ -171,11 +171,12 @@
             flex-wrap: wrap;
             gap: 4px;
         }
-        .boss-portrait-wrap:hover .boss-effects-tooltip {
+        .boss-portrait-wrap:hover .boss-effects-tooltip,
+        .boss-portrait-wrap.tt-active .boss-effects-tooltip {
             display: flex;
             flex-direction: column;
         }
-        .boss-portrait-wrap { position: relative; cursor: pointer; }
+        .boss-portrait-wrap { position: relative; cursor: default; }
 
         .boss-effects { display: none; } /* Ocultar boss-effects legacy */
         .team-column::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
@@ -2893,29 +2894,19 @@
         .battle-arena.boss-mode #team2Col:has(.boss-card) {
             padding-top: 40px;
         }
+        /* Tarjeta de jefe con tamaño FIJO: no se recalcula según las dimensiones
+           reales de la imagen/video (evita saltos de layout mientras carga). */
         .battle-arena.boss-mode #team2Col .boss-card {
             width: min(32vw, 300px);
         }
-        .battle-arena.boss-mode #team2Col .boss-card:has(video.boss-portrait) {
-            width: fit-content;
-            max-width: 90vw;
+        .battle-arena.boss-mode #team2Col .boss-portrait-wrap {
+            width: 100%;
         }
         .battle-arena.boss-mode #team2Col img.boss-portrait,
-        .battle-arena.boss-mode #team2Col .boss-portrait-placeholder {
-            height: min(26vh, 220px);
-        }
-        /* El video del jefe se muestra a su relación de aspecto NATURAL (sin recortar
-           ni forzar un ratio adivinado): se fija la altura y el ancho se calcula solo
-           a partir del video, y la tarjeta se ajusta ("width:fit-content") a ese ancho
-           real — así nunca quedan barras negras sin importar la proporción del clip. */
-        .battle-arena.boss-mode #team2Col .boss-portrait-wrap:has(video.boss-portrait) {
-            width: fit-content;
-            margin: 0 auto;
-        }
+        .battle-arena.boss-mode #team2Col .boss-portrait-placeholder,
         .battle-arena.boss-mode #team2Col video.boss-portrait {
-            width: auto;
-            height: min(46vh, 420px);
-            max-width: 86vw;
+            width: 100%;
+            height: min(26vh, 220px);
             object-fit: contain;
             display: block;
             background: #000;
