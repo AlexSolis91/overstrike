@@ -3576,6 +3576,11 @@
                 var modeLabel = isRaidAttack ? '⚔️ Raid' : '🔍 Rival';
                 addLog('🏆 Puntos Ranked [' + modeLabel + ']: ' + ptLabel + ' | Total: ' + cur.points, atkPoints >= 0 ? 'buff' : 'damage');
 
+                // ── Misiones diarias: registrar progreso de ataque Ranked (Raid o Buscar Rival) ──
+                if (typeof window.registerRankedMissionProgress === 'function') {
+                    window.registerRankedMissionProgress(myUid, { isRaid: isRaidAttack, won: won, isPerfect: !!isPerfect });
+                }
+
                 // ── ORO POR PARTIDA RANKED (fórmula unificada, ya no depende de ganar/perder) ──
                 // Enemigos derrotados: random(50-100) c/u. Sobrevivientes propios: random(30-80) c/u.
                 // Perfect (todo el equipo sobrevive con 100% HP): +500. Se guarda como PENDIENTE
@@ -5169,6 +5174,11 @@
             const ref = db.ref('users/' + uid + '/gold');
             const snap = await ref.once('value');
             await ref.set((snap.val()||0) + amount);
+            // Misiones diarias: registrar oro ganado hoy (cuenta cualquier oro recibido,
+            // incluyendo recompensas de misiones, solo sumando cuando es positivo)
+            if (amount > 0 && typeof window.registerGoldEarnedForMissions === 'function') {
+                window.registerGoldEarnedForMissions(uid, amount);
+            }
         }
 
         // ══════════════════════════════════════════════════════════════════
