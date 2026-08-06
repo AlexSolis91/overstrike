@@ -189,7 +189,7 @@
                 marketBadge.style.display = 'none';
             }
         }
-        var banner = document.getElementById('arcaneEventBanner');
+        var banner = document.getElementById('arcaneEventBannerSlot');
         if (banner) {
             if (event) {
                 var bonusStr = (event.bonusPct * 100).toFixed(1).replace('.0', '') + '%';
