@@ -152,7 +152,32 @@
             background: transparent;
         }
         /* Cards shrink slightly when many characters are present */
-        .team-column::-webkit-scrollbar { width: 3px; }
+        /* ── BOSS EFFECTS TOOLTIP: oculto por defecto, visible al hover sobre el portrait ── */
+        .boss-effects-tooltip {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, rgba(4,8,18,0.97), rgba(8,12,28,0.98));
+            border: 1px solid rgba(0,196,255,0.35);
+            border-radius: 10px;
+            padding: 10px 12px;
+            min-width: 200px;
+            max-width: 280px;
+            z-index: 9000;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.8), 0 0 12px rgba(0,196,255,0.15);
+            pointer-events: none;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        .boss-portrait-wrap:hover .boss-effects-tooltip {
+            display: flex;
+            flex-direction: column;
+        }
+        .boss-portrait-wrap { position: relative; cursor: pointer; }
+
+        .boss-effects { display: none; } /* Ocultar boss-effects legacy */
         .team-column::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
         .team-column::-webkit-scrollbar-thumb { background: rgba(0,196,255,0.4); border-radius: 6px; }
 
