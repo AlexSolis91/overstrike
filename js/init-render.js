@@ -853,6 +853,7 @@
                     '</div>' +
                     '</div>' +
                     (_sfx ? '<div class="char-effects-row">' + _sfx + '</div>' : '') +
+                    (_sfx ? '<div class="char-status-tooltip"><div style="font-family:Orbitron,sans-serif;font-size:.6rem;color:#aaa;letter-spacing:.05em;">EFECTOS ACTIVOS</div>' + _sfx + '</div>' : '') +
                     '</div>';
 
                 container.innerHTML += cardHTML;
