@@ -5065,8 +5065,8 @@
             }
             list.innerHTML = '';
             notifs.forEach(function(n) {
-                const icons = { trade_completed:'🤝', trade_new:'🏷️', ranked_defense_win:'🛡️', ranked_defense_loss:'⚔️', general:'📢' };
-                const colors = { trade_completed:'#4fc3f7', trade_new:'#00ff88', ranked_defense_win:'#00ff88', ranked_defense_loss:'#ff6688', general:'#ffaa00' };
+                const icons = { trade_completed:'🤝', trade_new:'🏷️', ranked_defense_win:'🛡️', ranked_defense_loss:'⚔️', arcane_boost:'🎲', general:'📢' };
+                const colors = { trade_completed:'#4fc3f7', trade_new:'#00ff88', ranked_defense_win:'#00ff88', ranked_defense_loss:'#ff6688', arcane_boost:'#ffd700', general:'#ffaa00' };
                 const icon  = icons[n.type]  || '📢';
                 const color = colors[n.type] || '#ffaa00';
                 const date  = new Date(n.ts||0).toLocaleDateString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
@@ -5581,12 +5581,16 @@
             }
 
             // New drop rates: Legendario 0.5%, Épico 5%, Runa 10%, Especial 35%, Raro 49.5%
+            // ── Evento de Probabilidad Aumentada: si está activo, suma su bonus al % legendario ──
+            const arcaneEvent = (typeof getActiveArcaneBoostEvent === 'function') ? getActiveArcaneBoostEvent() : null;
+            const eventBonusPct = arcaneEvent ? arcaneEvent.bonusPct : 0;
+            const totalLegPctWithEvent = totalLegPct + eventBonusPct;
             const rv = Math.random();
             let tier, bonusRuneArcana = false;
-            if (rv < totalLegPct)                      tier = 'Legendario';   // ~0.5% (+ pity)
-            else if (rv < totalLegPct + 0.05)          tier = 'Epico';        // 5%
-            else if (rv < totalLegPct + 0.05 + 0.10) { tier = 'Runa'; }      // 10% → Runa de Ataque
-            else if (rv < totalLegPct + 0.05 + 0.10 + 0.35) tier = 'Especial'; // 35%
+            if (rv < totalLegPctWithEvent)                      tier = 'Legendario';   // ~0.5% (+ pity + evento)
+            else if (rv < totalLegPctWithEvent + 0.05)          tier = 'Epico';        // 5%
+            else if (rv < totalLegPctWithEvent + 0.05 + 0.10) { tier = 'Runa'; }      // 10% → Runa de Ataque
+            else if (rv < totalLegPctWithEvent + 0.05 + 0.10 + 0.35) tier = 'Especial'; // 35%
             else                                        tier = 'Raro';         // 49.5%
 
             let name;
