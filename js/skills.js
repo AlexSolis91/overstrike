@@ -1282,6 +1282,7 @@
             // Se setea SIEMPRE, no solo cuando el atacante tiene reliquias
             gameState._lastAbilityType = ability ? ability.type : null;
             gameState._lastAbilityChargeGain = ability ? (ability.chargeGain || 0) : 0;
+            gameState._lastAbilityTarget = ability ? ability.target : null;
 
             // (Cazador de Héroes charge hook moved to generateChargesInline)
 
@@ -8977,6 +8978,7 @@
                         gameState.selectedTarget    = _gmTgt;
                         gameState._lastAbilityType       = 'basic';
                         gameState._lastAbilityChargeGain = _gmBasic.chargeGain || 0;
+                        gameState._lastAbilityTarget     = _gmBasic.target || 'single';
 
                         // Calculate finalDamage for this ally (respects buffs/Furia/etc)
                         var _gmFinalDmg = _gmBasic.damage || 0;
