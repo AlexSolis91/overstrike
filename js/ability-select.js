@@ -93,7 +93,25 @@
             return (isTransf && (char.transformPortrait || char.transformationPortrait)) ? (char.transformPortrait || char.transformationPortrait) : (char.portrait || null);
         }
 
-                function showTargetSelection(ability) {
+                // ── SALVAGUARDA GENERAL: evita que la ventana de selección de objetivos se
+        //    quede abierta sin ningún botón accionable (todos los objetivos muertos/
+        //    inválidos). Si no hay ningún .target-btn dentro del grid, en vez de
+        //    mostrar la ventana: la cierra, termina el turno del personaje actual y
+        //    hace un escaneo inmediato de fin de partida/oleada (por si el equipo
+        //    enemigo ya no tiene personajes vivos).
+        function _openTargetModalOrAutoEnd(modal, grid, abilityName) {
+            const hasActionableTarget = grid.querySelector('.target-btn') !== null;
+            if (!hasActionableTarget) {
+                addLog('⚠️ ' + (abilityName || 'El movimiento') + ': no hay objetivos seleccionables — turno finalizado automáticamente', 'info');
+                modal.classList.remove('show');
+                if (typeof checkGameOver === 'function' && checkGameOver()) return;
+                if (typeof endTurn === 'function') endTurn();
+                return;
+            }
+            modal.classList.add('show');
+        }
+
+        function showTargetSelection(ability) {
             const modal = document.getElementById('targetModal');
             const grid = document.getElementById('targetGrid');
             const title = document.getElementById('targetModalTitle');
@@ -429,12 +447,14 @@
                             addLog('⚠️ ' + _noTgtAbilName + ': no hay objetivos válidos disponibles', 'info');
                         }
                         modal.classList.remove('show');
+                        if (typeof checkGameOver === 'function' && checkGameOver()) return;
                         if (typeof endTurn === 'function') endTurn();
+                        return;
                     }
                 }
             }
             
-            modal.classList.add('show');
+            _openTargetModalOrAutoEnd(modal, grid, ability ? ability.name : null);
         }
 
         // ── HOOK POST-DAÑO: pasivas que se activan DESPUÉS de recibir daño ──
@@ -919,7 +939,8 @@ function triggerMaboroshi(targetTeam, debuffName) {
                     '<strong>' + name + '</strong><br><small>HP: ' + c.hp + '/' + c.maxHp + ' | Cargas: ' + c.charges + '</small>'
                 );
             }
-            modal.classList.add('show');
+            modal.classList.remove('show');
+            _openTargetModalOrAutoEnd(modal, grid, label);
         }
 
         function executeNakimeSwap(swapType, enemyName, allyName) {
