@@ -873,10 +873,20 @@ function triggerMaboroshi(targetTeam, debuffName) {
             const imgHTML = portrait
                 ? `<img class="target-btn-portrait" src="${portrait}" alt="${name}" loading="eager" referrerpolicy="no-referrer" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="target-btn-portrait-placeholder" style="display:none">⚔️</div>`
                 : `<div class="target-btn-portrait-placeholder">⚔️</div>`;
+            // Ventana de estado (buffs/debuffs): se busca al personaje por nombre en
+            // gameState.characters — si tiene efectos activos, se agrega el overlay
+            // que aparece al pasar el cursor sobre toda la ventana de selección.
+            let tooltipHTML = '';
+            const _tgtChar = (typeof gameState !== 'undefined' && gameState.characters) ? gameState.characters[name] : null;
+            const _tgtSfx = (_tgtChar && typeof renderStatusEffects === 'function') ? renderStatusEffects(_tgtChar) : '';
+            if (_tgtSfx) {
+                tooltipHTML = '<div class="target-status-tooltip"><div style="font-family:Orbitron,sans-serif;font-size:.6rem;color:#aaa;letter-spacing:.05em;">EFECTOS ACTIVOS</div>' + _tgtSfx + '</div>';
+            }
             return `
                 <button class="target-btn" onclick="playGameSelectSfx();${onclick}" style="${extraStyle}">
                     ${imgHTML}
                     <div class="target-btn-info">${infoHTML}</div>
+                    ${tooltipHTML}
                 </button>
             `;
         }
