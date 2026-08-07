@@ -737,6 +737,29 @@
             flex-direction: column;
             align-items: stretch;
             text-align: center;
+            position: relative;
+        }
+
+        /* ── Ventana de estado (buffs/debuffs) sobre las tarjetas de la ventana de
+           selección de objetivos. Se activa al pasar el cursor sobre TODA la ventana
+           (#targetModal), no por tarjeta individual — mismo patrón que el jefe de sala:
+           overlay DENTRO de .target-btn para no chocar con su overflow:hidden. */
+        .target-status-tooltip {
+            display: none;
+            position: absolute;
+            inset: 0;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            padding: 8px;
+            background: linear-gradient(135deg, rgba(4,8,18,0.96), rgba(8,12,28,0.97));
+            z-index: 30;
+            overflow-y: auto;
+            pointer-events: none;
+        }
+        #targetModal.show-status-tooltips .target-status-tooltip {
+            display: flex;
         }
 
         .target-btn:hover {
