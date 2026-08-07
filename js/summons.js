@@ -2360,16 +2360,19 @@
                             if (gameState._lastAbilityType === 'basic' && (gameState._lastAbilityChargeGain||0) > 0 && _atkChar) {
                                 var _ergGain1 = gameState._lastAbilityChargeGain;
                                 _atkChar.charges = Math.min(20, (_atkChar.charges||0) + _ergGain1);
+                                // El equipo aliado genera las MISMAS cargas que el portador (ya duplicadas: 2x base)
+                                var _ergTeamGain = _ergGain1 * 2;
                                 const _ergTeam1 = _atkChar.team;
                                 Object.keys(gameState.characters).forEach(function(n) {
                                     const _c = gameState.characters[n];
                                     if (_c && _c.team === _ergTeam1 && n !== attackerName && !_c.isDead)
-                                        _c.charges = Math.min(20, (_c.charges||0) + _ergGain1);
+                                        _c.charges = Math.min(20, (_c.charges||0) + _ergTeamGain);
                                 });
-                                addLog('⚡ Ergonos: +' + _ergGain1 + ' cargas a todo el equipo (básico)', 'buff');
+                                addLog('⚡ Ergonos: +' + _ergTeamGain + ' cargas a todo el equipo (básico)', 'buff');
                             }
-                            // ST: Megacongelación al objetivo + Congelación a 2 enemigos aleatorios
-                            if (gameState._lastAbilityType === 'basic' && gameState._lastAbilityTarget === 'single' && _atkChar && !passiveExecuting) {
+                            // ST (cualquier tipo — básico, especial u Over): Megacongelación al objetivo
+                            // + Congelación a 2 enemigos aleatorios
+                            if (gameState._lastAbilityTarget === 'single' && _atkChar && !passiveExecuting) {
                                 if (typeof applyDebuff === 'function') {
                                     applyDebuff(targetName, { name:'Megacongelacion', type:'debuff', duration:2, emoji:'🧊❄️' });
                                     addLog('⚡ Ergonos: Megacongelación aplicada a ' + targetName, 'debuff');
