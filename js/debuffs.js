@@ -334,11 +334,15 @@ function triggerMaboroshi(targetTeam, debuffName) {
 
             // ── HARD DEDUPLICATION: non-stackable debuffs cannot stack ──
             // (catches direct pushes and any path that bypassed _normalizeEffect)
+            // NOTA: usa la MISMA lista `stackable` de arriba — antes tenía su propia lista
+            // más corta que no incluía 'celeridad' (entre otros), lo que hacía que buffs
+            // repetidos (ej. Destello de Pegaso cada ronda) se cancelaran en silencio ANTES
+            // de llegar a los hooks reactivos (Arco del Kitán, Vestidura Arcana, etc.),
+            // que viven más abajo, después del push.
             (function() {
                 if (!effectObj || !effectObj.name) return;
                 var _nm = effectObj.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
-                var _stackable = ['quemadura','veneno','sangrado','escudo'];
-                if (_stackable.indexOf(_nm) >= 0) return; // stackable - allow
+                if (stackable.indexOf(_nm) >= 0) return; // stackable - allow
                 // Check if already present
                 var _existing = (target.statusEffects || []).findIndex(function(e) {
                     if (!e || !e.name) return false;
