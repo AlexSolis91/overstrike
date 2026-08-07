@@ -817,6 +817,7 @@
                 hp: 25, maxHp: 25, speed: 90, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/szT2tjJ/Captura-de-pantalla-2026-04-14-174630.png',
+                relicPortraits: { 'Frostmourne': 'https://i.ibb.co/DDf7Vznx/Whats-App-Image-2026-08-05-at-4-05-11-PM.jpg' },
                 passive: { name: 'Mundo Transparente', description: 'Si Yorichi golpea un objetivo con QS activa, aplica debuff Silenciar. Yorichi tiene 100% de probabilidad de golpe crítico en objetivos con QS activa. Cuando un enemigo con QS recibe daño, Yorichi genera 2 cargas y cura 2 HP a un aliado aleatorio.' },
                 abilities: [
                     { name: 'Corte Solar', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'corte_solar_yorichi', description: 'Causa 2 daño. 50% de aplicar QS. Si el objetivo ya tenía QS, genera 1 carga al equipo aliado.' },
