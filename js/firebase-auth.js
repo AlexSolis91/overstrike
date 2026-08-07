@@ -1337,14 +1337,6 @@
                 var _uid = _user.uid;
                 var _tierColors = { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700' };
                 var _baseName = _charName.replace(/ v\d+$/, '');
-                var _SLOTS = [
-                    { key:'arma1',  label:'⚔️ Arma 1',       cat:'Arma',       locked:false },
-                    { key:'arma2',  label:'⚔️ Arma 2',       cat:'Arma',       locked:true  },
-                    { key:'equip1', label:'🛡️ Equipación 1', cat:'Equipacion', locked:false },
-                    { key:'equip2', label:'🛡️ Equipación 2', cat:'Equipacion', locked:true  },
-                    { key:'joya1',  label:'💎 Joya 1',        cat:'Joya',       locked:false },
-                    { key:'joya2',  label:'💎 Joya 2',        cat:'Joya',       locked:true  },
-                ];
 
                 function _rtRenderInlineRelics(slotsV2, unlocks) {
                     var container = document.getElementById('rtInlineRelicSlots');
@@ -1352,6 +1344,20 @@
                     container.innerHTML = '';
                     var unlockedCount = Object.values(unlocks).filter(Boolean).length;
                     var nextCost = unlockedCount === 0 ? '100,000' : unlockedCount === 1 ? '500,000' : '1,000,000';
+
+                    // Regla del Arco: repropone el slot de arma hermano como "Equipación 3"
+                    var _rtArma1Data = slotsV2.arma1 && typeof RELICS_DATA !== 'undefined' ? RELICS_DATA[slotsV2.arma1] : null;
+                    var _rtArma2Data = slotsV2.arma2 && typeof RELICS_DATA !== 'undefined' ? RELICS_DATA[slotsV2.arma2] : null;
+                    var _rtArcoEnArma1 = _rtArma1Data && _rtArma1Data.subtype === 'Arco';
+                    var _rtArcoEnArma2 = _rtArma2Data && _rtArma2Data.subtype === 'Arco';
+                    var _SLOTS = [
+                        { key:'arma1',  label: _rtArcoEnArma2 ? '🛡️ Equipación 3' : '⚔️ Arma 1', cat: _rtArcoEnArma2 ? 'Equipacion' : 'Arma', locked:false },
+                        { key:'arma2',  label: _rtArcoEnArma1 ? '🛡️ Equipación 3' : '⚔️ Arma 2', cat: _rtArcoEnArma1 ? 'Equipacion' : 'Arma', locked:true  },
+                        { key:'equip1', label:'🛡️ Equipación 1', cat:'Equipacion', locked:false },
+                        { key:'equip2', label:'🛡️ Equipación 2', cat:'Equipacion', locked:true  },
+                        { key:'joya1',  label:'💎 Joya 1',        cat:'Joya',       locked:false },
+                        { key:'joya2',  label:'💎 Joya 2',        cat:'Joya',       locked:true  },
+                    ];
 
                     _SLOTS.forEach(function(cfg) {
                         var isLocked = cfg.key === 'arma1' || cfg.key === 'equip1' || cfg.key === 'joya1' ? false : !unlocks[cfg.key];
@@ -5434,8 +5440,24 @@
             const cat = relic.slotCategory || (relic.slot === 'Joya' ? 'Joya' : relic.slot === 'Arco' || relic.slot === 'Escudo' ? 'Arma' : relic.slot === 'Armadura' || relic.slot === 'Botas' || relic.slot === 'Guante' || relic.slot === 'Yelmo' ? 'Equipacion' : 'Arma');
             const subtype = relic.subtype || relic.slot;
 
+            const slots = await getCharSlots(uid, charName);
+
+            // ── Regla del Arco: si el slot HERMANO (arma1<->arma2) tiene un Arco equipado,
+            // este slot deja de ser "Arma" y se convierte en "Equipación 3" — solo acepta
+            // reliquias de Equipación, ya no Armas/Escudos/otro Arco.
+            let slotCat = slotKey.startsWith('arma') ? 'Arma' : slotKey.startsWith('equip') ? 'Equipacion' : 'Joya';
+            let _repurposedAsEquip3 = false;
+            if (slotKey === 'arma1' || slotKey === 'arma2') {
+                const _siblingKey = slotKey === 'arma1' ? 'arma2' : 'arma1';
+                const _siblingRelic = slots[_siblingKey];
+                const _siblingData = _siblingRelic ? RELICS_DATA[_siblingRelic] : null;
+                if (_siblingData && _siblingData.subtype === 'Arco') {
+                    slotCat = 'Equipacion';
+                    _repurposedAsEquip3 = true;
+                }
+            }
+
             // Verify slot matches category
-            const slotCat = slotKey.startsWith('arma') ? 'Arma' : slotKey.startsWith('equip') ? 'Equipacion' : 'Joya';
             if (cat !== slotCat) {
                 alert('Esta reliquia es de tipo ' + cat + ' y no puede ir en un slot de ' + slotCat + '.');
                 return false;
@@ -5446,8 +5468,6 @@
                 const unlocks = await getSlotUnlocks(uid, charName);
                 if (!unlocks[slotKey]) { alert('Este slot está bloqueado. Desbloquéalo primero.'); return false; }
             }
-
-            const slots = await getCharSlots(uid, charName);
 
             // Check slot is empty
             if (slots[slotKey]) { alert('Este slot ya está ocupado. Primero remueve la reliquia actual.'); return false; }
@@ -5461,8 +5481,8 @@
             // controla naturalmente (equipar consume la reliquia del inventario, así que si
             // solo tienes 1 copia no puedes equiparla en dos personajes a la vez).
 
-            // Rules for Arma slots
-            if (slotCat === 'Arma') {
+            // Rules for Arma slots (no aplican si el slot ya fue repropuesto como Equipación 3)
+            if (slotCat === 'Arma' && !_repurposedAsEquip3) {
                 const equippedArmas = ['arma1','arma2'].map(function(k){ return slots[k]; }).filter(Boolean);
                 const armaRelics = equippedArmas.map(function(r){ return RELICS_DATA[r]; }).filter(Boolean);
                 const hasArco  = armaRelics.some(function(r){ return r.subtype === 'Arco'; });
@@ -5488,7 +5508,7 @@
             await db.ref('users/' + uid + '/characters/' + charName + '/slots_v2/' + slotKey).set(relicName);
             await removeRelicFromInventory(uid, relicName);
             await updateLobbyHUD();
-            alert('✅ ' + relicName + ' equipada en ' + charName + ' (slot ' + slotKey + ')');
+            alert('✅ ' + relicName + ' equipada en ' + charName + ' (slot ' + slotKey + (_repurposedAsEquip3 ? ' — Equipación 3' : '') + ')');
             return true;
         }
 
@@ -5501,8 +5521,26 @@
             if (!ok) { alert('No tienes suficiente oro. Remover cuesta 10,000 🪙.'); return false; }
             await relicRef.remove();
             await addRelicToInventory(uid, relicName);
+
+            // ── Regla del Arco: si lo que se quitó ES un Arco, el slot hermano (arma1<->arma2)
+            // deja de ser "Equipación 3" y vuelve a ser un slot de Arma normal — si tenía una
+            // reliquia de Equipación equipada ahí, se devuelve automáticamente al inventario.
+            let _cascadeMsg = '';
+            const _removedData = typeof RELICS_DATA !== 'undefined' ? RELICS_DATA[relicName] : null;
+            if (_removedData && _removedData.subtype === 'Arco' && (slotKey === 'arma1' || slotKey === 'arma2')) {
+                const _siblingKey = slotKey === 'arma1' ? 'arma2' : 'arma1';
+                const _siblingRef = db.ref('users/' + uid + '/characters/' + charName + '/slots_v2/' + _siblingKey);
+                const _siblingSnap = await _siblingRef.once('value');
+                const _siblingRelic = _siblingSnap.val();
+                if (_siblingRelic) {
+                    await _siblingRef.remove();
+                    await addRelicToInventory(uid, _siblingRelic);
+                    _cascadeMsg = ' El slot Equipación 3 volvió a ser ' + (slotKey === 'arma1' ? 'Arma 2' : 'Arma 1') + ' y "' + _siblingRelic + '" se devolvió al inventario.';
+                }
+            }
+
             await updateLobbyHUD();
-            alert('✅ ' + relicName + ' removida y devuelta al inventario.');
+            alert('✅ ' + relicName + ' removida y devuelta al inventario.' + _cascadeMsg);
             return true;
         }
 
