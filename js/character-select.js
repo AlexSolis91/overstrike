@@ -629,12 +629,12 @@
                 hp: 25, maxHp: 25, speed: 92, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/dwGgLj5R/Ai-Generated-Marvels-Characters-Wallpapers.jpg',
-                passive: { name: 'Aura de Latveria', description: 'Cuando un enemigo recupera HP, el equipo aliado recupera la misma cantidad. Cuando se aplica un debuff sobre Doctor Doom, aplica Protección Sagrada, disipa debuffs aliados y genera 3 cargas por debuff disipado.' },
+                passive: { name: 'Aura de Latveria', description: 'Cuando un enemigo recupera HP, el equipo aliado recupera la misma cantidad. Una vez por ronda, al recibir un debuff aplica Protección Sagrada y disipa debuffs aliados. Al ser atacado con Protección Sagrada/Escudo Sagrado activo, roba 3 cargas de cada enemigo.' },
                 abilities: [
-                    { name: 'Guantelete de Plasma',      type: 'basic',   cost: 0,  chargeGain: 1, damage: 2, target: 'aoe',    effect: 'doom_gauntlet',         description: 'AOE 2 daño. Si golpea a enemigo con Provocación/MegaProvocación, todos los demás reciben daño adicional. 80% de probabilidad de +1 HP MAX por enemigo golpeado.' },
-                    { name: 'Campo de Fuerza del Tirano', type: 'special', cost: 4,  chargeGain: 0, damage: 0, target: 'self',   effect: 'doom_force_field',      description: 'Mega Provocación + Armadura 3T en Doctor Doom. +1 carga al equipo aliado por buff activo en equipo enemigo.' },
+                    { name: 'Guantelete de Plasma',      type: 'basic',   cost: 0,  chargeGain: 1, damage: 2, target: 'aoe',    effect: 'doom_gauntlet',         description: 'AOE 2 daño. Si golpea a enemigo con Provocación/MegaProvocación, todos los demás reciben daño adicional. 50% de probabilidad de +1 HP MAX por enemigo golpeado (sin tope).' },
+                    { name: 'Escudo Molecular',           type: 'special', cost: 3,  chargeGain: 0, damage: 0, target: 'self',   effect: 'doom_force_field',      description: 'Escudo Sagrado (2T) en Doctor Doom + 1 turno adicional.' },
                     { name: 'Magia de la Línea de Sangre', type: 'special', cost: 5, chargeGain: 0, damage: 2, target: 'aoe',   effect: 'doom_bloodline',        description: 'AOE 2 daño. Roba HP a cada enemigo: base 2 HP + bonus por rareza de reliquia (Rara+1, Especial+2, Épico+3, Legendario+4). El HP robado cura a Doctor Doom.' },
-                    { name: 'Dios Emperador Doom',        type: 'over',    cost: 12, chargeGain: 0, damage: 10, target: 'single', effect: 'doom_god_emperor',    description: 'ST 10 daño. Equipo aliado recupera 100% HP. Por cada HP recuperado, 1 daño a enemigo aleatorio.' }
+                    { name: 'Dios Emperador Doom',        type: 'over',    cost: 12, chargeGain: 0, damage: 10, target: 'single', effect: 'doom_god_emperor',    description: 'ST 10 daño. Equipo aliado recupera 50 HP repartidos al azar. Por cada HP efectivo curado, 1 daño a enemigo aleatorio.' }
                 ]
             },
 
