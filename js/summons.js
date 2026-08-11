@@ -1670,6 +1670,33 @@
                 }
             }
             
+            // AURA DE LATVERIA (Doctor Doom): si es atacado mientras tiene Protección Sagrada
+            // o Escudo Sagrado activo, roba 3 cargas de CADA enemigo (sin límite por ronda)
+            if (attackerName !== null && target.passive && target.passive.name === 'Aura de Latveria') {
+                const _doomHasSagrado = (target.statusEffects||[]).some(function(e) {
+                    if (!e || !e.name) return false;
+                    const _n = e.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+                    return _n === 'proteccion sagrada' || _n === 'escudo sagrado';
+                });
+                if (_doomHasSagrado) {
+                    const _doomEnemyTeam = target.team === 'team1' ? 'team2' : 'team1';
+                    let _doomStolen = 0;
+                    Object.keys(gameState.characters).forEach(function (n) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== _doomEnemyTeam || c.isDead || c.hp <= 0) return;
+                        const steal = Math.min(3, c.charges || 0);
+                        if (steal > 0) {
+                            c.charges -= steal;
+                            target.charges = Math.min(20, (target.charges || 0) + steal);
+                            _doomStolen += steal;
+                        }
+                    });
+                    if (_doomStolen > 0) {
+                        addLog('🌩️ Aura de Latveria: Doctor Doom roba ' + _doomStolen + ' cargas del equipo enemigo (atacado con Protección Sagrada/Escudo Sagrado)', 'buff');
+                    }
+                }
+            }
+
             // DOT damage (burns, poison, solar burn) bypasses shields — goes directly to HP
             // attackerName === null means this is DOT/status effect damage
             // DESTREZA DE LOS HUARGOS (Horda): todos los ataques del portador ignoran el buff Escudo
