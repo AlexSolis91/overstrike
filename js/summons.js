@@ -1672,7 +1672,10 @@
             
             // DOT damage (burns, poison, solar burn) bypasses shields — goes directly to HP
             // attackerName === null means this is DOT/status effect damage
-            if (target.shield > 0 && attackerName !== null) {
+            // DESTREZA DE LOS HUARGOS (Horda): todos los ataques del portador ignoran el buff Escudo
+            const _attackerIgnoresShield = attackerName && gameState.characters[attackerName] &&
+                gameState.characters[attackerName].passive && gameState.characters[attackerName].passive.name === 'Destreza de los Huargos';
+            if (target.shield > 0 && attackerName !== null && !_attackerIgnoresShield) {
                 // Activar efecto especial del escudo si existe (como Golden Shield)
                 if (target.shieldEffect === 'golden_shield') {
                     target.charges += 1;
