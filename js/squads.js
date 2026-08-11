@@ -302,10 +302,209 @@
                 '&nbsp;&nbsp;vs&nbsp;&nbsp;<b style="color:#ff4444;">REAPERS: ' + (room.soulFragments ? room.soulFragments.reapers : 0) + '</b></div>' +
                 '</div>';
 
-            html += '<div style="text-align:center;font-size:.64rem;color:#666;margin-top:10px;">Las siguientes fases (construcción de defensas, ataques y recompensas) están en construcción — pronto disponibles aquí mismo.</div>';
+            html += '<div style="text-align:center;font-size:.64rem;color:#666;margin-top:10px;">Las siguientes fases (ataques y recompensas) están en construcción — pronto disponibles aquí mismo.</div>';
+
+            // ── FASE 2: Constructor de defensas (solo durante las primeras 24h) ──
+            if (myTeam && phase === 'building') {
+                content.innerHTML = html;
+                _squadsRenderDefenseBuilder(room, myTeam, myUid);
+                return;
+            }
+            if (myTeam && phase !== 'building') {
+                html += _squadsDefenseOrderReadonlyHtml(room, myTeam);
+            }
         }
 
         content.innerHTML = html;
     }
+
+    // ══════════════════════════════════════════════════════════════════
+    // FASE 2: CONSTRUCCIÓN DE DEFENSAS
+    // Cada jugador arma 3 equipos de defensa (5 personajes c/u). Un
+    // personaje no puede repetirse entre las 3 defensas del MISMO
+    // jugador (pero sí lo puede usar su compañero de equipo). Solo se
+    // puede editar y reordenar durante las primeras 24h (fase 'building').
+    // ══════════════════════════════════════════════════════════════════
+    var _squadsPickingDef = null; // { defSlot, slotIdx }
+    var _squadsLastRoom = null;   // última copia de la sala (para el picker)
+
+    function _squadsDefKey(uid, defSlot) { return uid + '_' + defSlot; }
+
+    function _squadsMyDefenses(room, uid) {
+        var d = (room.defenses && room.defenses[uid]) || {};
+        return {
+            def1: (d.def1 && d.def1.chars) ? d.def1.chars : [null, null, null, null, null],
+            def2: (d.def2 && d.def2.chars) ? d.def2.chars : [null, null, null, null, null],
+            def3: (d.def3 && d.def3.chars) ? d.def3.chars : [null, null, null, null, null]
+        };
+    }
+
+    function _squadsRenderDefenseBuilder(room, myTeam, myUid) {
+        _squadsLastRoom = room;
+        var container = document.getElementById('squadsRoomContent');
+        if (!container) return;
+        var wrap = document.createElement('div');
+        wrap.id = 'squadsDefenseBuilder';
+        wrap.style.cssText = 'margin-top:10px;border-top:1px solid rgba(255,255,255,0.1);padding-top:16px;';
+
+        var defs = _squadsMyDefenses(room, myUid);
+        var html = '<div style="font-family:Orbitron,sans-serif;color:#c864ff;font-size:.85rem;font-weight:900;margin-bottom:10px;">🛡️ MIS DEFENSAS</div>';
+        html += '<div style="font-size:.62rem;color:#888;margin-bottom:12px;">Un personaje no puede repetirse entre tus 3 defensas ni usarse luego en tu equipo de ataque. Tu compañero de equipo sí puede usar los mismos personajes que tú.</div>';
+
+        ['def1', 'def2', 'def3'].forEach(function (defSlot, di) {
+            var chars = defs[defSlot];
+            var filled = chars.filter(Boolean).length;
+            html += '<div style="background:rgba(255,255,255,0.03);border:1px solid ' + (filled === 5 ? 'rgba(0,255,136,0.35)' : 'rgba(255,255,255,0.1)') + ';border-radius:12px;padding:10px 12px;margin-bottom:10px;">' +
+                '<div style="font-size:.68rem;color:' + (filled === 5 ? '#00ff88' : '#ffaa00') + ';font-weight:700;margin-bottom:8px;">Defensa ' + (di + 1) + ' (' + filled + '/5)</div>' +
+                '<div style="display:flex;gap:6px;flex-wrap:wrap;">';
+            for (var i = 0; i < 5; i++) {
+                var name = chars[i];
+                if (name) {
+                    var portrait = (typeof getCharPortrait === 'function') ? getCharPortrait(name) : '';
+                    html += '<div style="position:relative;width:52px;height:52px;">' +
+                        '<img src="' + portrait + '" title="' + name.replace(/"/g, '') + '" style="width:52px;height:52px;border-radius:8px;object-fit:cover;border:2px solid #c864ff;" referrerpolicy="no-referrer">' +
+                        '<button onclick="window.squadsRemoveDefenseChar(\'' + defSlot + '\',' + i + ')" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;background:#ff3366;border:none;border-radius:50%;color:#fff;font-size:.6rem;cursor:pointer;line-height:1;">✕</button>' +
+                        '</div>';
+                } else {
+                    html += '<div onclick="window.squadsOpenCharPicker(\'' + defSlot + '\',' + i + ')" style="width:52px;height:52px;border-radius:8px;border:2px dashed rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;color:#555;font-size:1.2rem;cursor:pointer;">+</div>';
+                }
+            }
+            html += '</div></div>';
+        });
+
+        wrap.innerHTML = html;
+        container.appendChild(wrap);
+
+        // Orden del equipo (reordenable) — visible también en fase de construcción
+        var orderWrap = document.createElement('div');
+        orderWrap.innerHTML = _squadsDefenseOrderEditableHtml(room, myTeam);
+        container.appendChild(orderWrap);
+    }
+
+    // ── Lista de las 6 defensas del equipo (ambos jugadores), reordenable ──
+    function _squadsDefenseOrderEditableHtml(room, myTeam) {
+        var teamUids = room.teams[myTeam];
+        var order = (room.defenseOrder && room.defenseOrder[myTeam]) || _squadsDefaultOrder(teamUids);
+        var html = '<div style="margin-top:16px;border-top:1px solid rgba(255,255,255,0.1);padding-top:16px;">' +
+            '<div style="font-family:Orbitron,sans-serif;color:#ffd700;font-size:.85rem;font-weight:900;margin-bottom:6px;">📋 ORDEN DE DEFENSA DEL EQUIPO</div>' +
+            '<div style="font-size:.62rem;color:#888;margin-bottom:10px;">Ambos pueden reordenar. Solo se puede cambiar durante las primeras 24h.</div>';
+        order.forEach(function (defKey, idx) {
+            var parts = defKey.split('_'); // uid_defN — el uid puede tener guiones bajos, así que tomamos el último segmento como defSlot
+            var defSlot = parts.pop();
+            var uid = parts.join('_');
+            var ownerName = (room.players[uid] || {}).name || '???';
+            var chars = _squadsMyDefenses(room, uid)[defSlot] || [];
+            var filled = chars.filter(Boolean).length;
+            html += '<div style="display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.03);border-radius:10px;padding:8px 12px;margin-bottom:6px;">' +
+                '<div style="font-family:Orbitron,sans-serif;color:#ffd700;font-weight:900;width:24px;">#' + (idx + 1) + '</div>' +
+                '<div style="flex:1;font-size:.7rem;color:#fff;">' + ownerName + ' — ' + defSlot.replace('def', 'Defensa ') + ' (' + filled + '/5)</div>' +
+                '<button onclick="window.squadsMoveDefense(\'' + myTeam + '\',' + idx + ',-1)" ' + (idx === 0 ? 'disabled' : '') + ' style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.2);color:' + (idx === 0 ? '#444' : '#fff') + ';border-radius:6px;padding:3px 8px;cursor:' + (idx === 0 ? 'default' : 'pointer') + ';">▲</button>' +
+                '<button onclick="window.squadsMoveDefense(\'' + myTeam + '\',' + idx + ',1)" ' + (idx === order.length - 1 ? 'disabled' : '') + ' style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.2);color:' + (idx === order.length - 1 ? '#444' : '#fff') + ';border-radius:6px;padding:3px 8px;cursor:' + (idx === order.length - 1 ? 'default' : 'pointer') + ';">▼</button>' +
+                '</div>';
+        });
+        html += '</div>';
+        return html;
+    }
+
+    function _squadsDefenseOrderReadonlyHtml(room, myTeam) {
+        var teamUids = room.teams[myTeam];
+        var order = (room.defenseOrder && room.defenseOrder[myTeam]) || _squadsDefaultOrder(teamUids);
+        var html = '<div style="margin-top:16px;border-top:1px solid rgba(255,255,255,0.1);padding-top:16px;">' +
+            '<div style="font-family:Orbitron,sans-serif;color:#ffd700;font-size:.85rem;font-weight:900;margin-bottom:10px;">📋 ORDEN DE DEFENSA DEL EQUIPO</div>';
+        order.forEach(function (defKey, idx) {
+            var parts = defKey.split('_');
+            var defSlot = parts.pop();
+            var uid = parts.join('_');
+            var ownerName = (room.players[uid] || {}).name || '???';
+            html += '<div style="font-size:.7rem;color:#fff;padding:4px 0;">#' + (idx + 1) + ' — ' + ownerName + ' — ' + defSlot.replace('def', 'Defensa ') + '</div>';
+        });
+        html += '</div>';
+        return html;
+    }
+
+    function _squadsDefaultOrder(teamUids) {
+        var order = [];
+        teamUids.forEach(function (uid) {
+            order.push(_squadsDefKey(uid, 'def1'));
+            order.push(_squadsDefKey(uid, 'def2'));
+            order.push(_squadsDefKey(uid, 'def3'));
+        });
+        return order;
+    }
+
+    window.squadsMoveDefense = async function (team, idx, dir) {
+        if (!_squadsCurrentRoomId) return;
+        var room = _squadsLastRoom;
+        if (!room) return;
+        var order = (room.defenseOrder && room.defenseOrder[team]) || _squadsDefaultOrder(room.teams[team]);
+        order = order.slice();
+        var newIdx = idx + dir;
+        if (newIdx < 0 || newIdx >= order.length) return;
+        var tmp = order[idx]; order[idx] = order[newIdx]; order[newIdx] = tmp;
+        await db.ref('squads_rooms/' + _squadsCurrentRoomId + '/defenseOrder/' + team).set(order);
+    };
+
+    window.squadsRemoveDefenseChar = async function (defSlot, slotIdx) {
+        if (!_squadsCurrentRoomId || !currentUser) return;
+        await db.ref('squads_rooms/' + _squadsCurrentRoomId + '/defenses/' + currentUser.uid + '/' + defSlot + '/chars/' + slotIdx).remove();
+    };
+
+    // ── Picker de personajes (grid con bloqueo de repetidos) ──
+    window.squadsOpenCharPicker = function (defSlot, slotIdx) {
+        _squadsPickingDef = { defSlot: defSlot, slotIdx: slotIdx };
+        _squadsRenderCharPickerModal();
+    };
+
+    function _squadsRenderCharPickerModal() {
+        var existing = document.getElementById('squadsCharPickerModal');
+        if (existing) existing.remove();
+        if (!_squadsLastRoom || !currentUser || typeof characterData === 'undefined') return;
+
+        var myDefs = _squadsMyDefenses(_squadsLastRoom, currentUser.uid);
+        var used = new Set();
+        ['def1', 'def2', 'def3'].forEach(function (k) { (myDefs[k] || []).forEach(function (n) { if (n) used.add(n); }); });
+
+        var overlay = document.createElement('div');
+        overlay.id = 'squadsCharPickerModal';
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:9999999;display:flex;align-items:center;justify-content:center;padding:20px;';
+        var card = document.createElement('div');
+        card.style.cssText = 'background:linear-gradient(135deg,#0a0e17,#1a0033);border:2px solid #c864ff;border-radius:20px;padding:20px;max-width:700px;width:100%;max-height:85vh;overflow-y:auto;';
+        var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
+            '<div style="font-family:Orbitron,sans-serif;color:#c864ff;font-size:.9rem;font-weight:900;">Elegir personaje</div>' +
+            '<button id="squadsPickerCloseBtn" style="background:none;border:1px solid #ff3366;color:#ff3366;border-radius:8px;padding:4px 10px;cursor:pointer;font-family:Orbitron,sans-serif;font-size:.7rem;">✕</button>' +
+            '</div>' +
+            '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px;">';
+
+        Object.keys(characterData).forEach(function (name) {
+            var cd = characterData[name];
+            if (!cd || !cd.abilities) return;
+            var blocked = used.has(name);
+            var portrait = (typeof getCharPortrait === 'function') ? getCharPortrait(name) : '';
+            html += '<div class="squads-pick-card" data-name="' + name.replace(/"/g, '&quot;') + '" style="position:relative;border-radius:10px;overflow:hidden;cursor:' + (blocked ? 'not-allowed' : 'pointer') + ';opacity:' + (blocked ? '0.3' : '1') + ';border:2px solid ' + (blocked ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.15)') + ';">' +
+                '<img src="' + portrait + '" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;" referrerpolicy="no-referrer">' +
+                '<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.8);padding:2px 3px;font-size:.55rem;color:#ccc;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + name.split(' ')[0] + '</div>' +
+                '</div>';
+        });
+        html += '</div>';
+        card.innerHTML = html;
+        overlay.appendChild(card);
+        document.body.appendChild(overlay);
+        overlay.querySelector('#squadsPickerCloseBtn').onclick = function () { overlay.remove(); };
+        overlay.onclick = function (e) { if (e.target === overlay) overlay.remove(); };
+        card.querySelectorAll('.squads-pick-card').forEach(function (el) {
+            var name = el.getAttribute('data-name');
+            if (used.has(name)) return;
+            el.onclick = function () { window.squadsPickCharacterForDefense(name); };
+        });
+    }
+
+    window.squadsPickCharacterForDefense = async function (name) {
+        if (!_squadsPickingDef || !_squadsCurrentRoomId || !currentUser) return;
+        var ref = db.ref('squads_rooms/' + _squadsCurrentRoomId + '/defenses/' + currentUser.uid + '/' + _squadsPickingDef.defSlot + '/chars/' + _squadsPickingDef.slotIdx);
+        await ref.set(name);
+        var m = document.getElementById('squadsCharPickerModal');
+        if (m) m.remove();
+        _squadsPickingDef = null;
+    };
 
 })();
