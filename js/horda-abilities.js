@@ -53,6 +53,10 @@
         var caster = gameState.characters[casterName];
         if (!caster || baseDamage <= 0) return baseDamage;
         var dmg = baseDamage;
+        // HIMNO DE LOS GIGANTES (Kargalgan): +5 daño base a TODOS los ataques (básico,
+        // especial y over) del equipo aliado — se aplica aquí porque esta función la
+        // llaman todas las habilidades de todos los Orcos, sin importar el tipo.
+        if (caster._hordaGiantsHymnBonus) dmg += caster._hordaGiantsHymnBonus;
         (caster.equippedRelics || []).forEach(function (relicName) {
             var rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[relicName] : null;
             if (!rd || !rd.effect) return;
@@ -211,7 +215,7 @@
         passiveHolders(team, 'Aniquilacion').forEach(function (generalName) {
             if (generalName === deadName) return; // el propio General no se sustituye a sí mismo aquí
             if (Math.random() >= 0.5) return;
-            var types = Object.keys(window.HORDA_CHARACTER_DATA || {});
+            var types = Object.keys(window.HORDA_CHARACTER_DATA || {}).filter(function (t) { return t !== 'Kargalgan'; }); // Kargalgan nunca puede "aparecer" reviviendo otra tarjeta
             var newType = randomFrom(types);
             if (!newType) return;
             var tmpl = window.HORDA_CHARACTER_DATA[newType];
@@ -230,6 +234,20 @@
             addLog('👑 Aniquilacion: la tarjeta de ' + deadName + ' es sustituida por un ' + newType + ' (100% HP)', 'buff');
             if (typeof renderCharacters === 'function') renderCharacters();
         });
+
+        // DESTREZA DE LOS HUARGOS: al morir, elimina todos los buffs activos del equipo enemigo.
+        if (dead.passive && dead.passive.name === 'Destreza de los Huargos') {
+            var enemyTeam2 = enemyTeamOf(team);
+            var cleared = 0;
+            aliveOnTeam(enemyTeam2).forEach(function (n) {
+                var c = gameState.characters[n];
+                if (!c || !c.statusEffects) return;
+                var before = c.statusEffects.length;
+                c.statusEffects = c.statusEffects.filter(function (e) { return !e || e.type !== 'buff' || e.permanent; });
+                cleared += before - c.statusEffects.length;
+            });
+            addLog('🐺 Destreza de los Huargos: al morir ' + deadName + ', se eliminan ' + cleared + ' buff(s) del equipo enemigo', 'debuff');
+        }
     };
 
     // ══════════════════════════════════════════════════════════════════════
@@ -239,6 +257,21 @@
         Object.keys(gameState.characters).forEach(function (n) {
             var c = gameState.characters[n];
             if (c) c._hordaTitanHitThisRound = false;
+        });
+
+        // DESTREZA DE LOS HUARGOS: al inicio de la ronda, la velocidad del portador
+        // se incrementa en la misma cantidad que la velocidad del enemigo con MÁS velocidad.
+        Object.keys(gameState.characters).forEach(function (n) {
+            var c = gameState.characters[n];
+            if (!c || c.isDead || c.hp <= 0 || !c.passive || c.passive.name !== 'Destreza de los Huargos') return;
+            var enemyTeam = enemyTeamOf(c.team);
+            var enemies = aliveOnTeam(enemyTeam).map(function (en) { return gameState.characters[en]; }).filter(Boolean);
+            if (!enemies.length) return;
+            var maxEnemySpeed = Math.max.apply(null, enemies.map(function (e) { return e.speed || 0; }));
+            if (maxEnemySpeed > 0) {
+                c.speed = (c.speed || 0) + maxEnemySpeed;
+                addLog('🐺 Destreza de los Huargos: ' + n + ' +' + maxEnemySpeed + ' velocidad (igual al enemigo más rápido)', 'buff');
+            }
         });
     };
 
@@ -291,10 +324,30 @@
                 addLog('🩸 Artes de la Sangre Oscura: ' + n + ' genera ' + (3 * expiredCount) + ' cargas (' + expiredCount + ' buffs enemigos expiraron)', 'buff');
             }
         });
+
+        // HIMNO DE LA HORDA (Kargalgan): al final de cada ronda, revive a UN aliado
+        // muerto al azar con 100% HP y 20 cargas. Kargalgan mismo nunca es candidato
+        // (no puede ser revivido por nada, ni siquiera por su propia pasiva).
+        Object.keys(gameState.characters).forEach(function (n) {
+            var karg = gameState.characters[n];
+            if (!karg || karg.isDead || karg.hp <= 0 || !karg.passive || karg.passive.name !== 'Himno de la Horda') return;
+            var deadAllies = Object.keys(gameState.characters).filter(function (dn) {
+                var dc = gameState.characters[dn];
+                return dc && dc.team === karg.team && dc.isDead && dn.indexOf('Kargalgan') !== 0;
+            });
+            if (!deadAllies.length) return;
+            var chosen = randomFrom(deadAllies);
+            var rc = gameState.characters[chosen];
+            rc.isDead = false;
+            rc.hp = rc.maxHp;
+            rc.charges = 20;
+            addLog('🎵 Himno de la Horda: ' + n + ' revive a ' + chosen + ' con 100% HP y 20 cargas', 'heal');
+            if (typeof renderCharacters === 'function') renderCharacters();
+        });
     };
 
     // ══════════════════════════════════════════════════════════════════════
-    // GANCHO: UN ENEMIGO EJECUTA UN ESPECIAL (Sed de Sangre / Orco de Elite)
+    // GANCHO: UN ENEMIGO EJECUTA UN ESPECIAL (Sed de Sangre / Orco de Elite, Himno de la Horda / Kargalgan)
     // ══════════════════════════════════════════════════════════════════════
     window.hordaOnEnemySpecialUsed = function (actorName) {
         var actor = gameState.characters[actorName];
@@ -304,6 +357,43 @@
             grantExtraTurn(n);
             if (typeof applyFrenesi === 'function') applyFrenesi(n, 2);
             addLog('🩸 Sed de Sangre: ' + n + ' gana turno extra y Frenesí 2T (' + actorName + ' usó un especial)', 'buff');
+        });
+
+        // HIMNO DE LA HORDA (Kargalgan): cada vez que un enemigo (del punto de vista de
+        // Kargalgan) ejecuta un ataque ESPECIAL, aplica Quemaduras sobre un enemigo aleatorio
+        // por una cantidad de HP igual al 10% de la suma del HP actual de todo su equipo (el
+        // equipo enemigo desde la perspectiva de Kargalgan, es decir, el mismo equipo de quien
+        // ejecutó el especial).
+        passiveHolders(enemyTeam, 'Himno de la Horda').forEach(function (n) {
+            var karg = gameState.characters[n];
+            if (!karg) return;
+            var kargEnemyTeam = enemyTeamOf(karg.team); // = actor.team
+            var totalHp = 0;
+            aliveOnTeam(kargEnemyTeam).forEach(function (en) { var ec = gameState.characters[en]; if (ec) totalHp += (ec.hp || 0); });
+            var burnAmount = Math.max(1, Math.floor(totalHp * 0.10));
+            var targets = aliveOnTeam(kargEnemyTeam);
+            if (!targets.length) return;
+            var tgt = randomFrom(targets);
+            if (typeof applyBurn === 'function') applyBurn(tgt, burnAmount, 2);
+            addLog('🎵 Himno de la Horda: ' + n + ' aplica Quemaduras (' + burnAmount + ' HP) a ' + tgt + ' (' + actorName + ' usó un especial)', 'debuff');
+        });
+    };
+
+    // ══════════════════════════════════════════════════════════════════════
+    // GANCHO: UN ENEMIGO EJECUTA UN OVER (Himno de la Horda / Kargalgan)
+    // ══════════════════════════════════════════════════════════════════════
+    window.hordaOnEnemyOverUsed = function (actorName) {
+        var actor = gameState.characters[actorName];
+        if (!actor) return;
+        var enemyTeam = enemyTeamOf(actor.team);
+        passiveHolders(enemyTeam, 'Himno de la Horda').forEach(function (n) {
+            var karg = gameState.characters[n];
+            if (!karg || karg.isDead || karg.hp <= 0) return;
+            var overAb = (karg.abilities || []).find(function (a) { return a && a.type === 'over'; });
+            if (!overAb) return;
+            addLog('🎵 Himno de la Horda: ' + n + ' ejecuta su Over (' + actorName + ' ejecutó un Over)', 'buff');
+            var enemiesNow = aliveOnTeam(enemyTeamOf(karg.team));
+            window.hordaExecuteAbility(overAb, n, randomFrom(enemiesNow), karg, overAb.damage);
         });
     };
 
@@ -638,7 +728,8 @@
         aliveOnTeam(caster.team).forEach(function (n) { if (n !== casterName) grantCharges(n, 5); });
         var dead = Object.keys(gameState.characters).filter(function (n) {
             var c = gameState.characters[n];
-            return c && c.team === caster.team && c.isDead;
+            // Kargalgan (Himno de la Horda) nunca puede ser revivido, ni por esta habilidad ni por ninguna otra
+            return c && c.team === caster.team && c.isDead && n.indexOf('Kargalgan') !== 0;
         });
         addLog('💀 Magia de Muerte: equipo genera 5 cargas', 'buff');
         if (dead.length) {
@@ -868,6 +959,194 @@
         addLog('🌋 Devastación Planetaria: AOE 5-20 daño + 10%-50% del HP actual del enemigo', 'damage');
     }
 
+    // ── HUARGOS ──
+    function ability_huargosBasic(casterName, targetName) {
+        var caster = gameState.characters[casterName];
+        if (!caster) return;
+        // "Cada vez que se realiza este movimiento duplica el daño causado" → daño base x2
+        var dmg = (5 + (caster._hordaBasicDmgBonus || 0)) * 2;
+        dmg = hordaComputeRelicDamage(casterName, targetName, dmg, 'basic', false);
+        applyDamageWithShield(targetName, dmg, casterName);
+        if (typeof applyWeaken === 'function') applyWeaken(targetName, 2);
+        generateChargesInline(casterName, 2);
+        addLog('🐺 Rabia del Huargo: ' + casterName + ' causa ' + dmg + ' daño (x2) y Debilitar 2T a ' + targetName, 'damage');
+    }
+    function ability_huargosSpecial1(casterName) {
+        var caster = gameState.characters[casterName];
+        if (!caster) return;
+        aliveOnTeam(caster.team).forEach(function (n) {
+            var c = gameState.characters[n];
+            if (!c) return;
+            c.hp = (c.hp || 0) * 2; // duplica el HP ACTUAL (puede superar temporalmente el máximo)
+            c.speed = Math.round((c.speed || 80) * 1.5);
+        });
+        addLog('👁️ Ojos del Terror: ' + casterName + ' duplica el HP actual y +50% velocidad de todo el equipo', 'buff');
+        if (typeof renderCharacters === 'function') renderCharacters();
+    }
+    function ability_huargosSpecial2(casterName) {
+        var caster = gameState.characters[casterName];
+        if (!caster) return;
+        var enemyTeam = enemyTeamOf(caster.team);
+        var hits = 2 + Math.floor(Math.random() * 4); // 2 a 5
+        var totalDmg = 0, actualHits = 0;
+        for (var i = 0; i < hits; i++) {
+            var enemies = aliveOnTeam(enemyTeam);
+            if (!enemies.length) break;
+            var tgt = randomFrom(enemies);
+            var dmg = 5;
+            if (Math.random() < 0.20) {
+                var c = gameState.characters[tgt];
+                dmg += Math.max(1, Math.floor((c.hp || 0) * 0.5));
+            }
+            dmg = hordaComputeRelicDamage(casterName, tgt, dmg, 'special', false);
+            applyDamageWithShield(tgt, dmg, casterName);
+            totalDmg += dmg;
+            actualHits++;
+        }
+        addLog('🪓 Hacha Oscura del Verdugo: ' + casterName + ' golpea ' + actualHits + ' veces (' + totalDmg + ' daño total)', 'damage');
+    }
+    function ability_huargosOver(casterName) {
+        var caster = gameState.characters[casterName];
+        if (!caster) return;
+        var enemyTeam = enemyTeamOf(caster.team);
+        var enemies = aliveOnTeam(enemyTeam);
+        enemies.forEach(function (n) {
+            var dmg = hordaComputeRelicDamage(casterName, n, 5, 'over', true);
+            applyDamageWithShield(n, dmg, casterName);
+        });
+        addLog('🌕 Aullido de la Horda: 5 daño AOE', 'damage');
+        // +1 daño por cada 2 HP Escudo activo en el equipo enemigo, a un enemigo aleatorio
+        var totalShield = 0;
+        enemies.forEach(function (n) { var c = gameState.characters[n]; if (c) totalShield += (c.shield || 0); });
+        var bonusDmg = Math.floor(totalShield / 2);
+        if (bonusDmg > 0) {
+            var stillAlive = aliveOnTeam(enemyTeam);
+            if (stillAlive.length) {
+                var tgt = randomFrom(stillAlive);
+                applyDamageWithShield(tgt, bonusDmg, casterName);
+                addLog('🌕 Aullido de la Horda: +' + bonusDmg + ' daño adicional a ' + tgt + ' (Escudo del equipo enemigo)', 'damage');
+            }
+        }
+        // 10% de eliminar instantáneamente a cada enemigo con más de 100 HP
+        aliveOnTeam(enemyTeam).forEach(function (n) {
+            var c = gameState.characters[n];
+            if (c && !c.isDead && c.hp > 100 && Math.random() < 0.10) {
+                c.hp = 0; c.isDead = true;
+                addLog('🌕 Aullido de la Horda: ¡' + n + ' eliminado! (más de 100 HP, 10% de probabilidad)', 'damage');
+                if (typeof registerKill === 'function') registerKill(casterName, n, false);
+                if (typeof checkGameOver === 'function') checkGameOver();
+            }
+        });
+        if (typeof renderCharacters === 'function') renderCharacters();
+    }
+
+    // ── KARGALGAN ──
+    function ability_kargalganBasic(casterName) {
+        var caster = gameState.characters[casterName];
+        if (!caster) return;
+        aliveOnTeam(caster.team).forEach(function (n) {
+            var c = gameState.characters[n];
+            if (!c) return;
+            var inc = Math.ceil((c.maxHp || 0) * 0.2);
+            c.maxHp = (c.maxHp || 0) + inc;
+            c.hp = (c.hp || 0) + inc;
+            if (typeof applyShield === 'function') applyShield(n, caster.hp || 0);
+        });
+        generateChargesInline(casterName, 3);
+        addLog('🎵 Himno de Proteccion: ' + casterName + ' incrementa 20% HP y aplica Escudo (' + (caster.hp || 0) + ' HP) a todo el equipo', 'buff');
+        if (typeof renderCharacters === 'function') renderCharacters();
+    }
+    function ability_kargalganSpecial1(casterName) {
+        var caster = gameState.characters[casterName];
+        if (!caster) return;
+        aliveOnTeam(caster.team).forEach(function (n) {
+            var c = gameState.characters[n];
+            if (!c) return;
+            c._hordaGiantsHymnBonus = (c._hordaGiantsHymnBonus || 0) + 5;
+            grantCharges(n, 5);
+        });
+        addLog('🎵 Himno de los Gigantes: ' + casterName + ' incrementa +5 daño base a todo el equipo y genera 5 cargas', 'buff');
+    }
+    function ability_kargalganSpecial2(casterName, targetName) {
+        var target = gameState.characters[targetName];
+        if (!target) return;
+        var hadMega = (target.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'mega congelacion'; });
+        var hadCongel = (target.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'congelacion'; });
+        var hadQuemadura = (target.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'quemadura'; });
+
+        var dmg = hordaComputeRelicDamage(casterName, targetName, 5, 'special', false);
+        applyDamageWithShield(targetName, dmg, casterName);
+        addLog('❄️ Himno de Hielo: ' + casterName + ' causa ' + dmg + ' daño a ' + targetName, 'damage');
+
+        var caster = gameState.characters[casterName];
+        var tgt = gameState.characters[targetName];
+        if (tgt && !tgt.isDead) {
+            if (typeof applyDebuff === 'function') applyDebuff(targetName, { name: 'Megacongelacion', type: 'debuff', duration: 2, emoji: '🧊❄️' });
+            addLog('❄️ Himno de Hielo: Megacongelación aplicada a ' + targetName, 'debuff');
+        }
+        if (caster) {
+            var enemyTeam = enemyTeamOf(caster.team);
+            var others = aliveOnTeam(enemyTeam).filter(function (n) { return n !== targetName; });
+            var shuffled = others.sort(function () { return Math.random() - 0.5; }).slice(0, 2);
+            shuffled.forEach(function (n) {
+                if (typeof applyDebuff === 'function') applyDebuff(n, { name: 'Congelacion', type: 'debuff', duration: 1, emoji: '🧊' });
+                addLog('❄️ Himno de Hielo: Congelación aplicada a ' + n, 'debuff');
+            });
+        }
+        tgt = gameState.characters[targetName];
+        if (tgt && !tgt.isDead) {
+            if (hadMega) {
+                tgt.hp = 0; tgt.isDead = true;
+                addLog('❄️ Himno de Hielo: ¡' + targetName + ' eliminado! (ya tenía Megacongelación)', 'damage');
+                if (typeof registerKill === 'function') registerKill(casterName, targetName, false);
+                if (typeof checkGameOver === 'function') checkGameOver();
+            } else if (hadCongel && Math.random() < 0.5) {
+                tgt.hp = 0; tgt.isDead = true;
+                addLog('❄️ Himno de Hielo: ¡' + targetName + ' eliminado! (ya tenía Congelación, 50%)', 'damage');
+                if (typeof registerKill === 'function') registerKill(casterName, targetName, false);
+                if (typeof checkGameOver === 'function') checkGameOver();
+            }
+        }
+        tgt = gameState.characters[targetName];
+        if (tgt && !tgt.isDead && hadQuemadura) {
+            var steal = Math.max(1, Math.floor((tgt.hp || 0) * 0.5));
+            tgt.hp = Math.max(0, tgt.hp - steal);
+            if (caster) caster.hp = Math.min(caster.maxHp, (caster.hp || 0) + steal);
+            addLog('❄️ Himno de Hielo: roba ' + steal + ' HP de ' + targetName + ' (ya tenía Quemaduras)', 'damage');
+            if (tgt.hp <= 0 && !tgt.isDead) {
+                tgt.isDead = true;
+                if (typeof registerKill === 'function') registerKill(casterName, targetName, false);
+                if (typeof checkGameOver === 'function') checkGameOver();
+            }
+        }
+        if (typeof renderCharacters === 'function') renderCharacters();
+    }
+    function ability_kargalganOver(casterName) {
+        var caster = gameState.characters[casterName];
+        if (!caster) return;
+        var enemyTeam = enemyTeamOf(caster.team);
+        aliveOnTeam(enemyTeam).forEach(function (n) {
+            var c = gameState.characters[n];
+            if (!c) return;
+            var hasDebuff = (c.statusEffects || []).some(function (e) { return e && e.type === 'debuff'; });
+            var triple = hasDebuff && Math.random() < 0.5;
+            var dmg = 100 * (triple ? 3 : 1);
+            dmg = hordaComputeRelicDamage(casterName, n, dmg, 'over', true);
+            applyDamageWithShield(n, dmg, casterName);
+            if (triple) addLog('🐉 Himno del Dragón de Fuego: ¡daño triple en ' + n + ' (tenía debuffs)!', 'damage');
+            var after = gameState.characters[n];
+            if (after && !after.isDead && after.hp > 0) {
+                var halfMax = Math.floor((after.maxHp || 0) * 0.5);
+                var halfHp = Math.floor((after.hp || 0) * 0.5);
+                after.maxHp = Math.max(1, halfMax);
+                after.hp = Math.min(after.maxHp, Math.max(1, halfHp));
+                addLog('🐉 Himno del Dragón de Fuego: ' + n + ' sobrevive — HP Máx y actual reducidos 50%', 'damage');
+            }
+        });
+        addLog('🐉 Himno del Dragón de Fuego: 100 daño AOE', 'damage');
+        if (typeof renderCharacters === 'function') renderCharacters();
+    }
+
     // ══════════════════════════════════════════════════════════════════════
     // DISPATCHER PRINCIPAL
     // ══════════════════════════════════════════════════════════════════════
@@ -929,6 +1208,16 @@
             case 'horda_titan_special1':  ability_titanSpecial1(charName); break;
             case 'horda_titan_special2':  ability_titanSpecial2(charName); break;
             case 'horda_titan_over':      ability_titanOver(charName); break;
+
+            case 'horda_huargos_basic':     ability_huargosBasic(charName, targetName); break;
+            case 'horda_huargos_special1':  ability_huargosSpecial1(charName); break;
+            case 'horda_huargos_special2':  ability_huargosSpecial2(charName); break;
+            case 'horda_huargos_over':      ability_huargosOver(charName); break;
+
+            case 'horda_kargalgan_basic':     ability_kargalganBasic(charName); break;
+            case 'horda_kargalgan_special1':  ability_kargalganSpecial1(charName); break;
+            case 'horda_kargalgan_special2':  ability_kargalganSpecial2(charName, targetName); break;
+            case 'horda_kargalgan_over':      ability_kargalganOver(charName); break;
 
             default:
                 console.error('[HORDA] Efecto no reconocido:', ability.effect);
