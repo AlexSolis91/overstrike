@@ -930,11 +930,185 @@
         if (typeof updateLobbyHUD === 'function') updateLobbyHUD();
     };
 
+    // ══════════════════════════════════════════════════════════════════
+    // FASE 5: EVENTO BONUS DEL JEFE DE SALA
+    // Solo disponible si el equipo ganó SIN empate y acumuló 50+ fragmentos
+    // de alma. Cualquiera de los 2 jugadores puede pagarlos para activar
+    // un jefe existente (1,000,000 HP, 24h, solo ese equipo puede atacarlo).
+    // Reutiliza window.startBossBattle() — el mismo punto de entrada que
+    // usa el Jefe de Sala normal — así que hereda todo su motor de combate.
+    // ══════════════════════════════════════════════════════════════════
+    var SQUADS_BOSS_HP = 1000000;
+    var SQUADS_BOSS_COST = 50;
+
+    function _squadsAvailableBossIds() {
+        if (typeof BOSS_DATA === 'undefined') return [];
+        return Object.keys(BOSS_DATA).filter(function (id) { return BOSS_DATA[id] && BOSS_DATA[id].name && !BOSS_DATA[id].bossId; });
+    }
+
     function _squadsBossEventHtml(room, myTeam) {
-        return '<div style="margin-top:16px;background:rgba(255,68,68,0.06);border:2px solid #ff4444;border-radius:16px;padding:16px;text-align:center;">' +
-            '<div style="font-family:Orbitron,sans-serif;color:#ff4444;font-size:.8rem;font-weight:900;">🐲 EVENTO BONUS — próximamente</div>' +
-            '<div style="font-size:.65rem;color:#aaa;margin-top:6px;">Construcción en curso.</div>' +
+        var bossEvent = room.bossEvent;
+        var fragments = (room.soulFragments && room.soulFragments[myTeam]) || 0;
+
+        if (bossEvent && bossEvent.active) {
+            var now = Date.now();
+            var expired = now >= bossEvent.expiresAt;
+            var bossData = (typeof BOSS_DATA !== 'undefined') ? BOSS_DATA[bossEvent.bossId] : null;
+            var hpPct = Math.max(0, Math.min(100, (bossEvent.hp / bossEvent.maxHp) * 100));
+            if (expired) {
+                return '<div style="margin-top:16px;background:rgba(255,68,68,0.06);border:2px solid #ff4444;border-radius:16px;padding:16px;text-align:center;">' +
+                    '<div style="font-family:Orbitron,sans-serif;color:#ff4444;font-size:.85rem;font-weight:900;">⏱️ Tiempo agotado</div>' +
+                    '<div style="font-size:.65rem;color:#aaa;margin-top:6px;">El evento del jefe expiró sin ser derrotado.</div></div>';
+            }
+            return '<div style="margin-top:16px;background:rgba(255,68,68,0.06);border:2px solid #ff4444;border-radius:16px;padding:16px;text-align:center;">' +
+                '<div style="font-family:Orbitron,sans-serif;color:#ff4444;font-size:.85rem;font-weight:900;">🐲 ' + (bossData ? bossData.name : 'Jefe') + '</div>' +
+                '<div style="background:rgba(255,255,255,0.1);border-radius:8px;height:14px;margin:10px 0;overflow:hidden;"><div style="height:100%;width:' + hpPct.toFixed(1) + '%;background:linear-gradient(90deg,#ff4444,#ffaa00);"></div></div>' +
+                '<div style="font-size:.65rem;color:#fff;">' + bossEvent.hp.toLocaleString() + ' / ' + bossEvent.maxHp.toLocaleString() + ' HP</div>' +
+                '<div style="font-size:.6rem;color:#888;margin-top:4px;">Tiempo restante: ' + _fmtTimeLeft(bossEvent.expiresAt - now) + '</div>' +
+                '<button onclick="window.squadsAttackBoss()" style="margin-top:12px;padding:10px 24px;background:linear-gradient(135deg,#3a0000,#7a1a00);border:2px solid #ff4444;color:#fff;border-radius:10px;font-family:Orbitron,sans-serif;font-weight:900;font-size:.75rem;cursor:pointer;">⚔️ ATACAR AL JEFE</button>' +
+                '</div>';
+        }
+
+        if (bossEvent && bossEvent.defeated) {
+            var bd = (typeof BOSS_DATA !== 'undefined') ? BOSS_DATA[bossEvent.bossId] : null;
+            return '<div style="margin-top:16px;background:rgba(0,255,136,0.06);border:2px solid #00ff88;border-radius:16px;padding:16px;text-align:center;">' +
+                '<div style="font-family:Orbitron,sans-serif;color:#00ff88;font-size:.85rem;font-weight:900;">🏆 ' + (bd ? bd.name : 'Jefe') + ' DERROTADO</div>' +
+                '<div style="font-size:.65rem;color:#aaa;margin-top:6px;">Ambos jugadores del equipo ya recibieron su llave.</div></div>';
+        }
+
+        if (fragments < SQUADS_BOSS_COST) {
+            return '<div style="margin-top:16px;text-align:center;font-size:.62rem;color:#666;">🐲 Evento bonus del jefe: necesitas ' + SQUADS_BOSS_COST + ' fragmentos de tu equipo (tienes ' + fragments + ').</div>';
+        }
+        return '<div style="margin-top:16px;background:rgba(255,215,0,0.06);border:2px solid #ffd700;border-radius:16px;padding:16px;text-align:center;">' +
+            '<div style="font-family:Orbitron,sans-serif;color:#ffd700;font-size:.8rem;font-weight:900;">🐲 EVENTO BONUS DISPONIBLE</div>' +
+            '<div style="font-size:.62rem;color:#aaa;margin-top:6px;">Tu equipo tiene ' + fragments + ' fragmentos — paga ' + SQUADS_BOSS_COST + ' para activar un jefe de ' + SQUADS_BOSS_HP.toLocaleString() + ' HP (24h, solo ustedes dos pueden atacarlo).</div>' +
+            '<button onclick="window.squadsOpenBossPicker()" style="margin-top:12px;padding:10px 24px;background:linear-gradient(135deg,#3a2800,#7a5500);border:2px solid #ffd700;color:#ffd700;border-radius:10px;font-family:Orbitron,sans-serif;font-weight:900;font-size:.75rem;cursor:pointer;">🐲 ACTIVAR JEFE BONUS</button>' +
             '</div>';
+    }
+
+    window.squadsOpenBossPicker = function () {
+        var ids = _squadsAvailableBossIds();
+        var existing = document.getElementById('squadsBossPickerModal');
+        if (existing) existing.remove();
+        var overlay = document.createElement('div');
+        overlay.id = 'squadsBossPickerModal';
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:9999999;display:flex;align-items:center;justify-content:center;padding:20px;';
+        var html = '<div style="background:linear-gradient(135deg,#0a0e17,#3a0000);border:2px solid #ff4444;border-radius:20px;padding:20px;max-width:500px;width:100%;">' +
+            '<div style="font-family:Orbitron,sans-serif;color:#ff4444;font-size:.9rem;font-weight:900;margin-bottom:14px;text-align:center;">Elige el Jefe (' + SQUADS_BOSS_HP.toLocaleString() + ' HP)</div>';
+        ids.forEach(function (id) {
+            var b = BOSS_DATA[id];
+            html += '<div onclick="window.squadsActivateBoss(\'' + id + '\')" style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:10px;margin-bottom:8px;cursor:pointer;">' +
+                '<img src="' + b.portrait + '" style="width:44px;height:44px;border-radius:8px;object-fit:cover;" referrerpolicy="no-referrer">' +
+                '<div style="font-size:.75rem;color:#fff;font-weight:700;">' + b.name + '</div></div>';
+        });
+        html += '<button onclick="document.getElementById(\'squadsBossPickerModal\').remove()" style="width:100%;margin-top:8px;padding:8px;background:none;border:1px solid #ff3366;color:#ff3366;border-radius:8px;font-family:Orbitron,sans-serif;font-size:.7rem;cursor:pointer;">Cancelar</button></div>';
+        overlay.innerHTML = html;
+        document.body.appendChild(overlay);
+        overlay.onclick = function (e) { if (e.target === overlay) overlay.remove(); };
+    };
+
+    window.squadsActivateBoss = async function (bossId) {
+        var roomId = _squadsCurrentRoomId;
+        var room = _squadsLastRoom;
+        if (!roomId || !room || !currentUser) return;
+        var myTeam = room.teams.haunters.indexOf(currentUser.uid) !== -1 ? 'haunters' : 'reapers';
+        var m = document.getElementById('squadsBossPickerModal'); if (m) m.remove();
+
+        await db.ref('squads_rooms/' + roomId).transaction(function (r) {
+            if (!r) return r;
+            if (r.bossEvent && r.bossEvent.active) return r; // ya activado por el compañero — no duplicar
+            var frags = (r.soulFragments && r.soulFragments[myTeam]) || 0;
+            if (frags < SQUADS_BOSS_COST) return r; // abortar sin cambios
+            r.soulFragments[myTeam] = frags - SQUADS_BOSS_COST;
+            r.bossEvent = {
+                active: true, bossId: bossId,
+                hp: SQUADS_BOSS_HP, maxHp: SQUADS_BOSS_HP,
+                activatedBy: currentUser.uid, activatedAt: Date.now(),
+                expiresAt: Date.now() + 24 * 3600000,
+                defeated: false, team: myTeam
+            };
+            return r;
+        });
+    };
+
+    // ── Lanzar el combate contra el jefe bonus (reutiliza window.startBossBattle) ──
+    window.squadsAttackBoss = function () {
+        var room = _squadsLastRoom;
+        if (!room || !room.bossEvent || !room.bossEvent.active || !currentUser) return;
+        if (Date.now() >= room.bossEvent.expiresAt) { alert('El evento del jefe ya expiró.'); return; }
+        var myTeam = room.teams.haunters.indexOf(currentUser.uid) !== -1 ? 'haunters' : 'reapers';
+        if (room.bossEvent.team !== myTeam) { alert('Solo el equipo que activó el jefe puede atacarlo.'); return; }
+        if (typeof BOSS_DATA === 'undefined' || !BOSS_DATA[room.bossEvent.bossId]) return;
+
+        var customBoss = Object.assign({}, BOSS_DATA[room.bossEvent.bossId], { hp: room.bossEvent.hp, maxHp: room.bossEvent.maxHp });
+
+        window._squadsBossMode = true;
+        window._squadsBossRoomId = _squadsCurrentRoomId;
+        window._squadsBossHpAtStart = room.bossEvent.hp;
+
+        var m = document.getElementById('squadsRoomModal'); if (m) m.remove();
+        _squadsStopRoomListener();
+
+        if (typeof window.startBossBattle === 'function') {
+            window.startBossBattle(currentUser.uid, currentUser.displayName || 'Jugador', 'team1', customBoss);
+        }
+    };
+
+    // ── Registrar el resultado del combate contra el jefe bonus ──
+    // Se engancha sobre showGameOver ADICIONALMENTE al hook que ya instala
+    // jefe-de-sala.js (para el jefe semanal normal). Aquí solo actuamos si
+    // `_squadsBossMode` está activo, y forzamos `_bossMode = false` antes de
+    // dejar pasar la llamada, para que el jefe semanal normal (weekly_boss)
+    // nunca reciba por error el daño de nuestro jefe bonus de SQUADS.
+    (function _squadsPatchShowGameOver() {
+        if (typeof window.showGameOver !== 'function') { setTimeout(_squadsPatchShowGameOver, 150); return; }
+        var _origSGO = window.showGameOver;
+        window.showGameOver = function (message) {
+            if (window._squadsBossMode) {
+                _squadsProcessBossResult();
+                window._bossMode = false;
+                window._squadsBossMode = false;
+            }
+            _origSGO(message);
+        };
+    })();
+
+    async function _squadsProcessBossResult() {
+        try {
+            var roomId = window._squadsBossRoomId;
+            if (!roomId) return;
+            var bossKey = (window._bossBattleData && window._bossBattleData.boss) ? window._bossBattleData.boss.name : null;
+            var bossChar = (typeof gameState !== 'undefined' && gameState.characters && bossKey) ? gameState.characters[bossKey] : null;
+            var hpRestante = bossChar ? Math.max(0, bossChar.hp || 0) : 0;
+            var damageDealt = Math.max(0, (window._squadsBossHpAtStart || 0) - hpRestante);
+
+            var justDefeated = false;
+            var winningTeamUids = [];
+            if (damageDealt > 0) {
+                await db.ref('squads_rooms/' + roomId).transaction(function (room) {
+                    if (!room || !room.bossEvent || !room.bossEvent.active) return room;
+                    var newHp = Math.max(0, room.bossEvent.hp - damageDealt);
+                    room.bossEvent.hp = newHp;
+                    if (newHp <= 0 && !room.bossEvent.defeated) {
+                        room.bossEvent.defeated = true;
+                        room.bossEvent.active = false;
+                        justDefeated = true;
+                        winningTeamUids = (room.teams && room.teams[room.bossEvent.team]) || [];
+                    }
+                    return room;
+                });
+            }
+
+            if (justDefeated && winningTeamUids.length) {
+                for (var i = 0; i < winningTeamUids.length; i++) {
+                    var uid = winningTeamUids[i];
+                    var field = Math.random() < 0.5 ? 'champion_keys' : 'horda_keys';
+                    await db.ref('users/' + uid + '/' + field).transaction(function (v) { return (v || 0) + 1; });
+                }
+            }
+        } catch (e) { console.error('[SQUADS BOSS] Error registrando resultado:', e); }
+        window._squadsBossRoomId = null;
+        window._squadsBossHpAtStart = null;
     }
 
 })();
