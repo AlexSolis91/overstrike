@@ -172,6 +172,81 @@
     };
 
     // ─────────────────────────────────────────────────────────────────────────
+    // EQUIPAMIENTO ALEATORIO DE RELIQUIAS PARA JEFES DE SALA (reutilizable)
+    // Se llama cada vez que un jugador entra a atacar a un jefe con
+    // `randomRelics: true` en su configuración (ver BOSS_DATA en index.html).
+    // Respeta las mismas reglas de equipamiento que los personajes: un Arco
+    // ocupa el otro slot de arma como "Equipación 3", no se pueden duplicar
+    // dos Escudos, Armas normales y Joyas sí pueden repetirse, el resto no.
+    // Favorece tiers altos (Épico/Legendario) ya que es contenido de jefe.
+    // ─────────────────────────────────────────────────────────────────────────
+    var BOSS_RELIC_TIER_WEIGHTS = { 'Legendario': 30, 'Epico': 35, 'Especial': 25, 'Raro': 10 };
+    function _bossPickTier() {
+        var total = 0;
+        for (var t in BOSS_RELIC_TIER_WEIGHTS) total += BOSS_RELIC_TIER_WEIGHTS[t];
+        var roll = Math.random() * total;
+        for (var t2 in BOSS_RELIC_TIER_WEIGHTS) {
+            roll -= BOSS_RELIC_TIER_WEIGHTS[t2];
+            if (roll <= 0) return t2;
+        }
+        return 'Raro';
+    }
+    function bossEquipRandomRelics(bossChar) {
+        if (typeof RELICS_DATA === 'undefined' || !bossChar) return;
+        var slotOrder = ['arma1', 'arma2', 'equip1', 'equip2', 'joya1', 'joya2'];
+        var assigned = {};
+        var usedNonRepeatable = {};
+
+        slotOrder.forEach(function (slotKey) {
+            var isArmaSlot = slotKey === 'arma1' || slotKey === 'arma2';
+            var siblingKey = slotKey === 'arma1' ? 'arma2' : (slotKey === 'arma2' ? 'arma1' : null);
+            var siblingRelic = siblingKey ? assigned[siblingKey] : null;
+            var siblingData = siblingRelic ? RELICS_DATA[siblingRelic] : null;
+            var repurposedAsEquip3 = isArmaSlot && siblingData && siblingData.subtype === 'Arco';
+            var wantedCat = repurposedAsEquip3 ? 'Equipacion' : (isArmaSlot ? 'Arma' : (slotKey.indexOf('equip') === 0 ? 'Equipacion' : 'Joya'));
+
+            var candidates = Object.keys(RELICS_DATA).filter(function (name) {
+                if (name === 'Memorex') return false;
+                var r = RELICS_DATA[name];
+                if (!r || r.isEventRelic) return false;
+                if ((r.slotCategory || 'Arma') !== wantedCat) return false;
+                if (isArmaSlot && !repurposedAsEquip3 && r.subtype === 'Arco' && siblingRelic) return false;
+                if (r.subtype === 'Escudo' && Object.keys(assigned).some(function (k) { var rd = RELICS_DATA[assigned[k]]; return rd && rd.subtype === 'Escudo'; })) return false;
+                var canRepeat = (r.slotCategory === 'Arma' && r.subtype !== 'Arco' && r.subtype !== 'Escudo') || r.slotCategory === 'Joya';
+                if (!canRepeat && usedNonRepeatable[name]) return false;
+                return true;
+            });
+            if (!candidates.length) return;
+
+            var tier = _bossPickTier();
+            var byTier = candidates.filter(function (n) { return RELICS_DATA[n].tier === tier; });
+            var pool = byTier.length ? byTier : candidates;
+            var chosen = pool[Math.floor(Math.random() * pool.length)];
+
+            assigned[slotKey] = chosen;
+            var chosenData = RELICS_DATA[chosen];
+            var canRepeatChosen = (chosenData.slotCategory === 'Arma' && chosenData.subtype !== 'Arco' && chosenData.subtype !== 'Escudo') || chosenData.slotCategory === 'Joya';
+            if (!canRepeatChosen) usedNonRepeatable[chosen] = true;
+        });
+
+        var finalRelics = Object.keys(assigned).map(function (k) { return assigned[k]; });
+        bossChar.equippedRelics = finalRelics;
+        bossChar.slots_v2 = assigned;
+
+        finalRelics.forEach(function (relicName) {
+            var rd = RELICS_DATA[relicName];
+            if (!rd) return;
+            if (rd.hpBonus) { bossChar.hp = (bossChar.hp || 0) + rd.hpBonus; bossChar.maxHp = (bossChar.maxHp || 0) + rd.hpBonus; }
+            if (rd.velBonus) { bossChar.speed = (bossChar.speed || 0) + rd.velBonus; }
+        });
+
+        if (typeof addLog === 'function' && finalRelics.length) {
+            addLog('🎲 ' + (bossChar.name || 'El Jefe') + ' entra equipado con: ' + finalRelics.join(', '), 'buff');
+        }
+    }
+    window.bossEquipRandomRelics = bossEquipRandomRelics;
+
+    // ─────────────────────────────────────────────────────────────────────────
     // 4. Patch initGame — inyectar el Jefe como team2 en modo boss
     // ─────────────────────────────────────────────────────────────────────────
     (function patchInitGame() {
@@ -228,6 +303,11 @@
                             : [])
                     )
             };
+
+            // Equipamiento aleatorio de reliquias (solo si el jefe lo tiene habilitado)
+            if (boss.randomRelics && typeof window.bossEquipRandomRelics === 'function') {
+                window.bossEquipRandomRelics(chars[bossKey]);
+            }
 
             // Llamar al initGame original con los personajes ya inyectados
             _orig(chars);
