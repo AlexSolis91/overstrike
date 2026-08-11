@@ -102,7 +102,13 @@
     function _squadsRenderRoomList(rooms) {
         var list = document.getElementById('squadsRoomList');
         if (!list) return;
-        var ids = Object.keys(rooms).filter(function (id) { return rooms[id] && rooms[id].status !== 'finished'; });
+        var ids = Object.keys(rooms).filter(function (id) {
+            var r = rooms[id];
+            if (!r) return false;
+            if (r.status !== 'finished') return true;
+            // Las salas finalizadas solo se listan si el jugador participó (para poder reclamar su recompensa)
+            return currentUser && r.players && r.players[currentUser.uid] && !(r.rewardsClaimed && r.rewardsClaimed[currentUser.uid]);
+        });
         // Salas más nuevas primero
         ids.sort(function (a, b) { return (rooms[b].createdAt || 0) - (rooms[a].createdAt || 0); });
         if (!ids.length) {
@@ -117,7 +123,8 @@
             var statusLabel = r.status === 'waiting' ? 'Esperando jugadores' :
                 r.status === 'teams_assigned' || r.status === 'building' ? '🛡️ Construyendo defensas' :
                 r.status === 'attacking_day2' ? '⚔️ Día 2 — Ataques' :
-                r.status === 'attacking_day3' ? '⚔️ Día 3 — Ataques' : r.status;
+                r.status === 'attacking_day3' ? '⚔️ Día 3 — Ataques' :
+                r.status === 'finished' ? '🏁 Finalizada — reclama tu recompensa' : r.status;
             var alreadyIn = currentUser && r.players && r.players[currentUser.uid];
             html += '<div style="background:rgba(255,255,255,0.03);border:1px solid ' + (full ? 'rgba(255,255,255,0.08)' : 'rgba(200,100,255,0.3)') + ';border-radius:12px;padding:12px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;">' +
                 '<div>' +
@@ -215,6 +222,7 @@
         _squadsRoomListener.on('value', function (snap) {
             var room = snap.val();
             if (!room) { window.squadsCloseRoom(); return; }
+            _squadsCheckAndResolveWinner(roomId, room); // idempotente — no hace nada si ya hay ganador
             _squadsRenderRoomDetail(room);
         });
     };
@@ -235,6 +243,12 @@
         if (!content) return;
         var myUid = currentUser ? currentUser.uid : null;
         var count = Object.keys(room.players || {}).length;
+
+        // ── FASE 4: si ya hay ganador, mostrar la pantalla de recompensas en vez del resto ──
+        if (room.winner) {
+            _squadsRenderRewardsScreen(room, myUid);
+            return;
+        }
 
         var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
             '<div style="font-family:Orbitron,sans-serif;color:#c864ff;font-size:1rem;font-weight:900;">👥⚔️ Sala de ' + (room.createdByName || 'Jugador') + '</div>' +
@@ -790,5 +804,137 @@
             setTimeout(function () { t.remove(); }, 5000);
         }, 1500);
     };
+
+    // ══════════════════════════════════════════════════════════════════
+    // FASE 4: CONDICIÓN DE VICTORIA Y RECOMPENSAS
+    //
+    // El evento termina de dos formas:
+    //  a) ANTICIPADO — las 6 defensas de un equipo quedan totalmente
+    //     "agotadas" (el rival ya reclamó el fragmento de TODOS sus
+    //     personajes). Gana automáticamente el equipo que las agotó.
+    //  b) POR TIEMPO — pasan las 72h del evento. Gana quien tenga más
+    //     fragmentos; empate exacto = ambos equipos reciben el premio de
+    //     ganador (pero el evento del jefe bonus NO se habilita en empate).
+    // ══════════════════════════════════════════════════════════════════
+
+    function _squadsCheckExhausted(room, team) {
+        var teamUids = (room.teams && room.teams[team]) || [];
+        var totalChars = 0, claimedChars = 0;
+        teamUids.forEach(function (uid) {
+            ['def1', 'def2', 'def3'].forEach(function (defSlot) {
+                var chars = _squadsMyDefenses(room, uid)[defSlot] || [];
+                var claimed = (room.fragmentsClaimed && room.fragmentsClaimed[_squadsDefKey(uid, defSlot)]) || {};
+                chars.filter(Boolean).forEach(function (n) {
+                    totalChars++;
+                    if (claimed[n.replace(/ v\d+$/, '')]) claimedChars++;
+                });
+            });
+        });
+        return totalChars > 0 && claimedChars >= totalChars;
+    }
+
+    function _squadsCompareFragments(room) {
+        var h = (room.soulFragments && room.soulFragments.haunters) || 0;
+        var r = (room.soulFragments && room.soulFragments.reapers) || 0;
+        if (h === r) return 'tie';
+        return h > r ? 'haunters' : 'reapers';
+    }
+
+    function _squadsResolveWinner(room) {
+        if (!room.teams) return null; // el evento ni siquiera empezó
+        var hauntersExhausted = _squadsCheckExhausted(room, 'haunters');
+        var reapersExhausted = _squadsCheckExhausted(room, 'reapers');
+        if (hauntersExhausted && reapersExhausted) return _squadsCompareFragments(room);
+        if (hauntersExhausted) return 'reapers'; // reapers reclamaron TODO de haunters
+        if (reapersExhausted) return 'haunters';
+        if (window._squadsPhaseFor(room.eventStartAt) === 'finished') return _squadsCompareFragments(room);
+        return null; // el evento sigue en curso
+    }
+
+    // Idempotente: cualquier cliente que entre puede resolver el ganador, pero la
+    // transacción garantiza que solo se escribe una vez (evita condiciones de carrera).
+    async function _squadsCheckAndResolveWinner(roomId, room) {
+        if (room.winner) return;
+        var winner = _squadsResolveWinner(room);
+        if (!winner) return;
+        await db.ref('squads_rooms/' + roomId).transaction(function (r) {
+            if (!r || r.winner) return r; // ya resuelto por otro cliente — no tocar
+            r.winner = winner;
+            r.status = 'finished';
+            r.finishedAt = Date.now();
+            return r;
+        });
+    }
+
+    // ── Pantalla de recompensas ──
+    function _squadsRenderRewardsScreen(room, myUid) {
+        var content = document.getElementById('squadsRoomContent');
+        if (!content) return;
+        var myTeam = room.teams.haunters.indexOf(myUid) !== -1 ? 'haunters' : (room.teams.reapers.indexOf(myUid) !== -1 ? 'reapers' : null);
+        var isTie = room.winner === 'tie';
+        var iWon = isTie || (myTeam && room.winner === myTeam);
+        var alreadyClaimed = room.rewardsClaimed && room.rewardsClaimed[myUid];
+
+        var winnerLabel = isTie ? '🤝 EMPATE — ambos equipos ganan' : (room.winner === 'haunters' ? '🔷 HAUNTERS' : '🔴 REAPERS') + ' GANA LA PARTIDA';
+        var h = (room.soulFragments && room.soulFragments.haunters) || 0;
+        var r = (room.soulFragments && room.soulFragments.reapers) || 0;
+
+        var html = '<div style="text-align:center;padding:10px 0 20px;">' +
+            '<div style="font-family:Orbitron,sans-serif;color:#ffd700;font-size:1.1rem;font-weight:900;text-shadow:0 0 20px rgba(255,215,0,0.5);">🏁 ' + winnerLabel + '</div>' +
+            '<div style="font-size:.75rem;color:#aaa;margin-top:8px;">💠 HAUNTERS: <b style="color:#4fc3f7;">' + h + '</b> &nbsp;vs&nbsp; REAPERS: <b style="color:#ff4444;">' + r + '</b></div>' +
+            '</div>';
+
+        if (myTeam) {
+            html += '<div style="background:' + (iWon ? 'rgba(255,215,0,0.08)' : 'rgba(255,255,255,0.03)') + ';border:2px solid ' + (iWon ? '#ffd700' : 'rgba(255,255,255,0.15)') + ';border-radius:16px;padding:18px;text-align:center;">' +
+                '<div style="font-family:Orbitron,sans-serif;color:' + (iWon ? '#ffd700' : '#aaa') + ';font-size:.85rem;font-weight:900;margin-bottom:12px;">' + (iWon ? '🎉 TU RECOMPENSA (GANADOR)' : '🎁 TU RECOMPENSA (PARTICIPACIÓN)') + '</div>' +
+                '<div style="display:flex;justify-content:center;gap:18px;flex-wrap:wrap;font-size:.78rem;color:#fff;">' +
+                (iWon
+                    ? '<div>🗝️ x5 Llaves Arcanas</div><div>🪙 50,000 Oro</div><div>🔮 x1 Runa de Portal</div><div>⚔️ x1 Runa de Ataque</div>'
+                    : '<div>🗝️ x1 Llave Arcana</div><div>🪙 20,000 Oro</div><div>🔮 x1 Runa de Portal</div>') +
+                '</div>' +
+                (alreadyClaimed
+                    ? '<div style="margin-top:14px;color:#00ff88;font-size:.72rem;font-weight:700;">✅ Ya reclamada</div>'
+                    : '<button onclick="window.squadsClaimReward()" style="margin-top:16px;padding:12px 28px;background:linear-gradient(135deg,#3a2800,#7a5500);border:2px solid #ffd700;color:#ffd700;border-radius:12px;font-family:Orbitron,sans-serif;font-weight:900;font-size:.8rem;cursor:pointer;">🎁 RECLAMAR RECOMPENSA</button>') +
+                '</div>';
+
+            // ── FASE 5: evento bonus del jefe (solo si NO hubo empate y mi equipo ganó, con 50+ fragmentos) ──
+            if (!isTie && room.winner === myTeam) {
+                html += _squadsBossEventHtml(room, myTeam);
+            }
+        }
+
+        content.innerHTML = html;
+    }
+
+    window.squadsClaimReward = async function () {
+        var room = _squadsLastRoom;
+        if (!room || !room.winner || !currentUser || !_squadsCurrentRoomId) return;
+        var myUid = currentUser.uid;
+        if (room.rewardsClaimed && room.rewardsClaimed[myUid]) return;
+        var myTeam = room.teams.haunters.indexOf(myUid) !== -1 ? 'haunters' : (room.teams.reapers.indexOf(myUid) !== -1 ? 'reapers' : null);
+        if (!myTeam) return;
+        var isTie = room.winner === 'tie';
+        var iWon = isTie || room.winner === myTeam;
+
+        if (iWon) {
+            await db.ref('users/' + myUid + '/arcane_keys').transaction(function (v) { return (v || 0) + 5; });
+            if (typeof addGold === 'function') await addGold(myUid, 50000);
+            await db.ref('users/' + myUid + '/portal_runes').transaction(function (v) { return (v || 0) + 1; });
+            await db.ref('users/' + myUid + '/attack_runes').transaction(function (v) { return (v || 0) + 1; });
+        } else {
+            await db.ref('users/' + myUid + '/arcane_keys').transaction(function (v) { return (v || 0) + 1; });
+            await db.ref('users/' + myUid + '/portal_runes').transaction(function (v) { return (v || 0) + 1; });
+            if (typeof addGold === 'function') await addGold(myUid, 20000);
+        }
+        await db.ref('squads_rooms/' + _squadsCurrentRoomId + '/rewardsClaimed/' + myUid).set(true);
+        if (typeof updateLobbyHUD === 'function') updateLobbyHUD();
+    };
+
+    function _squadsBossEventHtml(room, myTeam) {
+        return '<div style="margin-top:16px;background:rgba(255,68,68,0.06);border:2px solid #ff4444;border-radius:16px;padding:16px;text-align:center;">' +
+            '<div style="font-family:Orbitron,sans-serif;color:#ff4444;font-size:.8rem;font-weight:900;">🐲 EVENTO BONUS — próximamente</div>' +
+            '<div style="font-size:.65rem;color:#aaa;margin-top:6px;">Construcción en curso.</div>' +
+            '</div>';
+    }
 
 })();
