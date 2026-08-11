@@ -177,14 +177,11 @@
             var enemyRelicMap = {}; // nombre único -> lista de reliquias a equipar
 
             // ── ESCALADO PROGRESIVO DE HP/VELOCIDAD POR OLEADA ──
-            // Cada 3 oleadas: +HORDA_HP_STEP HP máximo. Cada 4 oleadas: +1 velocidad.
-            // NOTA: por ahora HORDA_HP_STEP = 2 (tal como se pidió textualmente); si la
-            // fórmula real debía ser +1 por cada 3 oleadas, solo hay que cambiar esta constante.
-            var HORDA_HP_STEP = 2;
-            var hpIncrements = Math.floor(wave / 3);
-            var spdIncrements = Math.floor(wave / 4);
-            var hpBonus = hpIncrements * HORDA_HP_STEP;
-            var spdBonus = spdIncrements * 1;
+            // HP: +3 por cada oleada (la oleada 1 es la base sin bono; oleada 2 = +3,
+            // oleada 3 = +6, ...). Velocidad: +2 cada 3 oleadas (oleadas 1-3 sin bono,
+            // oleada 4 ya es +2, oleada 7 es +4, ...).
+            var hpBonus = Math.max(0, wave - 1) * 3;
+            var spdBonus = Math.floor(Math.max(0, wave - 1) / 3) * 2;
 
             // ── BUFF ALEATORIO DESDE LA OLEADA 25 (25% de probabilidad, 1 buff, 2 turnos) ──
             var HORDA_BUFF_POOL = [
