@@ -310,6 +310,11 @@
                 _squadsRenderDefenseBuilder(room, myTeam, myUid);
                 return;
             }
+            if (myTeam && phase !== 'building' && phase !== 'finished') {
+                content.innerHTML = html;
+                _squadsRenderAttackPanel(room, myTeam, myUid, phase);
+                return;
+            }
             if (myTeam && phase !== 'building') {
                 html += _squadsDefenseOrderReadonlyHtml(room, myTeam);
             }
@@ -505,6 +510,285 @@
         var m = document.getElementById('squadsCharPickerModal');
         if (m) m.remove();
         _squadsPickingDef = null;
+    };
+
+    // ══════════════════════════════════════════════════════════════════
+    // FASE 3: ATAQUES (día 2 y día 3)
+    // Cada jugador tiene 6 ataques por día (no acumulables entre días).
+    // Elige una de las 6 defensas del equipo RIVAL — si nunca fue atacada
+    // por nadie del equipo, aparece oculta ("a ciegas"); en cuanto CUALQUIER
+    // integrante del equipo atacante la golpea, queda revelada para AMBOS.
+    // El equipo de ataque se arma fresco antes de cada ataque, excluyendo
+    // personajes que el jugador ya tiene en sus propias defensas y los que
+    // ya murieron en ataques anteriores (bloqueados permanentemente).
+    // ══════════════════════════════════════════════════════════════════
+    var _squadsAttackPick = null;   // array de 5 (o null) mientras se arma el equipo de ataque
+    var _squadsAttackTargetDefKey = null;
+
+    function _squadsAttacksLeftToday(room, uid, dayKey) {
+        var used = (room.attacksUsed && room.attacksUsed[uid] && room.attacksUsed[uid][dayKey]) || 0;
+        return Math.max(0, 6 - used);
+    }
+
+    function _squadsRenderAttackPanel(room, myTeam, myUid, phase) {
+        _squadsLastRoom = room;
+        var container = document.getElementById('squadsRoomContent');
+        if (!container) return;
+        var enemyTeam = myTeam === 'haunters' ? 'reapers' : 'haunters';
+        var dayKey = phase === 'attacking_day2' ? 'day2' : 'day3';
+        var attacksLeft = _squadsAttacksLeftToday(room, myUid, dayKey);
+
+        var wrap = document.createElement('div');
+        wrap.style.cssText = 'margin-top:10px;border-top:1px solid rgba(255,255,255,0.1);padding-top:16px;';
+        var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
+            '<div style="font-family:Orbitron,sans-serif;color:#ff6644;font-size:.85rem;font-weight:900;">⚔️ ATACAR AL EQUIPO RIVAL</div>' +
+            '<div style="font-family:Orbitron,sans-serif;color:' + (attacksLeft > 0 ? '#00ff88' : '#ff3366') + ';font-size:.72rem;font-weight:700;">' + attacksLeft + '/6 ataques hoy</div>' +
+            '</div>';
+
+        var order = (room.defenseOrder && room.defenseOrder[enemyTeam]) || _squadsDefaultOrder(room.teams[enemyTeam]);
+        var claimed = room.fragmentsClaimed || {};
+        var revealed = room.revealed || {};
+
+        order.forEach(function (defKey, idx) {
+            var parts = defKey.split('_'); var defSlot = parts.pop(); var uid = parts.join('_');
+            var ownerName = (room.players[uid] || {}).name || '???';
+            var isRevealed = !!revealed[defKey];
+            var chars = _squadsMyDefenses(room, uid)[defSlot] || [];
+            var claimedForThis = claimed[defKey] || {};
+            var totalChars = chars.filter(Boolean).length;
+            var claimedCount = chars.filter(function (n) { return n && claimedForThis[n.replace(/ v\d+$/, '')]; }).length;
+            var exhausted = totalChars > 0 && claimedCount >= totalChars;
+
+            html += '<div style="background:rgba(255,255,255,0.03);border:1px solid ' + (exhausted ? 'rgba(255,255,255,0.08)' : 'rgba(255,102,68,0.3)') + ';border-radius:12px;padding:10px 12px;margin-bottom:8px;">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+                    '<div style="font-size:.7rem;color:#fff;font-weight:700;">#' + (idx + 1) + ' — ' + ownerName + ' — ' + defSlot.replace('def', 'Defensa ') + '</div>' +
+                    (exhausted ? '<span style="font-size:.6rem;color:#666;">💀 AGOTADA — sin fragmentos restantes</span>' : '') +
+                '</div>';
+
+            if (!isRevealed) {
+                html += '<div style="font-size:.68rem;color:#888;margin-bottom:8px;">❓ Defensa desconocida — nunca ha sido atacada. El primer ataque es a ciegas.</div>';
+            } else {
+                html += '<div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">';
+                chars.forEach(function (n) {
+                    if (!n) return;
+                    var bn = n.replace(/ v\d+$/, '');
+                    var isClaimed = !!claimedForThis[bn];
+                    var portrait = (typeof getCharPortrait === 'function') ? getCharPortrait(n) : '';
+                    html += '<div style="position:relative;width:40px;height:40px;">' +
+                        '<img src="' + portrait + '" title="' + n.replace(/"/g, '') + '" style="width:40px;height:40px;border-radius:6px;object-fit:cover;border:2px solid ' + (isClaimed ? '#444' : '#ff4444') + ';filter:' + (isClaimed ? 'grayscale(100%)' : 'none') + ';opacity:' + (isClaimed ? '0.5' : '1') + ';" referrerpolicy="no-referrer">' +
+                        (isClaimed ? '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.9rem;">💀</div>' : '') +
+                        '</div>';
+                });
+                html += '</div>';
+            }
+
+            html += (attacksLeft > 0
+                ? '<button onclick="window.squadsStartAttackPicker(\'' + defKey + '\')" style="width:100%;padding:8px;background:linear-gradient(135deg,#3a0000,#7a1a00);border:2px solid #ff6644;color:#ff6644;border-radius:8px;font-family:Orbitron,sans-serif;font-size:.68rem;font-weight:700;cursor:pointer;">⚔️ ATACAR</button>'
+                : '<button disabled style="width:100%;padding:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);color:#555;border-radius:8px;font-family:Orbitron,sans-serif;font-size:.68rem;font-weight:700;">Sin ataques hoy</button>') +
+                '</div>';
+        });
+
+        wrap.innerHTML = html;
+        container.appendChild(wrap);
+    }
+
+    // ── Iniciar armado del equipo de ataque para golpear una defensa específica ──
+    window.squadsStartAttackPicker = function (defKey) {
+        _squadsAttackTargetDefKey = defKey;
+        _squadsAttackPick = [null, null, null, null, null];
+        _squadsRenderAttackTeamModal();
+    };
+
+    function _squadsBlockedForAttack() {
+        // Bloqueados: personajes en MIS defensas + personajes ya muertos en ataques previos
+        var room = _squadsLastRoom;
+        var myUid = currentUser ? currentUser.uid : null;
+        var blocked = new Set();
+        if (room && myUid) {
+            var defs = _squadsMyDefenses(room, myUid);
+            ['def1', 'def2', 'def3'].forEach(function (k) { (defs[k] || []).forEach(function (n) { if (n) blocked.add(n.replace(/ v\d+$/, '')); }); });
+            var dead = (room.deadChars && room.deadChars[myUid]) || {};
+            Object.keys(dead).forEach(function (n) { blocked.add(n); });
+        }
+        return blocked;
+    }
+
+    function _squadsRenderAttackTeamModal() {
+        var existing = document.getElementById('squadsAttackTeamModal');
+        if (existing) existing.remove();
+        var overlay = document.createElement('div');
+        overlay.id = 'squadsAttackTeamModal';
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:9999999;display:flex;align-items:center;justify-content:center;padding:20px;';
+        var card = document.createElement('div');
+        card.style.cssText = 'background:linear-gradient(135deg,#0a0e17,#2a0000);border:2px solid #ff6644;border-radius:20px;padding:20px;max-width:760px;width:100%;max-height:88vh;overflow-y:auto;';
+        card.id = 'squadsAttackTeamCard';
+        document.body.appendChild(overlay);
+        overlay.appendChild(card);
+        overlay.onclick = function (e) { if (e.target === overlay) { overlay.remove(); _squadsAttackTargetDefKey = null; } };
+        _squadsRedrawAttackTeamCard();
+    }
+
+    function _squadsRedrawAttackTeamCard() {
+        var card = document.getElementById('squadsAttackTeamCard');
+        if (!card || typeof characterData === 'undefined') return;
+        var blocked = _squadsBlockedForAttack();
+        var picked = new Set((_squadsAttackPick || []).filter(Boolean));
+        var filledCount = (_squadsAttackPick || []).filter(Boolean).length;
+
+        var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
+            '<div style="font-family:Orbitron,sans-serif;color:#ff6644;font-size:.9rem;font-weight:900;">Arma tu equipo de ataque (' + filledCount + '/5)</div>' +
+            '<button onclick="document.getElementById(\'squadsAttackTeamModal\').remove()" style="background:none;border:1px solid #ff3366;color:#ff3366;border-radius:8px;padding:4px 10px;cursor:pointer;font-family:Orbitron,sans-serif;font-size:.7rem;">✕</button>' +
+            '</div>';
+
+        html += '<div style="display:flex;gap:6px;margin-bottom:14px;">';
+        for (var i = 0; i < 5; i++) {
+            var n = _squadsAttackPick[i];
+            if (n) {
+                var portrait = (typeof getCharPortrait === 'function') ? getCharPortrait(n) : '';
+                html += '<div style="position:relative;width:56px;height:56px;">' +
+                    '<img src="' + portrait + '" style="width:56px;height:56px;border-radius:8px;object-fit:cover;border:2px solid #ff6644;" referrerpolicy="no-referrer">' +
+                    '<button onclick="window._squadsAttackRemove(' + i + ')" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;background:#ff3366;border:none;border-radius:50%;color:#fff;font-size:.6rem;cursor:pointer;">✕</button>' +
+                    '</div>';
+            } else {
+                html += '<div style="width:56px;height:56px;border-radius:8px;border:2px dashed rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;color:#555;">+</div>';
+            }
+        }
+        html += '</div>';
+
+        html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:8px;max-height:400px;overflow-y:auto;">';
+        Object.keys(characterData).forEach(function (name) {
+            var cd = characterData[name];
+            if (!cd || !cd.abilities) return;
+            var isBlocked = blocked.has(name) || picked.has(name);
+            var portrait = (typeof getCharPortrait === 'function') ? getCharPortrait(name) : '';
+            html += '<div class="squads-atk-card" data-name="' + name.replace(/"/g, '&quot;') + '" style="position:relative;border-radius:8px;overflow:hidden;cursor:' + (isBlocked ? 'not-allowed' : 'pointer') + ';opacity:' + (isBlocked ? '0.3' : '1') + ';border:2px solid rgba(255,255,255,0.12);">' +
+                '<img src="' + portrait + '" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;" referrerpolicy="no-referrer">' +
+                '<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.8);padding:2px 3px;font-size:.52rem;color:#ccc;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + name.split(' ')[0] + '</div>' +
+                '</div>';
+        });
+        html += '</div>';
+
+        html += '<button id="squadsConfirmAttackBtn" ' + (filledCount === 5 ? '' : 'disabled') + ' style="width:100%;margin-top:14px;padding:12px;background:' + (filledCount === 5 ? 'linear-gradient(135deg,#3a0000,#7a1a00)' : 'rgba(255,255,255,0.03)') + ';border:2px solid ' + (filledCount === 5 ? '#ff6644' : 'rgba(255,255,255,0.1)') + ';color:' + (filledCount === 5 ? '#fff' : '#555') + ';border-radius:12px;font-family:Orbitron,sans-serif;font-weight:900;font-size:.85rem;cursor:' + (filledCount === 5 ? 'pointer' : 'default') + ';">⚔️ CONFIRMAR ATAQUE</button>';
+
+        card.innerHTML = html;
+        card.querySelectorAll('.squads-atk-card').forEach(function (el) {
+            var name = el.getAttribute('data-name');
+            if (blocked.has(name) || picked.has(name)) return;
+            el.onclick = function () {
+                var slot = _squadsAttackPick.indexOf(null);
+                if (slot === -1) return;
+                _squadsAttackPick[slot] = name;
+                _squadsRedrawAttackTeamCard();
+            };
+        });
+        if (filledCount === 5) {
+            document.getElementById('squadsConfirmAttackBtn').onclick = window.squadsConfirmAttack;
+        }
+    }
+
+    window._squadsAttackRemove = function (idx) {
+        _squadsAttackPick[idx] = null;
+        _squadsRedrawAttackTeamCard();
+    };
+
+    // ── Lanzar la batalla real (reutiliza el motor de Ranked vs equipo de defensa) ──
+    window.squadsConfirmAttack = async function () {
+        if (!_squadsAttackTargetDefKey || !_squadsLastRoom || !currentUser) return;
+        var attackTeam = _squadsAttackPick.filter(Boolean);
+        if (attackTeam.length !== 5) return;
+
+        var defKey = _squadsAttackTargetDefKey;
+        var parts = defKey.split('_'); var defSlot = parts.pop(); var defOwnerUid = parts.join('_');
+        var defs = _squadsMyDefenses(_squadsLastRoom, defOwnerUid)[defSlot] || [];
+        var defenseTeam = defs.filter(Boolean);
+        if (defenseTeam.length !== 5) { alert('Esa defensa todavía no está completa (5/5) — no se puede atacar todavía.'); return; }
+
+        var ownerName = (_squadsLastRoom.players[defOwnerUid] || {}).name || 'Rival';
+
+        // Cerrar modales de UI antes de lanzar la batalla
+        var m1 = document.getElementById('squadsAttackTeamModal'); if (m1) m1.remove();
+        var m2 = document.getElementById('squadsRoomModal'); if (m2) m2.remove();
+        _squadsStopRoomListener();
+
+        window._rankedDefenseOwnerUid = defOwnerUid;
+        window._opponentUid = defOwnerUid;
+        if (typeof _launchRankedVsIAWithTeam === 'function') {
+            _launchRankedVsIAWithTeam(attackTeam, defenseTeam, '👥 ' + ownerName + ' (SQUADS)');
+        }
+        // Sobreescribir el modo justo después: SQUADS no debe guardar puntos de Ranked
+        window._rankedMode = false;
+        window._squadsMode = true;
+        window._squadsActiveRoomId = _squadsCurrentRoomId;
+        window._squadsActiveDefKey = defKey;
+
+        _squadsAttackPick = null;
+        _squadsAttackTargetDefKey = null;
+    };
+
+    // ── Se llama desde showGameOver() (skills.js) al terminar la batalla ──
+    window._squadsFinalizeAttack = async function (playerChars, opponentChars) {
+        var roomId = window._squadsActiveRoomId;
+        var defKey = window._squadsActiveDefKey;
+        if (!roomId || !defKey || !currentUser) return;
+        var myUid = currentUser.uid;
+        var chars = gameState.characters || {};
+        function baseName(n) { return n.replace(/ v\d+$/, ''); }
+
+        var deadDefenders = opponentChars.filter(function (n) { var c = chars[n]; return c && (c.isDead || c.hp <= 0); }).map(baseName);
+        var deadAttackers = playerChars.filter(function (n) { var c = chars[n]; return c && (c.isDead || c.hp <= 0); }).map(baseName);
+
+        var result = { fragmentsGained: 0, fragmentsLost: 0 };
+
+        await db.ref('squads_rooms/' + roomId).transaction(function (room) {
+            if (!room) return room;
+            var myTeam = (room.teams.haunters || []).indexOf(myUid) !== -1 ? 'haunters' : 'reapers';
+            var enemyTeam = myTeam === 'haunters' ? 'reapers' : 'haunters';
+
+            room.fragmentsClaimed = room.fragmentsClaimed || {};
+            room.fragmentsClaimed[defKey] = room.fragmentsClaimed[defKey] || {};
+            room.deadChars = room.deadChars || {};
+            room.deadChars[myUid] = room.deadChars[myUid] || {};
+            room.revealed = room.revealed || {};
+            room.soulFragments = room.soulFragments || { haunters: 0, reapers: 0 };
+            room.attacksUsed = room.attacksUsed || {};
+            room.attacksUsed[myUid] = room.attacksUsed[myUid] || { day2: 0, day3: 0 };
+
+            var gainedNow = 0;
+            deadDefenders.forEach(function (bn) {
+                if (!room.fragmentsClaimed[defKey][bn]) {
+                    room.fragmentsClaimed[defKey][bn] = true;
+                    gainedNow++;
+                }
+            });
+            var lostNow = 0;
+            deadAttackers.forEach(function (bn) {
+                room.deadChars[myUid][bn] = true;
+                lostNow++;
+            });
+
+            room.revealed[defKey] = true;
+            var dayKey = window._squadsPhaseFor(room.eventStartAt) === 'attacking_day2' ? 'day2' : 'day3';
+            room.attacksUsed[myUid][dayKey] = (room.attacksUsed[myUid][dayKey] || 0) + 1;
+
+            room.soulFragments[myTeam] = (room.soulFragments[myTeam] || 0) + gainedNow;
+            room.soulFragments[enemyTeam] = (room.soulFragments[enemyTeam] || 0) + lostNow;
+
+            result.fragmentsGained = gainedNow;
+            result.fragmentsLost = lostNow;
+            return room;
+        });
+
+        window._squadsMode = false;
+        window._squadsActiveRoomId = null;
+        window._squadsActiveDefKey = null;
+
+        setTimeout(function () {
+            var t = document.createElement('div');
+            t.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#1a0000,#4a1400);color:#fff;padding:14px 24px;border-radius:12px;font-family:Orbitron,sans-serif;font-size:.8rem;font-weight:700;z-index:2147483647;box-shadow:0 0 30px rgba(255,102,68,0.5);text-align:center;';
+            t.innerHTML = '💠 Fragmentos ganados: <b style="color:#00ff88;">+' + result.fragmentsGained + '</b> · Fragmentos perdidos: <b style="color:#ff3366;">-' + result.fragmentsLost + '</b>';
+            document.body.appendChild(t);
+            setTimeout(function () { t.remove(); }, 5000);
+        }, 1500);
     };
 
 })();
