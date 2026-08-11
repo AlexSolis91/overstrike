@@ -3398,6 +3398,24 @@
                     }
                 }
 
+                // ── REY DE LA MUERTE (Lich King): fin de ronda → 50% de probabilidad (por cada
+                //    enemigo individualmente) de aplicar Congelación; de ese 50%, 20% de que sea
+                //    Megacongelación en su lugar ──
+                for (const _lkEorN in gameState.characters) {
+                    const _lkEorC = gameState.characters[_lkEorN];
+                    if (!_lkEorC || _lkEorC.isDead || !_lkEorC.passive || _lkEorC.passive.name !== 'Rey de la Muerte') continue;
+                    const _lkEorET = _lkEorC.team === 'team1' ? 'team2' : 'team1';
+                    Object.keys(gameState.characters).forEach(function(en) {
+                        const _ec = gameState.characters[en];
+                        if (!_ec || _ec.team !== _lkEorET || _ec.isDead || _ec.hp <= 0) return;
+                        if (Math.random() < 0.50 && typeof applyFreeze === 'function') {
+                            const _isMega = Math.random() < 0.20;
+                            applyFreeze(en, 1, _isMega);
+                            addLog('❄️ Rey de la Muerte: ' + (_isMega ? 'Megacongelación' : 'Congelación') + ' aplicada a ' + en + ' (fin de ronda, 50%)', 'debuff');
+                        }
+                    });
+                }
+
                 // ── MORDEDURA (Cría de Dragón): fin de ronda → aplica debuff aleatorio a enemigo aleatorio ──
                 for (const _criaSumId in gameState.summons) {
                     const _criaS = gameState.summons[_criaSumId];
