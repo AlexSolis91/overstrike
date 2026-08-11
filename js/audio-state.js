@@ -256,7 +256,7 @@
                 name: 'Sindragosa',
                 hp: 30, maxHp: 30, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.postimg.cc/T1G26Gxf/Captura_de_pantalla_2026_03_15_003004.png',
-                passive: 'Dragon de la Muerte: 50% de probabilidad de aplicar debuff Megacongelacion en cada enemigo. Cada vez que Lich King recibe daño, inflige 5 daño al atacante.'
+                passive: 'Dragon de la Muerte: Al inicio de cada ronda, 50% de probabilidad de aplicar debuff Megacongelación en cada enemigo. Cada vez que Lich King recibe daño, inflige 5 daño al atacante.'
             },
             'Banshee': {
                 name: 'Banshee',
@@ -274,7 +274,7 @@
                 name: 'Necrofago',
                 hp: 8, maxHp: 8, summoner: null, team: null, statusEffects: [],
                 img: 'https://i.ibb.co/Z6RVycY6/Whats-App-Image-2026-04-16-at-12-09-37-PM.jpg',
-                passive: 'Castigo de la Muerte: Inflige 3 HP a un enemigo aleatorio. 50% de probabilidad de aplicar debuff Aturdimiento.'
+                passive: 'Castigo de la Muerte: Al final de cada ronda, inflige 3 de daño y aplica debuff Aturdimiento a un enemigo aleatorio.'
             },
             'Caballero de la Muerte': {
                 name: 'Caballero de la Muerte',
