@@ -30,8 +30,8 @@
             'B':   ['Alto Orco', 'Orco Gigante'],
             'A':   ['Orco de Elite', 'Orco Arcano'],
             'S':   ['General de la Horda'],
-            'SS':  ['Warmaster'],
-            'SSS': ['Orco Titan']
+            'SS':  ['Warmaster', 'Orco Titan', 'Huargos'],
+            'SSS': ['Kargalgan']
         };
 
         // ══════════════════════════════════════════════════════════════════
@@ -121,7 +121,7 @@
                 ]
             },
             'Orco Titan': {
-                name: 'Orco Titan', rank: 'SSS', hp: 40, maxHp: 40, speed: 84,
+                name: 'Orco Titan', rank: 'SS', hp: 40, maxHp: 40, speed: 84,
                 portrait: 'https://i.ibb.co/84cdjjz2/image-d4718b71.png',
                 passive: { name: 'Fuerza descomunal', description: 'Al final de cada ronda incrementa +2 el daño de ataque básico de todos los aliados. La primera vez por ronda que recibe daño, se aplica Buff Mega Provocación 1 turno y Armadura 1 turno. Los movimientos AOE enemigos causan 50% menos daño mientras esté en batalla.' },
                 abilities: [
@@ -130,41 +130,78 @@
                     { name: 'Furia de Titanes', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'multi', effect: 'horda_titan_special2', description: 'Golpea 1 vez a cada enemigo por cada debuff activo que tenga, con Impacto Colosal.' },
                     { name: 'Devastacion planetaria', type: 'over', cost: 8, chargeGain: 0, damage: 0, target: 'aoe', effect: 'horda_titan_over', description: 'AOE entre 5 y 20 de daño base. Causa entre un 10% y 50% de daño adicional sobre el HP actual de cada enemigo golpeado.' }
                 ]
+            },
+            'Huargos': {
+                name: 'Huargos', rank: 'SS', hp: 25, maxHp: 25, speed: 97,
+                portrait: 'https://i.ibb.co/1G2PqQp9/image-1723868f.png',
+                passive: { name: 'Destreza de los Huargos', description: 'Al inicio de la ronda su velocidad se incrementa en la misma cantidad de la velocidad del enemigo con mayor velocidad. Al morir elimina todos los buffs activos del equipo enemigo. Todos sus ataques ignoran buff Escudo.' },
+                abilities: [
+                    { name: 'Rabia del Huargo', type: 'basic', cost: 0, chargeGain: 2, damage: 5, target: 'single', effect: 'horda_huargos_basic', description: 'Cada vez que se realiza este movimiento duplica el daño causado en el enemigo. Aplica debuff Debilitar 2 turnos en el objetivo.' },
+                    { name: 'Ojos del Terror', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'self', effect: 'horda_huargos_special1', description: 'Duplica el HP actual de todos los aliados. Incrementa un 50% la velocidad de todos los aliados.' },
+                    { name: 'Hacha Oscura del Verdugo', type: 'special', cost: 10, chargeGain: 0, damage: 5, target: 'multi', effect: 'horda_huargos_special2', description: 'Golpea de 2 a 5 veces sobre objetivos aleatorios. Cada golpe tiene 20% de probabilidad de causar daño adicional equivalente al 50% del HP actual del objetivo.' },
+                    { name: 'Aullido de la Horda', type: 'over', cost: 10, chargeGain: 0, damage: 5, target: 'aoe', effect: 'horda_huargos_over', description: 'Causa 1 de daño adicional a un enemigo aleatorio por cada 2 puntos de HP Escudo que esté activo en el equipo enemigo. Si el enemigo tiene más de 100 HP este ataque tiene un 10% de probabilidad de eliminarlo.' }
+                ]
+            },
+            'Kargalgan': {
+                name: 'Kargalgan', rank: 'SSS', hp: 40, maxHp: 40, speed: 100,
+                portrait: 'https://i.ibb.co/QBHP63n/image-e5e3c9ab.png',
+                passive: { name: 'Himno de la Horda', description: 'Al final de cada Ronda revive a un aliado con 100% de HP y 20 cargas. Kargalgan no puede ser revivido. Cada vez que un enemigo ejecuta un Over Kargalgan ejecuta su Over. Cada vez que un enemigo ejecuta un ataque especial aplica (sobre un enemigo aleatorio) debuff quemaduras de HP equivalente al 10% del HP total de todos los HP actuales de los personajes vivos del equipo enemigo.' },
+                abilities: [
+                    { name: 'Himno de Proteccion', type: 'basic', cost: 0, chargeGain: 3, damage: 0, target: 'self', effect: 'horda_kargalgan_basic', description: 'Incrementa un 20% los HP Máximos y actuales de todos los aliados y aplica un Escudo con HP equivalente al HP actual de Kargalgan en todos los aliados.' },
+                    { name: 'Himno de los Gigantes', type: 'special', cost: 3, chargeGain: 0, damage: 0, target: 'self', effect: 'horda_kargalgan_special1', description: 'Incrementa en +5 el daño base de todos los ataques (básico, especial y over) del equipo aliado. El equipo aliado genera 5 cargas.' },
+                    { name: 'Himno de Hielo', type: 'special', cost: 5, chargeGain: 0, damage: 5, target: 'single', effect: 'horda_kargalgan_special2', description: 'Aplica debuff Megacongelación sobre el objetivo y Congelación sobre dos enemigos aleatorios. Si el objetivo ya tenía Megacongelación, lo elimina. Si ya tenía Congelación, 50% de probabilidad de eliminarlo. Si ya tenía Quemaduras, roba 50% de su HP actual.' },
+                    { name: 'Himno del Dragón de Fuego', type: 'over', cost: 15, chargeGain: 0, damage: 100, target: 'aoe', effect: 'horda_kargalgan_over', description: 'Si el enemigo golpeado sobrevive, reduce 50% su HP Máx y actual. 50% de probabilidad de daño triple en enemigos con debuffs activos.' }
+                ]
             }
         };
         if (typeof window !== 'undefined') window.HORDA_CHARACTER_DATA = HORDA_CHARACTER_DATA;
 
-        // Curvas de progresión de rango (ver documentación arriba). Devuelve un
-        // número decimal donde la parte entera es el rango garantizado y la
-        // parte fraccionaria es la probabilidad de estar UN rango más arriba.
-        function _hordaRankFloat(wave, startWave, maxWave) {
-            if (wave < startWave) return 0;
-            if (wave >= maxWave) return HORDA_RANKS.length - 1;
-            const span = maxWave - startWave; // oleadas entre el primer indicio y el máximo
-            // En startWave arranca en 0.5 (50% de probabilidad del primer rango superior),
-            // sube linealmente hasta tocar el rango máximo exactamente en maxWave.
-            return 0.5 + (wave - startWave) * ((HORDA_RANKS.length - 1) - 0.5) / span;
+        // ══════════════════════════════════════════════════════════════════
+        // CURVA DE PROBABILIDAD DE RANGO (por oleada)
+        // Cada rango normal (C/B/A/S/SS) tiene una oleada de "apertura" (gate,
+        // antes de eso 0% de probabilidad), sube suave tras abrirse, y decae
+        // suave una vez que el SIGUIENTE rango empieza a tomar protagonismo —
+        // pero nunca llega exactamente a 0% (residual). SS es el techo natural
+        // del pool normal: no decae, crece sin límite conforme avanzan las
+        // oleadas (se vuelve casi garantizado a oleadas muy altas).
+        //
+        // SSS (Kargalgan) NO forma parte de este pool ponderado: es un "jefe"
+        // aparte, ver hordaGenerateWaveEnemies — solo puede haber 1 por oleada,
+        // con 25% de probabilidad, y solo a partir de la oleada 41.
+        // ══════════════════════════════════════════════════════════════════
+        const HORDA_NORMAL_RANKS = ['C', 'B', 'A', 'S', 'SS'];
+        const HORDA_RANK_CURVE = {
+            'C':  { gate: 1,  peak: 1,   rise: 1, decay: 9    },
+            'B':  { gate: 2,  peak: 10,  rise: 6, decay: 9    },
+            'A':  { gate: 11, peak: 20,  rise: 6, decay: 9    },
+            'S':  { gate: 21, peak: 30,  rise: 6, decay: 9    },
+            'SS': { gate: 31, peak: 9999, rise: 6, decay: 9999 } // nunca decae — techo natural
+        };
+
+        function _hordaRankWeight(rankKey, wave) {
+            const c = HORDA_RANK_CURVE[rankKey];
+            if (!c || wave < c.gate) return 0;
+            let up;
+            if (rankKey === 'C' && wave === c.gate) up = 1.0;
+            else up = 1 - Math.exp(-(wave - c.gate) / c.rise);
+            const down = Math.exp(-Math.max(0, wave - c.peak) / c.decay);
+            return Math.max(up, 0.02) * down; // mínimo 2% de "piso" tras abrirse (nunca 0% exacto)
         }
 
-        const HORDA_VANGUARD_START_WAVE = 3;
-        const HORDA_VANGUARD_MAX_WAVE   = 20;
-        const HORDA_SQUAD_START_WAVE    = 10;
-        const HORDA_SQUAD_MAX_WAVE      = 50;
-
-        function hordaGetRankIndexForWave(wave, isVanguard) {
-            const f = isVanguard
-                ? _hordaRankFloat(wave, HORDA_VANGUARD_START_WAVE, HORDA_VANGUARD_MAX_WAVE)
-                : _hordaRankFloat(wave, HORDA_SQUAD_START_WAVE, HORDA_SQUAD_MAX_WAVE);
-            const floor = Math.min(HORDA_RANKS.length - 1, Math.max(0, Math.floor(f)));
-            const frac = f - floor;
-            // A partir de oleada 50, todo queda garantizado al máximo.
-            if (wave >= 50) return HORDA_RANKS.length - 1;
-            if (frac > 0 && Math.random() < frac && floor < HORDA_RANKS.length - 1) return floor + 1;
-            return floor;
-        }
-
+        // Elige un rango NORMAL (C a SS) para una oleada dada, según la curva de arriba.
+        // El parámetro isVanguard se conserva por compatibilidad con quien llame a esta
+        // función, pero ya no diferencia velocidad de subida — la curva es la misma para
+        // los 5 orcos de la oleada (así lo especificó el diseño de esta actualización).
         function hordaGetRankForWave(wave, isVanguard) {
-            return HORDA_RANKS[hordaGetRankIndexForWave(wave, isVanguard)];
+            const weights = HORDA_NORMAL_RANKS.map(function (r) { return { rank: r, w: _hordaRankWeight(r, wave) }; });
+            const total = weights.reduce(function (s, x) { return s + x.w; }, 0);
+            if (total <= 0) return 'C';
+            let roll = Math.random() * total;
+            for (let i = 0; i < weights.length; i++) {
+                roll -= weights[i].w;
+                if (roll <= 0) return weights[i].rank;
+            }
+            return weights[weights.length - 1].rank;
         }
 
         // Elige un tipo de orco concreto (nombre de personaje) para un rango dado.
@@ -289,11 +326,20 @@
         // ── FUNCIÓN PRINCIPAL: genera los 5 orcos de una oleada ──
         // Devuelve: [{ rank, orcType, relics: {slotKey: relicName, ...} }, ...5]
         // El índice 0 siempre es el orco "Vanguardia".
+        //
+        // REGLA SSS (Kargalgan): a partir de la oleada 41, cada oleada tiene 25% de
+        // probabilidad de que EXACTAMENTE UNO de los 5 orcos (elegido al azar) sea SSS
+        // en vez de su rango normal — nunca puede haber más de 1 SSS por oleada, y nunca
+        // aparece antes de la oleada 41 ("después de la oleada 40").
         function hordaGenerateWaveEnemies(wave) {
             const enemies = [];
+            let sssSlot = -1;
+            if (wave >= 41 && Math.random() < 0.25) {
+                sssSlot = Math.floor(Math.random() * 5);
+            }
             for (let i = 0; i < 5; i++) {
                 const isVanguard = (i === 0);
-                const rank = hordaGetRankForWave(wave, isVanguard);
+                const rank = (i === sssSlot) ? 'SSS' : hordaGetRankForWave(wave, isVanguard);
                 enemies.push({
                     rank: rank,
                     orcType: hordaPickOrcType(rank),
