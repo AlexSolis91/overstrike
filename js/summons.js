@@ -2425,12 +2425,11 @@
                                     if (_atkChar) _atkChar.charges = Math.min(20, (_atkChar.charges||0) + _frostSteal);
                                     addLog('❄️ Frostmourne: robadas ' + _frostSteal + ' cargas de ' + targetName, 'buff');
                                 }
-                                // Revivir como aliado si el objetivo muere — EXCEPTO en Modo Horda: los
-                                // enemigos ahí son Orcos de plantilla (sin set de habilidades ni estructura
-                                // de personaje jugable), así que "revivirlos como aliado" corrompía el
-                                // estado justo cuando la oleada intentaba cerrarse, dejando el juego
-                                // trabado con la Horda ya sin personajes vivos pero sin avanzar de oleada.
-                                if ((_tgtChar.hp <= 0 || _tgtChar.isDead) && gameState.gameMode !== 'horda') {
+                                // Revivir como aliado si el objetivo muere — incluido Modo Horda: los Orcos
+                                // conservan su bandera `isHordaOrc`, así que `startTurn()` los sigue
+                                // reconociendo y los hace jugar su turno vía IA de Orcos aunque ahora estén
+                                // en el equipo del jugador (ver startTurn en turn-logic.js).
+                                if (_tgtChar.hp <= 0 || _tgtChar.isDead) {
                                     // Capturar el equipo del atacante Y el equipo original de la víctima AHORA
                                     // (de forma síncrona), no dentro del setTimeout — en una partida online
                                     // cada cliente sincroniza su propia copia del estado, y para cuando el
@@ -2456,6 +2455,12 @@
                                         addLog('❄️ Frostmourne: ' + targetName + ' revive como aliado con 100% HP y 20 cargas!', 'buff');
                                         if (typeof renderCharacters === 'function') renderCharacters();
                                         if (typeof pushGameState === 'function' && typeof onlineMode !== 'undefined' && onlineMode) pushGameState();
+                                        // SALVAGUARDA (Modo Horda): esta revivificación es asíncrona (400ms de
+                                        // retraso) — si en ese lapso checkGameOver() ya había cerrado la oleada
+                                        // (porque en el momento del AOE el equipo enemigo ya estaba en 0), no
+                                        // reabrir nada; y si por alguna razón el estado quedó inconsistente,
+                                        // este re-chequeo garantiza que la oleada nunca se quede trabada.
+                                        if (gameState.gameMode === 'horda' && typeof checkGameOver === 'function') checkGameOver();
                                     }, 400);
                                 }
                             }
