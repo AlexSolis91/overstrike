@@ -1963,6 +1963,11 @@
                     gameState.turnsInRound = 0;
                     gameState._aguijonUsedThisRound = false; // Aguijón Esmeralda: resetear para la próxima ronda
 
+                    // Reset Aura de Latveria (Doctor Doom): la Protección Sagrada por debuff es 1x por ronda REAL
+                    // (a diferencia del reset de Arco del Kitan de arriba, este vive en el punto real de cambio
+                    // de ronda, no en cada fin de turno, para que el límite sea genuinamente "una vez por ronda")
+                    for (const _dlN in gameState.characters) { const _dlC = gameState.characters[_dlN]; if (_dlC) _dlC._auraLatveriaUsedThisRound = false; }
+
                     // Reset Seiya per-round HP tracking
                     for (const _sn in gameState.characters) {
                         const _sc = gameState.characters[_sn];
