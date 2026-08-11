@@ -195,6 +195,12 @@
 
         // Datos de invocaciones
         const summonData = {
+            'Clon de Kurumi': {
+                name: 'Clon de Kurumi',
+                hp: 20, maxHp: 20, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.ibb.co/spQG6Ryv/Whats-App-Image-2026-07-24-at-4-36-52-PM.jpg',
+                passive: 'Sombra Protectora: absorbe todo el daño que fuera a recibir su invocador. Al morir, causa 8 daño repartido entre todos los enemigos.'
+            },
             'Igris': {
                 name: 'Igris',
                 hp: 5, maxHp: 5, summoner: null, team: null, statusEffects: [],
