@@ -2899,6 +2899,21 @@
                         break;
                     }
 
+                    // ── SINDRAGOSA (Dragon de la Muerte): inicio de ronda → 50% de probabilidad
+                    //    POR ENEMIGO (tirada independiente para cada uno) de aplicar Megacongelación ──
+                    const _sindragosaSummon = Object.values(gameState.summons).find(function(s){ return s && s.name === 'Sindragosa' && s.hp > 0; });
+                    if (_sindragosaSummon) {
+                        const _sindETeam = _sindragosaSummon.team === 'team1' ? 'team2' : 'team1';
+                        Object.keys(gameState.characters).forEach(function(n) {
+                            const _c = gameState.characters[n];
+                            if (!_c || _c.isDead || _c.hp <= 0 || _c.team !== _sindETeam) return;
+                            if (Math.random() < 0.50 && typeof applyDebuff === 'function') {
+                                applyDebuff(n, { name: 'Megacongelacion', type: 'debuff', duration: 2, emoji: '🧊❄️' });
+                                addLog('🐉 Dragon de la Muerte: Sindragosa aplica Megacongelación a ' + n + ' (50%)', 'debuff');
+                            }
+                        });
+                    }
+
                     // ── VALKYR (Sirviente de la Muerte): inicio de ronda → +10 velocidad al equipo aliado ──
                     const _valkyr = Object.values(gameState.summons).find(function(s){ return s && s.name === 'Valkyr' && s.hp > 0; });
                     if (_valkyr) {
@@ -4173,10 +4188,8 @@
                         const _necTarget = _necTargets[Math.floor(Math.random() * _necTargets.length)];
                         applyDamageWithShield(_necTarget, 3, null);
                         addLog('💀 Necrofago (Castigo de la Muerte): 3 daño a ' + _necTarget, 'damage');
-                        if (Math.random() < 0.50) {
-                            if (typeof applyStun === 'function') applyStun(_necTarget, 1);
-                            addLog('💀 Necrofago: Aturdimiento 1T a ' + _necTarget + ' (50%)', 'debuff');
-                        }
+                        if (typeof applyStun === 'function') applyStun(_necTarget, 1);
+                        addLog('💀 Necrofago: Aturdimiento 1T a ' + _necTarget, 'debuff');
                     }
                 }
                 // ── CABALLERO DE LA MUERTE (Espada de Ébano): fin de ronda — 4 cargas al equipo aliado (en inicio de ronda abajo) ──
