@@ -872,14 +872,15 @@ function applyDebuff(targetName, effectObj) {
                 }
             }
 
-            // ── AURA DE LATVERIA (Doctor Doom): al recibir debuff → Protección Sagrada + disipa debuffs aliados + 3 cargas por debuff ──
+            // ── AURA DE LATVERIA (Doctor Doom): al recibir debuff (1x por ronda) → Protección Sagrada + disipa debuffs aliados ──
             if (!passiveExecuting && effectObj && effectObj.type === 'debuff' && !effectObj.passiveHidden) {
                 const _doomDbChar = gameState.characters[targetName];
-                if (_doomDbChar && _doomDbChar.passive && _doomDbChar.passive.name === 'Aura de Latveria') {
+                if (_doomDbChar && _doomDbChar.passive && _doomDbChar.passive.name === 'Aura de Latveria' && !_doomDbChar._auraLatveriaUsedThisRound) {
                     passiveExecuting = true;
+                    _doomDbChar._auraLatveriaUsedThisRound = true;
                     // Apply Protección Sagrada to Doctor Doom
                     applyDebuff(targetName, { name: 'Proteccion Sagrada', type: 'buff', duration: 2, emoji: '🛡️✨' });
-                    // Cleanse all debuffs from allied team and count them
+                    // Cleanse all debuffs from allied team
                     let _doomDisipados = 0;
                     for (const _aln in gameState.characters) {
                         const _alc = gameState.characters[_aln];
@@ -890,12 +891,10 @@ function applyDebuff(targetName, effectObj) {
                             _doomDisipados += _debuffsBefore;
                         }
                     }
-                    // +3 cargas por debuff disipado
                     if (_doomDisipados > 0) {
-                        _doomDbChar.charges = Math.min(20, (_doomDbChar.charges||0) + _doomDisipados * 3);
-                        addLog('🌩️ Aura de Latveria: Doctor Doom disipa ' + _doomDisipados + ' debuff(s) aliados y genera ' + (_doomDisipados*3) + ' cargas', 'buff');
+                        addLog('🌩️ Aura de Latveria: Doctor Doom disipa ' + _doomDisipados + ' debuff(s) aliados (1 vez por ronda)', 'buff');
                     }
-                    addLog('🌩️ Aura de Latveria: Doctor Doom recibe Protección Sagrada (recibió debuff)', 'buff');
+                    addLog('🌩️ Aura de Latveria: Doctor Doom recibe Protección Sagrada (recibió debuff, 1 vez por ronda)', 'buff');
                     passiveExecuting = false;
                 }
             }
