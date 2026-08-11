@@ -10931,10 +10931,10 @@
                         _dkProvDmg = _dealt;
                         _dkProvName = _n;
                     }
-                    // 80% prob +1 HP MAX (tope: 60 HP máximo total)
-                    if (Math.random() < 0.80 && _dkAtk && (_dkAtk.maxHp||0) < 60) {
-                        _dkAtk.maxHp = Math.min(60, (_dkAtk.maxHp||0) + 1);
-                        addLog('💪 Guantelete de Plasma: Doctor Doom +1 HP MAX (' + _dkAtk.maxHp + '/60)', 'buff');
+                    // 50% prob +1 HP MAX (sin tope)
+                    if (Math.random() < 0.50 && _dkAtk) {
+                        _dkAtk.maxHp = (_dkAtk.maxHp||0) + 1;
+                        addLog('💪 Guantelete de Plasma: Doctor Doom +1 HP MAX (' + _dkAtk.maxHp + ')', 'buff');
                     }
                 }
                 // Second pass: if Provocación hit, deal bonus damage to all OTHER enemies
@@ -10950,31 +10950,12 @@
                 addLog('⚡ Guantelete de Plasma: ' + finalDamage + ' daño AOE', 'damage');
 
             } else if (ability.effect === 'doom_force_field') {
-                // CAMPO DE FUERZA DEL TIRANO: Mega Provocación + Armadura 3T en Doom
-                // +1 carga al equipo aliado por cada buff activo en equipo enemigo
-                const _ffAtk   = gameState.characters[gameState.selectedCharacter];
-                const _ffTeam  = _ffAtk ? _ffAtk.team : 'team1';
-                const _ffETeam = _ffTeam === 'team1' ? 'team2' : 'team1';
+                // ESCUDO MOLECULAR: Doctor Doom se aplica buff Escudo Sagrado 2 turnos y gana 1 turno adicional
                 if (typeof applyBuff === 'function') {
-                    applyBuff(gameState.selectedCharacter, { name: 'Mega Provocacion', type: 'buff', duration: 3, emoji: '🛡️' });
-                    applyBuff(gameState.selectedCharacter, { name: 'Armadura', type: 'buff', duration: 3, emoji: '🪖' });
+                    applyBuff(gameState.selectedCharacter, { name: 'Escudo Sagrado', type: 'buff', duration: 2, emoji: '🔰✨' });
                 }
-                addLog('🛡️ Campo de Fuerza del Tirano: Doctor Doom activa Mega Provocación + Armadura (3 turnos)', 'buff');
-                // Count buffs in enemy team
-                let _ffBuffCount = 0;
-                for (const _n in gameState.characters) {
-                    const _c = gameState.characters[_n];
-                    if (!_c || _c.team !== _ffETeam || _c.isDead || _c.hp <= 0) continue;
-                    _ffBuffCount += (_c.statusEffects||[]).filter(function(e){ return e && e.type === 'buff' && !e.passiveHidden; }).length;
-                }
-                if (_ffBuffCount > 0) {
-                    for (const _n in gameState.characters) {
-                        const _c = gameState.characters[_n];
-                        if (!_c || _c.team !== _ffTeam || _c.isDead || _c.hp <= 0) continue;
-                        _c.charges = Math.min(20, (_c.charges||0) + _ffBuffCount);
-                    }
-                    addLog('⚡ Campo de Fuerza del Tirano: equipo aliado +' + _ffBuffCount + ' cargas (' + _ffBuffCount + ' buffs en equipo enemigo)', 'buff');
-                }
+                gameState._skeggoxExtraTurn = gameState.selectedCharacter;
+                addLog('🔰 Escudo Molecular: Doctor Doom activa Escudo Sagrado (2 turnos) y gana 1 turno adicional', 'buff');
 
             } else if (ability.effect === 'doom_bloodline') {
                 // MAGIA DE LA LÍNEA DE SANGRE: AOE 2 daño + roba HP escalado por rareza de reliquia
@@ -11011,24 +10992,28 @@
 
             } else if (ability.effect === 'doom_god_emperor') {
                 // DIOS EMPERADOR DOOM: ST 10 daño + equipo aliado recupera 100% HP
-                // Por cada HP recuperado, 1 daño a enemigo aleatorio
+                // DIOS EMPERADOR DOOM: ST 10 daño + reparte 50 HP al azar entre aliados vivos
+                // (1 HP a la vez a un aliado elegido al azar entre los que aún tengan HP
+                // faltante, así nunca se desperdicia por sobre-curación). Por cada punto de
+                // HP EFECTIVAMENTE curado, causa 1 daño a un enemigo aleatorio.
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 addLog('👑 Dios Emperador Doom: ' + finalDamage + ' daño a ' + targetName, 'damage');
                 const _deAtk   = gameState.characters[gameState.selectedCharacter];
                 const _deTeam  = _deAtk ? _deAtk.team : 'team1';
                 const _deETeam = _deTeam === 'team1' ? 'team2' : 'team1';
                 let _deTotalHeal = 0;
-                for (const _n in gameState.characters) {
-                    const _c = gameState.characters[_n];
-                    if (!_c || _c.team !== _deTeam || _c.isDead || _c.hp <= 0) continue;
-                    const _missing = (_c.maxHp||0) - (_c.hp||0);
-                    if (_missing > 0) {
-                        if (typeof applyHeal === 'function') applyHeal(_n, _missing, 'Dios Emperador Doom');
-                        _deTotalHeal += _missing;
-                    }
+                for (let _hi = 0; _hi < 50; _hi++) {
+                    const _aliveAllies = Object.keys(gameState.characters).filter(function(_n) {
+                        const _c = gameState.characters[_n];
+                        return _c && _c.team === _deTeam && !_c.isDead && _c.hp > 0 && _c.hp < (_c.maxHp||0);
+                    });
+                    if (!_aliveAllies.length) break;
+                    const _rndAlly = _aliveAllies[Math.floor(Math.random()*_aliveAllies.length)];
+                    if (typeof applyHeal === 'function') applyHeal(_rndAlly, 1, 'Dios Emperador Doom');
+                    _deTotalHeal++;
                 }
-                addLog('👑 Dios Emperador Doom: equipo aliado restaura ' + _deTotalHeal + ' HP total', 'heal');
-                // 1 damage per HP healed to random enemies
+                addLog('👑 Dios Emperador Doom: equipo aliado restaura ' + _deTotalHeal + ' HP (repartidos al azar)', 'heal');
+                // 1 daño por cada HP efectivamente curado, a enemigos aleatorios
                 if (_deTotalHeal > 0) {
                     const _deEnemies = Object.keys(gameState.characters).filter(function(_n) {
                         const _c = gameState.characters[_n];
