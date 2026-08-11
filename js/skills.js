@@ -1749,6 +1749,10 @@
             if (ability.type === 'special' && typeof window.hordaOnEnemySpecialUsed === 'function') {
                 window.hordaOnEnemySpecialUsed(charName);
             }
+            // MODO HORDA: un enemigo ejecuta un OVER → Himno de la Horda (Kargalgan)
+            if (ability.type === 'over' && typeof window.hordaOnEnemyOverUsed === 'function') {
+                window.hordaOnEnemyOverUsed(charName);
+            }
 
             // ── MODO HORDA: delega efectos 'horda_*' al módulo dedicado (js/horda-abilities.js) ──
             if (ability.effect && ability.effect.indexOf('horda_') === 0) {
