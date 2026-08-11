@@ -1792,6 +1792,17 @@
             gameState._relicEffectsActive = false;
             gameState._isCritHit = false;
             gameState._abilityExecuting = false; // Limpiar guard de ejecución
+            // SALVAGUARDA: passiveExecuting es una bandera GLOBAL compartida por todas las
+            // pasivas del juego (declarada en summons.js) para evitar recursión entre ellas.
+            // No tenía ningún reset de seguridad — si algún camino de código la dejaba en
+            // `true` por error (una excepción o un return temprano antes de resetearla),
+            // se quedaba atorada así por el resto de la partida, bloqueando en silencio
+            // CASI TODAS las aplicaciones de debuffs/buffs (que revisan `!passiveExecuting`
+            // antes de aplicarse) — Quemadura normal era la única excepción porque su función
+            // (applyBurn) no depende de esta bandera. Forzarla a `false` en cada fin de turno
+            // garantiza que nunca quede atorada más de un turno, sin importar cuál haya sido
+            // la fuga original.
+            if (typeof passiveExecuting !== 'undefined') passiveExecuting = false;
             // Limpiar flags por turno
             gameState._vortexActive = false;
             gameState._nishanExtraTurnRolledThisTurn = false;
