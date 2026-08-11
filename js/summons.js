@@ -2220,18 +2220,11 @@
                     const _sindAtk = gameState.characters[attackerName];
                     if (_sindAtk && !_sindAtk.isDead && _sindAtk.hp > 0) {
                         passiveExecuting = true;
-                        const _sindWasAlive = _sindAtk.hp > 0;
                         _sindAtk.hp = Math.max(0, (_sindAtk.hp||0) - 5);
                         addLog('🐉 Dragon de la Muerte: Sindragosa inflige 5 daño a ' + attackerName, 'damage');
-                        if (_sindWasAlive && _sindAtk.hp <= 0) {
+                        if (_sindAtk.hp <= 0) {
                             _sindAtk.isDead = true;
-                            // Revivir como aliado de Lich King
-                            _sindAtk.isDead = false;
-                            _sindAtk.hp = Math.ceil(_sindAtk.maxHp * 0.50);
-                            _sindAtk.charges = 0;
-                            _sindAtk.statusEffects = [];
-                            _sindAtk.team = target.team;
-                            addLog('💀➡️👻 Dragon de la Muerte: ¡' + attackerName + ' revive como aliado de Lich King con ' + _sindAtk.hp + ' HP!', 'buff');
+                            if (typeof registerKill === 'function') registerKill('Sindragosa', attackerName, false);
                         }
                         passiveExecuting = false;
                     }
