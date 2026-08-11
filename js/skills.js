@@ -2841,7 +2841,7 @@
             } else if (ability.effect === 'el_rey_caido') {
                 // LICH KING - El Rey Caído: 3 invocaciones aleatorias
                 const lichPool = ['Sindragosa', 'Banshee', 'Valkyr', 'Necrofago', 'Caballero de la Muerte'];
-                const lichWeights = { 'Sindragosa': 24, 'Banshee': 24, 'Valkyr': 24, 'Necrofago': 24, 'Caballero de la Muerte': 4 };
+                const lichWeights = { 'Sindragosa': 4, 'Banshee': 24, 'Valkyr': 24, 'Necrofago': 24, 'Caballero de la Muerte': 24 };
                 const myLichSummons = getSummonsBySummoner(gameState.selectedCharacter);
                 const existingLich = new Set(myLichSummons.map(s => s.name));
                 const availableLich = lichPool.filter(n => !existingLich.has(n));
