@@ -13519,6 +13519,19 @@
                 } catch(e) { console.error('[RANKED] Error saving ranked result:', e); }
             }
 
+            // ══ SQUADS: registrar fragmentos de alma, personajes eliminados y revelar defensa ══
+            if (window._squadsMode) {
+                try {
+                    const playerTeam = window._rankedPlayerTeam || 'team1';
+                    const opponentTeam = playerTeam === 'team1' ? 'team2' : 'team1';
+                    const playerChars = Object.keys(gameState.characters || {}).filter(function(n){ const c=gameState.characters[n]; return c && c.team===playerTeam; });
+                    const opponentChars = Object.keys(gameState.characters || {}).filter(function(n){ const c=gameState.characters[n]; return c && c.team===opponentTeam; });
+                    if (typeof window._squadsFinalizeAttack === 'function') {
+                        window._squadsFinalizeAttack(playerChars, opponentChars);
+                    }
+                } catch(e) { console.error('[SQUADS] Error finalizando ataque:', e); }
+            }
+
             // Online: push game over — incluir mvpChar para que el guest pueda usarlo
             if (onlineMode && currentRoomId) {
                 var _goMvp = null;
