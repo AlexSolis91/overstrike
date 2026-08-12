@@ -26,6 +26,35 @@
             0%, 100% { box-shadow: 0 0 10px rgba(255,215,0,0.55); transform: scale(1); }
             50% { box-shadow: 0 0 22px rgba(255,215,0,0.95); transform: scale(1.05); }
         }
+        @keyframes kargalganGlow {
+            0%, 100% { box-shadow: 0 0 14px rgba(255,215,0,0.55), inset 0 0 18px rgba(255,215,0,0.12); }
+            50%      { box-shadow: 0 0 32px rgba(255,215,0,0.95), inset 0 0 28px rgba(255,215,0,0.25); }
+        }
+        @keyframes kargalganShimmer {
+            0%   { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        /* Kargalgan: Orco único de rango SSS — tarjeta dorada brillante e imponente */
+        .kargalgan-card {
+            border: 2px solid #ffd700 !important;
+            animation: kargalganGlow 1.8s ease-in-out infinite;
+            position: relative;
+            overflow: hidden;
+        }
+        .kargalgan-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, transparent 40%, rgba(255,235,150,0.35) 50%, transparent 60%);
+            background-size: 200% 100%;
+            animation: kargalganShimmer 2.6s linear infinite;
+            pointer-events: none;
+            z-index: 5;
+        }
+        .kargalgan-card .char-name-badge {
+            color: #ffd700 !important;
+            text-shadow: 0 0 8px rgba(255,215,0,0.7);
+        }
         @keyframes slideIn {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
