@@ -899,6 +899,26 @@ function applyDebuff(targetName, effectObj) {
                 }
             }
 
+            // ── POR EL PODER DE GRAYSKULL (He-Man): al recibir cualquier debuff, ejecuta
+            //    Mandoble de Eternia sobre un enemigo aleatorio — SIN límite de veces por ronda ──
+            if (!passiveExecuting && effectObj && effectObj.type === 'debuff' && !effectObj.passiveHidden) {
+                const _hemanDbChar = gameState.characters[targetName];
+                if (_hemanDbChar && _hemanDbChar.passive && _hemanDbChar.passive.name === 'Por el Poder de Grayskull' && !_hemanDbChar.isDead && _hemanDbChar.hp > 0) {
+                    passiveExecuting = true;
+                    const _hemanETeam = _hemanDbChar.team === 'team1' ? 'team2' : 'team1';
+                    const _hemanEnemies = Object.keys(gameState.characters).filter(function (n) {
+                        const c = gameState.characters[n];
+                        return c && !c.isDead && c.hp > 0 && c.team === _hemanETeam;
+                    });
+                    if (_hemanEnemies.length > 0) {
+                        const _hemanTarget = _hemanEnemies[Math.floor(Math.random() * _hemanEnemies.length)];
+                        addLog('⚡ Por el Poder de Grayskull: He-Man contraataca (recibió un debuff)', 'buff');
+                        if (typeof window._hemanMandoble === 'function') window._hemanMandoble(targetName, _hemanTarget, true);
+                    }
+                    passiveExecuting = false;
+                }
+            }
+
             // ── DAGA DE KAISEL: al recibir un debuff → aplica ese mismo debuff a un enemigo aleatorio y le quita 2 cargas ──
             if (!passiveExecuting && effectObj && effectObj.type === 'debuff' && !effectObj.passiveHidden) {
                 const _dkChar = gameState.characters[targetName];
