@@ -2925,10 +2925,20 @@
                         });
                     }
 
+                    // ── HE-MAN (Por el Poder de Grayskull): inicio de ronda → 50% de probabilidad
+                    //    de +2 daño base (acumulable) y +3 velocidad (acumulable) ──
+                    const _hemanC = gameState.characters['He-Man'];
+                    if (_hemanC && !_hemanC.isDead && _hemanC.hp > 0) {
+                        if (Math.random() < 0.50) {
+                            _hemanC._hemanDmgBonus = (_hemanC._hemanDmgBonus || 0) + 2;
+                            _hemanC.speed = (_hemanC.speed || 0) + 3;
+                            addLog('⚡ Por el Poder de Grayskull: He-Man +2 daño base (total +' + _hemanC._hemanDmgBonus + ') y +3 velocidad (' + _hemanC.speed + ' total)', 'buff');
+                        }
+                    }
+
                     // ── VALKYR (Sirviente de la Muerte): inicio de ronda → +10 velocidad al equipo aliado ──
                     const _valkyr = Object.values(gameState.summons).find(function(s){ return s && s.name === 'Valkyr' && s.hp > 0; });
-                    if (_valkyr) {
-                        const _valETeam = _valkyr.team === 'team1' ? 'team2' : 'team1';
+                    if (_valkyr) {                        const _valETeam = _valkyr.team === 'team1' ? 'team2' : 'team1';
                         const _valEnemies = Object.keys(gameState.characters).filter(function(n){
                             const _c = gameState.characters[n];
                             return _c && _c.team === _valETeam && !_c.isDead && _c.hp > 0 && (_c.charges||0) > 0;
