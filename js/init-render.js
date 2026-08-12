@@ -829,7 +829,8 @@
                 }
                 // ══ END BOSS CARD ════════════════════════════════════════════════════
 
-                const cardHTML = '<div class="character-card ' + (isDefeated ? 'defeated' : '') + ' ' + (isTransformed ? 'transformed-mode' : '') + '"' +
+                const isKargalgan = (char.baseName === 'Kargalgan' || name.indexOf('Kargalgan') === 0);
+                const cardHTML = '<div class="character-card ' + (isDefeated ? 'defeated' : '') + ' ' + (isTransformed ? 'transformed-mode' : '') + (isKargalgan && !isDefeated ? ' kargalgan-card' : '') + '"' +
                     ' id="char-' + name.replace(/\s+/g, '-') + '"' +
                     ' data-charname="' + name + '">' +
                     (char.shield > 0 ? '<div class="char-shield-bar"></div>' : '') +
