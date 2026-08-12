@@ -355,6 +355,84 @@
                 }
             }
         }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // HE-MAN — funciones reutilizables (llamadas desde el despachador de
+        // habilidades, desde el contraataque de la pasiva al recibir debuff, y
+        // desde el Over, que ejecuta las 3 habilidades completas de golpe).
+        // ══════════════════════════════════════════════════════════════════════
+        window._hemanMandoble = function (casterName, targetName, isForced) {
+            const caster = gameState.characters[casterName];
+            const target = gameState.characters[targetName];
+            if (!caster || !target || target.isDead || target.hp <= 0) return;
+            const baseDmg = 2 + (caster._hemanDmgBonus || 0);
+            const statusEffects = target.statusEffects || [];
+            const debuffs = statusEffects.filter(function (e) { return e && e.type === 'debuff'; });
+            const targetBuffs = statusEffects.filter(function (e) { return e && e.type === 'buff'; });
+            const isCrit = statusEffects.length === 0;
+            let dmg = baseDmg;
+            if (isCrit) dmg *= 2;
+            if (debuffs.length > 0) dmg += debuffs.length * 2;
+            let enemyTeamBuffs = 0;
+            Object.keys(gameState.characters).forEach(function (n) {
+                const c = gameState.characters[n];
+                if (!c || c.isDead || c.hp <= 0 || c.team !== target.team) return;
+                enemyTeamBuffs += (c.statusEffects || []).filter(function (e) { return e && e.type === 'buff'; }).length;
+            });
+            dmg += enemyTeamBuffs;
+            applyDamageWithShield(targetName, dmg, casterName);
+            addLog('⚔️ Mandoble de Eternia: ' + casterName + ' causa ' + dmg + ' daño a ' + targetName + (isCrit ? ' (¡Crítico!)' : ''), 'damage');
+            if (isForced) generateChargesInline(casterName, 1); // el disparo normal ya recibe su chargeGain base del flujo estándar
+            const bonusCharges = targetBuffs.length * 6;
+            if (bonusCharges > 0) {
+                generateChargesInline(casterName, bonusCharges);
+                addLog('⚔️ Mandoble de Eternia: +' + bonusCharges + ' cargas (buffs activos en el objetivo)', 'buff');
+            }
+        };
+
+        window._hemanCiclonGrayskull = function (casterName) {
+            const caster = gameState.characters[casterName];
+            if (!caster) return;
+            const eTeam = caster.team === 'team1' ? 'team2' : 'team1';
+            const bonus = caster._hemanDmgBonus || 0;
+            Object.keys(gameState.characters).forEach(function (n) {
+                const c = gameState.characters[n];
+                if (!c || c.isDead || c.hp <= 0 || c.team !== eTeam) return;
+                applyDamageWithShield(n, 3 + bonus, casterName);
+                if (Math.random() < 0.50 && typeof applyStun === 'function') {
+                    applyStun(n, 1);
+                    addLog('🌀 Ciclón Grayskull: Aturdimiento aplicado a ' + n + ' (50%)', 'debuff');
+                }
+                const buffs = (c.statusEffects || []).filter(function (e) { return e && e.type === 'buff'; });
+                if (buffs.length > 0) {
+                    const idx = c.statusEffects.indexOf(buffs[0]);
+                    if (idx > -1) { c.statusEffects.splice(idx, 1); addLog('🌀 Ciclón Grayskull: 1 buff limpiado de ' + n, 'debuff'); }
+                }
+            });
+            addLog('🌀 Ciclón Grayskull: ' + (3 + bonus) + ' daño base AOE', 'damage');
+        };
+
+        window._hemanSuperBreath = function (casterName) {
+            const caster = gameState.characters[casterName];
+            if (!caster) return;
+            const eTeam = caster.team === 'team1' ? 'team2' : 'team1';
+            const bonus = caster._hemanDmgBonus || 0;
+            const tierBonus = { 'Raro': 1, 'Especial': 2, 'Epico': 3, 'Legendario': 5 };
+            Object.keys(gameState.characters).forEach(function (n) {
+                const c = gameState.characters[n];
+                if (!c || c.isDead || c.hp <= 0 || c.team !== eTeam) return;
+                let dmg = 3 + bonus, relicBonus = 0;
+                (c.equippedRelics || []).forEach(function (rn) {
+                    const rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[rn] : null;
+                    if (rd && rd.tier && tierBonus[rd.tier]) relicBonus += tierBonus[rd.tier];
+                });
+                dmg += relicBonus;
+                applyDamageWithShield(n, dmg, casterName);
+                if (relicBonus > 0) addLog('💨 Super Breath: +' + relicBonus + ' daño adicional a ' + n + ' (reliquias equipadas)', 'damage');
+            });
+            addLog('💨 Super Breath: ' + (3 + bonus) + ' daño base AOE', 'damage');
+        };
+
         function applyAOEDamageToTeam(enemyTeam, damage, attackerName) {
             let _kyoAOEHits = 0;
             for (let n in gameState.characters) {
@@ -11028,6 +11106,40 @@
                         }
                         addLog('👑 Dios Emperador Doom: ' + _deTotalHeal + ' daño distribuido al equipo enemigo', 'damage');
                     }
+                }
+
+            // ══════════════════════════════════════════════════════
+            // HE-MAN — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'heman_basic') {
+                if (typeof window._hemanMandoble === 'function') window._hemanMandoble(gameState.selectedCharacter, targetName, false);
+
+            } else if (ability.effect === 'heman_special1') {
+                if (typeof window._hemanCiclonGrayskull === 'function') window._hemanCiclonGrayskull(gameState.selectedCharacter);
+
+            } else if (ability.effect === 'heman_special2') {
+                if (typeof window._hemanSuperBreath === 'function') window._hemanSuperBreath(gameState.selectedCharacter);
+
+            } else if (ability.effect === 'heman_over') {
+                const _ytAtk = gameState.characters[gameState.selectedCharacter];
+                if (_ytAtk) {
+                    if (typeof applyBuff === 'function') {
+                        applyBuff(gameState.selectedCharacter, { name: 'Escudo Sagrado', type: 'buff', duration: 2, emoji: '🔰✨' });
+                        applyBuff(gameState.selectedCharacter, { name: 'Proteccion Sagrada', type: 'buff', duration: 2, emoji: '🛡️✨' });
+                    }
+                    addLog('⚡ ¡Yo Tengo el Poder!: He-Man activa Escudo Sagrado y Protección Sagrada (2 turnos)', 'buff');
+                    const _ytETeam = _ytAtk.team === 'team1' ? 'team2' : 'team1';
+                    const _ytEnemies = Object.keys(gameState.characters).filter(function (n) {
+                        const c = gameState.characters[n];
+                        return c && !c.isDead && c.hp > 0 && c.team === _ytETeam;
+                    });
+                    const _ytShuffled = _ytEnemies.sort(function () { return Math.random() - 0.5; }).slice(0, 2);
+                    _ytShuffled.forEach(function (n) {
+                        if (typeof window._hemanMandoble === 'function') window._hemanMandoble(gameState.selectedCharacter, n, true);
+                    });
+                    if (typeof window._hemanCiclonGrayskull === 'function') window._hemanCiclonGrayskull(gameState.selectedCharacter);
+                    if (typeof window._hemanSuperBreath === 'function') window._hemanSuperBreath(gameState.selectedCharacter);
                 }
 
             // ══════════════════════════════════════════════════════
