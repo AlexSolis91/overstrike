@@ -1180,6 +1180,19 @@
                 ]
             },
 
+            'He-Man': {
+                portrait: 'https://i.ibb.co/PGbtwg62/image-f80ced97.png',
+                hp: 25, maxHp: 25, speed: 84, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                passive: { name: 'Por el Poder de Grayskull', description: 'Al inicio de cada ronda, 50% de probabilidad de que el daño base de todos los movimientos de He-Man se incremente en +2 y su velocidad se incremente en +3 (acumulable ronda tras ronda). Cada vez que He-Man recibe un debuff, ejecuta Mandoble de Eternia sobre un enemigo aleatorio (sin límite de veces por ronda).' },
+                abilities: [
+                    { name: 'Mandoble de Eternia', type: 'basic',   cost: 0,  chargeGain: 1, damage: 2, target: 'single', effect: 'heman_basic',    description: 'Si el objetivo no tiene Buff ni Debuff activo, causa daño crítico. +2 daño adicional por cada debuff activo en el objetivo. +1 daño adicional por cada buff activo en todo el equipo enemigo. Genera 6 cargas por cada buff activo en el objetivo golpeado.' },
+                    { name: 'Ciclón Grayskull',     type: 'special', cost: 3,  chargeGain: 0, damage: 3, target: 'aoe',    effect: 'heman_special1', description: '50% de probabilidad de aplicar Aturdimiento sobre cada objetivo golpeado. Si el enemigo golpeado tiene Buffs activos, limpia 1 buff.' },
+                    { name: 'Super Breath',         type: 'special', cost: 3,  chargeGain: 0, damage: 3, target: 'aoe',    effect: 'heman_special2', description: 'Cada enemigo golpeado con reliquias equipadas recibe daño adicional según la rareza (Rara +1, Especial +2, Épico +3, Legendario +5).' },
+                    { name: '¡Yo Tengo el Poder!',  type: 'over',    cost: 15, chargeGain: 0, damage: 0, target: 'self',   effect: 'heman_over',     description: 'He-Man se aplica Escudo Sagrado y Protección Sagrada (2 turnos). Ejecuta Mandoble de Eternia sobre 2 enemigos aleatorios, Ciclón Grayskull y Super Breath (con todos sus efectos y generación de cargas).' }
+                ]
+            },
+
         };
         // ==================== RELIQUIAS ====================
         const RELICS_DATA = {
