@@ -3182,6 +3182,7 @@
             top: 44px;
             right: 8px;
             bottom: 12px;
+            height: auto; /* deja que top+bottom controlen el alto real; si no, el height:100% heredado de la regla base gana y la columna queda más corta de lo debido */
             width: 220px;
             padding: 8px;
             gap: 4px;
