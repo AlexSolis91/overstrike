@@ -575,6 +575,28 @@ function processBurnEffects(charName) {
                     }
                 }
             }
+            // ASHBRINGER: si el que se curó es el PORTADOR, replica la misma curación en 2 aliados
+            // aleatorios. Si el que se curó es un ALIADO distinto del portador (curado por una
+            // habilidad del propio portador), marca el disparo del efecto de disipar+HP máx.
+            if (_actual > 0 && _ch) {
+                const _ashChar = gameState.characters[charName];
+                if (_ashChar && (_ashChar.equippedRelics||[]).includes('Ashbringer')) {
+                    const _ashAllies = Object.keys(gameState.characters).filter(function(n) {
+                        const c = gameState.characters[n];
+                        return c && !c.isDead && c.hp > 0 && c.team === _ashChar.team && n !== charName;
+                    });
+                    const _ashShuffled = _ashAllies.sort(function(){ return Math.random()-0.5; }).slice(0, 2);
+                    _ashShuffled.forEach(function(n) { applyHeal(n, _actual, 'Ashbringer'); });
+                    if (_ashShuffled.length > 0) addLog('🗡️ Ashbringer: curación replicada en ' + _ashShuffled.join(' y '), 'heal');
+                }
+                if (gameState.selectedCharacter && gameState.selectedCharacter !== charName && !passiveExecuting) {
+                    const _ashCaster = gameState.characters[gameState.selectedCharacter];
+                    if (_ashCaster && (_ashCaster.equippedRelics||[]).includes('Ashbringer') && _ashCaster.team === _ch.team) {
+                        window._ashbringerTriggerUid = gameState.selectedCharacter;
+                    }
+                }
+            }
+
             // FRAGMENTO DE LA LUZ: cuando un ENEMIGO se cura → escudo 2HP a todos los aliados del portador
             if (_actual > 0 && !passiveExecuting && _ch) {
                 for (const _flN in gameState.characters) {
@@ -591,6 +613,20 @@ function processBurnEffects(charName) {
                     }
                     addLog('💎 Fragmento de la Luz: ' + _flN + ' — equipo aliado gana Escudo 2HP (enemigo se curó)', 'buff');
                     break;
+                }
+            }
+
+            // ARCO DE ATILA: cuando un ENEMIGO recibe curación, el portador ejecuta su básico
+            // sobre ese enemigo (solo si el básico es ST)
+            if (_actual > 0 && !passiveExecuting && _ch) {
+                for (const _atN in gameState.characters) {
+                    const _atC = gameState.characters[_atN];
+                    if (!_atC || _atC.isDead || _atC.hp <= 0 || _atC.team === _ch.team) continue;
+                    if (!(_atC.equippedRelics||[]).includes('Arco de Atila')) continue;
+                    const _atBasic = _atC.abilities && _atC.abilities[0];
+                    if (!_atBasic || _atBasic.target !== 'single') continue;
+                    addLog('🏹 Arco de Atila: ' + _atN + ' ejecuta su básico sobre ' + charName + ' (recibió curación)', 'buff');
+                    if (typeof window._executeBasicForced === 'function') window._executeBasicForced(_atN, charName);
                 }
             }
 
