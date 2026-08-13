@@ -1244,6 +1244,23 @@ function applyDebuff(targetName, effectObj) {
             target.speed = Math.max(1, target.speed - _freezeActualPenalty);
             addLog(emoji + ' ' + targetName + ' queda ' + (mega ? 'Mega Congelado' : 'Congelado') + ' (vel -' + _freezeActualPenalty + ') por ' + duration + ' turno' + (duration > 1 ? 's' : ''), 'damage');
 
+            // YELMO DE CABALLERO DE LA MUERTE: cuando se aplica Congelación/Megacongelación a
+            // un enemigo, el portador ejecuta su básico sobre él (solo si es ST). Mega = x3.
+            if (!passiveExecuting) {
+                Object.keys(gameState.characters).forEach(function (n) {
+                    const c = gameState.characters[n];
+                    if (!c || c.isDead || c.hp <= 0 || c.team === target.team) return;
+                    if (!(c.equippedRelics || []).includes('Yelmo de Caballero de la Muerte')) return;
+                    const reps = mega ? 3 : 1;
+                    addLog('☠️ Yelmo de Caballero de la Muerte: ' + n + ' ejecuta su básico sobre ' + targetName + (mega ? ' (x3, Megacongelación)' : ' (Congelación)'), 'buff');
+                    for (let i = 0; i < reps; i++) {
+                        const _yTgt = gameState.characters[targetName];
+                        if (!_yTgt || _yTgt.isDead || _yTgt.hp <= 0) break;
+                        if (typeof window._executeBasicForced === 'function') window._executeBasicForced(n, targetName);
+                    }
+                });
+            }
+
             // ── INVIERNO ETERNO (Rey de la Noche): 2 daño directo al objetivo cuando su equipo aplica Congelacion/Megacongelacion ──
             if (!passiveExecuting) {
                 const _tgtRDN = gameState.characters[targetName];
