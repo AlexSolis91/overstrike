@@ -1598,7 +1598,22 @@
         function _rtSaveToFirebase(cb) {
             if (!currentUser) return;
             db.ref('ranked_teams_v2/' + currentUser.uid).set({ configs: _rtConfigs, active: _rtActiveId }).then(function() {
-                if (cb) cb();
+                // Sincronizar SIEMPRE la ruta legacy 'ranked_teams/{uid}' — es la que en
+                // realidad leen los demás jugadores al atacar tu defensa (ver rankedAttackTarget
+                // y funciones similares). Centralizar esto aquí garantiza que CUALQUIER acción
+                // que cambie la config activa (guardar, o simplemente presionar "USAR ESTA")
+                // quede reflejada de inmediato para los atacantes, sin depender de jugar una
+                // partida ni de volver a guardar manualmente.
+                var active = _rtConfigs[_rtActiveId];
+                var attackFull  = active && active.attack  && active.attack.filter(Boolean).length === 5;
+                var defenseFull = active && active.defense && active.defense.filter(Boolean).length === 5;
+                if (active && attackFull && defenseFull) {
+                    db.ref('ranked_teams/' + currentUser.uid).set({ attack: active.attack, defense: active.defense, uid: currentUser.uid, name: currentUser.displayName || 'Jugador', ts: Date.now() }).then(function() {
+                        if (cb) cb();
+                    });
+                } else {
+                    if (cb) cb();
+                }
             });
         }
 
@@ -1701,11 +1716,6 @@
             // Si solo hay 1 config, marcarla activa automáticamente
             if (Object.keys(_rtConfigs).length === 1) _rtActiveId = _rtEditingId;
             _rtSaveToFirebase(function() {
-                // Compatibilidad: también escribir en ranked_teams/{uid} con la config activa
-                var active = _rtConfigs[_rtActiveId];
-                if (active) {
-                    db.ref('ranked_teams/' + currentUser.uid).set({ attack: active.attack, defense: active.defense, uid: currentUser.uid, name: currentUser.displayName || 'Jugador', ts: Date.now() });
-                }
                 _rtRenderConfigList();
                 _rtShowMsg('✅ Equipos guardados correctamente');
             });
