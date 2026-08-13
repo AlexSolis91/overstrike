@@ -2936,6 +2936,45 @@
                         }
                     }
 
+                    // ── GRANADAS DE UZUI: inicio de ronda → 50% de probabilidad de Quemaduras (2 HP) a cada enemigo ──
+                    Object.keys(gameState.characters).forEach(function(_guN) {
+                        const _guC = gameState.characters[_guN];
+                        if (!_guC || _guC.isDead || _guC.hp <= 0 || !(_guC.equippedRelics||[]).includes('Granadas de Uzui')) return;
+                        const _guETeam = _guC.team === 'team1' ? 'team2' : 'team1';
+                        Object.keys(gameState.characters).forEach(function(_guEn) {
+                            const _guEc = gameState.characters[_guEn];
+                            if (!_guEc || _guEc.isDead || _guEc.hp <= 0 || _guEc.team !== _guETeam) return;
+                            if (Math.random() < 0.50 && typeof applyDebuff === 'function') {
+                                applyDebuff(_guEn, { name:'Quemadura', type:'debuff', duration:2, emoji:'🔥', flatHp:2 });
+                                addLog('💣 Granadas de Uzui: Quemaduras (2 HP) aplicadas a ' + _guEn + ' (50%)', 'debuff');
+                            }
+                        });
+                    });
+
+                    // ── ARMADURA DORADA FRAGMENTADA: inicio de ronda → Regeneración 10% (1 turno) al portador ──
+                    Object.keys(gameState.characters).forEach(function(_adfN) {
+                        const _adfC = gameState.characters[_adfN];
+                        if (!_adfC || _adfC.isDead || _adfC.hp <= 0 || !(_adfC.equippedRelics||[]).includes('Armadura Dorada Fragmentada')) return;
+                        if (typeof applyBuff === 'function') {
+                            applyBuff(_adfN, { name:'Regeneracion', type:'buff', duration:1, emoji:'💖', percent:10 });
+                            addLog('🛡️ Armadura Dorada Fragmentada: ' + _adfN + ' se aplica Regeneración 10% (1 turno)', 'buff');
+                        }
+                    });
+
+                    // ── ESTANDARTE DE JUANA DE ARCO: solo en la ronda 1 → +2 velocidad a todo el equipo aliado ──
+                    if (gameState.currentRound === 1) {
+                        Object.keys(gameState.characters).forEach(function(_ejaN) {
+                            const _ejaC = gameState.characters[_ejaN];
+                            if (!_ejaC || _ejaC.isDead || !(_ejaC.equippedRelics||[]).includes('Estandarte de Juana de Arco')) return;
+                            Object.keys(gameState.characters).forEach(function(_ejaAn) {
+                                const _ejaAc = gameState.characters[_ejaAn];
+                                if (!_ejaAc || _ejaAc.isDead || _ejaAc.team !== _ejaC.team) return;
+                                _ejaAc.speed = (_ejaAc.speed||0) + 2;
+                            });
+                            addLog('🚩 Estandarte de Juana de Arco: +2 velocidad a todo el equipo aliado', 'buff');
+                        });
+                    }
+
                     // ── VALKYR (Sirviente de la Muerte): inicio de ronda → +10 velocidad al equipo aliado ──
                     const _valkyr = Object.values(gameState.summons).find(function(s){ return s && s.name === 'Valkyr' && s.hp > 0; });
                     if (_valkyr) {                        const _valETeam = _valkyr.team === 'team1' ? 'team2' : 'team1';
@@ -3456,6 +3495,92 @@
                         }
                     });
                 }
+
+                // ── ASHBRINGER: fin de ronda → cura 40% de su HP máx al portador ──
+                Object.keys(gameState.characters).forEach(function(_ashN) {
+                    const _ashC = gameState.characters[_ashN];
+                    if (!_ashC || _ashC.isDead || _ashC.hp <= 0 || !(_ashC.equippedRelics||[]).includes('Ashbringer')) return;
+                    const _ashHealAmt = Math.ceil((_ashC.maxHp||0) * 0.40);
+                    if (typeof applyHeal === 'function') applyHeal(_ashN, _ashHealAmt, 'Ashbringer (fin de ronda)');
+                });
+
+                // ── ASHBRINGER (3er efecto): si durante este turno el portador curó/aplicó buff/generó
+                //    cargas en un aliado (no en sí mismo), disipa debuffs aliados + buffs enemigos y
+                //    +1 HP máx por cada uno disipado. Se resuelve una vez al final de la ronda. ──
+                if (window._ashbringerTriggerUid) {
+                    const _ash2C = gameState.characters[window._ashbringerTriggerUid];
+                    if (_ash2C && !_ash2C.isDead) {
+                        const _ash2ETeam = _ash2C.team === 'team1' ? 'team2' : 'team1';
+                        let _ash2Cleared = 0;
+                        Object.keys(gameState.characters).forEach(function(n) {
+                            const c = gameState.characters[n];
+                            if (!c || c.isDead || c.hp <= 0) return;
+                            if (c.team === _ash2C.team) {
+                                const _before = (c.statusEffects||[]).filter(function(e){ return e && e.type==='debuff'; }).length;
+                                if (_before > 0) { c.statusEffects = (c.statusEffects||[]).filter(function(e){ return !e || e.type!=='debuff'; }); _ash2Cleared += _before; }
+                            } else if (c.team === _ash2ETeam) {
+                                const _before = (c.statusEffects||[]).filter(function(e){ return e && e.type==='buff'; }).length;
+                                if (_before > 0) { c.statusEffects = (c.statusEffects||[]).filter(function(e){ return !e || e.type!=='buff'; }); _ash2Cleared += _before; }
+                            }
+                        });
+                        if (_ash2Cleared > 0) {
+                            Object.keys(gameState.characters).forEach(function(n) {
+                                const c = gameState.characters[n];
+                                if (c && !c.isDead && c.team === _ash2C.team) c.maxHp = (c.maxHp||0) + _ash2Cleared;
+                            });
+                            addLog('🗡️ Ashbringer: disipados ' + _ash2Cleared + ' debuffs/buffs — equipo aliado +' + _ash2Cleared + ' HP máx', 'buff');
+                        }
+                    }
+                    window._ashbringerTriggerUid = null;
+                }
+
+                // ── CRISTAL DE MANA CONCENTRADO: fin de ronda → portador + 1 aliado aleatorio +1 vel / +1 carga ──
+                Object.keys(gameState.characters).forEach(function(_cmN) {
+                    const _cmC = gameState.characters[_cmN];
+                    if (!_cmC || _cmC.isDead || _cmC.hp <= 0 || !(_cmC.equippedRelics||[]).includes('Cristal de Mana Concentrado')) return;
+                    _cmC.speed = (_cmC.speed||0) + 1;
+                    _cmC.charges = Math.min(20, (_cmC.charges||0) + 1);
+                    const _cmAllies = Object.keys(gameState.characters).filter(function(n) {
+                        const c = gameState.characters[n];
+                        return c && !c.isDead && c.hp > 0 && c.team === _cmC.team && n !== _cmN;
+                    });
+                    let _cmTarget = null;
+                    if (_cmAllies.length > 0) {
+                        _cmTarget = _cmAllies[Math.floor(Math.random()*_cmAllies.length)];
+                        const _cmTc = gameState.characters[_cmTarget];
+                        _cmTc.speed = (_cmTc.speed||0) + 1;
+                        _cmTc.charges = Math.min(20, (_cmTc.charges||0) + 1);
+                    }
+                    addLog('💎 Cristal de Mana Concentrado: ' + _cmN + (_cmTarget ? ' y ' + _cmTarget : '') + ' +1 velocidad y +1 carga', 'buff');
+                });
+
+                // ── ESTANDARTE DE JUANA DE ARCO: fin de ronda → Celeridad 10% (1 turno) a un aliado aleatorio ──
+                Object.keys(gameState.characters).forEach(function(_eja2N) {
+                    const _eja2C = gameState.characters[_eja2N];
+                    if (!_eja2C || _eja2C.isDead || !(_eja2C.equippedRelics||[]).includes('Estandarte de Juana de Arco')) return;
+                    const _eja2Allies = Object.keys(gameState.characters).filter(function(n) {
+                        const c = gameState.characters[n];
+                        return c && !c.isDead && c.hp > 0 && c.team === _eja2C.team;
+                    });
+                    if (_eja2Allies.length > 0 && typeof applyBuff === 'function') {
+                        const _eja2Tgt = _eja2Allies[Math.floor(Math.random()*_eja2Allies.length)];
+                        applyBuff(_eja2Tgt, { name:'Celeridad', type:'buff', duration:1, emoji:'💨', percent:10 });
+                        addLog('🚩 Estandarte de Juana de Arco: Celeridad 10% (1T) a ' + _eja2Tgt, 'buff');
+                    }
+                });
+
+                // ── ESPADA DE ACERO VALYRIO: fin de ronda → 30% de probabilidad de +2 velocidad a cada aliado ──
+                Object.keys(gameState.characters).forEach(function(_esvN) {
+                    const _esvC = gameState.characters[_esvN];
+                    if (!_esvC || _esvC.isDead || !(_esvC.equippedRelics||[]).includes('Espada de Acero Valyrio')) return;
+                    if (Math.random() < 0.30) {
+                        Object.keys(gameState.characters).forEach(function(n) {
+                            const c = gameState.characters[n];
+                            if (c && !c.isDead && c.hp > 0 && c.team === _esvC.team) c.speed = (c.speed||0) + 2;
+                        });
+                        addLog('⚔️ Espada de Acero Valyrio: +2 velocidad a todo el equipo aliado (30%)', 'buff');
+                    }
+                });
 
                 // ── MORDEDURA (Cría de Dragón): fin de ronda → aplica debuff aleatorio a enemigo aleatorio ──
                 for (const _criaSumId in gameState.summons) {
