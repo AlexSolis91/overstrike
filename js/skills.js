@@ -1832,6 +1832,72 @@
                 window.hordaOnEnemyOverUsed(charName);
             }
 
+            // ── ROMPECABEZAS DEL MILENIO: 50% de turno extra al portador cuando UN ENEMIGO
+            //    ejecuta cualquier habilidad (básico, especial u Over) ──
+            (function () {
+                const _actorC = gameState.characters[charName];
+                if (!_actorC) return;
+                const _puzETeam = _actorC.team === 'team1' ? 'team2' : 'team1';
+                Object.keys(gameState.characters).forEach(function (n) {
+                    const c = gameState.characters[n];
+                    if (!c || c.isDead || c.hp <= 0 || c.team !== _puzETeam) return;
+                    if (!(c.equippedRelics || []).includes('Rompecabezas del Milenio')) return;
+                    if (Math.random() < 0.50) {
+                        gameState._skeggoxExtraTurn = n;
+                        addLog('🧩 Rompecabezas del Milenio: ' + n + ' gana turno adicional (50%, enemigo ejecutó una habilidad)', 'buff');
+                    }
+                });
+            })();
+
+            // ── NANOGUANTE DE IRON MAN: cuando cualquier enemigo ejecuta un Over, el portador
+            //    roba 5 HP a un enemigo aleatorio (independiente de a quién ataque el Over) ──
+            if (ability.type === 'over') {
+                const _niActorC = gameState.characters[charName];
+                if (_niActorC) {
+                    const _niETeam = _niActorC.team === 'team1' ? 'team2' : 'team1';
+                    Object.keys(gameState.characters).forEach(function (n) {
+                        const c = gameState.characters[n];
+                        if (!c || c.isDead || c.hp <= 0 || c.team !== _niETeam) return;
+                        if (!(c.equippedRelics || []).includes('Nanoguante de Iron Man')) return;
+                        const _niTargets = Object.keys(gameState.characters).filter(function (m) {
+                            const mc = gameState.characters[m];
+                            return mc && !mc.isDead && mc.hp > 0 && mc.team === _niActorC.team;
+                        });
+                        if (_niTargets.length > 0) {
+                            const _niTgt = _niTargets[Math.floor(Math.random() * _niTargets.length)];
+                            const _niTgtC = gameState.characters[_niTgt];
+                            const _niSteal = Math.min(5, _niTgtC.hp);
+                            _niTgtC.hp -= _niSteal;
+                            c.hp = Math.min(c.maxHp, c.hp + _niSteal);
+                            addLog('🦾 Nanoguante de Iron Man: ' + n + ' roba ' + _niSteal + ' HP de ' + _niTgt + ' (enemigo usó un Over)', 'damage');
+                        }
+                    });
+                }
+            }
+
+            // ── ROMPECABEZAS DEL MILENIO: 80% de ejecutar la Transformación del PORTADOR al
+            //    usar cualquier movimiento propio (si el personaje tiene un movimiento así) ──
+            if (!passiveExecuting) {
+                const _puzWearer = gameState.characters[charName];
+                if (_puzWearer && (_puzWearer.equippedRelics || []).includes('Rompecabezas del Milenio') && !gameState._puzzleTransformExecuting) {
+                    const _puzTransform = (_puzWearer.abilities || []).find(function (a) { return a && (a.name === 'Transformacion' || a.name === 'Transformación'); });
+                    if (_puzTransform && Math.random() < 0.80) {
+                        addLog('🧩 Rompecabezas del Milenio: ' + charName + ' ejecuta su Transformación (80%)', 'buff');
+                        const _savedChar = gameState.selectedCharacter;
+                        const _savedAbility = gameState.selectedAbility;
+                        gameState.selectedCharacter = charName;
+                        gameState.selectedAbility = _puzTransform;
+                        gameState._puzzleTransformExecuting = true;
+                        passiveExecuting = true;
+                        try { if (typeof _executeAbilityCore === 'function') _executeAbilityCore(charName); } catch (e) { console.error('[Rompecabezas del Milenio]', e); }
+                        gameState.selectedCharacter = _savedChar;
+                        gameState.selectedAbility = _savedAbility;
+                        gameState._puzzleTransformExecuting = false;
+                        passiveExecuting = false;
+                    }
+                }
+            }
+
             // ── MODO HORDA: delega efectos 'horda_*' al módulo dedicado (js/horda-abilities.js) ──
             if (ability.effect && ability.effect.indexOf('horda_') === 0) {
                 if (typeof window.hordaExecuteAbility === 'function') {
