@@ -2859,6 +2859,145 @@
                         const c = gameState.characters[n];
                         if (c && !c.isDead && c.hp > 0) c.hpAtRoundStart = c.hp;
                     }
+                    // ── IRON (Sun Jin Woo): inicio de ronda → 3 cargas al equipo aliado ──
+                    (function() {
+                        for (const _irSid in gameState.summons) {
+                            const _irS = gameState.summons[_irSid];
+                            if (!_irS || _irS.hp <= 0 || _irS.name !== 'Iron') continue;
+                            for (const _an in gameState.characters) {
+                                const _ac = gameState.characters[_an];
+                                if (!_ac || _ac.isDead || _ac.hp <= 0 || _ac.team !== _irS.team) continue;
+                                _ac.charges = Math.min(20, (_ac.charges||0) + 3);
+                            }
+                            addLog('🛡️ Voluntad de Acero (Iron): +3 cargas al equipo aliado', 'buff');
+                            break;
+                        }
+                    })();
+
+                    // ── TUSK (Sun Jin Woo): inicio de ronda → Quemadura 2HP a 2 enemigos aleatorios ──
+                    (function() {
+                        for (const _tkSid in gameState.summons) {
+                            const _tkS = gameState.summons[_tkSid];
+                            if (!_tkS || _tkS.hp <= 0 || _tkS.name !== 'Tusk') continue;
+                            // Equipo enemigo de Tusk
+                            const _tkETeam = _tkS.team === 'team1' ? 'team2' : 'team1';
+                            const _tkEnemies = Object.keys(gameState.characters).filter(function(n){
+                                const _c = gameState.characters[n];
+                                return _c && _c.team === _tkETeam && !_c.isDead && _c.hp > 0;
+                            }).sort(function(){ return Math.random()-0.5; }).slice(0,2);
+                            _tkEnemies.forEach(function(n){
+                                if (typeof applyFlatBurn === 'function') applyFlatBurn(n, 2, 1);
+                                addLog('🔥 Hipno de Fuego (Tusk): Quemadura 2HP a ' + n, 'debuff');
+                            });
+                            break;
+                        }
+                    })();
+
+                    // ── SANGRE MALDITA (Iori Yagami): inicio de ronda → 25% de +20% VEL y 10 cargas ──
+                    (function() {
+                        for (const _iyN in gameState.characters) {
+                            const _iyC = gameState.characters[_iyN];
+                            if (!_iyC || _iyC.isDead || !_iyC.passive) continue;
+                            if (_iyC.passive.name !== 'Sangre Maldita') continue;
+                            if (Math.random() < 0.25) {
+                                _iyC._smBonus = Math.floor((_iyC.speed||80) * 0.20);
+                                _iyC.speed = (_iyC.speed||80) + _iyC._smBonus;
+                                _iyC.charges = Math.min(20, (_iyC.charges||0) + 10);
+                                addLog('💜 Sangre Maldita: Iori siente la sangre arder — +' + _iyC._smBonus + ' VEL y +10 cargas esta ronda', 'buff');
+                                // Re-ordenar turnOrder con la nueva velocidad
+                                if (gameState.turnOrder) {
+                                    gameState.turnOrder.sort(function(a, b) {
+                                        return (gameState.characters[b] ? gameState.characters[b].speed||0 : 0) -
+                                               (gameState.characters[a] ? gameState.characters[a].speed||0 : 0);
+                                    });
+                                }
+                            }
+                            break;
+                        }
+                    })();
+
+                    // ── PRESENCIA OSCURA (Darth Vader): inicio de ronda → 50% Miedo + 70% Reflejar ──
+                    (function() {
+                        for (const _dvN in gameState.characters) {
+                            const _dvC = gameState.characters[_dvN];
+                            if (!_dvC || _dvC.isDead || !_dvC.passive) continue;
+                            if (_dvC.passive.name !== 'Presencia Oscura') continue;
+                            const _dvET = _dvC.team === 'team1' ? 'team2' : 'team1';
+                            // 50% Miedo a cada enemigo
+                            for (const _n in gameState.characters) {
+                                const _ec = gameState.characters[_n];
+                                if (!_ec || _ec.team !== _dvET || _ec.isDead || _ec.hp <= 0) continue;
+                                if (Math.random() < 0.50) {
+                                    if (typeof applyFear === 'function') applyFear(_n, 1);
+                                    else if (typeof applyDebuff === 'function') applyDebuff(_n, { name: 'Miedo', type: 'debuff', duration: 1, emoji: '😱' });
+                                    addLog('🌑 Presencia Oscura: Miedo aplicado a ' + _n, 'debuff');
+                                }
+                            }
+                            // 70% Reflejar a Darth Vader
+                            if (Math.random() < 0.70) {
+                                if (typeof applyBuff === 'function') applyBuff(_dvN, { name: 'Reflejar', type: 'buff', duration: 1, emoji: '🪞' });
+                                addLog('🌑 Presencia Oscura: Darth Vader se aplica Reflejar', 'buff');
+                            }
+                            break;
+                        }
+                    })();
+
+                    // ── DESTELLO DE PEGASO (Seiya): inicio de ronda → Celeridad 15% a aliados ──
+                    (function() {
+                        for (const _seN in gameState.characters) {
+                            const _seC = gameState.characters[_seN];
+                            if (!_seC || _seC.isDead || !_seC.passive) continue;
+                            if (_seC.passive.name !== 'Destello de Pegaso') continue;
+                            const _seTeam = _seC.team;
+                            for (const _n in gameState.characters) {
+                                const _ac = gameState.characters[_n];
+                                if (!_ac || _ac.team !== _seTeam || _ac.isDead || _ac.hp <= 0) continue;
+                                if (typeof applyBuff === 'function') applyBuff(_n, { name: 'Celeridad', type: 'buff', duration: 1, emoji: '⚡', speedBonus: 0.15 });
+                                addLog('🌟 Destello de Pegaso: ' + _n + ' recibe Celeridad 15% (1T)', 'buff');
+                            }
+                            break;
+                        }
+                    })();
+
+                    // ── EL ELEGIDO (Anakin): inicio de ronda → 50% de Frenesi + Furia 2T ──
+                    (function() {
+                        for (const _akN in gameState.characters) {
+                            const _akC = gameState.characters[_akN];
+                            if (!_akC || _akC.isDead || _akC.hp <= 0) continue;
+                            if (!_akC.passive || _akC.passive.name !== 'El Elegido') continue;
+                            if (Math.random() < 0.50) {
+                                applyFrenesi(_akN, 2);
+                                applyFuria(_akN, 2);
+                                addLog('⚡ El Elegido: ' + _akN + ' gana Frenesi + Furia 2T (inicio de ronda)', 'buff');
+                            }
+                            break;
+                        }
+                    })();
+
+                    // ── LLAMARADA KUSANAGI (Kyo): inicio de ronda → Aura de Fuego a 2 aliados aleatorios ──
+                    (function() {
+                        for (const _kyoN in gameState.characters) {
+                            const _kyoC = gameState.characters[_kyoN];
+                            if (!_kyoC || _kyoC.isDead || !_kyoC.passive) continue;
+                            if (_kyoC.passive.name !== 'Llamarada Kusanagi') continue;
+                            const _kyoTeam = _kyoC.team;
+                            const _kyoAllies = Object.keys(gameState.characters).filter(function(n){
+                                const _c = gameState.characters[n];
+                                return _c && _c.team === _kyoTeam && !_c.isDead && _c.hp > 0;
+                            });
+                            // Mezclar aleatoriamente y tomar 2
+                            const _shuffled = _kyoAllies.sort(function(){ return Math.random() - 0.5; }).slice(0, 2);
+                            _shuffled.forEach(function(n) {
+                                const _c = gameState.characters[n];
+                                if (!_c) return;
+                                if (!hasStatusEffect(n, 'Aura de Fuego') && !hasStatusEffect(n, 'Aura de fuego')) {
+                                    if (typeof applyBuff === 'function') applyBuff(n, { name: 'Aura de Fuego', type: 'buff', duration: 2, emoji: '🔥' });
+                                    addLog('🔥 Llamarada Kusanagi: ' + n + ' recibe Aura de Fuego', 'buff');
+                                }
+                            });
+                            break;
+                        }
+                    })();
         }
 
         function endTurn() {
@@ -3108,145 +3247,6 @@
                         gameState.currentTurnIndex = 0; // el +1 posterior lo llevará a índice 1
                     }
 
-                    // ── IRON (Sun Jin Woo): inicio de ronda → 3 cargas al equipo aliado ──
-                    (function() {
-                        for (const _irSid in gameState.summons) {
-                            const _irS = gameState.summons[_irSid];
-                            if (!_irS || _irS.hp <= 0 || _irS.name !== 'Iron') continue;
-                            for (const _an in gameState.characters) {
-                                const _ac = gameState.characters[_an];
-                                if (!_ac || _ac.isDead || _ac.hp <= 0 || _ac.team !== _irS.team) continue;
-                                _ac.charges = Math.min(20, (_ac.charges||0) + 3);
-                            }
-                            addLog('🛡️ Voluntad de Acero (Iron): +3 cargas al equipo aliado', 'buff');
-                            break;
-                        }
-                    })();
-
-                    // ── TUSK (Sun Jin Woo): inicio de ronda → Quemadura 2HP a 2 enemigos aleatorios ──
-                    (function() {
-                        for (const _tkSid in gameState.summons) {
-                            const _tkS = gameState.summons[_tkSid];
-                            if (!_tkS || _tkS.hp <= 0 || _tkS.name !== 'Tusk') continue;
-                            // Equipo enemigo de Tusk
-                            const _tkETeam = _tkS.team === 'team1' ? 'team2' : 'team1';
-                            const _tkEnemies = Object.keys(gameState.characters).filter(function(n){
-                                const _c = gameState.characters[n];
-                                return _c && _c.team === _tkETeam && !_c.isDead && _c.hp > 0;
-                            }).sort(function(){ return Math.random()-0.5; }).slice(0,2);
-                            _tkEnemies.forEach(function(n){
-                                if (typeof applyFlatBurn === 'function') applyFlatBurn(n, 2, 1);
-                                addLog('🔥 Hipno de Fuego (Tusk): Quemadura 2HP a ' + n, 'debuff');
-                            });
-                            break;
-                        }
-                    })();
-
-                    // ── SANGRE MALDITA (Iori Yagami): inicio de ronda → 25% de +20% VEL y 10 cargas ──
-                    (function() {
-                        for (const _iyN in gameState.characters) {
-                            const _iyC = gameState.characters[_iyN];
-                            if (!_iyC || _iyC.isDead || !_iyC.passive) continue;
-                            if (_iyC.passive.name !== 'Sangre Maldita') continue;
-                            if (Math.random() < 0.25) {
-                                _iyC._smBonus = Math.floor((_iyC.speed||80) * 0.20);
-                                _iyC.speed = (_iyC.speed||80) + _iyC._smBonus;
-                                _iyC.charges = Math.min(20, (_iyC.charges||0) + 10);
-                                addLog('💜 Sangre Maldita: Iori siente la sangre arder — +' + _iyC._smBonus + ' VEL y +10 cargas esta ronda', 'buff');
-                                // Re-ordenar turnOrder con la nueva velocidad
-                                if (gameState.turnOrder) {
-                                    gameState.turnOrder.sort(function(a, b) {
-                                        return (gameState.characters[b] ? gameState.characters[b].speed||0 : 0) -
-                                               (gameState.characters[a] ? gameState.characters[a].speed||0 : 0);
-                                    });
-                                }
-                            }
-                            break;
-                        }
-                    })();
-
-                    // ── PRESENCIA OSCURA (Darth Vader): inicio de ronda → 50% Miedo + 70% Reflejar ──
-                    (function() {
-                        for (const _dvN in gameState.characters) {
-                            const _dvC = gameState.characters[_dvN];
-                            if (!_dvC || _dvC.isDead || !_dvC.passive) continue;
-                            if (_dvC.passive.name !== 'Presencia Oscura') continue;
-                            const _dvET = _dvC.team === 'team1' ? 'team2' : 'team1';
-                            // 50% Miedo a cada enemigo
-                            for (const _n in gameState.characters) {
-                                const _ec = gameState.characters[_n];
-                                if (!_ec || _ec.team !== _dvET || _ec.isDead || _ec.hp <= 0) continue;
-                                if (Math.random() < 0.50) {
-                                    if (typeof applyFear === 'function') applyFear(_n, 1);
-                                    else if (typeof applyDebuff === 'function') applyDebuff(_n, { name: 'Miedo', type: 'debuff', duration: 1, emoji: '😱' });
-                                    addLog('🌑 Presencia Oscura: Miedo aplicado a ' + _n, 'debuff');
-                                }
-                            }
-                            // 70% Reflejar a Darth Vader
-                            if (Math.random() < 0.70) {
-                                if (typeof applyBuff === 'function') applyBuff(_dvN, { name: 'Reflejar', type: 'buff', duration: 1, emoji: '🪞' });
-                                addLog('🌑 Presencia Oscura: Darth Vader se aplica Reflejar', 'buff');
-                            }
-                            break;
-                        }
-                    })();
-
-                    // ── DESTELLO DE PEGASO (Seiya): inicio de ronda → Celeridad 15% a aliados ──
-                    (function() {
-                        for (const _seN in gameState.characters) {
-                            const _seC = gameState.characters[_seN];
-                            if (!_seC || _seC.isDead || !_seC.passive) continue;
-                            if (_seC.passive.name !== 'Destello de Pegaso') continue;
-                            const _seTeam = _seC.team;
-                            for (const _n in gameState.characters) {
-                                const _ac = gameState.characters[_n];
-                                if (!_ac || _ac.team !== _seTeam || _ac.isDead || _ac.hp <= 0) continue;
-                                if (typeof applyBuff === 'function') applyBuff(_n, { name: 'Celeridad', type: 'buff', duration: 1, emoji: '⚡', speedBonus: 0.15 });
-                                addLog('🌟 Destello de Pegaso: ' + _n + ' recibe Celeridad 15% (1T)', 'buff');
-                            }
-                            break;
-                        }
-                    })();
-
-                    // ── EL ELEGIDO (Anakin): inicio de ronda → 50% de Frenesi + Furia 2T ──
-                    (function() {
-                        for (const _akN in gameState.characters) {
-                            const _akC = gameState.characters[_akN];
-                            if (!_akC || _akC.isDead || _akC.hp <= 0) continue;
-                            if (!_akC.passive || _akC.passive.name !== 'El Elegido') continue;
-                            if (Math.random() < 0.50) {
-                                applyFrenesi(_akN, 2);
-                                applyFuria(_akN, 2);
-                                addLog('⚡ El Elegido: ' + _akN + ' gana Frenesi + Furia 2T (inicio de ronda)', 'buff');
-                            }
-                            break;
-                        }
-                    })();
-
-                    // ── LLAMARADA KUSANAGI (Kyo): inicio de ronda → Aura de Fuego a 2 aliados aleatorios ──
-                    (function() {
-                        for (const _kyoN in gameState.characters) {
-                            const _kyoC = gameState.characters[_kyoN];
-                            if (!_kyoC || _kyoC.isDead || !_kyoC.passive) continue;
-                            if (_kyoC.passive.name !== 'Llamarada Kusanagi') continue;
-                            const _kyoTeam = _kyoC.team;
-                            const _kyoAllies = Object.keys(gameState.characters).filter(function(n){
-                                const _c = gameState.characters[n];
-                                return _c && _c.team === _kyoTeam && !_c.isDead && _c.hp > 0;
-                            });
-                            // Mezclar aleatoriamente y tomar 2
-                            const _shuffled = _kyoAllies.sort(function(){ return Math.random() - 0.5; }).slice(0, 2);
-                            _shuffled.forEach(function(n) {
-                                const _c = gameState.characters[n];
-                                if (!_c) return;
-                                if (!hasStatusEffect(n, 'Aura de Fuego') && !hasStatusEffect(n, 'Aura de fuego')) {
-                                    if (typeof applyBuff === 'function') applyBuff(n, { name: 'Aura de Fuego', type: 'buff', duration: 2, emoji: '🔥' });
-                                    addLog('🔥 Llamarada Kusanagi: ' + n + ' recibe Aura de Fuego', 'buff');
-                                }
-                            });
-                            break;
-                        }
-                    })();
                 }
                 
                 gameState.currentTurnIndex = (gameState.currentTurnIndex + 1) % gameState.turnOrder.length;
