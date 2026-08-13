@@ -2408,6 +2408,65 @@
                             }
                             break;
 
+                        // HACHA DE FLOKI: aplica 1 stack de Veneno; si ya tenía Veneno, aplica Ponzoña en su lugar
+                        case 'hacha_floki':
+                            if (_tgtChar && !_tgtChar.isDead && _tgtChar.hp > 0 && !passiveExecuting) {
+                                const _hfHadVeneno = (_tgtChar.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'')==='veneno'; });
+                                if (_hfHadVeneno) {
+                                    if (typeof applyDebuff === 'function') {
+                                        applyDebuff(targetName, { name:'Ponzona', type:'debuff', duration:2, emoji:'☠️' });
+                                        addLog('🪓 Hacha de Floki: ' + targetName + ' ya tenía Veneno — se aplica Ponzoña', 'debuff');
+                                    }
+                                } else if (typeof applyDebuff === 'function') {
+                                    applyDebuff(targetName, { name:'Veneno', type:'debuff', duration:2, emoji:'☣️' });
+                                    addLog('🪓 Hacha de Floki: 1 stack de Veneno aplicado a ' + targetName, 'debuff');
+                                }
+                            }
+                            break;
+
+                        // ARCO DE ATILA: aplica Ceguera 2 turnos sobre el objetivo golpeado
+                        case 'arco_atila':
+                            if (_tgtChar && !_tgtChar.isDead && _tgtChar.hp > 0 && !passiveExecuting && typeof applyDebuff === 'function') {
+                                applyDebuff(targetName, { name:'Ceguera', type:'debuff', duration:2, emoji:'🙈' });
+                                addLog('🏹 Arco de Atila: Ceguera (2T) aplicada a ' + targetName, 'debuff');
+                            }
+                            break;
+
+                        // LLAVE NEGRA DE KIREI: al ejecutar un especial, limpia 1 buff de cada enemigo golpeado
+                        case 'llave_kirei':
+                            if (_tgtChar && !_tgtChar.isDead && gameState._lastAbilityType === 'special' && !passiveExecuting) {
+                                const _lkBuffs = (_tgtChar.statusEffects||[]).filter(function(e){ return e && e.type==='buff'; });
+                                if (_lkBuffs.length > 0) {
+                                    const _lkIdx = _tgtChar.statusEffects.indexOf(_lkBuffs[0]);
+                                    if (_lkIdx > -1) {
+                                        _tgtChar.statusEffects.splice(_lkIdx, 1);
+                                        addLog('🗝️ Llave Negra de Kirei: 1 buff limpiado de ' + targetName, 'debuff');
+                                    }
+                                }
+                            }
+                            break;
+
+                        // ESPADA DE ACERO VALYRIO: el Over ST tiene 1% de eliminar al objetivo
+                        case 'espada_valyrio':
+                            if (_tgtChar && !_tgtChar.isDead && _tgtChar.hp > 0 && gameState._lastAbilityType === 'over' &&
+                                gameState._lastAbilityTarget === 'single' && !passiveExecuting) {
+                                if (Math.random() < 0.01) {
+                                    _tgtChar.hp = 0; _tgtChar.isDead = true;
+                                    addLog('⚔️ Espada de Acero Valyrio: ¡' + targetName + ' eliminado! (1% de probabilidad, Over ST)', 'damage');
+                                    if (typeof registerKill === 'function') registerKill(attackerName, targetName, false);
+                                    if (typeof checkGameOver === 'function') checkGameOver();
+                                }
+                            }
+                            break;
+
+                        // HILOS DE CHAKRA DE SASORI: los ataques del portador aplican Posesión
+                        case 'hilos_sasori':
+                            if (_tgtChar && !_tgtChar.isDead && _tgtChar.hp > 0 && !passiveExecuting && typeof applyDebuff === 'function') {
+                                applyDebuff(targetName, { name:'Posesion', type:'debuff', duration:2, emoji:'👁️' });
+                                addLog('🕸️ Hilos de Chakra de Sasori: Posesión aplicada a ' + targetName, 'debuff');
+                            }
+                            break;
+
                         // FROSTMOURNE (Legendario): daño doble + roba cargas = daño causado + revive víctima
                         case 'frostmourne':
                             if (_tgtChar && remainingDamage > 0 && !passiveExecuting) {
@@ -3057,6 +3116,12 @@
                     target.charges = Math.min(20, (target.charges||0) + 20);
                     gameState._skeggoxExtraTurn = targetName;
                     addLog('⌛ Anillo del Tiempo: ' + targetName + ' revive con ' + target.hp + ' HP y 20 cargas + turno adicional', 'buff');
+                    if (typeof _animCard === 'function') _animCard(targetName, 'anim-transform', 700);
+                // ── COLLAR DE TSUNADE: una vez por combate, restaura 40% de HP en vez de morir ──
+                } else if (!target._tsunadeUsed && (target.equippedRelics||[]).includes('Collar de Tsunade')) {
+                    target._tsunadeUsed = true;
+                    target.hp = Math.max(1, Math.ceil(target.maxHp * 0.40));
+                    addLog('💚 Collar de Tsunade: ' + targetName + ' restaura ' + target.hp + ' HP en vez de ser eliminado (única vez)', 'buff');
                     if (typeof _animCard === 'function') _animCard(targetName, 'anim-transform', 700);
                 } else {
                     target.isDead = true;
