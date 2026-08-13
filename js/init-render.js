@@ -245,6 +245,12 @@
                 }
             }
 
+            // ── GANCHOS DE INICIO DE RONDA (pasivas/reliquias "Al inicio de cada ronda") ──
+            // La Ronda 1 nunca pasa por la transición normal de endTurn() (empieza directo
+            // en 1, no "llega" a 1 incrementando desde 0) — así que sin esta llamada, todos
+            // esos efectos se saltaban por completo en el primer turno de la partida.
+            if (typeof _runRoundStartPassiveHooks === 'function') _runRoundStartPassiveHooks();
+
             // Calcular orden de turnos
             calculateTurnOrder();
             
