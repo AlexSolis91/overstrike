@@ -1783,233 +1783,15 @@
             }
         }
 
-        function endTurn() {
-            // MODO HORDA: detecta generación de cargas por EFECTO (no por chargeGain normal)
-            // durante el turno que acaba de terminar — dispara el turno extra de Warmaster.
-            if (typeof window.hordaCheckWarmasterExtraTurn === 'function') window.hordaCheckWarmasterExtraTurn();
-
-            gameState._miedoActive = false;
-            gameState._relicEffectsActive = false;
-            gameState._isCritHit = false;
-            gameState._abilityExecuting = false; // Limpiar guard de ejecución
-            // SALVAGUARDA: passiveExecuting es una bandera GLOBAL compartida por todas las
-            // pasivas del juego (declarada en summons.js) para evitar recursión entre ellas.
-            // No tenía ningún reset de seguridad — si algún camino de código la dejaba en
-            // `true` por error (una excepción o un return temprano antes de resetearla),
-            // se quedaba atorada así por el resto de la partida, bloqueando en silencio
-            // CASI TODAS las aplicaciones de debuffs/buffs (que revisan `!passiveExecuting`
-            // antes de aplicarse) — Quemadura normal era la única excepción porque su función
-            // (applyBurn) no depende de esta bandera. Forzarla a `false` en cada fin de turno
-            // garantiza que nunca quede atorada más de un turno, sin importar cuál haya sido
-            // la fuga original.
-            if (typeof passiveExecuting !== 'undefined') passiveExecuting = false;
-            // Limpiar flags por turno
-            gameState._vortexActive = false;
-            gameState._nishanExtraTurnRolledThisTurn = false;
-            gameState._munequeras_rolled = false;
-            // Reset Arco del Kitan (una vez por ronda)
-            for (const _akrN in gameState.characters) { const _akrC = gameState.characters[_akrN]; if (_akrC) _akrC._arcoKitanUsedThisRound = false; }
-            // Limpiar el flag de Over automático de Skeletor como failsafe
-            // (si el Over se interrumpió, el flag podría quedar en true bloqueando futuros disparos)
-            for (const _skFn in gameState.characters) {
-                const _skFc = gameState.characters[_skFn];
-                if (_skFc && _skFc._grayskullAutoOverPending) _skFc._grayskullAutoOverPending = false;
-            }
-            if (gameState.selectedCharacter) {
-                const _esTurnChar = gameState.characters[gameState.selectedCharacter];
-                if (_esTurnChar) {
-                    _esTurnChar._doubleHeal = false;
-                    // Consumir _ignoreTauntNextAttack (Skeggöx) al finalizar el turno
-                    if (_esTurnChar._ignoreTauntNextAttack && !gameState._skeggoxExtraTurn) {
-                        _esTurnChar._ignoreTauntNextAttack = false;
-                    }
-                }
-            }
-
-            // ── SKEGGÖX: turno adicional pendiente ──
-            if (gameState._skeggoxExtraTurn) {
-                const _skChar = gameState._skeggoxExtraTurn;
-                gameState._skeggoxExtraTurn = null;
-                const _skCurIdx = (gameState.currentTurnIndex || 0);
-                if (gameState.turnOrder) {
-                    const _skOldIdx = gameState.turnOrder.indexOf(_skChar);
-                    if (_skOldIdx >= 0) gameState.turnOrder.splice(_skOldIdx, 1);
-                    const _skInsertAt = Math.min(_skCurIdx, gameState.turnOrder.length);
-                    gameState.turnOrder.splice(_skInsertAt, 0, _skChar);
-                    gameState.currentTurnIndex = _skInsertAt;
-                }
-                addLog('🪓 Skeggöx: ¡' + _skChar + ' gana turno adicional!', 'buff');
-                gameState._wasExtraTurn = true;
-                if (onlineMode) {
-                    if (typeof pushGameState === 'function') pushGameState();
-                }
-                setTimeout(function() { startTurn(); }, 700);
-                return;
-            }
-
-            // ── DARTH VADER (Presencia Oscura): turno adicional pendiente ──
-            if (gameState._vaderExtraTurn) {
-                const _vkChar = gameState._vaderExtraTurn;
-                gameState._vaderExtraTurn = null;
-                const _vkCurIdx = (gameState.currentTurnIndex || 0);
-                if (gameState.turnOrder) {
-                    const _vkOldIdx = gameState.turnOrder.indexOf(_vkChar);
-                    if (_vkOldIdx >= 0) gameState.turnOrder.splice(_vkOldIdx, 1);
-                    const _vkInsertAt = Math.min(_vkCurIdx, gameState.turnOrder.length);
-                    gameState.turnOrder.splice(_vkInsertAt, 0, _vkChar);
-                    gameState.currentTurnIndex = _vkInsertAt;
-                }
-                addLog('🌑 Presencia Oscura: ¡' + _vkChar + ' gana turno adicional!', 'buff');
-                gameState._wasExtraTurn = true;
-                if (onlineMode && typeof pushGameState === 'function') pushGameState();
-                setTimeout(function() { startTurn(); }, 700);
-                return;
-            }
-
-            // ── SEIYA (¡Arde, cosmos!): turno adicional pendiente ──
-            if (gameState._seiyaExtraTurn) {
-                const _seChar = gameState._seiyaExtraTurn;
-                gameState._seiyaExtraTurn = null;
-                const _seCurIdx = (gameState.currentTurnIndex || 0);
-                if (gameState.turnOrder) {
-                    const _seOldIdx = gameState.turnOrder.indexOf(_seChar);
-                    if (_seOldIdx >= 0) gameState.turnOrder.splice(_seOldIdx, 1);
-                    const _seInsertAt = Math.min(_seCurIdx, gameState.turnOrder.length);
-                    gameState.turnOrder.splice(_seInsertAt, 0, _seChar);
-                    gameState.currentTurnIndex = _seInsertAt;
-                }
-                addLog('🔥 ¡Arde, cosmos!: ¡' + _seChar + ' gana turno adicional!', 'buff');
-                gameState._wasExtraTurn = true;
-                if (onlineMode && typeof pushGameState === 'function') pushGameState();
-                setTimeout(function() { startTurn(); }, 700);
-                return;
-            }
-            // Cap all character charges at 20 and HP at maxHp
-            for (let n in gameState.characters) {
-                const _c = gameState.characters[n];
-                if (_c && _c.charges > 20) _c.charges = 20;
-                if (_c && _c.hp > _c.maxHp) _c.hp = _c.maxHp; // HP no puede superar el máximo
-            }
-            try {
-                // Decrementar duraciones al FINAL del turno activo
-                // (buffs/debuffs expiran al finalizar el turno del personaje que los tiene)
-                if (gameState.selectedCharacter) {
-                    // ── FORTALEZA DE TAURO (Aldebaran): al final de su turno con Escudo → +2 HP ──
-                    (function() {
-                        const _alC = gameState.characters[gameState.selectedCharacter];
-                        if (!_alC || _alC.isDead || !_alC.passive) return;
-                        if (_alC.passive.name !== 'Fortaleza de Tauro') return;
-                        if ((_alC.shield||0) > 0) {
-                            if (typeof applyHeal === 'function') applyHeal(gameState.selectedCharacter, 2, 'Fortaleza de Tauro');
-                            else if (!hasQuemaduraSolar(_alN)) _alC.hp = Math.min(_alC.maxHp, (_alC.hp||0) + 2);
-                            addLog('🐂 Fortaleza de Tauro: Aldebaran recupera 2 HP (Escudo activo al final del turno)', 'heal');
-                        }
-                    })();
-
-                // QUEMADURA: aplica daño al FINAL del turno del personaje con el debuff
-                    processBurnEffects(gameState.selectedCharacter);
-                    processSolarBurnEffects(gameState.selectedCharacter);
-                    // Check if burn killed the character
-                    const _burnVictim = gameState.characters[gameState.selectedCharacter];
-                    if (_burnVictim && _burnVictim.hp <= 0 && !_burnVictim.isDead) {
-                        _burnVictim.isDead = true;
-                    if (typeof registerKill === 'function') registerKill(gameState._currentTurnAttacker || 'unknown', _burnVictimName, false);
-                        addLog('💀 ' + gameState.selectedCharacter + ' ha sido derrotado por quemaduras', 'damage');
-                        renderCharacters();
-                    }
-                    updateStatusEffectDurations(gameState.selectedCharacter);
-                    // Decrementar cooldowns de habilidades (Another Dimension, etc.)
-                    const actorChar = gameState.characters[gameState.selectedCharacter];
-                    if (actorChar && actorChar.abilities) {
-                        actorChar.abilities.forEach(ab => {
-                            if (ab.cooldown > 0) ab.cooldown--;
-                        });
-                    }
-                }
-
-                // ESPÍRITU DEL HÉROE (Saitama): genera 3 cargas al final del turno si HP <= 50%
-                if ((gameState.selectedCharacter === 'Saitama' || gameState.selectedCharacter === 'Saitama v2')) {
-                    const saitama = gameState.characters['Saitama'];
-                    if (saitama && !saitama.isDead && saitama.hp <= Math.floor(saitama.maxHp * 0.5)) {
-                        saitama.charges += 3;
-                        addLog(`💪 Espíritu del Héroe: Saitama genera 3 cargas (HP bajo 50%)`, 'buff');
-                    }
-                }
-
-                // SIGILO: se rompe si el personaje activo realizó un ataque (al ponerse al descubierto)
-                if (gameState.selectedCharacter) {
-                    const activeChar = gameState.characters[gameState.selectedCharacter];
-                    if (activeChar && activeChar.statusEffects && gameState._attackedThisTurn) {
-                        const sigiloIdx = activeChar.statusEffects.findIndex(e => e && normAccent(e.name || '') === 'sigilo');
-                        if (sigiloIdx !== -1) {
-                            const sigiloEff = activeChar.statusEffects[sigiloIdx];
-                            if (sigiloEff.appliedThisTurn) {
-                                // Sigilo aplicado en ESTE turno — sobrevive, solo limpiar flag
-                                sigiloEff.appliedThisTurn = false;
-                                addLog('👤 Sigilo de ' + gameState.selectedCharacter + ' se mantiene (aplicado este turno)', 'buff');
-                            } else {
-                                activeChar.statusEffects.splice(sigiloIdx, 1);
-                                addLog('👤 Sigilo de ' + gameState.selectedCharacter + ' se pierde al atacar', 'damage');
-                            }
-                        }
-                    }
-                    gameState._attackedThisTurn = false;
-                }
-                
-                // Incrementar contador de turnos en la ronda
-                // No contar turnos extra (Skeggöx/Lado Luminoso) para no terminar la ronda antes de tiempo
-                if (!gameState._wasExtraTurn) {
-                    gameState.turnsInRound++;
-                }
-                gameState._wasExtraTurn = false;
-
-                // Check if round is complete
-                const _currentAlive = Object.values(gameState.characters).filter(c => c && !c.isDead && c.hp > 0).length;
-                const _roundComplete = gameState.turnsInRound >= Math.min(gameState.aliveCountAtRoundStart, _currentAlive > 0 ? _currentAlive : 1);
-                if (_roundComplete) {
-                    // Procesar efectos de final de ronda ANTES de incrementar la ronda
-                    processEndOfRoundEffects();
-                    
-                    gameState.currentRound++;
-                    gameState.turnsInRound = 0;
-                    gameState._aguijonUsedThisRound = false; // Aguijón Esmeralda: resetear para la próxima ronda
-
-                    // Reset Aura de Latveria (Doctor Doom): la Protección Sagrada por debuff es 1x por ronda REAL
-                    // (a diferencia del reset de Arco del Kitan de arriba, este vive en el punto real de cambio
-                    // de ronda, no en cada fin de turno, para que el límite sea genuinamente "una vez por ronda")
-                    for (const _dlN in gameState.characters) { const _dlC = gameState.characters[_dlN]; if (_dlC) _dlC._auraLatveriaUsedThisRound = false; }
-
-                    // Reset Seiya per-round HP tracking
-                    for (const _sn in gameState.characters) {
-                        const _sc = gameState.characters[_sn];
-                        if (_sc && _sc.passive && _sc.passive.name === 'Destello de Pegaso') {
-                            _sc._hpLostThisRound = 0;
-                            _sc._seiyaShieldApplied = false;
-                        }
-                    }
-
-                    // ── EMPATE / BOSS WINS: límite de rondas ──
-                    // Boss: máximo 10 rondas. Normal: máximo 30 rondas.
-                    const _roundLimit = window._bossMode ? 10 : 30;
-                    if (gameState.currentRound > _roundLimit && !gameState.gameOver) {
-                        gameState.gameOver = true;
-
-                        if (window._bossMode) {
-                            // En modo Jefe de Sala: victoria para el jefe, se registra el daño causado
-                            gameState.winner = gameState.aiTeam || 'team2';
-                            addLog('💀 ¡RONDA ' + _roundLimit + '! El Jefe de Sala resiste — ¡victoria del Jefe!', 'damage');
-                            if (typeof showGameOver === 'function') {
-                                showGameOver('💀 ¡RONDA ' + _roundLimit + '! — El Jefe de Sala ha resistido tu ataque');
-                            }
-                        } else {
-                            gameState.winner = 'EMPATE';
-                            addLog('⚖️ ¡RONDA ' + _roundLimit + '! La batalla termina en EMPATE.', 'info');
-                            if (typeof showGameOver === 'function') {
-                                showGameOver('⚖️ ¡EMPATE! — La batalla llegó a la ronda ' + _roundLimit);
-                            }
-                        }
-                        return;
-                    }
+        // ══════════════════════════════════════════════════════════════════
+        // GANCHOS DE INICIO DE RONDA (pasivas, reliquias, invocaciones "Al inicio
+        // de cada ronda"). Extraído a función para poder llamarlo TANTO en la
+        // transición normal de ronda (dentro de endTurn) COMO al arrancar la
+        // partida — antes esto solo vivía inline en el punto de transición, así
+        // que la Ronda 1 (que nunca "transiciona", ya empieza directo en 1) se
+        // saltaba todos estos efectos por completo.
+        // ══════════════════════════════════════════════════════════════════
+        function _runRoundStartPassiveHooks() {
                     // IZANAMI (Itachi): reset dodge flag each round
                     for (const _in in gameState.characters) {
                         const _ic = gameState.characters[_in];
@@ -3077,6 +2859,236 @@
                         const c = gameState.characters[n];
                         if (c && !c.isDead && c.hp > 0) c.hpAtRoundStart = c.hp;
                     }
+        }
+
+        function endTurn() {
+            // MODO HORDA: detecta generación de cargas por EFECTO (no por chargeGain normal)
+            // durante el turno que acaba de terminar — dispara el turno extra de Warmaster.
+            if (typeof window.hordaCheckWarmasterExtraTurn === 'function') window.hordaCheckWarmasterExtraTurn();
+
+            gameState._miedoActive = false;
+            gameState._relicEffectsActive = false;
+            gameState._isCritHit = false;
+            gameState._abilityExecuting = false; // Limpiar guard de ejecución
+            // SALVAGUARDA: passiveExecuting es una bandera GLOBAL compartida por todas las
+            // pasivas del juego (declarada en summons.js) para evitar recursión entre ellas.
+            // No tenía ningún reset de seguridad — si algún camino de código la dejaba en
+            // `true` por error (una excepción o un return temprano antes de resetearla),
+            // se quedaba atorada así por el resto de la partida, bloqueando en silencio
+            // CASI TODAS las aplicaciones de debuffs/buffs (que revisan `!passiveExecuting`
+            // antes de aplicarse) — Quemadura normal era la única excepción porque su función
+            // (applyBurn) no depende de esta bandera. Forzarla a `false` en cada fin de turno
+            // garantiza que nunca quede atorada más de un turno, sin importar cuál haya sido
+            // la fuga original.
+            if (typeof passiveExecuting !== 'undefined') passiveExecuting = false;
+            // Limpiar flags por turno
+            gameState._vortexActive = false;
+            gameState._nishanExtraTurnRolledThisTurn = false;
+            gameState._munequeras_rolled = false;
+            // Reset Arco del Kitan (una vez por ronda)
+            for (const _akrN in gameState.characters) { const _akrC = gameState.characters[_akrN]; if (_akrC) _akrC._arcoKitanUsedThisRound = false; }
+            // Limpiar el flag de Over automático de Skeletor como failsafe
+            // (si el Over se interrumpió, el flag podría quedar en true bloqueando futuros disparos)
+            for (const _skFn in gameState.characters) {
+                const _skFc = gameState.characters[_skFn];
+                if (_skFc && _skFc._grayskullAutoOverPending) _skFc._grayskullAutoOverPending = false;
+            }
+            if (gameState.selectedCharacter) {
+                const _esTurnChar = gameState.characters[gameState.selectedCharacter];
+                if (_esTurnChar) {
+                    _esTurnChar._doubleHeal = false;
+                    // Consumir _ignoreTauntNextAttack (Skeggöx) al finalizar el turno
+                    if (_esTurnChar._ignoreTauntNextAttack && !gameState._skeggoxExtraTurn) {
+                        _esTurnChar._ignoreTauntNextAttack = false;
+                    }
+                }
+            }
+
+            // ── SKEGGÖX: turno adicional pendiente ──
+            if (gameState._skeggoxExtraTurn) {
+                const _skChar = gameState._skeggoxExtraTurn;
+                gameState._skeggoxExtraTurn = null;
+                const _skCurIdx = (gameState.currentTurnIndex || 0);
+                if (gameState.turnOrder) {
+                    const _skOldIdx = gameState.turnOrder.indexOf(_skChar);
+                    if (_skOldIdx >= 0) gameState.turnOrder.splice(_skOldIdx, 1);
+                    const _skInsertAt = Math.min(_skCurIdx, gameState.turnOrder.length);
+                    gameState.turnOrder.splice(_skInsertAt, 0, _skChar);
+                    gameState.currentTurnIndex = _skInsertAt;
+                }
+                addLog('🪓 Skeggöx: ¡' + _skChar + ' gana turno adicional!', 'buff');
+                gameState._wasExtraTurn = true;
+                if (onlineMode) {
+                    if (typeof pushGameState === 'function') pushGameState();
+                }
+                setTimeout(function() { startTurn(); }, 700);
+                return;
+            }
+
+            // ── DARTH VADER (Presencia Oscura): turno adicional pendiente ──
+            if (gameState._vaderExtraTurn) {
+                const _vkChar = gameState._vaderExtraTurn;
+                gameState._vaderExtraTurn = null;
+                const _vkCurIdx = (gameState.currentTurnIndex || 0);
+                if (gameState.turnOrder) {
+                    const _vkOldIdx = gameState.turnOrder.indexOf(_vkChar);
+                    if (_vkOldIdx >= 0) gameState.turnOrder.splice(_vkOldIdx, 1);
+                    const _vkInsertAt = Math.min(_vkCurIdx, gameState.turnOrder.length);
+                    gameState.turnOrder.splice(_vkInsertAt, 0, _vkChar);
+                    gameState.currentTurnIndex = _vkInsertAt;
+                }
+                addLog('🌑 Presencia Oscura: ¡' + _vkChar + ' gana turno adicional!', 'buff');
+                gameState._wasExtraTurn = true;
+                if (onlineMode && typeof pushGameState === 'function') pushGameState();
+                setTimeout(function() { startTurn(); }, 700);
+                return;
+            }
+
+            // ── SEIYA (¡Arde, cosmos!): turno adicional pendiente ──
+            if (gameState._seiyaExtraTurn) {
+                const _seChar = gameState._seiyaExtraTurn;
+                gameState._seiyaExtraTurn = null;
+                const _seCurIdx = (gameState.currentTurnIndex || 0);
+                if (gameState.turnOrder) {
+                    const _seOldIdx = gameState.turnOrder.indexOf(_seChar);
+                    if (_seOldIdx >= 0) gameState.turnOrder.splice(_seOldIdx, 1);
+                    const _seInsertAt = Math.min(_seCurIdx, gameState.turnOrder.length);
+                    gameState.turnOrder.splice(_seInsertAt, 0, _seChar);
+                    gameState.currentTurnIndex = _seInsertAt;
+                }
+                addLog('🔥 ¡Arde, cosmos!: ¡' + _seChar + ' gana turno adicional!', 'buff');
+                gameState._wasExtraTurn = true;
+                if (onlineMode && typeof pushGameState === 'function') pushGameState();
+                setTimeout(function() { startTurn(); }, 700);
+                return;
+            }
+            // Cap all character charges at 20 and HP at maxHp
+            for (let n in gameState.characters) {
+                const _c = gameState.characters[n];
+                if (_c && _c.charges > 20) _c.charges = 20;
+                if (_c && _c.hp > _c.maxHp) _c.hp = _c.maxHp; // HP no puede superar el máximo
+            }
+            try {
+                // Decrementar duraciones al FINAL del turno activo
+                // (buffs/debuffs expiran al finalizar el turno del personaje que los tiene)
+                if (gameState.selectedCharacter) {
+                    // ── FORTALEZA DE TAURO (Aldebaran): al final de su turno con Escudo → +2 HP ──
+                    (function() {
+                        const _alC = gameState.characters[gameState.selectedCharacter];
+                        if (!_alC || _alC.isDead || !_alC.passive) return;
+                        if (_alC.passive.name !== 'Fortaleza de Tauro') return;
+                        if ((_alC.shield||0) > 0) {
+                            if (typeof applyHeal === 'function') applyHeal(gameState.selectedCharacter, 2, 'Fortaleza de Tauro');
+                            else if (!hasQuemaduraSolar(_alN)) _alC.hp = Math.min(_alC.maxHp, (_alC.hp||0) + 2);
+                            addLog('🐂 Fortaleza de Tauro: Aldebaran recupera 2 HP (Escudo activo al final del turno)', 'heal');
+                        }
+                    })();
+
+                // QUEMADURA: aplica daño al FINAL del turno del personaje con el debuff
+                    processBurnEffects(gameState.selectedCharacter);
+                    processSolarBurnEffects(gameState.selectedCharacter);
+                    // Check if burn killed the character
+                    const _burnVictim = gameState.characters[gameState.selectedCharacter];
+                    if (_burnVictim && _burnVictim.hp <= 0 && !_burnVictim.isDead) {
+                        _burnVictim.isDead = true;
+                    if (typeof registerKill === 'function') registerKill(gameState._currentTurnAttacker || 'unknown', _burnVictimName, false);
+                        addLog('💀 ' + gameState.selectedCharacter + ' ha sido derrotado por quemaduras', 'damage');
+                        renderCharacters();
+                    }
+                    updateStatusEffectDurations(gameState.selectedCharacter);
+                    // Decrementar cooldowns de habilidades (Another Dimension, etc.)
+                    const actorChar = gameState.characters[gameState.selectedCharacter];
+                    if (actorChar && actorChar.abilities) {
+                        actorChar.abilities.forEach(ab => {
+                            if (ab.cooldown > 0) ab.cooldown--;
+                        });
+                    }
+                }
+
+                // ESPÍRITU DEL HÉROE (Saitama): genera 3 cargas al final del turno si HP <= 50%
+                if ((gameState.selectedCharacter === 'Saitama' || gameState.selectedCharacter === 'Saitama v2')) {
+                    const saitama = gameState.characters['Saitama'];
+                    if (saitama && !saitama.isDead && saitama.hp <= Math.floor(saitama.maxHp * 0.5)) {
+                        saitama.charges += 3;
+                        addLog(`💪 Espíritu del Héroe: Saitama genera 3 cargas (HP bajo 50%)`, 'buff');
+                    }
+                }
+
+                // SIGILO: se rompe si el personaje activo realizó un ataque (al ponerse al descubierto)
+                if (gameState.selectedCharacter) {
+                    const activeChar = gameState.characters[gameState.selectedCharacter];
+                    if (activeChar && activeChar.statusEffects && gameState._attackedThisTurn) {
+                        const sigiloIdx = activeChar.statusEffects.findIndex(e => e && normAccent(e.name || '') === 'sigilo');
+                        if (sigiloIdx !== -1) {
+                            const sigiloEff = activeChar.statusEffects[sigiloIdx];
+                            if (sigiloEff.appliedThisTurn) {
+                                // Sigilo aplicado en ESTE turno — sobrevive, solo limpiar flag
+                                sigiloEff.appliedThisTurn = false;
+                                addLog('👤 Sigilo de ' + gameState.selectedCharacter + ' se mantiene (aplicado este turno)', 'buff');
+                            } else {
+                                activeChar.statusEffects.splice(sigiloIdx, 1);
+                                addLog('👤 Sigilo de ' + gameState.selectedCharacter + ' se pierde al atacar', 'damage');
+                            }
+                        }
+                    }
+                    gameState._attackedThisTurn = false;
+                }
+                
+                // Incrementar contador de turnos en la ronda
+                // No contar turnos extra (Skeggöx/Lado Luminoso) para no terminar la ronda antes de tiempo
+                if (!gameState._wasExtraTurn) {
+                    gameState.turnsInRound++;
+                }
+                gameState._wasExtraTurn = false;
+
+                // Check if round is complete
+                const _currentAlive = Object.values(gameState.characters).filter(c => c && !c.isDead && c.hp > 0).length;
+                const _roundComplete = gameState.turnsInRound >= Math.min(gameState.aliveCountAtRoundStart, _currentAlive > 0 ? _currentAlive : 1);
+                if (_roundComplete) {
+                    // Procesar efectos de final de ronda ANTES de incrementar la ronda
+                    processEndOfRoundEffects();
+                    
+                    gameState.currentRound++;
+                    gameState.turnsInRound = 0;
+                    gameState._aguijonUsedThisRound = false; // Aguijón Esmeralda: resetear para la próxima ronda
+
+                    // Reset Aura de Latveria (Doctor Doom): la Protección Sagrada por debuff es 1x por ronda REAL
+                    // (a diferencia del reset de Arco del Kitan de arriba, este vive en el punto real de cambio
+                    // de ronda, no en cada fin de turno, para que el límite sea genuinamente "una vez por ronda")
+                    for (const _dlN in gameState.characters) { const _dlC = gameState.characters[_dlN]; if (_dlC) _dlC._auraLatveriaUsedThisRound = false; }
+
+                    // Reset Seiya per-round HP tracking
+                    for (const _sn in gameState.characters) {
+                        const _sc = gameState.characters[_sn];
+                        if (_sc && _sc.passive && _sc.passive.name === 'Destello de Pegaso') {
+                            _sc._hpLostThisRound = 0;
+                            _sc._seiyaShieldApplied = false;
+                        }
+                    }
+
+                    // ── EMPATE / BOSS WINS: límite de rondas ──
+                    // Boss: máximo 10 rondas. Normal: máximo 30 rondas.
+                    const _roundLimit = window._bossMode ? 10 : 30;
+                    if (gameState.currentRound > _roundLimit && !gameState.gameOver) {
+                        gameState.gameOver = true;
+
+                        if (window._bossMode) {
+                            // En modo Jefe de Sala: victoria para el jefe, se registra el daño causado
+                            gameState.winner = gameState.aiTeam || 'team2';
+                            addLog('💀 ¡RONDA ' + _roundLimit + '! El Jefe de Sala resiste — ¡victoria del Jefe!', 'damage');
+                            if (typeof showGameOver === 'function') {
+                                showGameOver('💀 ¡RONDA ' + _roundLimit + '! — El Jefe de Sala ha resistido tu ataque');
+                            }
+                        } else {
+                            gameState.winner = 'EMPATE';
+                            addLog('⚖️ ¡RONDA ' + _roundLimit + '! La batalla termina en EMPATE.', 'info');
+                            if (typeof showGameOver === 'function') {
+                                showGameOver('⚖️ ¡EMPATE! — La batalla llegó a la ronda ' + _roundLimit);
+                            }
+                        }
+                        return;
+                    }
+                    _runRoundStartPassiveHooks();
                     // ── RECALCULAR ORDEN DE TURNOS por velocidad actual (incluye revividos) ──
                     const _lastActed = gameState.turnOrder[gameState.currentTurnIndex]; // quién actuó último
                     const _aliveNamesNew = Object.keys(gameState.characters).filter(function(n) {
