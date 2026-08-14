@@ -1193,6 +1193,19 @@
                 ]
             },
 
+            'Soldier Boy': {
+                portrait: 'https://i.ibb.co/BH6BBX47/Whats-App-Image-2026-08-14-at-12-26-17-PM.jpg',
+                hp: 30, maxHp: 30, speed: 74, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                passive: { name: 'Ultimo Heroe de America', description: 'Soldier Boy tiene efecto pasivo de Provocación permanente. Es inmune a daño de movimientos básicos. Cada vez que un enemigo llega a 20 cargas, Soldier Boy ejecuta automáticamente su Over Explosión Radioactiva (se repite cada vez que vuelva a pasar). Si Soldier Boy recibe un ataque mientras tiene buff Armadura activo, ejecuta su básico Golpe de Escudo sobre el atacante (daño, efectos y generación de cargas completos, sin límite de veces).' },
+                abilities: [
+                    { name: 'Golpe de Escudo',           type: 'basic',   cost: 0,  chargeGain: 2, damage: 1, target: 'single', effect: 'soldierboy_basic',    description: 'Causa de 1 a 6 de daño adicional aleatorio y elimina esa misma cantidad de cargas del enemigo golpeado.' },
+                    { name: 'Compuesto V Gen 1',         type: 'special', cost: 4,  chargeGain: 0, damage: 0, target: 'self',   effect: 'soldierboy_special1', description: 'Disipa los debuffs activos en Soldier Boy y se aplica buff Armadura (3 turnos).' },
+                    { name: 'Represalia Anticomunista',  type: 'special', cost: 8,  chargeGain: 0, damage: 0, target: 'self',   effect: 'soldierboy_special2', description: 'Se cura 10 HP y genera 7 cargas. Si tiene Armadura activa al ejecutar este ataque, el efecto se duplica (20 HP y 14 cargas).' },
+                    { name: 'Explosión Radioactiva',     type: 'over',    cost: 14, chargeGain: 0, damage: 0, target: 'aoe',    effect: 'soldierboy_over',     description: 'Ignora Mega Provocación, Esquivar y Esquiva Área. Elimina todas las cargas y disipa todos los buffs del equipo enemigo. Aplica Quemadura Solar y Debilitar (2 turnos) a todo el equipo enemigo.' }
+                ]
+            },
+
         };
         // ==================== RELIQUIAS ====================
         const RELICS_DATA = {
