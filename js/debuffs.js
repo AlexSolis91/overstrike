@@ -176,7 +176,7 @@ function triggerMaboroshi(targetTeam, debuffName) {
             'Contraataque':       { emoji:'🔄',      stackable:false },
             'Espinas':            { emoji:'🌵',      stackable:false },
             'Armadura':           { emoji:'🛡️',     stackable:false },
-            'Celeridad':          { emoji:'⚡',      stackable:false },
+            'Celeridad':          { emoji:'⚡',      stackable:true  },
             'Anticipacion':       { emoji:'👁️‍🗨️',   stackable:false, canonical:'Anticipación' },
             'Anticipación':       { emoji:'👁️‍🗨️',   stackable:false },
             'Concentracion':      { emoji:'🎯',      stackable:false, canonical:'Concentración' },
