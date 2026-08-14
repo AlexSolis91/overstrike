@@ -358,6 +358,39 @@
                     _fajaC.charges = Math.min(20, (_fajaC.charges||0) + 2);
                     addLog('🩸 Faja de la Agonía: ' + _fajaN + ' +2 cargas (enemigo generó cargas)', 'buff');
                 }
+
+                // ── ÚLTIMO HÉROE DE AMÉRICA (Soldier Boy): cuando un ENEMIGO llega a 20
+                //    cargas → Soldier Boy ejecuta Explosión Radioactiva automáticamente,
+                //    con la misma cinemática que otros disparos automáticos de Over
+                //    (Skeletor, Gipsy Danger). Se repite cada vez que cualquier enemigo
+                //    vuelva a llegar a 20 cargas más adelante en la partida. ──
+                if (c.charges === 20) {
+                    for (const _sbN in gameState.characters) {
+                        const _sbC = gameState.characters[_sbN];
+                        if (!_sbC || _sbC.isDead || _sbC.hp <= 0 || !_sbC.passive) continue;
+                        if (_sbC.passive.name !== 'Ultimo Heroe de America') continue;
+                        if (_sbC.team === c.team) continue; // solo si quien llegó a 20 es enemigo de Soldier Boy
+                        const _sbOver = (_sbC.abilities || []).find(function (a) { return a && a.type === 'over'; });
+                        if (!_sbOver) break;
+                        addLog('🎖️ Último Héroe de América: ' + charName + ' llegó a 20 cargas — Soldier Boy ejecuta Explosión Radioactiva automáticamente', 'buff');
+                        (function (_name, _over, _team) {
+                            if (typeof _showOverCinematic === 'function') {
+                                _showOverCinematic(_name, _over.name, _over.effect, _team, function () {
+                                    const _sbPrev = gameState.selectedCharacter;
+                                    const _sbPrevAb = gameState.selectedAbility;
+                                    gameState.selectedCharacter = _name;
+                                    gameState.selectedAbility = _over;
+                                    passiveExecuting = true;
+                                    try { _executeAbilityCore(null); } catch (e) { console.error('[Soldier Boy Auto Over]', e); }
+                                    passiveExecuting = false;
+                                    gameState.selectedCharacter = _sbPrev;
+                                    gameState.selectedAbility = _sbPrevAb;
+                                });
+                            }
+                        })(_sbN, _sbOver, _sbC.team);
+                        break;
+                    }
+                }
             }
         }
 
@@ -11216,6 +11249,66 @@
                     });
                     if (typeof window._hemanCiclonGrayskull === 'function') window._hemanCiclonGrayskull(gameState.selectedCharacter);
                     if (typeof window._hemanSuperBreath === 'function') window._hemanSuperBreath(gameState.selectedCharacter);
+                }
+
+            // ══════════════════════════════════════════════════════
+            // SOLDIER BOY — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'soldierboy_basic') {
+                const _sbBonus = Math.floor(Math.random() * 6) + 1; // 1 a 6
+                const _sbDmg = 1 + _sbBonus;
+                applyDamageWithShield(targetName, _sbDmg, gameState.selectedCharacter);
+                addLog('🛡️ Golpe de Escudo: ' + _sbDmg + ' daño a ' + targetName + ' (1 base + ' + _sbBonus + ' extra)', 'damage');
+                const _sbTgt = gameState.characters[targetName];
+                if (_sbTgt && !_sbTgt.isDead) {
+                    const _sbChargesRemoved = Math.min(_sbTgt.charges || 0, _sbBonus);
+                    if (_sbChargesRemoved > 0) {
+                        _sbTgt.charges -= _sbChargesRemoved;
+                        addLog('🛡️ Golpe de Escudo: ' + _sbChargesRemoved + ' cargas eliminadas de ' + targetName, 'debuff');
+                    }
+                }
+
+            } else if (ability.effect === 'soldierboy_special1') {
+                const _cvChar = gameState.characters[gameState.selectedCharacter];
+                if (_cvChar) {
+                    const _cvBefore = (_cvChar.statusEffects || []).filter(function (e) { return e && e.type === 'debuff'; }).length;
+                    _cvChar.statusEffects = (_cvChar.statusEffects || []).filter(function (e) { return !e || e.type !== 'debuff'; });
+                    if (typeof applyBuff === 'function') applyBuff(gameState.selectedCharacter, { name: 'Armadura', type: 'buff', duration: 3, emoji: '🪖' });
+                    addLog('💉 Compuesto V Gen 1: Soldier Boy disipa ' + _cvBefore + ' debuff(s) y se aplica Armadura (3 turnos)', 'buff');
+                }
+
+            } else if (ability.effect === 'soldierboy_special2') {
+                const _raChar = gameState.characters[gameState.selectedCharacter];
+                if (_raChar) {
+                    const _raHasArmadura = (_raChar.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'armadura'; });
+                    const _raMult = _raHasArmadura ? 2 : 1;
+                    const _raHeal = 10 * _raMult;
+                    const _raCharges = 7 * _raMult;
+                    if (typeof applyHeal === 'function') applyHeal(gameState.selectedCharacter, _raHeal, 'Represalia Anticomunista');
+                    generateChargesInline(gameState.selectedCharacter, _raCharges);
+                    addLog('🦅 Represalia Anticomunista: Soldier Boy cura ' + _raHeal + ' HP y genera ' + _raCharges + ' cargas' + (_raHasArmadura ? ' (x2, Armadura activa)' : ''), 'heal');
+                }
+
+            } else if (ability.effect === 'soldierboy_over') {
+                const _erChar = gameState.characters[gameState.selectedCharacter];
+                if (_erChar) {
+                    // Sin redirección de Mega Provocación/Esquivar/Esquiva Área: al no pasar por
+                    // applyDamageWithShield (daño 0, manipulación directa de cargas/buffs/debuffs),
+                    // este Over naturalmente ignora esos mecanismos de redirección de daño.
+                    const _erETeam = _erChar.team === 'team1' ? 'team2' : 'team1';
+                    Object.keys(gameState.characters).forEach(function (n) {
+                        const c = gameState.characters[n];
+                        if (!c || c.isDead || c.hp <= 0 || c.team !== _erETeam) return;
+                        c.charges = 0;
+                        c.statusEffects = (c.statusEffects || []).filter(function (e) { return !e || e.type !== 'buff' || e.permanent; });
+                        if (typeof applyDebuff === 'function') {
+                            applyDebuff(n, { name: 'Quemadura Solar', type: 'debuff', duration: 2, emoji: '☀️' });
+                            applyDebuff(n, { name: 'Debilitar', type: 'debuff', duration: 2, emoji: '⬇️' });
+                        }
+                    });
+                    addLog('☢️ Explosión Radioactiva: cargas eliminadas y buffs disipados del equipo enemigo. Quemadura Solar y Debilitar (2 turnos) aplicados.', 'damage');
+                    if (typeof renderCharacters === 'function') renderCharacters();
                 }
 
             // ══════════════════════════════════════════════════════
