@@ -1079,6 +1079,14 @@
                     return;
                 }
             }
+            // ── ÚLTIMO HÉROE DE AMÉRICA (Soldier Boy): inmune a daño de movimientos básicos ──
+            if (!passiveExecuting && gameState.selectedAbility && gameState.selectedAbility.type === 'basic') {
+                const _sbTarget = gameState.characters[targetName];
+                if (_sbTarget && _sbTarget.passive && _sbTarget.passive.name === 'Ultimo Heroe de America') {
+                    addLog('🎖️ Último Héroe de América: Soldier Boy es inmune al básico de ' + (attackerName||'enemigo'), 'buff');
+                    return;
+                }
+            }
             // ── CEGUERA: 50% de fallar el ataque ──
             if (!passiveExecuting && attackerName && damage > 0) {
                 const _blindAtk = gameState.characters[attackerName];
@@ -1693,6 +1701,35 @@
                     });
                     if (_doomStolen > 0) {
                         addLog('🌩️ Aura de Latveria: Doctor Doom roba ' + _doomStolen + ' cargas del equipo enemigo (atacado con Protección Sagrada/Escudo Sagrado)', 'buff');
+                    }
+                }
+            }
+
+            // ARMADURA DE BRONCE: cada vez que el portador recibe un ataque, +1 HP máximo
+            if (attackerName !== null && (target.equippedRelics || []).includes('Armadura de Bronce')) {
+                target.maxHp = (target.maxHp || 0) + 1;
+                addLog('🛡️ Armadura de Bronce: ' + targetName + ' +1 HP máximo (' + target.maxHp + ')', 'buff');
+            }
+
+            // NANOGUANTE DE IRON MAN: si es golpeado por un Over enemigo, gana Escudo Sagrado 2T
+            if (attackerName !== null && gameState.selectedAbility && gameState.selectedAbility.type === 'over' &&
+                (target.equippedRelics || []).includes('Nanoguante de Iron Man')) {
+                if (typeof applyBuff === 'function') {
+                    applyBuff(targetName, { name: 'Escudo Sagrado', type: 'buff', duration: 2, emoji: '✝️' });
+                    addLog('🦾 Nanoguante de Iron Man: ' + targetName + ' gana Escudo Sagrado (2T) — atacado con un Over', 'buff');
+                }
+            }
+
+            // ── ÚLTIMO HÉROE DE AMÉRICA (Soldier Boy): si es atacado mientras tiene buff
+            //    Armadura activo, ejecuta su básico Golpe de Escudo sobre el atacante
+            //    (daño, efectos y generación de cargas completos) — sin límite por ronda ──
+            if (attackerName !== null && target.passive && target.passive.name === 'Ultimo Heroe de America') {
+                const _sbHasArmadura = (target.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'armadura'; });
+                if (_sbHasArmadura && !passiveExecuting) {
+                    const _sbAttacker = gameState.characters[attackerName];
+                    if (_sbAttacker && !_sbAttacker.isDead && _sbAttacker.hp > 0) {
+                        addLog('🎖️ Último Héroe de América: Soldier Boy contraataca con Golpe de Escudo (Armadura activa)', 'buff');
+                        if (typeof window._executeBasicForced === 'function') window._executeBasicForced(targetName, attackerName);
                     }
                 }
             }
