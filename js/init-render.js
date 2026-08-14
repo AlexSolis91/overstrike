@@ -1,5 +1,11 @@
 // ==================== INICIALIZACIÓN ====================
         function initGame(selectedCharacters) {
+            // Limpieza defensiva: si quedó algún modal de SQUADS pegado (z-index muy alto,
+            // cubre toda la pantalla) de una sesión anterior, quitarlo SIEMPRE antes de
+            // arrancar cualquier partida nueva — sin esto podía tapar por completo la UI
+            // de la batalla (incluido el botón de Continuar Turno) en cualquier otro modo.
+            if (typeof window.squadsForceCloseAllModals === 'function') window.squadsForceCloseAllModals();
+
             // Reset full game state for new game
             gameState.selectedCharacter = null;
             gameState.selectedAbility = null;
