@@ -262,16 +262,20 @@ function triggerMaboroshi(targetTeam, debuffName) {
 
         function applyBuff(targetName, effectObj) {
             const target = gameState.characters[targetName];
-            if (!target || !target.statusEffects) return;
+            const _dbgName = effectObj ? effectObj.name : '?';
+            const _dbgTrace = (effectObj && effectObj.name === 'Celeridad'); // diagnóstico detallado solo para Celeridad, para no saturar la consola
+            if (!target || !target.statusEffects) { if (_dbgTrace) console.warn('[applyBuff] ABORT temprano: target inválido para ' + targetName); return; }
             // ── PONZOÑA: el portador no puede recibir buffs ──
             const _hasPonzona = (target.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'ponzona'; });
             if (_hasPonzona) {
                 addLog('☠️ Ponzoña: ' + targetName + ' no puede recibir buffs', 'debuff');
+                if (_dbgTrace) console.warn('[applyBuff] BLOQUEADO por Ponzoña en ' + targetName);
                 return;
             }
             // SABIDURÍA ANTIGUA (Yoda): inmune a buffs (los enemigos no pueden buffear a Yoda)
             // Sus propias habilidades sí aplican buffs a sus ALIADOS — no a Yoda mismo
             if (target.passive && target.passive.name === 'Sabiduría Antigua') {
+                if (_dbgTrace) console.warn('[applyBuff] BLOQUEADO por Sabiduría Antigua (Yoda) en ' + targetName);
                 return; // Yoda rechaza cualquier buff externo silenciosamente
             }
 
@@ -289,6 +293,7 @@ function triggerMaboroshi(targetTeam, debuffName) {
                             target.statusEffects[_bex].duration = Math.max(
                                 target.statusEffects[_bex].duration || 0, effectObj.duration);
                         }
+                        if (_dbgTrace) console.warn('[applyBuff] BLOQUEADO por HARD-DEDUP#1 (ya existía) en ' + targetName + '. Efectos: ' + JSON.stringify((target.statusEffects||[]).map(function(e){return e?e.name:'?';})));
                         return;
                     }
                 }
@@ -312,6 +317,7 @@ function triggerMaboroshi(targetTeam, debuffName) {
                             }
                         }
                         addLog('👁️ Six Paths: buff ' + (effectObj.name||'') + ' sobre ' + targetName + ' disipado (+3 cargas al equipo aliado)', 'buff');
+                        if (_dbgTrace) console.warn('[applyBuff] BLOQUEADO por Six Paths (Pain) en ' + targetName);
                         return;
                     }
                     break;
@@ -323,13 +329,15 @@ function triggerMaboroshi(targetTeam, debuffName) {
             if (!stackable.includes(effNorm)) {
                 if (target.statusEffects.some(e => e && normAccent(e.name || '') === effNorm)) {
                     addLog(`✨ ${targetName} ya tiene ${effectObj.name} activo`, 'info');
+                    if (_dbgTrace) console.warn('[applyBuff] BLOQUEADO por stackable-check (ya activo) en ' + targetName);
                     return;
                 }
             }
                         // Normalize: fix emoji, canonical name
             if (typeof _normalizeEffect === 'function') {
+                const _beforeNormalize = effectObj;
                 effectObj = _normalizeEffect(effectObj, target);
-                if (!effectObj) return; // no-stack: duration refreshed, don't push
+                if (!effectObj) { if (_dbgTrace) console.warn('[applyBuff] BLOQUEADO por _normalizeEffect (no-stack) en ' + targetName + '. Original: ' + JSON.stringify(_beforeNormalize)); return; } // no-stack: duration refreshed, don't push
             }
 
             // ── HARD DEDUPLICATION: non-stackable debuffs cannot stack ──
@@ -360,7 +368,7 @@ function triggerMaboroshi(targetTeam, debuffName) {
                     effectObj = null; // cancel push
                 }
             })();
-            if (!effectObj) return;
+            if (!effectObj) { if (_dbgTrace) console.warn('[applyBuff] BLOQUEADO por HARD-DEDUP#2 en ' + targetName); return; }
 
             // ── SIX PATHS (Pain): 50% interceptar debuff en aliado ──
             if (!passiveExecuting) {
@@ -371,6 +379,7 @@ function triggerMaboroshi(targetTeam, debuffName) {
                     if (Math.random() < 0.5) {
                         _pain.charges = Math.min(20, (_pain.charges||0) + 3);
                         addLog('👁️ Six Paths: debuff ' + (effectObj.name||'') + ' sobre ' + targetName + ' bloqueado (+3 cargas a Pain)', 'buff');
+                        if (_dbgTrace) console.warn('[applyBuff] BLOQUEADO por Six Paths (2do check, aliado) en ' + targetName);
                         return;
                     }
                     break;
@@ -383,10 +392,12 @@ function triggerMaboroshi(targetTeam, debuffName) {
                     target.charges = Math.min(20, (target.charges||0) + 3);
                     target.hp = Math.min(target.maxHp, (target.hp||0) + 3);
                     addLog('👑 Aniquilacion: General de la Horda limpia ' + (effectObj.name||'debuff') + ' (+3 cargas, +3 HP)', 'buff');
+                    if (_dbgTrace) console.warn('[applyBuff] BLOQUEADO por Aniquilacion en ' + targetName);
                     return;
                 }
             }
             target.statusEffects.push(effectObj);
+            if (_dbgTrace) console.warn('[applyBuff] PUSH exitoso de Celeridad en ' + targetName + '. Total efectos ahora: ' + target.statusEffects.length);
             // ── Notificar a SJW Arise!: +2 cargas por buff aplicado sobre ENEMIGO ──
             if (typeof notifyEnemyBuffApplied === 'function' && !passiveExecuting && effectObj && effectObj.type === 'buff') {
                 const _neb_team = target.team;
@@ -563,6 +574,10 @@ function triggerMaboroshi(targetTeam, debuffName) {
                         break;
                     }
                 }
+            }
+            if (_dbgTrace) {
+                const _stillThere = (target.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'celeridad'; });
+                console.warn('[applyBuff] FIN de función para ' + targetName + '. ¿Celeridad sigue presente? ' + _stillThere + '. Efectos finales: ' + JSON.stringify((target.statusEffects||[]).map(function(e){return e?e.name:'?';})));
             }
         }
 
