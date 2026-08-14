@@ -74,12 +74,28 @@
                     return;
                 }
                 
-                // UNICIDAD: verificar que no haya otra invocación con el mismo nombre del mismo invocador
+                // UNICIDAD: verificar que no haya otra invocación VIVA con el mismo nombre,
+                // ya sea del mismo equipo O del mismo invocador — antes solo comparaba por
+                // equipo, y en ciertos modos (Horda) un desajuste de la referencia de equipo
+                // entre rondas podía hacer que el chequeo nunca encontrara a la invocación ya
+                // existente, generando duplicados sin límite (visto con Nagini: 30 copias).
                 const alreadyExists = Object.values(gameState.summons).some(
-                    s => s && s.name === shadowName && s.team === summoner.team
+                    s => s && s.name === shadowName && !s.isDead && (s.hp === undefined || s.hp > 0) &&
+                         (s.team === summoner.team || s.summoner === summonerName)
                 );
                 if (alreadyExists) {
                     addLog('❌ ' + shadowName + ' ya está en el campo (no se puede invocar dos veces)', 'info');
+                    return;
+                }
+
+                // LÍMITE GENERAL: máximo 5 invocaciones vivas por equipo al mismo tiempo,
+                // sin importar el origen — red de seguridad universal para cualquier fuente
+                // de invocación (pasivas, habilidades, reliquias, etc.)
+                const _teamSummonCount = Object.values(gameState.summons).filter(
+                    s => s && s.team === summoner.team && !s.isDead && (s.hp === undefined || s.hp > 0)
+                ).length;
+                if (_teamSummonCount >= 5) {
+                    addLog('❌ ' + shadowName + ' no pudo invocarse — límite de 5 invocaciones por equipo alcanzado', 'info');
                     return;
                 }
                 // Crear copia de la invocación
