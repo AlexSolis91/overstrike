@@ -4096,11 +4096,12 @@
                 let totalHCCharges = 0;
                 addLog(`🪓 ${charName} usa Hacha del Caos Primigenio — ${finalDamage} de daño AOE`, 'damage');
                 checkAndRemoveStealth(enemyTeamHC);
-                for (let hcName in gameState.characters) {
+                const _hcAOE = window.resolveAOETargets(charName, enemyTeamHC);
+                _hcAOE.targets.forEach(function (hcName) {
                     const hcTarget = gameState.characters[hcName];
-                    if (!hcTarget || hcTarget.team !== enemyTeamHC || hcTarget.isDead || hcTarget.hp <= 0) continue;
+                    if (!hcTarget || hcTarget.isDead || hcTarget.hp <= 0) return;
                     const hasSangrado = hcTarget.statusEffects && hcTarget.statusEffects.some(function(e) { return e && normAccent(e.name||'') === 'sangrado'; });
-                    let hcDmg = finalDamage;
+                    let hcDmg = finalDamage * _hcAOE.multiplier;
                     // 50% crit si objetivo tiene Sangrado
                     if (hasSangrado && Math.random() < 0.5) {
                         hcDmg = hcDmg * 2;
@@ -4111,14 +4112,11 @@
                     if (hasSangrado) {
                         totalHCCharges += 3;
                     }
-                }
+                });
                 // También afecta invocaciones enemigas
-                for (let _sid in gameState.summons) {
-                    const _s = gameState.summons[_sid];
-                    if (_s && _s.team === enemyTeamHC && _s.hp > 0) {
-                        applySummonDamage(_sid, finalDamage, charName);
-                    }
-                }
+                _hcAOE.summonTargets.forEach(function (_sid) {
+                    applySummonDamage(_sid, finalDamage * _hcAOE.multiplier, charName);
+                });
                 if (totalHCCharges > 0) {
                     attacker.charges = Math.min(20, (attacker.charges || 0) + totalHCCharges);
                     addLog('⚔️ Hacha del Caos: ' + charName + ' genera ' + totalHCCharges + ' cargas (enemigos con Sangrado)', 'buff');
@@ -4129,40 +4127,46 @@
             // ── ALIENTO DE GINNUNGAGAP (Ymir) ──
             } else if (ability.effect === 'aliento_ginnungagap') {
                 const enemyTeamAG = attacker.team === 'team1' ? 'team2' : 'team1';
-                for (let n in gameState.characters) {
+                const _agAOE = window.resolveAOETargets(charName, enemyTeamAG);
+                _agAOE.targets.forEach(function (n) {
                     const c = gameState.characters[n];
-                    if (!c || c.team !== enemyTeamAG || c.isDead || c.hp <= 0) continue;
-                    applyDamageWithShield(n, finalDamage, charName);
-                    // 50% Megacongelación
+                    if (!c || c.isDead || c.hp <= 0) return;
+                    applyDamageWithShield(n, finalDamage * _agAOE.multiplier, charName);
+                    // 50% Megacongelación (sin magnitud numérica: no se multiplica)
                     if (Math.random() < 0.5) {
                         applyMegaFreeze(n, 1);
                         addLog('❄️ Aliento de Ginnungagap: ' + n + ' recibe Megacongelación', 'damage');
                     }
-                    // Si tiene Sangrado: reducir 2 cargas
+                    // Si tiene Sangrado: reducir 2 cargas (sí tiene magnitud, se multiplica)
                     const cPost = gameState.characters[n];
                     if (cPost && cPost.statusEffects && cPost.statusEffects.some(function(e) { return e && normAccent(e.name||'') === 'sangrado'; })) {
-                        cPost.charges = Math.max(0, (cPost.charges||0) - 2);
-                        addLog('🩸 Aliento Ginnungagap: ' + n + ' pierde 2 cargas (tenía Sangrado)', 'damage');
+                        const _agChargeLoss = 2 * _agAOE.multiplier;
+                        cPost.charges = Math.max(0, (cPost.charges||0) - _agChargeLoss);
+                        addLog('🩸 Aliento Ginnungagap: ' + n + ' pierde ' + _agChargeLoss + ' cargas (tenía Sangrado)', 'damage');
                     }
-                }
-                applyAOEDamageToSummons(attacker.team, finalDamage, charName);
+                });
+                _agAOE.summonTargets.forEach(function (_sid) {
+                    applySummonDamage(_sid, finalDamage * _agAOE.multiplier, charName);
+                });
 
             // ── NIEBLA DE NIFLHEIM (Ymir Over) ──
             } else if (ability.effect === 'niebla_niflheim') {
                 const allyTeamNN = attacker.team;
                 const enemyTeamNN = allyTeamNN === 'team1' ? 'team2' : 'team1';
                 // Daño AOE enemigos
-                for (let n in gameState.characters) {
+                const _nnAOE = window.resolveAOETargets(charName, enemyTeamNN);
+                _nnAOE.targets.forEach(function (n) {
                     const c = gameState.characters[n];
-                    if (!c || c.team !== enemyTeamNN || c.isDead || c.hp <= 0) continue;
-                    applyDamageWithShield(n, finalDamage, charName);
-                    // Congelación a cada enemigo
+                    if (!c || c.isDead || c.hp <= 0) return;
+                    applyDamageWithShield(n, finalDamage * _nnAOE.multiplier, charName);
+                    // Congelación a cada enemigo (sin magnitud: no se multiplica)
                     applyFreeze(n, 2);
                     addLog('❄️ Niebla de Niflheim: ' + n + ' recibe Congelación', 'damage');
-                }
+                });
+                _nnAOE.summonTargets.forEach(function (_sid) {
+                    applySummonDamage(_sid, finalDamage * _nnAOE.multiplier, charName);
+                });
                 // Limpiar debuffs aliados + aplicar Esquivar 3 turnos
-                // Also hit enemy summons
-                applyAOEDamageToSummons(attacker.team, finalDamage, charName);
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== allyTeamNN || c.isDead || c.hp <= 0) continue;
@@ -4228,19 +4232,21 @@
             } else if (ability.effect === 'rey_pagano_v2') {
                 const _rpAtk   = gameState.characters[charName];
                 const _rpETeam = _rpAtk ? (_rpAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
-                for (const _n in gameState.characters) {
+                const _rpAOE = window.resolveAOETargets(charName, _rpETeam);
+                _rpAOE.targets.forEach(function (_n) {
                     const _c = gameState.characters[_n];
-                    if (!_c || _c.team !== _rpETeam || _c.isDead || _c.hp <= 0) continue;
-                    if (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(_n, true)) { addLog('🌟 ' + _n + ' es inmune al AOE (Aspros)', 'buff'); continue; }
+                    if (!_c || _c.isDead || _c.hp <= 0) return;
                     const _hadBleedRP = (_c.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'sangrado'; });
-                    applyDamageWithShield(_n, finalDamage, charName);
+                    applyDamageWithShield(_n, finalDamage * _rpAOE.multiplier, charName);
                     if (typeof applyBleed === 'function') applyBleed(_n, 2);
                     if (_hadBleedRP) {
                         if (typeof applyFear === 'function') applyFear(_n, 2);
                         addLog('😱 Rey Pagano: ' + _n + ' tenía Sangrado → Miedo aplicado', 'debuff');
                     }
-                }
-                if (typeof applyAOEToSummons === 'function') applyAOEToSummons(_rpETeam, finalDamage, charName);
+                });
+                _rpAOE.summonTargets.forEach(function (_sid) {
+                    applySummonDamage(_sid, finalDamage * _rpAOE.multiplier, charName);
+                });
                 addLog('👑 Rey Pagano: ' + finalDamage + ' daño AOE + Sangrado al equipo enemigo', 'damage');
 
             // ── ÁGUILA DE SANGRE V2 (ST 10; <50% HP → elimina [no en Jefes de Sala];
@@ -10055,33 +10061,32 @@
 
             // ══ RENGOKU AOE — manejados ANTES del bloque Kyo para evitar que target=aoe los bloquee ══
             if (typeof ability !== 'undefined' && ability && ability.effect === 'mar_fuego_rengoku') {
-                // Mar de Fuego: 4 AOE. Ignora Esquiva Área. Disipa buffs. Quemadura 1HP. Si ya tenían Quemadura: 100% crítico
+                // Mar de Fuego: 4 AOE. Ignora Esquiva Área (bandera en datos). Disipa buffs. Quemadura 1HP. Si ya tenían Quemadura: 100% crítico
                 const _mfAtk2 = gameState.characters[gameState.selectedCharacter];
                 const _mfET2 = _mfAtk2 ? (_mfAtk2.team==='team1'?'team2':'team1') : 'team2';
-                for (const _n in gameState.characters) {
+                const _mfAOE = window.resolveAOETargets(gameState.selectedCharacter, _mfET2);
+                _mfAOE.targets.forEach(function (_n) {
                     const _cc = gameState.characters[_n];
-                    if (!_cc || _cc.team !== _mfET2 || _cc.isDead || _cc.hp <= 0) continue;
+                    if (!_cc || _cc.isDead || _cc.hp <= 0) return;
                     const _mfHadBurn2 = (_cc.statusEffects||[]).some(function(e){ return e && (e.name === 'Quemadura' || e.name === 'quemadura'); });
                     const _mfBufs2 = (_cc.statusEffects||[]).filter(function(e){ return e && e.type === 'buff' && !e.permanent && !e.passiveHidden; });
                     if (_mfBufs2.length > 0) {
                         _cc.statusEffects = (_cc.statusEffects||[]).filter(function(e){ return !e || e.type !== 'buff' || e.permanent || e.passiveHidden; });
                         addLog('🔥 Mar de Fuego: ' + _mfBufs2.length + ' buff(s) disipados de ' + _n, 'debuff');
                     }
-                    let _mfDmg2 = finalDamage;
+                    let _mfDmg2 = finalDamage * _mfAOE.multiplier;
                     if (_mfHadBurn2) {
-                        _mfDmg2 = finalDamage * 2;
+                        _mfDmg2 = _mfDmg2 * 2;
                         gameState._isCritHit = true;
                         addLog('🔥 Mar de Fuego: ¡Crítico 100%! ' + _n + ' tenía Quemadura activa', 'buff');
                     }
                     applyDamageWithShield(_n, _mfDmg2, gameState.selectedCharacter);
-                    applyFlatBurn(_n, 1, 2);
+                    applyFlatBurn(_n, 1 * _mfAOE.multiplier, 2);
                     addLog('🔥 Mar de Fuego: ' + _mfDmg2 + ' daño + Quemadura a ' + _n, 'damage');
-                }
-                for (const _sid in gameState.summons) {
-                    const _ss = gameState.summons[_sid];
-                    if (!_ss || _ss.team !== _mfET2 || _ss.hp <= 0) continue;
-                    applySummonDamage(_sid, finalDamage, gameState.selectedCharacter);
-                }
+                });
+                _mfAOE.summonTargets.forEach(function (_sid) {
+                    applySummonDamage(_sid, finalDamage * _mfAOE.multiplier, gameState.selectedCharacter);
+                });
                 addLog('🔥 Mar de Fuego: AOE completado (ignora Esquiva Área)', 'damage');
 
             } else if (ability.effect === 'tigre_fuego_rengoku') {
