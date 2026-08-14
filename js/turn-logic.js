@@ -2952,8 +2952,14 @@
                             for (const _n in gameState.characters) {
                                 const _ac = gameState.characters[_n];
                                 if (!_ac || _ac.team !== _seTeam || _ac.isDead || _ac.hp <= 0) continue;
+                                const _seBefore = (_ac.statusEffects || []).length;
                                 if (typeof applyBuff === 'function') applyBuff(_n, { name: 'Celeridad', type: 'buff', duration: 1, emoji: '⚡', speedBonus: 0.15 });
-                                addLog('🌟 Destello de Pegaso: ' + _n + ' recibe Celeridad 15% (1T)', 'buff');
+                                const _seHasIt = (_ac.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'celeridad'; });
+                                if (_seHasIt) {
+                                    addLog('🌟 Destello de Pegaso: ' + _n + ' recibe Celeridad 15% (1T)', 'buff');
+                                } else {
+                                    addLog('🌟 Destello de Pegaso: ' + _n + ' NO recibió Celeridad (bloqueado por otra pasiva/inmunidad)', 'info');
+                                }
                             }
                             break;
                         }
