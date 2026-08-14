@@ -3513,6 +3513,20 @@
                             passiveExecuting = false;
                             gameState.selectedCharacter = _gdPrev;
                             gameState.selectedAbility   = _gdPrevAb;
+                            // ── Reafirmar el botón de Continuar Turno ──
+                            // Esta ejecución forzada corre en segundo plano (la cinemática es
+                            // asíncrona), completamente fuera del flujo normal de turno — mientras
+                            // tanto el turno REAL (ej. el siguiente personaje del jugador) ya pudo
+                            // haber avanzado y mostrado su botón normalmente. _executeAbilityCore
+                            // internamente oculta el botón como parte de "ejecutar una habilidad",
+                            // y como este disparo no pasa por el ciclo normal de endTurn()/startTurn(),
+                            // nada lo volvía a mostrar — dejando al jugador sin poder continuar su
+                            // turno real hasta refrescar la página.
+                            if (!gameState.gameOver) {
+                                const _gdActiveChar = gameState.characters[gameState.selectedCharacter];
+                                const _gdIsPlayerTurn = _gdActiveChar && (!gameState.aiTeam || _gdActiveChar.team !== gameState.aiTeam);
+                                if (_gdIsPlayerTurn && typeof showContinueButton === 'function') showContinueButton();
+                            }
                         });
                     })(_gdN, _gdOver, _gdC.team);
                     break;
@@ -4589,6 +4603,28 @@
 
         // ==================== OVER CINEMATIC ====================
         function _showOverCinematic(charName, abilityName, abilityEffect, team, callback) {
+            // ── Reafirmar el botón de Continuar Turno tras CUALQUIER cinemática de Over ──
+            // Esta función también la usan disparos automáticos de pasivas/reliquias que
+            // ocurren FUERA del flujo normal de turno (Reactor Nuclear de Gipsy Danger,
+            // El Secreto de Grayskull de Skeletor al revivir alguien, Terrible Providencia
+            // de Thanatos por Ira Divina, etc.). Como la cinemática es asíncrona, el turno
+            // real del jugador puede haber avanzado y mostrado su botón mientras tanto —
+            // y como _executeAbilityCore oculta el botón como parte de ejecutar cualquier
+            // habilidad, sin pasar por el ciclo normal de endTurn()/startTurn() nada lo
+            // volvía a mostrar. Se envuelve el callback UNA sola vez aquí para cubrir los
+            // 3 puntos internos donde esta función lo invoca, y cualquier uso futuro.
+            const _origCallback = callback;
+            callback = function () {
+                if (_origCallback) _origCallback();
+                try {
+                    if (!gameState.gameOver) {
+                        const _ocActiveChar = gameState.characters[gameState.selectedCharacter];
+                        const _ocIsPlayerTurn = _ocActiveChar && (!gameState.aiTeam || _ocActiveChar.team !== gameState.aiTeam);
+                        if (_ocIsPlayerTurn && typeof showContinueButton === 'function') showContinueButton();
+                    }
+                } catch (e) { console.error('[_showOverCinematic] Error reafirmando botón de turno:', e); }
+            };
+
             // Eliminar cinemática previa si existe
             const prev = document.getElementById('overCinematic');
             if (prev) prev.remove();
