@@ -193,6 +193,11 @@
                     ch.statusEffects = ch.statusEffects || [];
                     ch.statusEffects.push({ name: 'Provocacion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🛡️' });
                 }
+                // Soldier Boy: Provocación permanente
+                if (baseName === 'Soldier Boy') {
+                    ch.statusEffects = ch.statusEffects || [];
+                    ch.statusEffects.push({ name: 'Provocacion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🎖️' });
+                }
                 // Darth Vader: Aura Oscura permanente (Presencia Oscura)
                 if (baseName === 'Darth Vader') {
                     ch.statusEffects = ch.statusEffects || [];
