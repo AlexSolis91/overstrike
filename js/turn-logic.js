@@ -2958,7 +2958,10 @@
                                 if (_seHasIt) {
                                     addLog('🌟 Destello de Pegaso: ' + _n + ' recibe Celeridad 15% (1T)', 'buff');
                                 } else {
-                                    addLog('🌟 Destello de Pegaso: ' + _n + ' NO recibió Celeridad (bloqueado por otra pasiva/inmunidad)', 'info');
+                                    const _seAfter = (_ac.statusEffects || []).length;
+                                    const _seCurrent = (_ac.statusEffects || []).map(function (e) { return e ? e.name : '?'; }).join(', ') || 'ninguno';
+                                    console.warn('[Destello de Pegaso] Celeridad NO se aplicó a ' + _n + '. Efectos antes=' + _seBefore + ' después=' + _seAfter + '. Efectos actuales: ' + _seCurrent);
+                                    addLog('⚠️ Destello de Pegaso: ' + _n + ' NO recibió Celeridad (revisar consola — F12)', 'debuff');
                                 }
                             }
                             break;
