@@ -2599,31 +2599,6 @@
                         break;
                     }
 
-                    // ── REACTOR NUCLEAR (Gipsy Danger): al final de ronda, si Escudo ≥ 30 → ejecuta Purga del Reactor (Over) AOE ──
-                    for (const _gdN in gameState.characters) {
-                        const _gdC = gameState.characters[_gdN];
-                        if (!_gdC || _gdC.isDead || _gdC.hp <= 0) continue;
-                        if (!_gdC.passive || _gdC.passive.name !== 'Reactor Nuclear') continue;
-                        if ((_gdC.shield||0) < 30) continue;
-                        const _gdOver = (_gdC.abilities||[]).find(function(a){ return a&&a.type==='over'; });
-                        if (!_gdOver) continue;
-                        addLog('⚙️ Reactor Nuclear: Gipsy ejecuta Purga del Reactor automáticamente (Escudo=' + _gdC.shield + ' HP ≥ 30)', 'buff');
-                        // Mostrar animación cinemática primero, luego ejecutar el Over
-                        (function(_name, _over, _team) {
-                            _showOverCinematic(_name, _over.name, _over.effect, _team, function() {
-                                const _gdPrev   = gameState.selectedCharacter;
-                                const _gdPrevAb = gameState.selectedAbility;
-                                gameState.selectedCharacter = _name;
-                                gameState.selectedAbility   = _over;
-                                passiveExecuting = true;
-                                try { _executeAbilityCore(null); } catch(e) { console.error('[Gipsy Reactor Over]', e); }
-                                passiveExecuting = false;
-                                gameState.selectedCharacter = _gdPrev;
-                                gameState.selectedAbility   = _gdPrevAb;
-                            });
-                        })(_gdN, _gdOver, _gdC.team);
-                        break;
-                    }
 
                     // ── VALARAUKAR (Balrog BOSS): inicio de ronda → 50% Miedo 1T / 50% Quemaduras 3HP / 50% Debilitar 1T a cada enemigo ──
                     for (const _balN in gameState.characters) {
@@ -3515,6 +3490,32 @@
                             addLog('❄️ Rey de la Muerte: ' + (_isMega ? 'Megacongelación' : 'Congelación') + ' aplicada a ' + en + ' (fin de ronda, 50%)', 'debuff');
                         }
                     });
+                }
+
+                // ── REACTOR NUCLEAR (Gipsy Danger): al final de ronda, si Escudo ≥ 30 → ejecuta Purga del Reactor (Over) AOE ──
+                for (const _gdN in gameState.characters) {
+                    const _gdC = gameState.characters[_gdN];
+                    if (!_gdC || _gdC.isDead || _gdC.hp <= 0) continue;
+                    if (!_gdC.passive || _gdC.passive.name !== 'Reactor Nuclear') continue;
+                    if ((_gdC.shield||0) < 30) continue;
+                    const _gdOver = (_gdC.abilities||[]).find(function(a){ return a&&a.type==='over'; });
+                    if (!_gdOver) continue;
+                    addLog('⚙️ Reactor Nuclear: Gipsy ejecuta Purga del Reactor automáticamente (Escudo=' + _gdC.shield + ' HP ≥ 30)', 'buff');
+                    // Mostrar animación cinemática primero, luego ejecutar el Over
+                    (function(_name, _over, _team) {
+                        _showOverCinematic(_name, _over.name, _over.effect, _team, function() {
+                            const _gdPrev   = gameState.selectedCharacter;
+                            const _gdPrevAb = gameState.selectedAbility;
+                            gameState.selectedCharacter = _name;
+                            gameState.selectedAbility   = _over;
+                            passiveExecuting = true;
+                            try { _executeAbilityCore(null); } catch(e) { console.error('[Gipsy Reactor Over]', e); }
+                            passiveExecuting = false;
+                            gameState.selectedCharacter = _gdPrev;
+                            gameState.selectedAbility   = _gdPrevAb;
+                        });
+                    })(_gdN, _gdOver, _gdC.team);
+                    break;
                 }
 
                 // ── ASHBRINGER: fin de ronda → cura 40% de su HP máx al portador ──
