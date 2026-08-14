@@ -233,6 +233,7 @@
             }
             addLog('👑 Aniquilacion: la tarjeta de ' + deadName + ' es sustituida por un ' + newType + ' (100% HP)', 'buff');
             if (typeof renderCharacters === 'function') renderCharacters();
+            if (typeof window.onCharacterRevived === 'function') window.onCharacterRevived(deadName);
         });
 
         // DESTREZA DE LOS HUARGOS: al morir, elimina todos los buffs activos del equipo enemigo.
@@ -343,6 +344,7 @@
             rc.charges = 20;
             addLog('🎵 Himno de la Horda: ' + n + ' revive a ' + chosen + ' con 100% HP y 20 cargas', 'heal');
             if (typeof renderCharacters === 'function') renderCharacters();
+            if (typeof window.onCharacterRevived === 'function') window.onCharacterRevived(chosen);
         });
     };
 
@@ -741,6 +743,7 @@
             grantExtraTurn(revived);
             addLog('💀 Magia de Muerte: ' + revived + ' revive con 50% HP, 5 cargas y turno adicional', 'buff');
             if (typeof renderCharacters === 'function') renderCharacters();
+            if (typeof window.onCharacterRevived === 'function') window.onCharacterRevived(revived);
         }
     }
 
