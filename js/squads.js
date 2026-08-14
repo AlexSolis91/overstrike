@@ -1109,6 +1109,15 @@
         } catch (e) { console.error('[SQUADS BOSS] Error registrando resultado:', e); }
         window._squadsBossRoomId = null;
         window._squadsBossHpAtStart = null;
+        // Limpiar TAMBIÉN las variables globales compartidas con el sistema normal de
+        // Jefe de Sala (window.startBossBattle las escribe indistintamente para ambos
+        // flujos) — si no se limpian aquí, la próxima batalla real contra el jefe de sala
+        // semanal (ej. Broly) hereda por error los datos del jefe bonus de SQUADS (ej.
+        // Lich King), mostrando "MVP: Lich King" y "Sin daño registrado" en un combate
+        // que en realidad fue contra otro jefe.
+        window._bossBattleData = null;
+        window._bossHpAtStart = null;
+        window._bossBattleUid = null;
     }
 
 })();
