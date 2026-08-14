@@ -231,6 +231,19 @@
         if (_squadsRoomListener) { _squadsRoomListener.off('value'); _squadsRoomListener = null; }
     }
 
+    // ── Limpieza defensiva: cerrar CUALQUIER modal de SQUADS que haya quedado pegado ──
+    // Se llama al arrancar cualquier partida nueva (initGame), sin importar el modo, para
+    // que un modal de SQUADS mal cerrado nunca pueda tapar la pantalla (z-index muy alto)
+    // en Horda, Ranked, Jefe de Sala, etc.
+    window.squadsForceCloseAllModals = function () {
+        _squadsStopRoomsListener();
+        _squadsStopRoomListener();
+        ['squadsLobbyModal', 'squadsRoomModal', 'squadsCharPickerModal', 'squadsAttackTeamModal', 'squadsBossPickerModal'].forEach(function (id) {
+            var el = document.getElementById(id);
+            if (el) el.remove();
+        });
+    };
+
     window.squadsCloseRoom = function () {
         _squadsStopRoomListener();
         var m = document.getElementById('squadsRoomModal');
