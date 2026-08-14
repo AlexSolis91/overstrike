@@ -11875,7 +11875,7 @@
                 const _gprAtk = gameState.characters[gameState.selectedCharacter];
                 const _gprETeam = _gprAtk ? (_gprAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
                 const _gprShield = _gprAtk ? (_gprAtk.shield||0) : 0;
-                const _gprInstantChance = Math.min(0.50, _gprShield * 0.01);
+                const _gprInstantChance = Math.min(0.20, _gprShield * 0.01);
                 const _gprIsBoss = typeof window._bossMode !== 'undefined' && window._bossMode;
                 for (const _n in gameState.characters) {
                     const _c = gameState.characters[_n];
