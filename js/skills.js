@@ -536,6 +536,100 @@
             }
         }
 
+        // ══════════════════════════════════════════════════════════════════════
+        // FÓRMULA GENERAL PARA ATAQUES AOE — Esquiva Área + Mega Provocación
+        // ══════════════════════════════════════════════════════════════════════
+        // TODA habilidad de categoría AOE debe resolver sus objetivos llamando a
+        // esta función UNA sola vez en vez de iterar el equipo enemigo a mano.
+        //
+        // Devuelve:
+        //   {
+        //     targets:      [nombres de PERSONAJES a golpear],
+        //     summonTargets:[ids de INVOCACIONES a golpear],
+        //     multiplier:   N,     // multiplicador para DAÑO y efectos con
+        //                          // magnitud numérica (HP de Quemadura, cargas
+        //                          // robadas en cantidad, etc.) cuando Mega
+        //                          // Provocación redirige el golpe completo a 1
+        //                          // solo objetivo. SIEMPRE 1 si no hay redirección.
+        //     redirected:   bool,  // true si Mega Provocación absorbió el AOE
+        //     holderName:   string|null
+        //   }
+        //
+        // Reglas:
+        //  • ESQUIVA ÁREA: se excluye de `targets` a cualquier personaje con el
+        //    buff o efecto pasivo activo — A MENOS QUE la habilidad declare
+        //    `ignoresEsquivaArea:true` en sus datos, o el atacante tenga
+        //    equipada una reliquia con `bypassEsquivaArea:true` (ej. Vortex).
+        //  • MEGA PROVOCACIÓN: si hay un portador activo en el equipo objetivo,
+        //    TODO el golpe se redirige a ese portador — `targets`/`summonTargets`
+        //    quedan con solo ese 1 objetivo, y `multiplier` queda en la cantidad
+        //    de objetivos que hubiera golpeado originalmente (para escalar daño
+        //    y efectos CON magnitud numérica). Los efectos SIN magnitud (aturdir,
+        //    congelar, disipar, dejar cargas en 0, etc.) se aplican una sola vez
+        //    normal sobre el portador — NO se multiplican. Esto no aplica si la
+        //    habilidad declara `ignoresMegaProvocacion:true`, o el atacante tiene
+        //    una reliquia con `bypassMegaProvocacion:true` (ej. Palantir).
+        //
+        // `overrides` (opcional) permite forzar ignoresEsquivaArea/ignoresMegaProvocacion
+        // desde el propio handler de una habilidad (ej. Genkidama de Goku, que ignora
+        // Esquiva Área solo en ciertas transformaciones — una condición en tiempo de
+        // ejecución que no se puede expresar como bandera estática en los datos).
+        window.resolveAOETargets = function (attackerName, targetTeam, overrides) {
+            overrides = overrides || {};
+            const attacker = gameState.characters[attackerName];
+            const ability = overrides.ability || gameState.selectedAbility || null;
+
+            const _hasRelicBypass = function (flagName) {
+                if (!attacker) return false;
+                return (attacker.equippedRelics || []).some(function (r) {
+                    const rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[r] : null;
+                    return rd && rd[flagName];
+                });
+            };
+
+            const ignoresEA = !!overrides.ignoresEsquivaArea || !!(ability && ability.ignoresEsquivaArea) || _hasRelicBypass('bypassEsquivaArea');
+            const ignoresMP = !!overrides.ignoresMegaProvocacion || !!(ability && ability.ignoresMegaProvocacion) || _hasRelicBypass('bypassMegaProvocacion');
+
+            // 1. Reunir vivos del equipo objetivo (personajes + invocaciones)
+            let chars = Object.keys(gameState.characters).filter(function (n) {
+                const c = gameState.characters[n];
+                return c && c.team === targetTeam && !c.isDead && c.hp > 0;
+            });
+            let summonIds = Object.keys(gameState.summons || {}).filter(function (sid) {
+                const s = gameState.summons[sid];
+                return s && s.team === targetTeam && s.hp > 0;
+            });
+
+            // 2. Filtrar Esquiva Área (buff o pasiva) — las invocaciones no la tienen
+            if (!ignoresEA) {
+                chars = chars.filter(function (n) {
+                    const _immune = (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(n, false)) ||
+                        (typeof checkMinatoAOEImmunity === 'function' && checkMinatoAOEImmunity(n));
+                    if (_immune) addLog('🌪️ ' + n + ' esquiva el ataque AOE (Esquiva Área)', 'buff');
+                    return !_immune;
+                });
+            }
+
+            // 3. Verificar Mega Provocación — redirige TODO el golpe a un solo objetivo
+            if (!ignoresMP && typeof checkKamishMegaProvocation === 'function') {
+                const mpData = checkKamishMegaProvocation(targetTeam);
+                if (mpData) {
+                    const totalCount = chars.length + summonIds.length;
+                    if (totalCount > 0) {
+                        const holderName = mpData.isCharacter ? mpData.characterName : (mpData.holder ? mpData.holder.name : 'Invocación');
+                        addLog('🎯 ' + holderName + ' (Mega Provocación) absorbe todo el golpe AOE (' + totalCount + ' objetivo' + (totalCount > 1 ? 's' : '') + ')', 'damage');
+                        if (mpData.isCharacter) {
+                            return { targets: [mpData.characterName], summonTargets: [], multiplier: totalCount, redirected: true, holderName: holderName };
+                        } else {
+                            return { targets: [], summonTargets: [mpData.id], multiplier: totalCount, redirected: true, holderName: holderName };
+                        }
+                    }
+                }
+            }
+
+            return { targets: chars, summonTargets: summonIds, multiplier: 1, redirected: false, holderName: null };
+        };
+
         function checkAndRedirectAOEMegaProv(targetTeam, dmgPerTarget, attackerName) {
             // JINETE DE DRAGONES (Daemon): ignora Provocacion y MegaProvocacion
             if (attackerName) {
@@ -11102,18 +11196,19 @@
                 // Este AOE usa un bucle propio en vez del flujo estándar de ability.target==='aoe',
                 // así que el trigger de Jon Snow (El Rey Prometido) hay que llamarlo explícitamente.
                 if (typeof triggerElReyPrometido === 'function') triggerElReyPrometido(gameState.selectedCharacter);
+                const _dkAOE = window.resolveAOETargets(gameState.selectedCharacter, _dkETeam);
                 let _dkProvDmg = 0;
                 let _dkProvName = null;
-                // First pass: deal AOE damage and detect Provocación victims
-                for (const _n in gameState.characters) {
+                // First pass: deal AOE damage (ya resuelto Esquiva Área + Mega Provocación) y detectar Provocación
+                _dkAOE.targets.forEach(function (_n) {
                     const _c = gameState.characters[_n];
-                    if (!_c || _c.team !== _dkETeam || _c.isDead || _c.hp <= 0) continue;
-                    if (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(_n, true)) continue;
+                    if (!_c || _c.isDead || _c.hp <= 0) return;
                     const _prevHp = _c.hp;
-                    applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
-                    const _dealt = _prevHp - Math.max(0, _c.hp);
-                    // Check if this enemy had Provocación/MegaProvocación
-                    if ((hasStatusEffect(_n,'Provocacion')||hasStatusEffect(_n,'Mega Provocacion')||
+                    const _dkDmg = finalDamage * _dkAOE.multiplier;
+                    applyDamageWithShield(_n, _dkDmg, gameState.selectedCharacter);
+                    const _dealt = _prevHp - Math.max(0, gameState.characters[_n] ? gameState.characters[_n].hp : 0);
+                    // Check if this enemy had Provocación/MegaProvocación (solo relevante si NO se redirigió)
+                    if (!_dkAOE.redirected && (hasStatusEffect(_n,'Provocacion')||hasStatusEffect(_n,'Mega Provocacion')||
                          hasStatusEffect(_n,'Provocación')||hasStatusEffect(_n,'Mega Provocación')) && _dealt > 0) {
                         _dkProvDmg = _dealt;
                         _dkProvName = _n;
@@ -11123,16 +11218,17 @@
                         _dkAtk.maxHp = (_dkAtk.maxHp||0) + 1;
                         addLog('💪 Guantelete de Plasma: Doctor Doom +1 HP MAX (' + _dkAtk.maxHp + ')', 'buff');
                     }
-                }
-                // Second pass: if Provocación hit, deal bonus damage to all OTHER enemies
-                if (_dkProvDmg > 0 && _dkProvName) {
+                });
+                // Second pass: si Provocación fue golpeada (y NO hubo redirección por Mega Provocación,
+                // ya que en ese caso solo existe 1 objetivo posible), daño extra a los demás enemigos
+                if (!_dkAOE.redirected && _dkProvDmg > 0 && _dkProvName) {
                     addLog('⚡ Guantelete de Plasma: ' + _dkProvName + ' tenía Provocación — ' + _dkProvDmg + ' daño adicional a los demás enemigos', 'damage');
-                    for (const _n in gameState.characters) {
+                    _dkAOE.targets.forEach(function (_n) {
+                        if (_n === _dkProvName) return;
                         const _c = gameState.characters[_n];
-                        if (!_c || _c.team !== _dkETeam || _c.isDead || _c.hp <= 0 || _n === _dkProvName) continue;
-                        if (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(_n, false)) continue;
+                        if (!_c || _c.isDead || _c.hp <= 0) return;
                         applyDamageWithShield(_n, _dkProvDmg, gameState.selectedCharacter);
-                    }
+                    });
                 }
                 addLog('⚡ Guantelete de Plasma: ' + finalDamage + ' daño AOE', 'damage');
 
@@ -11159,18 +11255,19 @@
                 });
                 const _blStealBase = 2 + _blRelicBonus;
                 let _blTotalStolen = 0;
-                for (const _n in gameState.characters) {
+                const _blAOE = window.resolveAOETargets(gameState.selectedCharacter, _blETeam);
+                _blAOE.targets.forEach(function (_n) {
                     const _c = gameState.characters[_n];
-                    if (!_c || _c.team !== _blETeam || _c.isDead || _c.hp <= 0) continue;
-                    if (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(_n, true)) continue;
-                    applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
+                    if (!_c || _c.isDead || _c.hp <= 0) return;
+                    const _blDmg = finalDamage * _blAOE.multiplier;
+                    const _blSteal = _blStealBase * _blAOE.multiplier;
+                    applyDamageWithShield(_n, _blDmg, gameState.selectedCharacter);
                     // Steal HP
-                    const _stealActual = Math.min(_blStealBase, _c.hp + _blStealBase); // can steal up to target's remaining HP
-                    _c.hp = Math.max(0, (_c.hp||0) - _blStealBase);
+                    _c.hp = Math.max(0, (_c.hp||0) - _blSteal);
                     if (_c.hp <= 0 && !_c.isDead) { _c.isDead = true; if(typeof registerKill==='function') registerKill(gameState.selectedCharacter, _n, false); }
-                    _blTotalStolen += _blStealBase;
-                    addLog('🩸 Magia de la Línea de Sangre: roba ' + _blStealBase + ' HP a ' + _n, 'damage');
-                }
+                    _blTotalStolen += _blSteal;
+                    addLog('🩸 Magia de la Línea de Sangre: roba ' + _blSteal + ' HP a ' + _n, 'damage');
+                });
                 // Heal Doctor Doom with stolen HP
                 if (_blTotalStolen > 0 && _blAtk && typeof applyHeal === 'function') {
                     applyHeal(gameState.selectedCharacter, _blTotalStolen, 'Magia de la Línea de Sangre');
@@ -11819,17 +11916,20 @@
                 // CAÑÓN DE PLASMA: AOE 2 daño. 50% Aturdimiento por enemigo. Por cada Aturdimiento en equipo enemigo → Gipsy +5 Escudo
                 const _gcpAtk = gameState.characters[gameState.selectedCharacter];
                 const _gcpETeam = _gcpAtk ? (_gcpAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
-                for (const _n in gameState.characters) {
+                const _gcpAOE = window.resolveAOETargets(gameState.selectedCharacter, _gcpETeam);
+                _gcpAOE.targets.forEach(function (_n) {
                     const _c = gameState.characters[_n];
-                    if (!_c || _c.team !== _gcpETeam || _c.isDead || _c.hp <= 0) continue;
-                    if (typeof checkAsprosAOEImmunity==='function' && checkAsprosAOEImmunity(_n, true)) continue;
-                    applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
-                    addLog('⚙️ Cañón de Plasma: ' + finalDamage + ' daño a ' + _n, 'damage');
+                    if (!_c || _c.isDead || _c.hp <= 0) return;
+                    const _gcpDmg = finalDamage * _gcpAOE.multiplier;
+                    applyDamageWithShield(_n, _gcpDmg, gameState.selectedCharacter);
+                    addLog('⚙️ Cañón de Plasma: ' + _gcpDmg + ' daño a ' + _n, 'damage');
+                    // El Aturdimiento no tiene magnitud numérica: se aplica 1 sola vez normal,
+                    // sin multiplicar, aunque el golpe haya sido redirigido por Mega Provocación
                     if (Math.random() < 0.50) {
                         if (typeof applyDebuff==='function') applyDebuff(_n, {name:'Aturdimiento',type:'debuff',duration:1,emoji:'⭐'});
                         addLog('⚙️ Cañón de Plasma: Aturdimiento aplicado a ' + _n, 'debuff');
                     }
-                }
+                });
                 // +5 Escudo por cada Aturdimiento en equipo enemigo
                 if (_gcpAtk) {
                     let _gcpStuns = 0;
@@ -11877,13 +11977,15 @@
                 const _gprShield = _gprAtk ? (_gprAtk.shield||0) : 0;
                 const _gprInstantChance = Math.min(0.20, _gprShield * 0.01);
                 const _gprIsBoss = typeof window._bossMode !== 'undefined' && window._bossMode;
-                for (const _n in gameState.characters) {
+                const _gprAOE = window.resolveAOETargets(gameState.selectedCharacter, _gprETeam);
+                _gprAOE.targets.forEach(function (_n) {
                     const _c = gameState.characters[_n];
-                    if (!_c || _c.team !== _gprETeam || _c.isDead || _c.hp <= 0) continue;
-                    if (typeof checkAsprosAOEImmunity==='function' && checkAsprosAOEImmunity(_n, true)) continue;
-                    applyDamageWithShield(_n, finalDamage, gameState.selectedCharacter);
-                    addLog('⚙️ Purga del Reactor: ' + finalDamage + ' daño a ' + _n, 'damage');
-                    // Eliminación instantánea (no aplica a Jefes de Sala)
+                    if (!_c || _c.isDead || _c.hp <= 0) return;
+                    const _gprDmg = finalDamage * _gprAOE.multiplier;
+                    applyDamageWithShield(_n, _gprDmg, gameState.selectedCharacter);
+                    addLog('⚙️ Purga del Reactor: ' + _gprDmg + ' daño a ' + _n, 'damage');
+                    // La eliminación instantánea es una probabilidad, no una magnitud numérica:
+                    // se evalúa 1 sola vez normal, sin multiplicar por objetivos redirigidos
                     if (!_gprIsBoss && _gprInstantChance > 0 && Math.random() < _gprInstantChance) {
                         const _cAfter = gameState.characters[_n];
                         if (_cAfter && !_cAfter.isDead && _cAfter.hp > 0) {
@@ -11892,7 +11994,7 @@
                             if (typeof checkAndHandleDeath==='function') checkAndHandleDeath(_n);
                         }
                     }
-                    // 50% Mega Aturdimiento
+                    // Mega Aturdimiento tampoco tiene magnitud: 1 sola vez normal
                     if (Math.random() < 0.50) {
                         const _cNow = gameState.characters[_n];
                         if (_cNow && !_cNow.isDead && _cNow.hp > 0) {
@@ -11900,7 +12002,7 @@
                             addLog('⚙️ Purga del Reactor: Mega Aturdimiento aplicado a ' + _n, 'debuff');
                         }
                     }
-                }
+                });
 
             // ══════════════════════════════════════════════════════
             // SKELETOR — handlers
