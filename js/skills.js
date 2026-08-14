@@ -114,6 +114,11 @@
                 if (!_skC.passive || _skC.passive.name !== 'Soberano de la Destrucción') continue;
                 // No disparar si quien revivió ES Skeletor mismo (evitar loop)
                 if (_skN === revivedName) continue;
+                // 50% de probabilidad POR CADA personaje revivido (tirada independiente cada vez)
+                if (Math.random() >= 0.5) {
+                    addLog('💀 Soberano de la Destrucción: ' + revivedName + ' revivió, pero Skeletor no reacciona esta vez (50%)', 'info');
+                    break;
+                }
                 // Disparar con pequeño delay para que la animación de revivir termine primero
                 (function(skName) {
                     setTimeout(function() {
@@ -2980,6 +2985,7 @@
                     tgtSegador.team = attacker.team; // Cambia de equipo
                     tgtSegador.statusEffects = [];
                     addLog(`💀➡️👻 ¡${targetName} revive como aliado de Lich King con ${tgtSegador.hp} HP!`, 'buff');
+                    if (typeof window.onCharacterRevived === 'function') window.onCharacterRevived(targetName);
                 }
 
             } else if (ability.effect === 'el_rey_caido') {
@@ -6353,6 +6359,7 @@
                     _tdTgt.team = _rdnTeam;
                     addLog('☠️ Toque de la Muerte: ¡' + targetName + ' revive como aliado del Rey de la Noche con ' + _tdTgt.hp + ' HP!', 'buff');
                     renderCharacters();
+                    if (typeof window.onCharacterRevived === 'function') window.onCharacterRevived(targetName);
                 }
                 addLog('❄️ Toque de la Muerte: ' + finalDamage + ' daño a ' + targetName, 'damage');
 
@@ -6387,6 +6394,7 @@
                             _c.statusEffects = [];
                             _c.team = _feAtk.team;
                             addLog('☠️ Frío Eterno: ¡' + _n + ' revive como aliado del Rey de la Noche con ' + _c.hp + ' HP!', 'buff');
+                            if (typeof window.onCharacterRevived === 'function') window.onCharacterRevived(_n);
                         }
                     }
                     for (const _sid in gameState.summons) { const _s = gameState.summons[_sid]; if (_s && _s.team === _feETeam && _s.hp > 0) applySummonDamage(_sid, finalDamage, gameState.selectedCharacter); }
@@ -7400,6 +7408,7 @@
                         _explosionDeSombras: true
                     };
                     addLog('💀 Extracción de Sombras: ' + targetName + ' revive como aliado con 5 HP y 20 cargas. Pasiva sustituida por Explosión de Sombras.', 'buff');
+                    if (typeof window.onCharacterRevived === 'function') window.onCharacterRevived(targetName);
                     renderCharacters();
                 }
 
@@ -9058,6 +9067,7 @@
                         _c.isDead = false; _c.hp = 20; _c.charges = 10; _c.statusEffects = []; _c._wasRevived = true;
                         _luR++;
                         addLog('🌟 Una Luz en la Oscuridad: ' + _n + ' revive con 20 HP y 10 cargas!', 'buff');
+                        if (typeof window.onCharacterRevived === 'function') window.onCharacterRevived(_n);
                     }
                     if (_luR === 0) addLog('🌟 Una Luz en la Oscuridad: no hay aliados caidos', 'info');
                     renderCharacters(); renderSummons();
