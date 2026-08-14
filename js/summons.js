@@ -2507,6 +2507,9 @@
                                         addLog('❄️ Frostmourne: ' + targetName + ' revive como aliado con 100% HP y 20 cargas!', 'buff');
                                         if (typeof renderCharacters === 'function') renderCharacters();
                                         if (typeof pushGameState === 'function' && typeof onlineMode !== 'undefined' && onlineMode) pushGameState();
+                                        // Notificar al sistema centralizado de revivificación (dispara, entre
+                                        // otras cosas, el Over automático de Skeletor si está en la partida)
+                                        if (typeof window.onCharacterRevived === 'function') window.onCharacterRevived(targetName);
                                         // SALVAGUARDA (Modo Horda): esta revivificación es asíncrona (400ms de
                                         // retraso) — si en ese lapso checkGameOver() ya había cerrado la oleada
                                         // (porque en el momento del AOE el equipo enemigo ya estaba en 0), no
@@ -3143,6 +3146,7 @@
                             // Ragnar revives
                             _rC.isDead = false; _rC.hp = 15; _rC.charges = 20;
                             addLog('🪓 Estratega de Odin: ¡Ragnar revive con 15 HP y 20 cargas!', 'buff');
+                            if (typeof window.onCharacterRevived === 'function') window.onCharacterRevived(_rN);
                             const _rETeam = _rC.team === 'team1' ? 'team2' : 'team1';
                             const _rEnemies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===_rETeam&&!c.isDead&&c.hp>0; });
                             if (_rEnemies.length > 0) {
@@ -3760,6 +3764,7 @@
                         addLog('💀 Rey de la Muerte: ' + victimName + ' revive como aliado del Lich King con ' + _v.hp + ' HP y 10 cargas!', 'buff');
                         if (typeof renderCharacters === 'function') renderCharacters();
                         if (typeof renderSummons === 'function') renderSummons();
+                        if (typeof window.onCharacterRevived === 'function') window.onCharacterRevived(victimName);
                     }, 500);
                 }
             }
@@ -4045,6 +4050,7 @@ function applyRegeneration(targetName, amount, duration) {
                 Object.values(gameState.characters).filter(c => c && !c.isDead && c.hp > 0).length);
             
             addLog(`✨ ${targetName} ha sido revivido con ${target.maxHp} HP y 10 cargas!`, 'heal');
+            if (typeof window.onCharacterRevived === 'function') window.onCharacterRevived(targetName);
 
             // ── MORDEDURA (Cría de Dragón): al morir, Rhaenyra genera 3 cargas ──
             // Note: this fires whenever any summon dies — check inside
