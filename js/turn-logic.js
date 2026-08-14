@@ -2269,6 +2269,7 @@
                             delete _svC._sabakuReviveHp;
                             addLog('🏜️ Sabaku Taisō: ¡' + _svN + ' revive con ' + _svC.hp + ' HP y 0 cargas!', 'buff');
                             renderCharacters();
+                            if (typeof window.onCharacterRevived === 'function') window.onCharacterRevived(_svN);
                         }
                     }
                     // RESET EVASIÓN SASUKE al inicio de ronda
