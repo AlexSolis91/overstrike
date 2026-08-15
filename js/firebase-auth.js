@@ -5436,6 +5436,20 @@
                     calculateTurnOrder();
                     if (typeof renderTurnOrder === 'function') renderTurnOrder();
                 }
+                // ── Volver a aplicar hooks de "inicio de ronda" que dependen de reliquias ──
+                // initGame() ya corre _runRoundStartPassiveHooks() sincrónicamente al arrancar
+                // la partida (para que la Ronda 1 no se los salte), pero la carga de reliquias es
+                // ASÍNCRONA (lecturas de Firebase) y termina DESPUÉS de que initGame() ya regresó —
+                // por eso reliquias como Jetpack Mandaloriano (Esquiva Área al inicio de ronda) no
+                // encontraban nada en equippedRelics la primera vez que corrió el hook.
+                // IMPORTANTE: NO se puede simplemente volver a llamar a toda
+                // _runRoundStartPassiveHooks() aquí — esa función contiene decenas de otros efectos
+                // (ataques automáticos, generación de cargas, tiradas de probabilidad) que NO son
+                // seguros de ejecutar dos veces y duplicarían daño/cargas. Solo se repite, de forma
+                // aislada, el hook puntual de Jetpack Mandaloriano — y únicamente en la Ronda 1.
+                if (gameState.currentRound === 1 && typeof window._runJetpackMandalorianoRoundStartCheck === 'function') {
+                    window._runJetpackMandalorianoRoundStartCheck();
+                }
             });
         };
 
