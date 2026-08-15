@@ -854,6 +854,22 @@
             if (typeof playGameSelectSfx !== 'undefined') playGameSelectSfx();
             gameState._relicEffectsActive = false;
             gameState._abilityExecuting = false; // Permitir siguiente ataque
+            // ── Red de seguridad: gameState.selectedCharacter apuntando a un personaje que ya no
+            //    existe (ej. corrupción por ejecuciones automáticas solapadas) — en vez de crashear
+            //    con "Cannot read properties of undefined", recuperar usando el turno actual real. ──
+            if (!gameState.characters[gameState.selectedCharacter]) {
+                console.warn('[continueTurn] gameState.selectedCharacter ("' + gameState.selectedCharacter + '") no existe. Recuperando desde turnOrder.');
+                const _recovered = gameState.turnOrder && gameState.turnOrder[gameState.currentTurnIndex];
+                if (_recovered && gameState.characters[_recovered]) {
+                    gameState.selectedCharacter = _recovered;
+                } else {
+                    const _anyAlive = Object.keys(gameState.characters).find(function (n) {
+                        const c = gameState.characters[n];
+                        return c && !c.isDead && c.hp > 0;
+                    });
+                    if (_anyAlive) gameState.selectedCharacter = _anyAlive;
+                }
+            }
             // ── ENFORCE PERMANENT PASSIVES AT TURN START ──
             for (const _epn in gameState.characters) {
                 const _epc = gameState.characters[_epn];
