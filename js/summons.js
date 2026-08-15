@@ -3313,7 +3313,14 @@
                 }
 
                 // SANGRE DE NUMENOR (Aragorn): cuando un ALIADO muere → Aragorn y un aliado aleatorio ejecutan su Over
-                if (!passiveExecuting) {
+                // NOTA: a propósito NO se filtra por !passiveExecuting — la pasiva debe activarse
+                // "cuando un aliado muere" sin importar si la muerte ocurrió durante un ataque
+                // automático de otro personaje (ej. Baran ejecutando Frenzied Slash al inicio de
+                // ronda, envuelto en passiveExecuting=true durante sus 3 golpes). Si esos 3 golpes
+                // matan a varios aliados de Aragorn, cada muerte debe programar su propio disparo
+                // (el setTimeout de 500ms ya desacopla la ejecución real del estado de
+                // passiveExecuting en el momento en que ocurrió la muerte).
+                {
                     const _deadChar = gameState.characters[targetName];
                     const _deadTeam = _deadChar ? _deadChar.team : null;
                     if (_deadTeam) {
