@@ -212,9 +212,35 @@
         };
 
         // ARAGORN — Over automático al morir un aliado (Sangre de Numenor)
+        // Encolado: si varios aliados mueren casi al mismo tiempo (ej. los 3 golpes de Frenzied
+        // Slash de Baran matando a varios personajes distintos), cada muerte programa su propio
+        // disparo. Sin una cola, sus cinemáticas/ejecuciones asíncronas podían solaparse y corromper
+        // gameState.selectedCharacter (guardado/restaurado dentro del callback async de cada una) —
+        // causando que continueTurn() luego intentara leer statusEffects de un personaje inexistente.
+        // La cola garantiza que cada disparo termine por completo antes de que empiece el siguiente.
+        window._aragornOverQueue = window._aragornOverQueue || [];
+        window._aragornOverQueueBusy = window._aragornOverQueueBusy || false;
+
+        function _processAragornOverQueue() {
+            if (window._aragornOverQueueBusy) return;
+            const _next = window._aragornOverQueue.shift();
+            if (!_next) return;
+            window._aragornOverQueueBusy = true;
+            _executeAragornOverOnDeathNow(_next.aragornName, _next.allyTeam, function () {
+                window._aragornOverQueueBusy = false;
+                _processAragornOverQueue();
+            });
+        }
+
         window._triggerAragornOverOnDeath = function(aragornName, allyTeam) {
+            window._aragornOverQueue.push({ aragornName: aragornName, allyTeam: allyTeam });
+            _processAragornOverQueue();
+        };
+
+        function _executeAragornOverOnDeathNow(aragornName, allyTeam, _onComplete) {
+            const _finish = _onComplete || function(){};
             const _aragorn = gameState.characters[aragornName];
-            if (!_aragorn || _aragorn.isDead || _aragorn.hp <= 0) return;
+            if (!_aragorn || _aragorn.isDead || _aragorn.hp <= 0) { _finish(); return; }
             const _aragornOver = (_aragorn.abilities||[]).find(function(a){ return a&&a.type==='over'; });
             const _alliesWithOver = Object.keys(gameState.characters).filter(function(_n){
                 const _c = gameState.characters[_n];
@@ -250,10 +276,11 @@
                             setTimeout(function() {
                                 _showCinematic(_allyName, _allyOver.name, _allyOver.effect, allyTeam, function() {
                                     _execOver(_allyName, _allyOver);
+                                    _finish();
                                 });
                             }, 400);
-                        }
-                    }
+                        } else { _finish(); }
+                    } else { _finish(); }
                 });
             } else if (_allyName) {
                 const _allyC    = gameState.characters[_allyName];
@@ -261,10 +288,11 @@
                 if (_allyOver) {
                     _showCinematic(_allyName, _allyOver.name, _allyOver.effect, allyTeam, function() {
                         _execOver(_allyName, _allyOver);
+                        _finish();
                     });
-                }
-            }
-        };
+                } else { _finish(); }
+            } else { _finish(); }
+        }
 
         function triggerThanatosAutoOver(charName) {
             const caster = gameState.characters[charName];
