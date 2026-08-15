@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OVERSTRIKE - 5v5 RPG Battle v4.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css?v=20261019">
+    <link rel="stylesheet" href="css/styles.css?v=20261020">
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -253,7 +253,7 @@
             <!-- Logo: sin emoji, pegado a la izquierda -->
             <div style="display:flex;flex-direction:column;gap:2px;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;white-space:nowrap;">OVERSTRIKE</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20261019</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20261020</div>
             </div>
 
             <!-- HUD: empujado todo a la derecha junto al botón mute -->
@@ -266,11 +266,11 @@
                     <div id="marketEventBadge" title="Evento de Probabilidad Aumentada activo" style="display:none;position:absolute;top:-10px;right:-10px;align-items:center;gap:3px;background:linear-gradient(135deg,#ffd700,#ff8800);color:#1a0f00;font-family:Orbitron,sans-serif;font-size:.55rem;font-weight:900;padding:3px 7px;border-radius:20px;box-shadow:0 0 10px rgba(255,215,0,0.85);white-space:nowrap;z-index:50;animation:arcaneEventPulse 1.2s infinite;pointer-events:none;">🎲 <span class="aeb-timer">00:00</span></div>
                 </div>
                 <!-- Inventario -->
-                <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} window.showInventoryScreen && window.showInventoryScreen()"
+                <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} window.showInventoryScreen && window.showInventoryScreen('relics')"
                     style="font-family:Orbitron,sans-serif;font-size:.72rem;font-weight:700;padding:.42rem 1rem;background:linear-gradient(135deg,#1a0a2e,#2d1b69);color:#c864ff;border:1.5px solid #c864ff;border-radius:8px;cursor:pointer;letter-spacing:.05em;transition:all .2s;"
                     onmouseover="this.style.boxShadow='0 0 12px rgba(200,100,255,.55)'" onmouseout="this.style.boxShadow='none'">🎒 INVENTARIO</button>
                 <!-- Personajes -->
-                <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} window.showInventoryScreen && window.showInventoryScreen(); setTimeout(function(){ window.showInvTab && window.showInvTab('characters'); }, 100);"
+                <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} window.showInventoryScreen && window.showInventoryScreen('characters')"
                     style="font-family:Orbitron,sans-serif;font-size:.72rem;font-weight:700;padding:.42rem 1rem;background:linear-gradient(135deg,#0a1a2e,#1a3a5c);color:#4fc3f7;border:1.5px solid #4fc3f7;border-radius:8px;cursor:pointer;letter-spacing:.05em;transition:all .2s;"
                     onmouseover="this.style.boxShadow='0 0 12px rgba(79,195,247,.55)'" onmouseout="this.style.boxShadow='none'">👤 PERSONAJES</button>
                 <!-- Relicario -->
@@ -690,12 +690,17 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20261019"></script>
-    <script src="js/arcane-event.js?v=20261019"></script>
+    <script src="js/firebase-auth.js?v=20261020"></script>
+    <script src="js/arcane-event.js?v=20261020"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
-        window.showInventoryScreen = function showInventoryScreen() {
+        window.showInventoryScreen = function showInventoryScreen(tab) {
             document.getElementById('inventoryScreen').style.display = 'block';
+            // Siempre fijar la pestaña explícitamente al abrir — antes, si el usuario había
+            // entrado antes a "Personajes" (que reutiliza esta misma pantalla), la pestaña se
+            // quedaba pegada en "characters" la próxima vez que se abría "Inventario", aunque
+            // el título dijera INVENTARIO. Ahora cada botón siempre fuerza su propia pestaña.
+            showInvTab(tab === 'characters' ? 'characters' : 'relics');
             loadInventoryData();
         }
         window.hideInventoryScreen = function hideInventoryScreen() { document.getElementById('inventoryScreen').style.display = 'none'; }
@@ -988,22 +993,29 @@
             }, 100);
         }
 
-        async function loadInventoryData() {
-            const user = firebase.auth().currentUser;
-            if (!user) return;
-            const data = await getPlayerData(user.uid);
-            document.getElementById('inv-gold').textContent = (data.gold||0).toLocaleString();
-            document.getElementById('inv-runes').textContent = data.attack_runes||0;
-            document.getElementById('inv-keys').textContent = data.arcane_keys||0;
-            // Renderizar reliquias
-            const relics = (data.inventory && data.inventory.relics) || {};
+        // ── Renderiza la grilla de reliquias respetando los filtros activos (nombre/rareza/tipo) ──
+        function renderInvRelicsGrid() {
             const grid = document.getElementById('inv-relics-grid');
+            if (!grid) return;
+            const relics = window._invRelicsRaw || {};
+            const uid = window._invUserUid;
+            const searchEl = document.getElementById('inv-relic-search');
+            const rarityEl = document.getElementById('inv-relic-filter-rarity');
+            const typeEl   = document.getElementById('inv-relic-filter-type');
+            const searchTerm = searchEl ? searchEl.value.trim().toLowerCase() : '';
+            const rarityFilter = rarityEl ? rarityEl.value : '';
+            const typeFilter   = typeEl ? typeEl.value : '';
             grid.innerHTML = '';
             const tierColors = { Raro:'#aaa', Especial:'#4fc3f7', Epico:'#c864ff', Legendario:'#ffd700' };
+            let shown = 0;
             Object.entries(relics).forEach(function([name, qty]) {
                 if (!qty || qty <= 0) return;
                 const rd = typeof RELICS_DATA !== 'undefined' ? RELICS_DATA[name] : null;
                 if (!rd) return;
+                if (searchTerm && name.toLowerCase().indexOf(searchTerm) === -1) return;
+                if (rarityFilter && rd.tier !== rarityFilter) return;
+                if (typeFilter && rd.slotCategory !== typeFilter) return;
+                shown++;
                 const color = tierColors[rd.tier]||'#aaa';
                 const card = document.createElement('div');
                  card.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid ' + color + ';border-radius:10px;padding:10px;text-align:center;position:relative;cursor:pointer;transition:all .15s;';
@@ -1015,11 +1027,29 @@
                      '<div style="font-size:.65rem;color:' + color + ';">' + rd.tier + '</div>' +
                      '<div style="position:absolute;top:6px;right:6px;background:' + color + ';color:#000;border-radius:10px;padding:2px 6px;font-size:.65rem;font-weight:700;">×' + qty + '</div>' +
                      '<div style="display:flex;gap:4px;margin-top:6px;">' +
-                     '<button data-uid="' + _escHtmlInv(user.uid) + '" data-name="' + _escHtmlInv(name) + '" onclick="event.stopPropagation();var b=this;quickSellRelic(b.dataset.uid,b.dataset.name).then(function(){loadInventoryData()})" style="flex:1;background:rgba(255,68,68,0.2);border:1px solid #ff4444;color:#ff4444;border-radius:6px;padding:3px;font-size:.6rem;cursor:pointer;">Vender</button>' +
+                     '<button data-uid="' + _escHtmlInv(uid) + '" data-name="' + _escHtmlInv(name) + '" onclick="event.stopPropagation();var b=this;quickSellRelic(b.dataset.uid,b.dataset.name).then(function(){loadInventoryData()})" style="flex:1;background:rgba(255,68,68,0.2);border:1px solid #ff4444;color:#ff4444;border-radius:6px;padding:3px;font-size:.6rem;cursor:pointer;">Vender</button>' +
                      '</div>';
                  grid.appendChild(card);
             });
-            if (grid.innerHTML === '') grid.innerHTML = '<div style="color:#555;font-size:.8rem;grid-column:1/-1;text-align:center;padding:24px;">No tienes reliquias en tu inventario.</div>';
+            if (shown === 0) {
+                const _hasAny = Object.values(relics).some(function(q){ return q > 0; });
+                grid.innerHTML = '<div style="color:#555;font-size:.8rem;grid-column:1/-1;text-align:center;padding:24px;">' +
+                    (_hasAny ? 'Ninguna reliquia coincide con el filtro.' : 'No tienes reliquias en tu inventario.') + '</div>';
+            }
+        }
+        function filterInvRelics() { renderInvRelicsGrid(); }
+
+        async function loadInventoryData() {
+            const user = firebase.auth().currentUser;
+            if (!user) return;
+            const data = await getPlayerData(user.uid);
+            document.getElementById('inv-gold').textContent = (data.gold||0).toLocaleString();
+            document.getElementById('inv-runes').textContent = data.attack_runes||0;
+            document.getElementById('inv-keys').textContent = data.arcane_keys||0;
+            // Guardar la lista cruda para que el filtro pueda re-renderizar sin re-consultar Firebase
+            window._invRelicsRaw = (data.inventory && data.inventory.relics) || {};
+            window._invUserUid = user.uid;
+            renderInvRelicsGrid();
             // Renderizar personajes
             const charsGrid = document.getElementById('inv-chars-grid');
             charsGrid.innerHTML = '';
@@ -1852,9 +1882,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20261019"></script>
+    <script src="js/characters.js?v=20261020"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20261019"></script>
+    <script src="js/audio-state.js?v=20261020"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2679,28 +2709,28 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20261019"></script>
+    <script src="js/ai-engine.js?v=20261020"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20261019"></script>
+    <script src="js/init-render.js?v=20261020"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20261019"></script>
+    <script src="js/turn-logic.js?v=20261020"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20261019"></script>
+    <script src="js/status-effects.js?v=20261020"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20261019"></script>
+    <script src="js/debuffs.js?v=20261020"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20261019"></script>
+    <script src="js/summons.js?v=20261020"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20261019"></script>
+    <script src="js/ability-select.js?v=20261020"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20261019"></script>
+<script src="js/skills.js?v=20261020"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20261019"></script>
-    <script src="js/horda-mode.js?v=20261019"></script>
-    <script src="js/horda-abilities.js?v=20261019"></script>
-    <script src="js/horda-battle.js?v=20261019"></script>
-    <script src="js/missions.js?v=20261019"></script>
-    <script src="js/squads.js?v=20261019"></script>
+    <script src="js/jefe-de-sala.js?v=20261020"></script>
+    <script src="js/horda-mode.js?v=20261020"></script>
+    <script src="js/horda-abilities.js?v=20261020"></script>
+    <script src="js/horda-battle.js?v=20261020"></script>
+    <script src="js/missions.js?v=20261020"></script>
+    <script src="js/squads.js?v=20261020"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
@@ -2804,6 +2834,26 @@
             </div>
             <!-- Tab Reliquias -->
             <div id="inv-tab-relics">
+                <!-- Filtro de búsqueda -->
+                <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+                    <input id="inv-relic-search" type="text" placeholder="🔍 Buscar por nombre..." oninput="filterInvRelics()"
+                        style="flex:2;min-width:160px;padding:8px 10px;background:rgba(255,255,255,0.05);border:1px solid rgba(200,100,255,0.3);border-radius:8px;color:#eee;font-size:.75rem;font-family:inherit;">
+                    <select id="inv-relic-filter-rarity" onchange="filterInvRelics()"
+                        style="flex:1;min-width:120px;padding:8px 10px;background:rgba(255,255,255,0.05);border:1px solid rgba(200,100,255,0.3);border-radius:8px;color:#eee;font-size:.75rem;font-family:inherit;">
+                        <option value="">Toda rareza</option>
+                        <option value="Raro">Raro</option>
+                        <option value="Especial">Especial</option>
+                        <option value="Epico">Épico</option>
+                        <option value="Legendario">Legendario</option>
+                    </select>
+                    <select id="inv-relic-filter-type" onchange="filterInvRelics()"
+                        style="flex:1;min-width:120px;padding:8px 10px;background:rgba(255,255,255,0.05);border:1px solid rgba(200,100,255,0.3);border-radius:8px;color:#eee;font-size:.75rem;font-family:inherit;">
+                        <option value="">Todo tipo</option>
+                        <option value="Arma">Arma</option>
+                        <option value="Equipacion">Equipación</option>
+                        <option value="Joya">Joya</option>
+                    </select>
+                </div>
                 <div id="inv-relics-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;"></div>
             </div>
             <!-- Tab Personajes -->
