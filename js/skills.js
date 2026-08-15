@@ -6085,9 +6085,13 @@
                         addLog('⚡ Flecha de Indra: ¡Se divide! ' + finalDamage + ' daño adicional a ' + _fiRand, 'damage');
                     }
                 }
-                addLog('⚡ Flecha de Indra: Sasuke gana turno adicional', 'buff');
-                if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, _fiAtk ? _fiAtk.team : 'team1');
-                gameState._abilityExecuting = false; renderCharacters(); renderSummons(); showContinueButton(); return;
+                // No conceder turno adicional si la partida ya terminó (este ataque, o el golpe
+                // que se divide, pudo haber eliminado al último enemigo vivo)
+                if (!gameState.gameOver) {
+                    addLog('⚡ Flecha de Indra: Sasuke gana turno adicional', 'buff');
+                    if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, _fiAtk ? _fiAtk.team : 'team1');
+                    gameState._abilityExecuting = false; renderCharacters(); renderSummons(); showContinueButton(); return;
+                }
 
 
             // ══════════════════════════════════════════════════════
@@ -10197,9 +10201,13 @@
                 addLog('🌀 Rinbo Hengoku: ' + _rhDmg + ' daño a ' + targetName, 'damage');
                 if (_rhCrit && _rhAtk) {
                     if (_rhAtk.rikudoMode) _rhAtk.charges = Math.min(20, (_rhAtk.charges||0) + 3);
-                    addLog('🌀 Gakido: turno adicional por crítico', 'buff');
-                    if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, _rhAtk.team);
-                    gameState._abilityExecuting = false; renderCharacters(); renderSummons(); showContinueButton(); return;
+                    // No conceder turno adicional si la partida ya terminó (el golpe crítico pudo
+                    // haber eliminado al último enemigo vivo del equipo contrario)
+                    if (!gameState.gameOver) {
+                        addLog('🌀 Gakido: turno adicional por crítico', 'buff');
+                        if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, _rhAtk.team);
+                        gameState._abilityExecuting = false; renderCharacters(); renderSummons(); showContinueButton(); return;
+                    }
                 }
 
             } else if (ability.effect === 'susanoo_madara') {
@@ -10300,9 +10308,13 @@
                 }
                 if (_ctCrit && _ctAtk) {
                     if (_ctAtk.rikudoMode) _ctAtk.charges = Math.min(20, (_ctAtk.charges||0) + 3);
-                    addLog('🌀 Gakido: turno adicional por crítico', 'buff');
-                    if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, _ctAtk.team);
-                    gameState._abilityExecuting = false; renderCharacters(); renderSummons(); showContinueButton(); return;
+                    // No conceder turno adicional si la partida ya terminó (Chibaku Tensei pudo
+                    // haber eliminado a todo el equipo enemigo con este mismo golpe crítico)
+                    if (!gameState.gameOver) {
+                        addLog('🌀 Gakido: turno adicional por crítico', 'buff');
+                        if (typeof triggerAnticipacion === 'function') triggerAnticipacion(gameState.selectedCharacter, _ctAtk.team);
+                        gameState._abilityExecuting = false; renderCharacters(); renderSummons(); showContinueButton(); return;
+                    }
                 }
 
             // ══ SAURON — handlers ══
