@@ -1792,6 +1792,7 @@
         // saltaba todos estos efectos por completo.
         // ══════════════════════════════════════════════════════════════════
         function _runRoundStartPassiveHooks() {
+            console.log('[Ronda] _runRoundStartPassiveHooks() iniciando (Ronda ' + gameState.currentRound + ')...');
                     // IZANAMI (Itachi): reset dodge flag each round
                     for (const _in in gameState.characters) {
                         const _ic = gameState.characters[_in];
@@ -2411,12 +2412,26 @@
                     }
 
                     // ── JETPACK MANDALORIANO: inicio de ronda → Esquiva Área hasta fin de ronda ──
-                    for (const _jpN in gameState.characters) {
-                        const _jpC = gameState.characters[_jpN];
-                        if (!_jpC || _jpC.isDead || _jpC.hp <= 0) continue;
-                        if (!(_jpC.equippedRelics||[]).includes('Jetpack Mandaloriano')) continue;
-                        if (typeof applyBuff === 'function') applyBuff(_jpN, { name: 'Esquiva Area', type: 'buff', duration: 1, untilRoundEnd: true, emoji: '🚀' });
-                        addLog('🚀 Jetpack Mandaloriano: ' + _jpN + ' gana Esquiva Área hasta fin de ronda', 'buff');
+                    try {
+                        console.log('[Ronda] Llegando al hook de Jetpack Mandaloriano...');
+                        for (const _jpN in gameState.characters) {
+                            const _jpC = gameState.characters[_jpN];
+                            if (!_jpC || _jpC.isDead || _jpC.hp <= 0) continue;
+                            if (!(_jpC.equippedRelics||[]).includes('Jetpack Mandaloriano')) continue;
+                            const _jpBefore = (_jpC.statusEffects || []).length;
+                            if (typeof applyBuff === 'function') applyBuff(_jpN, { name: 'Esquiva Area', type: 'buff', duration: 1, untilRoundEnd: true, emoji: '🚀' });
+                            const _jpHasIt = (_jpC.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'esquiva area'; });
+                            if (_jpHasIt) {
+                                addLog('🚀 Jetpack Mandaloriano: ' + _jpN + ' gana Esquiva Área hasta fin de ronda', 'buff');
+                            } else {
+                                const _jpAfter = (_jpC.statusEffects || []).length;
+                                const _jpCurrent = (_jpC.statusEffects || []).map(function (e) { return e ? e.name : '?'; }).join(', ') || 'ninguno';
+                                console.warn('[Jetpack Mandaloriano] Esquiva Área NO se aplicó a ' + _jpN + '. Efectos antes=' + _jpBefore + ' después=' + _jpAfter + '. Efectos actuales: ' + _jpCurrent);
+                                addLog('⚠️ Jetpack Mandaloriano: ' + _jpN + ' NO recibió Esquiva Área (revisar consola — F12)', 'debuff');
+                            }
+                        }
+                    } catch (e) {
+                        console.error('[Jetpack Mandaloriano] Excepción en el hook de inicio de ronda:', e);
                     }
 
                     // ── CUERNO DE GONDOR: inicio de ronda → 40% Asistir a cada aliado ──
