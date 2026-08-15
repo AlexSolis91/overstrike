@@ -3079,6 +3079,9 @@
             if (gameState._skeggoxExtraTurn) {
                 const _skChar = gameState._skeggoxExtraTurn;
                 gameState._skeggoxExtraTurn = null;
+                // No conceder turno adicional si la partida ya terminó (ej. el golpe que disparó
+                // este turno extra eliminó al último enemigo vivo del equipo contrario)
+                if (gameState.gameOver) { return; }
                 const _skCurIdx = (gameState.currentTurnIndex || 0);
                 if (gameState.turnOrder) {
                     const _skOldIdx = gameState.turnOrder.indexOf(_skChar);
@@ -3100,6 +3103,7 @@
             if (gameState._vaderExtraTurn) {
                 const _vkChar = gameState._vaderExtraTurn;
                 gameState._vaderExtraTurn = null;
+                if (gameState.gameOver) { return; }
                 const _vkCurIdx = (gameState.currentTurnIndex || 0);
                 if (gameState.turnOrder) {
                     const _vkOldIdx = gameState.turnOrder.indexOf(_vkChar);
@@ -3119,6 +3123,7 @@
             if (gameState._seiyaExtraTurn) {
                 const _seChar = gameState._seiyaExtraTurn;
                 gameState._seiyaExtraTurn = null;
+                if (gameState.gameOver) { return; }
                 const _seCurIdx = (gameState.currentTurnIndex || 0);
                 if (gameState.turnOrder) {
                     const _seOldIdx = gameState.turnOrder.indexOf(_seChar);
