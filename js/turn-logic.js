@@ -1791,6 +1791,34 @@
         // que la Ronda 1 (que nunca "transiciona", ya empieza directo en 1) se
         // saltaba todos estos efectos por completo.
         // ══════════════════════════════════════════════════════════════════
+        // ── JETPACK MANDALORIANO: al inicio de cada ronda, el portador gana Esquiva Área
+        //    hasta el final de esa ronda. Función independiente (no solo un bloque inline
+        //    dentro de _runRoundStartPassiveHooks) porque también necesita poder llamarse
+        //    por separado cuando termina la carga asíncrona de reliquias en la Ronda 1
+        //    (ver loadGameRelics en firebase-auth.js). Segura de llamar más de una vez. ──
+        window._runJetpackMandalorianoRoundStartCheck = function () {
+            try {
+                for (const _jpN in gameState.characters) {
+                    const _jpC = gameState.characters[_jpN];
+                    if (!_jpC || _jpC.isDead || _jpC.hp <= 0) continue;
+                    if (!(_jpC.equippedRelics||[]).includes('Jetpack Mandaloriano')) continue;
+                    const _jpBefore = (_jpC.statusEffects || []).length;
+                    if (typeof applyBuff === 'function') applyBuff(_jpN, { name: 'Esquiva Area', type: 'buff', duration: 1, untilRoundEnd: true, emoji: '🚀' });
+                    const _jpHasIt = (_jpC.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'esquiva area'; });
+                    if (_jpHasIt) {
+                        addLog('🚀 Jetpack Mandaloriano: ' + _jpN + ' gana Esquiva Área hasta fin de ronda', 'buff');
+                    } else {
+                        const _jpAfter = (_jpC.statusEffects || []).length;
+                        const _jpCurrent = (_jpC.statusEffects || []).map(function (e) { return e ? e.name : '?'; }).join(', ') || 'ninguno';
+                        console.warn('[Jetpack Mandaloriano] Esquiva Área NO se aplicó a ' + _jpN + '. Efectos antes=' + _jpBefore + ' después=' + _jpAfter + '. Efectos actuales: ' + _jpCurrent);
+                        addLog('⚠️ Jetpack Mandaloriano: ' + _jpN + ' NO recibió Esquiva Área (revisar consola — F12)', 'debuff');
+                    }
+                }
+            } catch (e) {
+                console.error('[Jetpack Mandaloriano] Excepción en el hook de inicio de ronda:', e);
+            }
+        };
+
         function _runRoundStartPassiveHooks() {
             console.log('[Ronda] _runRoundStartPassiveHooks() iniciando (Ronda ' + gameState.currentRound + ')...');
                     // IZANAMI (Itachi): reset dodge flag each round
@@ -2412,27 +2440,15 @@
                     }
 
                     // ── JETPACK MANDALORIANO: inicio de ronda → Esquiva Área hasta fin de ronda ──
-                    try {
-                        console.log('[Ronda] Llegando al hook de Jetpack Mandaloriano...');
-                        for (const _jpN in gameState.characters) {
-                            const _jpC = gameState.characters[_jpN];
-                            if (!_jpC || _jpC.isDead || _jpC.hp <= 0) continue;
-                            if (!(_jpC.equippedRelics||[]).includes('Jetpack Mandaloriano')) continue;
-                            const _jpBefore = (_jpC.statusEffects || []).length;
-                            if (typeof applyBuff === 'function') applyBuff(_jpN, { name: 'Esquiva Area', type: 'buff', duration: 1, untilRoundEnd: true, emoji: '🚀' });
-                            const _jpHasIt = (_jpC.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'esquiva area'; });
-                            if (_jpHasIt) {
-                                addLog('🚀 Jetpack Mandaloriano: ' + _jpN + ' gana Esquiva Área hasta fin de ronda', 'buff');
-                            } else {
-                                const _jpAfter = (_jpC.statusEffects || []).length;
-                                const _jpCurrent = (_jpC.statusEffects || []).map(function (e) { return e ? e.name : '?'; }).join(', ') || 'ninguno';
-                                console.warn('[Jetpack Mandaloriano] Esquiva Área NO se aplicó a ' + _jpN + '. Efectos antes=' + _jpBefore + ' después=' + _jpAfter + '. Efectos actuales: ' + _jpCurrent);
-                                addLog('⚠️ Jetpack Mandaloriano: ' + _jpN + ' NO recibió Esquiva Área (revisar consola — F12)', 'debuff');
-                            }
-                        }
-                    } catch (e) {
-                        console.error('[Jetpack Mandaloriano] Excepción en el hook de inicio de ronda:', e);
-                    }
+                    // Extraído a función reutilizable (window._runJetpackMandalorianoRoundStartCheck)
+                    // porque también se necesita volver a llamar, SOLO en la Ronda 1, cuando termina
+                    // la carga asíncrona de reliquias desde Firebase (ver loadGameRelics en
+                    // firebase-auth.js) — initGame() corre los hooks de inicio de ronda de forma
+                    // síncrona, ANTES de que las reliquias hayan terminado de cargar, así que la
+                    // primera pasada podía no encontrar equippedRelics todavía poblado. La función
+                    // es segura de llamar más de una vez: applyBuff no duplica Esquiva Área si ya
+                    // está activa, solo refresca la duración.
+                    window._runJetpackMandalorianoRoundStartCheck();
 
                     // ── CUERNO DE GONDOR: inicio de ronda → 40% Asistir a cada aliado ──
                     for (const _cgN in gameState.characters) {
