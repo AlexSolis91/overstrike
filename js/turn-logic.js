@@ -3611,6 +3611,17 @@
                     break;
                 }
 
+                // ── PROTECCIÓN DE KATSUYU: fin de ronda → Escudo 5 HP a cada aliado ──
+                Object.values(gameState.summons||{}).forEach(function (_ktEnd) {
+                    if (!_ktEnd || _ktEnd.name !== 'Katsuyu' || _ktEnd.isDead || _ktEnd.hp <= 0) return;
+                    for (const _ktEndN in gameState.characters) {
+                        const _ktEndC = gameState.characters[_ktEndN];
+                        if (!_ktEndC || _ktEndC.isDead || _ktEndC.hp <= 0 || _ktEndC.team !== _ktEnd.team) continue;
+                        _ktEndC.shield = (_ktEndC.shield || 0) + 5;
+                    }
+                    addLog('🐌 Protección de Katsuyu: Escudo 5 HP aplicado a todo el equipo aliado (fin de ronda)', 'buff');
+                });
+
                 // ── ASHBRINGER: fin de ronda → cura 40% de su HP máx al portador ──
                 Object.keys(gameState.characters).forEach(function(_ashN) {
                     const _ashC = gameState.characters[_ashN];
