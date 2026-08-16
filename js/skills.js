@@ -11487,6 +11487,119 @@
                 }
 
             // ══════════════════════════════════════════════════════
+            // TSUNADE — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'tsunade_basic') {
+                // ŌKASASHŌ: AOE 2 daño, 50% crítico, Aturdimiento al enemigo con mayor velocidad
+                const _okAtk = gameState.characters[gameState.selectedCharacter];
+                const _okETeam = _okAtk ? (_okAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _okAOE = window.resolveAOETargets(gameState.selectedCharacter, _okETeam);
+                let _okTopSpeed = -1, _okTopName = null;
+                _okAOE.targets.forEach(function (_n) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.isDead || _c.hp <= 0) return;
+                    const _okIsCrit = Math.random() < 0.50;
+                    const _okDmg = (_okIsCrit ? finalDamage * 2 : finalDamage) * _okAOE.multiplier;
+                    applyDamageWithShield(_n, _okDmg, gameState.selectedCharacter);
+                    addLog('👊 Ōkasashō: ' + _okDmg + ' daño a ' + _n + (_okIsCrit ? ' (¡crítico!)' : ''), 'damage');
+                    const _cAfter = gameState.characters[_n];
+                    if (_cAfter && !_cAfter.isDead && _cAfter.hp > 0 && (_cAfter.speed || 0) > _okTopSpeed) {
+                        _okTopSpeed = _cAfter.speed; _okTopName = _n;
+                    }
+                });
+                _okAOE.summonTargets.forEach(function (_sid) {
+                    applySummonDamage(_sid, finalDamage * _okAOE.multiplier, gameState.selectedCharacter);
+                });
+                if (_okTopName && typeof applyDebuff === 'function') {
+                    applyDebuff(_okTopName, { name: 'Aturdimiento', type: 'debuff', duration: 1, emoji: '⭐' });
+                    addLog('👊 Ōkasashō: Aturdimiento aplicado a ' + _okTopName + ' (mayor velocidad)', 'debuff');
+                }
+
+            } else if (ability.effect === 'tsunade_special1') {
+                // TENKYAKU: ST 4 daño, 25% crítico. Si crítico: Mega Aturdimiento + Aturdimiento a 2 enemigos
+                // aleatorios más. Cura a TODOS los aliados por la misma cantidad de daño causado.
+                const _tkAtk = gameState.characters[gameState.selectedCharacter];
+                const _tkIsCrit = Math.random() < 0.25;
+                const _tkDmg = (_tkIsCrit ? finalDamage * 2 : finalDamage);
+                applyDamageWithShield(targetName, _tkDmg, gameState.selectedCharacter);
+                addLog('🌀 Tenkyaku: ' + _tkDmg + ' daño a ' + targetName + (_tkIsCrit ? ' (¡crítico!)' : ''), 'damage');
+                if (_tkIsCrit) {
+                    const _tkTgtC = gameState.characters[targetName];
+                    const _tkETeam = _tkTgtC ? _tkTgtC.team : (_tkAtk && _tkAtk.team === 'team1' ? 'team2' : 'team1');
+                    if (_tkTgtC && !_tkTgtC.isDead && typeof applyDebuff === 'function') {
+                        applyDebuff(targetName, { name: 'Mega Aturdimiento', type: 'debuff', duration: 1, emoji: '💫' });
+                    }
+                    const _tkOthers = Object.keys(gameState.characters).filter(function (n) {
+                        const c = gameState.characters[n];
+                        return c && !c.isDead && c.hp > 0 && c.team === _tkETeam && n !== targetName;
+                    });
+                    const _tkShuffled = _tkOthers.sort(function () { return Math.random() - 0.5; }).slice(0, 2);
+                    _tkShuffled.forEach(function (n) {
+                        if (typeof applyDebuff === 'function') applyDebuff(n, { name: 'Aturdimiento', type: 'debuff', duration: 1, emoji: '⭐' });
+                    });
+                    addLog('🌀 Tenkyaku: ¡Crítico! Mega Aturdimiento a ' + targetName + (_tkShuffled.length ? ' + Aturdimiento a ' + _tkShuffled.join(', ') : ''), 'debuff');
+                }
+                if (_tkAtk) {
+                    for (const _tkAn in gameState.characters) {
+                        const _tkAc = gameState.characters[_tkAn];
+                        if (!_tkAc || _tkAc.isDead || _tkAc.hp <= 0 || _tkAc.team !== _tkAtk.team) continue;
+                        if (typeof applyHeal === 'function') applyHeal(_tkAn, _tkDmg, 'Tenkyaku');
+                        else _tkAc.hp = Math.min(_tkAc.maxHp, (_tkAc.hp || 0) + _tkDmg);
+                    }
+                    addLog('🌀 Tenkyaku: todo el equipo aliado cura ' + _tkDmg + ' HP cada uno', 'heal');
+                }
+
+            } else if (ability.effect === 'tsunade_special2') {
+                // KUCHIYOSE NO JUTSU: KATSUYU: Escudo 10HP + 3 cargas a todo el equipo aliado + invoca a Katsuyu
+                const _ktAtk = gameState.characters[gameState.selectedCharacter];
+                if (_ktAtk) {
+                    for (const _ktAn in gameState.characters) {
+                        const _ktAc = gameState.characters[_ktAn];
+                        if (!_ktAc || _ktAc.isDead || _ktAc.hp <= 0 || _ktAc.team !== _ktAtk.team) continue;
+                        _ktAc.shield = (_ktAc.shield || 0) + 10;
+                        _ktAc.charges = Math.min(20, (_ktAc.charges || 0) + 3);
+                    }
+                    addLog('🐌 Kuchiyose no Jutsu: Escudo 10 HP + 3 cargas a todo el equipo aliado', 'buff');
+                }
+                if (typeof summonShadow === 'function') summonShadow('Katsuyu', gameState.selectedCharacter);
+
+            } else if (ability.effect === 'tsunade_over') {
+                // BYAKUGŌ NO JUTSU: Armadura 4T, cura 80% de su HP máx, por cada punto recuperado cura
+                // 1 HP a un aliado aleatorio, y Escudo 10HP a cada aliado (incluida Tsunade)
+                const _byChar = gameState.characters[gameState.selectedCharacter];
+                if (_byChar) {
+                    if (typeof applyBuff === 'function') applyBuff(gameState.selectedCharacter, { name: 'Armadura', type: 'buff', duration: 4, emoji: '🪖' });
+                    const _byHealAmount = Math.ceil((_byChar.maxHp || 0) * 0.80);
+                    const _byBefore = _byChar.hp;
+                    if (typeof applyHeal === 'function') applyHeal(gameState.selectedCharacter, _byHealAmount, 'Byakugō no Jutsu');
+                    else _byChar.hp = Math.min(_byChar.maxHp, _byChar.hp + _byHealAmount);
+                    const _byActualHealed = Math.max(0, (gameState.characters[gameState.selectedCharacter].hp || 0) - _byBefore);
+                    addLog('💚 Byakugō no Jutsu: Tsunade recupera ' + _byActualHealed + ' HP (80% de su HP máx) y activa Armadura (4T)', 'heal');
+                    const _byAllies = Object.keys(gameState.characters).filter(function (n) {
+                        const c = gameState.characters[n];
+                        return c && !c.isDead && c.hp > 0 && c.team === _byChar.team && n !== gameState.selectedCharacter;
+                    });
+                    if (_byAllies.length > 0 && _byActualHealed > 0) {
+                        for (let _byI = 0; _byI < _byActualHealed; _byI++) {
+                            const _byRand = _byAllies[Math.floor(Math.random() * _byAllies.length)];
+                            const _byRandC = gameState.characters[_byRand];
+                            if (_byRandC && !_byRandC.isDead && _byRandC.hp > 0) {
+                                if (typeof applyHeal === 'function') applyHeal(_byRand, 1, 'Byakugō no Jutsu');
+                                else _byRandC.hp = Math.min(_byRandC.maxHp, _byRandC.hp + 1);
+                            }
+                        }
+                        addLog('💚 Byakugō no Jutsu: ' + _byActualHealed + ' HP distribuidos entre aliados aleatorios', 'heal');
+                    }
+                    for (const _byAn in gameState.characters) {
+                        const _byAc = gameState.characters[_byAn];
+                        if (!_byAc || _byAc.isDead || _byAc.hp <= 0 || _byAc.team !== _byChar.team) continue;
+                        _byAc.shield = (_byAc.shield || 0) + 10;
+                    }
+                    addLog('💚 Byakugō no Jutsu: Escudo 10 HP aplicado a todo el equipo aliado', 'buff');
+                }
+
+            // ══════════════════════════════════════════════════════
             // RHAENYRA TARGARYEN — handlers
             // ══════════════════════════════════════════════════════
 
