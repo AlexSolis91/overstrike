@@ -198,6 +198,11 @@
                     ch.statusEffects = ch.statusEffects || [];
                     ch.statusEffects.push({ name: 'Provocacion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🎖️' });
                 }
+                // Minato Namikaze: Esquivar permanente (Hiraishin Jutsushiki)
+                if (baseName === 'Minato Namikaze') {
+                    ch.statusEffects = ch.statusEffects || [];
+                    ch.statusEffects.push({ name: 'Esquivar', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '⚡' });
+                }
                 // Darth Vader: Aura Oscura permanente (Presencia Oscura)
                 if (baseName === 'Darth Vader') {
                     ch.statusEffects = ch.statusEffects || [];
