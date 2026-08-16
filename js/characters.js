@@ -1206,6 +1206,19 @@
                 ]
             },
 
+            'Tsunade': {
+                portrait: 'https://i.ibb.co/LhZgVsDZ/Tsunade-Senju.jpg',
+                hp: 30, maxHp: 30, speed: 73, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                passive: { name: 'Hi no Ishi', description: 'Cada vez que Tsunade recibe daño (de cualquier fuente) acumula un contador Senju — cada contador otorga +2 HP y +2 HP máximo. Si un aliado (no Tsunade) va a recibir daño por golpe de un ataque (no aplica a daño directo de debuffs/habilidades), solo recibe la mitad de ese daño y la otra mitad la absorbe Tsunade. Cada vez que un aliado recibe un debuff, Tsunade cura 2 HP a todo el equipo aliado por cada debuff recibido.' },
+                abilities: [
+                    { name: 'Ōkasashō',                        type: 'basic',   cost: 0, chargeGain: 2, damage: 2, target: 'aoe',    effect: 'tsunade_basic',    description: '50% de probabilidad de golpe crítico. Aplica Aturdimiento al enemigo con mayor velocidad.' },
+                    { name: 'Tenkyaku',                         type: 'special', cost: 4, chargeGain: 0, damage: 4, target: 'single', effect: 'tsunade_special1', description: '25% de probabilidad de golpe crítico. Si es crítico, aplica Mega Aturdimiento al objetivo y Aturdimiento a otros 2 enemigos aleatorios. Cura a todos los aliados por la misma cantidad de daño causado sobre el objetivo.' },
+                    { name: 'Kuchiyose no Jutsu: Katsuyu',       type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'self',   effect: 'tsunade_special2', description: 'Aplica buff Escudo de 10 HP a todo el equipo aliado y genera 3 cargas. Invoca a Katsuyu.' },
+                    { name: 'Byakugō no Jutsu',                 type: 'over',    cost: 10, chargeGain: 0, damage: 0, target: 'self',   effect: 'tsunade_over',     description: 'Tsunade se aplica buff Armadura (4 turnos). Recupera 80% de su HP máx, y por cada punto de HP recuperado cura 1 HP a un aliado aleatorio. Aplica buff Escudo 10 HP a todo el equipo aliado.' }
+                ]
+            },
+
         };
         // ==================== RELIQUIAS ====================
         const RELICS_DATA = {
