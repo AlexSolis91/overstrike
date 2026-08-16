@@ -1171,7 +1171,7 @@
                 statusEffects: [{ name: 'Esquiva Area', type: 'buff', duration: 999, permanent: true, passiveHidden: false, emoji: '💨' }],
                 shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/dskCbGYb/image.png',
-                passive: { name: 'Pilar de la Niebla', description: 'Efecto pasivo Esquiva Área. Al inicio de cada ronda, 50% de probabilidad de aplicar Buff Esquivar a cada aliado. Si Tokito golpea un objetivo con debuff Confusión, el daño es crítico. Si golpea un objetivo con Ceguera, el daño es triple.' },
+                passive: { name: 'Pilar de la Niebla', description: 'Efecto pasivo Esquiva Área (permanente, sobre Tokito misma). Al inicio de cada ronda, cada aliado (sin contar a Tokito) tiene 50% de probabilidad independiente de recibir buff Esquiva Área 1 turno. Si Tokito golpea un objetivo con debuff Confusión, el daño es crítico. Si golpea un objetivo con Ceguera, el daño es triple.' },
                 abilities: [
                     { name: 'Corte de Niebla',                  type: 'basic',   cost: 0,  chargeGain: 3, damage: 3,  target: 'single', effect: 'tokito_corte_niebla',   description: '' },
                     { name: 'Mar de Nubes',                     type: 'special', cost: 6,  chargeGain: 0, damage: 2,  target: 'aoe',     effect: 'tokito_mar_nubes',      description: '50% de probabilidad de aplicar Confusión. 50% de probabilidad de aplicar Ceguera.' },
