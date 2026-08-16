@@ -1087,6 +1087,28 @@
                     }
                 }
             }
+            // ── HI NO ISHI (Tsunade): si un aliado (no ella misma) va a recibir daño por golpe
+            //    (attackerName !== null, no aplica a daño directo de debuffs/habilidades), la
+            //    mitad del daño la absorbe Tsunade en su lugar ──
+            if (!passiveExecuting && attackerName !== null && damage > 0) {
+                const _tsTgtChar = gameState.characters[targetName];
+                if (_tsTgtChar && !_tsTgtChar.isDead) {
+                    for (const _tsN in gameState.characters) {
+                        const _tsC = gameState.characters[_tsN];
+                        if (!_tsC || _tsC.isDead || _tsC.hp <= 0 || _tsN === targetName) continue;
+                        if (_tsC.team !== _tsTgtChar.team) continue;
+                        if (!_tsC.passive || _tsC.passive.name !== 'Hi no Ishi') continue;
+                        const _tsHalfTarget = Math.floor(damage / 2);
+                        const _tsHalfTsunade = damage - _tsHalfTarget;
+                        damage = _tsHalfTarget;
+                        addLog('🩹 Hi no Ishi: ' + _tsN + ' absorbe ' + _tsHalfTsunade + ' del daño dirigido a ' + targetName, 'buff');
+                        passiveExecuting = true;
+                        applyDamageWithShield(_tsN, _tsHalfTsunade, attackerName);
+                        passiveExecuting = false;
+                        break;
+                    }
+                }
+            }
             // ── CABALLERO DE LA NOCHE (Batman): inmune a daño de movimientos especiales ──
             if (!passiveExecuting && gameState.selectedAbility && gameState.selectedAbility.type === 'special') {
                 const _batTarget = gameState.characters[targetName];
@@ -3171,6 +3193,15 @@
                         break;
                     }
                 }
+            }
+
+            // ── HI NO ISHI (Tsunade): cada vez que ELLA recibe daño (de cualquier fuente,
+            //    incluido el daño absorbido de un aliado), gana 1 contador Senju: +2 HP y +2 HP máx ──
+            if (remainingDamage > 0 && target && target.passive && target.passive.name === 'Hi no Ishi' && !target.isDead) {
+                target._senjuCounters = (target._senjuCounters || 0) + 1;
+                target.maxHp = (target.maxHp || 0) + 2;
+                target.hp = Math.min(target.maxHp, (target.hp || 0) + 2);
+                addLog('💪 Hi no Ishi: Tsunade gana un contador Senju (' + target._senjuCounters + ') — +2 HP y +2 HP máx', 'buff');
             }
 
             // ── HORROCRUX VIVIENTE (Voldemort): interceptar muerte si Nagini activa → sobrevive con 1 HP ──
