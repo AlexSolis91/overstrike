@@ -5450,6 +5450,9 @@
                 if (gameState.currentRound === 1 && typeof window._runJetpackMandalorianoRoundStartCheck === 'function') {
                     window._runJetpackMandalorianoRoundStartCheck();
                 }
+                if (gameState.currentRound === 1 && typeof window._runFulgorArgenteoRoundStartCheck === 'function') {
+                    window._runFulgorArgenteoRoundStartCheck();
+                }
             });
         };
 
