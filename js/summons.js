@@ -1826,6 +1826,20 @@
                         }
                     }
 
+                    // ── PROTECCIÓN DE KATSUYU: cada vez que un aliado pierde HP de Escudo → cura 3 HP a todo el equipo aliado ──
+                    (function () {
+                        const _ktSum = Object.values(gameState.summons||{}).find(function(s){ return s && s.name === 'Katsuyu' && !s.isDead && s.hp > 0 && s.team === target.team; });
+                        if (_ktSum) {
+                            for (const _ktN in gameState.characters) {
+                                const _ktC = gameState.characters[_ktN];
+                                if (!_ktC || _ktC.isDead || _ktC.hp <= 0 || _ktC.team !== target.team) continue;
+                                if (typeof applyHeal === 'function') applyHeal(_ktN, 3, 'Protección de Katsuyu');
+                                else _ktC.hp = Math.min(_ktC.maxHp, (_ktC.hp||0) + 3);
+                            }
+                            addLog('🐌 Protección de Katsuyu: equipo aliado cura 3 HP (' + targetName + ' perdió HP de Escudo)', 'heal');
+                        }
+                    })();
+
                     // Si el escudo se agota completamente, eliminar el efecto
                     if (target.shield === 0) {
                         target.shieldEffect = null;
@@ -1863,6 +1877,20 @@
                         target.charges = Math.min(20, (target.charges||0) + _brvC2);
                         addLog('💀 Último Rey de los Muertos: Bolvar genera ' + _brvC2 + ' cargas (' + shieldHP + ' HP escudo roto)', 'buff');
                     }
+
+                    // ── PROTECCIÓN DE KATSUYU: cada vez que un aliado pierde HP de Escudo → cura 3 HP a todo el equipo aliado ──
+                    (function () {
+                        const _ktSum2 = Object.values(gameState.summons||{}).find(function(s){ return s && s.name === 'Katsuyu' && !s.isDead && s.hp > 0 && s.team === target.team; });
+                        if (_ktSum2) {
+                            for (const _kt2N in gameState.characters) {
+                                const _kt2C = gameState.characters[_kt2N];
+                                if (!_kt2C || _kt2C.isDead || _kt2C.hp <= 0 || _kt2C.team !== target.team) continue;
+                                if (typeof applyHeal === 'function') applyHeal(_kt2N, 3, 'Protección de Katsuyu');
+                                else _kt2C.hp = Math.min(_kt2C.maxHp, (_kt2C.hp||0) + 3);
+                            }
+                            addLog('🐌 Protección de Katsuyu: equipo aliado cura 3 HP (' + targetName + ' perdió HP de Escudo)', 'heal');
+                        }
+                    })();
 
                     target.shield = 0;
                     target.shieldEffect = null;
