@@ -668,6 +668,12 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 c.charges = Math.min(20, (c.charges || 0) + 2);
                 addLog('⚡ Aceleración Constante: Flash esquiva y gana 2 cargas', 'buff');
             }
+            // HIRAISHIN JUTSUSHIKI (Minato Namikaze): al esquivar, +5 cargas y 1 turno adicional
+            if (c.passive && c.passive.name === 'Hiraishin Jutsushiki') {
+                c.charges = Math.min(20, (c.charges || 0) + 5);
+                gameState._skeggoxExtraTurn = charName;
+                addLog('⚡ Hiraishin Jutsushiki: Minato esquiva — +5 cargas y turno adicional', 'buff');
+            }
         }
 
         // ── PASIVA EL OJO QUE TODO LO VE (Sauron): ignora Provocación/Sigilo ──
