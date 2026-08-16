@@ -1864,6 +1864,26 @@
 
         function _runRoundStartPassiveHooks() {
             console.log('[Ronda] _runRoundStartPassiveHooks() iniciando (Ronda ' + gameState.currentRound + ')...');
+                    // ── HIRAISHIN JUTSUSHIKI (Minato Namikaze): inicio de ronda → +5 velocidad a
+                    //    Minato y +3 velocidad a 2 aliados aleatorios ──
+                    for (const _mnN in gameState.characters) {
+                        const _mnC = gameState.characters[_mnN];
+                        if (!_mnC || _mnC.isDead || _mnC.hp <= 0) continue;
+                        if (!_mnC.passive || _mnC.passive.name !== 'Hiraishin Jutsushiki') continue;
+                        _mnC.speed = (_mnC.speed || 0) + 5;
+                        addLog('⚡ Hiraishin Jutsushiki: ' + _mnN + ' +5 velocidad (' + _mnC.speed + ' total)', 'buff');
+                        const _mnAllies = Object.keys(gameState.characters).filter(function (n) {
+                            const c = gameState.characters[n];
+                            return c && !c.isDead && c.hp > 0 && c.team === _mnC.team && n !== _mnN;
+                        });
+                        const _mnChosen = _mnAllies.sort(function () { return Math.random() - 0.5; }).slice(0, 2);
+                        _mnChosen.forEach(function (n) {
+                            const c = gameState.characters[n];
+                            c.speed = (c.speed || 0) + 3;
+                        });
+                        if (_mnChosen.length > 0) addLog('⚡ Hiraishin Jutsushiki: ' + _mnChosen.join(' y ') + ' +3 velocidad', 'buff');
+                        break;
+                    }
                     // IZANAMI (Itachi): reset dodge flag each round
                     for (const _in in gameState.characters) {
                         const _ic = gameState.characters[_in];
@@ -2550,17 +2570,28 @@
                         if (typeof window.triggerRadarDragon === 'function') window.triggerRadarDragon(_rdN);
                     }
 
-                    // ── PILAR DE LA NIEBLA (Tokito): inicio de ronda → 50% Esquivar 1T a cada aliado ──
+                    // ── PILAR DE LA NIEBLA (Tokito): inicio de ronda → 50% Esquiva Área 1T a cada
+                    //    ALIADO (no a Tokito misma, que ya tiene Esquiva Área como efecto pasivo
+                    //    permanente propio) ──
                     for (const _tkN in gameState.characters) {
                         const _tkC = gameState.characters[_tkN];
                         if (!_tkC || _tkC.isDead || _tkC.hp <= 0 || !_tkC.passive || _tkC.passive.name !== 'Pilar de la Niebla') continue;
                         const _tkAllies = Object.keys(gameState.characters).filter(function(n){
-                            const _c = gameState.characters[n]; return _c && _c.team === _tkC.team && !_c.isDead && _c.hp > 0;
+                            const _c = gameState.characters[n]; return _c && _c.team === _tkC.team && !_c.isDead && _c.hp > 0 && n !== _tkN;
                         });
                         _tkAllies.forEach(function(n) {
                             if (Math.random() < 0.50) {
-                                if (typeof applyBuff === 'function') applyBuff(n, { name: 'Esquivar', type: 'buff', duration: 1, emoji: '💨' });
-                                addLog('🌫️ Pilar de la Niebla: ' + n + ' recibe Esquivar 1T', 'buff');
+                                const _tkC2 = gameState.characters[n];
+                                const _tkBefore = (_tkC2.statusEffects || []).length;
+                                if (typeof applyBuff === 'function') applyBuff(n, { name: 'Esquiva Area', type: 'buff', duration: 1, emoji: '💨' });
+                                const _tkHasIt = (_tkC2.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'esquiva area'; });
+                                if (_tkHasIt) {
+                                    addLog('🌫️ Pilar de la Niebla: ' + n + ' recibe Esquiva Área 1T', 'buff');
+                                } else {
+                                    const _tkAfter = (_tkC2.statusEffects || []).length;
+                                    console.warn('[Pilar de la Niebla] Esquiva Área NO se aplicó a ' + n + '. Efectos antes=' + _tkBefore + ' después=' + _tkAfter);
+                                    addLog('⚠️ Pilar de la Niebla: ' + n + ' NO recibió Esquiva Área (revisar consola — F12)', 'debuff');
+                                }
                             }
                         });
                     }
