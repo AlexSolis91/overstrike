@@ -215,6 +215,12 @@
 
         // Datos de invocaciones
         const summonData = {
+            'Katsuyu': {
+                name: 'Katsuyu',
+                hp: 30, maxHp: 30, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.ibb.co/7NCHPJjb/descarga-40.jpg',
+                passive: 'Protección de Katsuyu: cada vez que un aliado pierde HP de Escudo, cura 3 HP a todos los aliados del equipo. Al final de cada ronda aplica buff Escudo 5 HP en cada aliado.'
+            },
             'Clon de Kurumi': {
                 name: 'Clon de Kurumi',
                 hp: 20, maxHp: 20, summoner: null, team: null, statusEffects: [],
