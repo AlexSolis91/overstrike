@@ -248,13 +248,13 @@
             'Minato Namikaze': {
                 hp: 20, maxHp: 20, speed: 89, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/qvNv9NQN/Captura_de_pantalla_2026_03_11_215715.png',
-                passive: { name: 'Hiraishin no Jutsu', description: 'Esquiva area (no es afectado por ataques AOE del enemigo). Minato genera +1 cargas adicionales por cada enemigo golpeado que tenga menos velocidad que Minato.' },
+                portrait: 'https://i.ibb.co/Z6td09gb/Minato.jpg',
+                passive: { name: 'Hiraishin Jutsushiki', description: 'Minato tiene efecto pasivo Esquivar. Al inicio de la partida y al inicio de cada ronda, Minato aumenta su Velocidad en +5 y la velocidad de 2 aliados aleatorios en +3. Cada vez que Minato esquiva un ataque, genera 5 cargas y obtiene 1 turno adicional.' },
                 abilities: [
-                    { name: 'Kiiroi Senkō', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'kiiroi_senko', description: 'Causa 1 de daño. Se aplica Buff Celeridad 10% por 2 turnos. Se aplica un Buff aleatorio por 2 turnos.' },
-                    { name: 'Destello de la Danza Aullante', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'aoe', effect: 'destello_danza', description: 'Causa 2 AOE. Si el enemigo golpeado tiene menos velocidad que Minato, aplica un debuff aleatorio (Aturdimiento, Congelación, Posesión, Quemadura Solar, Sangrado, Miedo, Confusión, Debilitar, Silenciar, Agotamiento) por 1 turno.' },
-                    { name: 'Rasen Senkō Chō Rinbu Kō Sanshiki', type: 'special', cost: 6, chargeGain: 0, damage: 4, target: 'aoe', effect: 'rasen_senko_v2', description: 'Causa 4 AOE. 50% de probabilidad de robar 2 cargas del enemigo golpeado.' },
-                    { name: 'Legado del Cuarto Hokage', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'ally_team', effect: 'legado_hokage_v2', description: 'Genera 8 cargas para el resto de tu equipo (excepto Minato Namikaze). Requiere 10 cargas.' }
+                    { name: 'Kiiroi Senkō', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'single', effect: 'kiiroi_senko', description: 'De 1 a 3 de daño aleatorio. 30% de probabilidad de golpe crítico. Minato se aplica buff Esquiva Área 2 turnos.' },
+                    { name: 'Rasen Senkō Chō Rinbu Kō Sanshiki', type: 'special', cost: 4, chargeGain: 0, damage: 2, target: 'aoe', effect: 'rasen_senko_v3', description: 'Si el enemigo golpeado tiene menos velocidad que Minato, aplica debuff Confusión 1 turno y debuff Ceguera 2 turnos.' },
+                    { name: 'Rasen Senju', type: 'special', cost: 4, chargeGain: 0, damage: 5, target: 'single', effect: 'rasen_senju', description: 'Gana 20% de probabilidad de golpe crítico por cada debuff activo en el objetivo (acumulable sin límite). Si el golpe es crítico, el equipo aliado gana 5 cargas.' },
+                    { name: 'Hiraishin no Jutsu', type: 'over', cost: 15, chargeGain: 0, damage: 5, target: 'mt', effect: 'hiraishin_no_jutsu', description: 'Realiza de 2 a 10 ataques sobre enemigos aleatorios. Cada enemigo golpeado recibe una marca Hiraishin (contador). Al final de la ronda, Minato ejecuta su básico Kiiroi Senkō sobre cada objetivo marcado, una vez por cada contador — luego las marcas expiran.' }
                 ]
             },
 
