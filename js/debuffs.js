@@ -887,6 +887,30 @@ function applyDebuff(targetName, effectObj) {
                 }
             }
 
+            // ── HI NO ISHI (Tsunade): cada vez que un aliado recibe un debuff → cura 2 HP a
+            //    TODO el equipo aliado (incluida ella misma) por cada debuff recibido ──
+            if (!passiveExecuting && effectObj && effectObj.type === 'debuff' && !effectObj.passiveHidden) {
+                const _tsDbChar = gameState.characters[targetName];
+                if (_tsDbChar) {
+                    for (const _tsDbN in gameState.characters) {
+                        const _tsDbC = gameState.characters[_tsDbN];
+                        if (!_tsDbC || _tsDbC.isDead || _tsDbC.hp <= 0) continue;
+                        if (_tsDbC.team !== _tsDbChar.team) continue;
+                        if (!_tsDbC.passive || _tsDbC.passive.name !== 'Hi no Ishi') continue;
+                        passiveExecuting = true;
+                        for (const _tsHealN in gameState.characters) {
+                            const _tsHealC = gameState.characters[_tsHealN];
+                            if (!_tsHealC || _tsHealC.isDead || _tsHealC.hp <= 0 || _tsHealC.team !== _tsDbChar.team) continue;
+                            if (typeof applyHeal === 'function') applyHeal(_tsHealN, 2, 'Hi no Ishi');
+                            else _tsHealC.hp = Math.min(_tsHealC.maxHp, (_tsHealC.hp||0) + 2);
+                        }
+                        passiveExecuting = false;
+                        addLog('💚 Hi no Ishi: ' + _tsDbN + ' recibió un debuff — equipo aliado cura 2 HP', 'heal');
+                        break;
+                    }
+                }
+            }
+
             // ── AURA DE LATVERIA (Doctor Doom): al recibir debuff (1x por ronda) → Protección Sagrada + disipa debuffs aliados ──
             if (!passiveExecuting && effectObj && effectObj.type === 'debuff' && !effectObj.passiveHidden) {
                 const _doomDbChar = gameState.characters[targetName];
