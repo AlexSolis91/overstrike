@@ -3674,15 +3674,16 @@
                 addLog(`🐉 Dragón de la Vida: Burn 30% en enemigos, Regen 30% en aliados, Escudo Sagrado en ${gameState.selectedCharacter}`, 'buff');
 
             } else if (ability.effect === 'kiiroi_senko' || ability.effect === 'kiiroi_senko_v2') {
-                // Kiiroi Senkō (nuevo): 1 daño + Celeridad 10% 2t + Buff aleatorio 2t
-                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                const celerityBonus = Math.round(attacker.speed * 0.10);
-                attacker.speed += celerityBonus;
-                applyBuff(gameState.selectedCharacter, { name: 'Celeridad', type: 'buff', percent: 10, duration: 2, emoji: '⚡', speedBonus: celerityBonus });
-                const randomBuffs = ['Esquivar','Furia','Frenesi','Contraataque','Proteccion Sagrada'];
-                const rBuff = randomBuffs[Math.floor(Math.random() * randomBuffs.length)];
-                applyBuff(gameState.selectedCharacter, { name: rBuff, type: 'buff', duration: 2, emoji: '✨' });
-                addLog(`⚡ ${gameState.selectedCharacter} usa Kiiroi Senkō: +Celeridad ${celerityBonus} vel + ${rBuff}`, 'buff');
+                // KIIROI SENKŌ (Minato): 1 a 3 daño aleatorio, 30% crítico, Minato se aplica Esquiva Área 2T
+                const _ksDmg = Math.floor(Math.random() * 3) + 1; // 1 a 3
+                const _ksIsCrit = Math.random() < 0.30;
+                const _ksFinal = _ksIsCrit ? _ksDmg * 2 : _ksDmg;
+                applyDamageWithShield(targetName, _ksFinal, gameState.selectedCharacter);
+                addLog('⚡ Kiiroi Senkō: ' + _ksFinal + ' daño a ' + targetName + (_ksIsCrit ? ' (¡crítico!)' : ''), 'damage');
+                if (attacker) {
+                    if (typeof applyBuff === 'function') applyBuff(gameState.selectedCharacter, { name: 'Esquiva Area', type: 'buff', duration: 2, emoji: '💨' });
+                    addLog('⚡ Kiiroi Senkō: Minato se aplica Esquiva Área (2 turnos)', 'buff');
+                }
 
             } else if (ability.effect === 'legado_hokage') {
                 // Legado del Cuarto Hokage: intercambia buffs y cargas con aliado seleccionado
@@ -3828,7 +3829,79 @@
                 });
                 addLog(`🌀 Rasen Senkō Chō Rinbu: ${finalDamage} daño AOE`, 'damage');
 
-            // ── LEGADO DEL CUARTO HOKAGE V2 (Minato nuevo Over: 8 cargas a aliados) ──
+            // ══════════════════════════════════════════════════════
+            // MINATO NAMIKAZE (kit nuevo) — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'rasen_senko_v3') {
+                // RASEN SENKŌ CHŌ RINBU KŌ SANSHIKI: AOE 2 daño. Si el enemigo tiene menos velocidad
+                // que Minato → Confusión 1T + Ceguera 2T
+                const _rs3Atk = gameState.characters[gameState.selectedCharacter];
+                const _rs3ETeam = _rs3Atk ? (_rs3Atk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _rs3AOE = window.resolveAOETargets(gameState.selectedCharacter, _rs3ETeam);
+                _rs3AOE.targets.forEach(function (_n) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.isDead || _c.hp <= 0) return;
+                    const _rs3SpeedBefore = _c.speed;
+                    applyDamageWithShield(_n, finalDamage * _rs3AOE.multiplier, gameState.selectedCharacter);
+                    addLog('🌀 Rasen Senkō: ' + (finalDamage * _rs3AOE.multiplier) + ' daño a ' + _n, 'damage');
+                    if (_rs3Atk && _rs3SpeedBefore < _rs3Atk.speed) {
+                        const _cAfter = gameState.characters[_n];
+                        if (_cAfter && !_cAfter.isDead && _cAfter.hp > 0 && typeof applyDebuff === 'function') {
+                            applyDebuff(_n, { name: 'Confusion', type: 'debuff', duration: 1, emoji: '💫' });
+                            applyDebuff(_n, { name: 'Ceguera', type: 'debuff', duration: 2, emoji: '🙈' });
+                            addLog('🌀 Rasen Senkō: ' + _n + ' (más lento) recibe Confusión 1T + Ceguera 2T', 'debuff');
+                        }
+                    }
+                });
+                _rs3AOE.summonTargets.forEach(function (_sid) {
+                    applySummonDamage(_sid, finalDamage * _rs3AOE.multiplier, gameState.selectedCharacter);
+                });
+
+            } else if (ability.effect === 'rasen_senju') {
+                // RASEN SENJU: ST 5 daño. +20% de crítico por cada debuff en el objetivo (sin límite).
+                // Si crítico, el equipo aliado gana 5 cargas.
+                const _rjAtk = gameState.characters[gameState.selectedCharacter];
+                const _rjTgt = gameState.characters[targetName];
+                const _rjDebuffCount = _rjTgt ? (_rjTgt.statusEffects || []).filter(function (e) { return e && e.type === 'debuff'; }).length : 0;
+                const _rjCritChance = 0.20 * _rjDebuffCount;
+                const _rjIsCrit = Math.random() < _rjCritChance;
+                const _rjDmg = _rjIsCrit ? finalDamage * 2 : finalDamage;
+                applyDamageWithShield(targetName, _rjDmg, gameState.selectedCharacter);
+                addLog('🌀 Rasen Senju: ' + _rjDmg + ' daño a ' + targetName + (_rjIsCrit ? ' (¡crítico! ' + Math.round(_rjCritChance * 100) + '% por ' + _rjDebuffCount + ' debuff(s))' : ''), 'damage');
+                if (_rjIsCrit && _rjAtk) {
+                    for (const _rjAn in gameState.characters) {
+                        const _rjAc = gameState.characters[_rjAn];
+                        if (!_rjAc || _rjAc.isDead || _rjAc.hp <= 0 || _rjAc.team !== _rjAtk.team) continue;
+                        _rjAc.charges = Math.min(20, (_rjAc.charges || 0) + 5);
+                    }
+                    addLog('🌀 Rasen Senju: ¡crítico! Equipo aliado gana 5 cargas', 'buff');
+                }
+
+            } else if (ability.effect === 'hiraishin_no_jutsu') {
+                // HIRAISHIN NO JUTSU: 2 a 10 ataques sobre enemigos aleatorios (5 daño base c/u).
+                // Cada golpe deja una marca Hiraishin (contador) en el objetivo — se procesan y
+                // expiran al final de la ronda (ver hook de fin de ronda en turn-logic.js).
+                const _hnjAtk = gameState.characters[gameState.selectedCharacter];
+                const _hnjETeam = _hnjAtk ? (_hnjAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _hnjHits = 2 + Math.floor(Math.random() * 9); // 2 a 10
+                let _hnjLanded = 0;
+                for (let _hnjI = 0; _hnjI < _hnjHits; _hnjI++) {
+                    const _hnjPool = Object.keys(gameState.characters).filter(function (n) {
+                        const c = gameState.characters[n];
+                        return c && !c.isDead && c.hp > 0 && c.team === _hnjETeam;
+                    });
+                    if (!_hnjPool.length) break;
+                    const _hnjVictim = _hnjPool[Math.floor(Math.random() * _hnjPool.length)];
+                    applyDamageWithShield(_hnjVictim, finalDamage, gameState.selectedCharacter);
+                    const _hnjVc = gameState.characters[_hnjVictim];
+                    if (_hnjVc && !_hnjVc.isDead) {
+                        _hnjVc._hiraishinMarks = (_hnjVc._hiraishinMarks || 0) + 1;
+                    }
+                    _hnjLanded++;
+                }
+                addLog('🌀 Hiraishin no Jutsu: ' + _hnjLanded + ' ataque(s) sobre enemigos aleatorios (' + finalDamage + ' daño c/u) — marca Hiraishin aplicada', 'damage');
+
             } else if (ability.effect === 'legado_hokage_v2') {
                 const allyTeamLH = attacker.team;
                 for (let n in gameState.characters) {
