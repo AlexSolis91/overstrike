@@ -3622,6 +3622,32 @@
                     addLog('🐌 Protección de Katsuyu: Escudo 5 HP aplicado a todo el equipo aliado (fin de ronda)', 'buff');
                 });
 
+                // ── HIRAISHIN JUTSUSHIKI (Minato Namikaze): fin de ronda → ejecuta Kiiroi Senkō
+                //    (básico forzado, con daño/efectos/cargas reales) sobre cada objetivo marcado,
+                //    una vez por cada contador Hiraishin acumulado — luego las marcas expiran ──
+                for (const _hjN in gameState.characters) {
+                    const _hjC = gameState.characters[_hjN];
+                    if (!_hjC || _hjC.isDead || _hjC.hp <= 0) continue;
+                    if (!_hjC.passive || _hjC.passive.name !== 'Hiraishin Jutsushiki') continue;
+                    Object.keys(gameState.characters).forEach(function (_hjTgt) {
+                        const _hjTc = gameState.characters[_hjTgt];
+                        const _hjMarks = _hjTc ? (_hjTc._hiraishinMarks || 0) : 0;
+                        if (_hjMarks <= 0) return;
+                        addLog('⚡ Hiraishin Jutsushiki: ' + _hjN + ' ejecuta Kiiroi Senkō sobre ' + _hjTgt + ' x' + _hjMarks + ' (marcas Hiraishin)', 'buff');
+                        for (let _hjI = 0; _hjI < _hjMarks; _hjI++) {
+                            const _hjCurTgt = gameState.characters[_hjTgt];
+                            if (!_hjCurTgt || _hjCurTgt.isDead || _hjCurTgt.hp <= 0) break;
+                            if (typeof window._executeBasicForced === 'function') window._executeBasicForced(_hjN, _hjTgt);
+                        }
+                    });
+                    break;
+                }
+                // Limpiar TODAS las marcas Hiraishin al final de la ronda (hayan disparado o no)
+                for (const _hjClearN in gameState.characters) {
+                    const _hjClearC = gameState.characters[_hjClearN];
+                    if (_hjClearC) _hjClearC._hiraishinMarks = 0;
+                }
+
                 // ── ASHBRINGER: fin de ronda → cura 40% de su HP máx al portador ──
                 Object.keys(gameState.characters).forEach(function(_ashN) {
                     const _ashC = gameState.characters[_ashN];
