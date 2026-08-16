@@ -1835,6 +1835,33 @@
             }
         };
 
+        // ── FULGOR ARGÉNTEO: al inicio de cada ronda, el portador gana Protección Sagrada
+        //    2 turnos. Misma lógica y mismo motivo de extracción que Jetpack Mandaloriano
+        //    (arriba) — también necesita re-chequearse cuando termina la carga asíncrona de
+        //    reliquias en la Ronda 1. Segura de llamar más de una vez. ──
+        window._runFulgorArgenteoRoundStartCheck = function () {
+            try {
+                for (const _faN in gameState.characters) {
+                    const _faC = gameState.characters[_faN];
+                    if (!_faC || _faC.isDead || _faC.hp <= 0) continue;
+                    if (!(_faC.equippedRelics||[]).includes('Fulgor Argénteo')) continue;
+                    const _faBefore = (_faC.statusEffects || []).length;
+                    if (typeof applyBuff === 'function') applyBuff(_faN, { name: 'Proteccion Sagrada', type: 'buff', duration: 2, emoji: '✨' });
+                    const _faHasIt = (_faC.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'proteccion sagrada'; });
+                    if (_faHasIt) {
+                        addLog('✨ Fulgor Argénteo: ' + _faN + ' gana Protección Sagrada 2T', 'buff');
+                    } else {
+                        const _faAfter = (_faC.statusEffects || []).length;
+                        const _faCurrent = (_faC.statusEffects || []).map(function (e) { return e ? e.name : '?'; }).join(', ') || 'ninguno';
+                        console.warn('[Fulgor Argénteo] Protección Sagrada NO se aplicó a ' + _faN + '. Efectos antes=' + _faBefore + ' después=' + _faAfter + '. Efectos actuales: ' + _faCurrent);
+                        addLog('⚠️ Fulgor Argénteo: ' + _faN + ' NO recibió Protección Sagrada (revisar consola — F12)', 'debuff');
+                    }
+                }
+            } catch (e) {
+                console.error('[Fulgor Argénteo] Excepción en el hook de inicio de ronda:', e);
+            }
+        };
+
         function _runRoundStartPassiveHooks() {
             console.log('[Ronda] _runRoundStartPassiveHooks() iniciando (Ronda ' + gameState.currentRound + ')...');
                     // IZANAMI (Itachi): reset dodge flag each round
@@ -2421,13 +2448,12 @@
                     }
 
                     // ── FULGOR ARGÉNTEO: inicio de ronda → Protección Sagrada 2T ──
-                    for (const _faN in gameState.characters) {
-                        const _faC = gameState.characters[_faN];
-                        if (!_faC || _faC.isDead || _faC.hp <= 0) continue;
-                        if (!(_faC.equippedRelics||[]).includes('Fulgor Argénteo')) continue;
-                        if (typeof applyBuff === 'function') applyBuff(_faN, {name:'Proteccion Sagrada', type:'buff', duration:2, emoji:'✨'});
-                        addLog('✨ Fulgor Argénteo: ' + _faN + ' gana Protección Sagrada 2T', 'buff');
-                    }
+                    // Extraído a función reutilizable (window._runFulgorArgenteoRoundStartCheck) por
+                    // el mismo motivo que Jetpack Mandaloriano: initGame() corre los hooks de inicio
+                    // de ronda de forma síncrona ANTES de que termine la carga asíncrona de reliquias
+                    // desde Firebase — la primera pasada en la Ronda 1 podía no encontrar
+                    // equippedRelics todavía poblado. Segura de llamar más de una vez.
+                    window._runFulgorArgenteoRoundStartCheck();
 
                     // ── VACUNA DE GLICINIA: inicio de ronda → disipa debuffs del portador y un aliado aleatorio ──
                     for (const _vgN in gameState.characters) {
