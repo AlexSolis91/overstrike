@@ -193,6 +193,26 @@
             summons: {} // Objeto para almacenar invocaciones activas
         };
 
+        // ── DIAGNÓSTICO TEMPORAL: rastrear quién asigna el STRING "null"/"undefined" a
+        // selectedCharacter (en vez del valor real null) — esto corrompe continueTurn() más
+        // adelante. Se convierte la propiedad en un getter/setter para capturar el stack trace
+        // exacto del código que lo hace, sin cambiar el comportamiento normal del juego. ──
+        (function () {
+            var _scBacking = gameState.selectedCharacter;
+            Object.defineProperty(gameState, 'selectedCharacter', {
+                get: function () { return _scBacking; },
+                set: function (v) {
+                    if (v === 'null' || v === 'undefined') {
+                        console.warn('[DIAGNÓSTICO] gameState.selectedCharacter asignado al STRING "' + v + '" (no al valor real). Stack:');
+                        console.trace();
+                    }
+                    _scBacking = v;
+                },
+                enumerable: true,
+                configurable: true
+            });
+        })();
+
         // Datos de invocaciones
         const summonData = {
             'Clon de Kurumi': {
