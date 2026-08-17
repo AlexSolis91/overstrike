@@ -1093,6 +1093,12 @@
             const ey = sy;
             const cx = window.innerWidth / 2; // punto de aparición: centro de la pantalla
             const cy = window.innerHeight / 2;
+            // La fila objetivo puede estar ARRIBA o ABAJO del punto de aparición (depende de qué
+            // jugador ataca a quién). El 🗡️ en reposo apunta hacia ABAJO (0°) — si el objetivo
+            // está arriba, se le suma 180° a toda la secuencia de rotación para invertir la punta
+            // (apuntando hacia arriba) manteniendo el mismo barrido de izquierda a derecha.
+            const _flip = (sy < cy) ? 180 : 0;
+            const rotSteps = [-60, -15, 5, 15, 25, 30].map(function (d) { return (d + _flip) + 'deg'; });
             const el = document.createElement('div');
             el.className = 'sword-slash sword-aoe';
             el.textContent = '🗡️';
@@ -1102,6 +1108,12 @@
             el.style.setProperty('--sy', sy + 'px');
             el.style.setProperty('--ex', ex + 'px');
             el.style.setProperty('--ey', ey + 'px');
+            el.style.setProperty('--r0', rotSteps[0]);
+            el.style.setProperty('--r1', rotSteps[1]);
+            el.style.setProperty('--r2', rotSteps[2]);
+            el.style.setProperty('--r3', rotSteps[3]);
+            el.style.setProperty('--r4', rotSteps[4]);
+            el.style.setProperty('--r5', rotSteps[5]);
             document.body.appendChild(el);
             setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 1100);
         }
