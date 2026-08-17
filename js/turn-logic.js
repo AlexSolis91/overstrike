@@ -3696,11 +3696,12 @@
                     addLog('🐌 Protección de Katsuyu: Escudo 5 HP aplicado a todo el equipo aliado (fin de ronda)', 'buff');
                 });
 
-                // ── HIRAISHIN JUTSUSHIKI (Minato Namikaze): fin de ronda → cinemática de
-                //    Hiraishin no Jutsu (solo como indicador visual de que el disparo automático
-                //    ocurrió) y luego ejecuta Kiiroi Senkō (básico forzado real, con daño/efectos/
-                //    cargas/reliquias correspondientes) sobre cada objetivo marcado, una vez por
-                //    cada contador Hiraishin acumulado — luego las marcas expiran ──
+                // ── HIRAISHIN JUTSUSHIKI (Minato Namikaze): fin de ronda → ejecuta Kiiroi Senkō
+                //    (básico forzado real, con daño/efectos/cargas/reliquias correspondientes)
+                //    sobre cada objetivo marcado, una vez por cada contador Hiraishin acumulado —
+                //    luego las marcas expiran. Sin cinemática: en su lugar, cada golpe muestra un
+                //    número de daño flotante rojo con el emoji ⚡ sobre la tarjeta del objetivo,
+                //    para diferenciarlo visualmente de un golpe normal. ──
                 for (const _hjN in gameState.characters) {
                     const _hjC = gameState.characters[_hjN];
                     if (!_hjC || _hjC.isDead || _hjC.hp <= 0) continue;
@@ -3711,35 +3712,34 @@
                         return _c && (_c._hiraishinMarks || 0) > 0;
                     });
                     if (_hjTargets.length === 0) break;
-                    const _hjOver = (_hjC.abilities || []).find(function (a) { return a && a.type === 'over'; });
-                    const _hjRunAttacks = function () {
-                        const _hjHitLog = []; // nombres de enemigos que efectivamente recibieron ataques
-                        _hjTargets.forEach(function (_hjTgt) {
-                            const _hjMarks = gameState.characters[_hjTgt] ? (gameState.characters[_hjTgt]._hiraishinMarks || 0) : 0;
-                            if (_hjMarks <= 0) return;
-                            let _hjActualHits = 0;
-                            for (let _hjI = 0; _hjI < _hjMarks; _hjI++) {
-                                const _hjCurTgt = gameState.characters[_hjTgt];
-                                if (!_hjCurTgt || _hjCurTgt.isDead || _hjCurTgt.hp <= 0) break;
-                                if (typeof window._executeBasicForced === 'function') window._executeBasicForced(_hjN, _hjTgt);
-                                _hjActualHits++;
+                    const _hjHitLog = []; // nombres de enemigos que efectivamente recibieron ataques
+                    _hjTargets.forEach(function (_hjTgt) {
+                        const _hjMarks = gameState.characters[_hjTgt] ? (gameState.characters[_hjTgt]._hiraishinMarks || 0) : 0;
+                        if (_hjMarks <= 0) return;
+                        let _hjActualHits = 0;
+                        for (let _hjI = 0; _hjI < _hjMarks; _hjI++) {
+                            const _hjCurTgt = gameState.characters[_hjTgt];
+                            if (!_hjCurTgt || _hjCurTgt.isDead || _hjCurTgt.hp <= 0) break;
+                            const _hjHpBefore = _hjCurTgt.hp;
+                            if (typeof window._executeBasicForced === 'function') window._executeBasicForced(_hjN, _hjTgt);
+                            _hjActualHits++;
+                            const _hjCurTgtAfter = gameState.characters[_hjTgt];
+                            if (_hjCurTgtAfter) {
+                                const _hjDealt = Math.max(0, _hjHpBefore - _hjCurTgtAfter.hp);
+                                if (_hjDealt > 0 && typeof _spawnDmgNumber === 'function') {
+                                    _spawnDmgNumber(_hjTgt, '-' + _hjDealt + '⚡', 'dmg');
+                                }
                             }
-                            if (_hjActualHits > 0) _hjHitLog.push(_hjTgt + ' (x' + _hjActualHits + ')');
-                        });
-                        if (_hjHitLog.length > 0) {
-                            addLog('⚡ Hiraishin no Jutsu: ataques automáticos de Kiiroi Senkō completados sobre ' + _hjHitLog.join(', '), 'buff');
                         }
-                        // Limpiar TODAS las marcas Hiraishin al final de la ronda (hayan disparado o no)
-                        for (const _hjClearN in gameState.characters) {
-                            const _hjClearC = gameState.characters[_hjClearN];
-                            if (_hjClearC) _hjClearC._hiraishinMarks = 0;
-                        }
-                    };
-                    if (_hjOver && typeof _showOverCinematic === 'function') {
-                        addLog('⚡ Hiraishin no Jutsu: se activan los ataques automáticos de fin de ronda', 'buff');
-                        _showOverCinematic(_hjN, _hjOver.name, _hjOver.effect, _hjC.team, _hjRunAttacks);
-                    } else {
-                        _hjRunAttacks();
+                        if (_hjActualHits > 0) _hjHitLog.push(_hjTgt + ' (x' + _hjActualHits + ')');
+                    });
+                    if (_hjHitLog.length > 0) {
+                        addLog('⚡ Hiraishin no Jutsu: ataques automáticos de Kiiroi Senkō completados sobre ' + _hjHitLog.join(', '), 'buff');
+                    }
+                    // Limpiar TODAS las marcas Hiraishin al final de la ronda (hayan disparado o no)
+                    for (const _hjClearN in gameState.characters) {
+                        const _hjClearC = gameState.characters[_hjClearN];
+                        if (_hjClearC) _hjClearC._hiraishinMarks = 0;
                     }
                     break;
                 }
