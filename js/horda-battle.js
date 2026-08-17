@@ -239,6 +239,14 @@
             gameState.aiTeam = 'team2';
             gameState.myTeam = 'team1';
 
+            // Layout visual "manos de cartas" (igual que Ranked): equipo rival arriba, equipo
+            // propio abajo, ambos en fila, con panel de info de personaje. Se aplica aquí (no en
+            // initGame original) porque en ese momento gameState.gameMode todavía no valía
+            // 'horda'. Solo cambia lo visual — música y video de fondo de Horda siguen intactos,
+            // y la mecánica de oleadas no se toca en absoluto.
+            var _hordaBattleArenaEl = document.querySelector('.battle-arena');
+            if (_hordaBattleArenaEl) _hordaBattleArenaEl.classList.add('hand-mode');
+
             // SÍNCRONO — BUG CRÍTICO CORREGIDO: antes las invocaciones (Igris, MinByung, etc.)
             // solo se restauraban dentro del bloque async de más abajo (esperando una lectura
             // de Firebase). Como initGame() ya no es async, el turno de Sun Jin Woo podía
