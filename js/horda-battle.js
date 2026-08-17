@@ -389,7 +389,21 @@
     };
 
     window.hordaHandleGameOver = function (message) {
-        var won = message.indexOf('HUNTERS') !== -1; // el jugador siempre es team1/HUNTERS en Horda
+        // Antes esto revisaba si el texto del mensaje contenía literalmente la palabra
+        // "HUNTERS" — frágil, porque otros mensajes de fin de partida (ej. "¡EMPATE!" por
+        // límite de rondas, victoria del Jefe de Sala) NO contienen esa palabra aunque el
+        // jugador (team1) sí haya ganado, mostrando la pantalla de derrota por error. Ahora
+        // se revisa el estado REAL de los equipos: el jugador ganó si el equipo enemigo
+        // (team2, La Horda) está completamente eliminado, sin importar el texto del mensaje.
+        var _team2Alive = Object.keys(gameState.characters).some(function (n) {
+            var c = gameState.characters[n];
+            return c && c.team === 'team2' && !c.isDead && c.hp > 0;
+        });
+        var _team1Alive = Object.keys(gameState.characters).some(function (n) {
+            var c = gameState.characters[n];
+            return c && c.team === 'team1' && !c.isDead && c.hp > 0;
+        });
+        var won = !_team2Alive && _team1Alive; // team1 vivo y team2 (Horda) totalmente eliminado
         if (won) {
             // Oleada superada: la música y el fondo de video de Horda NO se tocan — siguen sonando/mostrándose.
             showHordaWaveClearedModal();
