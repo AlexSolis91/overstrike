@@ -6,7 +6,7 @@
             'Madara Uchiha': {
                 hp: 20, maxHp: 20, speed: 90, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.ibb.co/spKxL75H/descarga.jpg',
+                portrait: 'https://i.ibb.co/dsMWYhFc/Gemini-Generated-Image-qonvoiqonvoiqonv.jpg',
                 transformPortrait: 'https://i.ibb.co/Y4qQbMX5/Whats-App-Image-2026-06-02-at-4-50-41-PM.jpg',
                 passive: { name: 'Gakido', description: 'Absorbe daño directo de aliados (gana cargas en lugar de HP). Inmune a debuffs con Escudo activo. Cada golpe crítico otorga 1 turno adicional.' },
                 abilities: [
