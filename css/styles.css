@@ -2032,6 +2032,51 @@
             100% { opacity: 0; transform: translateY(-48px) scale(0.8); }
         }
 
+        /* ── TAJO DE ESPADA: efecto visual de ataque estilo Yu-Gi-Oh (🗡️) ──
+           Se activa en Básicos y Especiales (no en Over, que ya tienen su propia cinemática).
+           Las coordenadas de inicio/fin/medio se pasan por variables CSS calculadas en JS con
+           getBoundingClientRect(), por eso usan position:fixed (coincide con el viewport). */
+        .sword-slash {
+            position: fixed;
+            left: 0; top: 0;
+            font-size: 2.1rem;
+            z-index: 9998;
+            pointer-events: none;
+            filter: drop-shadow(0 0 6px rgba(255,255,255,0.75));
+        }
+        /* ST: la espada viaja del atacante al objetivo, apuntando en esa dirección */
+        .sword-slash.sword-st {
+            animation: swordSlashST 0.42s cubic-bezier(.4,0,.2,1) forwards;
+        }
+        @keyframes swordSlashST {
+            0%   { opacity: 0; transform: translate(var(--sx), var(--sy)) rotate(var(--ang)) scale(0.5); }
+            15%  { opacity: 1; transform: translate(var(--sx), var(--sy)) rotate(var(--ang)) scale(1); }
+            80%  { opacity: 1; }
+            100% { opacity: 0; transform: translate(var(--ex), var(--ey)) rotate(var(--ang)) scale(1.15); }
+        }
+        /* AOE: la espada aparece a mitad de pantalla y hace un barrido horizontal sobre toda la fila enemiga */
+        .sword-slash.sword-aoe {
+            font-size: 3.2rem;
+            animation: swordSlashAOE 0.65s ease-in-out forwards;
+        }
+        @keyframes swordSlashAOE {
+            0%   { opacity: 0; transform: translate(var(--sx), var(--sy)) rotate(-25deg) scale(0.7); }
+            12%  { opacity: 1; }
+            50%  { transform: translate(var(--mx), var(--my)) rotate(10deg) scale(1.35); }
+            88%  { opacity: 1; }
+            100% { opacity: 0; transform: translate(var(--ex), var(--ey)) rotate(35deg) scale(1); }
+        }
+        /* MT: tajo en el sitio, solo sobre la tarjeta del objetivo golpeado (sin viajar) */
+        .sword-slash.sword-mt {
+            animation: swordSlashMT 0.4s ease-out forwards;
+        }
+        @keyframes swordSlashMT {
+            0%   { opacity: 0; transform: translate(var(--sx), var(--sy)) rotate(-50deg) scale(0.5); }
+            20%  { opacity: 1; transform: translate(var(--sx), var(--sy)) rotate(-15deg) scale(1.1); }
+            60%  { opacity: 1; transform: translate(var(--sx), var(--sy)) rotate(40deg) scale(1.25); }
+            100% { opacity: 0; transform: translate(var(--sx), var(--sy)) rotate(55deg) scale(0.9); }
+        }
+
         /* ── BRILLO DORADO PULSANTE: generación de cargas ── */
         @keyframes chargeGlow {
             0%   { box-shadow: 0 0 0px rgba(255,210,0,0); }
