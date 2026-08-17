@@ -3297,15 +3297,6 @@
                 }
             }
 
-            // ── HI NO ISHI (Tsunade): cada vez que ELLA recibe daño (de cualquier fuente,
-            //    incluido el daño absorbido de un aliado), gana 1 contador Senju: +2 HP y +2 HP máx ──
-            if (remainingDamage > 0 && target && target.passive && target.passive.name === 'Hi no Ishi' && !target.isDead) {
-                target._senjuCounters = (target._senjuCounters || 0) + 1;
-                target.maxHp = (target.maxHp || 0) + 2;
-                target.hp = Math.min(target.maxHp, (target.hp || 0) + 2);
-                addLog('💪 Hi no Ishi: Tsunade gana un contador Senju (' + target._senjuCounters + ') — +2 HP y +2 HP máx', 'buff');
-            }
-
             // ── HORROCRUX VIVIENTE (Voldemort): interceptar muerte si Nagini activa → sobrevive con 1 HP ──
             if (target && target.hp <= 0 && !target.isDead && target.passive && target.passive.name === 'Horrocrux Viviente') {
                 const _voldTeam = target.team;
@@ -3540,6 +3531,20 @@
                     }
                     passiveExecuting = false;
                 }
+            }
+
+            // ── HI NO ISHI (Tsunade): cada vez que ELLA recibe daño (de cualquier fuente,
+            //    incluido el daño absorbido de un aliado), gana 1 contador Senju: +2 HP y +2 HP
+            //    máx. Vive DESPUÉS de toda la resolución de muerte (no antes) — así, si el golpe
+            //    es letal, la bonificación de HP nunca puede "revivirla" impidiendo su muerte real.
+            //    Solo aplica si sigue viva al llegar aquí (por sí misma, o por otra reliquia de
+            //    revivificación legítima que ya se haya procesado arriba). ──
+            if (remainingDamage > 0 && target && !target.isDead && target.hp > 0 &&
+                target.passive && target.passive.name === 'Hi no Ishi') {
+                target._senjuCounters = (target._senjuCounters || 0) + 1;
+                target.maxHp = (target.maxHp || 0) + 2;
+                target.hp = Math.min(target.maxHp, target.hp + 2);
+                addLog('💪 Hi no Ishi: Tsunade gana un contador Senju (' + target._senjuCounters + ') — +2 HP y +2 HP máx', 'buff');
             }
 
             // PASIVA DONCELLA ESCUDERA (Lagertha): cuando un enemigo con Sangrado recibe golpe, Lagertha gana Escudo 1 HP
