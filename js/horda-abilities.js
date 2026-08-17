@@ -61,9 +61,9 @@
             var rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[relicName] : null;
             if (!rd || !rd.effect) return;
 
-            if (rd.effect === 'crit_chance_bonus' && !gameState._isCritHit && Math.random() < 0.10) {
+            if (rd.effect === 'crit_chance_bonus' && !gameState._isCritHit && Math.random() < 0.30) {
                 dmg *= 2; gameState._isCritHit = true;
-                addLog('💫 Cuerno del Caos: ¡Crítico! (+10%)', 'buff');
+                addLog('💫 Cuerno del Caos: ¡Crítico! (+30%)', 'buff');
             }
             if (rd.effect === 'frostmourne') {
                 dmg = dmg * 2;
