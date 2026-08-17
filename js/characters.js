@@ -121,14 +121,14 @@
             'Alexstrasza': {
                 hp: 25, maxHp: 25, speed: 82, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/V6F3kYFw/Captura_de_pantalla_2026_02_21_233329.png',
-                transformationPortrait: 'https://i.postimg.cc/k4dLFV5p/Captura_de_pantalla_2026_02_24_101308.png',
-                passive: { name: 'Aspecto de la Vida', description: 'Al final de cada ronda, cura 3 HP al aliado con menos HP.' },
+                portrait: 'https://i.ibb.co/Kz56gQ5D/Gemini-Generated-Image-11t0dd11t0dd11t0.jpg',
+                transformationPortrait: 'https://i.ibb.co/RT7wf30z/Gemini-Generated-Image-62x10h62x10h62x1.jpg',
+                passive: { name: 'Aspecto de la Vida', description: 'Al final de cada ronda, Alexstrasza cura 2 HP y genera 2 cargas a todos los aliados. Cada vez que un debuff Quemaduras inflige daño (sin importar en qué equipo esté), genera 1 carga al equipo aliado.' },
                 abilities: [
-                    { name: 'Fuego Vital', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'ally_single', effect: 'fuego_vital', shieldAmount: 2, description: 'Aplica Buff Escudo de 2 HP al objetivo aliado. Aplica Buff Aura de fuego.' },
-                    { name: 'Don de la Vida', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'don_de_la_vida', heal: 4, description: 'Recupera 4 HP del objetivo aliado. Aplica Buff Aura de Luz.' },
-                    { name: 'Llama Preservadora', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'llama_preservadora', shieldAmount: 5, description: 'Aplica Buff Escudo al objetivo de 5 HP. Cuando el aliado consume un punto de este escudo, genera 1 punto de carga para Alexstrasza. Aplica Buff Aura de fuego. Aplica Buff Aura de Luz.' },
-                    { name: 'Dragón de la Vida', type: 'over', cost: 9, chargeGain: 0, damage: 0, target: 'self', effect: 'dragon_of_life', burnAmount: 4, description: 'Aplica debuff Quemadura de 4 HP a todo el equipo enemigo. Aplica Buff Regeneración de 30% a todos los aliados por 2 turnos. Alexstrasza gana Buff Escudo Sagrado.' }
+                    { name: 'Fuego Vital', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'ally_single', effect: 'fuego_vital', description: 'Aplica Escudo de 3 HP sobre el objetivo aliado. Aplica buff Aura de Fuego por 3 turnos sobre el objetivo aliado.' },
+                    { name: 'Don de la Vida', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'don_de_la_vida', description: 'Cura 4 HP del objetivo. Aplica buff Aura de Luz por 3 turnos. Si hay algún enemigo con debuff Quemaduras activa, ejecuta Fuego Vital sobre 2 aliados aleatorios.' },
+                    { name: 'Llama Preservadora', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'self', effect: 'llama_preservadora', description: 'Cura 2 HP a todo el equipo aliado por cada personaje con debuff Quemaduras activo en ambos equipos. Aplica Escudo de 2 HP por cada personaje con debuff Quemaduras activo en ambos equipos.' },
+                    { name: 'Dragón de la Vida', type: 'over', cost: 10, chargeGain: 0, damage: 0, target: 'self', effect: 'dragon_of_life', description: 'Alexstrasza se transforma en Dragón de la Vida por 3 turnos. Al inicio de cada ronda mientras esté transformada: disipa los debuffs del equipo aliado, cura 7 HP al equipo aliado, y aplica debuff Quemaduras de 7 HP al equipo enemigo.' }
                 ]
             },
 
