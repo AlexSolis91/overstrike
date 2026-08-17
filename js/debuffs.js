@@ -147,6 +147,26 @@ function triggerMaboroshi(targetTeam, debuffName) {
                     passiveExecuting = false;
                 }
             }
+            // KATANA DEL RAYO: enemigos del que ganó turno extra aplican Mega Aturdimiento
+            for (const name in gameState.characters) {
+                const c = gameState.characters[name];
+                if (!c || c.isDead || c.hp <= 0 || c.team !== enemyTeam) continue;
+                if (!(c.equippedRelics || []).includes('Katana del Rayo')) continue;
+                if (typeof applyStun === 'function') {
+                    applyStun(extraTurnCharName, 2); // duración 2+ = Mega Aturdimiento
+                    addLog(`⚡ Katana del Rayo: ${name} aplica Mega Aturdimiento a ${extraTurnCharName} (turno extra)`, 'debuff');
+                }
+            }
+            // HILOS DE CHAKRA DE SASORI: 30% de Mega Posesión sobre quien ganó turno extra
+            for (const name in gameState.characters) {
+                const c = gameState.characters[name];
+                if (!c || c.isDead || c.hp <= 0 || c.team !== enemyTeam) continue;
+                if (!(c.equippedRelics || []).includes('Hilos de Chakra de Sasori')) continue;
+                if (Math.random() < 0.30 && typeof applyMegaPosesion === 'function') {
+                    applyMegaPosesion(extraTurnCharName, 2);
+                    addLog(`🕸️ Hilos de Chakra de Sasori: ${name} aplica Mega Posesión a ${extraTurnCharName} (30%, turno extra)`, 'debuff');
+                }
+            }
         }
 
 
