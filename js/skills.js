@@ -3625,42 +3625,72 @@
                 }
 
             } else if (ability.effect === 'fuego_vital') {
-                // ALEXSTRAZA - Fuego Vital: Escudo 2 HP + Aura de fuego
+                // ALEXSTRASZA - Fuego Vital: Escudo 3 HP + Aura de Fuego 3T sobre el objetivo aliado
                 const tgtFV = gameState.characters[targetName];
                 if (tgtFV) {
-                    applyShield(targetName, ability.shieldAmount || 2);
-                    // Apply Aura de fuego buff
-                    if (!hasStatusEffect(targetName, 'Aura de fuego')) {
-                        applyBuff(targetName, { name: 'Aura de fuego', type: 'buff', duration: 4, emoji: '🔥', description: 'Quemadura 2HP al atacante' });
-                    }
-                    addLog('🔥 ' + targetName + ' recibe Escudo ' + (ability.shieldAmount || 2) + ' HP + Aura de Fuego (Fuego Vital)', 'buff');
+                    tgtFV.shield = (tgtFV.shield || 0) + 3;
+                    if (typeof applyBuff === 'function') applyBuff(targetName, { name: 'Aura de fuego', type: 'buff', duration: 3, emoji: '🔥', description: 'Quemadura 2HP al atacante' });
+                    addLog('🔥 Fuego Vital: ' + targetName + ' recibe Escudo 3 HP + Aura de Fuego (3 turnos)', 'buff');
                 }
 
             } else if (ability.effect === 'llama_preservadora') {
-                // ALEXSTRAZA - Llama Preservadora: Escudo 5 HP + Aura de fuego + Aura de Luz
-                const tgtLP = gameState.characters[targetName];
-                if (tgtLP) {
-                    applyShield(targetName, ability.shieldAmount || 5, 'fire_charge_regen');
-                    // Apply Aura de fuego
-                    if (!hasStatusEffect(targetName, 'Aura de fuego')) {
-                        applyBuff(targetName, { name: 'Aura de fuego', type: 'buff', duration: 4, emoji: '🔥', description: 'Quemadura 2HP al atacante' });
+                // ALEXSTRASZA - Llama Preservadora: cura 2 HP y aplica Escudo 2 HP a todo el equipo
+                // aliado por cada PERSONAJE (no por stack) con Quemaduras activa en AMBOS equipos
+                const _lpAtk = gameState.characters[gameState.selectedCharacter];
+                if (_lpAtk) {
+                    let _lpCount = 0;
+                    for (const _lpN in gameState.characters) {
+                        const _lpC = gameState.characters[_lpN];
+                        if (!_lpC || _lpC.isDead || _lpC.hp <= 0) continue;
+                        if ((_lpC.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'quemadura'; })) _lpCount++;
                     }
-                    // Apply Aura de Luz
-                    if (!hasStatusEffect(targetName, 'Aura de Luz') && !hasStatusEffect(targetName, 'Aura de luz')) {
-                        applyBuff(targetName, { name: 'Aura de Luz', type: 'buff', duration: 4, emoji: '✨', description: 'Duplica la recuperación de HP' });
+                    if (_lpCount > 0) {
+                        const _lpHeal = 2 * _lpCount;
+                        const _lpShield = 2 * _lpCount;
+                        for (const _lpAn in gameState.characters) {
+                            const _lpAc = gameState.characters[_lpAn];
+                            if (!_lpAc || _lpAc.isDead || _lpAc.hp <= 0 || _lpAc.team !== _lpAtk.team) continue;
+                            if (typeof applyHeal === 'function') applyHeal(_lpAn, _lpHeal, 'Llama Preservadora');
+                            else _lpAc.hp = Math.min(_lpAc.maxHp, (_lpAc.hp || 0) + _lpHeal);
+                            _lpAc.shield = (_lpAc.shield || 0) + _lpShield;
+                        }
+                        addLog('🔥 Llama Preservadora: equipo aliado cura ' + _lpHeal + ' HP y recibe Escudo ' + _lpShield + ' HP (' + _lpCount + ' personaje(s) con Quemaduras)', 'buff');
+                    } else {
+                        addLog('🔥 Llama Preservadora: ningún personaje tiene Quemaduras activa', 'info');
                     }
-                    addLog('🔥✨ Llama Preservadora: ' + targetName + ' recibe Escudo ' + (ability.shieldAmount || 5) + ' HP + Aura de Fuego + Aura de Luz', 'buff');
                 }
 
             } else if (ability.effect === 'don_de_la_vida') {
-                // Don de la Vida (Alexstrasza actualizado): cura 4 HP al objetivo
+                // ALEXSTRASZA - Don de la Vida: cura 4 HP + Aura de Luz 3T al objetivo. Si algún
+                // enemigo tiene Quemaduras activa, ejecuta el efecto de Fuego Vital sobre 2 aliados aleatorios
                 const tgtDV = gameState.characters[targetName];
-                if (tgtDV && (typeof canHeal !== 'function' || canHeal(targetName))) {
-                    const oldHpDV = tgtDV.hp;
-                    tgtDV.hp = Math.min(tgtDV.maxHp, tgtDV.hp + 4);
-                    const _ddvHeal = tgtDV.hp - oldHpDV;
-                    if (_ddvHeal > 0 && typeof notifyHeal === 'function') notifyHeal(targetName, _ddvHeal, 'Don de la Vida');
-                    addLog(`💚 ${targetName} recupera ${tgtDV.hp - oldHpDV} HP (Don de la Vida)`, 'heal');
+                const _dvAtk = gameState.characters[gameState.selectedCharacter];
+                if (tgtDV) {
+                    if (typeof applyHeal === 'function') applyHeal(targetName, 4, 'Don de la Vida');
+                    else tgtDV.hp = Math.min(tgtDV.maxHp, tgtDV.hp + 4);
+                    if (typeof applyBuff === 'function') applyBuff(targetName, { name: 'Aura de Luz', type: 'buff', duration: 3, emoji: '✨', description: 'Duplica la recuperación de HP' });
+                    addLog('💚 Don de la Vida: ' + targetName + ' recupera 4 HP + Aura de Luz (3 turnos)', 'heal');
+                }
+                if (_dvAtk) {
+                    const _dvETeam = _dvAtk.team === 'team1' ? 'team2' : 'team1';
+                    const _dvEnemyHasBurn = Object.keys(gameState.characters).some(function (n) {
+                        const c = gameState.characters[n];
+                        return c && !c.isDead && c.hp > 0 && c.team === _dvETeam && (c.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'quemadura'; });
+                    });
+                    if (_dvEnemyHasBurn) {
+                        const _dvAllies = Object.keys(gameState.characters).filter(function (n) {
+                            const c = gameState.characters[n];
+                            return c && !c.isDead && c.hp > 0 && c.team === _dvAtk.team;
+                        });
+                        const _dvChosen = _dvAllies.sort(function () { return Math.random() - 0.5; }).slice(0, 2);
+                        _dvChosen.forEach(function (n) {
+                            const c = gameState.characters[n];
+                            if (!c) return;
+                            c.shield = (c.shield || 0) + 3;
+                            if (typeof applyBuff === 'function') applyBuff(n, { name: 'Aura de fuego', type: 'buff', duration: 3, emoji: '🔥', description: 'Quemadura 2HP al atacante' });
+                        });
+                        if (_dvChosen.length > 0) addLog('🔥 Don de la Vida: enemigo con Quemaduras detectado — Fuego Vital ejecutado sobre ' + _dvChosen.join(' y '), 'buff');
+                    }
                 }
 
             } else if (ability.effect === 'fire_retaliation_shield') {
@@ -3690,20 +3720,19 @@
                 }
 
             } else if (ability.effect === 'dragon_of_life') {
-                // Dragón de la Vida: burn AOE + regen aliados + Escudo Sagrado a Alexstrasza + Forma Dragón
-                const myTeam = attacker.team; const eTeam = myTeam === 'team1' ? 'team2' : 'team1';
-                for (let n in gameState.characters) {
-                    const c = gameState.characters[n];
-                    if (c.team === eTeam && !c.isDead && c.hp > 0) applyFlatBurn(n, 4, 2);
-                    if (c.team === myTeam && !c.isDead && c.hp > 0) c.statusEffects.push({ name: 'Regeneracion', type: 'buff', duration: 3, emoji: '💖', amount: Math.ceil(c.maxHp * 0.30) });
+                // ALEXSTRASZA - Dragón de la Vida: transformación temporal de 3 turnos. Los efectos
+                // (disipar debuffs aliados, curar 7HP aliados, Quemaduras 7HP enemigos) se ejecutan
+                // al inicio de cada ronda MIENTRAS esté transformada (ver hook en turn-logic.js).
+                if (attacker) {
+                    attacker._dragonVidaTurnsLeft = 3;
+                    attacker.isTransformed = true;
+                    const _alexTP = attacker.transformPortrait || attacker.transformationPortrait;
+                    if (_alexTP) { attacker.portrait = _alexTP; }
+                    if (typeof audioManager !== 'undefined' && audioManager.playTransformSfx) audioManager.playTransformSfx();
+                    if (typeof _animCard === 'function') _animCard(gameState.selectedCharacter, 'anim-transform', 700);
+                    if (typeof _triggerPowerUp === 'function') _triggerPowerUp(gameState.selectedCharacter, attacker.team);
+                    addLog('🐉 Dragón de la Vida: Alexstrasza se transforma por 3 turnos', 'buff');
                 }
-                applyHolyShield(gameState.selectedCharacter, 3); // dur=3 → activo 2 turnos reales
-                attacker.dragonFormActive = true;
-                // Support both field names (transformPortrait and transformationPortrait)
-                const _alexTP = attacker.transformPortrait || attacker.transformationPortrait;
-                if (_alexTP) { attacker.portrait = _alexTP; }
-                audioManager.playTransformSfx(); if (typeof _animCard === 'function') _animCard(gameState.selectedCharacter, 'anim-transform', 700); if (typeof _triggerPowerUp === 'function') { const _puChar = gameState.characters[gameState.selectedCharacter]; _triggerPowerUp(gameState.selectedCharacter, _puChar ? _puChar.team : 'team1'); }
-                addLog(`🐉 Dragón de la Vida: Burn 30% en enemigos, Regen 30% en aliados, Escudo Sagrado en ${gameState.selectedCharacter}`, 'buff');
 
             } else if (ability.effect === 'kiiroi_senko' || ability.effect === 'kiiroi_senko_v2') {
                 // KIIROI SENKŌ (Minato): 1 a 3 daño aleatorio + bonos de reliquias/pasivas (ej.
