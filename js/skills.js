@@ -3674,8 +3674,12 @@
                 addLog(`🐉 Dragón de la Vida: Burn 30% en enemigos, Regen 30% en aliados, Escudo Sagrado en ${gameState.selectedCharacter}`, 'buff');
 
             } else if (ability.effect === 'kiiroi_senko' || ability.effect === 'kiiroi_senko_v2') {
-                // KIIROI SENKŌ (Minato): 1 a 3 daño aleatorio, 30% crítico, Minato se aplica Esquiva Área 2T
-                const _ksDmg = Math.floor(Math.random() * 3) + 1; // 1 a 3
+                // KIIROI SENKŌ (Minato): 1 a 3 daño aleatorio + bonos de reliquias/pasivas (ej.
+                // Guantes de Pantera Negra +3 en ST) + 30% crítico. Minato se aplica Esquiva Área 2T.
+                // El bono de reliquias ya viene sumado en finalDamage (arranca en ability.damage=1),
+                // así que se extrae como la diferencia y se suma sobre la tirada aleatoria propia.
+                const _ksRelicBonus = finalDamage - ability.damage;
+                const _ksDmg = (Math.floor(Math.random() * 3) + 1) + _ksRelicBonus; // 1 a 3 + bonos
                 const _ksIsCrit = Math.random() < 0.30;
                 const _ksFinal = _ksIsCrit ? _ksDmg * 2 : _ksDmg;
                 applyDamageWithShield(targetName, _ksFinal, gameState.selectedCharacter);
