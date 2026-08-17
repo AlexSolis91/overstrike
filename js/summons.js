@@ -1071,6 +1071,14 @@
                     _sfxHit.currentTime = 0; _sfxHit.volume = 0.5; _sfxHit.play().catch(function(){});
                 }
             }
+            // ── TAJO DE ESPADA (MT): un tajo por cada golpe real de una habilidad MT, escalonado
+            //    de forma secuencial. No aplica a daño directo (attackerName===null) ni a Over. ──
+            if (damage > 0 && attackerName !== null && !passiveExecuting && gameState.selectedAbility &&
+                gameState.selectedAbility.target === 'mt' && gameState.selectedAbility.type !== 'over' &&
+                typeof window._spawnSwordSlashMT === 'function') {
+                window._spawnSwordSlashMT(targetName, gameState._mtHitCounter || 0);
+                gameState._mtHitCounter = (gameState._mtHitCounter || 0) + 1;
+            }
             // ── ESPADA NICHIRIN NEGRA: daño doble a objetivos con Quemadura Solar ──
             // Vive AQUÍ (no en el bloque de "bonos pre-ataque" de un solo objetivo) para que
             // funcione en CADA golpe individual, sea un ataque de un solo objetivo o AOE/multi-golpe
