@@ -1904,6 +1904,42 @@
 
         function _runRoundStartPassiveHooks() {
             console.log('[Ronda] _runRoundStartPassiveHooks() iniciando (Ronda ' + gameState.currentRound + ')...');
+                    // ── DRAGÓN DE LA VIDA (Alexstrasza transformada): inicio de ronda mientras
+                    //    dure la transformación (3 turnos) → disipa debuffs aliados, cura 7 HP a
+                    //    los aliados, aplica Quemaduras 7HP al equipo enemigo. Al agotarse los
+                    //    turnos, revierte la transformación (incluido el portrait). ──
+                    for (const _dvN in gameState.characters) {
+                        const _dvC = gameState.characters[_dvN];
+                        if (!_dvC || _dvC.isDead || _dvC.hp <= 0) continue;
+                        if (!_dvC.isTransformed || !(_dvC._dragonVidaTurnsLeft > 0)) continue;
+                        const _dvETeam = _dvC.team === 'team1' ? 'team2' : 'team1';
+                        // Disipar debuffs del equipo aliado
+                        for (const _dvAn in gameState.characters) {
+                            const _dvAc = gameState.characters[_dvAn];
+                            if (!_dvAc || _dvAc.isDead || _dvAc.hp <= 0 || _dvAc.team !== _dvC.team) continue;
+                            _dvAc.statusEffects = (_dvAc.statusEffects || []).filter(function (e) { return !e || e.type !== 'debuff'; });
+                            if (typeof applyHeal === 'function') applyHeal(_dvAn, 7, 'Dragón de la Vida');
+                            else _dvAc.hp = Math.min(_dvAc.maxHp, (_dvAc.hp || 0) + 7);
+                        }
+                        // Quemaduras 7HP al equipo enemigo
+                        for (const _dvEn in gameState.characters) {
+                            const _dvEc = gameState.characters[_dvEn];
+                            if (!_dvEc || _dvEc.isDead || _dvEc.hp <= 0 || _dvEc.team !== _dvETeam) continue;
+                            if (typeof applyFlatBurn === 'function') applyFlatBurn(_dvEn, 7, 2);
+                        }
+                        addLog('🐉 Dragón de la Vida: debuffs aliados disipados, +7 HP al equipo aliado, Quemaduras 7HP al equipo enemigo', 'buff');
+                        _dvC._dragonVidaTurnsLeft--;
+                        if (_dvC._dragonVidaTurnsLeft <= 0) {
+                            _dvC.isTransformed = false;
+                            if (_dvC.portrait && (_dvC.transformPortrait === _dvC.portrait || _dvC.transformationPortrait === _dvC.portrait)) {
+                                // Restaurar el portrait normal desde los datos originales del personaje
+                                const _dvBase = (typeof characterData !== 'undefined' && characterData[_dvN]) ? characterData[_dvN] : null;
+                                if (_dvBase && _dvBase.portrait) _dvC.portrait = _dvBase.portrait;
+                            }
+                            addLog('🐉 Dragón de la Vida: la transformación de ' + _dvN + ' termina', 'info');
+                        }
+                        break;
+                    }
                     // ── HIRAISHIN JUTSUSHIKI (Minato Namikaze): inicio de ronda → +5 velocidad a
                     //    Minato y +3 velocidad a 2 aliados aleatorios ──
                     for (const _mnN in gameState.characters) {
@@ -3741,6 +3777,23 @@
                         const _hjClearC = gameState.characters[_hjClearN];
                         if (_hjClearC) _hjClearC._hiraishinMarks = 0;
                     }
+                    break;
+                }
+
+                // ── ASPECTO DE LA VIDA (Alexstrasza): fin de ronda → cura 2 HP y genera 2 cargas
+                //    a todo el equipo aliado ──
+                for (const _alN in gameState.characters) {
+                    const _alC = gameState.characters[_alN];
+                    if (!_alC || _alC.isDead || _alC.hp <= 0) continue;
+                    if (!_alC.passive || _alC.passive.name !== 'Aspecto de la Vida') continue;
+                    for (const _alAn in gameState.characters) {
+                        const _alAc = gameState.characters[_alAn];
+                        if (!_alAc || _alAc.isDead || _alAc.hp <= 0 || _alAc.team !== _alC.team) continue;
+                        if (typeof applyHeal === 'function') applyHeal(_alAn, 2, 'Aspecto de la Vida');
+                        else _alAc.hp = Math.min(_alAc.maxHp, (_alAc.hp || 0) + 2);
+                        _alAc.charges = Math.min(20, (_alAc.charges || 0) + 2);
+                    }
+                    addLog('🔥 Aspecto de la Vida: equipo aliado cura 2 HP y genera 2 cargas', 'heal');
                     break;
                 }
 
