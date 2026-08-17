@@ -3380,8 +3380,18 @@
 
                     // ── EMPATE / BOSS WINS: límite de rondas ──
                     // Boss: máximo 10 rondas. Normal: máximo 30 rondas.
+                    // NUNCA aplica en Modo Horda: una oleada larga contra enemigos fuertes es
+                    // normal ahí, no debe considerarse "empate" — y NUNCA aplica si alguno de los
+                    // dos equipos ya está completamente eliminado (una victoria/derrota real
+                    // siempre tiene prioridad sobre un límite de rondas arbitrario). Sin esta
+                    // segunda protección, si el jugador eliminaba al último enemigo justo en la
+                    // misma ronda en que se cruzaba el límite, el límite se declaraba PRIMERO y
+                    // le "robaba" la victoria real, mostrando la pantalla de derrota por error.
                     const _roundLimit = window._bossMode ? 10 : 30;
-                    if (gameState.currentRound > _roundLimit && !gameState.gameOver) {
+                    const _rlTeam1Alive = Object.keys(gameState.characters).some(function(n){ const c=gameState.characters[n]; return c && c.team==='team1' && !c.isDead && c.hp>0; });
+                    const _rlTeam2Alive = Object.keys(gameState.characters).some(function(n){ const c=gameState.characters[n]; return c && c.team==='team2' && !c.isDead && c.hp>0; });
+                    const _rlAlreadyDecided = !_rlTeam1Alive || !_rlTeam2Alive;
+                    if (gameState.currentRound > _roundLimit && !gameState.gameOver && gameState.gameMode !== 'horda' && !_rlAlreadyDecided) {
                         gameState.gameOver = true;
 
                         if (window._bossMode) {
