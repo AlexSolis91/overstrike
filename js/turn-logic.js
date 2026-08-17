@@ -428,6 +428,46 @@
         // Exponer globalmente para que closeTargetModal (index.html) pueda llamarla
         window.showContinueButton = showContinueButton;
 
+        // ── BOTÓN DE REFRESCAR TURNO ──
+        // Fuerza la reaparición del botón "Continuar Turno" cuando se queda atorado, sin
+        // necesidad de recargar la página (lo cual perdería transformaciones, aumentos de
+        // velocidad, contadores, etc. al reiniciar el estado del juego). Reutiliza la misma
+        // lógica de recuperación de gameState.selectedCharacter que ya usa continueTurn(), y
+        // además limpia las banderas que normalmente bloquean la aparición del botón.
+        window.forceShowContinueButton = function () {
+            try {
+                console.log('[Refrescar Turno] Forzando reaparición del botón Continuar Turno...');
+                // Recuperar gameState.selectedCharacter si apunta a algo inválido
+                if (!gameState.characters[gameState.selectedCharacter]) {
+                    console.warn('[Refrescar Turno] gameState.selectedCharacter ("' + gameState.selectedCharacter + '") no existe. Recuperando desde turnOrder.');
+                    const _recovered = gameState.turnOrder && gameState.turnOrder[gameState.currentTurnIndex];
+                    if (_recovered && gameState.characters[_recovered]) {
+                        gameState.selectedCharacter = _recovered;
+                    } else {
+                        const _anyAlive = Object.keys(gameState.characters).find(function (n) {
+                            const c = gameState.characters[n];
+                            return c && !c.isDead && c.hp > 0;
+                        });
+                        if (_anyAlive) gameState.selectedCharacter = _anyAlive;
+                    }
+                }
+                // Limpiar banderas que bloquean la aparición normal del botón
+                gameState._relicEffectsActive = false;
+                gameState._abilityExecuting = false;
+                passiveExecuting = false;
+                // Cerrar cualquier modal que pudiera estar tapando el botón
+                ['actionModal', 'targetModal'].forEach(function (id) {
+                    const el = document.getElementById(id);
+                    if (el) el.classList.remove('show');
+                });
+                if (typeof renderCharacters === 'function') renderCharacters();
+                if (typeof showContinueButton === 'function') showContinueButton();
+                addLog('🔄 Botón Continuar Turno reactivado manualmente', 'info');
+            } catch (e) {
+                console.error('[Refrescar Turno] Error al forzar el botón:', e);
+            }
+        };
+
         function hideContinueButton() {
             const btn = document.getElementById('floatingContinueBtn');
             if (btn) btn.style.display = 'none';
