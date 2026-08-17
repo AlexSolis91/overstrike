@@ -246,6 +246,20 @@ function processBurnEffects(charName) {
                 }
                 applyDamageWithShield(charName, damage, null);
                 addLog('🔥 ' + charName + ' recibe ' + damage + ' de daño por Quemadura', 'damage');
+                // ── ASPECTO DE LA VIDA (Alexstrasza): cada vez que una Quemadura inflige daño
+                //    (sin importar en qué equipo esté), genera 1 carga al equipo aliado de Alexstrasza ──
+                for (const _alqN in gameState.characters) {
+                    const _alqC = gameState.characters[_alqN];
+                    if (!_alqC || _alqC.isDead || _alqC.hp <= 0) continue;
+                    if (!_alqC.passive || _alqC.passive.name !== 'Aspecto de la Vida') continue;
+                    for (const _alqAn in gameState.characters) {
+                        const _alqAc = gameState.characters[_alqAn];
+                        if (!_alqAc || _alqAc.isDead || _alqAc.hp <= 0 || _alqAc.team !== _alqC.team) continue;
+                        _alqAc.charges = Math.min(20, (_alqAc.charges || 0) + 1);
+                    }
+                    addLog('🔥 Aspecto de la Vida: Quemadura infligió daño — equipo aliado gana 1 carga', 'buff');
+                    break;
+                }
                 if (typeof _animCard === 'function') _animCard(charName, 'anim-fire', 700);
                 if (typeof _spawnParticles === 'function') _spawnParticles(charName, '🔥', 3);
                 // MVP: registrar daño por quemadura + daño causado al aplicador
