@@ -1063,9 +1063,10 @@
             const sy = rA.top + rA.height / 2;
             const ex = rT.left + rT.width / 2;
             const ey = rT.top + rT.height / 2;
-            // 🗡️ apunta naturalmente hacia abajo-derecha ≈ 45°; se resta ese offset para que
-            // el ángulo calculado haga que la punta quede orientada hacia el objetivo real
-            const ang = (Math.atan2(ey - sy, ex - sx) * 180 / Math.PI) - 45;
+            // 🗡️ (daga) en reposo tiene la punta apuntando hacia ABAJO ≈ 90° en coordenadas de
+            // pantalla (0°=derecha, 90°=abajo); se resta ese offset para que la PUNTA quede
+            // orientada hacia el objetivo real, sin importar en qué dirección esté.
+            const ang = (Math.atan2(ey - sy, ex - sx) * 180 / Math.PI) - 90;
             const el = document.createElement('div');
             el.className = 'sword-slash sword-st';
             el.textContent = '🗡️';
@@ -1075,33 +1076,34 @@
             el.style.setProperty('--ey', ey + 'px');
             el.style.setProperty('--ang', ang + 'deg');
             document.body.appendChild(el);
-            setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 460);
+            setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 680);
         }
         window._spawnSwordSlashST = _spawnSwordSlashST;
 
-        // AOE: la espada aparece a mitad de pantalla y barre sobre toda la fila del equipo objetivo
+        // AOE: la espada aparece al centro de pantalla, se desplaza hacia la primera tarjeta
+        // (izquierda) del equipo objetivo, y luego barre de izquierda a derecha sobre toda la fila
         function _spawnSwordSlashAOE(targetTeam) {
             const containerId = targetTeam === 'team1' ? 'team1Characters' : 'team2Characters';
             const container = document.getElementById(containerId);
             if (!container) return;
             const r = container.getBoundingClientRect();
             const sy = r.top + r.height / 2;
-            const sx = r.left - 40;
-            const mx = r.left + r.width / 2;
-            const my = sy;
-            const ex = r.right + 40;
+            const sx = r.left + 20; // posición de la primera tarjeta (izquierda) de la fila
+            const ex = r.right - 20; // posición de la última tarjeta (derecha) de la fila
             const ey = sy;
+            const cx = window.innerWidth / 2; // punto de aparición: centro de la pantalla
+            const cy = window.innerHeight / 2;
             const el = document.createElement('div');
             el.className = 'sword-slash sword-aoe';
             el.textContent = '🗡️';
+            el.style.setProperty('--cx', cx + 'px');
+            el.style.setProperty('--cy', cy + 'px');
             el.style.setProperty('--sx', sx + 'px');
             el.style.setProperty('--sy', sy + 'px');
-            el.style.setProperty('--mx', mx + 'px');
-            el.style.setProperty('--my', my + 'px');
             el.style.setProperty('--ex', ex + 'px');
             el.style.setProperty('--ey', ey + 'px');
             document.body.appendChild(el);
-            setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 680);
+            setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 1100);
         }
         window._spawnSwordSlashAOE = _spawnSwordSlashAOE;
 
@@ -1113,7 +1115,7 @@
             const r = el2.getBoundingClientRect();
             const sx = r.left + r.width / 2;
             const sy = r.top + r.height / 2;
-            const delay = (hitIndex || 0) * 300;
+            const delay = (hitIndex || 0) * 400;
             setTimeout(function () {
                 const el = document.createElement('div');
                 el.className = 'sword-slash sword-mt';
@@ -1121,7 +1123,7 @@
                 el.style.setProperty('--sx', sx + 'px');
                 el.style.setProperty('--sy', sy + 'px');
                 document.body.appendChild(el);
-                setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 420);
+                setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 620);
             }, delay);
         }
         window._spawnSwordSlashMT = _spawnSwordSlashMT;
