@@ -1223,7 +1223,7 @@
         // ==================== RELIQUIAS ====================
         const RELICS_DATA = {
             // ── ARMAS ──
-            'Cuerno del Caos':        { tier:'Raro',      slotCategory:'Arma',      subtype:'Cuerno',    slot:'Arma',    img:'https://i.ibb.co/KRwMWSR/Gemini-Generated-Image-lk9bmxlk9bmxlk9b.png',   effect:'crit_chance_bonus',  desc:'+10% probabilidad de golpe crítico.' },
+            'Cuerno del Caos':        { tier:'Raro',      slotCategory:'Arma',      subtype:'Cuerno',    slot:'Arma',    img:'https://i.ibb.co/KRwMWSR/Gemini-Generated-Image-lk9bmxlk9bmxlk9b.png',   effect:'crit_chance_bonus',  desc:'+30% probabilidad de golpe crítico.' },
             'Mistic Hammer':          { tier:'Especial',  slotCategory:'Arma',      subtype:'Martillo',  slot:'Arma',    img:'https://i.ibb.co/4ZxCxDNX/Gemini-Generated-Image-ekv9yhekv9yhekv9.png',   effect:'stun_on_hit_50',     desc:'Ataques tienen 50% de aplicar Aturdimiento.' },
             'Colmillo de Agron':      { tier:'Epico',     slotCategory:'Arma',      subtype:'Colmillo',  slot:'Arma',    img:'https://i.ibb.co/bj5HPypz/Gemini-Generated-Image-xgovhnxgovhnxgov.png',   effect:'crit_team_charges',  desc:'Golpe crítico → equipo aliado genera 3 cargas.' },
             'Sable Nishant':          { tier:'Epico',     slotCategory:'Arma',      subtype:'Espada',    slot:'Arma',    img:'https://i.ibb.co/NnjSG3Dz/Gemini-Generated-Image-v4wxdmv4wxdmv4wx.png',   effect:'extra_turn_25',      desc:'25% de ganar turno adicional luego de atacar.' },
