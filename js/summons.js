@@ -1045,6 +1045,86 @@
             document.body.appendChild(num);
             setTimeout(function() { if (num.parentNode) num.parentNode.removeChild(num); }, 1050);
         }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // TAJO DE ESPADA — efecto visual de ataque (🗡️), estilo Yu-Gi-Oh.
+        // Se dispara desde _executeAbilityCore / applyDamageWithShield según el `target` de la
+        // habilidad (single/aoe/mt) — solo en Básicos y Especiales, nunca en Over.
+        // ══════════════════════════════════════════════════════════════════════
+
+        // ST: la espada viaja de la tarjeta del atacante a la del objetivo, apuntando hacia él
+        function _spawnSwordSlashST(attackerName, targetName) {
+            const elA = document.getElementById('char-' + (attackerName || '').replace(/\s+/g, '-'));
+            const elT = document.getElementById('char-' + (targetName || '').replace(/\s+/g, '-'));
+            if (!elA || !elT) return;
+            const rA = elA.getBoundingClientRect();
+            const rT = elT.getBoundingClientRect();
+            const sx = rA.left + rA.width / 2;
+            const sy = rA.top + rA.height / 2;
+            const ex = rT.left + rT.width / 2;
+            const ey = rT.top + rT.height / 2;
+            // 🗡️ apunta naturalmente hacia abajo-derecha ≈ 45°; se resta ese offset para que
+            // el ángulo calculado haga que la punta quede orientada hacia el objetivo real
+            const ang = (Math.atan2(ey - sy, ex - sx) * 180 / Math.PI) - 45;
+            const el = document.createElement('div');
+            el.className = 'sword-slash sword-st';
+            el.textContent = '🗡️';
+            el.style.setProperty('--sx', sx + 'px');
+            el.style.setProperty('--sy', sy + 'px');
+            el.style.setProperty('--ex', ex + 'px');
+            el.style.setProperty('--ey', ey + 'px');
+            el.style.setProperty('--ang', ang + 'deg');
+            document.body.appendChild(el);
+            setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 460);
+        }
+        window._spawnSwordSlashST = _spawnSwordSlashST;
+
+        // AOE: la espada aparece a mitad de pantalla y barre sobre toda la fila del equipo objetivo
+        function _spawnSwordSlashAOE(targetTeam) {
+            const containerId = targetTeam === 'team1' ? 'team1Characters' : 'team2Characters';
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const r = container.getBoundingClientRect();
+            const sy = r.top + r.height / 2;
+            const sx = r.left - 40;
+            const mx = r.left + r.width / 2;
+            const my = sy;
+            const ex = r.right + 40;
+            const ey = sy;
+            const el = document.createElement('div');
+            el.className = 'sword-slash sword-aoe';
+            el.textContent = '🗡️';
+            el.style.setProperty('--sx', sx + 'px');
+            el.style.setProperty('--sy', sy + 'px');
+            el.style.setProperty('--mx', mx + 'px');
+            el.style.setProperty('--my', my + 'px');
+            el.style.setProperty('--ex', ex + 'px');
+            el.style.setProperty('--ey', ey + 'px');
+            document.body.appendChild(el);
+            setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 680);
+        }
+        window._spawnSwordSlashAOE = _spawnSwordSlashAOE;
+
+        // MT: tajo en el sitio, solo sobre la tarjeta del objetivo golpeado — secuencial vía
+        // `hitIndex` (cada golpe se retrasa un poco más que el anterior, sin frenar la lógica real)
+        function _spawnSwordSlashMT(targetName, hitIndex) {
+            const el2 = document.getElementById('char-' + (targetName || '').replace(/\s+/g, '-'));
+            if (!el2) return;
+            const r = el2.getBoundingClientRect();
+            const sx = r.left + r.width / 2;
+            const sy = r.top + r.height / 2;
+            const delay = (hitIndex || 0) * 300;
+            setTimeout(function () {
+                const el = document.createElement('div');
+                el.className = 'sword-slash sword-mt';
+                el.textContent = '🗡️';
+                el.style.setProperty('--sx', sx + 'px');
+                el.style.setProperty('--sy', sy + 'px');
+                document.body.appendChild(el);
+                setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 420);
+            }, delay);
+        }
+        window._spawnSwordSlashMT = _spawnSwordSlashMT;
         // ==================== END ANIMACIONES ====================
 
         // ── MARIK ISHTAR: genera 3 cargas cuando una invocación es eliminada ──
