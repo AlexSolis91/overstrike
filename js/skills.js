@@ -1867,9 +1867,9 @@
                 (attacker.equippedRelics||[]).forEach(function(relicName) {
                     const _rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[relicName] : null;
                     if (!_rd) return;
-                    if (_rd.effect === 'crit_chance_bonus' && !gameState._isCritHit && Math.random() < 0.10) {
+                    if (_rd.effect === 'crit_chance_bonus' && !gameState._isCritHit && Math.random() < 0.30) {
                         finalDamage *= 2; gameState._isCritHit = true;
-                        addLog('💫 Cuerno del Caos: ¡Crítico! (+10%)', 'buff');
+                        addLog('💫 Cuerno del Caos: ¡Crítico! (+30%)', 'buff');
                     }
                     if (_rd.effect === 'frostmourne') {
                         finalDamage = finalDamage * 2;
