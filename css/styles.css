@@ -2063,13 +2063,13 @@
             animation: swordSlashAOE 1.05s ease-in-out forwards;
         }
         @keyframes swordSlashAOE {
-            0%   { opacity: 0;   transform: translate(var(--cx), var(--cy)) rotate(-60deg) scale(0.6); }
-            10%  { opacity: 1;   transform: translate(var(--cx), var(--cy)) rotate(-60deg) scale(1); }
-            25%  { opacity: 1;   transform: translate(var(--sx), var(--sy)) rotate(-15deg) scale(1.1); }
-            40%  { transform: translate(calc(var(--sx) + (var(--ex) - var(--sx)) * 0.30), var(--sy)) rotate(5deg)  scale(1.3); }
-            60%  { transform: translate(calc(var(--sx) + (var(--ex) - var(--sx)) * 0.60), var(--sy)) rotate(15deg) scale(1.3); }
-            90%  { opacity: 1;   transform: translate(var(--ex), var(--ey)) rotate(25deg) scale(1.1); }
-            100% { opacity: 0;   transform: translate(var(--ex), var(--ey)) rotate(30deg) scale(1); }
+            0%   { opacity: 0;   transform: translate(var(--cx), var(--cy)) rotate(var(--r0)) scale(0.6); }
+            10%  { opacity: 1;   transform: translate(var(--cx), var(--cy)) rotate(var(--r0)) scale(1); }
+            25%  { opacity: 1;   transform: translate(var(--sx), var(--sy)) rotate(var(--r1)) scale(1.1); }
+            40%  { transform: translate(calc(var(--sx) + (var(--ex) - var(--sx)) * 0.30), var(--sy)) rotate(var(--r2)) scale(1.3); }
+            60%  { transform: translate(calc(var(--sx) + (var(--ex) - var(--sx)) * 0.60), var(--sy)) rotate(var(--r3)) scale(1.3); }
+            90%  { opacity: 1;   transform: translate(var(--ex), var(--ey)) rotate(var(--r4)) scale(1.1); }
+            100% { opacity: 0;   transform: translate(var(--ex), var(--ey)) rotate(var(--r5)) scale(1); }
         }
         /* MT: tajo en el sitio, solo sobre la tarjeta del objetivo golpeado (sin viajar) */
         .sword-slash.sword-mt {
