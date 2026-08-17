@@ -515,6 +515,38 @@
             addLog('💨 Super Breath: ' + (3 + bonus) + ' daño base AOE', 'damage');
         };
 
+        // ══════════════════════════════════════════════════════════════════════
+        // FORZAR EJECUCIÓN DEL BÁSICO DE UN PERSONAJE SOBRE UN OBJETIVO ESPECÍFICO
+        // Reutilizada por reliquias/pasivas tipo "cuando pasa X, el portador ejecuta su
+        // básico sobre Y" (Arco de Atila, Yelmo de Caballero de la Muerte, Soldier Boy al
+        // recibir un ataque con Armadura activa, Hiraishin no Jutsu de Minato al final de
+        // ronda). Enruta por el despachador real de habilidades (_executeAbilityCore), así
+        // que aplica el daño, los efectos, la generación de cargas Y los bonos de reliquias
+        // reales del básico — no una simulación simplificada.
+        // ══════════════════════════════════════════════════════════════════════
+        window._executeBasicForced = function (casterName, targetName) {
+            const caster = gameState.characters[casterName];
+            const target = gameState.characters[targetName];
+            if (!caster || !target || caster.isDead || caster.hp <= 0 || target.isDead || target.hp <= 0) return;
+            const basic = caster.abilities && caster.abilities[0];
+            if (!basic || basic.target !== 'single') return;
+            const _savedChar = gameState.selectedCharacter;
+            const _savedAbility = gameState.selectedAbility;
+            const _savedCost = gameState.adjustedCost;
+            const _savedExecuting = passiveExecuting;
+            gameState.selectedCharacter = casterName;
+            gameState.selectedAbility = basic;
+            gameState.adjustedCost = 0;
+            passiveExecuting = true;
+            try {
+                if (typeof _executeAbilityCore === 'function') _executeAbilityCore(targetName);
+            } catch (e) { console.error('[_executeBasicForced] Error:', e); }
+            gameState.selectedCharacter = _savedChar;
+            gameState.selectedAbility = _savedAbility;
+            gameState.adjustedCost = _savedCost;
+            passiveExecuting = _savedExecuting;
+        };
+
         function applyAOEDamageToTeam(enemyTeam, damage, attackerName) {
             let _kyoAOEHits = 0;
             for (let n in gameState.characters) {
