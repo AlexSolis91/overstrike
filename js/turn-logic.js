@@ -3188,6 +3188,7 @@
                     gameState.currentTurnIndex = _skInsertAt;
                 }
                 addLog('🪓 Skeggöx: ¡' + _skChar + ' gana turno adicional!', 'buff');
+                if (typeof triggerAntipacion === 'function') triggerAntipacion(_skChar);
                 gameState._wasExtraTurn = true;
                 if (onlineMode) {
                     if (typeof pushGameState === 'function') pushGameState();
@@ -3210,6 +3211,7 @@
                     gameState.currentTurnIndex = _vkInsertAt;
                 }
                 addLog('🌑 Presencia Oscura: ¡' + _vkChar + ' gana turno adicional!', 'buff');
+                if (typeof triggerAntipacion === 'function') triggerAntipacion(_vkChar);
                 gameState._wasExtraTurn = true;
                 if (onlineMode && typeof pushGameState === 'function') pushGameState();
                 setTimeout(function() { startTurn(); }, 700);
@@ -3230,6 +3232,7 @@
                     gameState.currentTurnIndex = _seInsertAt;
                 }
                 addLog('🔥 ¡Arde, cosmos!: ¡' + _seChar + ' gana turno adicional!', 'buff');
+                if (typeof triggerAntipacion === 'function') triggerAntipacion(_seChar);
                 gameState._wasExtraTurn = true;
                 if (onlineMode && typeof pushGameState === 'function') pushGameState();
                 setTimeout(function() { startTurn(); }, 700);
