@@ -1474,6 +1474,17 @@
                 ? (gameState._gmOverrideFinalDamage) : (ability.damage);
             gameState._gmOverrideFinalDamage = null;
             let finalChargeGain = ability.chargeGain;
+
+            // ── TAJO DE ESPADA: efecto visual de ataque (🗡️) — solo Básico/Especial, nunca Over ──
+            if (ability.type !== 'over') {
+                if (ability.target === 'single' && targetName && typeof window._spawnSwordSlashST === 'function') {
+                    window._spawnSwordSlashST(charName, targetName);
+                } else if (ability.target === 'aoe' && attacker && typeof window._spawnSwordSlashAOE === 'function') {
+                    window._spawnSwordSlashAOE(attacker.team === 'team1' ? 'team2' : 'team1');
+                } else if (ability.target === 'mt') {
+                    gameState._mtHitCounter = 0; // reinicia el contador para el escalonado secuencial
+                }
+            }
             // ARCO DEL KITAN: +_arcoDmgBonus al daño del básico (acumulado por debuffs enemigos disipados)
             if (ability.type === 'basic' && attacker && (attacker._arcoDmgBonus||0) > 0) {
                 finalDamage += attacker._arcoDmgBonus;
