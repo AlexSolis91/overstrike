@@ -1283,6 +1283,20 @@ function applyDebuff(targetName, effectObj) {
             const target = gameState.characters[targetName];
             if (!target) return;
 
+            // LÍMITE: máximo 1 Congelación y 1 Megacongelación por personaje AL MISMO TIEMPO
+            // (sí puede tener ambas a la vez — una de cada tipo — pero nunca 2 del mismo tipo).
+            // Si ya tiene el tipo que se intenta aplicar, el intento se IGNORA POR COMPLETO — no
+            // refresca duración ni dispara ningún efecto reactivo (Yelmo de Caballero de la
+            // Muerte, Invierno Eterno, Último Rey de los Muertos, etc.). Esto es lo que corta en
+            // seco cualquier posible loop (ej. Ergonos + Yelmo re-disparándose entre sí).
+            const _freezeAlreadyActive = (target.statusEffects || []).some(function (e) {
+                return e && normAccent(e.name || '') === (mega ? 'mega congelacion' : 'congelacion');
+            });
+            if (_freezeAlreadyActive) {
+                addLog(emoji + ' ' + targetName + ' ya tiene ' + (mega ? 'Megacongelación' : 'Congelación') + ' activa — el intento se ignora', 'info');
+                return;
+            }
+
             // Arco Granizo: al aplicar Congelación (no Mega) → +1 carga al atacante
             if (!mega) {
                 var _afAttacker = gameState._currentTurnAttacker || gameState.selectedCharacter;
