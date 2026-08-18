@@ -534,10 +534,16 @@
             const _savedAbility = gameState.selectedAbility;
             const _savedCost = gameState.adjustedCost;
             const _savedExecuting = passiveExecuting;
+            const _savedSuppressEndTurn = gameState._suppressAutoEndTurn;
             gameState.selectedCharacter = casterName;
             gameState.selectedAbility = basic;
             gameState.adjustedCost = 0;
             passiveExecuting = true;
+            // Evitar que _executeAbilityCore llame a endTurn() por su cuenta — este es un ataque
+            // FORZADO (no un turno real del atacante), así que no debe avanzar el turno/ronda.
+            // Sin esto, cada golpe forzado disparaba su propio endTurn() anidado, causando que la
+            // ronda avanzara varias veces de golpe (ver Hiraishin no Jutsu, Arco de Atila, etc.)
+            gameState._suppressAutoEndTurn = true;
             try {
                 if (typeof _executeAbilityCore === 'function') _executeAbilityCore(targetName);
             } catch (e) { console.error('[_executeBasicForced] Error:', e); }
@@ -545,6 +551,7 @@
             gameState.selectedAbility = _savedAbility;
             gameState.adjustedCost = _savedCost;
             passiveExecuting = _savedExecuting;
+            gameState._suppressAutoEndTurn = _savedSuppressEndTurn;
         };
 
         function applyAOEDamageToTeam(enemyTeam, damage, attackerName) {
@@ -13996,9 +14003,14 @@
                 return;
             }
             
-            // Finalizar turno — pero NO si somos un sub-turno de Guía del Maestro
+            // Finalizar turno — pero NO si somos un sub-turno de Guía del Maestro, ni si esta
+            // ejecución fue una "acción forzada" (ver window._executeBasicForced en skills.js —
+            // Hiraishin no Jutsu, Arco de Atila, Yelmo de Caballero de la Muerte, contraataque de
+            // Soldier Boy). Sin esta bandera, cada ataque forzado disparaba su PROPIO endTurn()
+            // anidado dentro del endTurn() que ya estaba procesando fin de ronda, causando que la
+            // ronda avanzara varias veces de golpe (rondas "saltando" 10-20 de una vez).
             gameState._abilityExecuting = false;
-            if (!gameState._guiaMaestroActive) {
+            if (!gameState._guiaMaestroActive && !gameState._suppressAutoEndTurn) {
                 endTurn();
             }
             } catch (error) {
@@ -14007,7 +14019,7 @@
             console.error('Error en executeAbility [' + errAbility + ']:', error);
             addLog('❌ Error al ejecutar ' + errAbility + ': ' + errMsg, 'info');
             gameState._abilityExecuting = false;
-            if (!gameState._guiaMaestroActive) {
+            if (!gameState._guiaMaestroActive && !gameState._suppressAutoEndTurn) {
                 endTurn();
             }
             try {
