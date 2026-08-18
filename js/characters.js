@@ -1102,7 +1102,7 @@
             'Aragorn': {
                 hp: 25, maxHp: 25, speed: 81, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.ibb.co/Wv8TnQVX/Whats-App-Image-2026-07-27-at-2-05-35-PM-1.jpg',
+                portrait: 'https://i.ibb.co/CxsCTmK/Gemini-Generated-Image-6l8bwb6l8bwb6l8b-jpg.jpg',
                 passive: { name: 'Sangre de Numenor', description: 'Efecto pasivo Anticipación. Cuando un aliado muere, Aragorn y un aliado aleatorio ejecutan su Over automáticamente. Cada crítico de Aragorn o un aliado aumenta +2 el daño base del equipo aliado (máx +100%).' },
                 abilities: [
                     { name:'Andúril',                      type:'basic',   cost:0,  chargeGain:1, damage:1, target:'single', effect:'aragorn_anduril',         description:'1 daño + 3 por cada buff y debuff activo en el objetivo. Genera +2 cargas a todo el equipo aliado por cada reliquia equipada del objetivo.' },
