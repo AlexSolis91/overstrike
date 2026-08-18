@@ -3608,8 +3608,8 @@
                     memorexCarriers: countMemorexCarriers(playerChars)
                 });
 
-                // ── BONO: 5% de probabilidad de +1 Runa de Portal al GANAR una partida Ranked ──
-                var _wonPortalRune = won && Math.random() < 0.05;
+                // ── BONO: 2.5% de probabilidad de +1 Runa de Portal al GANAR una partida Ranked ──
+                var _wonPortalRune = won && Math.random() < 0.025;
 
                 function _showRankedRewardModal(totalPending) {
                     if (typeof window.showGoldClaimModal !== 'function') return;
