@@ -4831,16 +4831,24 @@
 
             } else if (ability.effect === 'invocar_senuelo') {
                 // Invoca un Señuelo (5HP). Al morir genera 2 cargas al equipo aliado
-                const sId = 'Señuelo_' + Date.now();
-                gameState.summons[sId] = {
-                    name: 'Señuelo', summoner: charName, team: attacker.team,
-                    hp: 5, maxHp: 5, isDead: false,
-                    statusEffects: []
-                };
-                // Padme gana Sigilo 2 turnos
+                const _snTeamCount = Object.values(gameState.summons).filter(function (s) {
+                    return s && s.team === attacker.team && !s.isDead && (s.hp === undefined || s.hp > 0);
+                }).length;
+                if (_snTeamCount >= 5) {
+                    addLog('🎭 Señuelo no pudo invocarse — límite de 5 invocaciones por equipo alcanzado', 'info');
+                } else {
+                    const sId = 'Señuelo_' + Date.now();
+                    gameState.summons[sId] = {
+                        name: 'Señuelo', summoner: charName, team: attacker.team,
+                        hp: 5, maxHp: 5, isDead: false,
+                        statusEffects: []
+                    };
+                    renderSummons();
+                    addLog('🎭 Padme invoca un Señuelo (5HP)', 'buff');
+                }
+                // Padme gana Sigilo 2 turnos (independiente de si el Señuelo pudo invocarse)
                 applyBuff(charName, { name: 'Sigilo', type: 'buff', duration: 2, emoji: '👤' });
-                renderSummons();
-                addLog('🎭 Padme invoca un Señuelo (5HP) y gana Sigilo 2 turnos', 'buff');
+                addLog('🎭 Padme gana Sigilo 2 turnos', 'buff');
 
             } else if (ability.effect === 'reina_de_naboo') {
                 // Escudo + 4 cargas a los 4 aliados
@@ -4859,7 +4867,7 @@
             // ══════════════════════════════════════════════
             } else if (ability.effect === 'madre_dragones') {
                 const dragonPool = ['Drogon','Rhaegal','Viserion'];
-                const existingDragons = new Set(Object.values(gameState.summons).filter(s => s && s.summoner === charName).map(s => s.name));
+                const existingDragons = new Set(Object.values(gameState.summons).filter(s => s && s.summoner === charName && !s.isDead && (s.hp === undefined || s.hp > 0)).map(s => s.name));
                 const available = dragonPool.filter(d => !existingDragons.has(d));
                 if (available.length === 0) {
                     addLog('🐉 Daenerys ya tiene todos los dragones invocados', 'info');
@@ -5465,11 +5473,11 @@
                 const _senName = gameState.selectedCharacter;
                 const _senAtt = gameState.characters[_senName];
                 if (!_senAtt) { addLog('❌ No se encontró el personaje', 'info'); }
-                const _teamSummons = Object.values(gameState.summons).filter(s => s && s.team === _senAtt.team);
+                const _teamSummons = Object.values(gameState.summons).filter(s => s && s.team === _senAtt.team && !s.isDead && (s.hp === undefined || s.hp > 0));
                 if (_teamSummons.length >= 5) {
                     addLog('❌ Límite de invocaciones alcanzado (máx 5)', 'info');
                 } else {
-                    const _seExists = Object.values(gameState.summons).some(s => s && s.name === 'Señuelo' && s.team === _senAtt.team);
+                    const _seExists = Object.values(gameState.summons).some(s => s && s.name === 'Señuelo' && s.team === _senAtt.team && !s.isDead && (s.hp === undefined || s.hp > 0));
                     if (_seExists) {
                         addLog('❌ El Señuelo ya está en el campo', 'info');
                     } else {
@@ -5530,12 +5538,16 @@
                 // Filter out dragons already on the field
                 const activeDragons = new Set(
                     Object.values(gameState.summons)
-                        .filter(s => s && s.team === attacker.team)
+                        .filter(s => s && s.team === attacker.team && !s.isDead && (s.hp === undefined || s.hp > 0))
                         .map(s => s.name)
                 );
                 const dragonPool = dragonPoolFull.filter(d => !activeDragons.has(d.name));
+                // LÍMITE GENERAL: máximo 5 invocaciones vivas por equipo (mismo límite que summonShadow)
+                const _sdTeamCount = Object.values(gameState.summons).filter(s => s && s.team === attacker.team && !s.isDead && (s.hp === undefined || s.hp > 0)).length;
                 if (dragonPool.length === 0) {
                     addLog('🐉 Madre de Dragones: Todos los dragones ya están en el campo', 'info');
+                } else if (_sdTeamCount >= 5) {
+                    addLog('🐉 Madre de Dragones: no se pudo invocar — límite de 5 invocaciones por equipo alcanzado', 'info');
                 } else {
                     const totalW = dragonPool.reduce((s, d) => s + d.weight, 0);
                     let drRand = Math.random() * totalW, drChosen = dragonPool[dragonPool.length-1].name;
@@ -11841,9 +11853,12 @@
                 // FUEGO DE SYRAX: invoca a Syrax
                 const _syAtk  = gameState.characters[gameState.selectedCharacter];
                 const _syTeam = _syAtk ? _syAtk.team : 'team1';
-                const _syExists = Object.values(gameState.summons).some(function(s){ return s && s.name === 'Syrax' && s.team === _syTeam && s.hp > 0; });
+                const _syExists = Object.values(gameState.summons).some(function(s){ return s && s.name === 'Syrax' && s.team === _syTeam && !s.isDead && s.hp > 0; });
+                const _syTeamCount = Object.values(gameState.summons).filter(function(s){ return s && s.team === _syTeam && !s.isDead && (s.hp === undefined || s.hp > 0); }).length;
                 if (_syExists) {
                     addLog('🔥 Syrax ya está en el campo', 'info');
+                } else if (_syTeamCount >= 5) {
+                    addLog('🔥 Syrax no pudo invocarse — límite de 5 invocaciones por equipo alcanzado', 'info');
                 } else {
                     const _syId = 'Syrax_' + Date.now();
                     gameState.summons[_syId] = {
@@ -12199,8 +12214,11 @@
                 const _clonExists = Object.values(gameState.summons).some(function(s){
                     return s && s.name === 'Clon de Kurumi' && s.team === _khTeam && !s.isDead && s.hp > 0;
                 });
+                const _khTeamCount = Object.values(gameState.summons).filter(function(s){ return s && s.team === _khTeam && !s.isDead && (s.hp === undefined || s.hp > 0); }).length;
                 if (_clonExists) {
                     addLog('🕑 Het: ya hay un Clon de Kurumi en el campo', 'info');
+                } else if (_khTeamCount >= 5) {
+                    addLog('🕑 Het: no se pudo invocar — límite de 5 invocaciones por equipo alcanzado', 'info');
                 } else {
                     const _clonId = 'KurumiClon_' + Date.now();
                     gameState.summons[_clonId] = {
@@ -12774,12 +12792,16 @@
 
             } else if (ability.effect === 'dkarthas_army') {
                 // EJÉRCITO DE LOS CONDENADOS: Invoca hasta 5 Campeones de la Muerte
+                // LÍMITE GENERAL: el total de invocaciones del EQUIPO (de cualquier tipo) nunca
+                // puede superar 5 — antes esta habilidad solo contaba sus propios Campeones,
+                // así que si el equipo ya tenía OTRAS invocaciones (Crías de Dragón, sombras,
+                // etc.) podía sumar hasta 5 Campeones MÁS, superando el límite por equipo.
                 const _arAtk  = gameState.characters[gameState.selectedCharacter];
                 const _arTeam = _arAtk ? _arAtk.team : 'team1';
-                const _existing = Object.values(gameState.summons||{}).filter(function(s){ return s && s.name === 'Campeon de la Muerte' && s.team === _arTeam && s.hp > 0; }).length;
-                const _toInvoke = Math.max(0, 5 - _existing);
+                const _arTeamTotal = Object.values(gameState.summons||{}).filter(function(s){ return s && s.team === _arTeam && !s.isDead && (s.hp === undefined || s.hp > 0); }).length;
+                const _toInvoke = Math.max(0, 5 - _arTeamTotal);
                 if (_toInvoke === 0) {
-                    addLog('💀 Ejército de los Condenados: ya hay 5 Campeones activos (máximo alcanzado)', 'info');
+                    addLog('💀 Ejército de los Condenados: el equipo ya está al límite de 5 invocaciones', 'info');
                 } else {
                     const catalogEntry = (typeof SUMMON_CATALOGUE !== 'undefined') ? SUMMON_CATALOGUE['Campeon de la Muerte'] : { hp:20, maxHp:20 };
                     for (let _i = 0; _i < _toInvoke; _i++) {
