@@ -12100,7 +12100,14 @@
                     // Debuff aleatorio
                     const _amDebuff = _amDebuffPool[Math.floor(Math.random() * _amDebuffPool.length)];
                     const _amBefore = (_amTgt.statusEffects||[]).length;
-                    if (typeof applyDebuff==='function') applyDebuff(targetName, Object.assign({}, _amDebuff));
+                    // Congelación es un caso especial: debe pasar por applyFreeze() (no applyDebuff
+                    // genérico) para respetar el límite de 1 por tipo y activar efectos reactivos
+                    // legítimos como el Yelmo de Caballero de la Muerte.
+                    if (_amDebuff.name === 'Congelacion' && typeof applyFreeze === 'function') {
+                        applyFreeze(targetName, 1, false);
+                    } else if (typeof applyDebuff==='function') {
+                        applyDebuff(targetName, Object.assign({}, _amDebuff));
+                    }
                     const _amAfter = (gameState.characters[targetName]?.statusEffects||[]).length;
                     if (_amAfter === _amBefore) { _amAnyFailed = true; addLog('⚔️ Montaraz: golpe ' + (_gi+1) + ' no aplicó debuff', 'info'); }
                     else addLog('⚔️ Montaraz: ' + _amDebuff.name + ' aplicado a ' + targetName, 'debuff');
@@ -12263,8 +12270,8 @@
                     if (_c.hp > _kzaTopHp) { _kzaTopHp = _c.hp; _kzaTopName = _n; }
                 });
                 if (_kzaTopName) {
-                    if (typeof applyDebuff === 'function') applyDebuff(_kzaTopName, { name: 'Mega Congelacion', type: 'debuff', duration: 2, emoji: '🧊❄️', megaFreeze: true });
                     addLog('🕑 Zayin: Mega Congelación aplicada a ' + _kzaTopName + ' (mayor HP)', 'debuff');
+                    if (typeof applyFreeze === 'function') applyFreeze(_kzaTopName, 2, true);
                 }
                 // 50% revivir aliado eliminado
                 if (Math.random() < 0.50) {
@@ -13599,9 +13606,7 @@
                     return _l === 'congelacion' || _l === 'megacongelacion';
                 });
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                if (typeof applyDebuff === 'function') {
-                    applyDebuff(targetName, { name:'Mega Congelacion', type:'debuff', duration:2, emoji:'🧊', freeze:true, mega:true });
-                }
+                if (typeof applyFreeze === 'function') applyFreeze(targetName, 2, true);
                 addLog('🧊 Golpe Gélido: ' + finalDamage + ' daño + Megacongelación a ' + targetName, 'damage');
                 // Absolute Zero: steal 3 charges from each enemy if target was frozen
                 if (_ggWasFrozen && _ggSZ) {
@@ -13704,9 +13709,7 @@
                     return _l === 'congelacion' || _l === 'megacongelacion';
                 });
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                if (typeof applyDebuff === 'function') {
-                    applyDebuff(targetName, { name:'Mega Congelacion', type:'debuff', duration:2, emoji:'🧊', freeze:true, mega:true });
-                }
+                if (typeof applyFreeze === 'function') applyFreeze(targetName, 2, true);
                 addLog('🧊 Ejecución de la Tundra: ' + finalDamage + ' daño + Megacongelación a ' + targetName, 'damage');
                 // Absolute Zero charge steal
                 if (_etWasFrozen && _etSZ) {
