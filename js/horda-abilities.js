@@ -1084,16 +1084,16 @@
         var caster = gameState.characters[casterName];
         var tgt = gameState.characters[targetName];
         if (tgt && !tgt.isDead) {
-            if (typeof applyDebuff === 'function') applyDebuff(targetName, { name: 'Megacongelacion', type: 'debuff', duration: 2, emoji: '🧊❄️' });
             addLog('❄️ Himno de Hielo: Megacongelación aplicada a ' + targetName, 'debuff');
+            if (typeof applyFreeze === 'function') applyFreeze(targetName, 2, true);
         }
         if (caster) {
             var enemyTeam = enemyTeamOf(caster.team);
             var others = aliveOnTeam(enemyTeam).filter(function (n) { return n !== targetName; });
             var shuffled = others.sort(function () { return Math.random() - 0.5; }).slice(0, 2);
             shuffled.forEach(function (n) {
-                if (typeof applyDebuff === 'function') applyDebuff(n, { name: 'Congelacion', type: 'debuff', duration: 1, emoji: '🧊' });
                 addLog('❄️ Himno de Hielo: Congelación aplicada a ' + n, 'debuff');
+                if (typeof applyFreeze === 'function') applyFreeze(n, 1, false);
             });
         }
         tgt = gameState.characters[targetName];
