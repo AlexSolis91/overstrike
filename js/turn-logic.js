@@ -3359,7 +3359,21 @@
                 if (_roundComplete) {
                     // Procesar efectos de final de ronda ANTES de incrementar la ronda
                     processEndOfRoundEffects();
-                    
+
+                    // ── DIAGNÓSTICO TEMPORAL: rastrear saltos anómalos de ronda ──
+                    // Si esto se dispara varias veces en rápida sucesión (menos de 50ms entre
+                    // cada una), sabremos que hay un bucle recursivo/repetido avanzando la ronda
+                    // más de una vez por transición real. Se deja temporalmente para diagnosticar
+                    // el salto reportado (ej. Ronda X → Ronda 31 de golpe tras ataques automáticos).
+                    window._roundIncrementLog = window._roundIncrementLog || [];
+                    const _riNow = Date.now();
+                    const _riLast = window._roundIncrementLog.length ? window._roundIncrementLog[window._roundIncrementLog.length - 1] : null;
+                    window._roundIncrementLog.push(_riNow);
+                    if (_riLast && (_riNow - _riLast) < 100) {
+                        console.warn('[DIAGNÓSTICO] Incremento de ronda sospechosamente rápido: ' + (_riNow - _riLast) + 'ms desde el anterior. Ronda actual antes de incrementar: ' + gameState.currentRound + '. Stack:');
+                        console.trace();
+                    }
+
                     gameState.currentRound++;
                     gameState.turnsInRound = 0;
                     gameState._aguijonUsedThisRound = false; // Aguijón Esmeralda: resetear para la próxima ronda
