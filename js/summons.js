@@ -410,8 +410,11 @@
 
         function summonDragon(dragonName, summoner, team) {
             // Check if already summoned
-            const alreadySummoned = Object.values(gameState.summons).some(s => s && s.name === dragonName && s.summoner === summoner);
+            const alreadySummoned = Object.values(gameState.summons).some(s => s && s.name === dragonName && s.summoner === summoner && !s.isDead && (s.hp === undefined || s.hp > 0));
             if (alreadySummoned) { addLog('🐉 ' + dragonName + ' ya está invocado', 'info'); return; }
+            // LÍMITE GENERAL: máximo 5 invocaciones vivas por equipo (mismo límite que summonShadow)
+            const _drTeamCount = Object.values(gameState.summons).filter(s => s && s.team === team && !s.isDead && (s.hp === undefined || s.hp > 0)).length;
+            if (_drTeamCount >= 5) { addLog('🐉 ' + dragonName + ' no pudo invocarse — límite de 5 invocaciones por equipo alcanzado', 'info'); return; }
             const dragonStats = {
                 'Drogon':  { hp: 15, maxHp: 15, effect: 'mega_prov_aoe_dmg', passive: '🔥 Sombra de Fuego: Inflige 3 daño AOE al equipo enemigo al final de cada ronda. Cada vez que Daenerys recibe daño, causa el mismo daño al atacante.' },
                 'Rhaegal': { hp: 8, maxHp: 8, effect: 'burn_team', passive: '🟢 Al final de cada ronda aplica Quemadura 1 HP por 1 turno a todo el equipo enemigo.' },
@@ -4317,12 +4320,19 @@ function applyRegeneration(targetName, amount, duration) {
                 'Igris': 0.25, 'MinByung': 0.20, 'Iron': 0.20, 'Tusk': 0.15,
                 'Beru': 0.13, 'Kaisel': 0.05, 'Bellion': 0.015, 'Kamish': 0.005
             };
-            // Check if we already have max summons (5 per team)
-            const teamSummons = Object.values(gameState.summons).filter(s => s && s.team === sjwChar.team);
-            if (teamSummons.length >= 5) {
-                // BUG: antes esto retornaba en silencio, sin ningún aviso — parecía que Arise!
-                // simplemente "no se activaba" esa ronda cuando en realidad era el límite de 5
-                // invocaciones por equipo (compartido con cualquier otro invocador aliado).
+            // ── Nombres ya presentes EN VIVO para este equipo — antes esta lista no filtraba
+            // por isDead/hp>0, así que una sombra muerta seguía "ocupando" su nombre para
+            // siempre, y (más grave) la creación final del objeto no pasaba por summonShadow(),
+            // que es la única función con el chequeo de unicidad+límite realmente confiable
+            // (filtrado correcto por vivo). Esa duplicación de lógica es lo que dejaba pasar
+            // sombras repetidas (2 Igris, 3 Tusk) y superar las 5 invocaciones por equipo. ──
+            const existingNames = new Set(
+                Object.values(gameState.summons)
+                    .filter(s => s && s.team === sjwChar.team && !s.isDead && (s.hp === undefined || s.hp > 0))
+                    .map(s => s.name)
+            );
+            const _teamAliveTotal = existingNames.size;
+            if (_teamAliveTotal >= 5) {
                 addLog('👻 Arise! (Pasiva): equipo al límite de 5 invocaciones — no se puede invocar esta ronda', 'info');
                 return;
             }
@@ -4334,58 +4344,29 @@ function applyRegeneration(targetName, amount, duration) {
                 cumulative += weight;
                 if (rand < cumulative) { chosen = name; break; }
             }
-            // Get summon data
-            let sData = summonData[chosen];
-            if (!sData) {
-                // BUG DE ANTES: si summonData no tenía datos para el nombre elegido, la función
-                // abortaba en silencio y Arise! simplemente no invocaba nada esa ronda.
-                // Ahora: avisar en consola y reintentar con cualquier sombra que sí tenga datos.
+            if (!summonData[chosen]) {
                 console.warn('[Arise!] summonData sin entrada para "' + chosen + '" — reintentando con otra sombra');
                 const _fallbackPool = Object.keys(shadowPool).filter(function(n){ return summonData[n]; });
                 if (_fallbackPool.length === 0) { addLog('👻 Arise! (Pasiva): error interno — sin datos de sombras disponibles', 'info'); return; }
                 chosen = _fallbackPool[Math.floor(Math.random() * _fallbackPool.length)];
-                sData = summonData[chosen];
             }
-            // Get names of summons already on the field for this summoner
-            const existingNames = new Set(
-                Object.values(gameState.summons)
-                    .filter(s => s && s.team === sjwChar.team)
-                    .map(s => s.name)
-            );
-            // If chosen shadow is already on field, try to find another available one
+            // Si la sombra elegida ya está viva en el campo, buscar otra disponible
             if (existingNames.has(chosen)) {
                 const allPool = ['Igris', 'MinByung', 'Iron', 'Tusk', 'Beru', 'Bellion', 'Kaisel', 'Kamish'];
-                const available = allPool.filter(n => !existingNames.has(n));
+                const available = allPool.filter(n => !existingNames.has(n) && summonData[n]);
                 if (available.length === 0) {
                     addLog('👻 Arise! (Pasiva): ' + charName + ' ya tiene todas las sombras invocadas', 'info');
                     return;
                 }
-                // Pick random from available (weighted if possible)
                 const availableWeights = available.map(n => ({ name: n, w: shadowPool[n] || 0.01 }));
                 const totalW = availableWeights.reduce((s, x) => s + x.w, 0);
                 let r2 = Math.random() * totalW;
                 chosen = availableWeights[availableWeights.length - 1].name;
                 for (const x of availableWeights) { r2 -= x.w; if (r2 <= 0) { chosen = x.name; break; } }
             }
-            const sData2 = summonData[chosen];
-            if (!sData2) return;
-            // Create the summon (guaranteed unique)
-            const summonId = chosen + '_' + Date.now();
-            gameState.summons[summonId] = {
-                id: summonId,
-                name: chosen,
-                hp: sData2.hp || 5,
-                maxHp: sData2.hp || 5,
-                team: sjwChar.team,
-                summoner: charName,
-                passive: sData2.passive || '',
-                img: sData2.img || '',
-                effect: sData2.effect || '',
-                dragonEffect: sData2.effect || null,
-                statusEffects: []
-            };
-            addLog('👻 Arise! (Pasiva): ' + charName + ' invoca a ' + chosen, 'buff');
-            renderSummons();
+            // La creación real pasa por summonShadow() — única fuente de verdad para unicidad y
+            // límite de 5 por equipo, ya con el filtrado correcto por invocaciones vivas.
+            summonShadow(chosen, charName);
         }
 
         function triggerSangreDeYmir(attackerName, ymirAllyName) {
