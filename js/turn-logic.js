@@ -2167,10 +2167,8 @@
                         });
                         if (!_szEnemies.length) continue;
                         const _szRnd = _szEnemies[Math.floor(Math.random() * _szEnemies.length)];
-                        if (typeof applyDebuff === 'function') {
-                            applyDebuff(_szRnd, { name:'Mega Congelacion', type:'debuff', duration:2, emoji:'🧊', freeze:true, mega:true });
-                        }
                         addLog('❄️ Absolute Zero: ' + _szRnd + ' recibe Megacongelación (inicio de ronda)', 'debuff');
+                        if (typeof applyFreeze === 'function') applyFreeze(_szRnd, 2, true);
                     }
 
                     // ── ICE CLON: fin de ronda → Sub-Zero +3 cargas si activo ──
@@ -2862,9 +2860,9 @@
                         Object.keys(gameState.characters).forEach(function(n) {
                             const _c = gameState.characters[n];
                             if (!_c || _c.isDead || _c.hp <= 0 || _c.team !== _sindETeam) return;
-                            if (Math.random() < 0.50 && typeof applyDebuff === 'function') {
-                                applyDebuff(n, { name: 'Megacongelacion', type: 'debuff', duration: 2, emoji: '🧊❄️' });
+                            if (Math.random() < 0.50) {
                                 addLog('🐉 Dragon de la Muerte: Sindragosa aplica Megacongelación a ' + n + ' (50%)', 'debuff');
+                                if (typeof applyFreeze === 'function') applyFreeze(n, 2, true);
                             }
                         });
                     }
