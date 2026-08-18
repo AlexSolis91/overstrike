@@ -2082,6 +2082,12 @@
             100% { opacity: 0; transform: translate(var(--sx), var(--sy)) rotate(55deg) scale(0.9); }
         }
 
+        /* ── BRILLO DORADO DE RELIQUIA LEGENDARIA (panel de Info de Personaje) ── */
+        @keyframes legendaryRelicGlow {
+            0%, 100% { box-shadow: 0 0 8px #ffd700, 0 0 14px #ffd70088; }
+            50%      { box-shadow: 0 0 14px #ffd700, 0 0 26px #ffd700cc; }
+        }
+
         /* ── BRILLO DORADO PULSANTE: generación de cargas ── */
         @keyframes chargeGlow {
             0%   { box-shadow: 0 0 0px rgba(255,210,0,0); }
