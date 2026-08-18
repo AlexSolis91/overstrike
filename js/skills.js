@@ -12490,26 +12490,16 @@
             // ══════════════════════════════════════════════════════
 
             } else if (ability.effect === 'gogeta_castigador') {
-                // CASTIGADOR DE ALMAS: ST 5 daño. Si sin debuffs → 6 debuffs aleatorios
+                // CASTIGADOR DE ALMAS: ST 5 daño. Disipa los buffs del objetivo.
                 applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
                 addLog('💥 Castigador de Almas: ' + finalDamage + ' daño a ' + targetName, 'damage');
                 const _gcTgt = gameState.characters[targetName];
-                const _gcHasDebuff = _gcTgt && (_gcTgt.statusEffects||[]).some(function(e){ return e && e.type === 'debuff'; });
-                if (!_gcHasDebuff && _gcTgt && !_gcTgt.isDead) {
-                    const _gcPool = ['Quemadura','Veneno','Sangrado','Congelacion','Silenciar','Miedo','Aturdimiento','Ceguera','Debilitar','Agotamiento'];
-                    for (let _gi = 0; _gi < 6; _gi++) {
-                        const _gd = _gcPool[Math.floor(Math.random()*_gcPool.length)];
-                        if (_gd==='Quemadura')   { if(typeof applyFlatBurn==='function') applyFlatBurn(targetName, 2, 2); }
-                        else if (_gd==='Veneno') { if(typeof applyPoison==='function') applyPoison(targetName, 1); }
-                        else if (_gd==='Sangrado'){ if(typeof applyBleed==='function') applyBleed(targetName, 2); }
-                        else if (_gd==='Congelacion'){ if(typeof applyFreeze==='function') applyFreeze(targetName, 2, false); }
-                        else if (_gd==='Silenciar'){ if(typeof applySilenciar==='function') applySilenciar(targetName, 2); }
-                        else if (_gd==='Miedo')  { if(typeof applyFear==='function') applyFear(targetName, 2); }
-                        else if (_gd==='Aturdimiento'){ if(typeof applyStun==='function') applyStun(targetName, 2); }
-                        else if (_gd==='Ceguera'){ if(typeof applyBlind==='function') applyBlind(targetName, 2); }
-                        else { if(typeof applyDebuff==='function') applyDebuff(targetName, {name:_gd,type:'debuff',duration:2,emoji:'💀'}); }
+                if (_gcTgt && !_gcTgt.isDead) {
+                    const _gcBuffsBefore = (_gcTgt.statusEffects || []).filter(function (e) { return e && e.type === 'buff' && !e.passiveHidden; }).length;
+                    _gcTgt.statusEffects = (_gcTgt.statusEffects || []).filter(function (e) { return !e || e.type !== 'buff' || e.passiveHidden; });
+                    if (_gcBuffsBefore > 0) {
+                        addLog('💥 Castigador de Almas: ' + _gcBuffsBefore + ' buff(s) disipado(s) de ' + targetName, 'debuff');
                     }
-                    addLog('💥 Castigador de Almas: ' + targetName + ' no tenía debuffs — 6 debuffs aplicados', 'debuff');
                 }
 
             } else if (ability.effect === 'gogeta_galick_ho') {
