@@ -88,15 +88,14 @@
                             }
                         })();
 
-                        // SUN JIN WOO PASIVA: Arise! — invoca sombra aleatoria + Sigilo 1T al inicio de turno
-                        // "1 invocación por ronda": si SJW obtiene un turno extra en la misma ronda,
-                        // no debe volver a invocar (el Sigilo sí se sigue aplicando cada turno).
+                        // SUN JIN WOO PASIVA: Arise! — invoca sombra aleatoria + Sigilo 1T al inicio de turno.
+                        // Se dispara en CADA turno real (incluidos turnos adicionales, ej. por
+                        // Skeggöx) — cada turno adicional cuenta como un inicio de turno
+                        // independiente. El límite de 5 invocaciones por equipo (dentro de
+                        // triggerSJWArisePassive) sigue protegiendo contra exceso de invocaciones.
                         if (currentChar && currentChar.passive && currentChar.passive.name === 'Arise!') {
                             if (currentChar && !currentChar.isDead && currentChar.hp > 0) {
-                                if (!currentChar._ariseSummonedThisRound) {
-                                    if (typeof triggerSJWArisePassive === 'function') triggerSJWArisePassive(currentCharName);
-                                    currentChar._ariseSummonedThisRound = true;
-                                }
+                                if (typeof triggerSJWArisePassive === 'function') triggerSJWArisePassive(currentCharName);
                                 // Apply Sigilo 1 turn
                                 if (typeof applyStealth === 'function') {
                                     applyStealth(currentCharName, 1);
@@ -1973,11 +1972,10 @@
                         const _acc = gameState.characters[_acn];
                         if (_acc) _acc._ardeCosmosUsedThisRound = false;
                     }
-                    // SUN JIN WOO (Arise!): desbloquear la invocación de nueva sombra cada ronda
-                    for (const _sjn in gameState.characters) {
-                        const _sjc = gameState.characters[_sjn];
-                        if (_sjc) _sjc._ariseSummonedThisRound = false;
-                    }
+                    // SUN JIN WOO (Arise!): el reset de "1 por ronda" ya no aplica — Arise! ahora
+                    // se dispara en CADA turno real de Sun Jin Woo (incluidos turnos adicionales,
+                    // ej. por Skeggöx), sin restricción de ronda; el límite de 5 invocaciones por
+                    // equipo (ver triggerSJWArisePassive) sigue protegiendo contra exceso.
                     // MODO HORDA: gancho genérico de inicio de ronda (Orco Titan, etc.)
                     if (typeof window.hordaOnRoundStart === 'function') window.hordaOnRoundStart();
                     // PILAR DEL AGUA (Giyu Tomioka): inicio de nueva ronda → Escudo 1HP a aliados
