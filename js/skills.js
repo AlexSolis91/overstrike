@@ -3814,7 +3814,7 @@
                 const _gobTeam = _gobAtk ? _gobAtk.team : 'team2';
                 const _gobETeam = _gobTeam === 'team1' ? 'team2' : 'team1';
                 checkAndRemoveStealth(_gobETeam);
-                const _gobBaseDmg = (ability.damage !== undefined ? ability.damage : 2);
+                const _gobBaseDmg = finalDamage;
                 if (checkAndRedirectAOEMegaProv(_gobETeam, _gobBaseDmg, gameState.selectedCharacter)) {
                     addLog('👑 Gate of Babylon redirigido por Mega Provocación', 'damage');
                 } else {
@@ -5802,7 +5802,7 @@
                 for (let _i = 0; _i < hits; _i++) {
                     const _tgt = gameState.characters[targetName];
                     if (!_tgt || _tgt.isDead || _tgt.hp <= 0) break;
-                    let _kbDmg = ability.damage || 1;
+                    let _kbDmg = finalDamage;
                     // Baryon: daño doble
                     if (_kbN && _kbN.narutoForm === 'baryon') _kbDmg *= 2;
                     applyDamageWithShield(targetName, _kbDmg, gameState.selectedCharacter);
@@ -11598,8 +11598,12 @@
             // ══════════════════════════════════════════════════════
 
             } else if (ability.effect === 'soldierboy_basic') {
+                // El bono de reliquias/pasivas ya viene sumado en finalDamage (arranca en
+                // ability.damage=1) — se extrae como la diferencia y se suma sobre la tirada
+                // aleatoria propia, igual que se corrigió antes en Kiiroi Senkō (Minato).
+                const _sbRelicBonus = finalDamage - ability.damage;
                 const _sbBonus = Math.floor(Math.random() * 6) + 1; // 1 a 6
-                const _sbDmg = 1 + _sbBonus;
+                const _sbDmg = 1 + _sbBonus + _sbRelicBonus;
                 applyDamageWithShield(targetName, _sbDmg, gameState.selectedCharacter);
                 addLog('🛡️ Golpe de Escudo: ' + _sbDmg + ' daño a ' + targetName + ' (1 base + ' + _sbBonus + ' extra)', 'damage');
                 const _sbTgt = gameState.characters[targetName];
@@ -13981,6 +13985,33 @@
                 // +8 cargas extra para Androide 17 (chargeGain en ability ya da 8)
                 if (_biA17) _biA17.charges = Math.min(20, (_biA17.charges||0) + 8);
                 addLog('⚡ Barrera de Impacto Total: Androide 17 gana 8 cargas adicionales', 'buff');
+
+            } else if (ability.effect === 'skeletor_mandoble') {
+                // SKELETOR — Mandoble de Alcalá: ST 2 daño. Roba 1 HP al objetivo por cada debuff
+                // activo en TODO el equipo enemigo (no solo el objetivo golpeado).
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('⚔️ Mandoble de Alcalá: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                const _smAtk = gameState.characters[gameState.selectedCharacter];
+                const _smTgt = gameState.characters[targetName];
+                if (_smAtk && _smTgt) {
+                    const _smETeam = _smTgt.team;
+                    let _smDebuffCount = 0;
+                    Object.keys(gameState.characters).forEach(function (n) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== _smETeam || c.isDead || c.hp <= 0) return;
+                        _smDebuffCount += (c.statusEffects || []).filter(function (e) { return e && e.type === 'debuff'; }).length;
+                    });
+                    if (_smDebuffCount > 0) {
+                        const _smTgtAfter = gameState.characters[targetName];
+                        if (_smTgtAfter && !_smTgtAfter.isDead && _smTgtAfter.hp > 0) {
+                            const _smActualSteal = Math.min(_smDebuffCount, _smTgtAfter.hp);
+                            _smTgtAfter.hp = Math.max(0, _smTgtAfter.hp - _smActualSteal);
+                            if (typeof applyHeal === 'function') applyHeal(gameState.selectedCharacter, _smActualSteal, 'Mandoble de Alcalá');
+                            else _smAtk.hp = Math.min(_smAtk.maxHp, (_smAtk.hp || 0) + _smActualSteal);
+                            addLog('⚔️ Mandoble de Alcalá: Skeletor roba ' + _smActualSteal + ' HP (' + _smDebuffCount + ' debuff(s) en el equipo enemigo)', 'heal');
+                        }
+                    }
+                }
 
             } // end Androide 17 handlers
 
