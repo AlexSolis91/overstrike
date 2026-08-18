@@ -1362,7 +1362,15 @@
                     relIcon.src = rd && rd.img ? rd.img : '';
                     relIcon.alt = relicName;
                     relIcon.title = relicName + (rd && rd.desc ? (' — ' + rd.desc) : '');
-                    relIcon.style.cssText = 'width:' + relIconSize + ';height:' + relIconSize + ';object-fit:cover;border-radius:6px;border:1px solid rgba(255,215,0,0.4);background:rgba(255,215,0,0.08);';
+                    // Marco según rareza: Raro=azul, Especial=naranja, Épico=morado,
+                    // Legendario=dorado con brillo (glow animado)
+                    const _tierColors = { 'Raro': '#3b82f6', 'Especial': '#ff9800', 'Epico': '#a855f7', 'Legendario': '#ffd700' };
+                    const _tier = rd ? rd.tier : null;
+                    const _tierColor = _tierColors[_tier] || 'rgba(255,215,0,0.4)';
+                    const _isLegendary = _tier === 'Legendario';
+                    relIcon.style.cssText = 'width:' + relIconSize + ';height:' + relIconSize + ';object-fit:cover;border-radius:6px;' +
+                        'border:2.5px solid ' + _tierColor + ';background:rgba(255,215,0,0.08);' +
+                        (_isLegendary ? 'box-shadow:0 0 8px ' + _tierColor + ',0 0 14px ' + _tierColor + '88;animation:legendaryRelicGlow 1.8s ease-in-out infinite;' : '');
                     relIcon.onerror = function() { this.style.display = 'none'; };
                     relWrap.appendChild(relIcon);
                 });
