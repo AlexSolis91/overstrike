@@ -164,6 +164,17 @@
 
             if (passiveName === 'Heredera Legítima') {
                 // Rhaenyra: invocar una Cría de Dragón directamente
+                // LÍMITE: máximo 5 invocaciones vivas por equipo al mismo tiempo (mismo límite que
+                // ya aplica en summonShadow) — este camino de invocación era directo y no pasaba
+                // por esa protección, permitiendo invocaciones ilimitadas en partidas largas
+                // (visto en Modo Horda: 9+ Crías de Dragón acumuladas, dejando el juego trabado).
+                const _crTeamCount = Object.values(gameState.summons).filter(function (s) {
+                    return s && s.team === ch.team && !s.isDead && (s.hp === undefined || s.hp > 0);
+                }).length;
+                if (_crTeamCount >= 5) {
+                    addLog('📡 Radar del Dragón: no se pudo invocar — límite de 5 invocaciones por equipo alcanzado', 'info');
+                    return;
+                }
                 const _criaId = 'Cria_Dragon_' + Date.now() + '_' + Math.random().toString(36).substr(2,6);
                 gameState.summons[_criaId] = {
                     id: _criaId, name: 'Cría de Dragón', summoner: charName, team: ch.team,
