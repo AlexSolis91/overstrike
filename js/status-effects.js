@@ -527,7 +527,14 @@ function processBurnEffects(charName) {
                     { name:'Silenciar',    type:'debuff', duration:1, emoji:'🤫' }
                 ];
                 const _chosen = _debuffPool[Math.floor(Math.random() * _debuffPool.length)];
-                if (typeof applyDebuff === 'function') applyDebuff(targetName, Object.assign({}, _chosen));
+                // Congelación es un caso especial: debe pasar por applyFreeze() para respetar el
+                // límite de 1 por tipo y activar efectos reactivos legítimos (ej. Yelmo de
+                // Caballero de la Muerte).
+                if (_chosen.name === 'Congelacion' && typeof applyFreeze === 'function') {
+                    applyFreeze(targetName, 1, false);
+                } else if (typeof applyDebuff === 'function') {
+                    applyDebuff(targetName, Object.assign({}, _chosen));
+                }
                 addLog('🃏 Anarquía: ' + targetName + ' recibe ' + _chosen.name + ' 1T (sufrió daño por DOT)', 'debuff');
                 break; // Only one Joker can trigger this
             }
