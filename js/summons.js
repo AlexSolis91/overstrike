@@ -2204,8 +2204,8 @@
                     if (Math.random() < 0.25) {
                         const _ceTgt = gameState.characters[targetName];
                         if (_ceTgt && !_ceTgt.isDead && _ceTgt.hp > 0) {
-                            if (typeof applyDebuff === 'function') applyDebuff(targetName, { name: 'Congelacion', type: 'debuff', duration: 2, emoji: '🧊', freeze: true });
                             addLog('🌿 Capa Élfica: ' + targetName + ' queda Congelado 2T (25%)', 'debuff');
+                            if (typeof applyFreeze === 'function') applyFreeze(targetName, 2, false);
                         }
                     }
                 }
@@ -2602,16 +2602,22 @@
                                 addLog('⚡ Ergonos: +' + _ergTeamGain + ' cargas a todo el equipo (básico)', 'buff');
                             }
                             // ST (cualquier tipo — básico, especial u Over): Megacongelación al objetivo
-                            // + Congelación a 2 enemigos aleatorios
+                            // + Congelación a 2 enemigos aleatorios.
+                            // Usa applyFreeze() (no applyDebuff) para que efectos reactivos legítimos
+                            // como el Yelmo de Caballero de la Muerte sí se activen correctamente —
+                            // antes usaba applyDebuff() y esos efectos nunca se disparaban.
                             if (gameState._lastAbilityTarget === 'single' && _atkChar && !passiveExecuting) {
-                                if (typeof applyDebuff === 'function') {
-                                    applyDebuff(targetName, { name:'Megacongelacion', type:'debuff', duration:2, emoji:'🧊❄️' });
+                                if (typeof applyFreeze === 'function') {
                                     addLog('⚡ Ergonos: Megacongelación aplicada a ' + targetName, 'debuff');
+                                    applyFreeze(targetName, 2, true);
                                     // 2 enemigos aleatorios reciben Congelación
                                     const _ergETeam = _atkChar.team === 'team1' ? 'team2' : 'team1';
                                     const _ergOthers = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===_ergETeam&&!c.isDead&&c.hp>0&&n!==targetName; });
                                     const _ergShuffle = _ergOthers.sort(function(){ return Math.random()-0.5; }).slice(0,2);
-                                    _ergShuffle.forEach(function(n){ applyDebuff(n, { name:'Congelacion', type:'debuff', duration:1, emoji:'🧊' }); addLog('⚡ Ergonos: Congelación aplicada a ' + n, 'debuff'); });
+                                    _ergShuffle.forEach(function(n){
+                                        addLog('⚡ Ergonos: Congelación aplicada a ' + n, 'debuff');
+                                        applyFreeze(n, 1, false);
+                                    });
                                 }
                             }
                             break;
@@ -3111,10 +3117,10 @@
                     const _icEnemies = Object.keys(gameState.characters).filter(function(n){
                         const _cc=gameState.characters[n]; return _cc&&_cc.team===_icETeam&&!_cc.isDead&&_cc.hp>0;
                     });
-                    if (_icEnemies.length && typeof applyDebuff === 'function') {
+                    if (_icEnemies.length) {
                         passiveExecuting = true;
                         const _rndE = _icEnemies[Math.floor(Math.random()*_icEnemies.length)];
-                        applyDebuff(_rndE, { name:'Mega Congelacion', type:'debuff', duration:2, emoji:'🧊', freeze:true, mega:true });
+                        if (typeof applyFreeze === 'function') applyFreeze(_rndE, 2, true);
                         passiveExecuting = false;
                         addLog('🧊 ICE CLON: Megacongelación aplicada a ' + _rndE, 'debuff');
                     }
