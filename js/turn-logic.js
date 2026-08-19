@@ -1911,6 +1911,14 @@
 
         function _runRoundStartPassiveHooks() {
             console.log('[Ronda] _runRoundStartPassiveHooks() iniciando (Ronda ' + gameState.currentRound + ')...');
+                    // ── YAUTJA HONOR CODE (Depredador): inicio de ronda → Sigilo 1 turno ──
+                    for (const _ycsN in gameState.characters) {
+                        const _ycsC = gameState.characters[_ycsN];
+                        if (!_ycsC || _ycsC.isDead || _ycsC.hp <= 0) continue;
+                        if (!_ycsC.passive || _ycsC.passive.name !== 'Yautja Honor Code') continue;
+                        if (typeof applyBuff === 'function') applyBuff(_ycsN, { name: 'Sigilo', type: 'buff', duration: 1, emoji: '👤' });
+                        addLog('🎯 Yautja Honor Code: ' + _ycsN + ' se aplica Sigilo 1 turno', 'buff');
+                    }
                     // ── EXPLOSIÓN (Fake Black): inicio de ronda → cada Fake Black viva cura 3 HP a
                     //    Goku Black y a un aliado aleatorio (se repite una vez por cada Fake Black) ──
                     Object.values(gameState.summons || {}).forEach(function (_fbSum) {
@@ -3823,6 +3831,57 @@
                     for (const _hjClearN in gameState.characters) {
                         const _hjClearC = gameState.characters[_hjClearN];
                         if (_hjClearC) _hjClearC._hiraishinMarks = 0;
+                    }
+                    break;
+                }
+
+                // ── YAUTJA HONOR CODE (Depredador): fin de ronda → ejecuta Plasma Blaster (con
+                //    cinemática, UNA SOLA VEZ) sobre los enemigos marcados — el daño y efecto del
+                //    Over se aplican una vez POR CADA marca acumulada en cada objetivo (ej. un
+                //    enemigo con 2 marcas recibe el Over 2 veces, uno con 1 marca lo recibe 1 vez) ──
+                for (const _ycfN in gameState.characters) {
+                    const _ycfC = gameState.characters[_ycfN];
+                    if (!_ycfC || _ycfC.isDead || _ycfC.hp <= 0) continue;
+                    if (!_ycfC.passive || _ycfC.passive.name !== 'Yautja Honor Code') continue;
+                    const _ycfMarkedTargets = Object.keys(gameState.characters).filter(function (n) {
+                        const c = gameState.characters[n];
+                        return c && !c.isDead && c.hp > 0 && c.team !== _ycfC.team &&
+                            ((c._marcaCazadorPermanente || 0) + (c._marcaCazadorTemporal || 0)) > 0;
+                    });
+                    if (_ycfMarkedTargets.length === 0) break;
+                    const _ycfOver = (_ycfC.abilities || []).find(function (a) { return a && a.type === 'over'; });
+                    if (!_ycfOver) break;
+                    const _ycfRunAttacks = function () {
+                        _ycfMarkedTargets.forEach(function (_ycfTgt) {
+                            const _ycfTgtC = gameState.characters[_ycfTgt];
+                            const _ycfReps = _ycfTgtC ? ((_ycfTgtC._marcaCazadorPermanente || 0) + (_ycfTgtC._marcaCazadorTemporal || 0)) : 0;
+                            for (let _i = 0; _i < _ycfReps; _i++) {
+                                const _ycfCurTgt = gameState.characters[_ycfTgt];
+                                if (!_ycfCurTgt || _ycfCurTgt.isDead || _ycfCurTgt.hp <= 0) break;
+                                const _ycfPrev = gameState.selectedCharacter;
+                                const _ycfPrevAb = gameState.selectedAbility;
+                                const _ycfPrevCost = gameState.adjustedCost;
+                                const _ycfPrevExecuting = passiveExecuting;
+                                const _ycfPrevSuppress = gameState._suppressAutoEndTurn;
+                                gameState.selectedCharacter = _ycfN;
+                                gameState.selectedAbility = _ycfOver;
+                                gameState.adjustedCost = 0;
+                                passiveExecuting = true;
+                                gameState._suppressAutoEndTurn = true;
+                                try { _executeAbilityCore(_ycfTgt); } catch (e) { console.error('[Yautja Honor Code] Error al ejecutar Plasma Blaster:', e); }
+                                gameState.selectedCharacter = _ycfPrev;
+                                gameState.selectedAbility = _ycfPrevAb;
+                                gameState.adjustedCost = _ycfPrevCost;
+                                passiveExecuting = _ycfPrevExecuting;
+                                gameState._suppressAutoEndTurn = _ycfPrevSuppress;
+                            }
+                        });
+                    };
+                    addLog('🎯 Yautja Honor Code: fin de ronda — Depredador ejecuta Plasma Blaster sobre los enemigos marcados', 'buff');
+                    if (typeof _showOverCinematic === 'function') {
+                        _showOverCinematic(_ycfN, _ycfOver.name, _ycfOver.effect, _ycfC.team, _ycfRunAttacks);
+                    } else {
+                        _ycfRunAttacks();
                     }
                     break;
                 }
