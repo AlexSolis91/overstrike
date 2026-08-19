@@ -595,6 +595,11 @@ function processBurnEffects(charName) {
                         registerHealing(_healCaster, _actual);
                     }
                 }
+                // ── DEIDAD DE MORTALES (Goku Black): cada vez que recibe una curación, +2 HP máximo ──
+                if (_ch && _ch.passive && _ch.passive.name === 'Deidad de Mortales') {
+                    _ch.maxHp = (_ch.maxHp || 0) + 2;
+                    addLog('⚫ Deidad de Mortales: Goku Black recibe curación — +2 HP máximo (' + _ch.maxHp + ' total)', 'buff');
+                }
             }
             // ASHBRINGER: si el que se curó es el PORTADOR, replica la misma curación en 2 aliados
             // aleatorios. Si el que se curó es un ALIADO distinto del portador (curado por una
