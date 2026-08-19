@@ -222,13 +222,13 @@
             'Goku Black': {
                 hp: 20, maxHp: 20, speed: 95, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.ibb.co/Sw26gc9V/Whats-App-Image-2026-03-31-at-1-24-06-PM.jpg',
-                passive: { name: 'Cuerpo Divino', description: 'Efecto pasivo Aura Oscura. Cada vez que Goku Black recibe daño genera 2 puntos de carga.' },
+                portrait: 'https://i.ibb.co/6csW1fT9/Gemini-Generated-Image-i0t3fhi0t3fhi0t3.jpg',
+                passive: { name: 'Deidad de Mortales', description: 'Cada vez que Goku Black recibe daño de cualquier fuente, tiene 10% de probabilidad de ejecutar su Over automáticamente (con cinemática), causando el daño y aplicando su efecto. Cada vez que Goku Black recibe una curación, aumenta su HP máximo en 2 puntos. Cada vez que Goku Black recibe un golpe, genera 3 cargas.' },
                 abilities: [
-                    { name: 'Espada de Ki', type: 'basic', cost: 0, chargeGain: 1, damage: 2, target: 'single', effect: 'espada_ki', description: 'Causa 2 daño. 50% de probabilidad de robar 1 carga del objetivo.' },
-                    { name: 'Kamehame Ha Oscuro', type: 'special', cost: 3, chargeGain: 0, damage: 2, target: 'single', effect: 'kamehame_oscuro', description: 'Causa 2 daño. 50% de crítico. 50% de Aturdimiento.' },
-                    { name: 'Lazo Divino', type: 'special', cost: 6, chargeGain: 0, damage: 3, target: 'single', effect: 'lazo_divino', description: 'Causa 3 daño. Invoca 3 Fake Black.' },
-                    { name: 'Guadaña Divina', type: 'over', cost: 12, chargeGain: 0, damage: 7, target: 'aoe', effect: 'guadania_divina', description: 'Causa 7 AOE. Elimina todos los puntos de carga de los enemigos. Si algún objetivo no tenía cargas, 100% de crítico en ese objetivo.' }
+                    { name: 'Espada de Ki', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'espada_ki_v2', description: 'Aplica debuff Sangrado 2 turnos al objetivo. 25% de probabilidad de golpe crítico — si acierta, Goku Black gana 1 turno adicional.' },
+                    { name: 'Kamehame Ha Oscuro', type: 'special', cost: 5, chargeGain: 0, damage: 3, target: 'aoe', effect: 'kamehame_oscuro_v2', description: '50% de probabilidad de Aturdimiento por cada enemigo golpeado. 10% de probabilidad de golpe crítico — si acierta, Goku Black ejecuta Espada de Ki (daño, cargas y efectos completos) sobre todos los enemigos con Aturdimiento activo en ese momento.' },
+                    { name: 'Lazo Divino', type: 'special', cost: 7, chargeGain: 0, damage: 2, target: 'single', effect: 'lazo_divino_v2', description: 'Causa daño al objetivo e invoca 3 Fake Black. 10% de probabilidad de golpe crítico — si acierta, Goku Black ejecuta Kamehame Ha Oscuro sin costo de cargas.' },
+                    { name: 'Guadaña Divina', type: 'over', cost: 15, chargeGain: 0, damage: 5, target: 'aoe', effect: 'guadania_divina_v2', description: '5% de probabilidad de golpe crítico. Si acierta: elimina todas las invocaciones de la batalla (de ambos equipos), aplica Mega Aturdimiento a los enemigos con transformación activa, los enemigos con Provocación o Mega Provocación reciben daño directo igual al 40% de su HP máximo, elimina a los personajes revividos del equipo enemigo, y 10% de probabilidad por cada reliquia equipada en los objetivos golpeados de aplicar Sangrado y Aturdimiento.' }
                 ]
             },
             'Saga de Geminis': {
