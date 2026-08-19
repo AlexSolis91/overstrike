@@ -8128,6 +8128,170 @@
                 }
 
             // ══════════════════════════════════════════════════════
+            // GOKU BLACK (kit nuevo) — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'espada_ki_v2') {
+                // GOKU BLACK — Espada de Ki: ST 2 daño + Sangrado 2T. 25% crítico → turno adicional.
+                const _ekIsCrit = Math.random() < 0.25;
+                const _ekDmg = _ekIsCrit ? finalDamage * 2 : finalDamage;
+                applyDamageWithShield(targetName, _ekDmg, gameState.selectedCharacter);
+                addLog('⚫ Espada de Ki: ' + _ekDmg + ' daño a ' + targetName + (_ekIsCrit ? ' (¡crítico!)' : ''), 'damage');
+                const _ekTgt = gameState.characters[targetName];
+                if (_ekTgt && !_ekTgt.isDead && _ekTgt.hp > 0 && typeof applyDebuff === 'function') {
+                    applyDebuff(targetName, { name: 'Sangrado', type: 'debuff', duration: 2, emoji: '🩸' });
+                }
+                if (_ekIsCrit) {
+                    if (!gameState._skeggoxExtraTurn) gameState._skeggoxExtraTurn = gameState.selectedCharacter;
+                    addLog('⚫ Espada de Ki: ¡crítico! Goku Black gana turno adicional', 'buff');
+                }
+
+            } else if (ability.effect === 'kamehame_oscuro_v2') {
+                // GOKU BLACK — Kamehame Ha Oscuro: AOE 3 daño. 50% Aturdimiento por golpeado
+                // (tirada independiente por objetivo). 10% crítico (del ataque completo) → ejecuta
+                // Espada de Ki (daño+cargas+efectos reales, vía _executeBasicForced) sobre TODOS los
+                // enemigos con Aturdimiento activo en ese momento, sin importar de dónde vino.
+                const _khAtk = gameState.characters[gameState.selectedCharacter];
+                const _khETeam = _khAtk ? (_khAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _khAOE = window.resolveAOETargets(gameState.selectedCharacter, _khETeam);
+                _khAOE.targets.forEach(function (_n) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.isDead || _c.hp <= 0) return;
+                    applyDamageWithShield(_n, finalDamage * _khAOE.multiplier, gameState.selectedCharacter);
+                    addLog('⚫ Kamehame Ha Oscuro: ' + (finalDamage * _khAOE.multiplier) + ' daño a ' + _n, 'damage');
+                    const _cAfter = gameState.characters[_n];
+                    if (_cAfter && !_cAfter.isDead && _cAfter.hp > 0 && Math.random() < 0.50 && typeof applyStun === 'function') {
+                        applyStun(_n, 1);
+                        addLog('⚫ Kamehame Ha Oscuro: Aturdimiento aplicado a ' + _n + ' (50%)', 'debuff');
+                    }
+                });
+                _khAOE.summonTargets.forEach(function (_sid) {
+                    applySummonDamage(_sid, finalDamage * _khAOE.multiplier, gameState.selectedCharacter);
+                });
+                if (Math.random() < 0.10) {
+                    addLog('⚫ Kamehame Ha Oscuro: ¡crítico! Ejecuta Espada de Ki sobre todos los enemigos con Aturdimiento', 'buff');
+                    const _khStunned = Object.keys(gameState.characters).filter(function (n) {
+                        const c = gameState.characters[n];
+                        return c && !c.isDead && c.hp > 0 && (c.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'aturdimiento'; });
+                    });
+                    _khStunned.forEach(function (n) {
+                        if (typeof window._executeBasicForced === 'function') window._executeBasicForced(gameState.selectedCharacter, n);
+                    });
+                }
+
+            } else if (ability.effect === 'lazo_divino_v2') {
+                // GOKU BLACK — Lazo Divino: ST daño al objetivo + invoca 3 Fake Black.
+                // 10% crítico → ejecuta Kamehame Ha Oscuro sin costo de cargas.
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('⚫ Lazo Divino: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                for (let _i = 0; _i < 3; _i++) {
+                    if (typeof summonFakeBlack === 'function') summonFakeBlack(gameState.selectedCharacter);
+                }
+                addLog('⚫ Lazo Divino: invocación de 3 Fake Black intentada', 'buff');
+                if (Math.random() < 0.10) {
+                    const _ldAtk = gameState.characters[gameState.selectedCharacter];
+                    const _khAbility = _ldAtk ? (_ldAtk.abilities || []).find(function (a) { return a && a.effect === 'kamehame_oscuro_v2'; }) : null;
+                    if (_khAbility) {
+                        addLog('⚫ Lazo Divino: ¡crítico! Goku Black ejecuta Kamehame Ha Oscuro sin costo', 'buff');
+                        const _ldPrev = gameState.selectedCharacter;
+                        const _ldPrevAb = gameState.selectedAbility;
+                        const _ldPrevCost = gameState.adjustedCost;
+                        const _ldPrevExecuting = passiveExecuting;
+                        const _ldPrevSuppress = gameState._suppressAutoEndTurn;
+                        gameState.selectedAbility = _khAbility;
+                        gameState.adjustedCost = 0;
+                        passiveExecuting = true;
+                        gameState._suppressAutoEndTurn = true;
+                        try { _executeAbilityCore(null); } catch (e) { console.error('[Lazo Divino] Error al ejecutar Kamehame Ha Oscuro:', e); }
+                        gameState.selectedCharacter = _ldPrev;
+                        gameState.selectedAbility = _ldPrevAb;
+                        gameState.adjustedCost = _ldPrevCost;
+                        passiveExecuting = _ldPrevExecuting;
+                        gameState._suppressAutoEndTurn = _ldPrevSuppress;
+                    }
+                }
+
+            } else if (ability.effect === 'guadania_divina_v2') {
+                // GOKU BLACK — Guadaña Divina: AOE 5 daño. 5% crítico → efectos especiales masivos.
+                const _gd2Atk = gameState.characters[gameState.selectedCharacter];
+                const _gd2ETeam = _gd2Atk ? (_gd2Atk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _gd2AOE = window.resolveAOETargets(gameState.selectedCharacter, _gd2ETeam);
+                const _gd2HitTargets = [];
+                _gd2AOE.targets.forEach(function (_n) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.isDead || _c.hp <= 0) return;
+                    applyDamageWithShield(_n, finalDamage * _gd2AOE.multiplier, gameState.selectedCharacter);
+                    _gd2HitTargets.push(_n);
+                });
+                _gd2AOE.summonTargets.forEach(function (_sid) {
+                    applySummonDamage(_sid, finalDamage * _gd2AOE.multiplier, gameState.selectedCharacter);
+                });
+                addLog('⚫ Guadaña Divina: ' + finalDamage + ' daño AOE al equipo enemigo', 'damage');
+
+                if (Math.random() < 0.05) {
+                    addLog('⚫ Guadaña Divina: ¡CRÍTICO! Se activan los efectos especiales', 'buff');
+
+                    // 1. Eliminar TODAS las invocaciones de la batalla (ambos equipos)
+                    let _gd2SummonsKilled = 0;
+                    Object.keys(gameState.summons || {}).forEach(function (sid) {
+                        const s = gameState.summons[sid];
+                        if (s && !s.isDead && s.hp > 0) { s.hp = 0; s.isDead = true; _gd2SummonsKilled++; }
+                    });
+                    if (_gd2SummonsKilled > 0) addLog('⚫ Guadaña Divina: ' + _gd2SummonsKilled + ' invocación(es) eliminada(s) de la batalla', 'damage');
+
+                    // 2. Mega Aturdimiento a enemigos con transformación activa
+                    let _gd2MegaStunned = 0;
+                    _gd2HitTargets.forEach(function (_n) {
+                        const c = gameState.characters[_n];
+                        if (c && !c.isDead && c.hp > 0 && c.isTransformed && typeof applyDebuff === 'function') {
+                            applyDebuff(_n, { name: 'Mega Aturdimiento', type: 'debuff', duration: 1, emoji: '💫' });
+                            _gd2MegaStunned++;
+                        }
+                    });
+                    if (_gd2MegaStunned > 0) addLog('⚫ Guadaña Divina: Mega Aturdimiento aplicado a ' + _gd2MegaStunned + ' enemigo(s) transformado(s)', 'debuff');
+
+                    // 3. Enemigos con Provocación/Mega Provocación (buff o pasiva) → daño DIRECTO
+                    //    igual al 40% de su HP máximo (individualmente)
+                    _gd2HitTargets.forEach(function (_n) {
+                        const c = gameState.characters[_n];
+                        if (!c || c.isDead || c.hp <= 0) return;
+                        const _hasProv = (c.statusEffects || []).some(function (e) {
+                            const _en = normAccent(e && e.name || '');
+                            return _en === 'provocacion' || _en === 'mega provocacion';
+                        });
+                        if (_hasProv) {
+                            const _gd2ProvDmg = Math.ceil((c.maxHp || 0) * 0.40);
+                            applyDamageWithShield(_n, _gd2ProvDmg, null); // daño directo
+                            addLog('⚫ Guadaña Divina: ' + _n + ' (Provocación) recibe ' + _gd2ProvDmg + ' daño directo (40% HP máx)', 'damage');
+                        }
+                    });
+
+                    // 4. Eliminar personajes revividos del equipo enemigo
+                    for (const _n in gameState.characters) {
+                        const c = gameState.characters[_n];
+                        if (!c || c.team !== _gd2ETeam || c.isDead || !c._wasRevived) continue;
+                        c.hp = 0; c.isDead = true;
+                        addLog('⚫ Guadaña Divina: ' + _n + ' (revivido) es eliminado', 'damage');
+                    }
+
+                    // 5. 10% de probabilidad POR CADA RELIQUIA equipada en los golpeados → Sangrado + Aturdimiento
+                    _gd2HitTargets.forEach(function (_n) {
+                        const c = gameState.characters[_n];
+                        if (!c || c.isDead || c.hp <= 0) return;
+                        const _relicCount = (c.equippedRelics || []).length;
+                        for (let _ri = 0; _ri < _relicCount; _ri++) {
+                            if (Math.random() < 0.10) {
+                                if (typeof applyDebuff === 'function') {
+                                    applyDebuff(_n, { name: 'Sangrado', type: 'debuff', duration: 2, emoji: '🩸' });
+                                    applyDebuff(_n, { name: 'Aturdimiento', type: 'debuff', duration: 1, emoji: '⭐' });
+                                }
+                                addLog('⚫ Guadaña Divina: ' + _n + ' recibe Sangrado + Aturdimiento (reliquia)', 'debuff');
+                            }
+                        }
+                    });
+                }
+
+            // ══════════════════════════════════════════════════════
             // DOOMSDAY — handlers actualizados
             // ══════════════════════════════════════════════════════
 
