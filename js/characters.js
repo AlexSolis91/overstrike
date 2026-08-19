@@ -1219,6 +1219,19 @@
                 ]
             },
 
+            'Depredador': {
+                portrait: 'https://i.ibb.co/HDvhYgW4/Gemini-Generated-Image-spkpdtspkpdtspkp.jpg',
+                hp: 25, maxHp: 25, speed: 82, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                passive: { name: 'Yautja Honor Code', description: 'Cuando un enemigo ejecuta un Over, recibe una marca del cazador (contador permanente, nunca se elimina). Los enemigos con al menos 1 marca del cazador causan 50% menos de daño a Depredador. Al final de cada ronda, Depredador ejecuta Plasma Blaster (con cinemática) sobre los enemigos marcados — una vez por cada marca acumulada (si un enemigo tiene 2 marcas, recibe el daño y efecto del Over 2 veces). Cuando el buff Sigilo expira, es disipado o limpiado en Depredador, ejecuta 3 ataques básicos Cuchillas Invisibles sobre enemigos aleatorios (con daño, efectos y generación de cargas reales). Al inicio de cada ronda, Depredador se aplica buff Sigilo 1 turno.' },
+                abilities: [
+                    { name: 'Cuchillas Invisibles', type: 'basic',   cost: 0,  chargeGain: 1, damage: 3,  target: 'single', effect: 'cuchillas_invisibles', description: 'Aplica Sangrado 2 turnos y una marca del cazador (contador temporal) sobre el objetivo. Causa daño triple sobre enemigos con debuff Hemorragia.' },
+                    { name: 'Disco Inteligente',    type: 'special', cost: 5,  chargeGain: 0, damage: 4,  target: 'mt',     effect: 'disco_inteligente',    description: 'Golpea a 4 enemigos aleatorios. Causa daño triple sobre enemigos con marca del cazador. Si algún golpeado tiene marca del cazador, Depredador gana Armadura 3T y Protección Sagrada 3T (una sola vez).' },
+                    { name: 'Lanza de Combate',     type: 'special', cost: 10, chargeGain: 0, damage: 5,  target: 'single', effect: 'lanza_combate',        description: 'Roba 3 HP y 3 cargas del objetivo por cada marca del cazador en todo el equipo enemigo. Roba HP adicional según las reliquias equipadas en Depredador (Raro +3, Especial +2, Épico +1 cada una). Por cada punto de HP robado, Depredador gana +1 HP máximo.' },
+                    { name: 'Plasma Blaster',       type: 'over',    cost: 10, chargeGain: 0, damage: 10, target: 'single', effect: 'plasma_blaster',       description: 'El daño se multiplica por la cantidad total de marcas del cazador activas en el equipo enemigo.' }
+                ]
+            },
+
         };
         // ==================== RELIQUIAS ====================
         const RELICS_DATA = {
