@@ -1911,6 +1911,25 @@
 
         function _runRoundStartPassiveHooks() {
             console.log('[Ronda] _runRoundStartPassiveHooks() iniciando (Ronda ' + gameState.currentRound + ')...');
+                    // ── EXPLOSIÓN (Fake Black): inicio de ronda → cada Fake Black viva cura 3 HP a
+                    //    Goku Black y a un aliado aleatorio (se repite una vez por cada Fake Black) ──
+                    Object.values(gameState.summons || {}).forEach(function (_fbSum) {
+                        if (!_fbSum || _fbSum.name !== 'Fake Black' || _fbSum.isDead || _fbSum.hp <= 0) return;
+                        const _fbGoku = gameState.characters[_fbSum.summoner];
+                        if (_fbGoku && !_fbGoku.isDead && _fbGoku.hp > 0) {
+                            if (typeof applyHeal === 'function') applyHeal(_fbSum.summoner, 3, 'Explosión (Fake Black)');
+                            else _fbGoku.hp = Math.min(_fbGoku.maxHp, (_fbGoku.hp || 0) + 3);
+                        }
+                        const _fbAllies = Object.keys(gameState.characters).filter(function (n) {
+                            const c = gameState.characters[n];
+                            return c && !c.isDead && c.hp > 0 && c.team === _fbSum.team && n !== _fbSum.summoner;
+                        });
+                        if (_fbAllies.length > 0) {
+                            const _fbRand = _fbAllies[Math.floor(Math.random() * _fbAllies.length)];
+                            if (typeof applyHeal === 'function') applyHeal(_fbRand, 3, 'Explosión (Fake Black)');
+                            else { const c = gameState.characters[_fbRand]; c.hp = Math.min(c.maxHp, (c.hp || 0) + 3); }
+                        }
+                    });
                     // ── DRAGÓN DE LA VIDA (Alexstrasza transformada): inicio de ronda mientras
                     //    dure la transformación (3 turnos) → disipa debuffs aliados, cura 7 HP a
                     //    los aliados, aplica Quemaduras 7HP al equipo enemigo. Al agotarse los
