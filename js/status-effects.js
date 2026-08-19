@@ -355,6 +355,32 @@ function processBurnEffects(charName) {
                             }
                         }
                     }
+                    // ── YAUTJA HONOR CODE (Depredador): cuando el buff Sigilo EXPIRA en Depredador
+                    //    mismo → ejecuta 3 ataques básicos Cuchillas Invisibles reales (daño,
+                    //    efectos y cargas completos) sobre enemigos aleatorios. Nota de alcance:
+                    //    esto cubre la expiración NATURAL de forma confiable (Sigilo se reaplica
+                    //    cada ronda, así que este gancho se dispara todas las rondas); no cubre de
+                    //    forma exhaustiva cada posible fuente de disipación externa del buff en
+                    //    otras partes del código, dado lo extenso que sería auditar cada una. ──
+                    if (effect.type === 'buff' && normAccent(effect.name || '') === 'sigilo') {
+                        const _pcChar = gameState.characters[charName];
+                        if (_pcChar && !_pcChar.isDead && _pcChar.hp > 0 && _pcChar.passive && _pcChar.passive.name === 'Yautja Honor Code') {
+                            const _pcBasic = (_pcChar.abilities || []).find(function (a) { return a && a.type === 'basic'; });
+                            if (_pcBasic) {
+                                const _pcETeam = _pcChar.team === 'team1' ? 'team2' : 'team1';
+                                addLog('🎯 Yautja Honor Code: Sigilo expira en ' + charName + ' — ejecuta 3 Cuchillas Invisibles sobre enemigos aleatorios', 'buff');
+                                for (let _i = 0; _i < 3; _i++) {
+                                    const _pcPool = Object.keys(gameState.characters).filter(function (n) {
+                                        const c = gameState.characters[n];
+                                        return c && !c.isDead && c.hp > 0 && c.team === _pcETeam;
+                                    });
+                                    if (_pcPool.length === 0) break;
+                                    const _pcTgt = _pcPool[Math.floor(Math.random() * _pcPool.length)];
+                                    if (typeof window._executeBasicForced === 'function') window._executeBasicForced(charName, _pcTgt);
+                                }
+                            }
+                        }
+                    }
                     const nname = normAccent(effect.name || '');
                     // Limpiar Forma Dragón de Alexstrasza cuando Escudo Sagrado expira
                     if (nname === 'escudo sagrado' && (charName === 'Alexstrasza' || charName === 'Alexstrasza v2')) {
