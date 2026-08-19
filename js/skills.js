@@ -1503,6 +1503,19 @@
                     gameState._mtHitCounter = 0; // reinicia el contador para el escalonado secuencial
                 }
             }
+
+            // ── YAUTJA HONOR CODE (Depredador): cuando un enemigo (de Depredador) ejecuta un
+            //    Over, recibe una marca del cazador PERMANENTE (contador, nunca se elimina) ──
+            if (ability.type === 'over' && attacker) {
+                for (const _ycN in gameState.characters) {
+                    const _ycC = gameState.characters[_ycN];
+                    if (!_ycC || _ycC.isDead || _ycC.hp <= 0 || !_ycC.passive || _ycC.passive.name !== 'Yautja Honor Code') continue;
+                    if (_ycC.team === attacker.team) continue; // Depredador debe ser enemigo de quien usó el Over
+                    attacker._marcaCazadorPermanente = (attacker._marcaCazadorPermanente || 0) + 1;
+                    addLog('🎯 Yautja Honor Code: ' + charName + ' recibe una marca del cazador permanente (' + attacker._marcaCazadorPermanente + ' total)', 'debuff');
+                    break;
+                }
+            }
             // ARCO DEL KITAN: +_arcoDmgBonus al daño del básico (acumulado por debuffs enemigos disipados)
             if (ability.type === 'basic' && attacker && (attacker._arcoDmgBonus||0) > 0) {
                 finalDamage += attacker._arcoDmgBonus;
@@ -8290,6 +8303,119 @@
                         }
                     });
                 }
+
+            // ══════════════════════════════════════════════════════
+            // DEPREDADOR — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'cuchillas_invisibles') {
+                // DEPREDADOR — Cuchillas Invisibles: ST 3 daño (triple si Hemorragia activa) +
+                // Sangrado 2T + marca del cazador TEMPORAL sobre el objetivo.
+                const _ciTgt = gameState.characters[targetName];
+                const _ciHasHemorragia = _ciTgt && (_ciTgt.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'hemorragia'; });
+                const _ciDmg = _ciHasHemorragia ? finalDamage * 3 : finalDamage;
+                applyDamageWithShield(targetName, _ciDmg, gameState.selectedCharacter);
+                addLog('🗡️ Cuchillas Invisibles: ' + _ciDmg + ' daño a ' + targetName + (_ciHasHemorragia ? ' (¡triple por Hemorragia!)' : ''), 'damage');
+                const _ciTgtAfter = gameState.characters[targetName];
+                if (_ciTgtAfter && !_ciTgtAfter.isDead && _ciTgtAfter.hp > 0) {
+                    if (typeof applyBleed === 'function') applyBleed(targetName, 2);
+                    _ciTgtAfter._marcaCazadorTemporal = (_ciTgtAfter._marcaCazadorTemporal || 0) + 1;
+                    addLog('🎯 Cuchillas Invisibles: marca del cazador temporal aplicada a ' + targetName + ' (' + _ciTgtAfter._marcaCazadorTemporal + ' total)', 'debuff');
+                }
+
+            } else if (ability.effect === 'disco_inteligente') {
+                // DEPREDADOR — Disco Inteligente: MT, golpea a 4 enemigos aleatorios. Daño triple
+                // sobre marcados. Si algún golpeado tenía marca (de cualquier tipo), Depredador
+                // gana Armadura 3T + Protección Sagrada 3T — una sola vez, sin importar cuántos
+                // de los 4 golpeados estaban marcados.
+                const _diAtk = gameState.characters[gameState.selectedCharacter];
+                const _diETeam = _diAtk ? (_diAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _diPool = Object.keys(gameState.characters).filter(function (n) {
+                    const c = gameState.characters[n];
+                    return c && !c.isDead && c.hp > 0 && c.team === _diETeam;
+                });
+                let _diAnyMarked = false;
+                for (let _i = 0; _i < 4; _i++) {
+                    if (_diPool.length === 0) break;
+                    const _diTgt = _diPool[Math.floor(Math.random() * _diPool.length)];
+                    const _diC = gameState.characters[_diTgt];
+                    if (!_diC || _diC.isDead || _diC.hp <= 0) continue;
+                    const _diMarked = ((_diC._marcaCazadorPermanente || 0) + (_diC._marcaCazadorTemporal || 0)) > 0;
+                    if (_diMarked) _diAnyMarked = true;
+                    const _diDmg = _diMarked ? finalDamage * 3 : finalDamage;
+                    applyDamageWithShield(_diTgt, _diDmg, gameState.selectedCharacter);
+                    addLog('💿 Disco Inteligente: ' + _diDmg + ' daño a ' + _diTgt + (_diMarked ? ' (¡triple por marca!)' : ''), 'damage');
+                }
+                if (_diAnyMarked && _diAtk) {
+                    if (typeof applyBuff === 'function') {
+                        applyBuff(gameState.selectedCharacter, { name: 'Armadura', type: 'buff', duration: 3, emoji: '🪖' });
+                        applyBuff(gameState.selectedCharacter, { name: 'Proteccion Sagrada', type: 'buff', duration: 3, emoji: '✨' });
+                    }
+                    addLog('💿 Disco Inteligente: objetivo(s) marcado(s) detectado(s) — Depredador gana Armadura 3T + Protección Sagrada 3T', 'buff');
+                }
+
+            } else if (ability.effect === 'lanza_combate') {
+                // DEPREDADOR — Lanza de Combate: ST daño base + roba HP/cargas del objetivo según
+                // el TOTAL de marcas del cazador en todo el equipo enemigo, más HP extra según las
+                // reliquias equipadas en Depredador. Todo el HP robado aumenta su HP máximo.
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('🔱 Lanza de Combate: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                const _lcAtk = gameState.characters[gameState.selectedCharacter];
+                const _lcTgt = gameState.characters[targetName];
+                if (_lcAtk && _lcTgt) {
+                    const _lcETeam = _lcTgt.team;
+                    let _lcTotalMarks = 0;
+                    Object.values(gameState.characters).forEach(function (c) {
+                        if (!c || c.team !== _lcETeam) return;
+                        _lcTotalMarks += (c._marcaCazadorPermanente || 0) + (c._marcaCazadorTemporal || 0);
+                    });
+                    let _lcStolenHp = 0, _lcStolenCharges = 0;
+                    const _lcTgtNow = gameState.characters[targetName];
+                    if (_lcTotalMarks > 0 && _lcTgtNow && !_lcTgtNow.isDead && _lcTgtNow.hp > 0) {
+                        _lcStolenHp = Math.min(_lcTotalMarks * 3, _lcTgtNow.hp);
+                        _lcStolenCharges = Math.min(_lcTotalMarks * 3, _lcTgtNow.charges || 0);
+                        _lcTgtNow.hp = Math.max(0, _lcTgtNow.hp - _lcStolenHp);
+                        if (_lcTgtNow.hp <= 0) { _lcTgtNow.isDead = true; if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, targetName, false); }
+                        _lcTgtNow.charges = Math.max(0, (_lcTgtNow.charges || 0) - _lcStolenCharges);
+                        addLog('🔱 Lanza de Combate: roba ' + _lcStolenHp + ' HP y ' + _lcStolenCharges + ' cargas de ' + targetName + ' (' + _lcTotalMarks + ' marca(s) en el equipo enemigo)', 'buff');
+                    }
+                    // Bono adicional de HP robado según las reliquias equipadas en Depredador
+                    let _lcRelicBonus = 0;
+                    (_lcAtk.equippedRelics || []).forEach(function (rn) {
+                        const rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[rn] : null;
+                        if (!rd) return;
+                        if (rd.tier === 'Raro') _lcRelicBonus += 3;
+                        else if (rd.tier === 'Especial') _lcRelicBonus += 2;
+                        else if (rd.tier === 'Epico') _lcRelicBonus += 1;
+                    });
+                    if (_lcRelicBonus > 0) addLog('🔱 Lanza de Combate: +' + _lcRelicBonus + ' HP robado por reliquias equipadas', 'buff');
+                    const _lcTotalHpStolen = _lcStolenHp + _lcRelicBonus;
+                    if (_lcTotalHpStolen > 0) {
+                        if (typeof applyHeal === 'function') applyHeal(gameState.selectedCharacter, _lcTotalHpStolen, 'Lanza de Combate');
+                        else _lcAtk.hp = Math.min(_lcAtk.maxHp, (_lcAtk.hp || 0) + _lcTotalHpStolen);
+                        _lcAtk.maxHp = (_lcAtk.maxHp || 0) + _lcTotalHpStolen;
+                        addLog('🔱 Lanza de Combate: Depredador roba ' + _lcTotalHpStolen + ' HP en total (+' + _lcTotalHpStolen + ' HP máximo)', 'heal');
+                    }
+                    if (_lcStolenCharges > 0) {
+                        _lcAtk.charges = Math.min(20, (_lcAtk.charges || 0) + _lcStolenCharges);
+                    }
+                }
+
+            } else if (ability.effect === 'plasma_blaster') {
+                // DEPREDADOR — Plasma Blaster (Over): ST 10 daño base. Se multiplica por el TOTAL
+                // de marcas del cazador (permanentes + temporales) activas en todo el equipo enemigo.
+                const _pbTgt = gameState.characters[targetName];
+                let _pbTotalMarks = 0;
+                if (_pbTgt) {
+                    const _pbETeam = _pbTgt.team;
+                    Object.values(gameState.characters).forEach(function (c) {
+                        if (!c || c.team !== _pbETeam) return;
+                        _pbTotalMarks += (c._marcaCazadorPermanente || 0) + (c._marcaCazadorTemporal || 0);
+                    });
+                }
+                const _pbDmg = finalDamage * _pbTotalMarks;
+                applyDamageWithShield(targetName, _pbDmg, gameState.selectedCharacter);
+                addLog('🔫 Plasma Blaster: ' + _pbDmg + ' daño a ' + targetName + ' (x' + _pbTotalMarks + ' por marcas del cazador en el equipo enemigo)', 'damage');
 
             // ══════════════════════════════════════════════════════
             // DOOMSDAY — handlers actualizados
