@@ -210,6 +210,26 @@
                 }
             }
 
+            // ── EXPLOSIÓN (Fake Black): al morir → 3 daño a 3 enemigos aleatorios + 3 cargas al equipo aliado ──
+            if (summon.name === 'Fake Black' && reason === 'derrotado') {
+                const _fbETeam = summon.team === 'team1' ? 'team2' : 'team1';
+                const _fbEnemies = Object.keys(gameState.characters).filter(function (n) {
+                    const c = gameState.characters[n];
+                    return c && c.team === _fbETeam && !c.isDead && c.hp > 0;
+                });
+                const _fbTargets = _fbEnemies.sort(function () { return Math.random() - 0.5; }).slice(0, 3);
+                _fbTargets.forEach(function (n) {
+                    if (typeof applyDamageWithShield === 'function') applyDamageWithShield(n, 3, null); // daño directo
+                });
+                if (_fbTargets.length > 0) addLog('⚫ Explosión: Fake Black causa 3 daño a ' + _fbTargets.join(', ') + ' al morir', 'damage');
+                for (const _fbAn in gameState.characters) {
+                    const _fbAc = gameState.characters[_fbAn];
+                    if (!_fbAc || _fbAc.isDead || _fbAc.hp <= 0 || _fbAc.team !== summon.team) continue;
+                    _fbAc.charges = Math.min(20, (_fbAc.charges || 0) + 3);
+                }
+                addLog('⚫ Explosión: equipo aliado gana 3 cargas (Fake Black eliminado)', 'buff');
+            }
+
             // ── VÍNCULO DORADO (Syrax): al morir → retirar buffs de Rhaenyra ──
             if (summon.name === 'Syrax' && summon.summoner) {
                 addLog('🔥 Syrax ha caído — los buffs de Vínculo Dorado expiran', 'info');
@@ -397,12 +417,21 @@
         function summonFakeBlack(summonerName) {
             const summoner = gameState.characters[summonerName];
             if (!summoner) return;
+            // LÍMITE: máximo 5 invocaciones vivas por equipo (mismo límite universal que aplica
+            // a cualquier invocación del juego, sin importar el origen)
+            const _fbTeamCount = Object.values(gameState.summons).filter(function (s) {
+                return s && s.team === summoner.team && !s.isDead && (s.hp === undefined || s.hp > 0);
+            }).length;
+            if (_fbTeamCount >= 5) {
+                addLog('⚫ Fake Black no pudo invocarse — límite de 5 invocaciones por equipo alcanzado', 'info');
+                return;
+            }
             const summonId = 'FakeBlack_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
             gameState.summons[summonId] = {
                 id: summonId, name: 'Fake Black',
                 hp: 2, maxHp: 2, summoner: summonerName, team: summoner.team,
-                statusEffects: [], img: '',
-                passive: 'Explosion: Al morir causa 3 puntos de dano AOE y genera 2 puntos de carga en el equipo aliado',
+                statusEffects: [], img: 'https://i.ibb.co/V0N5r6WR/Whats-App-Image-2026-03-31-at-1-22-44-PM.jpg',
+                passive: 'Explosión: Al inicio de cada ronda, cura 3 HP a Goku Black y a un aliado aleatorio. Al morir, causa 3 puntos de daño a 3 enemigos aleatorios y genera 3 puntos de carga en el equipo aliado.',
                 dragonEffect: 'fake_black_explosion', megaProvocation: false
             };
             addLog('Fake Black invocado por ' + summonerName, 'buff');
@@ -3554,6 +3583,41 @@
                 target.maxHp = (target.maxHp || 0) + 2;
                 target.hp = Math.min(target.maxHp, target.hp + 2);
                 addLog('💪 Hi no Ishi: Tsunade gana un contador Senju (' + target._senjuCounters + ') — +2 HP y +2 HP máx', 'buff');
+            }
+
+            // ── DEIDAD DE MORTALES (Goku Black): dos ganchos independientes ──
+            if (remainingDamage > 0 && target && !target.isDead && target.hp > 0 &&
+                target.passive && target.passive.name === 'Deidad de Mortales') {
+                // 1) Cada vez que recibe un GOLPE (no daño directo) → +3 cargas
+                if (attackerName !== null) {
+                    target.charges = Math.min(20, (target.charges || 0) + 3);
+                    addLog('⚫ Deidad de Mortales: Goku Black genera 3 cargas al recibir un golpe', 'buff');
+                }
+                // 2) Cada vez que recibe daño de CUALQUIER fuente (incluido daño directo) → 10% de
+                //    ejecutar su Over automáticamente, con cinemática (mismo patrón que Soldier Boy)
+                if (Math.random() < 0.10 && !passiveExecuting) {
+                    const _gbOver = (target.abilities || []).find(function (a) { return a && a.type === 'over'; });
+                    if (_gbOver) {
+                        const _gbName = targetName, _gbTeam = target.team;
+                        addLog('⚫ Deidad de Mortales: Goku Black ejecuta ' + _gbOver.name + ' automáticamente (10%)', 'buff');
+                        if (typeof _showOverCinematic === 'function') {
+                            _showOverCinematic(_gbName, _gbOver.name, _gbOver.effect, _gbTeam, function () {
+                                const _gbPrev = gameState.selectedCharacter;
+                                const _gbPrevAb = gameState.selectedAbility;
+                                const _gbPrevSuppress = gameState._suppressAutoEndTurn;
+                                gameState.selectedCharacter = _gbName;
+                                gameState.selectedAbility = _gbOver;
+                                passiveExecuting = true;
+                                gameState._suppressAutoEndTurn = true;
+                                try { _executeAbilityCore(null); } catch (e) { console.error('[Deidad de Mortales]', e); }
+                                passiveExecuting = false;
+                                gameState.selectedCharacter = _gbPrev;
+                                gameState.selectedAbility = _gbPrevAb;
+                                gameState._suppressAutoEndTurn = _gbPrevSuppress;
+                            });
+                        }
+                    }
+                }
             }
 
             // PASIVA DONCELLA ESCUDERA (Lagertha): cuando un enemigo con Sangrado recibe golpe, Lagertha gana Escudo 1 HP
