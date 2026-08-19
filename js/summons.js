@@ -1197,6 +1197,27 @@
                     _sfxHit.currentTime = 0; _sfxHit.volume = 0.5; _sfxHit.play().catch(function(){});
                 }
             }
+            // ── YAUTJA HONOR CODE (Depredador): dos ganchos independientes al inicio del
+            //    procesamiento de daño ──
+            if (damage > 0 && attackerName !== null && !passiveExecuting) {
+                const _ycTgt = gameState.characters[targetName];
+                const _ycAtkC = gameState.characters[attackerName];
+                // 1) Reducción de daño 50%: si QUIEN ATACA tiene marca (de cualquier tipo) y el
+                //    OBJETIVO es Depredador
+                if (_ycTgt && _ycTgt.passive && _ycTgt.passive.name === 'Yautja Honor Code' && _ycAtkC) {
+                    const _ycAtkMarked = ((_ycAtkC._marcaCazadorPermanente || 0) + (_ycAtkC._marcaCazadorTemporal || 0)) > 0;
+                    if (_ycAtkMarked) {
+                        damage = Math.ceil(damage * 0.5);
+                        addLog('🎯 Yautja Honor Code: ' + attackerName + ' está marcado — daño reducido 50% contra Depredador', 'buff');
+                    }
+                }
+                // 2) La marca del cazador TEMPORAL se elimina de quien la lleva (el objetivo) al
+                //    recibir un golpe de un ataque enemigo
+                if (_ycTgt && (_ycTgt._marcaCazadorTemporal || 0) > 0) {
+                    addLog('🎯 Yautja Honor Code: marca del cazador temporal de ' + targetName + ' se elimina al recibir un golpe', 'debuff');
+                    _ycTgt._marcaCazadorTemporal = 0;
+                }
+            }
             // ── TAJO DE ESPADA (MT): un tajo por cada golpe real de una habilidad MT, escalonado
             //    de forma secuencial. No aplica a daño directo (attackerName===null) ni a Over. ──
             if (damage > 0 && attackerName !== null && !passiveExecuting && gameState.selectedAbility &&
