@@ -18,6 +18,75 @@
         if (typeof showContinueButton === 'undefined') {
             window.showContinueButton = function() {};
         }
+        // ── executeAITurn: ejecuta el turno de un personaje controlado por la IA (Solo, Ranked
+        // vs IA, Horda-héroes, Boss). Se perdió por completo en algún push anterior — todas sus
+        // llamadas (startTurn, endTurn) fallaban en silencio con "executeAITurn not found",
+        // dejando el botón "Continuar Turno" reapareciendo sin que el personaje IA actuara nunca.
+        // Reconstruida siguiendo el mismo patrón ya probado de executeHordaOrcTurn
+        // (js/horda-abilities.js): prioridad Over > Especial > Básico, chequeos de control
+        // (Aturdimiento/Mega Aturdimiento/Congelación/Miedo), selección de objetivo simple. ──
+        window.executeAITurn = function (charName) {
+            try {
+                const char = gameState.characters[charName];
+                if (!char || char.isDead || char.hp <= 0) { endTurn(); return; }
+
+                if (char.statusEffects) {
+                    const _stunned = char.statusEffects.some(function (e) { return e && (normAccent(e.name || '') === 'aturdimiento' || normAccent(e.name || '') === 'mega aturdimiento'); });
+                    if (_stunned) { addLog('⭐ ' + charName + ' está aturdido y pierde su turno', 'damage'); endTurn(); return; }
+                    if (typeof hasStatusEffect === 'function') {
+                        if (hasStatusEffect(charName, 'Mega Congelacion')) { addLog('🧊 ' + charName + ' está Mega Congelado y pierde su turno', 'damage'); endTurn(); return; }
+                        if (hasStatusEffect(charName, 'Congelacion') && Math.random() < 0.5) { addLog('❄️ ' + charName + ' está Congelado y pierde su turno', 'damage'); endTurn(); return; }
+                        if (hasStatusEffect(charName, 'Miedo') && Math.random() < 0.5) { addLog('😱 ' + charName + ' está paralizado por el Miedo', 'damage'); endTurn(); return; }
+                    }
+                }
+
+                const _myTeam = char.team;
+                const _enemyTeam = _myTeam === 'team1' ? 'team2' : 'team1';
+                const _enemies = Object.keys(gameState.characters).filter(function (n) {
+                    const c = gameState.characters[n];
+                    return c && c.team === _enemyTeam && !c.isDead && c.hp > 0;
+                });
+                if (_enemies.length === 0) { endTurn(); return; }
+
+                const _charges = char.charges || 0;
+                const _usable = (char.abilities || []).filter(function (a) {
+                    if (a.type === 'basic') return true;
+                    return _charges >= (a.cost || 0);
+                });
+
+                // Prioridad: Over > Especial > Básico. Si hay varios especiales usables, elige al azar.
+                let _chosen = _usable.find(function (a) { return a.type === 'over'; });
+                if (!_chosen) {
+                    const _specials = _usable.filter(function (a) { return a.type === 'special'; });
+                    if (_specials.length) _chosen = _specials[Math.floor(Math.random() * _specials.length)];
+                }
+                if (!_chosen) _chosen = _usable.find(function (a) { return a.type === 'basic'; });
+                if (!_chosen) { endTurn(); return; }
+
+                const _target = (_chosen.target === 'single' || _chosen.target === 'multi')
+                    ? _enemies[Math.floor(Math.random() * _enemies.length)]
+                    : charName; // aoe/self/mt no necesitan objetivo específico — executeAbility(charName) los maneja
+
+                addLog('🤖 ' + charName + ' decide usar ' + _chosen.name + (_target !== charName ? ' sobre ' + _target : ''), 'info');
+                gameState.selectedCharacter = charName;
+                gameState.selectedAbility = _chosen;
+                gameState.adjustedCost = _chosen.cost;
+
+                setTimeout(function () {
+                    if (_chosen.target === 'aoe' || _chosen.target === 'self' || _chosen.target === 'mt' || _chosen.target === 'multi') {
+                        executeAbility(charName);
+                    } else if (_target) {
+                        executeAbility(_target);
+                    } else {
+                        endTurn();
+                    }
+                }, _chosen.type === 'over' ? 200 : 400);
+            } catch (err) {
+                console.error('[IA] Error en executeAITurn:', err);
+                endTurn();
+            }
+        };
+
         function startTurn() {
             // Cola de turnos adicionales: procesar pendientes
             if (gameState._sasukeRevengeQueue && gameState._sasukeRevengeQueue.length > 0) {
