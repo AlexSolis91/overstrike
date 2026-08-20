@@ -684,6 +684,16 @@
             const ignoresEA = !!overrides.ignoresEsquivaArea || !!(ability && ability.ignoresEsquivaArea) || _hasRelicBypass('bypassEsquivaArea');
             const ignoresMP = !!overrides.ignoresMegaProvocacion || !!(ability && ability.ignoresMegaProvocacion) || _hasRelicBypass('bypassMegaProvocacion');
 
+            // ── EL REY PROMETIDO (Jon Snow): cualquier ataque AOE enemigo (que NO ignore Esquiva
+            //    Área) activa la pasiva — equipo aliado de Jon Snow gana Esquiva Área 2T + 1
+            //    carga. Centralizado aquí (el sistema unificado de resolución de objetivos AOE)
+            //    para que TODA habilidad AOE lo dispare automáticamente, sin depender de que cada
+            //    handler individual recuerde llamarlo explícitamente — antes solo las habilidades
+            //    que aún usaban el sistema viejo (checkAndRedirectAOEMegaProv) lo activaban. ──
+            if (!overrides._skipJonSnowTrigger && ability && ability.target === 'aoe' && !ignoresEA) {
+                if (typeof triggerElReyPrometido === 'function') triggerElReyPrometido(attackerName);
+            }
+
             // 1. Reunir vivos del equipo objetivo (personajes + invocaciones)
             let chars = Object.keys(gameState.characters).filter(function (n) {
                 const c = gameState.characters[n];
@@ -11960,9 +11970,9 @@
                 const _dkAtk   = gameState.characters[gameState.selectedCharacter];
                 const _dkTeam  = _dkAtk ? _dkAtk.team : 'team1';
                 const _dkETeam = _dkTeam === 'team1' ? 'team2' : 'team1';
-                // Este AOE usa un bucle propio en vez del flujo estándar de ability.target==='aoe',
-                // así que el trigger de Jon Snow (El Rey Prometido) hay que llamarlo explícitamente.
-                if (typeof triggerElReyPrometido === 'function') triggerElReyPrometido(gameState.selectedCharacter);
+                // (El Rey Prometido de Jon Snow ya se dispara automáticamente dentro de
+                // resolveAOETargets — la llamada explícita que vivía aquí quedó obsoleta cuando
+                // este handler se migró al sistema centralizado, y duplicaba el efecto.)
                 const _dkAOE = window.resolveAOETargets(gameState.selectedCharacter, _dkETeam);
                 let _dkProvDmg = 0;
                 let _dkProvName = null;
