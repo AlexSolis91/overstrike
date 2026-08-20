@@ -232,6 +232,11 @@
                 chars[uniqueName] = chData;
             });
 
+            // Capturar ANTES de llamar a _orig(chars) si había invocaciones pendientes de
+            // restaurar — la restauración real ahora ocurre DENTRO de _orig (initGame base, ver
+            // js/init-render.js), pero esta bandera sigue siendo necesaria más abajo para decidir
+            // si además hace falta una restauración async desde Firebase (resumir sesión distinta).
+            var _hordaSyncRestoreDone = !!window._hordaTransientSummons;
             _orig(chars);
 
             if (typeof gameState === 'undefined') return;
@@ -247,25 +252,14 @@
             var _hordaBattleArenaEl = document.querySelector('.battle-arena');
             if (_hordaBattleArenaEl) _hordaBattleArenaEl.classList.add('hand-mode');
 
-            // SÍNCRONO — BUG CRÍTICO CORREGIDO: antes las invocaciones (Igris, MinByung, etc.)
-            // solo se restauraban dentro del bloque async de más abajo (esperando una lectura
-            // de Firebase). Como initGame() ya no es async, el turno de Sun Jin Woo podía
-            // empezar a procesarse ANTES de que esa lectura terminara — en ese instante
-            // gameState.summons todavía estaba vacío (recién reseteado por _orig), así que
-            // Arise! no veía ningún Igris existente y invocaba uno nuevo. Milisegundos después
-            // llegaba la restauración y volvía a meter el Igris de la oleada anterior — dos
-            // Igris vivos a la vez, y así se iban acumulando oleada tras oleada.
-            // Solución: cuando la transición viene de la MISMA sesión (resolveHordaChoice ya
-            // guardó gameState.summons en una variable en memoria antes de llamar a initGame),
-            // restaurarlas aquí mismo de forma síncrona, antes de que cualquier turno arranque.
-            var _hordaSyncRestoreDone = false;
-            if (window._hordaTransientSummons) {
-                Object.keys(window._hordaTransientSummons).forEach(function (sid) {
-                    gameState.summons[sid] = window._hordaTransientSummons[sid];
-                });
-                window._hordaTransientSummons = null;
-                _hordaSyncRestoreDone = true;
-            }
+            // SÍNCRONO — la restauración de invocaciones (Igris, MinByung, etc.) entre oleadas se
+            // movió DENTRO del initGame base (js/init-render.js), justo después de resetear
+            // gameState.summons — porque este mismo initGame() calcula el orden de turnos y
+            // arranca el primer turno de forma síncrona ANTES de devolver el control aquí. Si
+            // restaurábamos las invocaciones EN ESTE PUNTO (después de _orig(chars)), y Sun Jin
+            // Woo iba primero en el orden de turnos, su pasiva Arise! ya se había disparado con
+            // gameState.summons todavía vacío, invocando una sombra nueva — y esta restauración
+            // tardía metía TAMBIÉN la vieja de vuelta, duplicando (2 Igris, 3 Tusk, etc.).
 
             if (typeof renderCharacters === 'function') renderCharacters();
             if (typeof addLog === 'function') addLog('🌊 Modo Horda — Oleada ' + wave + ': ' + waveEnemies.map(function (e) { return e.orcType + ' (' + e.rank + ')'; }).join(', '), 'info');
