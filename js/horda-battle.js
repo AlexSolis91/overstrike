@@ -238,6 +238,7 @@
             // si además hace falta una restauración async desde Firebase (resumir sesión distinta).
             var _hordaSyncRestoreDone = !!window._hordaTransientSummons;
             _orig(chars);
+            console.log('[DIAGNÓSTICO Horda] Justo después de _orig(chars) — gameState.summons:', JSON.stringify(Object.keys(gameState.summons || {}).map(function(sid){ var s=gameState.summons[sid]; return s.name+'('+sid+') team='+s.team+' hp='+s.hp; })));
 
             if (typeof gameState === 'undefined') return;
             gameState.gameMode = 'horda';
@@ -555,6 +556,7 @@
         // initGame las restaure de inmediato, sin esperar una lectura de Firebase — evita la
         // condición de carrera que dejaba duplicar invocaciones (ej. 2-3 Igris a la vez).
         window._hordaTransientSummons = JSON.parse(JSON.stringify(gameState.summons || {}));
+        console.log('[DIAGNÓSTICO Horda] Snapshot capturado antes de avanzar de oleada:', JSON.stringify(Object.keys(window._hordaTransientSummons).map(function(sid){ var s=window._hordaTransientSummons[sid]; return s.name+'('+sid+') team='+s.team+' hp='+s.hp; })));
         var team1Names = window._hordaRunTeam || Object.keys(gameState.characters).filter(function (n) { return gameState.characters[n].team === 'team1'; });
         var selectedChars = {};
         team1Names.forEach(function (n) {
