@@ -3277,6 +3277,194 @@
                     addLog(`👑 El Rey Caído: Lich King invoca ${selectedLich.join(', ')} (1 invocación aleatoria)`, 'buff');
                 }
 
+            // ══════════════════════════════════════════════════════
+            // LICH KING (kit nuevo) — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'peste_necrotica') {
+                // LICH KING — Peste Necrótica: ST 1 daño. Congelación (o Megacongelación si ya
+                // tenía Congelación). Posesión (o Mega Posesión si ya tenía Posesión).
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('☠️ Peste Necrótica: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                const _pnTgt = gameState.characters[targetName];
+                if (_pnTgt && !_pnTgt.isDead && _pnTgt.hp > 0) {
+                    const _pnHadCongelacion = (_pnTgt.statusEffects || []).some(function(e){ return e && normAccent(e.name||'') === 'congelacion'; });
+                    if (typeof applyFreeze === 'function') applyFreeze(targetName, 2, _pnHadCongelacion);
+                }
+                const _pnTgt2 = gameState.characters[targetName];
+                if (_pnTgt2 && !_pnTgt2.isDead && _pnTgt2.hp > 0) {
+                    const _pnHadPosesion = (_pnTgt2.statusEffects || []).some(function(e){ return e && normAccent(e.name||'') === 'posesion'; });
+                    if (_pnHadPosesion) {
+                        if (typeof applyMegaPosesion === 'function') applyMegaPosesion(targetName, 2);
+                    } else {
+                        if (typeof applyPosesion === 'function') applyPosesion(targetName, 2);
+                    }
+                }
+
+            } else if (ability.effect === 'profanar_vida') {
+                // LICH KING — Profanar Vida: AOE 1 daño. A cada golpeado, roba 2 HP por Congelación
+                // + 1 HP por Posesión que tenga. Lich King gana +2 HP máx por cada Mega Posesión y
+                // +2 HP máx por cada Megacongelación activas en TODO el equipo enemigo (confirmado).
+                const _pvAtk = gameState.characters[gameState.selectedCharacter];
+                const _pvETeam = _pvAtk ? (_pvAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _pvAOE = window.resolveAOETargets(gameState.selectedCharacter, _pvETeam);
+                let _pvTotalStolen = 0;
+                _pvAOE.targets.forEach(function (_n) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.isDead || _c.hp <= 0) return;
+                    applyDamageWithShield(_n, finalDamage * _pvAOE.multiplier, gameState.selectedCharacter);
+                    const _cAfter = gameState.characters[_n];
+                    if (!_cAfter || _cAfter.isDead || _cAfter.hp <= 0) return;
+                    const _hasCongelacion = (_cAfter.statusEffects || []).some(function(e){ return e && normAccent(e.name||'') === 'congelacion'; });
+                    const _hasPosesion = (_cAfter.statusEffects || []).some(function(e){ return e && normAccent(e.name||'') === 'posesion'; });
+                    let _steal = (_hasCongelacion ? 2 : 0) + (_hasPosesion ? 1 : 0);
+                    if (_steal > 0) {
+                        const _actualSteal = Math.min(_steal, _cAfter.hp);
+                        _cAfter.hp = Math.max(0, _cAfter.hp - _actualSteal);
+                        _pvTotalStolen += _actualSteal;
+                        addLog('☠️ Profanar Vida: roba ' + _actualSteal + ' HP de ' + _n, 'damage');
+                    }
+                });
+                _pvAOE.summonTargets.forEach(function (_sid) {
+                    applySummonDamage(_sid, finalDamage * _pvAOE.multiplier, gameState.selectedCharacter);
+                });
+                addLog('☠️ Profanar Vida: ' + finalDamage + ' daño AOE al equipo enemigo', 'damage');
+                if (_pvTotalStolen > 0 && _pvAtk) {
+                    if (typeof applyHeal === 'function') applyHeal(gameState.selectedCharacter, _pvTotalStolen, 'Profanar Vida');
+                    else _pvAtk.hp = Math.min(_pvAtk.maxHp, (_pvAtk.hp||0) + _pvTotalStolen);
+                    addLog('☠️ Profanar Vida: Lich King roba ' + _pvTotalStolen + ' HP en total', 'heal');
+                }
+                if (_pvAtk) {
+                    let _pvMegaCount = 0;
+                    Object.values(gameState.characters).forEach(function (c) {
+                        if (!c || c.team !== _pvETeam || c.isDead || c.hp <= 0) return;
+                        (c.statusEffects || []).forEach(function (e) {
+                            const _en = normAccent(e && e.name || '');
+                            if (_en === 'mega posesion' || _en === 'mega congelacion') _pvMegaCount++;
+                        });
+                    });
+                    if (_pvMegaCount > 0) {
+                        const _pvHpGain = _pvMegaCount * 2;
+                        _pvAtk.maxHp = (_pvAtk.maxHp || 0) + _pvHpGain;
+                        addLog('☠️ Profanar Vida: Lich King gana +' + _pvHpGain + ' HP máximo (' + _pvMegaCount + ' Mega Posesión/Megacongelación en el equipo enemigo)', 'buff');
+                    }
+                }
+
+            } else if (ability.effect === 'quebrar_voluntad') {
+                // LICH KING — Quebrar Voluntad: ST 2 daño. Cada invocación viva de Lich King
+                // activa su propia pasiva una vez por CADA debuff (Posesión, Congelación, Mega
+                // Posesión, Megacongelación) activo en TODO el equipo enemigo, sumados
+                // (confirmado: 3 Posesión + 3 Congelación + 1 Megacongelación = 7 activaciones).
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('☠️ Quebrar Voluntad: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                const _qvAtk = gameState.characters[gameState.selectedCharacter];
+                if (_qvAtk) {
+                    const _qvETeam = _qvAtk.team === 'team1' ? 'team2' : 'team1';
+                    let _qvDebuffCount = 0;
+                    Object.values(gameState.characters).forEach(function (c) {
+                        if (!c || c.team !== _qvETeam || c.isDead || c.hp <= 0) return;
+                        (c.statusEffects || []).forEach(function (e) {
+                            const _en = normAccent(e && e.name || '');
+                            if (_en === 'posesion' || _en === 'congelacion' || _en === 'mega posesion' || _en === 'mega congelacion') _qvDebuffCount++;
+                        });
+                    });
+                    if (_qvDebuffCount > 0) {
+                        const _qvSummons = Object.values(gameState.summons).filter(function (s) { return s && s.summoner === gameState.selectedCharacter && !s.isDead && s.hp > 0; });
+                        addLog('☠️ Quebrar Voluntad: ' + _qvDebuffCount + ' debuff(s) en el equipo enemigo — cada invocación activa su pasiva ' + _qvDebuffCount + ' vez(es)', 'buff');
+                        _qvSummons.forEach(function (_s) {
+                            for (let _i = 0; _i < _qvDebuffCount; _i++) {
+                                if (_s.name === 'Sindragosa') {
+                                    const _sET = _s.team === 'team1' ? 'team2' : 'team1';
+                                    Object.keys(gameState.characters).forEach(function (n) {
+                                        const c = gameState.characters[n];
+                                        if (!c || c.isDead || c.hp <= 0 || c.team !== _sET) return;
+                                        if (Math.random() < 0.50 && typeof applyFreeze === 'function') applyFreeze(n, 2, true);
+                                    });
+                                } else if (_s.name === 'Banshee') {
+                                    Object.keys(gameState.characters).forEach(function (n) {
+                                        const c = gameState.characters[n];
+                                        if (!c || c.isDead || c.hp <= 0 || c.team !== _s.team) return;
+                                        if (typeof applyHeal === 'function') applyHeal(n, 3, 'Banshee (Quebrar Voluntad)');
+                                    });
+                                } else if (_s.name === 'Valkyr') {
+                                    const _vET = _s.team === 'team1' ? 'team2' : 'team1';
+                                    const _vPool = Object.keys(gameState.characters).filter(function (n) {
+                                        const c = gameState.characters[n];
+                                        return c && c.team === _vET && !c.isDead && c.hp > 0 && (c.charges || 0) > 0;
+                                    });
+                                    if (_vPool.length > 0) {
+                                        const _vT = _vPool[Math.floor(Math.random() * _vPool.length)];
+                                        const _vC = gameState.characters[_vT];
+                                        const _vDrain = Math.min(5, _vC.charges || 0);
+                                        _vC.charges = Math.max(0, (_vC.charges || 0) - _vDrain);
+                                    }
+                                } else if (_s.name === 'Necrofago') {
+                                    const _nET = _s.team === 'team1' ? 'team2' : 'team1';
+                                    const _nPool = Object.keys(gameState.characters).filter(function (n) {
+                                        const c = gameState.characters[n];
+                                        return c && c.team === _nET && !c.isDead && c.hp > 0;
+                                    });
+                                    if (_nPool.length > 0) {
+                                        const _nT = _nPool[Math.floor(Math.random() * _nPool.length)];
+                                        applyDamageWithShield(_nT, 3, null);
+                                        if (typeof applyStun === 'function') applyStun(_nT, 1);
+                                    }
+                                } else if (_s.name === 'Caballero de la Muerte') {
+                                    Object.keys(gameState.characters).forEach(function (n) {
+                                        const c = gameState.characters[n];
+                                        if (!c || c.isDead || c.hp <= 0 || c.team !== _s.team) return;
+                                        c.charges = Math.min(20, (c.charges || 0) + 4);
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+
+            } else if (ability.effect === 'furia_rey_plaga') {
+                // LICH KING (Over) — Furia del Rey de la Plaga: AOE 3 daño, ignora Mega Provocación.
+                // A cada enemigo que TENÍA algún buff: se lo disipa y le aplica Mega Posesión.
+                // A cada enemigo que TENÍA Congelación/Megacongelación/Posesión: se los disipa y
+                // le causa +2 de daño adicional. Solo afecta a quienes tenían algo que disipar
+                // (confirmado). Cada uso: +10% a la probabilidad de El Príncipe Caído.
+                const _frpAtk = gameState.characters[gameState.selectedCharacter];
+                const _frpETeam = _frpAtk ? (_frpAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _frpAOE = window.resolveAOETargets(gameState.selectedCharacter, _frpETeam);
+                _frpAOE.targets.forEach(function (_n) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.isDead || _c.hp <= 0) return;
+                    const _hadBuff = (_c.statusEffects || []).some(function (e) { return e && e.type === 'buff' && !e.passiveHidden; });
+                    const _hadRelevantDebuff = (_c.statusEffects || []).some(function (e) {
+                        const _en = normAccent(e && e.name || '');
+                        return _en === 'congelacion' || _en === 'mega congelacion' || _en === 'posesion';
+                    });
+                    let _frpDmg = finalDamage * _frpAOE.multiplier;
+                    if (_hadRelevantDebuff) {
+                        _c.statusEffects = (_c.statusEffects || []).filter(function (e) {
+                            const _en = normAccent(e && e.name || '');
+                            return !(_en === 'congelacion' || _en === 'mega congelacion' || _en === 'posesion');
+                        });
+                        _frpDmg += 2;
+                        addLog('☠️ Furia del Rey de la Plaga: disipa Congelación/Posesión de ' + _n + ' (+2 daño)', 'debuff');
+                    }
+                    applyDamageWithShield(_n, _frpDmg, gameState.selectedCharacter);
+                    if (_hadBuff) {
+                        const _cAfter = gameState.characters[_n];
+                        if (_cAfter && !_cAfter.isDead && _cAfter.hp > 0) {
+                            _cAfter.statusEffects = (_cAfter.statusEffects || []).filter(function (e) { return !(e && e.type === 'buff' && !e.passiveHidden); });
+                            if (typeof applyMegaPosesion === 'function') applyMegaPosesion(_n, 2);
+                            addLog('☠️ Furia del Rey de la Plaga: disipa buffs de ' + _n + ' y aplica Mega Posesión', 'debuff');
+                        }
+                    }
+                });
+                _frpAOE.summonTargets.forEach(function (_sid) {
+                    applySummonDamage(_sid, finalDamage * _frpAOE.multiplier, gameState.selectedCharacter);
+                });
+                if (_frpAtk) {
+                    _frpAtk._lichKingEliminationBonus = (_frpAtk._lichKingEliminationBonus || 0) + 10;
+                    addLog('☠️ Furia del Rey de la Plaga: +10% probabilidad de El Príncipe Caído (total: ' + (10 + _frpAtk._lichKingEliminationBonus) + '%)', 'buff');
+                }
+
             } else if (ability.effect === 'animacion') {
                 // OZYMANDIAS - Animación
                 const tgtAnim = gameState.characters[targetName];
@@ -14707,7 +14895,7 @@
             const _isTank = (_ch.maxHp >= 30) ||
                 (_ch.passive && (_ch.passive.name === 'Hombre de Acero' || _ch.passive.name === 'Mega Provocacion' ||
                     _ch.passive.name === 'Efecto Omega' || _ch.passive.name === 'Señor de los Nazgul' ||
-                    _ch.passive.name === 'Aura de Hielo')) ||
+                    _ch.passive.name === 'El Príncipe Caído')) ||
                 (_ch.abilities||[]).some(function(ab){
                     return ab && (ab.effect === 'rugido_devastador' || (ab.description||'').toLowerCase().includes('provocac'));
                 });
@@ -14800,7 +14988,7 @@
                 const poisonPts = pAppliers.includes(charName) && pAppliers.length > 0 ? Math.round((bs._totalPoisonDmg||0)/pAppliers.length * 10)/10 : 0;
                 const burnPts   = bAppliers.includes(charName) && bAppliers.length > 0 ? Math.round((bs._totalBurnDmg||0)/bAppliers.length * 10)/10 : 0;
                 // IsTank
-                const _isTank = _ch && ((_ch.maxHp||0) >= 30 || (_ch.passive && ['Hombre de Acero','Mega Provocacion','Efecto Omega','Señor de los Nazgul','Aura de Hielo'].includes(_ch.passive.name)));
+                const _isTank = _ch && ((_ch.maxHp||0) >= 30 || (_ch.passive && ['Hombre de Acero','Mega Provocacion','Efecto Omega','Señor de los Nazgul','El Príncipe Caído'].includes(_ch.passive.name)));
 
                 function _row(icon, label, raw, pts) {
                     if (!raw && raw !== 0) return '';
