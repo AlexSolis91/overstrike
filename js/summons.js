@@ -63,6 +63,7 @@
             try {
                 const summoner = gameState.characters[summonerName];
                 const shadowTemplate = summonData[shadowName];
+                console.log('[DIAGNÓSTICO Horda] summonShadow(' + shadowName + ', ' + summonerName + ') llamada. Invocaciones actuales:', JSON.stringify(Object.keys(gameState.summons).map(function(sid){ var s=gameState.summons[sid]; return s.name+'('+sid+') team='+s.team+' summoner='+s.summoner+' hp='+s.hp; })));
                 
                 if (!summoner) {
                     console.error('Summoner not found:', summonerName);
@@ -84,6 +85,7 @@
                          (s.team === summoner.team || s.summoner === summonerName)
                 );
                 if (alreadyExists) {
+                    console.log('[DIAGNÓSTICO Horda] summonShadow(' + shadowName + ') BLOQUEADO — ya existe una viva');
                     addLog('❌ ' + shadowName + ' ya está en el campo (no se puede invocar dos veces)', 'info');
                     return;
                 }
@@ -98,6 +100,7 @@
                     addLog('❌ ' + shadowName + ' no pudo invocarse — límite de 5 invocaciones por equipo alcanzado', 'info');
                     return;
                 }
+                console.log('[DIAGNÓSTICO Horda] summonShadow(' + shadowName + ') va a CREAR una nueva invocación');
                 // Crear copia de la invocación
                 const summonId = `${shadowName}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                 gameState.summons[summonId] = {
