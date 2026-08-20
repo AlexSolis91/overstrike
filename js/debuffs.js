@@ -95,6 +95,23 @@ function triggerMaboroshi(targetTeam, debuffName) {
             addLog(`😩 ${targetName} sufre Agotamiento (${duration} turno${duration>1?'s':''})`, 'damage');
         }
 
+        function applyPosesion(targetName, duration) {
+            // Análoga a applyMegaPosesion: máximo 1 Posesión (normal) activa por personaje —
+            // un segundo intento se ignora por completo, sin refrescar duración.
+            if (hasStatusEffect(targetName, 'Posesion')) {
+                addLog(`👁️ ${targetName} ya tiene Posesión activa`, 'info'); return;
+            }
+            const _pTgt = gameState.characters[targetName];
+            if (_pTgt && _pTgt.passive && _pTgt.passive.name === 'Mente Brillante') {
+                addLog('🪓 Mente Brillante: Ivar es inmune a Posesión', 'buff'); return;
+            }
+            if (_pTgt && _pTgt.immuneToPosesion) {
+                addLog('🛡️ ' + targetName + ' es inmune a Posesión', 'buff'); return;
+            }
+            applyDebuff(targetName, { name: 'Posesion', type: 'debuff', duration, emoji: '👁️' });
+            addLog(`👁️ ${targetName} sufre Posesión (${duration} turno${duration>1?'s':''})`, 'damage');
+        }
+
         function applyMegaPosesion(targetName, duration) {
             if (hasStatusEffect(targetName, 'Mega Posesion')) {
                 addLog(`👁️ ${targetName} ya tiene Mega Posesión activo`, 'info'); return;
