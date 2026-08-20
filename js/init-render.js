@@ -271,11 +271,15 @@
                     ch.immuneToConfusion = true;
                     ch.immuneToPosesion = true;
                 }
-                // Lich King: inmune a Miedo, Posesión y Congelación (flag)
+                // Lich King: inmune a Miedo, Posesión y Congelación (flag) + Provocación permanente
                 if (charName === 'Lich King') {
                     ch.immuneToMiedo = true;
                     ch.immuneToPosesion = true;
                     ch.immuneToCongelacion = true;
+                    ch.statusEffects = ch.statusEffects || [];
+                    if (!ch.statusEffects.some(function(e){ return e && (e.name||'').toLowerCase().replace(/[íÍ]/g,'i') === 'provocacion'; })) {
+                        ch.statusEffects.push({ name: 'Provocacion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🛡️' });
+                    }
                 }
             }
 
