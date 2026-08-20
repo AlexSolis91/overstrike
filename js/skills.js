@@ -15024,11 +15024,42 @@
                 muteBtn.id = 'audioToggleBtn';
                 muteBtn.textContent = '🔊';
                 muteBtn.title = 'Silenciar/Activar música';
-                muteBtn.style.cssText = 'position:fixed;top:14px;right:14px;z-index:9999;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.3);color:#fff;font-size:1.2rem;padding:6px 10px;border-radius:8px;cursor:pointer;transition:all .2s;';
+                muteBtn.style.cssText = 'position:fixed;top:14px;right:60px;z-index:9999;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.3);color:#fff;font-size:1.2rem;padding:6px 10px;border-radius:8px;cursor:pointer;transition:all .2s;';
                 muteBtn.onmouseover = function() { this.style.background = 'rgba(0,196,255,0.3)'; };
                 muteBtn.onmouseout  = function() { this.style.background = 'rgba(0,0,0,0.6)'; };
                 muteBtn.onclick = function() { if (typeof audioManager !== 'undefined') audioManager.toggleMute(); };
                 document.body.appendChild(muteBtn);
+            }
+            // Crear botón de pantalla completa flotante si no existe — justo a la derecha del
+            // botón de mute, pensado principalmente para usuarios en teléfono móvil.
+            if (!document.getElementById('fullscreenToggleBtn')) {
+                const fsBtn = document.createElement('button');
+                fsBtn.id = 'fullscreenToggleBtn';
+                fsBtn.textContent = '⛶';
+                fsBtn.title = 'Pantalla completa';
+                fsBtn.style.cssText = 'position:fixed;top:14px;right:14px;z-index:9999;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.3);color:#fff;font-size:1.2rem;padding:6px 10px;border-radius:8px;cursor:pointer;transition:all .2s;';
+                fsBtn.onmouseover = function() { this.style.background = 'rgba(0,196,255,0.3)'; };
+                fsBtn.onmouseout  = function() { this.style.background = 'rgba(0,0,0,0.6)'; };
+                const _updateFsBtnLabel = function() {
+                    const _isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+                    fsBtn.textContent = _isFs ? '🗗' : '⛶';
+                    fsBtn.title = _isFs ? 'Salir de pantalla completa' : 'Pantalla completa';
+                };
+                fsBtn.onclick = function() {
+                    const _isFs = !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+                    if (!_isFs) {
+                        const _el = document.documentElement;
+                        const _req = _el.requestFullscreen || _el.webkitRequestFullscreen || _el.msRequestFullscreen;
+                        if (_req) _req.call(_el).catch(function(){});
+                    } else {
+                        const _exit = document.exitFullscreen || document.webkitExitFullscreen || document.msExitFullscreen;
+                        if (_exit) _exit.call(document).catch(function(){});
+                    }
+                };
+                document.addEventListener('fullscreenchange', _updateFsBtnLabel);
+                document.addEventListener('webkitfullscreenchange', _updateFsBtnLabel);
+                document.addEventListener('msfullscreenchange', _updateFsBtnLabel);
+                document.body.appendChild(fsBtn);
             }
         }
         if (document.readyState === 'loading') {
