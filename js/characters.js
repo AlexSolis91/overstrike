@@ -32,6 +32,7 @@
             'Aldebaran': {
                 name: 'Aldebaran',
                 hp: 30, maxHp: 30, speed: 83, charges: 0,
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/PJr0LB6N/Captura-de-pantalla-2026-02-21-230603.png',
                 passive: { name: 'Fortaleza de Tauro', description: 'Efecto pasivo Provocación. Cada vez que un Buff Escudo (en cualquier aliado o en Aldebaran) pierde HP: Aldebaran ejecuta Great Horn automáticamente. Al final de cada ronda, si Aldebaran tiene Escudo activo: recupera 2 HP.' },
                 abilities: [
@@ -108,6 +109,7 @@
 
             'Thestalos': {
                 hp: 25, maxHp: 25, speed: 86, charges: 0,
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/9f6kNBpV/Gemini_Generated_Image_ac4u14ac4u14ac4u.png',
                 passive: { name: 'Primogénito del Sol', description: 'Contraataque. Provocación permanente. Al final de cada ronda: gana Escudo de 2 HP por cada enemigo con Quemadura activa.' },
                 abilities: [
@@ -521,6 +523,7 @@
             'Androide 17': {
                 name: 'Androide 17',
                 hp: 20, maxHp: 20, speed: 89, charges: 0,
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/7Jv6kYdg/Android-17.jpg',
                 passive: { name: 'Protección de la Naturaleza', description: 'Cuando un enemigo usa un Over: antes de su daño, aplica Escudo a cada aliado con HP = cargas gastadas por ese Over. Cuando Androide 17 recibe un debuff: lo elimina y genera 2 cargas para el equipo aliado.' },
                 abilities: [
@@ -912,6 +915,7 @@
                 hp: 15, maxHp: 15,
                 speed: 70,
                 charges: 0,
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/5gJPj7Q7/Whats-App-Image-2026-05-27-at-11-12-51-AM.jpg',
                 passive: { name: 'Sabiduría Antigua', description: 'Anticipación pasiva permanente. Yoda es inmune a todo daño, buffs y debuffs. Si todos sus aliados mueren, Yoda muere al instante.' },
                 abilities: [
@@ -925,6 +929,7 @@
             'Bjorn Ironside': {
                 name: 'Bjorn Ironside',
                 hp: 30, maxHp: 30, speed: 76, charges: 0,
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/vvx6KLyJ/image.png',
                 passive: { name: 'Piel de Nanook', description: 'Inmune a Congelación y Megacongelación. Al recibir daño por golpe: aplica Miedo 2T al atacante y roba 1 carga de todos los enemigos. Al final de cada ronda: roba 2 cargas de todos los enemigos con Miedo activo.' },
                 abilities: [
@@ -938,6 +943,7 @@
             'Sub-Zero': {
                 name: 'Sub-Zero',
                 hp: 25, maxHp: 25, speed: 81, charges: 0,
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/5xLctVtj/Cryomancy-Master.jpg',
                 passive: { name: 'Absolute Zero', description: 'Inmune a Congelación y Megacongelación. Al inicio de cada ronda aplica Megacongelación a un enemigo aleatorio. Al atacar a un enemigo con Congelación/Megacongelación activa: roba 3 cargas de CADA enemigo vivo (Sub-Zero gana el total).' },
                 abilities: [
@@ -951,6 +957,7 @@
             'Nezuko Kamado': {
                 name: 'Nezuko Kamado',
                 hp: 20, maxHp: 20, speed: 78, charges: 0,
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/qLDXZTqM/Whats-App-Image-2026-06-04-at-2-39-12-PM.jpg',
                 passive: { name: 'Explosión de Sangre', description: 'Al recibir daño: cura 3 HP al aliado con menos HP. Cada vez que un aliado cura HP: inflige 5 daño repartido aleatoriamente en el equipo enemigo.' },
                 abilities: [
@@ -964,6 +971,7 @@
             'Baran': {
                 name: 'Baran',
                 hp: 25, maxHp: 25, speed: 90, charges: 0,
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/27bpRFPM/descarga.jpg',
                 passive: { name: 'Monarca de los Demonios', description: 'Al inicio de cada ronda ejecuta Frenzied Slash automáticamente. Al final de cada ronda, si Kaisellin está invocado, roba 2 cargas a cada enemigo. Cada ataque de Baran tiene 50% de aplicar Miedo y 10% de aplicar Mega Aturdimiento.' },
                 abilities: [
@@ -977,6 +985,7 @@
             'Meliodas': {
                 name: 'Meliodas',
                 hp: 20, maxHp: 20, speed: 85, charges: 0,
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/B2Lq7WJ0/image.png',
                 transformPortrait: 'https://i.ibb.co/FvS9MSm/image.png',
                 relicPortraits: { 'Shadowmourne': 'https://i.ibb.co/S4bTtG5z/Whats-App-Image-2026-08-04-at-5-44-27-PM.jpg' },
@@ -992,6 +1001,7 @@
             'Pain': {
                 name: 'Pain',
                 hp: 25, maxHp: 25, speed: 85, charges: 0,
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/LDJkvJxy/Whats-App-Image-2026-06-02-at-4-58-46-PM.jpg',
                 passive: { name: 'Six Paths', description: 'Al recibir un aliado un debuff: 50% de limpiarlo y Pain gana 3 cargas. Al aplicarse un buff a un enemigo: 50% de disipar ese buff y el equipo aliado gana 3 cargas. Si un enemigo pierde 5 o más cargas: aplica Mega Aturdimiento sobre ese enemigo.' },
                 abilities: [
@@ -1005,6 +1015,7 @@
             'Lord Voldemort': {
                 name: 'Lord Voldemort',
                 hp: 20, maxHp: 20, speed: 83, charges: 0,
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.ibb.co/s9nC7Gz4/image.png',
                 passive: { name: 'Horrocrux Viviente', description: 'Al inicio de cada ronda invoca a Nagini. Si Voldemort llega a 0 HP mientras Nagini está activa, conserva 1 HP. Si en la siguiente ronda Nagini sigue activa, recupera todos sus HP. Al final de ronda, activa los ticks de Veneno acumulados del equipo enemigo si Nagini está activa.' },
                 abilities: [
