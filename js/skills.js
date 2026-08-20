@@ -1516,6 +1516,21 @@
                     break;
                 }
             }
+            // ── GUANTE DE SCORPIO: si un enemigo (del portador) ejecuta un ataque AOE o MT,
+            //    aplica de 1 a 15 stacks aleatorias de Veneno a ese enemigo — sin importar a
+            //    quién golpee (confirmado que se activa por el simple uso del ataque) ──
+            if ((ability.target === 'aoe' || ability.target === 'mt') && attacker) {
+                const _gsEnemyTeam = attacker.team === 'team1' ? 'team2' : 'team1';
+                const _gsWearer = Object.keys(gameState.characters).find(function (n) {
+                    const c = gameState.characters[n];
+                    return c && c.team === _gsEnemyTeam && !c.isDead && c.hp > 0 && (c.equippedRelics || []).includes('Guante de Scorpio');
+                });
+                if (_gsWearer) {
+                    const _gsStacks2 = Math.floor(Math.random() * 15) + 1; // 1 a 15
+                    addLog('🦂 Guante de Scorpio: ' + charName + ' usa un ataque ' + ability.target.toUpperCase() + ' — recibe Veneno', 'debuff');
+                    if (typeof applyPoison === 'function') applyPoison(charName, _gsStacks2);
+                }
+            }
             // ARCO DEL KITAN: +_arcoDmgBonus al daño del básico (acumulado por debuffs enemigos disipados)
             if (ability.type === 'basic' && attacker && (attacker._arcoDmgBonus||0) > 0) {
                 finalDamage += attacker._arcoDmgBonus;
@@ -2003,7 +2018,24 @@
                     }
                 });
             }
-            
+
+            // ── GUANTE DE SCORPIO: cualquier daño causado por un movimiento Over de un
+            //    atacante con Veneno activo se reduce a 0. Efecto GLOBAL (confirmado): basta con
+            //    que ALGUIEN en la batalla tenga la reliquia equipada, sin importar contra quién
+            //    se use el Over ni de qué equipo sea el portador. ──
+            if (ability.type === 'over' && attacker) {
+                const _gsAttackerPoisoned = (attacker.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'veneno'; });
+                if (_gsAttackerPoisoned) {
+                    const _gsRelicExists = Object.values(gameState.characters).some(function (c) {
+                        return c && !c.isDead && (c.equippedRelics || []).includes('Guante de Scorpio');
+                    });
+                    if (_gsRelicExists) {
+                        finalDamage = 0;
+                        addLog('🦂 Guante de Scorpio: ' + charName + ' está envenenado — el daño de su Over se reduce a 0', 'debuff');
+                    }
+                }
+            }
+
             // Consumir cargas
             attacker.charges = Math.max(0, (attacker.charges||0) - adjustedCost);
 
