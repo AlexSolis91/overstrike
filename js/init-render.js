@@ -29,12 +29,14 @@
             // Momentos después, la restauración del wrapper metía TAMBIÉN la vieja de vuelta —
             // dos Igris vivos a la vez. Restaurando aquí, antes de calculateTurnOrder/startTurn,
             // Arise! ya ve la invocación existente y no duplica.
+            console.log('[DIAGNÓSTICO Horda] initGame() — window._hordaTransientSummons antes de restaurar:', window._hordaTransientSummons ? JSON.stringify(Object.keys(window._hordaTransientSummons).map(function(sid){ var s=window._hordaTransientSummons[sid]; return s.name+'('+sid+')'; })) : 'null/undefined');
             if (window._hordaTransientSummons) {
                 Object.keys(window._hordaTransientSummons).forEach(function (sid) {
                     gameState.summons[sid] = window._hordaTransientSummons[sid];
                 });
                 window._hordaTransientSummons = null;
             }
+            console.log('[DIAGNÓSTICO Horda] initGame() — gameState.summons DESPUÉS de restaurar:', JSON.stringify(Object.keys(gameState.summons).map(function(sid){ var s=gameState.summons[sid]; return s.name+'('+sid+')'; })));
             gameState.activeField = null;
             // Clear all summons completely
             // Clear battle log
