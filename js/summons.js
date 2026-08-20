@@ -4463,6 +4463,38 @@ function applyRegeneration(targetName, amount, duration) {
             summonShadow(chosen, charName);
         }
 
+        function triggerLichKingInvocation(charName) {
+            // EL PRÍNCIPE CAÍDO (Lich King): al inicio de su turno, invoca aleatoriamente según
+            // los pesos de probabilidad definidos. Si la elegida ya está viva en el campo, se
+            // vuelve a tirar (sin repetición) hasta encontrar una disponible o agotar el pool.
+            const lkChar = gameState.characters[charName];
+            if (!lkChar || lkChar.isDead || lkChar.hp <= 0) return;
+            const lkPool = ['Sindragosa', 'Banshee', 'Valkyr', 'Necrofago', 'Caballero de la Muerte'];
+            const lkWeights = { 'Sindragosa': 4, 'Banshee': 24, 'Valkyr': 24, 'Necrofago': 24, 'Caballero de la Muerte': 24 };
+            const lkExisting = new Set(
+                Object.values(gameState.summons)
+                    .filter(function (s) { return s && s.team === lkChar.team && !s.isDead && (s.hp === undefined || s.hp > 0); })
+                    .map(function (s) { return s.name; })
+            );
+            const lkAvailable = lkPool.filter(function (n) { return !lkExisting.has(n); });
+            if (lkAvailable.length === 0) {
+                addLog('👑 El Príncipe Caído: ' + charName + ' ya tiene todas sus invocaciones activas', 'info');
+                return;
+            }
+            const lkAvailWeights = lkAvailable.map(function (n) { return { name: n, w: lkWeights[n] || 1 }; });
+            const lkTotalW = lkAvailWeights.reduce(function (s, x) { return s + x.w; }, 0);
+            let lkRand = Math.random() * lkTotalW;
+            let lkChosen = lkAvailWeights[lkAvailWeights.length - 1].name;
+            for (const x of lkAvailWeights) { lkRand -= x.w; if (lkRand <= 0) { lkChosen = x.name; break; } }
+            summonShadow(lkChosen, charName);
+            // Invocaciones con Mega Provocación permanente (mismo comportamiento que antes)
+            if (lkChosen === 'Sindragosa' || lkChosen === 'Caballero de la Muerte') {
+                const lkNewSummon = Object.values(gameState.summons).find(function (s) { return s && s.name === lkChosen && s.summoner === charName; });
+                if (lkNewSummon) lkNewSummon.megaProvocation = true;
+            }
+            addLog('👑 El Príncipe Caído: ' + charName + ' invoca a ' + lkChosen + ' (inicio de turno)', 'buff');
+        }
+
         function triggerSangreDeYmir(attackerName, ymirAllyName) {
             // Find Ymir in the same team as ymirAllyName
             const ymirAllyChar = gameState.characters[ymirAllyName];
