@@ -2776,10 +2776,14 @@
                     charCopy.baseName = base;
                     selectedChars[key] = charCopy;
                 });
-                initGame(selectedChars);
-                window._teamNames = { team1: myName, team2: opponentName };
+                // Establecer gameMode y aiTeam ANTES de llamar a initGame() — mismo motivo que en
+                // _launchRankedGame: initGame() ya procesa el primer turno de forma síncrona
+                // antes de devolver el control, así que un valor viejo de aiTeam de la partida
+                // anterior podría afectar a ese primer turno si no se corrige antes de llamarla.
                 gameState.gameMode = 'ranked';
                 gameState.aiTeam = 'team2';
+                initGame(selectedChars);
+                window._teamNames = { team1: myName, team2: opponentName };
                 // Layout "manos de cartas" (Ranked): equipo rival arriba, equipo propio abajo, ambos en fila.
                 // RANKED_HAND_LAYOUT_ENABLED: cambia a false (o pide "layout clásico de ranked") para
                 // volver instantáneamente al layout anterior (grid de 3 columnas) sin borrar este código.
@@ -4799,9 +4803,19 @@
                     if (el) el.style.display = 'none';
                 });
 
-                initGame(selectedChars);
+                // Establecer gameMode y aiTeam ANTES de llamar a initGame() — initGame() ya
+                // calcula el orden de turnos y arranca el primer turno de forma SÍNCRONA en su
+                // propia ejecución (calculateTurnOrder() + startTurn()), antes de devolver el
+                // control aquí. Si esta partida en vivo es la SEGUNDA jugada en la misma sesión
+                // del navegador (ej. después de una Horda o un ataque a Equipo de Defensa), el
+                // valor de gameState.aiTeam de la partida ANTERIOR ('team1' o 'team2') seguía
+                // activo durante ese primer turno — si el personaje más rápido coincidía con ese
+                // equipo, el juego lo trataba como controlado por IA y ejecutaba su turno
+                // automáticamente (vía executeAITurn) sin que el jugador humano llegara a actuar,
+                // saltando directo al siguiente personaje en el orden de turnos.
                 gameState.gameMode = 'ranked';
                 gameState.aiTeam   = null; // both humans
+                initGame(selectedChars);
                 window._teamNames  = { team1: hostName, team2: guestName };
 
                 // Update team labels
