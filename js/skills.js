@@ -14586,6 +14586,16 @@
             hideContinueButton();
             updateWaitingIndicator('', false);
 
+            // ── Capturar ANTES de que saveRankedResult() (más abajo) apague window._rankedMode ──
+            // El botón "Nueva Batalla" necesita saber si ESTA partida que acaba de terminar fue
+            // Ranked, pero saveRankedResult() pone window._rankedMode = false en su primera línea
+            // (para guardar las estadísticas correctamente) — para cuando el jugador ve la
+            // pantalla de resultados y hace clic, la bandera original ya estaba apagada, así que
+            // "Nueva Batalla" siempre caía en el comportamiento de recargar página en vez de ir
+            // directo a Buscando Rival. Esta bandera nueva NO se resetea automáticamente, así que
+            // sobrevive intacta hasta que el jugador realmente hace clic en el botón.
+            window._lastGameWasRanked = !!window._rankedMode;
+
             // ══ MODO HORDA: intercepta ANTES de tocar música/sfx — la pista exclusiva de
             // Horda no debe cortarse entre oleadas. Solo se detiene/cambia en la derrota
             // final (todos los personajes del jugador eliminados), decidido dentro de
