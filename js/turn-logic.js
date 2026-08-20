@@ -104,6 +104,15 @@
                             }
                         }
 
+                        // EL PRÍNCIPE CAÍDO (Lich King): invoca aleatoriamente al inicio de su
+                        // turno, según sus pesos de probabilidad — nunca repite una invocación ya
+                        // activa en el campo (misma lógica de re-tirada que Arise! de Sun Jin Woo).
+                        if (currentChar && currentChar.passive && currentChar.passive.name === 'El Príncipe Caído') {
+                            if (currentChar && !currentChar.isDead && currentChar.hp > 0) {
+                                if (typeof triggerLichKingInvocation === 'function') triggerLichKingInvocation(currentCharName);
+                            }
+                        }
+
                         // ── ORGULLO DEL LEÓN (Escanor): inicio de turno → +1 HP por enemigo con QS ──
                         if (currentChar.passive && currentChar.passive.name === 'Orgullo del León') {
                             const _esETeamT = currentChar.team === 'team1' ? 'team2' : 'team1';
@@ -1911,6 +1920,31 @@
 
         function _runRoundStartPassiveHooks() {
             console.log('[Ronda] _runRoundStartPassiveHooks() iniciando (Ronda ' + gameState.currentRound + ')...');
+                    // EL PRÍNCIPE CAÍDO (Lich King): inicio de ronda → probabilidad (10% base,
+                    // +10% acumulable por cada uso de Furia del Rey de la Plaga) de eliminar a un
+                    // enemigo con Mega Posesión activa — solo puede ocurrir una vez por ronda.
+                    for (const _lkN in gameState.characters) {
+                        const _lkC = gameState.characters[_lkN];
+                        if (!_lkC || _lkC.isDead || _lkC.hp <= 0) continue;
+                        if (!_lkC.passive || _lkC.passive.name !== 'El Príncipe Caído') continue;
+                        const _lkChance = 0.10 + ((_lkC._lichKingEliminationBonus || 0) / 100);
+                        const _lkETeam = _lkC.team === 'team1' ? 'team2' : 'team1';
+                        const _lkMegaPosTargets = Object.keys(gameState.characters).filter(function (n) {
+                            const c = gameState.characters[n];
+                            return c && c.team === _lkETeam && !c.isDead && c.hp > 0 &&
+                                (c.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'mega posesion'; });
+                        });
+                        if (_lkMegaPosTargets.length === 0) continue;
+                        if (Math.random() < _lkChance) {
+                            const _lkVictim = _lkMegaPosTargets[Math.floor(Math.random() * _lkMegaPosTargets.length)];
+                            const _lkVictimC = gameState.characters[_lkVictim];
+                            _lkVictimC.hp = 0;
+                            _lkVictimC.isDead = true;
+                            addLog('👑 El Príncipe Caído: ' + _lkVictim + ' es eliminado (Mega Posesión, ' + Math.round(_lkChance * 100) + '%)', 'damage');
+                            if (typeof registerKill === 'function') registerKill(_lkN, _lkVictim, false);
+                        }
+                        break;
+                    }
                     // ── YAUTJA HONOR CODE (Depredador): inicio de ronda → Sigilo 1 turno ──
                     for (const _ycsN in gameState.characters) {
                         const _ycsC = gameState.characters[_ycsN];
