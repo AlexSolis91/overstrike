@@ -1200,6 +1200,16 @@
                     _sfxHit.currentTime = 0; _sfxHit.volume = 0.5; _sfxHit.play().catch(function(){});
                 }
             }
+            // ── GUANTE DE SCORPIO: todos los ataques del portador aplican 1-5 stacks de Veneno
+            //    por cada golpe acertado sobre el objetivo ──
+            if (damage > 0 && attackerName !== null && !passiveExecuting) {
+                const _gsAtk = gameState.characters[attackerName];
+                const _gsTgt = gameState.characters[targetName];
+                if (_gsAtk && (_gsAtk.equippedRelics || []).includes('Guante de Scorpio') && _gsTgt && !_gsTgt.isDead && _gsTgt.hp > 0) {
+                    const _gsStacks = Math.floor(Math.random() * 5) + 1; // 1 a 5
+                    if (typeof applyPoison === 'function') applyPoison(targetName, _gsStacks);
+                }
+            }
             // ── YAUTJA HONOR CODE (Depredador): dos ganchos independientes al inicio del
             //    procesamiento de daño ──
             if (damage > 0 && attackerName !== null && !passiveExecuting) {
