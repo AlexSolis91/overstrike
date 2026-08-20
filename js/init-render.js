@@ -19,6 +19,22 @@
             gameState._attackedThisTurn = false;
             gameState._miedoActive = false;
             gameState.summons = {};
+            // ── RESTAURACIÓN DE INVOCACIONES ENTRE OLEADAS DE HORDA (fix real) ──
+            // Debe vivir AQUÍ (dentro del initGame base), no en el wrapper de horda-battle.js que
+            // se ejecuta DESPUÉS de llamar a este initGame. La razón: este mismo initGame() ya
+            // calcula el orden de turnos y arranca el primer turno de forma SÍNCRONA más abajo
+            // (calculateTurnOrder() + startTurn()) — si Sun Jin Woo va primero, su pasiva Arise!
+            // se dispara ANTES de que el wrapper de Horda alcance a restaurar sus invocaciones
+            // viejas (Igris, etc.), viendo gameState.summons todavía vacío e invocando una nueva.
+            // Momentos después, la restauración del wrapper metía TAMBIÉN la vieja de vuelta —
+            // dos Igris vivos a la vez. Restaurando aquí, antes de calculateTurnOrder/startTurn,
+            // Arise! ya ve la invocación existente y no duplica.
+            if (window._hordaTransientSummons) {
+                Object.keys(window._hordaTransientSummons).forEach(function (sid) {
+                    gameState.summons[sid] = window._hordaTransientSummons[sid];
+                });
+                window._hordaTransientSummons = null;
+            }
             gameState.activeField = null;
             // Clear all summons completely
             // Clear battle log
