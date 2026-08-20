@@ -318,12 +318,12 @@
                 hp: 30, maxHp: 30, speed: 82, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/63JHLp7S/Whats-App-Image-2026-04-16-at-9-36-07-AM.jpg',
-                passive: { name: 'Aura de Hielo', description: 'Efecto pasivo de Aura Gélida. Lich King es inmune a debuffs de Miedo, Posesión y Congelación.' },
+                passive: { name: 'El Príncipe Caído', description: 'Efecto pasivo de Aura Gélida y efecto pasivo Provocación. Lich King es inmune a debuffs de Miedo, Posesión, Mega Posesión, Congelación y Megacongelación. Al inicio de su turno realiza una invocación aleatoria de acuerdo a su probabilidad de invocación (nunca repetida en el campo). Al inicio de cada ronda, 10% de probabilidad de eliminar a un enemigo con debuff Mega Posesión activo (una sola vez por ronda).' },
                 abilities: [
-                    { name: 'Agonía de Escarcha', type: 'basic', cost: 0, chargeGain: 1, damage: 1, target: 'single', effect: 'agonia_escarcha', description: 'Causa 1 daño. Roba 1 HP del objetivo. Aplica Buff Provocación en Lich King.' },
-                    { name: 'Cadenas de Hielo', type: 'special', cost: 2, chargeGain: 0, damage: 1, target: 'aoe', effect: 'cadenas_hielo', description: 'Causa 1 AOE. 50% de probabilidad de aplicar debuff Congelación a cada enemigo golpeado.' },
-                    { name: 'El Rey Caído', type: 'special', cost: 5, chargeGain: 5, damage: 0, target: 'self', effect: 'el_rey_caido', description: 'INVOCACIÓN: Realiza 1 invocación aleatoria.' },
-                    { name: 'Segador de Almas', type: 'over', cost: 8, chargeGain: 0, damage: 10, target: 'single', effect: 'segador_almas', description: 'Causa 10 daño. Si el enemigo muere con este ataque, es revivido como aliado con 50% de vida y 0 cargas.' }
+                    { name: 'Peste Necrótica',              type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'peste_necrotica',       description: 'Aplica Congelación al objetivo — si ya tenía Congelación activa, aplica Megacongelación en su lugar. Aplica Posesión al objetivo — si ya tenía Posesión activa, aplica Mega Posesión en su lugar.' },
+                    { name: 'Profanar Vida',                 type: 'special', cost: 4,  chargeGain: 0, damage: 1, target: 'aoe',    effect: 'profanar_vida',         description: 'A cada enemigo golpeado, roba 2 HP por cada Congelación y 1 HP por cada Posesión que tenga activas. Lich King gana +2 HP máximo por cada Mega Posesión y +2 HP máximo por cada Megacongelación activas en todo el equipo enemigo.' },
+                    { name: 'Quebrar Voluntad',              type: 'special', cost: 8,  chargeGain: 0, damage: 2, target: 'single', effect: 'quebrar_voluntad',      description: 'Las invocaciones de Lich King activan su pasiva una vez por cada debuff Posesión, Congelación, Mega Posesión y Megacongelación activo en todo el equipo enemigo (sumados).' },
+                    { name: 'Furia del Rey de la Plaga',     type: 'over',    cost: 10, chargeGain: 0, damage: 3, target: 'aoe',    effect: 'furia_rey_plaga', ignoresMegaProvocacion: true,      description: 'Disipa los buffs de los enemigos que tengan alguno y les aplica Mega Posesión. Disipa Congelación, Megacongelación y Posesión de los enemigos que tengan alguno y les causa +2 de daño adicional. Ignora Mega Provocación. Cada uso aumenta 10% la probabilidad de eliminación de El Príncipe Caído.' }
                 ]
             },
 
