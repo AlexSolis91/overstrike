@@ -475,11 +475,14 @@ function triggerMaboroshi(targetTeam, debuffName) {
                     if (!_akBasic) break;
                     const _prevSel = gameState.selectedCharacter;
                     const _prevAb  = gameState.selectedAbility;
+                    const _prevSuppress = gameState._suppressAutoEndTurn;
                     gameState.selectedCharacter = _akN;
                     gameState.selectedAbility   = _akBasic;
                     passiveExecuting = true;
+                    gameState._suppressAutoEndTurn = true;
                     try { _executeAbilityCore(targetName); } catch(e) { console.error('[Arco del Kitan]', e); }
                     passiveExecuting = false;
+                    gameState._suppressAutoEndTurn = _prevSuppress;
                     gameState.selectedCharacter = _prevSel;
                     gameState.selectedAbility   = _prevAb;
                     addLog('🏹 Arco del Kitan: ' + _akN + ' ejecuta básico sobre ' + targetName + ' (enemigo recibió buff)', 'buff');
