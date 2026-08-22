@@ -3876,11 +3876,14 @@
                         _showOverCinematic(_name, _over.name, _over.effect, _team, function() {
                             const _gdPrev   = gameState.selectedCharacter;
                             const _gdPrevAb = gameState.selectedAbility;
+                            const _gdPrevSuppress = gameState._suppressAutoEndTurn;
                             gameState.selectedCharacter = _name;
                             gameState.selectedAbility   = _over;
                             passiveExecuting = true;
+                            gameState._suppressAutoEndTurn = true;
                             try { _executeAbilityCore(null); } catch(e) { console.error('[Gipsy Reactor Over]', e); }
                             passiveExecuting = false;
+                            gameState._suppressAutoEndTurn = _gdPrevSuppress;
                             gameState.selectedCharacter = _gdPrev;
                             gameState.selectedAbility   = _gdPrevAb;
                             // ── Reafirmar el botón de Continuar Turno ──
