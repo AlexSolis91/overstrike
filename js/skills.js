@@ -194,12 +194,15 @@
             if (!summonAbility) return;
             const prevSelected = gameState.selectedCharacter;
             const prevAbility = gameState.selectedAbility;
+            const prevSuppress = gameState._suppressAutoEndTurn;
             passiveExecuting = true;
             gameState.selectedCharacter = charName;
             gameState.selectedAbility = summonAbility;
+            gameState._suppressAutoEndTurn = true;
             try { _executeAbilityCore(null); } catch(e) { console.error('[Radar del Dragón]', e); }
             gameState.selectedCharacter = prevSelected;
             gameState.selectedAbility = prevAbility;
+            gameState._suppressAutoEndTurn = prevSuppress;
             passiveExecuting = false;
             addLog('📡 Radar del Dragón: ' + charName + ' invoca automáticamente', 'buff');
         };
@@ -264,11 +267,14 @@
             function _execOver(name, over) {
                 const _prev  = gameState.selectedCharacter;
                 const _prev2 = gameState.selectedAbility;
+                const _prev3 = gameState._suppressAutoEndTurn;
                 gameState.selectedCharacter = name;
                 gameState.selectedAbility   = over;
                 passiveExecuting = true;
+                gameState._suppressAutoEndTurn = true;
                 try { _executeAbilityCore(null); } catch(e) { console.error('[Aragorn Over ' + name + ']', e); }
                 passiveExecuting = false;
+                gameState._suppressAutoEndTurn = _prev3;
                 gameState.selectedCharacter = _prev;
                 gameState.selectedAbility   = _prev2;
             }
@@ -425,11 +431,14 @@
                                 _showOverCinematic(_name, _over.name, _over.effect, _team, function () {
                                     const _sbPrev = gameState.selectedCharacter;
                                     const _sbPrevAb = gameState.selectedAbility;
+                                    const _sbPrevSuppress = gameState._suppressAutoEndTurn;
                                     gameState.selectedCharacter = _name;
                                     gameState.selectedAbility = _over;
                                     passiveExecuting = true;
+                                    gameState._suppressAutoEndTurn = true;
                                     try { _executeAbilityCore(null); } catch (e) { console.error('[Soldier Boy Auto Over]', e); }
                                     passiveExecuting = false;
+                                    gameState._suppressAutoEndTurn = _sbPrevSuppress;
                                     gameState.selectedCharacter = _sbPrev;
                                     gameState.selectedAbility = _sbPrevAb;
                                 });
@@ -2177,15 +2186,18 @@
                         addLog('🧩 Rompecabezas del Milenio: ' + charName + ' ejecuta su Transformación (80%)', 'buff');
                         const _savedChar = gameState.selectedCharacter;
                         const _savedAbility = gameState.selectedAbility;
+                        const _savedSuppress = gameState._suppressAutoEndTurn;
                         gameState.selectedCharacter = charName;
                         gameState.selectedAbility = _puzTransform;
                         gameState._puzzleTransformExecuting = true;
                         passiveExecuting = true;
+                        gameState._suppressAutoEndTurn = true;
                         try { if (typeof _executeAbilityCore === 'function') _executeAbilityCore(charName); } catch (e) { console.error('[Rompecabezas del Milenio]', e); }
                         gameState.selectedCharacter = _savedChar;
                         gameState.selectedAbility = _savedAbility;
                         gameState._puzzleTransformExecuting = false;
                         passiveExecuting = false;
+                        gameState._suppressAutoEndTurn = _savedSuppress;
                     }
                 }
             }
@@ -6272,6 +6284,8 @@
                         gameState.selectedCharacter = _aln;
                         gameState.selectedAbility   = _overAb;
                         gameState.adjustedCost      = 0;
+                        const _rjPrevSuppress = gameState._suppressAutoEndTurn;
+                        gameState._suppressAutoEndTurn = true;
 
                         // ── Mostrar cinemática y esperar que termine ──
                         if (typeof _showOverCinematicAsync === 'function') {
@@ -6284,6 +6298,7 @@
                         } catch(e) {
                             addLog('👑 Error en Over de ' + _aln + ': ' + e.message, 'info');
                         }
+                        gameState._suppressAutoEndTurn = _rjPrevSuppress;
 
                         // Sanear cargas
                         _alc.charges = Math.max(0, Math.min(20, _alc.charges || 0));
@@ -7675,10 +7690,13 @@
                             if (_aliveEnemies.length === 0) break;
                             const _jsBTgt = _aliveEnemies[Math.floor(Math.random()*_aliveEnemies.length)];
                             const _prevSel = gameState.selectedCharacter; const _prevAb = gameState.selectedAbility; const _prevExec = gameState._abilityExecuting;
+                            const _prevSuppress2 = gameState._suppressAutoEndTurn;
                             gameState.selectedCharacter = charName; gameState.selectedAbility = _jsBasic; gameState._abilityExecuting = false;
                             passiveExecuting = true;
+                            gameState._suppressAutoEndTurn = true;
                             _executeAbilityCore(_jsBTgt);
                             passiveExecuting = false;
+                            gameState._suppressAutoEndTurn = _prevSuppress2;
                             gameState.selectedCharacter = _prevSel; gameState.selectedAbility = _prevAb; gameState._abilityExecuting = _prevExec;
                         }
                         addLog('🃏 ¿Por qué tan serio?: ' + (_jsBuffsApplied*3) + ' ataques básicos extra ejecutados', 'damage');
@@ -10756,11 +10774,14 @@
                         addLog('⛓️ Maboroshi no Shinkirō: Saga ejecuta Genrō Maō Ken automáticamente (enemigo usó especial)', 'buff');
                         const _msPrev  = gameState.selectedCharacter;
                         const _msPrevA = gameState.selectedAbility;
+                        const _msPrevSuppress = gameState._suppressAutoEndTurn;
                         gameState.selectedCharacter = _msN;
                         gameState.selectedAbility   = _msGenro;
                         passiveExecuting = true;
+                        gameState._suppressAutoEndTurn = true;
                         try { _executeAbilityCore(null); } catch(e) { console.error('[Saga Genro auto]', e); }
                         passiveExecuting = false;
+                        gameState._suppressAutoEndTurn = _msPrevSuppress;
                         gameState.selectedCharacter = _msPrev;
                         gameState.selectedAbility   = _msPrevA;
                         break;
@@ -12876,10 +12897,13 @@
                     if (!_tgt || _tgt.isDead || _tgt.hp <= 0) break;
                     const _prevSel = gameState.selectedCharacter;
                     const _prevAb  = gameState.selectedAbility;
+                    const _prevSuppress = gameState._suppressAutoEndTurn;
                     gameState.selectedAbility = _grrBasic || ability;
                     passiveExecuting = true;
+                    gameState._suppressAutoEndTurn = true;
                     try { _executeAbilityCore(targetName); } catch(e){}
                     passiveExecuting = false;
+                    gameState._suppressAutoEndTurn = _prevSuppress;
                     gameState.selectedCharacter = _prevSel;
                     gameState.selectedAbility   = _prevAb;
                 }
