@@ -362,6 +362,7 @@
             allCharacters.sort((a, b) => b.speed - a.speed);
             
             gameState.turnOrder = allCharacters.map(c => c.name);
+            console.log('[DIAGNÓSTICO Turnos] calculateTurnOrder() — orden calculado:', JSON.stringify(allCharacters.map(c => c.name + '(' + c.speed + ')')));
         }
 
         // ==================== RENDERIZADO ====================
