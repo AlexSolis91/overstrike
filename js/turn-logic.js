@@ -87,6 +87,29 @@
             }
         };
 
+        // ── _advanceTurnIndex: incremento centralizado de gameState.currentTurnIndex, con
+        //    diagnóstico. Antes había 6 puntos distintos en el código haciendo este mismo
+        //    incremento por separado — el mismo patrón exacto que causó el bug de rondas
+        //    saltando de golpe (ver gameState.currentRound, ya diagnosticado y corregido antes).
+        //    Si dos incrementos ocurren en menos de 50ms, es señal de un avance duplicado o en
+        //    carrera que se está saltando algún personaje del orden de turnos sin que actúe. ──
+        function _advanceTurnIndex(reason) {
+            const _atiPrevIdx = gameState.currentTurnIndex;
+            const _atiPrevName = (gameState.turnOrder || [])[_atiPrevIdx];
+            gameState.currentTurnIndex = (gameState.currentTurnIndex + 1) % gameState.turnOrder.length;
+            const _atiNewName = (gameState.turnOrder || [])[gameState.currentTurnIndex];
+            window._turnIndexAdvanceLog = window._turnIndexAdvanceLog || [];
+            const _atiNow = Date.now();
+            const _atiLast = window._turnIndexAdvanceLog.length ? window._turnIndexAdvanceLog[window._turnIndexAdvanceLog.length - 1] : null;
+            window._turnIndexAdvanceLog.push(_atiNow);
+            const _atiGap = _atiLast ? (_atiNow - _atiLast) : null;
+            console.log('[DIAGNÓSTICO Turnos] _advanceTurnIndex(' + reason + '): ' + _atiPrevName + '(' + _atiPrevIdx + ') → ' + _atiNewName + '(' + gameState.currentTurnIndex + ')' + (_atiGap !== null ? ' — ' + _atiGap + 'ms desde el avance anterior' : ''));
+            if (_atiGap !== null && _atiGap < 50) {
+                console.warn('[DIAGNÓSTICO Turnos] ⚠️ Avance sospechosamente rápido (' + _atiGap + 'ms) — posible salto de personaje en el orden de turnos. Stack:');
+                console.trace();
+            }
+        }
+
         function startTurn() {
             // Cola de turnos adicionales: procesar pendientes
             if (gameState._sasukeRevengeQueue && gameState._sasukeRevengeQueue.length > 0) {
@@ -124,7 +147,7 @@
                     
                     if (!currentChar) {
                         // Personaje no existe, pasar al siguiente
-                        gameState.currentTurnIndex = (gameState.currentTurnIndex + 1) % gameState.turnOrder.length;
+                        _advanceTurnIndex('personaje inexistente en startTurn');
                         attempts++;
                         continue;
                     }
@@ -355,7 +378,7 @@
                             }
                             
                             // Pasar al siguiente turno
-                            gameState.currentTurnIndex = (gameState.currentTurnIndex + 1) % gameState.turnOrder.length;
+                            _advanceTurnIndex('personaje aturdido/inmovilizado en startTurn');
                             attempts++;
                             continue;
                         }
@@ -378,7 +401,7 @@
                     }
                     
                     // Personaje muerto, pasar al siguiente
-                    gameState.currentTurnIndex = (gameState.currentTurnIndex + 1) % gameState.turnOrder.length;
+                    _advanceTurnIndex('personaje muerto en startTurn');
                     attempts++;
                 }
                 
@@ -392,7 +415,7 @@
                     try {
                         gameState._abilityExecuting = false;
                         gameState._relicEffectsActive = false;
-                        gameState.currentTurnIndex = (gameState.currentTurnIndex + 1) % gameState.turnOrder.length;
+                        _advanceTurnIndex('error catch en startTurn (recuperación)');
                         // Solo reintentar si el error NO es de función/variable indefinida
                         // (esos errores son bugs de código, no transitorios)
                         const _errMsg = error && error.message ? error.message : String(error);
@@ -3580,7 +3603,7 @@
 
                 }
                 
-                gameState.currentTurnIndex = (gameState.currentTurnIndex + 1) % gameState.turnOrder.length;
+                _advanceTurnIndex('endTurn normal');
 
                 if (onlineMode) {
                     // Capture battle log for sync
@@ -3600,7 +3623,7 @@
                 console.error('Error en endTurn:', error);
                 // Intentar continuar de todas formas
                 try {
-                    gameState.currentTurnIndex = (gameState.currentTurnIndex + 1) % gameState.turnOrder.length;
+                    _advanceTurnIndex('error catch en endTurn (recuperación)');
                     setTimeout(() => startTurn(), 1000);
                 } catch (e) {
                     console.error('Error crítico en endTurn:', e);
