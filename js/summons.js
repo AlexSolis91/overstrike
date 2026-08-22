@@ -2200,15 +2200,18 @@
                         const _prevSelected = gameState.selectedCharacter;
                         const _prevAbility = gameState.selectedAbility;
                         const _prevExecuting = gameState._abilityExecuting;
+                        const _prevSuppress = gameState._suppressAutoEndTurn;
                         gameState.selectedCharacter = 'Garou';
                         gameState.selectedAbility = _ghAbility;
                         gameState._abilityExecuting = false;
+                        gameState._suppressAutoEndTurn = true;
                         try {
                             _executeAbilityCore(_ghTarget);
                         } finally {
                             gameState.selectedCharacter = _prevSelected;
                             gameState.selectedAbility = _prevAbility;
                             gameState._abilityExecuting = _prevExecuting;
+                            gameState._suppressAutoEndTurn = _prevSuppress;
                         }
                     }
                 }
