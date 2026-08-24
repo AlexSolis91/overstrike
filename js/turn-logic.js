@@ -64,7 +64,26 @@
                 if (!_chosen) { endTurn(); return; }
 
                 const _target = (_chosen.target === 'single' || _chosen.target === 'multi')
-                    ? _enemies[Math.floor(Math.random() * _enemies.length)]
+                    ? (function () {
+                        // Respetar Provocación/Mega Provocación al elegir objetivo — antes la IA
+                        // elegía completamente al azar, ignorando por completo estos efectos
+                        // (ej. Ragnar atacando a Yorichi en vez de a Escanor, que tenía
+                        // Provocación permanente activa en el mismo equipo enemigo).
+                        const _ignoresProv = !!_chosen.ignoresProvocacion || !!_chosen.ignoresMegaProvocacion;
+                        if (!_ignoresProv) {
+                            const _megaProvHolder = _enemies.find(function (n) {
+                                const c = gameState.characters[n];
+                                return (c.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'mega provocacion'; });
+                            });
+                            if (_megaProvHolder) return _megaProvHolder;
+                            const _provHolder = _enemies.find(function (n) {
+                                const c = gameState.characters[n];
+                                return (c.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'provocacion'; });
+                            });
+                            if (_provHolder) return _provHolder;
+                        }
+                        return _enemies[Math.floor(Math.random() * _enemies.length)];
+                    })()
                     : charName; // aoe/self/mt no necesitan objetivo específico — executeAbility(charName) los maneja
 
                 addLog('🤖 ' + charName + ' decide usar ' + _chosen.name + (_target !== charName ? ' sobre ' + _target : ''), 'info');
