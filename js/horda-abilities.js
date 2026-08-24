@@ -1271,7 +1271,24 @@
             if (!chosen) { endTurn(); return; }
 
             const target = (chosen.target === 'single' || chosen.target === 'multi')
-                ? randomFrom(enemies)
+                ? (function () {
+                    // Respetar Provocación/Mega Provocación al elegir objetivo — antes el Orco
+                    // elegía completamente al azar, ignorando por completo estos efectos.
+                    const ignoresProv = !!chosen.ignoresProvocacion || !!chosen.ignoresMegaProvocacion;
+                    if (!ignoresProv) {
+                        const megaProvHolder = enemies.find(function (n) {
+                            const c = gameState.characters[n];
+                            return (c.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'mega provocacion'; });
+                        });
+                        if (megaProvHolder) return megaProvHolder;
+                        const provHolder = enemies.find(function (n) {
+                            const c = gameState.characters[n];
+                            return (c.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'provocacion'; });
+                        });
+                        if (provHolder) return provHolder;
+                    }
+                    return randomFrom(enemies);
+                })()
                 : charName; // aoe/self no necesitan objetivo específico — executeAbility(charName) los maneja
 
             addLog('🌊 [Horda] ' + charName + ' decide usar ' + chosen.name + (target !== charName ? ' sobre ' + target : ''), 'info');
