@@ -10281,8 +10281,8 @@
             } else if (ability.effect === 'luz_del_alba_tirion') {
                 const _ld=gameState.characters[gameState.selectedCharacter],_ldE=_ld?(_ld.team==='team1'?'team2':'team1'):'team2',_ldA=_ld?_ld.team:'team1';
                 if(checkAndRedirectAOEMegaProv(_ldE,finalDamage,gameState.selectedCharacter)){addLog('🌟 Luz del Alba redirigida','damage');}else{for(const _n in gameState.characters){const _c=gameState.characters[_n];if(!_c||_c.team!==_ldE||_c.isDead||_c.hp<=0)continue;if(checkAsprosAOEImmunity(_n,true)||checkMinatoAOEImmunity(_n))continue;applyDamageWithShield(_n,finalDamage,gameState.selectedCharacter);}}
-                for(const _n in gameState.characters){const _c=gameState.characters[_n];if(!_c||_c.team!==_ldA||_c.isDead||_c.hp<=0)continue;if(typeof applyHeal==='function')applyHeal(_n,1,'Luz del Alba');else if(typeof canHeal==='function'?canHeal(_n):true)_c.hp=Math.min(_c.maxHp,(_c.hp||0)+1);if(!hasStatusEffect(_n,'Aura de Luz')&&!hasStatusEffect(_n,'Aura de luz')){if(typeof applyBuff==='function')applyBuff(_n,{name:'Aura de Luz',type:'buff',duration:2,emoji:'✨'});}}
-                addLog('🌟 Luz del Alba: 1 AOE + 1 HP cura + Aura de Luz al equipo aliado','buff');
+                for(const _n in gameState.characters){const _c=gameState.characters[_n];if(!_c||_c.team!==_ldA||_c.isDead||_c.hp<=0)continue;if(typeof applyHeal==='function')applyHeal(_n,2,'Luz del Alba');else if(typeof canHeal==='function'?canHeal(_n):true)_c.hp=Math.min(_c.maxHp,(_c.hp||0)+2);if(!hasStatusEffect(_n,'Aura de Luz')&&!hasStatusEffect(_n,'Aura de luz')){if(typeof applyBuff==='function')applyBuff(_n,{name:'Aura de Luz',type:'buff',duration:2,emoji:'✨'});}}
+                addLog('🌟 Luz del Alba: 1 AOE + 2 HP cura + Aura de Luz al equipo aliado','buff');
             } else if (ability.effect === 'proteccion_luz_tirion') {
                 const _pl=gameState.characters[targetName];
                 if(_pl){if(typeof applyHeal==='function')applyHeal(targetName,3,'Protección de la Luz');else if(typeof canHeal==='function'?canHeal(targetName):true)_pl.hp=Math.min(_pl.maxHp,(_pl.hp||0)+3);const _pld=(_pl.statusEffects||[]).filter(function(e){return e&&e.type==='debuff'&&!e.permanent;});_pl.statusEffects=(_pl.statusEffects||[]).filter(function(e){return !e||e.type!=='debuff'||e.permanent;});if(_pld.length>0){_pl.charges=Math.min(20,(_pl.charges||0)+_pld.length*2);addLog('🌟 Protección: '+_pld.length+' debuffs → +'+((_pld.length*2))+' cargas a '+targetName,'buff');}}
@@ -11060,11 +11060,11 @@
                         for (const _an in gameState.characters) {
                             const _ac = gameState.characters[_an];
                             if (!_ac || _ac.isDead || _ac.hp <= 0 || _ac.team !== _tirOvDefTeam) continue;
-                            if (typeof applyHeal === 'function') applyHeal(_an, 3, 'Paladín de la Mano de Plata');
-                            else if (typeof canHeal === 'function' ? canHeal(_an) : true) _ac.hp = Math.min(_ac.maxHp, (_ac.hp||0) + 3);
-                            _ac.charges = Math.min(20, (_ac.charges||0) + 3);
+                            if (typeof applyHeal === 'function') applyHeal(_an, 5, 'Paladín de la Mano de Plata');
+                            else if (typeof canHeal === 'function' ? canHeal(_an) : true) _ac.hp = Math.min(_ac.maxHp, (_ac.hp||0) + 5);
+                            _ac.charges = Math.min(20, (_ac.charges||0) + 5);
                         }
-                        addLog('🌟 Paladín de la Mano de Plata: equipo aliado +3 HP y +3 cargas (enemigo usó Over)', 'buff');
+                        addLog('🌟 Paladín de la Mano de Plata: equipo aliado +5 HP y +5 cargas (enemigo usó Over)', 'buff');
                         passiveExecuting = false;
                         break;
                     }
