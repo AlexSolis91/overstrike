@@ -2958,24 +2958,42 @@
                 } // end if (!gameState._relicEffectsActive)
             } // end if (remainingDamage > 0 && attackerName...)
 
-            // ── EL OJO QUE TODO LO VE (Sauron): reducción 50% con MegaProv/ProtSagrada + Aturdimiento al atacante ──
-            if (damage > 0 && attackerName && attackerName !== targetName &&
-                target.passive && target.passive.name === 'El Ojo que Todo lo Ve') {
-                // Reducir 50% si Sauron tiene MegaProvocacion o Proteccion Sagrada
-                const _saHasMegaProv = hasStatusEffect(targetName, 'Mega Provocacion') ||
-                                       hasStatusEffect(targetName, 'MegaProvocacion');
-                const _saHasProt    = hasStatusEffect(targetName, 'Proteccion Sagrada') ||
-                                      hasStatusEffect(targetName, 'Protección Sagrada');
-                if (_saHasMegaProv || _saHasProt) {
-                    damage = Math.ceil(damage * 0.5);
-                    addLog('🌑 El Ojo que Todo lo Ve: ' + targetName + ' reduce 50% el daño recibido (' + damage + ' HP)', 'buff');
+            // ── EL OJO QUE TODO LO VE (Sauron) — efectos activos cuando SAURON ES EL OBJETIVO
+            //    que recibe daño (los efectos del lado "atacante" — bono +5 daño por Anillo,
+            //    robo de HP por Capa, Mega Posesión por 3 Raras — viven en el bucle de bonos de
+            //    reliquia del atacante en skills.js, junto a Puño de Obsidiana). ──
+            if (damage > 0 && target.passive && target.passive.name === 'El Ojo que Todo lo Ve') {
+                const _saCounts = { tier: {}, subtype: {} };
+                (target.equippedRelics || []).forEach(function (rn) {
+                    const rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[rn] : null;
+                    if (!rd) return;
+                    _saCounts.tier[rd.tier] = (_saCounts.tier[rd.tier] || 0) + 1;
+                    _saCounts.subtype[rd.subtype] = (_saCounts.subtype[rd.subtype] || 0) + 1;
+                });
+                // 6 Legendarias: inmune a TODO daño mientras haya otro aliado vivo
+                const _saOtherAllyAlive = Object.values(gameState.characters).some(function (c) {
+                    return c && c !== target && c.team === target.team && !c.isDead && c.hp > 0;
+                });
+                if ((_saCounts.tier['Legendario'] || 0) >= 6 && _saOtherAllyAlive) {
+                    damage = 0;
+                    addLog('👁️ El Ojo que Todo lo Ve: Sauron es inmune a todo daño (6 Legendarias, hay otro aliado vivo)', 'buff');
                 }
-                // Aturdimiento al atacante si Sauron tiene MegaProvocacion activa
-                if (_saHasMegaProv && !passiveExecuting) {
-                    passiveExecuting = true;
-                    if (typeof applyStun === 'function') applyStun(attackerName, 1);
-                    addLog('🌑 El Ojo que Todo lo Ve: ' + attackerName + ' queda Aturdido (atacó a Sauron con MegaProvocación)', 'debuff');
-                    passiveExecuting = false;
+                // 2 Épicas: solo puede recibir daño de ataques REALES (no directo) de enemigos con
+                // al menos 1 reliquia Legendaria de tipo Arma
+                else if ((_saCounts.tier['Epico'] || 0) >= 2 && attackerName !== null) {
+                    const _saAttacker = gameState.characters[attackerName];
+                    const _saAttackerHasLegArma = _saAttacker && (_saAttacker.equippedRelics || []).some(function (rn) {
+                        const rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[rn] : null;
+                        return rd && rd.tier === 'Legendario' && rd.slotCategory === 'Arma';
+                    });
+                    if (!_saAttackerHasLegArma) {
+                        damage = 0;
+                        addLog('👁️ El Ojo que Todo lo Ve: Sauron ignora el daño (2 Épicas — atacante sin Arma Legendaria)', 'buff');
+                    }
+                }
+                // Yelmo equipado: regenera 10 HP cada vez que recibe un golpe (ataque real)
+                if ((_saCounts.subtype['Yelmo'] || 0) >= 1 && attackerName !== null && !target.isDead && target.hp > 0) {
+                    if (typeof applyHeal === 'function') applyHeal(targetName, 10, 'El Ojo que Todo lo Ve (Yelmo)');
                 }
             }
 
