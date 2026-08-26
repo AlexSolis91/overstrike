@@ -510,6 +510,15 @@
         Object.keys(characterData).forEach(function (name) {
             var cd = characterData[name];
             if (!cd || !cd.abilities) return;
+            // ── PERSONAJES CON DESBLOQUEO (ej. Bolvar Fordragon, Arthas, Aragorn) — mismo
+            //    chequeo que usa la pantalla principal de selección de personajes. Antes este
+            //    selector de Squads no lo revisaba en absoluto, permitiendo elegir para las
+            //    defensas/ataques a cualquier personaje del juego, incluidos los que el jugador
+            //    nunca desbloqueó. ──
+            var _lockedChars = { 'Bolvar Fordragon': 'bolvar_fordragon', 'Gogeta': 'gogeta', 'Arthas Menethil': 'arthas_menethil', 'Grindelwald': 'grindelwald', 'Aragorn': 'aragorn' };
+            var _lockKey = _lockedChars[name];
+            var _isLocked = _lockKey && !(window._unlockedCharacters && window._unlockedCharacters[_lockKey]);
+            if (_isLocked) return; // ni siquiera se muestra en el selector de Squads
             var blocked = used.has(name);
             var portrait = (typeof getCharPortrait === 'function') ? getCharPortrait(name) : '';
             html += '<div class="squads-pick-card" data-name="' + name.replace(/"/g, '&quot;') + '" style="position:relative;border-radius:10px;overflow:hidden;cursor:' + (blocked ? 'not-allowed' : 'pointer') + ';opacity:' + (blocked ? '0.3' : '1') + ';border:2px solid ' + (blocked ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.15)') + ';">' +
@@ -686,6 +695,11 @@
         Object.keys(characterData).forEach(function (name) {
             var cd = characterData[name];
             if (!cd || !cd.abilities) return;
+            // ── PERSONAJES CON DESBLOQUEO — mismo chequeo que el selector de defensas ──
+            var _lockedChars = { 'Bolvar Fordragon': 'bolvar_fordragon', 'Gogeta': 'gogeta', 'Arthas Menethil': 'arthas_menethil', 'Grindelwald': 'grindelwald', 'Aragorn': 'aragorn' };
+            var _lockKey = _lockedChars[name];
+            var _isLocked = _lockKey && !(window._unlockedCharacters && window._unlockedCharacters[_lockKey]);
+            if (_isLocked) return; // ni siquiera se muestra en el selector de ataque
             var isBlocked = blocked.has(name) || picked.has(name);
             var portrait = (typeof getCharPortrait === 'function') ? getCharPortrait(name) : '';
             html += '<div class="squads-atk-card" data-name="' + name.replace(/"/g, '&quot;') + '" style="position:relative;border-radius:8px;overflow:hidden;cursor:' + (isBlocked ? 'not-allowed' : 'pointer') + ';opacity:' + (isBlocked ? '0.3' : '1') + ';border:2px solid rgba(255,255,255,0.12);">' +
