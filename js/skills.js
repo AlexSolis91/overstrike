@@ -8701,6 +8701,164 @@
                 addLog('🔫 Plasma Blaster: ' + _pbDmg + ' daño a ' + targetName + ' (x' + _pbTotalMarks + ' por marcas del cazador en el equipo enemigo)', 'damage');
 
             // ══════════════════════════════════════════════════════
+            // SAURON (kit nuevo) — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'voluntad_mordor_sauron_v2') {
+                // SAURON — Voluntad de Mordor: ST 1 daño. Revisa el estado del objetivo ANTES de
+                // aplicar daño (los 3 efectos condicionales dependen de lo que ya tenía activo).
+                const _vmTgt = gameState.characters[targetName];
+                const _vmHadMegaPos = _vmTgt && (_vmTgt.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'mega posesion'; });
+                const _vmHadMegaCong = _vmTgt && (_vmTgt.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'mega congelacion'; });
+                const _vmHadMegaAturd = _vmTgt && (_vmTgt.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'mega aturdimiento'; });
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('👁️ Voluntad de Mordor: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                const _vmAtk = gameState.characters[gameState.selectedCharacter];
+                if (_vmHadMegaPos && _vmAtk) {
+                    Object.keys(gameState.characters).forEach(function (n) {
+                        const c = gameState.characters[n];
+                        if (c && c.team === _vmAtk.team && !c.isDead && c.hp > 0) c.charges = Math.min(20, (c.charges || 0) + 5);
+                    });
+                    addLog('👁️ Voluntad de Mordor: equipo aliado genera 5 cargas (Mega Posesión previa)', 'buff');
+                }
+                if (_vmHadMegaCong && _vmAtk) {
+                    const _vmETeam = _vmAtk.team === 'team1' ? 'team2' : 'team1';
+                    const _vmDmg = Math.ceil((_vmAtk.maxHp || 0) * 0.5);
+                    Object.keys(gameState.characters).forEach(function (n) {
+                        const c = gameState.characters[n];
+                        if (c && c.team === _vmETeam && !c.isDead && c.hp > 0) applyDamageWithShield(n, _vmDmg, gameState.selectedCharacter);
+                    });
+                    addLog('👁️ Voluntad de Mordor: ' + _vmDmg + ' daño a todo el equipo enemigo (Megacongelación previa)', 'damage');
+                }
+                if (_vmHadMegaAturd && _vmAtk) {
+                    const _vmDead = Object.keys(gameState.characters).filter(function (n) {
+                        const c = gameState.characters[n];
+                        return c && c.team === _vmAtk.team && c.isDead;
+                    }).slice(0, 2);
+                    _vmDead.forEach(function (n) {
+                        const c = gameState.characters[n];
+                        c.isDead = false;
+                        c.hp = c.maxHp;
+                        c.charges = 20;
+                        addLog('👁️ Voluntad de Mordor: ' + n + ' revive con 100% HP y 20 cargas (Mega Aturdimiento previo)', 'buff');
+                    });
+                }
+
+            } else if (ability.effect === 'mano_negra_sauron_v2') {
+                // SAURON — Mano Negra: AOE 3 daño. Por cada reliquia de tipo Yelmo/Botas/
+                // Armadura/Anillo/Maza equipada, aplica 1 debuff aleatorio a un enemigo aleatorio.
+                const _mnAtk = gameState.characters[gameState.selectedCharacter];
+                const _mnETeam = _mnAtk ? (_mnAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _mnAOE = window.resolveAOETargets(gameState.selectedCharacter, _mnETeam);
+                _mnAOE.targets.forEach(function (_n) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.isDead || _c.hp <= 0) return;
+                    applyDamageWithShield(_n, finalDamage * _mnAOE.multiplier, gameState.selectedCharacter);
+                });
+                _mnAOE.summonTargets.forEach(function (_sid) {
+                    applySummonDamage(_sid, finalDamage * _mnAOE.multiplier, gameState.selectedCharacter);
+                });
+                addLog('👁️ Mano Negra: ' + finalDamage + ' daño AOE al equipo enemigo', 'damage');
+                if (_mnAtk) {
+                    const _mnSubtypes = ['Yelmo', 'Botas', 'Armadura', 'Anillo', 'Maza'];
+                    const _mnRelicCount = (_mnAtk.equippedRelics || []).filter(function (rn) {
+                        const rd = RELICS_DATA[rn];
+                        return rd && _mnSubtypes.includes(rd.subtype);
+                    }).length;
+                    const _mnDebuffPool = ['Mega Posesion', 'Mega Aturdimiento', 'Mega Congelacion', 'Posesion', 'Aturdimiento', 'Congelacion'];
+                    for (let _i = 0; _i < _mnRelicCount; _i++) {
+                        const _mnEnemies = Object.keys(gameState.characters).filter(function (n) {
+                            const c = gameState.characters[n];
+                            return c && c.team === _mnETeam && !c.isDead && c.hp > 0;
+                        });
+                        if (_mnEnemies.length === 0) break;
+                        const _mnTgt = _mnEnemies[Math.floor(Math.random() * _mnEnemies.length)];
+                        const _mnDebuff = _mnDebuffPool[Math.floor(Math.random() * _mnDebuffPool.length)];
+                        if (_mnDebuff === 'Mega Posesion') { if (typeof applyMegaPosesion === 'function') applyMegaPosesion(_mnTgt, 2); }
+                        else if (_mnDebuff === 'Posesion') { if (typeof applyPosesion === 'function') applyPosesion(_mnTgt, 2); }
+                        else if (_mnDebuff === 'Mega Congelacion') { if (typeof applyFreeze === 'function') applyFreeze(_mnTgt, 2, true); }
+                        else if (_mnDebuff === 'Congelacion') { if (typeof applyFreeze === 'function') applyFreeze(_mnTgt, 2, false); }
+                        else if (_mnDebuff === 'Mega Aturdimiento') { if (typeof applyDebuff === 'function') applyDebuff(_mnTgt, { name: 'Mega Aturdimiento', type: 'debuff', duration: 1, emoji: '💫' }); }
+                        else if (_mnDebuff === 'Aturdimiento') { if (typeof applyStun === 'function') applyStun(_mnTgt, 1); }
+                    }
+                    if (_mnRelicCount > 0) addLog('👁️ Mano Negra: ' + _mnRelicCount + ' debuff(s) aleatorio(s) aplicado(s) (reliquias equipadas)', 'debuff');
+                }
+
+            } else if (ability.effect === 'senor_oscuro_sauron_v2') {
+                // SAURON — Señor Oscuro: ST 6 daño. Si el objetivo tiene Provocación/Mega
+                // Provocación (buff o pasiva), causa 50% del HP máx de Sauron a 2 enemigos
+                // aleatorios. Cura 50% de su HP máx por cada enemigo eliminado por este ataque.
+                const _soTgt = gameState.characters[targetName];
+                const _soHasProv = _soTgt && (_soTgt.statusEffects || []).some(function (e) {
+                    const _en = normAccent(e && e.name || '');
+                    return _en === 'provocacion' || _en === 'mega provocacion';
+                });
+                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
+                addLog('👁️ Señor Oscuro: ' + finalDamage + ' daño a ' + targetName, 'damage');
+                const _soAtk = gameState.characters[gameState.selectedCharacter];
+                if (_soHasProv && _soAtk) {
+                    const _soETeam = _soAtk.team === 'team1' ? 'team2' : 'team1';
+                    const _soDmg = Math.ceil((_soAtk.maxHp || 0) * 0.5);
+                    const _soEnemies = Object.keys(gameState.characters).filter(function (n) {
+                        const c = gameState.characters[n];
+                        return c && c.team === _soETeam && !c.isDead && c.hp > 0;
+                    });
+                    const _soShuffled = _soEnemies.sort(function () { return Math.random() - 0.5; }).slice(0, 2);
+                    let _soKills = 0;
+                    _soShuffled.forEach(function (_n) {
+                        applyDamageWithShield(_n, _soDmg, gameState.selectedCharacter);
+                        const _cAfter = gameState.characters[_n];
+                        if (_cAfter && _cAfter.isDead) _soKills++;
+                    });
+                    addLog('👁️ Señor Oscuro: ' + _soDmg + ' daño a ' + _soShuffled.join(', ') + ' (Provocación detectada)', 'damage');
+                    if (_soKills > 0) {
+                        const _soHealAmt = Math.ceil((_soAtk.maxHp || 0) * 0.5) * _soKills;
+                        if (typeof applyHeal === 'function') applyHeal(gameState.selectedCharacter, _soHealAmt, 'Señor Oscuro');
+                        addLog('👁️ Señor Oscuro: Sauron recupera ' + _soHealAmt + ' HP (' + _soKills + ' enemigo(s) eliminado(s))', 'heal');
+                    }
+                }
+
+            } else if (ability.effect === 'poder_anillo_sauron_v2') {
+                // SAURON (Over) — Poder del Anillo: cura y aumenta HP máx sumando por cada
+                // reliquia equipada (10%/10 normal, 20%/20 Legendaria). Causa daño al equipo
+                // enemigo (repartido hasta 3 objetivos) igual al HP curado. Turno extra por kill.
+                const _paAtk = gameState.characters[gameState.selectedCharacter];
+                if (_paAtk) {
+                    let _paHealPct = 0, _paMaxHpBonus = 0;
+                    (_paAtk.equippedRelics || []).forEach(function (rn) {
+                        const rd = RELICS_DATA[rn];
+                        if (!rd) return;
+                        if (rd.tier === 'Legendario') { _paHealPct += 0.20; _paMaxHpBonus += 20; }
+                        else { _paHealPct += 0.10; _paMaxHpBonus += 10; }
+                    });
+                    _paAtk.maxHp = (_paAtk.maxHp || 0) + _paMaxHpBonus;
+                    const _paHealAmt = Math.ceil((_paAtk.maxHp || 0) * _paHealPct);
+                    if (typeof applyHeal === 'function') applyHeal(gameState.selectedCharacter, _paHealAmt, 'Poder del Anillo');
+                    addLog('👁️ Poder del Anillo: Sauron cura ' + _paHealAmt + ' HP y gana +' + _paMaxHpBonus + ' HP máximo (reliquias equipadas)', 'heal');
+                    const _paETeam = _paAtk.team === 'team1' ? 'team2' : 'team1';
+                    const _paEnemies = Object.keys(gameState.characters).filter(function (n) {
+                        const c = gameState.characters[n];
+                        return c && c.team === _paETeam && !c.isDead && c.hp > 0;
+                    });
+                    const _paTargets = _paEnemies.sort(function () { return Math.random() - 0.5; }).slice(0, 3);
+                    let _paRemaining = _paHealAmt;
+                    let _paAnyKill = false;
+                    _paTargets.forEach(function (_n, _idx) {
+                        const _paShare = Math.ceil(_paHealAmt / _paTargets.length);
+                        const _paThisDmg = Math.min(_paShare, _paRemaining);
+                        _paRemaining -= _paThisDmg;
+                        applyDamageWithShield(_n, _paThisDmg, gameState.selectedCharacter);
+                        const _cAfter = gameState.characters[_n];
+                        if (_cAfter && _cAfter.isDead) _paAnyKill = true;
+                    });
+                    if (_paTargets.length > 0) addLog('👁️ Poder del Anillo: ' + _paHealAmt + ' daño repartido entre ' + _paTargets.join(', '), 'damage');
+                    if (_paAnyKill) {
+                        if (!gameState._skeggoxExtraTurn) gameState._skeggoxExtraTurn = gameState.selectedCharacter;
+                        addLog('👁️ Poder del Anillo: ¡Sauron gana un turno adicional! (eliminó un enemigo)', 'buff');
+                    }
+                }
+
+            // ══════════════════════════════════════════════════════
             // DOOMSDAY — handlers actualizados
             // ══════════════════════════════════════════════════════
 
