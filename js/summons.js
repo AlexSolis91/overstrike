@@ -1200,6 +1200,26 @@
                     _sfxHit.currentTime = 0; _sfxHit.volume = 0.5; _sfxHit.play().catch(function(){});
                 }
             }
+            // ── EL OJO QUE TODO LO VE (Sauron): consumir banderas puestas en skills.js —
+            //    3 Raras → Mega Posesión al objetivo golpeado; Capa → roba 8 HP del objetivo.
+            //    NO se resetean aquí — un AOE golpea a varios objetivos con applyDamageWithShield
+            //    varias veces seguidas, y el efecto debe aplicar a TODOS los golpeados, no solo al
+            //    primero. El reset real vive en skills.js, al inicio de cada ejecución de habilidad.
+            if (damage > 0 && attackerName !== null && !passiveExecuting) {
+                const _saAtkChar = gameState.characters[attackerName];
+                const _saTgtChar = gameState.characters[targetName];
+                if (gameState._sauronAppliesMegaPosesion && _saTgtChar && !_saTgtChar.isDead && _saTgtChar.hp > 0) {
+                    if (typeof applyMegaPosesion === 'function') applyMegaPosesion(targetName, 2);
+                    addLog('👁️ El Ojo que Todo lo Ve: Mega Posesión aplicada a ' + targetName + ' (3 Raras)', 'debuff');
+                }
+                if (gameState._sauronCapaSteal && _saTgtChar && !_saTgtChar.isDead && _saTgtChar.hp > 0 && _saAtkChar) {
+                    const _saStealAmt = Math.min(gameState._sauronCapaSteal, _saTgtChar.hp);
+                    _saTgtChar.hp = Math.max(0, _saTgtChar.hp - _saStealAmt);
+                    if (typeof applyHeal === 'function') applyHeal(attackerName, _saStealAmt, 'El Ojo que Todo lo Ve (Capa)');
+                    else _saAtkChar.hp = Math.min(_saAtkChar.maxHp, (_saAtkChar.hp || 0) + _saStealAmt);
+                    addLog('👁️ El Ojo que Todo lo Ve: ' + attackerName + ' roba ' + _saStealAmt + ' HP de ' + targetName + ' (Capa)', 'heal');
+                }
+            }
             // ── GUANTE DE SCORPIO: todos los ataques del portador aplican 1-5 stacks de Veneno
             //    por cada golpe acertado sobre el objetivo ──
             if (damage > 0 && attackerName !== null && !passiveExecuting) {
