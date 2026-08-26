@@ -901,12 +901,12 @@
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 tirionLowHpTriggered: false,
                 portrait: 'https://i.ibb.co/mrcVTbh7/Whats-App-Image-2026-04-16-at-3-22-08-PM.jpg',
-                passive: { name: 'Paladín de la Mano de Plata', description: 'Si llega a 10 HP: Protección Sagrada + Escudo Sagrado + 20 cargas (solo una vez). Cada vez que un enemigo usa Over: +3 HP y +3 cargas al equipo aliado.' },
+                passive: { name: 'Paladín de la Mano de Plata', description: 'Si Tirion llega a 10 HP: se aplica Protección Sagrada y Escudo Sagrado, disipa sus propios debuffs y genera 20 cargas (solo una vez por combate). Cada vez que un enemigo usa un Over, cura 5 HP y genera 5 cargas a todo el equipo aliado.' },
                 abilities: [
-                    { name: 'Luz del Alba', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'aoe', effect: 'luz_del_alba_tirion', description: 'Causa 1 AOE. Cura 1 HP al equipo aliado. Aplica Aura de Luz al equipo aliado.' },
+                    { name: 'Luz del Alba', type: 'basic', cost: 0, chargeGain: 2, damage: 1, target: 'aoe', effect: 'luz_del_alba_tirion', description: 'Causa 1 AOE. Cura 2 HP al equipo aliado. Aplica Aura de Luz al equipo aliado.' },
                     { name: 'Protección de la Luz', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'ally_single', effect: 'proteccion_luz_tirion', description: 'Cura 3 HP al objetivo aliado. Disipa sus debuffs. Por cada debuff disipado, el objetivo genera 2 cargas.' },
-                    { name: 'Portador de Cenizas', type: 'special', cost: 10, chargeGain: 0, damage: 1, target: 'aoe', effect: 'portador_cenizas_tirion', description: 'Causa 2 AOE. Cura al equipo aliado el 50% del HP actual de Tirion. Toma control de todos los personajes revividos por pasiva o habilidad.' },
-                    { name: 'Una Luz en la Oscuridad', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'self', effect: 'luz_oscuridad_tirion', description: 'Solo usable si Tirion es el único aliado vivo. Revive a todos los aliados con 20 HP y 10 cargas.' }
+                    { name: 'Portador de Cenizas', type: 'special', cost: 10, chargeGain: 0, damage: 1, target: 'aoe', effect: 'portador_cenizas_tirion', description: 'Causa 2 AOE. Cura al equipo aliado el 50% de los HP actuales de Tirion. Toma control de todos los personajes del equipo enemigo que hayan sido revividos por alguna pasiva, movimiento o reliquia — cambian de bando hacia el equipo de Tirion.' },
+                    { name: 'Una Luz en la Oscuridad', type: 'over', cost: 15, chargeGain: 0, damage: 0, target: 'self', effect: 'luz_oscuridad_tirion', description: 'Solo puede ejecutarse si Tirion es el único aliado vivo. Revive a todos los aliados con 20 HP y 10 cargas.' }
                 ]
             },
 
