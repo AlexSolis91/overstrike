@@ -287,7 +287,15 @@
             // La Ronda 1 nunca pasa por la transición normal de endTurn() (empieza directo
             // en 1, no "llega" a 1 incrementando desde 0) — así que sin esta llamada, todos
             // esos efectos se saltaban por completo en el primer turno de la partida.
-            if (typeof _runRoundStartPassiveHooks === 'function') _runRoundStartPassiveHooks();
+            // NOTA: la llamada real se movió más abajo, al bloque que espera a que las
+            // reliquias terminen de cargar (window._relicsReady) — antes corría aquí mismo,
+            // ANTES de que loadGameRelics() completara su Promise.all, así que cualquier
+            // condición "si tiene tal reliquia equipada" (ej. Sauron: +20 cargas con Anillo
+            // Legendario) siempre evaluaba con equippedRelics todavía vacío en la Ronda 1 —
+            // funcionaba recién a partir de la Ronda 2, cuando las reliquias ya habían
+            // cargado de la ronda anterior. Debe seguir corriendo ANTES de calculateTurnOrder()
+            // (no después) para que los bonos de velocidad que otorga (Sauron, Minato, etc.)
+            // sí afecten el orden de turnos de esa misma ronda.
 
             // Calcular orden de turnos
             calculateTurnOrder();
@@ -333,6 +341,10 @@
                 if (window._relicsReady || !gameState._waitingForRelics) {
                     clearInterval(_turnStartInterval);
                     gameState._waitingForRelics = false;
+                    // Ganchos de inicio de ronda — AQUÍ, ya con las reliquias cargadas, para que
+                    // condiciones como "si tiene tal reliquia equipada" evalúen correctamente
+                    // desde la Ronda 1 (antes solo funcionaban a partir de la Ronda 2).
+                    if (typeof _runRoundStartPassiveHooks === 'function') _runRoundStartPassiveHooks();
                     // Recalcular con velocidades actualizadas por reliquias
                     calculateTurnOrder();
                     renderTurnOrder();
@@ -344,6 +356,7 @@
                 if (gameState._waitingForRelics) {
                     clearInterval(_turnStartInterval);
                     gameState._waitingForRelics = false;
+                    if (typeof _runRoundStartPassiveHooks === 'function') _runRoundStartPassiveHooks();
                     calculateTurnOrder();
                     renderTurnOrder();
                     startTurn();
