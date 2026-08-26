@@ -134,7 +134,6 @@
             // DAENERYS - Dinastía del Dragón: inmune a Quemadura y Quemadura Solar
             if ((targetName === 'Daenerys Targaryen' || targetName === 'Daenerys Targaryen v2')) {
                 addLog('🐉 Dynastía del Dragón: Daenerys es inmune a Quemadura', 'buff');
-                triggerDaenerysPassiveBurnHeal('Daenerys Targaryen');
                 return;
             }
             // INVIERNO ETERNO (Rey de la Noche): inmune a Quemaduras
@@ -209,11 +208,11 @@
 function processBurnEffects(charName) {
             const char = gameState.characters[charName];
             if (!char || !char.statusEffects) return;
-            // DAENERYS: immune to Quemadura — remove any that slipped through and heal
+            // DAENERYS: immune to Quemadura — remove any that slipped through (sin curar, ya que
+            // no llegó a causar daño — la curación ahora solo ocurre cuando una Quemadura SÍ
+            // causa daño, más abajo)
             if ((charName === 'Daenerys Targaryen' || charName === 'Daenerys Targaryen v2')) {
-                const burnsBefore = char.statusEffects.filter(e => e && e.name === 'Quemadura').length;
                 char.statusEffects = char.statusEffects.filter(e => !e || e.name !== 'Quemadura');
-                if (burnsBefore > 0 && typeof triggerDaenerysPassiveBurnHeal === 'function') triggerDaenerysPassiveBurnHeal(charName);
                 return;
             }
             const burnEffects = char.statusEffects.filter(e => e && e.name === 'Quemadura');
@@ -246,6 +245,9 @@ function processBurnEffects(charName) {
                 }
                 applyDamageWithShield(charName, damage, null);
                 addLog('🔥 ' + charName + ' recibe ' + damage + ' de daño por Quemadura', 'damage');
+                // ── DINASTÍA DEL DRAGÓN (Daenerys): cada vez que un debuff Quemadura cause daño
+                //    (a cualquiera, sin importar el equipo), Daenerys cura 1 HP ──
+                if (typeof triggerDaenerysPassiveBurnHeal === 'function') triggerDaenerysPassiveBurnHeal('Daenerys Targaryen');
                 // ── ASPECTO DE LA VIDA (Alexstrasza): cada vez que una Quemadura inflige daño
                 //    (sin importar en qué equipo esté), genera 1 carga al equipo aliado de Alexstrasza ──
                 for (const _alqN in gameState.characters) {
@@ -296,11 +298,10 @@ function processBurnEffects(charName) {
             }
             const char = gameState.characters[charName];
             if (!char || !char.statusEffects) return;
-            // DAENERYS: immune to Quemadura Solar
+            // DAENERYS: immune to Quemadura Solar (no cura aquí — QS nunca causa daño, así que
+            // bloquearla/limpiarla no cumple la condición de "cuando Quemadura causa daño")
             if ((charName === 'Daenerys Targaryen' || charName === 'Daenerys Targaryen v2')) {
-                const solarBefore = char.statusEffects.filter(e => e && e.name === 'Quemadura Solar').length;
                 char.statusEffects = char.statusEffects.filter(e => !e || e.name !== 'Quemadura Solar');
-                if (solarBefore > 0 && typeof triggerDaenerysPassiveBurnHeal === 'function') triggerDaenerysPassiveBurnHeal(charName);
                 return;
             }
             if (hasStatusEffect(charName, 'Proteccion Sagrada')) return;
@@ -328,10 +329,8 @@ function processBurnEffects(charName) {
                 if (effect.permanent) return true; // Nunca expiran los buffs permanentes
                 if (effect.untilRoundEnd) return true;
                 if (effect.duration <= 0) {
-                    // DAENERYS Dinastía del Dragón: heal 1 HP when Quemadura/QS expires
-                    if ((charName === 'Daenerys Targaryen' || charName === 'Daenerys Targaryen v2') && (effect.name === 'Quemadura' || effect.name === 'Quemadura Solar')) {
-                        if (typeof triggerDaenerysPassiveBurnHeal === 'function') triggerDaenerysPassiveBurnHeal(charName);
-                    }
+                    // (Dinastía del Dragón ya no cura al expirar Quemadura/QS — solo cuando
+                    // Quemadura causa daño realmente, ver processBurnEffects)
                     // PALPATINE PASSIVE: when an enemy debuff expires, 50% chance to stun them
                     if (effect.type === 'debuff') {
                         const palChar = gameState.characters['Emperador Palpatine'];
