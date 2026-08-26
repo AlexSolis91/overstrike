@@ -90,12 +90,35 @@ function triggerMaboroshi(targetTeam, debuffName) {
             addLog(`🎯 ${targetName} gana Buff Concentración (${duration} turno${duration>1?'s':''})`, 'buff');
         }
 
+        // ── EL OJO QUE TODO LO VE (Sauron): helper compartido de inmunidad a debuffs, usado por
+        //    applyDebuff() y las funciones dedicadas (applyFreeze, applyMegaPosesion,
+        //    applyPosesion) que NO pasan por applyDebuff() directamente ──
+        function _sauronDebuffImmune(targetName, debuffNameNorm) {
+            const t = gameState.characters[targetName];
+            if (!t || !t.passive || t.passive.name !== 'El Ojo que Todo lo Ve') return false;
+            const _tier = {};
+            (t.equippedRelics || []).forEach(function (rn) {
+                const rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[rn] : null;
+                if (rd) _tier[rd.tier] = (_tier[rd.tier] || 0) + 1;
+            });
+            if ((_tier['Legendario'] || 0) >= 3) {
+                addLog('👁️ El Ojo que Todo lo Ve: Sauron es inmune a debuffs (3 Legendarias)', 'buff');
+                return true;
+            }
+            if ((_tier['Especial'] || 0) >= 2 && (debuffNameNorm === 'miedo' || debuffNameNorm === 'confusion')) {
+                addLog('👁️ El Ojo que Todo lo Ve: Sauron es inmune a ' + debuffNameNorm + ' (2 Especiales)', 'buff');
+                return true;
+            }
+            return false;
+        }
+
         function applyAgotamiento(targetName, duration) {
             applyDebuff(targetName, { name: 'Agotamiento', type: 'debuff', duration, emoji: '😩' });
             addLog(`😩 ${targetName} sufre Agotamiento (${duration} turno${duration>1?'s':''})`, 'damage');
         }
 
         function applyPosesion(targetName, duration) {
+            if (_sauronDebuffImmune(targetName, 'posesion')) return;
             // Análoga a applyMegaPosesion: máximo 1 Posesión (normal) activa por personaje —
             // un segundo intento se ignora por completo, sin refrescar duración.
             if (hasStatusEffect(targetName, 'Posesion')) {
@@ -113,6 +136,7 @@ function triggerMaboroshi(targetTeam, debuffName) {
         }
 
         function applyMegaPosesion(targetName, duration) {
+            if (_sauronDebuffImmune(targetName, 'mega posesion')) return;
             if (hasStatusEffect(targetName, 'Mega Posesion')) {
                 addLog(`👁️ ${targetName} ya tiene Mega Posesión activo`, 'info'); return;
             }
@@ -653,6 +677,8 @@ function triggerMaboroshi(targetTeam, debuffName) {
 function applyDebuff(targetName, effectObj) {
             const target = gameState.characters[targetName];
             if (!target || !target.statusEffects) return;
+            // EL OJO QUE TODO LO VE (Sauron): condicional según reliquias equipadas
+            if (_sauronDebuffImmune(targetName, normAccent(effectObj && effectObj.name || ''))) return;
             // SABIDURÍA ANTIGUA (Yoda): inmune a todos los debuffs
             if (target.passive && target.passive.name === 'Sabiduría Antigua') {
                 addLog('🟢 Sabiduría Antigua: ' + targetName + ' es inmune a debuffs', 'buff');
@@ -1297,6 +1323,7 @@ function applyDebuff(targetName, effectObj) {
 
         function applyFreeze(targetName, duration, mega = false) {
 
+            if (_sauronDebuffImmune(targetName, mega ? 'mega congelacion' : 'congelacion')) return;
             if (isImmuneToDebuff(targetName)) { addLog('🛡️ ' + targetName + ' es inmune a debuffs', 'buff'); return; }            const name = mega ? 'Mega Congelacion' : 'Congelacion';
             const emoji = mega ? '🧊❄️' : '❄️';
             const speedPenalty = mega ? 0.20 : 0.10;
