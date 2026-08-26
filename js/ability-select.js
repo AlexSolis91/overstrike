@@ -676,10 +676,12 @@ function triggerMaboroshi(targetTeam, debuffName) {
             }
         }
 
-        // ── PASIVA EL OJO QUE TODO LO VE (Sauron): ignora Provocación/Sigilo ──
+        // ── (OBSOLETO) La pasiva vieja de Sauron ignoraba Provocación/Sigilo — su rediseño ya
+        //    no incluye este comportamiento, así que esta función ahora siempre retorna false.
+        //    Se deja la función (en vez de tocar cada referencia dispersa) para no arriesgar
+        //    romper la sintaxis de las expresiones que la combinan con otros bypass (Ivar, etc.)
         function sauronIgnoresRestrictions() {
-            const sauron = gameState.characters['Sauron'];
-            return sauron && !sauron.isDead && sauron.hp > 0 && gameState.selectedCharacter === 'Sauron';
+            return false;
         }
 
         // ── PASIVA AURA DE HIELO (Lich King): congela al atacante al recibir daño ──
