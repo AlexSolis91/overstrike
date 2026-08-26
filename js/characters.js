@@ -344,12 +344,12 @@
                 hp: 15, maxHp: 15, speed: 77, charges: 0, team: 'team2',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
                 portrait: 'https://i.postimg.cc/8k0xqnbx/Whats_App_Image_2026_03_05_at_9_41_48_AM.jpg',
-                passive: { name: 'Dinastía del Dragón', description: 'Inmune a Debuffs Quemadura y Quemadura Solar. Aplica curación en Daenerys de 1 HP cada vez que un debuff Quemadura expire, sea Limpiado o Disipado.' },
+                passive: { name: 'Dinastía del Dragón', description: 'Inmune a debuffs Quemadura y Quemadura Solar. Cura 1 HP en Daenerys cada vez que un debuff Quemadura cause daño (a cualquiera). Al inicio de cada ronda, si los 3 dragones están invocados, se aplica Escudo Sagrado 1 turno y Aura de Fuego 1 turno.' },
                 abilities: [
-                    { name: 'Madre de Dragones', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'self', effect: 'summon_dragon', description: 'INVOCACIÓN: Invoca un Dragón aleatorio.' },
-                    { name: 'Vuelo del Dragón', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'self', effect: 'escudo_sagrado_self', duration: 2, description: 'Gana Buff Escudo Sagrado por 2 turnos.' },
-                    { name: 'Locura Targaryen', type: 'special', cost: 8, chargeGain: 0, damage: 6, target: 'aoe', effect: 'locura_targaryen', description: 'Causa 6 AOE. Genera 1 punto de carga a todo el equipo aliado por cada debuff Quemadura activo en los enemigos.' },
-                    { name: 'Dracarys', type: 'over', cost: 14, chargeGain: 0, damage: 8, target: 'aoe', effect: 'dracarys', burnAmount: 2, description: 'INVOCACIÓN: Causa 8 AOE. Aplica Debuff Quemadura de 2 HP. Invoca a los 3 dragones.' }
+                    { name: 'Madre de Dragones', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'self', effect: 'summon_dragon', description: 'Invoca un Dragón aleatorio.' },
+                    { name: 'Trinidad del Dragón', type: 'special', cost: 4, chargeGain: 0, damage: 0, target: 'aoe', effect: 'trinidad_dragon_daenerys', description: 'Los dragones invocados activan su habilidad pasiva. Daenerys gana Escudo +3 HP por cada dragón invocado. Si tiene Escudo de 20 HP o más, aplica Quemadura de 2 a 10 HP a cada enemigo.' },
+                    { name: 'Locura Targaryen', type: 'special', cost: 8, chargeGain: 0, damage: 6, target: 'aoe', effect: 'locura_targaryen_v2', description: 'Activa el daño de todos los debuffs Quemadura activos en ambos equipos. Por cada punto de daño causado así, genera 1 carga a un aliado aleatorio (tirada independiente por punto).' },
+                    { name: 'Dracarys', type: 'over', cost: 15, chargeGain: 0, damage: 10, target: 'aoe', effect: 'dracarys_v2', description: 'Invoca a los 3 dragones. Si los 3 ya estaban invocados antes del ataque, es crítico. +2 de daño directo por cada debuff Quemadura activo en el equipo enemigo antes del ataque.' }
                 ]
             },
 
