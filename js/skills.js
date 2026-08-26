@@ -1410,6 +1410,13 @@
         }
 
         function _executeAbilityCore(targetName) {
+            // Resetear banderas de "El Ojo que Todo lo Ve" (Sauron) al inicio de CADA ejecución
+            // de habilidad — se vuelven a calcular más abajo, en el bucle de bonos de reliquia,
+            // según lo que Sauron tenga equipado en ESTE momento. Deben persistir durante TODA
+            // la ejecución (para que un AOE las aplique a cada objetivo golpeado), así que no se
+            // resetean tras cada golpe individual — solo aquí, al empezar una ejecución nueva.
+            gameState._sauronAppliesMegaPosesion = false;
+            gameState._sauronCapaSteal = 0;
             // SFX especial para OVER
             if (gameState.selectedAbility && gameState.selectedAbility.type === 'over') {
                 audioManager.playOverSfx();
@@ -2036,6 +2043,34 @@
                         gameState._martilloAlbaActive = true;
                     }
                 });
+            }
+
+            // ── EL OJO QUE TODO LO VE (Sauron): efectos del lado ATACANTE, según cuántas
+            //    reliquias de cada tipo tenga equipadas. No están atados a una reliquia
+            //    específica (effect key) sino al SUBTIPO/TIER, ya que "por cada Anillo" aplica a
+            //    cualquier reliquia de ese subtipo, sin importar cuál sea exactamente. ──
+            if (attacker && attacker.passive && attacker.passive.name === 'El Ojo que Todo lo Ve' && finalDamage > 0) {
+                const _saAtkCounts = { tier: {}, subtype: {} };
+                (attacker.equippedRelics || []).forEach(function (rn) {
+                    const rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[rn] : null;
+                    if (!rd) return;
+                    _saAtkCounts.tier[rd.tier] = (_saAtkCounts.tier[rd.tier] || 0) + 1;
+                    _saAtkCounts.subtype[rd.subtype] = (_saAtkCounts.subtype[rd.subtype] || 0) + 1;
+                });
+                // +5 daño por cada Anillo equipado
+                const _saAnillos = _saAtkCounts.subtype['Anillo'] || 0;
+                if (_saAnillos > 0) {
+                    finalDamage += 5 * _saAnillos;
+                    addLog('👁️ El Ojo que Todo lo Ve: +' + (5 * _saAnillos) + ' daño (' + _saAnillos + ' Anillo(s))', 'buff');
+                }
+                // 3 Raras: todos los ataques aplican Mega Posesión
+                if ((_saAtkCounts.tier['Raro'] || 0) >= 3) {
+                    gameState._sauronAppliesMegaPosesion = true;
+                }
+                // Capa equipada: roba 8 HP del objetivo golpeado (se resuelve tras aplicar el daño)
+                if ((_saAtkCounts.subtype['Capa'] || 0) >= 1) {
+                    gameState._sauronCapaSteal = 8;
+                }
             }
 
             // ── GUANTE DE SCORPIO: cualquier daño causado por un movimiento Over de un
