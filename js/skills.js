@@ -8859,6 +8859,144 @@
                 }
 
             // ══════════════════════════════════════════════════════
+            // DAENERYS TARGARYEN (kit nuevo) — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'trinidad_dragon_daenerys') {
+                // DAENERYS — Trinidad del Dragón: los dragones invocados activan su pasiva.
+                // Daenerys gana Escudo +3 HP por cada dragón invocado. Si tiene Escudo ≥20 HP,
+                // aplica Quemadura de 2 a 10 HP (independiente por enemigo) a cada enemigo.
+                const _tdAtk = gameState.characters[gameState.selectedCharacter];
+                if (_tdAtk) {
+                    const _tdETeam = _tdAtk.team === 'team1' ? 'team2' : 'team1';
+                    const _tdDragonNames = ['Drogon', 'Rhaegal', 'Viserion'];
+                    const _tdAliveDragons = Object.values(gameState.summons).filter(function (s) {
+                        return s && _tdDragonNames.includes(s.name) && s.team === _tdAtk.team && !s.isDead && s.hp > 0;
+                    });
+                    addLog('🐉 Trinidad del Dragón: ' + _tdAliveDragons.length + ' dragón(es) activan su pasiva', 'buff');
+                    _tdAliveDragons.forEach(function (dragon) {
+                        if (dragon.name === 'Drogon') {
+                            Object.keys(gameState.characters).forEach(function (n) {
+                                const c = gameState.characters[n];
+                                if (c && c.team === _tdETeam && !c.isDead && c.hp > 0) applyDamageWithShield(n, 3, null);
+                            });
+                            addLog('🐉 Sombra de Fuego: 3 daño a todo el equipo enemigo', 'damage');
+                        } else if (dragon.name === 'Rhaegal') {
+                            Object.keys(gameState.characters).forEach(function (n) {
+                                const c = gameState.characters[n];
+                                if (c && c.team === _tdETeam && !c.isDead && c.hp > 0 && typeof applyFlatBurn === 'function') applyFlatBurn(n, 1, 1);
+                            });
+                            addLog('🐉 Furia Esmeralda: Quemadura 1 HP a todo el equipo enemigo', 'debuff');
+                        } else if (dragon.name === 'Viserion') {
+                            Object.keys(gameState.characters).forEach(function (n) {
+                                const c = gameState.characters[n];
+                                if (c && c.team === _tdAtk.team && !c.isDead && c.hp > 0 && typeof applyHeal === 'function') applyHeal(n, 2, 'Llama de Oro');
+                            });
+                            addLog('🐉 Llama de Oro: cura 2 HP a todo el equipo aliado', 'heal');
+                        }
+                    });
+                    if (_tdAliveDragons.length > 0) {
+                        const _tdShieldAmt = 3 * _tdAliveDragons.length;
+                        if (typeof applyShield === 'function') applyShield(gameState.selectedCharacter, _tdShieldAmt);
+                    }
+                    const _tdAtkAfter = gameState.characters[gameState.selectedCharacter];
+                    if (_tdAtkAfter && (_tdAtkAfter.shield || 0) >= 20) {
+                        Object.keys(gameState.characters).forEach(function (n) {
+                            const c = gameState.characters[n];
+                            if (c && c.team === _tdETeam && !c.isDead && c.hp > 0) {
+                                const _tdBurnAmt = Math.floor(Math.random() * 9) + 2; // 2 a 10
+                                if (typeof applyFlatBurn === 'function') applyFlatBurn(n, _tdBurnAmt, 2);
+                            }
+                        });
+                        addLog('🐉 Trinidad del Dragón: Quemadura (2-10 HP) aplicada a todo el equipo enemigo (Escudo ≥20)', 'debuff');
+                    }
+                }
+
+            } else if (ability.effect === 'locura_targaryen_v2') {
+                // DAENERYS — Locura Targaryen: AOE 6 daño. Activa el daño de TODOS los debuffs
+                // Quemadura activos en AMBOS equipos. Por cada punto de daño causado así, 1
+                // tirada independiente de aliado aleatorio gana 1 carga.
+                const _ltAtk = gameState.characters[gameState.selectedCharacter];
+                const _ltETeam = _ltAtk ? (_ltAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _ltAOE = window.resolveAOETargets(gameState.selectedCharacter, _ltETeam);
+                _ltAOE.targets.forEach(function (_n) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.isDead || _c.hp <= 0) return;
+                    applyDamageWithShield(_n, finalDamage * _ltAOE.multiplier, gameState.selectedCharacter);
+                });
+                _ltAOE.summonTargets.forEach(function (_sid) {
+                    applySummonDamage(_sid, finalDamage * _ltAOE.multiplier, gameState.selectedCharacter);
+                });
+                addLog('🐉 Locura Targaryen: ' + finalDamage + ' daño AOE al equipo enemigo', 'damage');
+                if (_ltAtk) {
+                    let _ltTotalBurnDmg = 0;
+                    Object.keys(gameState.characters).forEach(function (n) {
+                        const c = gameState.characters[n];
+                        if (!c || c.isDead || c.hp <= 0) return;
+                        const _ltBurns = (c.statusEffects || []).filter(function (e) { return e && normAccent(e.name || '') === 'quemadura'; });
+                        if (_ltBurns.length === 0) return;
+                        let _ltDmg = 0;
+                        _ltBurns.forEach(function (b) { _ltDmg += b.flatHp || 0; });
+                        if (_ltDmg > 0) {
+                            applyDamageWithShield(n, _ltDmg, null);
+                            addLog('🐉 Locura Targaryen: Quemadura de ' + n + ' activada — ' + _ltDmg + ' daño', 'damage');
+                            _ltTotalBurnDmg += _ltDmg;
+                        }
+                    });
+                    if (_ltTotalBurnDmg > 0) {
+                        const _ltAllies = Object.keys(gameState.characters).filter(function (n) {
+                            const c = gameState.characters[n];
+                            return c && c.team === _ltAtk.team && !c.isDead && c.hp > 0;
+                        });
+                        if (_ltAllies.length > 0) {
+                            for (let _i = 0; _i < _ltTotalBurnDmg; _i++) {
+                                const _ltRandAlly = _ltAllies[Math.floor(Math.random() * _ltAllies.length)];
+                                const _ltAllyC = gameState.characters[_ltRandAlly];
+                                _ltAllyC.charges = Math.min(20, (_ltAllyC.charges || 0) + 1);
+                            }
+                            addLog('🐉 Locura Targaryen: ' + _ltTotalBurnDmg + ' cargas repartidas al azar entre aliados (1 por punto de daño)', 'buff');
+                        }
+                    }
+                }
+
+            } else if (ability.effect === 'dracarys_v2') {
+                // DAENERYS (Over) — Dracarys: AOE 10 daño. Invoca a los 3 dragones. Si los 3 ya
+                // estaban invocados antes del ataque, es crítico. +2 daño directo por cada
+                // Quemadura activa en el equipo enemigo antes del ataque.
+                const _drAtk = gameState.characters[gameState.selectedCharacter];
+                const _drETeam = _drAtk ? (_drAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _drDragonNames = ['Drogon', 'Rhaegal', 'Viserion'];
+                const _drAllPresentBefore = _drAtk ? _drDragonNames.every(function (dn) {
+                    return Object.values(gameState.summons).some(function (s) {
+                        return s && s.name === dn && s.team === _drAtk.team && !s.isDead && s.hp > 0;
+                    });
+                }) : false;
+                let _drBurnCount = 0;
+                if (_drAtk) {
+                    Object.keys(gameState.characters).forEach(function (n) {
+                        const c = gameState.characters[n];
+                        if (!c || c.team !== _drETeam || c.isDead || c.hp <= 0) return;
+                        _drBurnCount += (c.statusEffects || []).filter(function (e) { return e && normAccent(e.name || '') === 'quemadura'; }).length;
+                    });
+                }
+                let _drDmg = finalDamage + (_drBurnCount * 2);
+                if (_drAllPresentBefore) { _drDmg *= 2; addLog('🐉 Dracarys: ¡Crítico! (los 3 dragones ya estaban invocados)', 'buff'); }
+                const _drAOE = window.resolveAOETargets(gameState.selectedCharacter, _drETeam);
+                _drAOE.targets.forEach(function (_n) {
+                    const _c = gameState.characters[_n];
+                    if (!_c || _c.isDead || _c.hp <= 0) return;
+                    applyDamageWithShield(_n, _drDmg * _drAOE.multiplier, gameState.selectedCharacter);
+                });
+                _drAOE.summonTargets.forEach(function (_sid) {
+                    applySummonDamage(_sid, _drDmg * _drAOE.multiplier, gameState.selectedCharacter);
+                });
+                addLog('🐉 Dracarys: ' + _drDmg + ' daño AOE al equipo enemigo (+' + (_drBurnCount * 2) + ' por ' + _drBurnCount + ' Quemadura(s))', 'damage');
+                if (_drAtk && typeof summonDragon === 'function') {
+                    _drDragonNames.forEach(function (dn) { summonDragon(dn, gameState.selectedCharacter, _drAtk.team); });
+                    addLog('🐉 Dracarys: invoca a los 3 dragones', 'buff');
+                }
+
+            // ══════════════════════════════════════════════════════
             // DOOMSDAY — handlers actualizados
             // ══════════════════════════════════════════════════════
 
