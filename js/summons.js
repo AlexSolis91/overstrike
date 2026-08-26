@@ -3298,6 +3298,10 @@
                 target.hp <= 10) {
                 target.tirionLowHpTriggered = true;
                 passiveExecuting = true;
+                // Disipar los debuffs activos en Tirion (no permanentes)
+                const _tirDebuffsCleared = (target.statusEffects || []).filter(function (e) { return e && e.type === 'debuff' && !e.permanent; }).length;
+                target.statusEffects = (target.statusEffects || []).filter(function (e) { return !e || e.type !== 'debuff' || e.permanent; });
+                if (_tirDebuffsCleared > 0) addLog('🌟 Paladín de la Mano de Plata: ' + _tirDebuffsCleared + ' debuff(s) disipado(s) de Tirion', 'buff');
                 // Protección Sagrada — 2 turnos, limpiable por habilidades de disipación
                 if (typeof hasStatusEffect === 'function' && !hasStatusEffect(targetName, 'Proteccion Sagrada')) {
                     target.statusEffects.push({ name: 'Proteccion Sagrada', type: 'buff', duration: 2, emoji: '🛡️' });
