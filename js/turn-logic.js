@@ -2031,6 +2031,33 @@
 
         function _runRoundStartPassiveHooks() {
             console.log('[Ronda] _runRoundStartPassiveHooks() iniciando (Ronda ' + gameState.currentRound + ')...');
+                    // EL OJO QUE TODO LO VE (Sauron): inicio de ronda → +20 cargas si tiene un
+                    // Anillo Legendario equipado, y +5 velocidad + +5 HP máximo por cada Anillo
+                    // equipado (sin límite — se acumula ronda tras ronda mientras dure la batalla).
+                    for (const _saN in gameState.characters) {
+                        const _saC = gameState.characters[_saN];
+                        if (!_saC || _saC.isDead || _saC.hp <= 0) continue;
+                        if (!_saC.passive || _saC.passive.name !== 'El Ojo que Todo lo Ve') continue;
+                        const _saAnillos = (_saC.equippedRelics || []).filter(function (rn) {
+                            const rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[rn] : null;
+                            return rd && rd.subtype === 'Anillo';
+                        });
+                        const _saHasLegAnillo = _saAnillos.some(function (rn) {
+                            const rd = RELICS_DATA[rn];
+                            return rd && rd.tier === 'Legendario';
+                        });
+                        if (_saHasLegAnillo) {
+                            _saC.charges = Math.min(20, (_saC.charges || 0) + 20);
+                            addLog('👁️ El Ojo que Todo lo Ve: Sauron genera 20 cargas (Anillo Legendario)', 'buff');
+                        }
+                        if (_saAnillos.length > 0) {
+                            const _saGain = 5 * _saAnillos.length;
+                            _saC.speed = (_saC.speed || 0) + _saGain;
+                            _saC.maxHp = (_saC.maxHp || 0) + _saGain;
+                            _saC.hp = Math.min(_saC.maxHp, (_saC.hp || 0) + _saGain);
+                            addLog('👁️ El Ojo que Todo lo Ve: Sauron gana +' + _saGain + ' velocidad y +' + _saGain + ' HP máximo (' + _saAnillos.length + ' Anillo(s))', 'buff');
+                        }
+                    }
                     // EL PRÍNCIPE CAÍDO (Lich King): inicio de ronda → probabilidad (10% base,
                     // +10% acumulable por cada uso de Furia del Rey de la Plaga) de eliminar a un
                     // enemigo con Mega Posesión activa — solo puede ocurrir una vez por ronda.
