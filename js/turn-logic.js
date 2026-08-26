@@ -2031,6 +2031,27 @@
 
         function _runRoundStartPassiveHooks() {
             console.log('[Ronda] _runRoundStartPassiveHooks() iniciando (Ronda ' + gameState.currentRound + ')...');
+                    // DINASTÍA DEL DRAGÓN (Daenerys): inicio de ronda → si los 3 dragones están
+                    // invocados (Drogon, Rhaegal, Viserion vivos), gana Escudo Sagrado 1T y Aura
+                    // de Fuego 1T.
+                    for (const _daeN in gameState.characters) {
+                        const _daeC = gameState.characters[_daeN];
+                        if (!_daeC || _daeC.isDead || _daeC.hp <= 0) continue;
+                        if (!_daeC.passive || _daeC.passive.name !== 'Dinastía del Dragón') continue;
+                        const _daeDragons = ['Drogon', 'Rhaegal', 'Viserion'];
+                        const _daeAllPresent = _daeDragons.every(function (dn) {
+                            return Object.values(gameState.summons).some(function (s) {
+                                return s && s.name === dn && s.team === _daeC.team && !s.isDead && s.hp > 0;
+                            });
+                        });
+                        if (_daeAllPresent) {
+                            if (typeof applyBuff === 'function') {
+                                applyBuff(_daeN, { name: 'Escudo Sagrado', type: 'buff', duration: 1, emoji: '🛡️' });
+                                applyBuff(_daeN, { name: 'Aura de Fuego', type: 'buff', duration: 1, emoji: '🔥' });
+                            }
+                            addLog('🐉 Dinastía del Dragón: Daenerys gana Escudo Sagrado 1T y Aura de Fuego 1T (los 3 dragones invocados)', 'buff');
+                        }
+                    }
                     // EL OJO QUE TODO LO VE (Sauron): inicio de ronda → +20 cargas si tiene un
                     // Anillo Legendario equipado, y +5 velocidad + +5 HP máximo por cada Anillo
                     // equipado (sin límite — se acumula ronda tras ronda mientras dure la batalla).
