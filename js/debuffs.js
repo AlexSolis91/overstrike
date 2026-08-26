@@ -1551,7 +1551,6 @@ function applyDebuff(targetName, effectObj) {
             }
             if ((targetName === 'Daenerys Targaryen' || targetName === 'Daenerys Targaryen v2')) {
                 addLog('🐉 Dynastía del Dragón: Daenerys es inmune a Quemadura Solar', 'buff');
-                if (typeof triggerDaenerysPassiveBurnHeal === 'function') triggerDaenerysPassiveBurnHeal('Daenerys Targaryen');
                 return;
             }
             if ((targetName === 'Saitama' || targetName === 'Saitama v2')) {
