@@ -775,8 +775,21 @@
         var chars = gameState.characters || {};
         function baseName(n) { return n.replace(/ v\d+$/, ''); }
 
-        var deadDefenders = opponentChars.filter(function (n) { var c = chars[n]; return c && (c.isDead || c.hp <= 0); }).map(baseName);
-        var deadAttackers = playerChars.filter(function (n) { var c = chars[n]; return c && (c.isDead || c.hp <= 0); }).map(baseName);
+        // ── Usar el registro acumulativo de muertes (gameState._killedThisBattle) en vez del
+        //    estado final isDead — un personaje revivido por Frostmourne u otro efecto tendrá
+        //    isDead:false al terminar, pero habrá quedado registrado en _killedThisBattle cuando
+        //    murió por primera vez. El registro acumulativo cubre AMBOS equipos (defenders y
+        //    attackers), así que simplemente comprobamos si el nombre base aparece en él. ──
+        var killedSet = (typeof gameState !== 'undefined' && gameState._killedThisBattle) || {};
+        var deadDefenders = opponentChars.map(baseName).filter(function (bn) {
+            // Muerto al final O muerto en algún momento de la batalla (revivido después)
+            var finalDead = opponentChars.some(function (n) { var c = chars[n]; return baseName(n) === bn && c && (c.isDead || c.hp <= 0); });
+            return finalDead || killedSet[bn];
+        }).filter(function (bn, i, arr) { return arr.indexOf(bn) === i; }); // deduplicar
+        var deadAttackers = playerChars.map(baseName).filter(function (bn) {
+            var finalDead = playerChars.some(function (n) { var c = chars[n]; return baseName(n) === bn && c && (c.isDead || c.hp <= 0); });
+            return finalDead || killedSet[bn];
+        }).filter(function (bn, i, arr) { return arr.indexOf(bn) === i; }); // deduplicar
 
         var result = { fragmentsGained: 0, fragmentsLost: 0 };
 
