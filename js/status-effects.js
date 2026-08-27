@@ -498,6 +498,37 @@ function processBurnEffects(charName) {
                 finalAmount = amount * 2;
             }
             charObj.charges = Math.min(20, (charObj.charges || 0) + finalAmount);
+
+            // ── OJOS DE MIRKWOOD (Legolas): cuando un ENEMIGO genera 5 o más cargas en una
+            //    sola aplicación → Legolas ejecuta Emboscada de Nimrodel automáticamente ──
+            if (finalAmount >= 5 && charName && !passiveExecuting) {
+                for (const _lgN in gameState.characters) {
+                    const _lgC = gameState.characters[_lgN];
+                    if (!_lgC || _lgC.isDead || _lgC.hp <= 0 || !_lgC.passive) continue;
+                    if (_lgC.passive.name !== 'Ojos de Mirkwood') continue;
+                    if (_lgC.team === charObj.team) continue;
+                    const _lgAmbush = (_lgC.abilities || []).find(function (a) { return a && a.effect === 'emboscada_nimrodel_legolas'; });
+                    if (!_lgAmbush) break;
+                    addLog('🏹 Ojos de Mirkwood: ' + charName + ' generó ' + finalAmount + ' cargas — Legolas ejecuta Emboscada de Nimrodel automáticamente', 'buff');
+                    const _lgPrev = gameState.selectedCharacter;
+                    const _lgPrevAb = gameState.selectedAbility;
+                    const _lgPrevCost = gameState.adjustedCost;
+                    const _lgPrevExecuting = passiveExecuting;
+                    const _lgPrevSuppress = gameState._suppressAutoEndTurn;
+                    gameState.selectedCharacter = _lgN;
+                    gameState.selectedAbility = _lgAmbush;
+                    gameState.adjustedCost = 0;
+                    passiveExecuting = true;
+                    gameState._suppressAutoEndTurn = true;
+                    try { if (typeof _executeAbilityCore === 'function') _executeAbilityCore(null); } catch (e) { console.error('[Ojos de Mirkwood - Emboscada auto]', e); }
+                    gameState.selectedCharacter = _lgPrev;
+                    gameState.selectedAbility = _lgPrevAb;
+                    gameState.adjustedCost = _lgPrevCost;
+                    passiveExecuting = _lgPrevExecuting;
+                    gameState._suppressAutoEndTurn = _lgPrevSuppress;
+                    break;
+                }
+            }
         }
 
 
