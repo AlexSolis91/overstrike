@@ -9029,6 +9029,168 @@
                 }
 
             // ══════════════════════════════════════════════════════
+            // LEGOLAS (kit nuevo) — handlers
+            // ══════════════════════════════════════════════════════
+
+            } else if (ability.effect === 'flecha_lothlorien_legolas') {
+                // LEGOLAS — Flecha de Lothlórien: 2 golpes ST, cada uno 20% crítico. Si AMBOS
+                // golpes son críticos, Legolas ejecuta su Over automáticamente sobre un enemigo
+                // aleatorio (con cinemática).
+                const _flAtk = gameState.characters[gameState.selectedCharacter];
+                let _flBothCrit = true;
+                for (let _i = 0; _i < 2; _i++) {
+                    const _flTgtNow = gameState.characters[targetName];
+                    if (!_flTgtNow || _flTgtNow.isDead || _flTgtNow.hp <= 0) { _flBothCrit = false; break; }
+                    const _flIsCrit = Math.random() < 0.20;
+                    if (!_flIsCrit) _flBothCrit = false;
+                    const _flDmg = _flIsCrit ? finalDamage * 2 : finalDamage;
+                    applyDamageWithShield(targetName, _flDmg, gameState.selectedCharacter);
+                    addLog('🏹 Flecha de Lothlórien: ' + _flDmg + ' daño a ' + targetName + (_flIsCrit ? ' (¡crítico!)' : ''), 'damage');
+                    if (_flIsCrit && _flAtk) {
+                        _flAtk._legolasSenalCount = (_flAtk._legolasSenalCount || 0) + 1;
+                        addLog('🏹 Ojos de Mirkwood: Legolas acumula un Contador Señal (' + _flAtk._legolasSenalCount + ' total)', 'buff');
+                    }
+                }
+                if (_flBothCrit && _flAtk) {
+                    const _flOver = (_flAtk.abilities || []).find(function (a) { return a && a.type === 'over'; });
+                    const _flETeam = _flAtk.team === 'team1' ? 'team2' : 'team1';
+                    const _flEnemies = Object.keys(gameState.characters).filter(function (n) {
+                        const c = gameState.characters[n];
+                        return c && c.team === _flETeam && !c.isDead && c.hp > 0;
+                    });
+                    if (_flOver && _flEnemies.length > 0) {
+                        const _flRandTgt = _flEnemies[Math.floor(Math.random() * _flEnemies.length)];
+                        addLog('🏹 Flecha de Lothlórien: ¡ambos golpes críticos! Legolas ejecuta su Over automáticamente', 'buff');
+                        const _flPrevSel = gameState.selectedCharacter;
+                        const _flPrevAb = gameState.selectedAbility;
+                        const _flPrevSuppress = gameState._suppressAutoEndTurn;
+                        const _flCasterName = gameState.selectedCharacter;
+                        const _flCasterTeam = _flAtk.team;
+                        if (typeof _showOverCinematic === 'function') {
+                            _showOverCinematic(_flCasterName, _flOver.name, _flOver.effect, _flCasterTeam, function () {
+                                gameState.selectedCharacter = _flCasterName;
+                                gameState.selectedAbility = _flOver;
+                                passiveExecuting = true;
+                                gameState._suppressAutoEndTurn = true;
+                                try { _executeAbilityCore(_flRandTgt); } catch (e) { console.error('[Flecha Lothlórien -> Over]', e); }
+                                passiveExecuting = false;
+                                gameState._suppressAutoEndTurn = _flPrevSuppress;
+                                gameState.selectedCharacter = _flPrevSel;
+                                gameState.selectedAbility = _flPrevAb;
+                            });
+                        }
+                    }
+                }
+
+            } else if (ability.effect === 'vista_halcon_legolas') {
+                // LEGOLAS — Vista de Halcón: se aplica Frenesí 2T, Debilitar 2T a un enemigo
+                // aleatorio, y gana 1 turno adicional.
+                const _vhAtk = gameState.characters[gameState.selectedCharacter];
+                if (typeof applyBuff === 'function') applyBuff(gameState.selectedCharacter, { name: 'Frenesi', type: 'buff', duration: 2, emoji: '⚡' });
+                addLog('🏹 Vista de Halcón: Legolas se aplica Frenesí 2 turnos', 'buff');
+                if (_vhAtk) {
+                    const _vhETeam = _vhAtk.team === 'team1' ? 'team2' : 'team1';
+                    const _vhEnemies = Object.keys(gameState.characters).filter(function (n) {
+                        const c = gameState.characters[n];
+                        return c && c.team === _vhETeam && !c.isDead && c.hp > 0;
+                    });
+                    if (_vhEnemies.length > 0) {
+                        const _vhTgt = _vhEnemies[Math.floor(Math.random() * _vhEnemies.length)];
+                        if (typeof applyDebuff === 'function') applyDebuff(_vhTgt, { name: 'Debilitar', type: 'debuff', duration: 2, emoji: '💔' });
+                        addLog('🏹 Vista de Halcón: Debilitar 2 turnos aplicado a ' + _vhTgt, 'debuff');
+                    }
+                }
+                if (!gameState._skeggoxExtraTurn) gameState._skeggoxExtraTurn = gameState.selectedCharacter;
+                addLog('🏹 Vista de Halcón: ¡Legolas gana turno adicional!', 'buff');
+
+            } else if (ability.effect === 'emboscada_nimrodel_legolas') {
+                // LEGOLAS — Emboscada de Nimrodel: MT, de 2 a 5 golpes sobre enemigos aleatorios.
+                // Cada golpe 50% crítico. Por cada crítico, +3 velocidad a Legolas. Los enemigos
+                // golpeados con buffs activos los pierden todos.
+                const _enAtk = gameState.characters[gameState.selectedCharacter];
+                const _enETeam = _enAtk ? (_enAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _enHitCount = Math.floor(Math.random() * 4) + 2; // 2 a 5
+                let _enCritTotal = 0;
+                for (let _i = 0; _i < _enHitCount; _i++) {
+                    const _enEnemies = Object.keys(gameState.characters).filter(function (n) {
+                        const c = gameState.characters[n];
+                        return c && c.team === _enETeam && !c.isDead && c.hp > 0;
+                    });
+                    if (_enEnemies.length === 0) break;
+                    const _enTgt = _enEnemies[Math.floor(Math.random() * _enEnemies.length)];
+                    const _enIsCrit = Math.random() < 0.50;
+                    const _enDmg = _enIsCrit ? finalDamage * 2 : finalDamage;
+                    applyDamageWithShield(_enTgt, _enDmg, gameState.selectedCharacter);
+                    addLog('🏹 Emboscada de Nimrodel: ' + _enDmg + ' daño a ' + _enTgt + (_enIsCrit ? ' (¡crítico!)' : ''), 'damage');
+                    if (_enIsCrit) {
+                        _enCritTotal++;
+                        if (_enAtk) {
+                            _enAtk._legolasSenalCount = (_enAtk._legolasSenalCount || 0) + 1;
+                            addLog('🏹 Ojos de Mirkwood: Legolas acumula un Contador Señal (' + _enAtk._legolasSenalCount + ' total)', 'buff');
+                        }
+                    }
+                    const _enTgtAfter = gameState.characters[_enTgt];
+                    if (_enTgtAfter && !_enTgtAfter.isDead && _enTgtAfter.hp > 0) {
+                        const _enHadBuffs = (_enTgtAfter.statusEffects || []).some(function (e) { return e && e.type === 'buff' && !e.passiveHidden; });
+                        if (_enHadBuffs) {
+                            _enTgtAfter.statusEffects = (_enTgtAfter.statusEffects || []).filter(function (e) { return !(e && e.type === 'buff' && !e.passiveHidden); });
+                            addLog('🏹 Emboscada de Nimrodel: buffs de ' + _enTgt + ' disipados', 'debuff');
+                        }
+                    }
+                }
+                if (_enCritTotal > 0 && _enAtk) {
+                    _enAtk.speed = (_enAtk.speed || 0) + (_enCritTotal * 3);
+                    addLog('🏹 Emboscada de Nimrodel: Legolas gana +' + (_enCritTotal * 3) + ' velocidad (' + _enCritTotal + ' crítico(s))', 'buff');
+                }
+
+            } else if (ability.effect === 'ultima_alianza_legolas') {
+                // LEGOLAS (Over) — La Última Alianza: ST 5 daño + daño adicional igual al 60% del
+                // HP máx del OBJETIVO (no aplica contra Jefes de Sala). Si sobrevive, ejecuta 3
+                // Flecha de Lothlórien sobre enemigos aleatorios. Contra Jefe de Sala, causa daño
+                // adicional igual a la suma de cargas del equipo aliado en vez del 60%.
+                const _uaTgt = gameState.characters[targetName];
+                const _uaIsBoss = !!(_uaTgt && (_uaTgt._isEventChar || _uaTgt._eventBoss || _uaTgt.isRoomBoss));
+                let _uaDmg = finalDamage;
+                if (_uaTgt) {
+                    if (_uaIsBoss) {
+                        const _uaAtk = gameState.characters[gameState.selectedCharacter];
+                        let _uaChargeSum = 0;
+                        if (_uaAtk) {
+                            Object.keys(gameState.characters).forEach(function (n) {
+                                const c = gameState.characters[n];
+                                if (c && c.team === _uaAtk.team && !c.isDead && c.hp > 0) _uaChargeSum += (c.charges || 0);
+                            });
+                        }
+                        _uaDmg += _uaChargeSum;
+                        addLog('🏹 La Última Alianza: +' + _uaChargeSum + ' daño adicional (suma de cargas del equipo aliado, Jefe de Sala)', 'damage');
+                    } else {
+                        const _uaExtra = Math.ceil((_uaTgt.maxHp || 0) * 0.60);
+                        _uaDmg += _uaExtra;
+                        addLog('🏹 La Última Alianza: +' + _uaExtra + ' daño adicional (60% HP máx del objetivo)', 'damage');
+                    }
+                }
+                applyDamageWithShield(targetName, _uaDmg, gameState.selectedCharacter);
+                addLog('🏹 La Última Alianza: ' + _uaDmg + ' daño total a ' + targetName, 'damage');
+                const _uaTgtAfter = gameState.characters[targetName];
+                if (_uaTgtAfter && !_uaTgtAfter.isDead && _uaTgtAfter.hp > 0) {
+                    const _uaAtk2 = gameState.characters[gameState.selectedCharacter];
+                    const _uaBasic = _uaAtk2 ? (_uaAtk2.abilities || []).find(function (a) { return a && a.effect === 'flecha_lothlorien_legolas'; }) : null;
+                    if (_uaBasic && _uaAtk2) {
+                        const _uaETeam = _uaAtk2.team === 'team1' ? 'team2' : 'team1';
+                        addLog('🏹 La Última Alianza: ¡' + targetName + ' sobrevivió! Legolas ejecuta 3 Flecha de Lothlórien sobre enemigos aleatorios', 'buff');
+                        for (let _i = 0; _i < 3; _i++) {
+                            const _uaEnemies = Object.keys(gameState.characters).filter(function (n) {
+                                const c = gameState.characters[n];
+                                return c && c.team === _uaETeam && !c.isDead && c.hp > 0;
+                            });
+                            if (_uaEnemies.length === 0) break;
+                            const _uaRandTgt = _uaEnemies[Math.floor(Math.random() * _uaEnemies.length)];
+                            if (typeof window._executeBasicForced === 'function') window._executeBasicForced(gameState.selectedCharacter, _uaRandTgt);
+                        }
+                    }
+                }
+
+            // ══════════════════════════════════════════════════════
             // DOOMSDAY — handlers actualizados
             // ══════════════════════════════════════════════════════
 
