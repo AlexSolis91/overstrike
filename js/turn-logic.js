@@ -2031,6 +2031,28 @@
 
         function _runRoundStartPassiveHooks() {
             console.log('[Ronda] _runRoundStartPassiveHooks() iniciando (Ronda ' + gameState.currentRound + ')...');
+                    // OJOS DE MIRKWOOD (Legolas): inicio de ronda → Protección Sagrada + disipa
+                    // debuffs en 2 aliados aleatorios (puede incluir al propio Legolas).
+                    for (const _lgrN in gameState.characters) {
+                        const _lgrC = gameState.characters[_lgrN];
+                        if (!_lgrC || _lgrC.isDead || _lgrC.hp <= 0) continue;
+                        if (!_lgrC.passive || _lgrC.passive.name !== 'Ojos de Mirkwood') continue;
+                        const _lgrAllies = Object.keys(gameState.characters).filter(function (n) {
+                            const c = gameState.characters[n];
+                            return c && c.team === _lgrC.team && !c.isDead && c.hp > 0;
+                        });
+                        const _lgrChosen = _lgrAllies.sort(function () { return Math.random() - 0.5; }).slice(0, 2);
+                        _lgrChosen.forEach(function (_an) {
+                            if (typeof applyBuff === 'function') applyBuff(_an, { name: 'Proteccion Sagrada', type: 'buff', duration: 2, emoji: '🛡️' });
+                            const _ac = gameState.characters[_an];
+                            if (_ac) {
+                                const _lgrCleared = (_ac.statusEffects || []).filter(function (e) { return e && e.type === 'debuff' && !e.permanent; }).length;
+                                _ac.statusEffects = (_ac.statusEffects || []).filter(function (e) { return !e || e.type !== 'debuff' || e.permanent; });
+                                if (_lgrCleared > 0) addLog('🏹 Ojos de Mirkwood: ' + _lgrCleared + ' debuff(s) disipado(s) de ' + _an, 'buff');
+                            }
+                        });
+                        if (_lgrChosen.length > 0) addLog('🏹 Ojos de Mirkwood: ' + _lgrChosen.join(', ') + ' gana(n) Protección Sagrada', 'buff');
+                    }
                     // DINASTÍA DEL DRAGÓN (Daenerys): inicio de ronda → si los 3 dragones están
                     // invocados (Drogon, Rhaegal, Viserion vivos), gana Escudo Sagrado 1T y Aura
                     // de Fuego 1T.
