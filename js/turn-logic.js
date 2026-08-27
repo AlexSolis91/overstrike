@@ -3474,7 +3474,10 @@
                     gameState.currentTurnIndex = _skInsertAt;
                 }
                 addLog('🪓 Skeggöx: ¡' + _skChar + ' gana turno adicional!', 'buff');
-                if (typeof triggerAnticipacion === 'function') triggerAnticipacion(_skChar);
+                if (typeof triggerAnticipacion === 'function') {
+                    const _skC = gameState.characters[_skChar];
+                    triggerAnticipacion(_skChar, _skC ? _skC.team : null);
+                }
                 gameState._wasExtraTurn = true;
                 if (onlineMode) {
                     if (typeof pushGameState === 'function') pushGameState();
@@ -3497,7 +3500,10 @@
                     gameState.currentTurnIndex = _vkInsertAt;
                 }
                 addLog('🌑 Presencia Oscura: ¡' + _vkChar + ' gana turno adicional!', 'buff');
-                if (typeof triggerAnticipacion === 'function') triggerAnticipacion(_vkChar);
+                if (typeof triggerAnticipacion === 'function') {
+                    const _vkC = gameState.characters[_vkChar];
+                    triggerAnticipacion(_vkChar, _vkC ? _vkC.team : null);
+                }
                 gameState._wasExtraTurn = true;
                 if (onlineMode && typeof pushGameState === 'function') pushGameState();
                 setTimeout(function() { startTurn(); }, 700);
@@ -3518,7 +3524,10 @@
                     gameState.currentTurnIndex = _seInsertAt;
                 }
                 addLog('🔥 ¡Arde, cosmos!: ¡' + _seChar + ' gana turno adicional!', 'buff');
-                if (typeof triggerAnticipacion === 'function') triggerAnticipacion(_seChar);
+                if (typeof triggerAnticipacion === 'function') {
+                    const _seC = gameState.characters[_seChar];
+                    triggerAnticipacion(_seChar, _seC ? _seC.team : null);
+                }
                 gameState._wasExtraTurn = true;
                 if (onlineMode && typeof pushGameState === 'function') pushGameState();
                 setTimeout(function() { startTurn(); }, 700);
