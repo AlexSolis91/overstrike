@@ -719,6 +719,8 @@
 
         container.appendChild(wrap);
     }
+    // Alias global para que los onclick de los botones de pestaña puedan llamarla
+    window._squadsRenderAttackPanel = _squadsRenderAttackPanel;
 
     // ── Iniciar armado del equipo de ataque para golpear una defensa específica ──
     window.squadsStartAttackPicker = function (defKey) {
