@@ -568,6 +568,9 @@
 
     function _squadsRenderAttackPanel(room, myTeam, myUid, phase) {
         _squadsLastRoom = room;
+        _squadsLastMyTeam = myTeam;   // guardar para el wrapper global _squadsSetTab
+        _squadsLastMyUid  = myUid;
+        _squadsLastPhase  = phase;
         var container = document.getElementById('squadsRoomContent');
         if (!container) return;
         var enemyTeam = myTeam === 'haunters' ? 'reapers' : 'haunters';
@@ -584,13 +587,13 @@
 
         // ── 2 pestañas ──
         var tabHtml = '<div style="display:flex;gap:8px;margin-bottom:14px;">' +
-            '<button id="squadsTabAtk" onclick="window._squadsActiveTab=\'attack\'; _squadsRenderAttackPanel(_squadsLastRoom, \'' + myTeam + '\', \'' + myUid + '\', \'' + phase + '\')" ' +
+            '<button id="squadsTabAtk" onclick="window._squadsSetTab(\'attack\')" ' +
             'style="flex:1;padding:9px;font-family:Orbitron,sans-serif;font-size:.68rem;font-weight:700;border-radius:10px;cursor:pointer;transition:all .15s;' +
             (window._squadsActiveTab === 'attack'
                 ? 'background:linear-gradient(135deg,#3a0000,#7a1a00);border:2px solid #ff6644;color:#ff6644;'
                 : 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.18);color:#888;') +
             '">⚔️ ATACAR AL RIVAL</button>' +
-            '<button id="squadsTabDef" onclick="window._squadsActiveTab=\'defense\'; _squadsRenderAttackPanel(_squadsLastRoom, \'' + myTeam + '\', \'' + myUid + '\', \'' + phase + '\')" ' +
+            '<button id="squadsTabDef" onclick="window._squadsSetTab(\'defense\')" ' +
             'style="flex:1;padding:9px;font-family:Orbitron,sans-serif;font-size:.68rem;font-weight:700;border-radius:10px;cursor:pointer;transition:all .15s;' +
             (window._squadsActiveTab === 'defense'
                 ? 'background:linear-gradient(135deg,#001a33,#003a7a);border:2px solid #4fc3f7;color:#4fc3f7;'
@@ -719,8 +722,16 @@
 
         container.appendChild(wrap);
     }
-    // Alias global para que los onclick de los botones de pestaña puedan llamarla
-    window._squadsRenderAttackPanel = _squadsRenderAttackPanel;
+    // Variables auxiliares para que el wrapper global pueda rellamar _squadsRenderAttackPanel
+    // con los mismos parámetros — las variables privadas del closure no son accesibles desde el
+    // onclick del HTML, así que las guardamos aquí y el wrapper las lee desde dentro del closure.
+    var _squadsLastMyTeam = null, _squadsLastMyUid = null, _squadsLastPhase = null;
+    window._squadsSetTab = function (tab) {
+        window._squadsActiveTab = tab;
+        if (_squadsLastRoom && _squadsLastMyTeam && _squadsLastMyUid && _squadsLastPhase) {
+            _squadsRenderAttackPanel(_squadsLastRoom, _squadsLastMyTeam, _squadsLastMyUid, _squadsLastPhase);
+        }
+    };
 
     // ── Iniciar armado del equipo de ataque para golpear una defensa específica ──
     window.squadsStartAttackPicker = function (defKey) {
