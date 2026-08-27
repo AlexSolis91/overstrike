@@ -574,57 +574,149 @@
         var dayKey = phase === 'attacking_day2' ? 'day2' : 'day3';
         var attacksLeft = _squadsAttacksLeftToday(room, myUid, dayKey);
 
+        // ── Persistir la pestaña activa entre re-renders (Firebase hace un snapshot nuevo cada
+        //    pocos segundos, lo que volvería a renderizar la función entera y resetearía a la
+        //    pestaña de ataque aunque el jugador estuviera viendo "Mis Defensas") ──
+        if (!window._squadsActiveTab) window._squadsActiveTab = 'attack';
+
         var wrap = document.createElement('div');
         wrap.style.cssText = 'margin-top:10px;border-top:1px solid rgba(255,255,255,0.1);padding-top:16px;';
-        var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
-            '<div style="font-family:Orbitron,sans-serif;color:#ff6644;font-size:.85rem;font-weight:900;">⚔️ ATACAR AL EQUIPO RIVAL</div>' +
-            '<div style="font-family:Orbitron,sans-serif;color:' + (attacksLeft > 0 ? '#00ff88' : '#ff3366') + ';font-size:.72rem;font-weight:700;">' + attacksLeft + '/6 ataques hoy</div>' +
+
+        // ── 2 pestañas ──
+        var tabHtml = '<div style="display:flex;gap:8px;margin-bottom:14px;">' +
+            '<button id="squadsTabAtk" onclick="window._squadsActiveTab=\'attack\'; _squadsRenderAttackPanel(_squadsLastRoom, \'' + myTeam + '\', \'' + myUid + '\', \'' + phase + '\')" ' +
+            'style="flex:1;padding:9px;font-family:Orbitron,sans-serif;font-size:.68rem;font-weight:700;border-radius:10px;cursor:pointer;transition:all .15s;' +
+            (window._squadsActiveTab === 'attack'
+                ? 'background:linear-gradient(135deg,#3a0000,#7a1a00);border:2px solid #ff6644;color:#ff6644;'
+                : 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.18);color:#888;') +
+            '">⚔️ ATACAR AL RIVAL</button>' +
+            '<button id="squadsTabDef" onclick="window._squadsActiveTab=\'defense\'; _squadsRenderAttackPanel(_squadsLastRoom, \'' + myTeam + '\', \'' + myUid + '\', \'' + phase + '\')" ' +
+            'style="flex:1;padding:9px;font-family:Orbitron,sans-serif;font-size:.68rem;font-weight:700;border-radius:10px;cursor:pointer;transition:all .15s;' +
+            (window._squadsActiveTab === 'defense'
+                ? 'background:linear-gradient(135deg,#001a33,#003a7a);border:2px solid #4fc3f7;color:#4fc3f7;'
+                : 'background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.18);color:#888;') +
+            '">🛡️ MIS DEFENSAS</button>' +
             '</div>';
+        wrap.innerHTML = tabHtml;
 
-        var order = (room.defenseOrder && room.defenseOrder[enemyTeam]) || _squadsDefaultOrder(room.teams[enemyTeam]);
-        var claimed = room.fragmentsClaimed || {};
-        var revealed = room.revealed || {};
-
-        order.forEach(function (defKey, idx) {
-            var parts = defKey.split('_'); var defSlot = parts.pop(); var uid = parts.join('_');
-            var ownerName = (room.players[uid] || {}).name || '???';
-            var isRevealed = !!revealed[defKey];
-            var chars = _squadsMyDefenses(room, uid)[defSlot] || [];
-            var claimedForThis = claimed[defKey] || {};
-            var totalChars = chars.filter(Boolean).length;
-            var claimedCount = chars.filter(function (n) { return n && claimedForThis[n.replace(/ v\d+$/, '')]; }).length;
-            var exhausted = totalChars > 0 && claimedCount >= totalChars;
-
-            html += '<div style="background:rgba(255,255,255,0.03);border:1px solid ' + (exhausted ? 'rgba(255,255,255,0.08)' : 'rgba(255,102,68,0.3)') + ';border-radius:12px;padding:10px 12px;margin-bottom:8px;">' +
-                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
-                    '<div style="font-size:.7rem;color:#fff;font-weight:700;">#' + (idx + 1) + ' — ' + ownerName + ' — ' + defSlot.replace('def', 'Defensa ') + '</div>' +
-                    (exhausted ? '<span style="font-size:.6rem;color:#666;">💀 AGOTADA — sin fragmentos restantes</span>' : '') +
+        if (window._squadsActiveTab === 'attack') {
+            // ─── PESTAÑA DE ATAQUE (vista original) ─────────────────────────────
+            var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">' +
+                '<div style="font-family:Orbitron,sans-serif;color:#ff6644;font-size:.82rem;font-weight:900;">Defensas del equipo enemigo</div>' +
+                '<div style="font-family:Orbitron,sans-serif;color:' + (attacksLeft > 0 ? '#00ff88' : '#ff3366') + ';font-size:.72rem;font-weight:700;">' + attacksLeft + '/6 ataques hoy</div>' +
                 '</div>';
 
-            if (!isRevealed) {
-                html += '<div style="font-size:.68rem;color:#888;margin-bottom:8px;">❓ Defensa desconocida — nunca ha sido atacada. El primer ataque es a ciegas.</div>';
-            } else {
-                html += '<div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">';
-                chars.forEach(function (n) {
-                    if (!n) return;
-                    var bn = n.replace(/ v\d+$/, '');
-                    var isClaimed = !!claimedForThis[bn];
-                    var portrait = (typeof getCharPortrait === 'function') ? getCharPortrait(n) : '';
-                    html += '<div style="position:relative;width:40px;height:40px;">' +
-                        '<img src="' + portrait + '" title="' + n.replace(/"/g, '') + '" style="width:40px;height:40px;border-radius:6px;object-fit:cover;border:2px solid ' + (isClaimed ? '#444' : '#ff4444') + ';filter:' + (isClaimed ? 'grayscale(100%)' : 'none') + ';opacity:' + (isClaimed ? '0.5' : '1') + ';" referrerpolicy="no-referrer">' +
-                        (isClaimed ? '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.9rem;">💀</div>' : '') +
-                        '</div>';
-                });
-                html += '</div>';
-            }
+            var order = (room.defenseOrder && room.defenseOrder[enemyTeam]) || _squadsDefaultOrder(room.teams[enemyTeam]);
+            var claimed = room.fragmentsClaimed || {};
+            var revealed = room.revealed || {};
 
-            html += (attacksLeft > 0
-                ? '<button onclick="window.squadsStartAttackPicker(\'' + defKey + '\')" style="width:100%;padding:8px;background:linear-gradient(135deg,#3a0000,#7a1a00);border:2px solid #ff6644;color:#ff6644;border-radius:8px;font-family:Orbitron,sans-serif;font-size:.68rem;font-weight:700;cursor:pointer;">⚔️ ATACAR</button>'
-                : '<button disabled style="width:100%;padding:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);color:#555;border-radius:8px;font-family:Orbitron,sans-serif;font-size:.68rem;font-weight:700;">Sin ataques hoy</button>') +
-                '</div>';
-        });
+            order.forEach(function (defKey, idx) {
+                var parts = defKey.split('_'); var defSlot = parts.pop(); var uid = parts.join('_');
+                var ownerName = (room.players[uid] || {}).name || '???';
+                var isRevealed = !!revealed[defKey];
+                var chars = _squadsMyDefenses(room, uid)[defSlot] || [];
+                var claimedForThis = claimed[defKey] || {};
+                var totalChars = chars.filter(Boolean).length;
+                var claimedCount = chars.filter(function (n) { return n && claimedForThis[n.replace(/ v\d+$/, '')]; }).length;
+                var exhausted = totalChars > 0 && claimedCount >= totalChars;
 
-        wrap.innerHTML = html;
+                html += '<div style="background:rgba(255,255,255,0.03);border:1px solid ' + (exhausted ? 'rgba(255,255,255,0.08)' : 'rgba(255,102,68,0.3)') + ';border-radius:12px;padding:10px 12px;margin-bottom:8px;">' +
+                    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+                        '<div style="font-size:.7rem;color:#fff;font-weight:700;">#' + (idx + 1) + ' — ' + ownerName + ' — ' + defSlot.replace('def', 'Defensa ') + '</div>' +
+                        (exhausted ? '<span style="font-size:.6rem;color:#666;">💀 AGOTADA — sin fragmentos restantes</span>' : '') +
+                    '</div>';
+
+                if (!isRevealed) {
+                    html += '<div style="font-size:.68rem;color:#888;margin-bottom:8px;">❓ Defensa desconocida — nunca ha sido atacada. El primer ataque es a ciegas.</div>';
+                } else {
+                    html += '<div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;">';
+                    chars.forEach(function (n) {
+                        if (!n) return;
+                        var bn = n.replace(/ v\d+$/, '');
+                        var isClaimed = !!claimedForThis[bn];
+                        var portrait = (typeof getCharPortrait === 'function') ? getCharPortrait(n) : '';
+                        html += '<div style="position:relative;width:40px;height:40px;">' +
+                            '<img src="' + portrait + '" title="' + n.replace(/"/g, '') + '" style="width:40px;height:40px;border-radius:6px;object-fit:cover;border:2px solid ' + (isClaimed ? '#444' : '#ff4444') + ';filter:' + (isClaimed ? 'grayscale(100%)' : 'none') + ';opacity:' + (isClaimed ? '0.5' : '1') + ';" referrerpolicy="no-referrer">' +
+                            (isClaimed ? '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.9rem;">💀</div>' : '') +
+                            '</div>';
+                    });
+                    html += '</div>';
+                }
+
+                html += (attacksLeft > 0
+                    ? '<button onclick="window.squadsStartAttackPicker(\'' + defKey + '\')" style="width:100%;padding:8px;background:linear-gradient(135deg,#3a0000,#7a1a00);border:2px solid #ff6644;color:#ff6644;border-radius:8px;font-family:Orbitron,sans-serif;font-size:.68rem;font-weight:700;cursor:pointer;">⚔️ ATACAR</button>'
+                    : '<button disabled style="width:100%;padding:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.1);color:#555;border-radius:8px;font-family:Orbitron,sans-serif;font-size:.68rem;font-weight:700;">Sin ataques hoy</button>') +
+                    '</div>';
+            });
+
+            var atkDiv = document.createElement('div');
+            atkDiv.innerHTML = html;
+            wrap.appendChild(atkDiv);
+
+        } else {
+            // ─── PESTAÑA DE MIS DEFENSAS ────────────────────────────────────────
+            var myOrder = (room.defenseOrder && room.defenseOrder[myTeam]) || _squadsDefaultOrder(room.teams[myTeam]);
+            var myClaimed = room.fragmentsClaimed || {};
+
+            var dhtml = '<div style="font-size:.72rem;color:#aaa;margin-bottom:10px;">Estado de las defensas de tu equipo — los enemigos ya pueden ver estas después del primer ataque.</div>';
+
+            myOrder.forEach(function (defKey, idx) {
+                var parts = defKey.split('_'); var defSlot = parts.pop(); var uid = parts.join('_');
+                var ownerName = (room.players[uid] || {}).name || '???';
+                var isMe = uid === myUid;
+                var chars = _squadsMyDefenses(room, uid)[defSlot] || [];
+                var claimedForThis = myClaimed[defKey] || {};
+                var totalChars = chars.filter(Boolean).length;
+                var claimedCount = chars.filter(function (n) { return n && claimedForThis[n.replace(/ v\d+$/, '')]; }).length;
+                var exhausted = totalChars > 0 && claimedCount >= totalChars;
+                var isRevealed = !!(room.revealed && room.revealed[defKey]);
+
+                dhtml += '<div style="background:rgba(255,255,255,0.03);border:1px solid ' +
+                    (exhausted ? 'rgba(255,30,30,0.35)' : (claimedCount > 0 ? 'rgba(255,170,0,0.3)' : 'rgba(79,195,247,0.25)')) +
+                    ';border-radius:12px;padding:10px 12px;margin-bottom:8px;">' +
+                    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
+                        '<div style="font-size:.7rem;color:#fff;font-weight:700;">#' + (idx + 1) + ' — ' + ownerName + (isMe ? ' <span style="color:#4fc3f7;font-size:.62rem;">(tú)</span>' : '') + ' — ' + defSlot.replace('def', 'Defensa ') + '</div>' +
+                        '<div style="font-size:.62rem;font-weight:700;color:' + (exhausted ? '#ff3333' : (claimedCount > 0 ? '#ffaa00' : '#00ff88')) + ';">' +
+                            (exhausted ? '💀 Agotada' : (claimedCount > 0 ? '⚠️ ' + claimedCount + '/' + totalChars + ' almas perdidas' : '✅ Intacta')) +
+                        '</div>' +
+                    '</div>';
+
+                if (totalChars === 0) {
+                    dhtml += '<div style="font-size:.65rem;color:#555;margin-bottom:6px;">⚠️ Defensa vacía — sin personajes configurados.</div>';
+                } else if (!isRevealed) {
+                    dhtml += '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;">';
+                    chars.forEach(function (n) {
+                        if (!n) return;
+                        var portrait = (typeof getCharPortrait === 'function') ? getCharPortrait(n) : '';
+                        dhtml += '<div style="position:relative;width:40px;height:40px;">' +
+                            '<img src="' + portrait + '" title="' + n.replace(/"/g,'') + '" style="width:40px;height:40px;border-radius:6px;object-fit:cover;border:2px solid #4fc3f7;" referrerpolicy="no-referrer">' +
+                            '</div>';
+                    });
+                    dhtml += '</div>';
+                    dhtml += '<div style="font-size:.62rem;color:#666;">🔒 Aún no revelada al enemigo — el primer ataque es a ciegas.</div>';
+                } else {
+                    dhtml += '<div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;">';
+                    chars.forEach(function (n) {
+                        if (!n) return;
+                        var bn = n.replace(/ v\d+$/, '');
+                        var isClaimed = !!claimedForThis[bn];
+                        var portrait = (typeof getCharPortrait === 'function') ? getCharPortrait(n) : '';
+                        dhtml += '<div style="position:relative;width:40px;height:40px;" title="' + n.replace(/"/g,'') + (isClaimed ? ' — alma extraída' : ' — alma intacta') + '">' +
+                            '<img src="' + portrait + '" style="width:40px;height:40px;border-radius:6px;object-fit:cover;border:2px solid ' + (isClaimed ? '#aa2222' : '#4fc3f7') + ';filter:' + (isClaimed ? 'grayscale(100%)' : 'none') + ';opacity:' + (isClaimed ? '0.45' : '1') + ';" referrerpolicy="no-referrer">' +
+                            (isClaimed ? '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.9rem;">💀</div>' : '<div style="position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px;"><div style="width:7px;height:7px;border-radius:50%;background:#4fc3f7;box-shadow:0 0 4px #4fc3f7;"></div></div>') +
+                            '</div>';
+                    });
+                    dhtml += '</div>';
+                }
+
+                dhtml += '</div>';
+            });
+
+            var defDiv = document.createElement('div');
+            defDiv.innerHTML = dhtml;
+            wrap.appendChild(defDiv);
+        }
+
         container.appendChild(wrap);
     }
 
