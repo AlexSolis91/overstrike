@@ -1581,7 +1581,8 @@
                 abHeader.appendChild(abName); abHeader.appendChild(abType);
                 abDiv.appendChild(abHeader);
                 const abCost = document.createElement('div');
-                abCost.textContent = '💎 ' + (ab.cost || 0) + ' cargas';
+                const _catLabel = (typeof window._abilityCategoryLabel === 'function') ? window._abilityCategoryLabel(ab.target) : (ab.target || '').toUpperCase();
+                abCost.textContent = '💎 ' + (ab.cost || 0) + ' cargas · ' + _catLabel + ' · ⚔️ ' + (ab.damage || 0) + ' DAÑO';
                 abCost.style.cssText = 'opacity:0.6;margin-bottom:4px;font-size:' + (isEmbedded ? '0.85em' : '0.72em') + ';';
                 abDiv.appendChild(abCost);
                 if (ab.description) {
@@ -1911,12 +1912,15 @@
                 const SMAP_ACTION = { 'summon_shadows': ['Igris','Tusk','Beru'], 'summon_kamish': ['Kamish'], 'el_rey_caido': ['Sindragosa','Banshee','Valkyr','Necrofago','Caballero de la Muerte'], 'summon_sphinx': ['Abu el-Hol Sphinx'], 'summon_ramesseum': ['Ramesseum Tentyris'], 'enkidu': ['Enkidu'] };
                 const sSummonList = SMAP_ACTION[ability.effect];
                 const sSummonBtns = sSummonList ? sSummonList.map(n => '<button onclick="showSummonInfo(\'' + n.replace(/'/g,"\'") + '\',event)" style="background:rgba(168,85,247,0.2);border:1px solid #a855f7;color:#a855f7;border-radius:6px;cursor:pointer;padding:2px 7px;font-size:.65rem;margin:2px 2px 0 0;display:inline-block;" title="Info invocación">🔮 ' + n + '</button>').join('') : '';
+                const _actCatLabel = (typeof window._abilityCategoryLabel === 'function') ? window._abilityCategoryLabel(ability.target) : (ability.target || '').toUpperCase();
                 button.innerHTML = `
                     <span class="action-ability-name">${ability.name}</span>
                     <div class="action-ability-desc">${ability.description || 'Sin descripción disponible.'}${sSummonList ? '<div style="margin-top:5px;">' + sSummonBtns + '</div>' : ''}</div>
                     ${reasonTag}
                     <div class="action-ability-footer">
                         <span class="action-ability-cost">💎 ${adjustedCost}</span>
+                        <span class="action-ability-category">${_actCatLabel}</span>
+                        <span class="action-ability-dmg">⚔️ ${ability.damage || 0} DAÑO</span>
                         <span class="action-ability-type">${ability.type}</span>
                     </div>
                 `;
