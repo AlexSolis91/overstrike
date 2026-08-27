@@ -15341,6 +15341,20 @@
                         if (_relicBuffMap[rn]) _relicBuffs.push({ relic: rn, buff: _relicBuffMap[rn].buff, desc: _relicBuffMap[rn].desc });
                     });
                 }
+                // ── Si no encontramos reliquias por el invocador, verificar también los
+                //    statusEffects de la invocación directamente (fuente más fiable) ──
+                if (_relicBuffs.length === 0 && _activeSummon.statusEffects) {
+                    const _hasEAEffect = (_activeSummon.statusEffects || []).some(function (e) {
+                        if (!e) return false;
+                        const _n = (e.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                        return _n === 'esquiva area';
+                    });
+                    if (_hasEAEffect) {
+                        // Tenemos el buff activo — intentamos identificar la reliquia fuente
+                        const _srcRelic = _summoner && (_summoner.equippedRelics || []).find(function (rn) { return _relicBuffMap[rn]; });
+                        _relicBuffs.push({ relic: _srcRelic || 'Reliquia del invocador', buff: '💨 Esquiva Área', desc: 'No es afectada por ataques AOE del enemigo.' });
+                    }
+                }
                 if (_relicBuffs.length > 0) {
                     _relicBuffsHtml = '<div style="background:rgba(0,200,100,0.08);border:1px solid rgba(0,200,100,0.35);border-radius:10px;padding:14px;margin-top:10px;">' +
                         '<div style="color:#00c878;font-weight:700;margin-bottom:8px;font-size:.82rem;">🔰 Efectos por reliquia del invocador</div>';
