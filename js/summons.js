@@ -3450,6 +3450,16 @@
                     if (typeof _animCard === 'function') _animCard(targetName, 'anim-transform', 700);
                 } else {
                     target.isDead = true;
+                    // ── SQUADS: registro acumulativo de muertes durante la batalla — un personaje
+                    //    revivido (por Frostmourne u otro efecto) no estaría marcado como isDead
+                    //    al finalizar, así que el conteo por estado final lo perdería. Con este
+                    //    set, cualquier personaje que haya muerto en ALGÚN MOMENTO de la batalla
+                    //    queda registrado para el cómputo de fragmentos de alma. ──
+                    if (window._squadsMode) {
+                        gameState._killedThisBattle = gameState._killedThisBattle || {};
+                        const _kbName = targetName.replace(/\s+v\d+$/i, '').trim();
+                        gameState._killedThisBattle[_kbName] = true;
+                    }
                     if (typeof _animCard === 'function') _animCard(targetName, 'anim-defeat', 700);
 
                     // ── MODO HORDA: gancho genérico "al morir" (Sed de Sangre, Aniquilacion, etc.) ──
