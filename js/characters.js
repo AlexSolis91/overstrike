@@ -287,6 +287,19 @@
                 ]
             },
 
+            'Legolas': {
+                hp: 20, maxHp: 20, speed: 86, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/7tCWYXj6/image-7ef550fc.png',
+                passive: { name: 'Ojos de Mirkwood', description: 'Cada vez que Legolas acierta un golpe crítico, acumula un Contador Señal — cada uno incrementa 10% el daño de sus ataques. Al inicio de cada ronda, aplica Protección Sagrada sobre 2 aliados aleatorios y disipa sus debuffs activos. Cada vez que un enemigo genera 5 o más cargas de una sola vez, Legolas ejecuta Emboscada de Nimrodel automáticamente.' },
+                abilities: [
+                    { name: 'Flecha de Lothlórien', type: 'basic', cost: 0, chargeGain: 2, damage: 2, target: 'single', effect: 'flecha_lothlorien_legolas', description: 'Realiza 2 ataques sobre el objetivo — cada uno con 20% de probabilidad de crítico. Si ambos golpes son críticos, Legolas ejecuta su Over sobre un enemigo aleatorio.' },
+                    { name: 'Vista de Halcón', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'self', effect: 'vista_halcon_legolas', description: 'Legolas se aplica Frenesí 2 turnos. Aplica Debilitar 2 turnos a un enemigo aleatorio. Gana 1 turno adicional.' },
+                    { name: 'Emboscada de Nimrodel', type: 'special', cost: 6, chargeGain: 5, damage: 3, target: 'mt', effect: 'emboscada_nimrodel_legolas', description: 'Realiza de 2 a 5 golpes sobre enemigos aleatorios — cada uno con 50% de probabilidad de crítico. Por cada crítico, Legolas gana +3 de velocidad. Los enemigos golpeados con buffs activos los pierden todos.' },
+                    { name: 'La Última Alianza', type: 'over', cost: 12, chargeGain: 6, damage: 5, target: 'single', effect: 'ultima_alianza_legolas', description: 'El objetivo recibe daño adicional igual al 60% de su HP máximo (no aplica contra Jefes de Sala). Si sobrevive, Legolas ejecuta 3 Flecha de Lothlórien sobre enemigos aleatorios. Contra un Jefe de Sala, causa daño adicional igual a la suma de cargas del equipo aliado.' }
+                ]
+            },
+
             'Sauron': {
                 hp: 25, maxHp: 25, speed: 78, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
