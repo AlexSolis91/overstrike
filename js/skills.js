@@ -1441,14 +1441,58 @@
         }
         window.killCharacter = killCharacter;
 
+        // ── rollCrit: tirada unificada de crítico que suma el bono de reliquias al chance base.
+        //    Uso: `const isCrit = rollCrit(0.20, charName)` en cualquier handler que tenga
+        //    probabilidad de crítico. Si la reliquia Onslaught está equipada, +2 velocidad
+        //    al atacante en cada crítico. Expuesta globalmente para que handlers externos puedan
+        //    usarla también. ──
+        window.rollCrit = function (baseCritChance, attackerName) {
+            const combined = Math.min(1, (baseCritChance || 0) + (gameState._relicCritBonus || 0));
+            const isCrit = Math.random() < combined;
+            if (isCrit) {
+                gameState._isCritHit = true;
+                gameState._relicCritUsedByHandler = true;
+                // ONSLAUGHT: +2 velocidad por cada golpe crítico
+                const _atkOnsl = attackerName ? gameState.characters[attackerName] : null;
+                if (_atkOnsl) {
+                    const _hasOnsl = (_atkOnsl.equippedRelics || []).some(function (rn) {
+                        const _rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[rn] : null;
+                        return _rd && _rd.effect === 'onslaught';
+                    });
+                    if (_hasOnsl) {
+                        _atkOnsl.speed = (_atkOnsl.speed || 0) + 2;
+                        addLog('⚡ Onslaught: ¡Crítico! +2 velocidad (' + _atkOnsl.speed + ' total)', 'buff');
+                    }
+                }
+            }
+            gameState._relicCritUsedByHandler = gameState._relicCritUsedByHandler || combined > 0;
+            return isCrit;
+        };
+
         function _executeAbilityCore(targetName) {
             // Resetear banderas de "El Ojo que Todo lo Ve" (Sauron) al inicio de CADA ejecución
-            // de habilidad — se vuelven a calcular más abajo, en el bucle de bonos de reliquia,
-            // según lo que Sauron tenga equipado en ESTE momento. Deben persistir durante TODA
-            // la ejecución (para que un AOE las aplique a cada objetivo golpeado), así que no se
-            // resetean tras cada golpe individual — solo aquí, al empezar una ejecución nueva.
             gameState._sauronAppliesMegaPosesion = false;
             gameState._sauronCapaSteal = 0;
+
+            // ── SISTEMA CENTRALIZADO DE CRÍTICO POR RELIQUIAS ────────────────────────────────
+            // Calcula el bono acumulado de probabilidad de crítico de TODAS las reliquias
+            // equipadas por el atacante. Los handlers de habilidades llaman a rollCrit(base) para
+            // obtener la tirada CORRECTAMENTE ADITIVA: 20% base + 30% Cuerno + 30% Onslaught = 80%.
+            // Para ataques sin crítico base (0%), un bono rélico de 60% otorga exactamente 60%.
+            // _relicCritUsedByHandler: true si el handler ya llamó a rollCrit() — evita que el
+            // bucle de reliquias al final dispare un segundo intento (doble conteo).
+            const _coreAttacker = gameState.selectedCharacter ? gameState.characters[gameState.selectedCharacter] : null;
+            gameState._relicCritBonus = 0;
+            gameState._isCritHit = false;
+            gameState._relicCritUsedByHandler = false;
+            if (_coreAttacker) {
+                (_coreAttacker.equippedRelics || []).forEach(function (rn) {
+                    const rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[rn] : null;
+                    if (!rd) return;
+                    if (rd.effect === 'crit_chance_bonus') gameState._relicCritBonus += 0.30; // Cuerno del Caos
+                    if (rd.effect === 'onslaught')         gameState._relicCritBonus += 0.30; // Onslaught
+                });
+            }
             // ── OJOS DE MIRKWOOD (Legolas): snapshot de cargas de TODOS los personajes antes de
             //    esta ejecución, para comparar al final y detectar si alguien ganó 5+ cargas de
             //    golpe (sin importar el mecanismo exacto que las otorgó — cubre tanto
@@ -2030,9 +2074,12 @@
                 (attacker.equippedRelics||[]).forEach(function(relicName) {
                     const _rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[relicName] : null;
                     if (!_rd) return;
-                    if (_rd.effect === 'crit_chance_bonus' && !gameState._isCritHit && Math.random() < 0.30) {
-                        finalDamage *= 2; gameState._isCritHit = true;
-                        addLog('💫 Cuerno del Caos: ¡Crítico! (+30%)', 'buff');
+                    if (_rd.effect === 'crit_chance_bonus') {
+                        // El bono ya fue sumado en _relicCritBonus al inicio de _executeAbilityCore.
+                        // Si el handler ya usó rollCrit(), el crítico se evaluó correctamente de
+                        // forma aditiva (base + reliquias). Si el handler NO usó rollCrit (ataque
+                        // sin probabilidad de crítico propia), se aplica el bono más abajo, fuera
+                        // de este forEach, como fallback para cualquier personaje.
                     }
                     if (_rd.effect === 'frostmourne') {
                         finalDamage = finalDamage * 2;
@@ -2091,6 +2138,24 @@
                         gameState._martilloAlbaActive = true;
                     }
                 });
+            }
+
+            // ── FALLBACK DE CRÍTICO POR RELIQUIAS (para cualquier ataque sin probabilidad de
+            //    crítico base) — se activa cuando el handler NO usó rollCrit() (es decir, la
+            //    habilidad no tiene probabilidad de crítico por sí misma) y hay bono de reliquias
+            //    pendiente. El resultado es ADITIVO: si el atacante tiene Cuerno del Caos y
+            //    Onslaught (60% total), cualquier ataque tiene un 60% de probabilidad de crítico.
+            //    Si el handler sí usó rollCrit(), el bono ya fue incluido de forma aditiva en esa
+            //    tirada, por lo que este fallback se omite para evitar doble conteo. ──
+            if (finalDamage > 0 && !gameState._isCritHit && !gameState._relicCritUsedByHandler && (gameState._relicCritBonus || 0) > 0 && attacker) {
+                if (window.rollCrit(0, gameState.selectedCharacter)) {
+                    finalDamage *= 2;
+                    const _rcNames = (attacker.equippedRelics || []).filter(function (rn) {
+                        const _rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[rn] : null;
+                        return _rd && (_rd.effect === 'crit_chance_bonus' || _rd.effect === 'onslaught');
+                    }).join(' + ');
+                    addLog('💫 ¡Crítico por reliquia! (' + Math.round(gameState._relicCritBonus * 100) + '% — ' + _rcNames + ')', 'buff');
+                }
             }
 
             // ── EL OJO QUE TODO LO VE (Sauron): efectos del lado ATACANTE, según cuántas
@@ -9057,15 +9122,15 @@
             // ══════════════════════════════════════════════════════
 
             } else if (ability.effect === 'flecha_lothlorien_legolas') {
-                // LEGOLAS — Flecha de Lothlórien: 2 golpes ST, cada uno 20% crítico. Si AMBOS
-                // golpes son críticos, Legolas ejecuta su Over automáticamente sobre un enemigo
-                // aleatorio (con cinemática).
+                // LEGOLAS — Flecha de Lothlórien: 2 golpes ST, cada uno con probabilidad de
+                // crítico = 20% + bonos de reliquias (ej. Cuerno del Caos +30%, Onslaught +30%
+                // → 80% total). Si AMBOS golpes son críticos, Legolas ejecuta su Over.
                 const _flAtk = gameState.characters[gameState.selectedCharacter];
                 let _flBothCrit = true;
                 for (let _i = 0; _i < 2; _i++) {
                     const _flTgtNow = gameState.characters[targetName];
                     if (!_flTgtNow || _flTgtNow.isDead || _flTgtNow.hp <= 0) { _flBothCrit = false; break; }
-                    const _flIsCrit = Math.random() < 0.20;
+                    const _flIsCrit = window.rollCrit(0.20, gameState.selectedCharacter);
                     if (!_flIsCrit) _flBothCrit = false;
                     const _flDmg = _flIsCrit ? finalDamage * 2 : finalDamage;
                     applyDamageWithShield(targetName, _flDmg, gameState.selectedCharacter);
@@ -9129,8 +9194,8 @@
 
             } else if (ability.effect === 'emboscada_nimrodel_legolas') {
                 // LEGOLAS — Emboscada de Nimrodel: MT, de 2 a 5 golpes sobre enemigos aleatorios.
-                // Cada golpe 50% crítico. Por cada crítico, +3 velocidad a Legolas. Los enemigos
-                // golpeados con buffs activos los pierden todos.
+                // Cada golpe usa probabilidad de crítico = 50% + bonos de reliquias (ej. +60%
+                // con Cuerno + Onslaught → 100% crit garantizado). Por cada crítico, +3 velocidad.
                 const _enAtk = gameState.characters[gameState.selectedCharacter];
                 const _enETeam = _enAtk ? (_enAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
                 const _enHitCount = Math.floor(Math.random() * 4) + 2; // 2 a 5
@@ -9142,7 +9207,7 @@
                     });
                     if (_enEnemies.length === 0) break;
                     const _enTgt = _enEnemies[Math.floor(Math.random() * _enEnemies.length)];
-                    const _enIsCrit = Math.random() < 0.50;
+                    const _enIsCrit = window.rollCrit(0.50, gameState.selectedCharacter);
                     const _enDmg = _enIsCrit ? finalDamage * 2 : finalDamage;
                     applyDamageWithShield(_enTgt, _enDmg, gameState.selectedCharacter);
                     addLog('🏹 Emboscada de Nimrodel: ' + _enDmg + ' daño a ' + _enTgt + (_enIsCrit ? ' (¡crítico!)' : ''), 'damage');
