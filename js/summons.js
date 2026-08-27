@@ -460,6 +460,15 @@
                 dragonEffect: stats.effect, passive: stats.passive || 'Pasiva especial de dragón',
                 megaProvocation: false // Drogon ya no tiene Megaprovocación
             };
+            // ── HUEVO DE DRAGÓN: si el invocador lleva esta reliquia equipada, el dragón gana
+            //    Esquiva Área permanente. El check vive aquí (summonDragon) y en summonShadow —
+            //    los dragones de Daenerys usan summonDragon, NO summonShadow, por eso el buff
+            //    nunca se aplicaba a pesar del check que ya existía en la otra función. ──
+            const _summonerChar = gameState.characters[summoner];
+            if (_summonerChar && (_summonerChar.equippedRelics || []).includes('Huevo de Dragon')) {
+                gameState.summons[sId].statusEffects.push({ name: 'Esquiva Area', type: 'buff', duration: 999, permanent: true, passiveHidden: false, emoji: '💨' });
+                addLog('🐲 Huevo de Dragón: ' + dragonName + ' gana Esquiva Área', 'buff');
+            }
             renderSummons();
             addLog('🐉 ' + summoner + ' invoca a ' + dragonName + ' (' + stats.hp + ' HP)', 'buff');
         }
