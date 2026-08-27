@@ -19,6 +19,8 @@
             gameState._attackedThisTurn = false;
             gameState._miedoActive = false;
             gameState.summons = {};
+            // Resetear el registro acumulativo de muertes para que no cruce entre batallas de Squads
+            gameState._killedThisBattle = {};
             // ── RESTAURACIÓN DE INVOCACIONES ENTRE OLEADAS DE HORDA (fix real) ──
             // Debe vivir AQUÍ (dentro del initGame base), no en el wrapper de horda-battle.js que
             // se ejecuta DESPUÉS de llamar a este initGame. La razón: este mismo initGame() ya
