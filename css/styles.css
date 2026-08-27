@@ -1029,8 +1029,10 @@
 
         .action-ability-footer {
             display: flex;
-            justify-content: space-between;
+            flex-wrap: wrap;
+            justify-content: flex-start;
             align-items: center;
+            gap: 6px;
             margin-top: 5px;
         }
 
@@ -1042,7 +1044,28 @@
             border-radius: 10px;
             font-size: 0.85em;
             color: var(--warning);
-            margin-right: 8px;
+        }
+
+        .action-ability-category {
+            display: inline-block;
+            background: rgba(0,217,255,0.18);
+            border: 1px solid rgba(0,217,255,0.5);
+            padding: 3px 9px;
+            border-radius: 10px;
+            font-size: 0.78em;
+            color: #00d9ff;
+            white-space: nowrap;
+        }
+
+        .action-ability-dmg {
+            display: inline-block;
+            background: rgba(255,80,80,0.18);
+            border: 1px solid rgba(255,80,80,0.45);
+            padding: 3px 9px;
+            border-radius: 10px;
+            font-size: 0.78em;
+            color: #ff6b6b;
+            white-space: nowrap;
         }
 
         .action-ability-type {
@@ -1050,6 +1073,7 @@
             font-size: 0.75em;
             opacity: 0.7;
             text-transform: uppercase;
+            margin-left: auto;
         }
 
         .passive-indicator {
@@ -1782,8 +1806,10 @@
 
         .cs-detail-ability-footer {
             display: flex;
-            justify-content: space-between;
+            flex-wrap: wrap;
+            justify-content: flex-start;
             align-items: center;
+            gap: 8px;
         }
 
         .cs-detail-ability-cost {
@@ -1796,10 +1822,33 @@
             font-weight: 700;
         }
 
+        .cs-detail-ability-category {
+            background: rgba(0,217,255,0.15);
+            border: 1px solid rgba(0,217,255,0.5);
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-size: 0.72em;
+            color: #00d9ff;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .cs-detail-ability-dmg {
+            background: rgba(255,80,80,0.15);
+            border: 1px solid rgba(255,80,80,0.45);
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-size: 0.72em;
+            color: #ff6b6b;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
         .cs-detail-ability-type {
             font-size: 0.68em;
             opacity: 0.6;
             text-transform: uppercase;
+            margin-left: auto;
         }
 
         .cs-detail-question {
