@@ -582,7 +582,13 @@
         //    pestaña de ataque aunque el jugador estuviera viendo "Mis Defensas") ──
         if (!window._squadsActiveTab) window._squadsActiveTab = 'attack';
 
+        // Eliminar el panel anterior antes de recrearlo — sin esto, cada llamada
+        // (cambio de pestaña o re-render de Firebase) agregaba un panel nuevo debajo del anterior
+        var _existingWrap = document.getElementById('squadsAttackPanel');
+        if (_existingWrap) _existingWrap.remove();
+
         var wrap = document.createElement('div');
+        wrap.id = 'squadsAttackPanel';
         wrap.style.cssText = 'margin-top:10px;border-top:1px solid rgba(255,255,255,0.1);padding-top:16px;';
 
         // ── 2 pestañas ──
