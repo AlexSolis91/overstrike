@@ -10346,8 +10346,15 @@
                     }
                     for (let _gSId in gameState.summons) {
                         const _gS = gameState.summons[_gSId];
-                        if (_gS && _gS.team === targetTeam && _gS.hp > 0)
-                            applySummonDamage(_gSId, finalDamage, gameState.selectedCharacter);
+                        if (!_gS || _gS.team !== targetTeam || _gS.hp <= 0) continue;
+                        // Filtrar Esquiva Área en invocaciones — mismo chequeo que en resolveAOETargets
+                        const _gSHasEA = (_gS.statusEffects || []).some(function (e) {
+                            if (!e) return false;
+                            const _en = typeof normAccent === 'function' ? normAccent(e.name || '') : (e.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                            return _en === 'esquiva area';
+                        });
+                        if (_gSHasEA) { addLog('🌪️ ' + (_gS.name || _gSId) + ' esquiva el ataque AOE (Esquiva Área)', 'buff'); continue; }
+                        applySummonDamage(_gSId, finalDamage, gameState.selectedCharacter);
                     }
                     addLog('💥 AOE: ' + finalDamage + ' daño a todos los enemigos', 'damage');
                 }
@@ -15298,23 +15305,88 @@
         function showSummonInfo(summonName, event) {
             if (event) { event.stopPropagation(); }
             const data = SUMMON_CATALOGUE[summonName];
-            // Also check summonData for image
             const sData = (typeof summonData !== 'undefined') ? summonData[summonName] : null;
             const imgUrl = (data && data.img) || (sData && sData.img) || '';
             if (!data) return;
+
+            // ── Buscar la instancia activa de esta invocación en gameState.summons para
+            //    mostrar su HP actual, efectos activos y buffs concedidos por reliquias ──
+            let _activeSummon = null;
+            if (typeof gameState !== 'undefined' && gameState.summons) {
+                Object.values(gameState.summons).forEach(function (s) {
+                    if (s && s.name === summonName && s.hp > 0) _activeSummon = s;
+                });
+            }
+
             const modal = document.getElementById('summonInfoModal');
             document.getElementById('summonInfoTitle').textContent = '🔮 ' + summonName;
+
             const imgHtml = imgUrl ? '<div style="text-align:center;margin-bottom:12px;"><img src="' + imgUrl + '" alt="' + summonName + '" style="width:80px;height:80px;object-fit:cover;border-radius:10px;border:2px solid #a855f7;" onerror="this.style.display=\'none\'"></div>' : '';
+
+            // HP actual si está en campo, o HP base si no
+            const _hpDisplay = _activeSummon
+                ? '<div style="color:#fff;font-size:1.1rem;">' + _activeSummon.hp + ' / ' + (data.hp || '?') + '</div><div style="background:rgba(255,255,255,0.1);border-radius:6px;overflow:hidden;margin-top:4px;height:6px;"><div style="height:100%;background:#00ff88;width:' + Math.max(0, Math.min(100, (_activeSummon.hp / (data.hp || 1)) * 100)) + '%;transition:width .3s;"></div></div>'
+                : '<div style="color:#fff;font-size:1.1rem;">' + (data.hp || '?') + '</div>';
+
+            // ── Sección de buffs activos por reliquias del invocador ──
+            let _relicBuffsHtml = '';
+            if (_activeSummon && _activeSummon.summoner) {
+                const _summoner = typeof gameState !== 'undefined' && gameState.characters && gameState.characters[_activeSummon.summoner];
+                const _relicBuffMap = {
+                    'Huevo de Dragon': { buff: '💨 Esquiva Área', desc: 'No es afectada por ataques AOE del enemigo.' }
+                };
+                const _relicBuffs = [];
+                if (_summoner) {
+                    (_summoner.equippedRelics || []).forEach(function (rn) {
+                        if (_relicBuffMap[rn]) _relicBuffs.push({ relic: rn, buff: _relicBuffMap[rn].buff, desc: _relicBuffMap[rn].desc });
+                    });
+                }
+                if (_relicBuffs.length > 0) {
+                    _relicBuffsHtml = '<div style="background:rgba(0,200,100,0.08);border:1px solid rgba(0,200,100,0.35);border-radius:10px;padding:14px;margin-top:10px;">' +
+                        '<div style="color:#00c878;font-weight:700;margin-bottom:8px;font-size:.82rem;">🔰 Efectos por reliquia del invocador</div>';
+                    _relicBuffs.forEach(function (rb) {
+                        _relicBuffsHtml += '<div style="margin-bottom:8px;padding:8px;background:rgba(0,200,100,0.06);border-radius:8px;">' +
+                            '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">' +
+                            '<span style="color:#00ff88;font-weight:700;font-size:.8rem;">' + rb.buff + '</span>' +
+                            '<span style="color:#888;font-size:.7rem;">— otorgado por</span>' +
+                            '<span style="color:#ffd700;font-size:.75rem;font-weight:600;">✨ ' + rb.relic + '</span>' +
+                            '</div>' +
+                            '<div style="color:#aaa;font-size:.74rem;line-height:1.4;">' + rb.desc + '</div>' +
+                            '</div>';
+                    });
+                    _relicBuffsHtml += '</div>';
+                }
+
+                // Otros buffs activos en la invocación (no de reliquias)
+                const _activeBuffs = (_activeSummon.statusEffects || []).filter(function (e) { return e && e.type === 'buff' && !e.passiveHidden; });
+                // Quitar los que ya mostramos por reliquia para no duplicar
+                const _relicBuffNames = _relicBuffs.map(function (rb) { return rb.buff.replace(/^[^\s]+ /, ''); });
+                const _otherBuffs = _activeBuffs.filter(function (e) {
+                    const _n = (e.name || '').replace(/[áéíóúÁÉÍÓÚ]/g, function (c) { return { á:'a',é:'e',í:'i',ó:'o',ú:'u',Á:'A',É:'E',Í:'I',Ó:'O',Ú:'U' }[c]; });
+                    return !_relicBuffNames.some(function (rb) { return _n.toLowerCase().includes(rb.toLowerCase()); });
+                });
+                if (_otherBuffs.length > 0) {
+                    _relicBuffsHtml += '<div style="background:rgba(79,195,247,0.08);border:1px solid rgba(79,195,247,0.3);border-radius:10px;padding:10px;margin-top:8px;">' +
+                        '<div style="color:#4fc3f7;font-weight:700;margin-bottom:6px;font-size:.8rem;">⚡ Efectos activos</div>' +
+                        _otherBuffs.map(function (e) { return '<span style="display:inline-block;background:rgba(79,195,247,0.12);border:1px solid rgba(79,195,247,0.3);border-radius:6px;padding:2px 8px;font-size:.72rem;color:#4fc3f7;margin:2px;">' + (e.emoji || '') + ' ' + e.name + '</span>'; }).join('') +
+                        '</div>';
+                }
+
+                // Mostrar invocador
+                _relicBuffsHtml += '<div style="margin-top:8px;font-size:.68rem;color:#666;text-align:center;">Invocado por: ' + _activeSummon.summoner + '</div>';
+            }
+
             document.getElementById('summonInfoContent').innerHTML =
                 imgHtml +
                 '<div style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.3);border-radius:10px;padding:14px;margin-bottom:12px;">' +
                 '<div style="color:#a855f7;font-weight:700;margin-bottom:6px;">❤️ HP</div>' +
-                '<div style="color:#fff;font-size:1.1rem;">' + data.hp + '</div>' +
+                _hpDisplay +
                 '</div>' +
                 '<div style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.3);border-radius:10px;padding:14px;">' +
                 '<div style="color:#a855f7;font-weight:700;margin-bottom:6px;">⚡ Efecto / Pasiva</div>' +
                 '<div style="color:#ccc;line-height:1.6;">' + data.passive + '</div>' +
-                '</div>';
+                '</div>' +
+                _relicBuffsHtml;
             modal.style.display = 'block';
         }
 
