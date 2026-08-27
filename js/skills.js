@@ -2094,6 +2094,17 @@
                 }
             }
 
+            // ── OJOS DE MIRKWOOD (Legolas): +10% de daño por cada Contador Señal acumulado
+            //    (uno por cada golpe crítico que Legolas ha acertado en toda la batalla) ──
+            if (attacker && attacker.passive && attacker.passive.name === 'Ojos de Mirkwood' && finalDamage > 0) {
+                const _lgStacks = attacker._legolasSenalCount || 0;
+                if (_lgStacks > 0) {
+                    const _lgBonus = Math.ceil(finalDamage * (_lgStacks * 0.10));
+                    finalDamage += _lgBonus;
+                    addLog('🏹 Ojos de Mirkwood: +' + _lgBonus + ' daño (' + _lgStacks + ' Contador(es) Señal)', 'buff');
+                }
+            }
+
             // ── GUANTE DE SCORPIO: cualquier daño causado por un movimiento Over de un
             //    atacante con Veneno activo se reduce a 0. Efecto GLOBAL (confirmado): basta con
             //    que ALGUIEN en la batalla tenga la reliquia equipada, sin importar contra quién
