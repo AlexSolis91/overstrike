@@ -1429,6 +1429,18 @@
             _executeAbilityCore(targetName);
         }
 
+        // ── killCharacter: eliminar un personaje de forma que respete los efectos de "última
+        //    línea" (Anillo del Tiempo, Collar de Tsunade, etc.) — en vez de setear isDead=true
+        //    directamente (que los bypasea), pasa daño masivo por applyDamageWithShield para que
+        //    esos sistemas tengan oportunidad de intervenir. ──
+        function killCharacter(charName, attackerName) {
+            const _kc = gameState.characters[charName];
+            if (!_kc || _kc.isDead || _kc.hp <= 0) return;
+            // Daño masivo que garantiza la muerte pero pasa por applyDamageWithShield
+            applyDamageWithShield(charName, _kc.hp + (_kc.shield || 0) + 999, attackerName || null);
+        }
+        window.killCharacter = killCharacter;
+
         function _executeAbilityCore(targetName) {
             // Resetear banderas de "El Ojo que Todo lo Ve" (Sauron) al inicio de CADA ejecución
             // de habilidad — se vuelven a calcular más abajo, en el bucle de bonos de reliquia,
@@ -2494,9 +2506,12 @@
                         if (_hpBefore <= _maxHp * 0.50) {
                             const _cNow = gameState.characters[_n];
                             if (_cNow && !_cNow.isDead && _cNow.hp > 0) {
-                                _cNow.hp = 0; _cNow.isDead = true;
+                                // Pasar daño adicional por applyDamageWithShield para que el Anillo
+                                // del Tiempo (y otros efectos de "última línea" como Collar de
+                                // Tsunade) tengan oportunidad de activarse en vez de setear
+                                // isDead = true directamente, que bypassea todo ese sistema.
+                                applyDamageWithShield(_n, _cNow.hp + _cNow.shield + 999, gameState.selectedCharacter);
                                 addLog('⛓️ Explosión de Galaxias: ¡' + _n + ' eliminado! (tenía ≤ 50% HP)', 'damage');
-                                if (typeof checkAndHandleDeath === 'function') checkAndHandleDeath(_n);
                             }
                         }
                     }
@@ -2615,11 +2630,7 @@
                 const tgtBE = gameState.characters[targetName];
                 // Solo ejecutar si el daño llegó Y el HP resultante es menor al 50% del máximo
                 if (beDmgDealt > 0 && tgtBE && !tgtBE.isDead && tgtBE.hp > 0 && tgtBE.hp < tgtBE.maxHp * 0.5) {
-                    tgtBE.hp = 0;
-                    tgtBE.shield = 0;
-                    tgtBE.shieldEffect = null;
-                    tgtBE.isDead = true;
-                    registerKill(gameState.selectedCharacter, targetName, false);
+                    killCharacter(targetName, gameState.selectedCharacter);
                     addLog(`🦅 Águila de Sangre: ¡${targetName} ejecutado! (quedó con <50% HP)`, 'damage');
                 }
                 // Si murió, aplica Miedo a 2 enemigos aleatorios
@@ -8023,10 +8034,8 @@
                                 applyDamageWithShield(_n, 75, gameState.selectedCharacter);
                                 addLog('⚔️ Ira de Kratos [Jefe + Sangrado]: ¡75 daño a ' + _n + '!', 'damage');
                             } else if (!_cNowIsBoss && Math.random() < 0.10) {
-                                _cNow.hp = 0; _cNow.isDead = true;
-                                if (typeof registerKill === 'function') registerKill(gameState.selectedCharacter, _n, false);
+                                killCharacter(_n, gameState.selectedCharacter);
                                 addLog('💀 Ira de Kratos: ¡' + _n + ' eliminado (10%)!', 'damage');
-                                if (typeof checkGameOver === 'function') checkGameOver();
                             }
                         }
                     }
