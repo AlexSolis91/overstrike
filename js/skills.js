@@ -718,13 +718,28 @@
                 return s && s.team === targetTeam && s.hp > 0;
             });
 
-            // 2. Filtrar Esquiva Área (buff o pasiva) — las invocaciones no la tienen
+            // 2. Filtrar Esquiva Área — personajes E invocaciones
             if (!ignoresEA) {
                 chars = chars.filter(function (n) {
                     const _immune = (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(n, false)) ||
                         (typeof checkMinatoAOEImmunity === 'function' && checkMinatoAOEImmunity(n));
                     if (_immune) addLog('🌪️ ' + n + ' esquiva el ataque AOE (Esquiva Área)', 'buff');
                     return !_immune;
+                });
+                // ── HUEVO DE DRAGÓN y cualquier fuente que aplique Esquiva Área a invocaciones:
+                //    filtrar también las invocaciones que tengan este buff activo — antes se
+                //    omitía por completo este chequeo en summonIds, dejando que las invocaciones
+                //    con Esquiva Área siguieran siendo golpeadas por AOE sin ninguna excepción. ──
+                summonIds = summonIds.filter(function (sid) {
+                    const s = gameState.summons[sid];
+                    if (!s) return false;
+                    const _hasEA = (s.statusEffects || []).some(function (e) {
+                        if (!e) return false;
+                        const _n = typeof normAccent === 'function' ? normAccent(e.name || '') : (e.name || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                        return _n === 'esquiva area';
+                    });
+                    if (_hasEA) { addLog('🌪️ ' + (s.name || sid) + ' esquiva el ataque AOE (Esquiva Área)', 'buff'); return false; }
+                    return true;
                 });
             }
 
