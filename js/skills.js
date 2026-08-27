@@ -447,38 +447,11 @@
                         break;
                     }
                 }
-
-                // ── OJOS DE MIRKWOOD (Legolas): cuando un ENEMIGO genera 5 o más cargas en una
-                //    sola aplicación → Legolas ejecuta Emboscada de Nimrodel automáticamente
-                //    (sin costo de cargas, sin cinemática de Over dado que no es un Over) ──
-                if (finalAmt >= 5) {
-                    for (const _lgN in gameState.characters) {
-                        const _lgC = gameState.characters[_lgN];
-                        if (!_lgC || _lgC.isDead || _lgC.hp <= 0 || !_lgC.passive) continue;
-                        if (_lgC.passive.name !== 'Ojos de Mirkwood') continue;
-                        if (_lgC.team === c.team) continue; // solo si quien generó las cargas es enemigo de Legolas
-                        const _lgAmbush = (_lgC.abilities || []).find(function (a) { return a && a.effect === 'emboscada_nimrodel_legolas'; });
-                        if (!_lgAmbush) break;
-                        addLog('🏹 Ojos de Mirkwood: ' + charName + ' generó ' + finalAmt + ' cargas — Legolas ejecuta Emboscada de Nimrodel automáticamente', 'buff');
-                        const _lgPrev = gameState.selectedCharacter;
-                        const _lgPrevAb = gameState.selectedAbility;
-                        const _lgPrevCost = gameState.adjustedCost;
-                        const _lgPrevExecuting = passiveExecuting;
-                        const _lgPrevSuppress = gameState._suppressAutoEndTurn;
-                        gameState.selectedCharacter = _lgN;
-                        gameState.selectedAbility = _lgAmbush;
-                        gameState.adjustedCost = 0;
-                        passiveExecuting = true;
-                        gameState._suppressAutoEndTurn = true;
-                        try { _executeAbilityCore(null); } catch (e) { console.error('[Ojos de Mirkwood - Emboscada auto]', e); }
-                        gameState.selectedCharacter = _lgPrev;
-                        gameState.selectedAbility = _lgPrevAb;
-                        gameState.adjustedCost = _lgPrevCost;
-                        passiveExecuting = _lgPrevExecuting;
-                        gameState._suppressAutoEndTurn = _lgPrevSuppress;
-                        break;
-                    }
-                }
+                // (Nota: el gancho de "Ojos de Mirkwood" (Legolas) que vivía aquí se movió a
+                // _executeAbilityCore — una comparación por snapshot de cargas antes/después de
+                // CADA ejecución de habilidad, que cubre TODOS los mecanismos de otorgar cargas
+                // del juego, no solo generateChargesInline/addCharges. Dejarlo también aquí
+                // hubiera disparado la Emboscada dos veces por el mismo evento.)
             }
         }
 
@@ -1449,6 +1422,22 @@
             // resetean tras cada golpe individual — solo aquí, al empezar una ejecución nueva.
             gameState._sauronAppliesMegaPosesion = false;
             gameState._sauronCapaSteal = 0;
+            // ── OJOS DE MIRKWOOD (Legolas): snapshot de cargas de TODOS los personajes antes de
+            //    esta ejecución, para comparar al final y detectar si alguien ganó 5+ cargas de
+            //    golpe (sin importar el mecanismo exacto que las otorgó — cubre tanto
+            //    generateChargesInline/addCharges como cualquier asignación directa dentro del
+            //    handler de esta habilidad). Solo se toma en la ejecución de nivel superior
+            //    (!passiveExecuting) — las ejecuciones forzadas anidadas (ej. la propia Emboscada
+            //    disparándose a sí misma) no vuelven a tomar snapshot, evitando dobles disparos.
+            const _lgTopLevel = !passiveExecuting;
+            let _lgChargeSnapshot = null;
+            if (_lgTopLevel) {
+                _lgChargeSnapshot = {};
+                for (const _lgSn in gameState.characters) {
+                    const _lgSc = gameState.characters[_lgSn];
+                    if (_lgSc) _lgChargeSnapshot[_lgSn] = _lgSc.charges || 0;
+                }
+            }
             // SFX especial para OVER
             if (gameState.selectedAbility && gameState.selectedAbility.type === 'over') {
                 audioManager.playOverSfx();
@@ -14960,7 +14949,47 @@
                 }
                 delete gameState._kyoAOEHitsByAttacker;
             }
-            
+
+            // ── OJOS DE MIRKWOOD (Legolas): comparar el snapshot de cargas contra el estado
+            //    actual — cualquier personaje que haya ganado 5+ cargas durante esta ejecución
+            //    (sin importar el mecanismo exacto) dispara la Emboscada automática de CUALQUIER
+            //    Legolas enemigo suyo presente en la batalla. Solo se evalúa en la ejecución de
+            //    nivel superior (ver _lgTopLevel al inicio de esta función). ──
+            if (_lgTopLevel && _lgChargeSnapshot) {
+                for (const _lgGainerName in gameState.characters) {
+                    const _lgGainerC = gameState.characters[_lgGainerName];
+                    if (!_lgGainerC || _lgGainerC.isDead || _lgGainerC.hp <= 0) continue;
+                    const _lgBefore = _lgChargeSnapshot[_lgGainerName] || 0;
+                    const _lgAfter = _lgGainerC.charges || 0;
+                    if ((_lgAfter - _lgBefore) < 5) continue;
+                    for (const _lgN in gameState.characters) {
+                        const _lgC = gameState.characters[_lgN];
+                        if (!_lgC || _lgC.isDead || _lgC.hp <= 0 || !_lgC.passive) continue;
+                        if (_lgC.passive.name !== 'Ojos de Mirkwood') continue;
+                        if (_lgC.team === _lgGainerC.team) continue; // solo si el que ganó cargas es enemigo de Legolas
+                        const _lgAmbush = (_lgC.abilities || []).find(function (a) { return a && a.effect === 'emboscada_nimrodel_legolas'; });
+                        if (!_lgAmbush) break;
+                        addLog('🏹 Ojos de Mirkwood: ' + _lgGainerName + ' ganó ' + (_lgAfter - _lgBefore) + ' cargas de golpe — ' + _lgN + ' ejecuta Emboscada de Nimrodel automáticamente', 'buff');
+                        const _lgPrev = gameState.selectedCharacter;
+                        const _lgPrevAb = gameState.selectedAbility;
+                        const _lgPrevCost = gameState.adjustedCost;
+                        const _lgPrevExecuting = passiveExecuting;
+                        const _lgPrevSuppress = gameState._suppressAutoEndTurn;
+                        gameState.selectedCharacter = _lgN;
+                        gameState.selectedAbility = _lgAmbush;
+                        gameState.adjustedCost = 0;
+                        passiveExecuting = true;
+                        gameState._suppressAutoEndTurn = true;
+                        try { _executeAbilityCore(null); } catch (e) { console.error('[Ojos de Mirkwood - Emboscada auto]', e); }
+                        gameState.selectedCharacter = _lgPrev;
+                        gameState.selectedAbility = _lgPrevAb;
+                        gameState.adjustedCost = _lgPrevCost;
+                        passiveExecuting = _lgPrevExecuting;
+                        gameState._suppressAutoEndTurn = _lgPrevSuppress;
+                    }
+                }
+            }
+
             // Verificar fin del juego
             if (checkGameOver()) {
                 gameState._abilityExecuting = false;
