@@ -1493,6 +1493,27 @@
                     if (rd.effect === 'onslaught')         gameState._relicCritBonus += 0.30; // Onslaught
                 });
             }
+
+            // ── KAMA: resetear acumulador de daño total para el efecto de robo de HP ──
+            gameState._kamaDmgTotal = 0;
+            gameState._kamaAttackerName = gameState.selectedCharacter;
+
+            // ── GUNBAI: snapshot antes de un Over enemigo para poder deshacerlo al final ──
+            let _gunbaiSnap = null;
+            if (!passiveExecuting && gameState.selectedAbility && gameState.selectedAbility.type === 'over' && _coreAttacker) {
+                for (const _gn in gameState.characters) {
+                    const _gc = gameState.characters[_gn];
+                    if (!_gc || _gc.isDead || _gc.hp <= 0) continue;
+                    if (_gc.team === _coreAttacker.team) continue;
+                    if (!(_gc.equippedRelics || []).includes('Gunbai')) continue;
+                    if (Math.random() < 0.70) {
+                        _gunbaiSnap = { name: _gn, hp: _gc.hp, shield: _gc.shield || 0, maxHp: _gc.maxHp,
+                            statusEffects: JSON.parse(JSON.stringify(_gc.statusEffects || [])) };
+                        addLog('🌀 Gunbai: ' + _gn + ' activa el bloqueo de Over (70%)', 'buff');
+                    } else { addLog('🌀 Gunbai: ' + _gn + ' falla el bloqueo (30%)', 'debuff'); }
+                    break;
+                }
+            }
             // ── OJOS DE MIRKWOOD (Legolas): snapshot de cargas de TODOS los personajes antes de
             //    esta ejecución, para comparar al final y detectar si alguien ganó 5+ cargas de
             //    golpe (sin importar el mecanismo exacto que las otorgó — cubre tanto
@@ -15257,6 +15278,52 @@
                         gameState._suppressAutoEndTurn = _lgPrevSuppress;
                     }
                 }
+            }
+
+            // ── GUNBAI: resolver el reflejo de Over después de que el ability se ejecutó ──
+            if (_gunbaiSnap) {
+                const _gw = gameState.characters[_gunbaiSnap.name];
+                if (_gw) {
+                    const _dmgBlocked = Math.max(0, _gunbaiSnap.hp - (_gw.hp || 0));
+                    _gw.hp = _gunbaiSnap.hp; _gw.shield = _gunbaiSnap.shield;
+                    _gw.statusEffects = _gunbaiSnap.statusEffects;
+                    addLog('🌀 Gunbai: Over bloqueado — ' + _dmgBlocked + ' HP y efectos anulados en ' + _gunbaiSnap.name, 'buff');
+                    if (_dmgBlocked > 0) {
+                        const _gwETeam = _coreAttacker ? _coreAttacker.team : (_gw.team === 'team1' ? 'team2' : 'team1');
+                        const _gwReflTgts = Object.keys(gameState.characters).filter(function (n2) {
+                            const c2 = gameState.characters[n2];
+                            return c2 && c2.team === _gwETeam && !c2.isDead && c2.hp > 0;
+                        });
+                        if (_gwReflTgts.length > 0) {
+                            const _rt = _gwReflTgts[Math.floor(Math.random() * _gwReflTgts.length)];
+                            applyDamageWithShield(_rt, _dmgBlocked + 10, _gunbaiSnap.name);
+                            addLog('🌀 Gunbai: ' + (_dmgBlocked + 10) + ' daño reflejado sobre ' + _rt, 'damage');
+                        }
+                    }
+                }
+            }
+            // ── KAMA: robo de HP total al final de la ejecución ──
+            if (gameState._kamaDmgTotal > 0 && gameState._kamaAttackerName) {
+                const _kamaAtk = gameState.characters[gameState._kamaAttackerName];
+                if (_kamaAtk && !_kamaAtk.isDead && _kamaAtk.hp > 0 &&
+                    (_kamaAtk.equippedRelics || []).some(function (rn) {
+                        const rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[rn] : null;
+                        return rd && rd.effect === 'kama';
+                    })) {
+                    const _kamaETeam = _kamaAtk.team === 'team1' ? 'team2' : 'team1';
+                    const _kamaTgts = Object.keys(gameState.characters).filter(function (n2) {
+                        const c2 = gameState.characters[n2];
+                        return c2 && c2.team === _kamaETeam && !c2.isDead && c2.hp > 0;
+                    });
+                    if (_kamaTgts.length > 0) {
+                        const _kamaStealTgt = _kamaTgts[Math.floor(Math.random() * _kamaTgts.length)];
+                        const _kamaStealAmt = Math.min(gameState._kamaDmgTotal, gameState.characters[_kamaStealTgt].hp);
+                        applyDamageWithShield(_kamaStealTgt, _kamaStealAmt, gameState._kamaAttackerName);
+                        if (typeof applyHeal === 'function') applyHeal(gameState._kamaAttackerName, _kamaStealAmt, 'Kama');
+                        addLog('🔱 Kama: roba ' + _kamaStealAmt + ' HP de ' + _kamaStealTgt + ' (daño total causado: ' + gameState._kamaDmgTotal + ')', 'heal');
+                    }
+                }
+                gameState._kamaDmgTotal = 0;
             }
 
             // Verificar fin del juego
