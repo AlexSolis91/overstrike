@@ -1239,6 +1239,44 @@
                     if (typeof applyPoison === 'function') applyPoison(targetName, _gsStacks);
                 }
             }
+            // ── KAMA: acumular daño total causado por el portador (se consume al final de
+            //    _executeAbilityCore en skills.js para robar ese total de HP a un enemigo) ──
+            if (damage > 0 && attackerName !== null && !passiveExecuting &&
+                attackerName === gameState._kamaAttackerName) {
+                const _kamaAtkC = gameState.characters[attackerName];
+                if (_kamaAtkC && (_kamaAtkC.equippedRelics || []).some(function (rn) {
+                    const rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[rn] : null;
+                    return rd && rd.effect === 'kama';
+                })) {
+                    gameState._kamaDmgTotal = (gameState._kamaDmgTotal || 0) + damage;
+                }
+            }
+            // ── GUNBAI: bloqueo de categoría aleatoria en el objetivo golpeado por el portador ──
+            if (damage > 0 && attackerName !== null && !passiveExecuting) {
+                const _gbAtkC = gameState.characters[attackerName];
+                const _gbTgtC = gameState.characters[targetName];
+                if (_gbAtkC && _gbTgtC && !_gbTgtC.isDead && _gbTgtC.hp > 0 &&
+                    (_gbAtkC.equippedRelics || []).some(function (rn) {
+                        const rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[rn] : null;
+                        return rd && rd.effect === 'gunbai';
+                    })) {
+                    // Sortear categoría aleatoria: ST, MT, AOE o SELF
+                    const _gbCats = ['single', 'mt', 'aoe', 'self'];
+                    const _gbCatChosen = _gbCats[Math.floor(Math.random() * _gbCats.length)];
+                    const _gbCatLabel = { single: 'ST', mt: 'MT', aoe: 'AOE', self: 'SELF' }[_gbCatChosen];
+                    // Solo aplica si el objetivo no tiene ya ese bloqueo activo
+                    const _gbAlreadyBlocked = (_gbTgtC.statusEffects || []).some(function (e) {
+                        return e && e.gunbaiBlockCategory === _gbCatChosen;
+                    });
+                    if (!_gbAlreadyBlocked) {
+                        (_gbTgtC.statusEffects = _gbTgtC.statusEffects || []).push({
+                            name: 'Bloqueo: ' + _gbCatLabel, type: 'debuff', duration: 2,
+                            emoji: '🌀', permanent: false, gunbaiBlockCategory: _gbCatChosen
+                        });
+                        addLog('🌀 Gunbai: ' + targetName + ' pierde acceso a habilidades ' + _gbCatLabel + ' por 2 turnos', 'debuff');
+                    }
+                }
+            }
             // ── YAUTJA HONOR CODE (Depredador): dos ganchos independientes al inicio del
             //    procesamiento de daño ──
             if (damage > 0 && attackerName !== null && !passiveExecuting) {
