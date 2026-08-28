@@ -9,14 +9,14 @@
 (function () {
 
     // ── Tabla de recompensas del cofre misterioso ──
-    // (Runa de Portal ya NO es posible aquí — se movió a un bono del 5% al ganar Ranked)
+    // PUNTO 1: relic_Legendario eliminado — las Legendarias solo se consiguen en
+    // Cofre Arcano, Cofre de Campeones y Cofre de la Horda (no como recompensa de oleada).
     var CHEST_TABLE = [
         { type: 'gold',              weight: 40 },
         { type: 'relic_Raro',        weight: 30 },
         { type: 'relic_Especial',    weight: 10 },
         { type: 'arcane_key',        weight: 10 },
-        { type: 'relic_Epico',       weight: 5 },
-        { type: 'relic_Legendario',  weight: 0.05 }
+        { type: 'relic_Epico',       weight: 5 }
     ];
 
     function pickChestReward() {
