@@ -1232,6 +1232,28 @@
             }
 
             // Sin debuffs bloqueantes → mostrar modal de acción normal
+            // ── KAMA: al inicio del turno del portador, pagar 3 HP por debuff para limpiarlo
+            //    y ganar 4 cargas. Solo si tiene HP suficiente para pagar cada uno. ──
+            const _kamaChar = gameState.characters[gameState.currentCharacter || gameState.selectedCharacter || (gameState.turnOrder && gameState.turnOrder[gameState.currentTurnIndex])];
+            if (_kamaChar && !_kamaChar.isDead && _kamaChar.hp > 0 &&
+                (_kamaChar.equippedRelics || []).some(function (rn) {
+                    const rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[rn] : null;
+                    return rd && rd.effect === 'kama';
+                })) {
+                const _kamaDebuffs = (_kamaChar.statusEffects || []).filter(function (e) {
+                    return e && e.type === 'debuff' && !e.permanent;
+                });
+                let _kamaCleared = 0;
+                for (let _ki = _kamaDebuffs.length - 1; _ki >= 0; _ki--) {
+                    if (_kamaChar.hp > 3) {
+                        _kamaChar.hp = Math.max(1, _kamaChar.hp - 3);
+                        _kamaChar.statusEffects = (_kamaChar.statusEffects || []).filter(function (e) { return e !== _kamaDebuffs[_ki]; });
+                        _kamaChar.charges = Math.min(20, (_kamaChar.charges || 0) + 4);
+                        _kamaCleared++;
+                    }
+                }
+                if (_kamaCleared > 0) addLog('🔱 Kama: ' + _kamaCleared + ' debuff(s) limpiados (-' + (_kamaCleared * 3) + ' HP) → +' + (_kamaCleared * 4) + ' cargas', 'buff');
+            }
             showActionModal();
         }
 
@@ -1885,7 +1907,17 @@
                         cooldownLabel = '⏳ Cooldown: ' + _cdChar._singularidadCooldown + 'T';
                     }
                 }
-                const disabled = !canUse || !canRevive || !canSacrifice || !canSummon || !canSummonKamish || blockedByFreeze || blockedBySigilo || blockedByTransform || blockedByCooldown || blockedByDragon || blockedByNoRa || blockedBySummonCap || blockedByTirionCondition;
+                const _gunbaiBlockedCategory = (function() {
+                    // GUNBAI: si el personaje tiene un debuff de bloqueo de categoría, deshabilitar
+                    // las habilidades de esa categoría (target type). Puede haber más de un bloqueo.
+                    const _currentChar = gameState.characters[gameState.selectedCharacter];
+                    if (!_currentChar) return null;
+                    const _blocks = (_currentChar.statusEffects || []).filter(function (e) { return e && e.gunbaiBlockCategory; });
+                    return _blocks.map(function (e) { return e.gunbaiBlockCategory; });
+                })();
+                const blockedByGunbai = _gunbaiBlockedCategory && _gunbaiBlockedCategory.length > 0 &&
+                    _gunbaiBlockedCategory.includes(ability.target);
+                const disabled = !canUse || !canRevive || !canSacrifice || !canSummon || !canSummonKamish || blockedByFreeze || blockedBySigilo || blockedByTransform || blockedByCooldown || blockedByDragon || blockedByNoRa || blockedBySummonCap || blockedByTirionCondition || blockedByGunbai;
                 
                 // Bloquear invocación única si ya está activa en campo
                 const SINGLE_SUMMON_BLOCK = {
@@ -1907,6 +1939,10 @@
                 let reasonTag = '';
                 if (blockedByCooldown && cooldownLabel) {
                     reasonTag = '<div style="font-size:.65rem;color:#ff8844;margin-top:4px;font-weight:700;">' + cooldownLabel + '</div>';
+                }
+                if (blockedByGunbai) {
+                    const _gbCatLabel = { single: 'ST', mt: 'MT', aoe: 'AOE', self: 'SELF' }[ability.target] || ability.target;
+                    reasonTag = '<div style="font-size:.65rem;color:#ff8844;margin-top:4px;font-weight:700;">🌀 Gunbai: categoría ' + _gbCatLabel + ' bloqueada</div>';
                 }
                 
                 const SMAP_ACTION = { 'summon_shadows': ['Igris','Tusk','Beru'], 'summon_kamish': ['Kamish'], 'el_rey_caido': ['Sindragosa','Banshee','Valkyr','Necrofago','Caballero de la Muerte'], 'summon_sphinx': ['Abu el-Hol Sphinx'], 'summon_ramesseum': ['Ramesseum Tentyris'], 'enkidu': ['Enkidu'] };
