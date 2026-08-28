@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OVERSTRIKE - 5v5 RPG Battle v4.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css?v=20261090">
+    <link rel="stylesheet" href="css/styles.css?v=20261091">
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -266,7 +266,7 @@
             <!-- Logo: sin emoji, pegado a la izquierda -->
             <div style="display:flex;flex-direction:column;gap:2px;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;white-space:nowrap;">OVERSTRIKE</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20261090</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20261091</div>
             </div>
 
             <!-- HUD: empujado todo a la derecha junto al botón mute -->
@@ -399,7 +399,7 @@
                     style="width:100%;padding:.85rem 1rem;font-family:'Orbitron',sans-serif;font-size:.88rem;background:rgba(255,51,102,0.07);color:#aaa;border:1px solid #3a1a22;border-radius:10px;cursor:pointer;transition:all .2s;"
                     onmouseover="this.style.borderColor='#ff336644';this.style.color='#ccc'" onmouseout="this.style.borderColor='#3a1a22';this.style.color='#aaa'">🤖 SOLITARIO — vs IA</button>
 
-                <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} window.hordaEnterMode && window.hordaEnterMode()"
+                <button onclick="var _m=document.getElementById('sfxModo'); if(_m){_m.currentTime=0;_m.play().catch(function(){});} window.showHordaModeSelector()"
                     style="width:100%;padding:.85rem 1rem;font-family:'Orbitron',sans-serif;font-size:.88rem;background:rgba(160,60,255,0.09);color:#b46cff;border:1px solid rgba(160,60,255,.35);border-radius:10px;cursor:pointer;transition:all .2s;"
                     onmouseover="this.style.borderColor='rgba(160,60,255,.7)'" onmouseout="this.style.borderColor='rgba(160,60,255,.35)'">🌊 MODO HORDA</button>
 
@@ -712,8 +712,8 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20261090"></script>
-    <script src="js/arcane-event.js?v=20261090"></script>
+    <script src="js/firebase-auth.js?v=20261091"></script>
+    <script src="js/arcane-event.js?v=20261091"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen(tab) {
@@ -1908,9 +1908,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20261090"></script>
+    <script src="js/characters.js?v=20261091"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20261090"></script>
+    <script src="js/audio-state.js?v=20261091"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2739,28 +2739,28 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20261090"></script>
+    <script src="js/ai-engine.js?v=20261091"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20261090"></script>
+    <script src="js/init-render.js?v=20261091"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20261090"></script>
+    <script src="js/turn-logic.js?v=20261091"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20261090"></script>
+    <script src="js/status-effects.js?v=20261091"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20261090"></script>
+    <script src="js/debuffs.js?v=20261091"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20261090"></script>
+    <script src="js/summons.js?v=20261091"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20261090"></script>
+    <script src="js/ability-select.js?v=20261091"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20261090"></script>
+<script src="js/skills.js?v=20261091"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20261090"></script>
-    <script src="js/horda-mode.js?v=20261090"></script>
-    <script src="js/horda-abilities.js?v=20261090"></script>
-    <script src="js/horda-battle.js?v=20261090"></script>
-    <script src="js/missions.js?v=20261090"></script>
-    <script src="js/squads.js?v=20261090"></script>
+    <script src="js/jefe-de-sala.js?v=20261091"></script>
+    <script src="js/horda-mode.js?v=20261091"></script>
+    <script src="js/horda-abilities.js?v=20261091"></script>
+    <script src="js/horda-battle.js?v=20261091"></script>
+    <script src="js/missions.js?v=20261091"></script>
+    <script src="js/squads.js?v=20261091"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
@@ -3510,6 +3510,21 @@ window.showRelicDetail = function(name) {
     var color = tierColors[r.tier] || '#aaa';
     var modal = document.getElementById('relicarioDetailModal');
     var content = document.getElementById('relicarioDetailContent');
+    // ── PUNTO 4: Tabla de fuentes de obtención ──
+    var sources = (typeof RELIC_SOURCES !== 'undefined' && RELIC_SOURCES[name]) ? RELIC_SOURCES[name] : [];
+    // Fuentes automáticas según tier si no está en la tabla manual
+    if (sources.length === 0) {
+        if (r.tier === 'Raro' || r.tier === 'Especial' || r.tier === 'Epico') sources = ['⚔️ Horda: Orcos', '🔑 Cofre Arcano'];
+        if (r.tier === 'Legendario') sources = ['🔑 Cofre Arcano', '🏆 Cofre de Campeones', '🌊 Cofre de la Horda'];
+    }
+    var sourcesHtml = sources.length > 0
+        ? '<div class="relic-sources-tooltip" style="position:relative;display:inline-block;margin-top:12px;">' +
+          '<button style="background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.4);color:#00ff88;border-radius:8px;padding:5px 14px;font-size:.72rem;cursor:pointer;font-family:Orbitron,sans-serif;font-weight:700;">🗺️ OBTENCIÓN</button>' +
+          '<div class="relic-sources-content" style="display:none;position:absolute;bottom:110%;left:50%;transform:translateX(-50%);background:#080f1e;border:1px solid rgba(0,255,136,0.35);border-radius:10px;padding:10px 14px;min-width:180px;z-index:9999;white-space:nowrap;">' +
+          '<div style="font-size:.68rem;color:#00ff88;font-weight:700;margin-bottom:6px;font-family:Orbitron,sans-serif;">¿Dónde conseguirla?</div>' +
+          sources.map(function(s){ return '<div style="font-size:.72rem;color:#ccc;margin:3px 0;">• '+s+'</div>'; }).join('') +
+          '</div></div>'
+        : '';
     content.innerHTML =
         '<div style="text-align:center;margin-bottom:16px;">' +
         '<img src="'+(r.img||'')+'" onerror="this.style.opacity=0.2" style="width:90px;height:90px;object-fit:contain;border-radius:12px;border:2px solid '+color+';display:block;margin:0 auto 12px;">' +
@@ -3518,11 +3533,65 @@ window.showRelicDetail = function(name) {
         '<span style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:6px;padding:3px 10px;font-size:.68rem;color:'+color+';">'+r.tier+'</span>' +
         (r.slotCategory ? '<span style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:6px;padding:3px 10px;font-size:.68rem;color:#aaa;">'+r.slotCategory+'</span>' : '') +
         (r.subtype ? '<span style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:6px;padding:3px 10px;font-size:.68rem;color:#aaa;">'+r.subtype+'</span>' : '') +
-        '</div></div>' +
+        '</div>' +
+        sourcesHtml +
+        '</div>' +
         '<div style="background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px;">' +
         '<div style="font-size:.8rem;color:#ddd;line-height:1.6;">'+(r.desc||'Sin descripción.')+'</div>' +
         '</div>';
+    // Hover del tooltip de obtención
+    var btn = content.querySelector('.relic-sources-tooltip button');
+    var tip = content.querySelector('.relic-sources-content');
+    if (btn && tip) {
+        btn.onmouseenter = function(){ tip.style.display = 'block'; };
+        btn.onmouseleave = function(){ tip.style.display = 'none'; };
+        tip.onmouseenter = function(){ tip.style.display = 'block'; };
+        tip.onmouseleave = function(){ tip.style.display = 'none'; };
+    }
     modal.style.display = 'flex';
+};
+
+// ── PUNTO 4: Tabla de fuentes de obtención de reliquias ──
+// Las fuentes automáticas (Horda: Orcos / Cofre Arcano) se calculan por tier en showRelicDetail.
+// Aquí solo se registran los casos especiales que difieren de la regla general:
+// reliquias del Cofre de Campeones, misiones diarias específicas, u otras fuentes únicas.
+// Ejemplo: window.RELIC_SOURCES['Nombre Reliquia'] = ['⚔️ Horda: Orcos', '🏆 Cofre de Campeones'];
+window.RELIC_SOURCES = {
+    'Ergonos':           ['🔑 Cofre Arcano', '🏆 Cofre de Campeones'],
+    'Frostmourne':       ['🔑 Cofre Arcano', '🏆 Cofre de Campeones'],
+    'Varita de Saúco':   ['🔑 Cofre Arcano', '🏆 Cofre de Campeones'],
+    'Anillo del Tiempo': ['🔑 Cofre Arcano', '🏆 Cofre de Campeones'],
+    'Guante de Scorpio': ['🔑 Cofre Arcano', '🏆 Cofre de Campeones']
+};
+
+// ── PUNTO 2: Modal de selección de modo Horda ──
+window.showHordaModeSelector = function() {
+    var existing = document.getElementById('hordaModeSelectorModal');
+    if (existing) existing.remove();
+    var modal = document.createElement('div');
+    modal.id = 'hordaModeSelectorModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:9000;display:flex;align-items:center;justify-content:center;';
+    modal.innerHTML =
+        '<div style="background:linear-gradient(135deg,#080f1e,#0d1a2e);border:1px solid rgba(160,60,255,0.4);border-radius:18px;padding:32px 28px;max-width:420px;width:90%;text-align:center;box-shadow:0 0 60px rgba(160,60,255,0.2);">' +
+        '<div style="font-family:Orbitron,sans-serif;font-size:1.2rem;font-weight:900;color:#b46cff;margin-bottom:6px;">🌊 MODO HORDA</div>' +
+        '<div style="font-size:.75rem;color:#888;margin-bottom:24px;">Elige tu campo de batalla</div>' +
+        // Orcos
+        '<div onclick="document.getElementById(\'hordaModeSelectorModal\').remove(); window.hordaEnterMode && window.hordaEnterMode();" ' +
+        'style="background:rgba(180,108,255,0.08);border:2px solid rgba(180,108,255,0.5);border-radius:14px;padding:20px;margin-bottom:12px;cursor:pointer;transition:all .2s;" ' +
+        'onmouseover="this.style.borderColor=\'rgba(180,108,255,0.9)\';this.style.background=\'rgba(180,108,255,0.16)\'" ' +
+        'onmouseout="this.style.borderColor=\'rgba(180,108,255,0.5)\';this.style.background=\'rgba(180,108,255,0.08)\'">' +
+        '<div style="font-family:Orbitron,sans-serif;font-size:1rem;font-weight:900;color:#b46cff;margin-bottom:6px;">⚔️ ORCOS</div>' +
+        '<div style="font-size:.72rem;color:#aaa;line-height:1.5;">Sobrevive oleadas de Orcos y consigue reliquias Raras, Especiales y Épicas.</div>' +
+        '</div>' +
+        // Elfos Oscuros (no disponible)
+        '<div style="background:rgba(255,255,255,0.03);border:2px solid rgba(255,255,255,0.1);border-radius:14px;padding:20px;margin-bottom:24px;opacity:0.55;cursor:not-allowed;">' +
+        '<div style="font-family:Orbitron,sans-serif;font-size:1rem;font-weight:900;color:#888;margin-bottom:6px;">🧝 ELFOS OSCUROS</div>' +
+        '<div style="font-size:.72rem;color:#666;line-height:1.5;margin-bottom:8px;">Un nuevo desafío se acerca...</div>' +
+        '<div style="display:inline-block;background:rgba(255,170,0,0.12);border:1px solid rgba(255,170,0,0.4);color:#ffaa00;border-radius:6px;padding:3px 12px;font-size:.65rem;font-family:Orbitron,sans-serif;font-weight:700;">⏳ AÚN NO DISPONIBLE</div>' +
+        '</div>' +
+        '<button onclick="document.getElementById(\'hordaModeSelectorModal\').remove()" style="background:rgba(255,51,102,0.1);border:1px solid rgba(255,51,102,0.4);color:#ff3366;border-radius:8px;padding:8px 22px;cursor:pointer;font-family:Orbitron,sans-serif;font-size:.72rem;">✕ CANCELAR</button>' +
+        '</div>';
+    document.body.appendChild(modal);
 };
 </script>
 
