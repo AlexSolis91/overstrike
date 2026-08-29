@@ -1121,7 +1121,7 @@
             );
             if (stunEffect) {
                 addLog(`${stunEffect.emoji || '⭐'} ${charName} está aturdido y pierde su turno`, 'damage');
-                if (typeof _animCard === 'function') _animCard(charName, 'anim-shake', 600);
+                if (typeof _animCard === 'function') _animCard(charName, 'anim-stun', 750);
                 renderCharacters();
                 endTurn();
                 return;
@@ -1131,7 +1131,9 @@
             if (hasStatusEffect(charName, 'Congelacion')) {
                 if (Math.random() < 0.5) {
                     addLog(`❄️ ${charName} está Congelado y pierde su turno (50% de prob.)`, 'damage');
-                    if (typeof _animCard === 'function') _animCard(charName, 'anim-pulse-blue', 750);
+                    if (typeof _animCard === 'function') _animCard(charName, 'anim-freeze', 1100);
+                    if (typeof _spawnParticles === 'function') _spawnParticles(charName, '❄️', 3);
+                    if (typeof _spawnParticles === 'function') setTimeout(function(){ _spawnParticles(charName, '🥶', 2); }, 200);
                     renderCharacters();
                     endTurn();
                     return;
@@ -1141,14 +1143,15 @@
             }
 
             // ── MEGA CONGELACIÓN: pierde turno siempre ─────────────────────
-            // Check both 'Mega Congelacion' (with space) and 'Megacongelacion' (no space)
             const _isMegaFrozen = hasStatusEffect(charName, 'Mega Congelacion') ||
                                   hasStatusEffect(charName, 'Megacongelacion') ||
                                   hasStatusEffect(charName, 'Megacongelación') ||
                                   hasStatusEffect(charName, 'Mega Congelación');
             if (_isMegaFrozen) {
                 addLog(`🧊 ${charName} está Mega Congelado y pierde su turno`, 'damage');
-                if (typeof _animCard === 'function') _animCard(charName, 'anim-pulse-blue', 750);
+                if (typeof _animCard === 'function') _animCard(charName, 'anim-freeze', 1100);
+                if (typeof _spawnParticles === 'function') _spawnParticles(charName, '❄️', 4);
+                if (typeof _spawnParticles === 'function') setTimeout(function(){ _spawnParticles(charName, '🥶', 3); }, 180);
                 renderCharacters();
                 endTurn();
                 return;
@@ -1158,7 +1161,7 @@
             if (hasStatusEffect(charName, 'Miedo')) {
                 if (Math.random() < 0.25) {
                     addLog(`😱 ${charName} está paralizado por el Miedo y pierde su turno`, 'damage');
-                    if (typeof _animCard === 'function') _animCard(charName, 'anim-shake', 600);
+                    if (typeof _animCard === 'function') _animCard(charName, 'anim-fear', 900);
                     renderCharacters();
                     endTurn();
                     return;
@@ -1185,8 +1188,8 @@
             // ── CONFUSIÓN: ataca a un enemigo aleatorio automáticamente ──────
             if (hasStatusEffect(charName, 'Confusion')) {
                 addLog(`😵 ${charName} está Confundido — atacará a un enemigo aleatorio automáticamente`, 'damage');
-                if (typeof _spawnDmgNumber === 'function') _spawnDmgNumber(charName, '😵❓', 'heal');
-                if (typeof _animCard === 'function') _animCard(charName, 'anim-debuff', 600);
+                if (typeof _animCard === 'function') _animCard(charName, 'anim-confusion', 800);
+                if (typeof _spawnConfusion === 'function') _spawnConfusion(charName);
                 executeConfusionAttack(charName);
                 return;
             }
@@ -3883,8 +3886,8 @@
                                     addLog('☠️ Aguijón Esmeralda: 2 stacks de Veneno aplicados a todo el equipo enemigo', 'debuff');
                                 }
                             }
-                            if (typeof _animCard === 'function') _animCard(_eorN, 'anim-poison', 700);
-                            if (typeof _spawnParticles === 'function') _spawnParticles(_eorN, '☠️', 3);
+                            if (typeof _animCard === 'function') _animCard(_eorN, 'anim-venom', 750);
+                            if (typeof _spawnParticles === 'function') _spawnParticles(_eorN, '☠️', 4);
                             if (typeof registerPoisonDamage === 'function') registerPoisonDamage(_eorPoisonDmg);
                             if (gameState.battleStats && gameState.battleStats.poisonAppliers) {
                                 const _pApp = Array.from(gameState.battleStats.poisonAppliers);
