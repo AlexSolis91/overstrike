@@ -1045,7 +1045,8 @@
             if (!el) return;
             el.classList.remove('anim-shake','anim-hit','anim-crit','anim-heal','anim-charge','anim-debuff',
                 'anim-over','anim-transform','anim-defeat','anim-pulse-red','anim-pulse-green','anim-pulse-gold',
-                'anim-pulse-blue','anim-charge-glow','anim-fire','anim-poison','anim-bleed');
+                'anim-pulse-blue','anim-charge-glow','anim-fire','anim-poison','anim-bleed',
+                'anim-freeze','anim-stun','anim-fear','anim-confusion','anim-burn','anim-venom');
             void el.offsetWidth; // reflow para reiniciar
             el.classList.add(animClass);
             setTimeout(function() { el.classList.remove(animClass); }, durationMs || 600);
@@ -1075,6 +1076,29 @@
             }
         }
         window._spawnParticles = _spawnParticles;
+
+        // ── _spawnConfusion: aparecen 3 ❓ uno tras otro sobre la carta, cada uno se
+        //    desvanece antes de que aparezca el siguiente (para el debuff Confusión) ──
+        function _spawnConfusion(charName) {
+            const id = 'char-' + (charName || '').replace(/\s+/g, '-');
+            const el = document.getElementById(id);
+            if (!el) return;
+            const rect = el.getBoundingClientRect();
+            const emojis = ['❓', '❓', '❓'];
+            emojis.forEach(function (e, i) {
+                setTimeout(function () {
+                    var p = document.createElement('div');
+                    p.style.cssText = 'position:fixed;z-index:9999;font-size:1.6rem;pointer-events:none;' +
+                        'left:' + (rect.left + rect.width * 0.25 + i * rect.width * 0.22) + 'px;' +
+                        'top:' + (rect.top + rect.height * 0.12) + 'px;' +
+                        'animation:confusionParticle 0.55s ease-in-out forwards;';
+                    p.textContent = e;
+                    document.body.appendChild(p);
+                    setTimeout(function () { if (p.parentNode) p.remove(); }, 560);
+                }, i * 180);
+            });
+        }
+        window._spawnConfusion = _spawnConfusion;
 
         function _spawnDmgNumber(charName, text, type) {
             const id = 'char-' + (charName || '').replace(/\s+/g, '-');
