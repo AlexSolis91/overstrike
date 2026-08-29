@@ -213,18 +213,16 @@
         // ── PROGRESIÓN DE TIER DE RELIQUIA ──
         // Pesos por tramo de oleadas; se interpola linealmente entre tramos vecinos
         // para que la transición sea gradual y no un salto brusco.
-        // PUNTO 1: Legendario queda en 0 en todos los tramos — las reliquias Legendarias
-        // ya NO se pueden obtener como recompensa de oleada del Modo Horda (ni Orcos ni
-        // futuros modos). Solo se consiguen en Cofre Arcano, Cofre de Campeones y Cofre
-        // de la Horda.
+        // Esta tabla controla el tier de reliquias que EQUIPAN LOS ORCOS enemigos en
+        // cada oleada — NO las recompensas del jugador (eso es CHEST_TABLE en horda-battle.js).
         const HORDA_TIER_STAGES = [
             { wave: 1,  weights: { Raro: 1,    Especial: 0,    Epico: 0,    Legendario: 0 } },
             { wave: 8,  weights: { Raro: 1,    Especial: 0,    Epico: 0,    Legendario: 0 } },
             { wave: 15, weights: { Raro: 0.35, Especial: 0.65, Epico: 0,    Legendario: 0 } },
             { wave: 22, weights: { Raro: 0.05, Especial: 0.55, Epico: 0.40, Legendario: 0 } },
             { wave: 29, weights: { Raro: 0,    Especial: 0.15, Epico: 0.85, Legendario: 0 } },
-            { wave: 40, weights: { Raro: 0,    Especial: 0,    Epico: 1,    Legendario: 0 } },
-            { wave: 50, weights: { Raro: 0,    Especial: 0,    Epico: 1,    Legendario: 0 } }
+            { wave: 40, weights: { Raro: 0,    Especial: 0,    Epico: 0.55, Legendario: 0.45 } },
+            { wave: 50, weights: { Raro: 0,    Especial: 0,    Epico: 0,    Legendario: 1 } }
         ];
         const HORDA_TIER_ORDER = ['Raro', 'Especial', 'Epico', 'Legendario'];
 
