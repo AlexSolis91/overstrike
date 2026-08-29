@@ -262,8 +262,8 @@ function processBurnEffects(charName) {
                     addLog('🔥 Aspecto de la Vida: Quemadura infligió daño — equipo aliado gana 1 carga', 'buff');
                     break;
                 }
-                if (typeof _animCard === 'function') _animCard(charName, 'anim-fire', 700);
-                if (typeof _spawnParticles === 'function') _spawnParticles(charName, '🔥', 3);
+                if (typeof _animCard === 'function') _animCard(charName, 'anim-burn', 750);
+                if (typeof _spawnParticles === 'function') _spawnParticles(charName, '🔥', 4);
                 // MVP: registrar daño por quemadura + daño causado al aplicador
                 if (typeof registerBurnDamage === 'function') registerBurnDamage(damage);
                 // Atribuir daño causado a los aplicadores de quemadura
