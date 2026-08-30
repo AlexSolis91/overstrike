@@ -533,6 +533,7 @@
                 const _prevChar = gameState.selectedCharacter;
                 const _prevAb   = gameState.selectedAbility;
                 const _prevTgt  = gameState.selectedTarget;
+                const _prevSuppress = gameState._suppressAutoEndTurn;
                 passiveExecuting = true;
                 for (let hit = 0; hit < 3; hit++) {
                     // Verificar que el objetivo sigue vivo en cada golpe
@@ -544,11 +545,19 @@
                     gameState.selectedCharacter = n;
                     gameState.selectedAbility   = basic;
                     gameState._abilityExecuting  = false;
+                    // ── _suppressAutoEndTurn es OBLIGATORIO aquí — sin él, cada uno de los 3
+                    //    golpes llama a endTurn() al terminar, avanzando el índice de turno 3
+                    //    veces y solapando varios setTimeout(startTurn) con el del turno extra
+                    //    del personaje que disparó Anticipación. En Horda, esto causa que el
+                    //    botón "Continuar Turno" quede atascado y que el personaje reciba turno
+                    //    extra repetido en bucle al refrescar. ──
+                    gameState._suppressAutoEndTurn = true;
                     passiveExecuting = false; // permitir que _executeAbilityCore corra efectos
                     try { _executeAbilityCore(attackerName); } catch(e) { console.error('[Anticipación golpe '+(hit+1)+']', e); }
                     passiveExecuting = true;
                 }
                 passiveExecuting = false;
+                gameState._suppressAutoEndTurn = _prevSuppress;
                 gameState.selectedCharacter = _prevChar;
                 gameState.selectedAbility   = _prevAb;
                 gameState.selectedTarget    = _prevTgt;
