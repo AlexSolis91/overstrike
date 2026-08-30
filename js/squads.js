@@ -1019,6 +1019,9 @@
 
     // ── Pantalla de recompensas ──
     function _squadsRenderRewardsScreen(room, myUid) {
+        // Asegurar que _squadsLastRoom esté actualizado — squadsClaimReward lo necesita
+        // y solo se actualizaba en _squadsRenderAttackPanel, que no corre en esta fase
+        _squadsLastRoom = room;
         var content = document.getElementById('squadsRoomContent');
         if (!content) return;
         var myTeam = room.teams.haunters.indexOf(myUid) !== -1 ? 'haunters' : (room.teams.reapers.indexOf(myUid) !== -1 ? 'reapers' : null);
