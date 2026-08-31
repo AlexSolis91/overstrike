@@ -2074,6 +2074,11 @@
 
         function _runRoundStartPassiveHooks() {
             console.log('[Ronda] _runRoundStartPassiveHooks() iniciando (Ronda ' + gameState.currentRound + ')...');
+                    // Resetear el contador de Over en cadena de Legolas (máx 3 por ronda)
+                    Object.keys(gameState.characters || {}).forEach(function (n) {
+                        const _key = '_legolasOverChainCount_' + n;
+                        if (gameState[_key]) gameState[_key] = 0;
+                    });
                     // OJOS DE MIRKWOOD (Legolas): inicio de ronda → Protección Sagrada + disipa
                     // debuffs en 2 aliados aleatorios (puede incluir al propio Legolas).
                     for (const _lgrN in gameState.characters) {
