@@ -9259,7 +9259,7 @@
                 // Flecha de Lothlórien sobre enemigos aleatorios. Contra Jefe de Sala, causa daño
                 // adicional igual a la suma de cargas del equipo aliado en vez del 60%.
                 const _uaTgt = gameState.characters[targetName];
-                const _uaIsBoss = !!(_uaTgt && (_uaTgt._isEventChar || _uaTgt._eventBoss || _uaTgt.isRoomBoss));
+                const _uaIsBoss = !!(_uaTgt && (_uaTgt.isBoss || _uaTgt._isEventChar || _uaTgt._eventBoss || _uaTgt.isRoomBoss || gameState.gameMode === 'boss'));
                 let _uaDmg = finalDamage;
                 if (_uaTgt) {
                     if (_uaIsBoss) {
