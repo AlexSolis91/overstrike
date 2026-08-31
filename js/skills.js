@@ -9168,9 +9168,16 @@
                         const c = gameState.characters[n];
                         return c && c.team === _flETeam && !c.isDead && c.hp > 0;
                     });
-                    if (_flOver && _flEnemies.length > 0) {
+                    // ── Tope de 3 disparos de Over por ronda vía doble crítico de Flecha ──
+                    // Sin este límite, con 100% de probabilidad de crítico (reliquias) los Overs
+                    // encadenados por La Última Alianza → 3 Flechas → Over → 3 Flechas → ...
+                    // crearían un bucle infinito dentro de la misma ronda.
+                    const _flOverKey = '_legolasOverChainCount_' + (gameState.selectedCharacter || 'legolas');
+                    const _flOverCount = gameState[_flOverKey] || 0;
+                    if (_flOver && _flEnemies.length > 0 && _flOverCount < 3) {
+                        gameState[_flOverKey] = _flOverCount + 1;
                         const _flRandTgt = _flEnemies[Math.floor(Math.random() * _flEnemies.length)];
-                        addLog('🏹 Flecha de Lothlórien: ¡ambos golpes críticos! Legolas ejecuta su Over automáticamente', 'buff');
+                        addLog('🏹 Flecha de Lothlórien: ¡ambos golpes críticos! Legolas ejecuta su Over automáticamente (' + (gameState[_flOverKey]) + '/3 esta ronda)', 'buff');
                         const _flPrevSel = gameState.selectedCharacter;
                         const _flPrevAb = gameState.selectedAbility;
                         const _flPrevSuppress = gameState._suppressAutoEndTurn;
@@ -9189,6 +9196,8 @@
                                 gameState.selectedAbility = _flPrevAb;
                             });
                         }
+                    } else if (_flOver && _flOverCount >= 3) {
+                        addLog('🏹 Flecha de Lothlórien: doble crítico — Over bloqueado (límite de 3 activaciones por ronda alcanzado)', 'info');
                     }
                 }
 
