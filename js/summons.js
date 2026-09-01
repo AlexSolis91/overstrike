@@ -3677,6 +3677,14 @@
                     if (typeof _animCard === 'function') _animCard(targetName, 'anim-transform', 700);
                 } else {
                     target.isDead = true;
+                    // ── SISTEMA DE TURNOS v2: quien muere durante la ronda NO vuelve a tomar
+                    //    turno esta ronda, aunque sea revivido después (Anillo del Tiempo,
+                    //    Piedra de la Resurrección, Frostmourne, etc.). Su slot en la cola se
+                    //    salta. En la siguiente ronda vuelve a entrar con normalidad. ──
+                    gameState.diedThisRound = gameState.diedThisRound || [];
+                    if (gameState.diedThisRound.indexOf(targetName) === -1) {
+                        gameState.diedThisRound.push(targetName);
+                    }
                     // ── SQUADS: registro acumulativo de muertes durante la batalla — un personaje
                     //    revivido (por Frostmourne u otro efecto) no estaría marcado como isDead
                     //    al finalizar, así que el conteo por estado final lo perdería. Con este
