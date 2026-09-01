@@ -1491,6 +1491,8 @@
                     if (!rd) return;
                     if (rd.effect === 'crit_chance_bonus') gameState._relicCritBonus += 0.30; // Cuerno del Caos
                     if (rd.effect === 'onslaught')         gameState._relicCritBonus += 0.30; // Onslaught
+                    if (rd.effect === 'mjolnir')           gameState._relicCritBonus += 0.50; // Mjölnir +50%
+                    if (rd.effect === 'potara_izquierdo')  gameState._relicCritBonus += 0.25; // Pendiente Potara Izquierdo +25%
                 });
             }
 
@@ -1500,6 +1502,7 @@
 
             // ── GUNBAI: snapshot antes de un Over enemigo para poder deshacerlo al final ──
             let _gunbaiSnap = null;
+            let _capAmericaSnap = null; // Escudo del Capitán América
             if (!passiveExecuting && gameState.selectedAbility && gameState.selectedAbility.type === 'over' && _coreAttacker) {
                 for (const _gn in gameState.characters) {
                     const _gc = gameState.characters[_gn];
@@ -1512,6 +1515,24 @@
                         addLog('🌀 Gunbai: ' + _gn + ' activa el bloqueo de Over (70%)', 'buff');
                     } else { addLog('🌀 Gunbai: ' + _gn + ' falla el bloqueo (30%)', 'debuff'); }
                     break;
+                }
+                // ── ESCUDO DEL CAPITÁN AMERICA: si hay un portador vivo en el equipo defensor,
+                //    snapshot de HP de TODOS los aliados para calcular el daño total que absorberá. ──
+                let _capN = null;
+                for (const _cn in gameState.characters) {
+                    const _cc = gameState.characters[_cn];
+                    if (!_cc || _cc.isDead || _cc.hp <= 0) continue;
+                    if (_cc.team === _coreAttacker.team) continue;
+                    if ((_cc.equippedRelics || []).some(function(rn){ const rd=(typeof RELICS_DATA!=='undefined')?RELICS_DATA[rn]:null; return rd&&rd.effect==='escudo_capitan'; })) { _capN = _cn; break; }
+                }
+                if (_capN) {
+                    _capAmericaSnap = { capName: _capN, chars: {} };
+                    for (const _cn2 in gameState.characters) {
+                        const _cc2 = gameState.characters[_cn2];
+                        if (_cc2 && _cc2.team === gameState.characters[_capN].team) {
+                            _capAmericaSnap.chars[_cn2] = { hp: _cc2.hp, shield: _cc2.shield || 0 };
+                        }
+                    }
                 }
             }
             // ── OJOS DE MIRKWOOD (Legolas): snapshot de cargas de TODOS los personajes antes de
@@ -2101,6 +2122,49 @@
                         // forma aditiva (base + reliquias). Si el handler NO usó rollCrit (ataque
                         // sin probabilidad de crítico propia), se aplica el bono más abajo, fuera
                         // de este forEach, como fallback para cualquier personaje.
+                    }
+                    // ── MJÖLNIR: stun por golpe (el doble golpe se maneja en el bloque post-reliquias) ──
+                    if (_rd.effect === 'mjolnir' && finalDamage > 0) {
+                        const _mjRoll = Math.random();
+                        if (_mjRoll < 0.25) {
+                            if (typeof applyDebuff === 'function') applyDebuff(targetName, { name: 'Mega Aturdimiento', type: 'debuff', duration: 2, emoji: '💫' });
+                            addLog('🔨 Mjölnir: ¡Mega Aturdimiento! (25%)', 'debuff');
+                        } else if (_mjRoll < 0.75) {
+                            if (typeof applyDebuff === 'function') applyDebuff(targetName, { name: 'Aturdimiento', type: 'debuff', duration: 1, emoji: '⭐' });
+                            addLog('🔨 Mjölnir: Aturdimiento (50%)', 'debuff');
+                        }
+                    }
+                    // ── ARMADURA DE HADES: bonus daño saliente por contador ──
+                    if (_rd.effect === 'armadura_hades' && finalDamage > 0) {
+                        const _hadesBonus = Math.min(0.70, ((attacker._hadesCounters || 0) * 0.10));
+                        if (_hadesBonus > 0) {
+                            finalDamage = Math.floor(finalDamage * (1 + _hadesBonus));
+                        }
+                    }
+                    // ── SABLE DE LUZ AMATISTA: bonus daño MT por marcas sobre el objetivo ──
+                    if (_rd.effect === 'sable_amatista' && finalDamage > 0 && ability && ability.target === 'mt') {
+                        const _sableTgtC = gameState.characters[targetName];
+                        const _markCount = _sableTgtC ? (_sableTgtC.statusEffects || []).filter(function(e){ return e && e.amatistaMark; }).length : 0;
+                        if (_markCount > 0) {
+                            finalDamage = Math.floor(finalDamage * (1 + _markCount * 0.50));
+                            addLog('💜 Sable de Luz Amatista: +' + (_markCount * 50) + '% daño MT (' + _markCount + ' marcas)', 'buff');
+                        }
+                    }
+                    // ── ANILLO ÚNICO: +X daño base acumulado ──
+                    if (_rd.effect === 'anillo_unico' && finalDamage > 0) {
+                        const _auBonus = (attacker._anilloUnicoDmgBonus || 0);
+                        if (_auBonus > 0) finalDamage += _auBonus;
+                    }
+                    // ── HIELO (inmunidad debuffs con provocación): se aplica en applyDebuff ──
+                    // ── POTARA: el bono x2 daño (cuando ambos en mismo personaje) ──
+                    if (finalDamage > 0 && attacker) {
+                        const _pRelics = (attacker.equippedRelics || []);
+                        const _hasBothPotara = _pRelics.some(function(rn){ const rd=(typeof RELICS_DATA!=='undefined')?RELICS_DATA[rn]:null; return rd&&rd.effect==='potara_derecho'; }) &&
+                                               _pRelics.some(function(rn){ const rd=(typeof RELICS_DATA!=='undefined')?RELICS_DATA[rn]:null; return rd&&rd.effect==='potara_izquierdo'; });
+                        if ((_rd.effect === 'potara_derecho' || _rd.effect === 'potara_izquierdo') && _hasBothPotara && !gameState._potaraX2Applied) {
+                            finalDamage *= 2;
+                            gameState._potaraX2Applied = true; // evitar doble aplicación por ambas reliquias
+                        }
                     }
                     if (_rd.effect === 'frostmourne') {
                         finalDamage = finalDamage * 2;
@@ -15316,6 +15380,77 @@
                     }
                 }
             }
+
+            // ── ESCUDO DEL CAPITÁN AMERICA: absorber el daño total del Over que recibirían todos
+            //    los aliados y aplicarlo al Capitán. Los aliados conservan sus efectos/debuffs. ──
+            if (_capAmericaSnap && !_gunbaiSnap) { // Gunbai tiene prioridad si también activo
+                const _capChar = gameState.characters[_capAmericaSnap.capName];
+                if (_capChar && !_capChar.isDead) {
+                    let _capTotalDmg = 0;
+                    // Calcular daño total absorbido de TODOS los aliados (incluyendo al Capitán)
+                    for (const _cn3 in _capAmericaSnap.chars) {
+                        const _cSnap = _capAmericaSnap.chars[_cn3];
+                        const _cNow  = gameState.characters[_cn3];
+                        if (!_cNow) continue;
+                        const _hpLost = _cSnap.hp - _cNow.hp;
+                        if (_hpLost > 0) _capTotalDmg += _hpLost;
+                        // Restaurar HP de aliados (pero mantener debuffs/efectos del Over)
+                        if (_cn3 !== _capAmericaSnap.capName) {
+                            _cNow.hp    = _cSnap.hp;
+                            _cNow.shield= _cSnap.shield;
+                        }
+                    }
+                    if (_capTotalDmg > 0) {
+                        addLog('🛡️ Escudo del Capitán América: ' + _capAmericaSnap.capName + ' absorbe ' + _capTotalDmg + ' de daño total del Over (equipo aliado protegido)', 'buff');
+                        // Aplicar daño total al Capitán
+                        const _capHpBefore = _capChar.hp;
+                        applyDamageWithShield(_capAmericaSnap.capName, _capTotalDmg, gameState.selectedCharacter);
+                        // Contraataque: 60% HP máx al Over user
+                        const _capReflect = Math.ceil((_capChar.maxHp || 0) * 0.60);
+                        applyDamageWithShield(gameState.selectedCharacter, _capReflect, _capAmericaSnap.capName);
+                        addLog('🛡️ Escudo del Capitán América: ' + _capReflect + ' daño de contraataque a ' + gameState.selectedCharacter, 'damage');
+                        // Si el Capitán muere por el Over: Mega Aturdimiento al equipo enemigo
+                        if (_capChar.isDead || _capChar.hp <= 0) {
+                            const _capETeam = _capChar.team === 'team1' ? 'team2' : 'team1';
+                            Object.keys(gameState.characters).forEach(function(en) {
+                                const ec = gameState.characters[en];
+                                if (!ec || ec.team !== _capETeam || ec.isDead) return;
+                                if (typeof applyDebuff === 'function') applyDebuff(en, { name: 'Mega Aturdimiento', type: 'debuff', duration: 2, emoji: '💫' });
+                            });
+                            addLog('🛡️ Escudo del Capitán América: ¡' + _capAmericaSnap.capName + ' murió! Mega Aturdimiento al equipo enemigo', 'debuff');
+                        }
+                    }
+                }
+            }
+
+            // ── MJÖLNIR: doble golpe en ataques que causen daño (excepto SELF). ──
+            // Solo se dispara en la ejecución del nivel superior (!_mjolnirDoubleHitting) para
+            // evitar que el segundo golpe dispare un tercero.
+            if (!gameState._mjolnirDoubleHitting && _lgTopLevel && _coreAttacker &&
+                gameState.selectedAbility && gameState.selectedAbility.target !== 'self' &&
+                (_coreAttacker.equippedRelics || []).some(function(rn){ const rd=(typeof RELICS_DATA!=='undefined')?RELICS_DATA[rn]:null; return rd&&rd.effect==='mjolnir'; })) {
+                // Verificar que el ability causó daño (finalDamage > 0 o había targetName)
+                const _mjolnirTgt = targetName;
+                const _mjTgtC = _mjolnirTgt ? gameState.characters[_mjolnirTgt] : null;
+                if (_mjTgtC && !_mjTgtC.isDead && _mjTgtC.hp > 0) {
+                    addLog('🔨 Mjölnir: segundo golpe!', 'buff');
+                    const _mjPrevSel = gameState.selectedCharacter;
+                    const _mjPrevAb  = gameState.selectedAbility;
+                    const _mjPrevSup = gameState._suppressAutoEndTurn;
+                    gameState._mjolnirDoubleHitting = true;
+                    passiveExecuting = true;
+                    gameState._suppressAutoEndTurn = true;
+                    try { _executeAbilityCore(_mjolnirTgt); } catch(e) { console.error('[Mjölnir doble golpe]', e); }
+                    passiveExecuting = false;
+                    gameState._suppressAutoEndTurn = _mjPrevSup;
+                    gameState._mjolnirDoubleHitting = false;
+                    gameState.selectedCharacter = _mjPrevSel;
+                    gameState.selectedAbility   = _mjPrevAb;
+                }
+            }
+
+            // ── POTTARA: copia de habilidad del aliado con el otro Pendiente ──
+            // (Se dispara desde turn-logic.js en el endTurn del portador para no interferir aquí)
 
             // ── GUNBAI: resolver el reflejo de Over después de que el ability se ejecutó ──
             if (_gunbaiSnap) {
