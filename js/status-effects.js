@@ -692,6 +692,39 @@ function processBurnEffects(charName) {
             // Disparar TODAS las pasivas de curación centralizadas en notifyHeal()
             // (Bendición Sagrada, Explosión de Sangre, Adaptación Reactiva, showHpTick, MVP)
             if (_actual > 0 && typeof notifyHeal === 'function') notifyHeal(charName, _actual, logSource);
+            // ── KATANA CARMESÍ: cuando un ENEMIGO del portador recibe curación, el portador
+            //    ejecuta su básico sobre ese objetivo y aplica Quemadura = cantidad curada. ──
+            if (_actual > 0 && _ch && !passiveExecuting) {
+                Object.keys(gameState.characters).forEach(function(portadorName) {
+                    const portador = gameState.characters[portadorName];
+                    if (!portador || portador.isDead || portador.hp <= 0) return;
+                    if (portador.team === _ch.team) return; // mismo equipo → no es enemigo
+                    const _rdList = portador.equippedRelics || [];
+                    const _hasKatana = _rdList.some(function(rn){ const rd=(typeof RELICS_DATA!=='undefined')?RELICS_DATA[rn]:null; return rd&&rd.effect==='katana_carmesi'; });
+                    if (!_hasKatana) return;
+                    // Ejecutar básico sobre el objetivo curado
+                    const _kBasic = (portador.abilities||[]).find(function(a){ return a&&a.type==='basic'; });
+                    if (_kBasic) {
+                        const _kPrevSel = gameState.selectedCharacter;
+                        const _kPrevAb  = gameState.selectedAbility;
+                        const _kPrevSup = gameState._suppressAutoEndTurn;
+                        gameState.selectedCharacter = portadorName;
+                        gameState.selectedAbility   = _kBasic;
+                        passiveExecuting             = true;
+                        gameState._suppressAutoEndTurn = true;
+                        try { if (typeof _executeAbilityCore==='function') _executeAbilityCore(charName); } catch(e) {}
+                        passiveExecuting             = false;
+                        gameState._suppressAutoEndTurn = _kPrevSup;
+                        gameState.selectedCharacter = _kPrevSel;
+                        gameState.selectedAbility   = _kPrevAb;
+                    }
+                    // Aplicar Quemadura = cantidad curada
+                    if (typeof applyDebuff === 'function') {
+                        applyDebuff(charName, { name: 'Quemadura', type: 'debuff', duration: 99, damage: _actual, emoji: '🔥', permanent: false });
+                        addLog('🗡️ Katana Carmesí: ' + portadorName + ' atacó a ' + charName + ' (se curó ' + _actual + ' HP) → Quemadura ' + _actual + ' HP', 'damage');
+                    }
+                });
+            }
             return _actual;
         }
 
