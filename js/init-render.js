@@ -349,19 +349,9 @@
                     if (typeof _runRoundStartPassiveHooks === 'function') _runRoundStartPassiveHooks();
                     // Recalcular con velocidades actualizadas por reliquias
                     calculateTurnOrder();
-                    // ── HORDA: saltar el turno del personaje que acaba de limpiar la oleada si
-                    //    quedó primero en el nuevo orden de velocidades. Sin esto, Legolas (o
-                    //    cualquier personaje con la velocidad más alta) recibía un turno extra
-                    //    automático al iniciar cada nueva oleada, creando la ilusión de que el
-                    //    orden de turnos se recalculaba en medio de su propio turno. ──
-                    if (gameState.gameMode === 'horda' && window._hordaLastActed) {
-                        const _hlaFirst = gameState.turnOrder && gameState.turnOrder[0];
-                        if (_hlaFirst === window._hordaLastActed && gameState.turnOrder.length > 1) {
-                            gameState.currentTurnIndex = 1;
-                            if (typeof addLog === 'function') addLog('🌊 Nueva oleada: ' + window._hordaLastActed + ' ya actuó — turno pasa al siguiente personaje', 'info');
-                        }
-                        window._hordaLastActed = null;
-                    }
+                    // (El viejo parche de Horda que forzaba currentTurnIndex = 1 ya no hace
+                    //  falta: cada oleada construye una cola nueva desde el índice 0.)
+                    if (window._hordaLastActed) window._hordaLastActed = null;
                     renderTurnOrder();
                     startTurn();
                 }
@@ -373,13 +363,7 @@
                     gameState._waitingForRelics = false;
                     if (typeof _runRoundStartPassiveHooks === 'function') _runRoundStartPassiveHooks();
                     calculateTurnOrder();
-                    if (gameState.gameMode === 'horda' && window._hordaLastActed) {
-                        const _hlaFirst2 = gameState.turnOrder && gameState.turnOrder[0];
-                        if (_hlaFirst2 === window._hordaLastActed && gameState.turnOrder.length > 1) {
-                            gameState.currentTurnIndex = 1;
-                        }
-                        window._hordaLastActed = null;
-                    }
+                    if (window._hordaLastActed) window._hordaLastActed = null;
                     renderTurnOrder();
                     startTurn();
                 }
@@ -387,17 +371,47 @@
         }
 
         // ==================== CÁLCULO DE ORDEN DE TURNOS ====================
+        // ══════════════════════════════════════════════════════════════════════════════
+        // SISTEMA DE ORDEN DE TURNOS (v2)
+        // ──────────────────────────────────────────────────────────────────────────────
+        // El orden se calcula UNA SOLA VEZ al inicio de cada ronda, DESPUÉS de que se
+        // aplicaron todos los buffs/debuffs/efectos de inicio de ronda. Una vez calculado
+        // queda CONGELADO: los cambios de velocidad a mitad de ronda NO lo reordenan.
+        //
+        // gameState.turnOrder        → cola de la ronda (array de nombres, puede repetir
+        //                              un nombre si ese personaje ganó un turno adicional)
+        // gameState.currentTurnIndex → posición actual dentro de esa cola
+        // gameState.diedThisRound    → quien muere esta ronda NO vuelve a tomar turno,
+        //                              aunque sea revivido (Anillo del Tiempo, Piedra, etc.)
+        //
+        // La ronda termina cuando currentTurnIndex alcanza el final de turnOrder. Los turnos
+        // adicionales se insertan como slots reales en la cola, así que extienden la ronda
+        // de forma natural (no hace falta el viejo contador turnsInRound).
+        // ══════════════════════════════════════════════════════════════════════════════
         function calculateTurnOrder() {
-            let allCharacters = [];
-            for (let name in gameState.characters) {
-                allCharacters.push({ name: name, speed: gameState.characters[name].speed });
+            const alive = [];
+            for (const name in gameState.characters) {
+                const c = gameState.characters[name];
+                if (!c || c.isDead || c.hp <= 0) continue;
+                alive.push({ name: name, speed: c.speed || 0 });
             }
-            
-            // Ordenar por velocidad (mayor a menor)
-            allCharacters.sort((a, b) => b.speed - a.speed);
-            
-            gameState.turnOrder = allCharacters.map(c => c.name);
-            console.log('[DIAGNÓSTICO Turnos] calculateTurnOrder() — orden calculado:', JSON.stringify(allCharacters.map(c => c.name + '(' + c.speed + ')')));
+            // Velocidad de mayor a menor. Empates: se resuelven de forma estable por nombre
+            // para que el orden sea determinista y reproducible entre cliente y servidor.
+            alive.sort(function (a, b) {
+                if (b.speed !== a.speed) return b.speed - a.speed;
+                return a.name.localeCompare(b.name);
+            });
+
+            gameState.turnOrder        = alive.map(function (c) { return c.name; });
+            gameState.currentTurnIndex = 0;
+            gameState.diedThisRound    = [];
+            gameState._pendingExtraTurns = [];
+            gameState._lastActedIndex  = -1;
+            gameState._lastActedName   = null;
+            gameState._turnInProgress  = false;
+
+            console.log('[Turnos] Orden de la Ronda ' + gameState.currentRound + ':',
+                JSON.stringify(alive.map(function (c) { return c.name + '(' + c.speed + ')'; })));
         }
 
         // ==================== RENDERIZADO ====================
@@ -505,13 +519,24 @@
             const turnOrderList = document.getElementById('turnOrderList');
             if (!turnOrderList) return;
             turnOrderList.innerHTML = '';
-            (gameState.turnOrder || []).forEach(function(charName, index) {
+            const _q = gameState.turnOrder || [];
+            const _seen = {};
+            _q.forEach(function(charName, index) {
                 const char = gameState.characters[charName];
-                if (!char || char.hp <= 0 || char.isDead) return;
+                if (!char) return;
+                const _dead = char.hp <= 0 || char.isDead;
+                const _diedThisRound = (gameState.diedThisRound || []).indexOf(charName) !== -1;
+                // Un nombre repetido en la cola = turno adicional insertado
+                const _isExtra = !!_seen[charName];
+                _seen[charName] = true;
+                // Ocultar slots ya inservibles (muertos / que murieron esta ronda)
+                if (_dead || _diedThisRound) return;
                 const isActive = index === gameState.currentTurnIndex;
-                turnOrderList.innerHTML += '<div class="turn-order-item ' + (isActive ? 'active' : '') + '">' +
+                const isPast   = index < gameState.currentTurnIndex;
+                const _style = isPast ? 'opacity:.35;' : '';
+                turnOrderList.innerHTML += '<div class="turn-order-item ' + (isActive ? 'active' : '') + '" style="' + _style + '">' +
                     '<div style="font-size:.9em;opacity:.8;">#' + (index+1) + '</div>' +
-                    '<div>' + charName + '</div>' +
+                    '<div>' + charName + (_isExtra ? ' <span style="color:#ffd700;font-size:.8em;">⚡extra</span>' : '') + '</div>' +
                     '<div style="font-size:.85em;color:var(--warning);">⚡' + char.speed + '</div>' +
                     '</div>';
             });
