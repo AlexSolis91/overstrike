@@ -556,6 +556,9 @@
         // initGame las restaure de inmediato, sin esperar una lectura de Firebase — evita la
         // condición de carrera que dejaba duplicar invocaciones (ej. 2-3 Igris a la vez).
         window._hordaTransientSummons = JSON.parse(JSON.stringify(gameState.summons || {}));
+        // Guardar quién actuó último para que la nueva oleada no le dé turno extra al personaje
+        // que acaba de terminar su turno (normalmente Legolas si es el más rápido).
+        window._hordaLastActed = gameState.selectedCharacter || null;
         console.log('[DIAGNÓSTICO Horda] Snapshot capturado antes de avanzar de oleada:', JSON.stringify(Object.keys(window._hordaTransientSummons).map(function(sid){ var s=window._hordaTransientSummons[sid]; return s.name+'('+sid+') team='+s.team+' hp='+s.hp; })));
         var team1Names = window._hordaRunTeam || Object.keys(gameState.characters).filter(function (n) { return gameState.characters[n].team === 'team1'; });
         var selectedChars = {};
