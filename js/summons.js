@@ -1077,6 +1077,66 @@
         }
         window._spawnParticles = _spawnParticles;
 
+        // ── _triggerPiedraResurreccion: revive todo el equipo aliado con 5 HP y hace que
+        //    todos ejecuten su Over sin costo (con cinemática si disponible). Al final de
+        //    la ronda en que revivieron, el equipo aliado es eliminado. ──
+        function _triggerPiedraResurreccion(portadorName) {
+            const portador = gameState.characters[portadorName];
+            if (!portador) return;
+            const myTeam = portador.team;
+            addLog('💎 Piedra de la Resurrección: ¡EL EQUIPO ALIADO REVIVE CON 5 HP!', 'buff');
+            // Revivir a todos los aliados muertos
+            Object.keys(gameState.characters).forEach(function(n) {
+                const c = gameState.characters[n];
+                if (!c || c.team !== myTeam) return;
+                c.isDead = false;
+                c.hp = 5;
+                c.maxHp = Math.max(c.maxHp || 5, 5);
+            });
+            if (typeof renderCharacters === 'function') renderCharacters();
+            // Todos ejecutan su Over de forma secuencial
+            Object.keys(gameState.characters).forEach(function(n) {
+                const c = gameState.characters[n];
+                if (!c || c.team !== myTeam || c.isDead) return;
+                const _over = (c.abilities || []).find(function(a){ return a && a.type === 'over'; });
+                if (!_over) return;
+                const _ePrevSel = gameState.selectedCharacter;
+                const _ePrevAb  = gameState.selectedAbility;
+                const _ePrevSup = gameState._suppressAutoEndTurn;
+                gameState.selectedCharacter = n;
+                gameState.selectedAbility   = _over;
+                gameState.adjustedCost      = 0;
+                passiveExecuting            = true;
+                gameState._suppressAutoEndTurn = true;
+                const _eTeam = c.team === 'team1' ? 'team2' : 'team1';
+                const _eEnemies = Object.keys(gameState.characters).filter(function(en){ const ec=gameState.characters[en]; return ec&&ec.team===_eTeam&&!ec.isDead&&ec.hp>0; });
+                const _eTgt = _eEnemies.length > 0 ? _eEnemies[Math.floor(Math.random()*_eEnemies.length)] : null;
+                try {
+                    if (_eTgt) {
+                        if (typeof _showOverCinematic === 'function') {
+                            _showOverCinematic(n, _over.name, _over.effect, c.team, function() {
+                                gameState.selectedCharacter = n;
+                                gameState.selectedAbility   = _over;
+                                passiveExecuting            = true;
+                                gameState._suppressAutoEndTurn = true;
+                                try { if (typeof _executeAbilityCore==='function') _executeAbilityCore(_eTgt); } catch(e) {}
+                                passiveExecuting            = false;
+                                gameState._suppressAutoEndTurn = _ePrevSup;
+                            });
+                        } else {
+                            if (typeof _executeAbilityCore==='function') _executeAbilityCore(_eTgt);
+                        }
+                    }
+                } catch(e) { console.error('[Piedra Resurrección Over]', e); }
+                passiveExecuting            = false;
+                gameState._suppressAutoEndTurn = _ePrevSup;
+                gameState.selectedCharacter = _ePrevSel;
+                gameState.selectedAbility   = _ePrevAb;
+            });
+            addLog('💎 Piedra de la Resurrección: al final de esta ronda, el equipo aliado será eliminado.', 'debuff');
+        }
+        window._triggerPiedraResurreccion = _triggerPiedraResurreccion;
+
         // ── _spawnConfusion: aparecen 3 ❓ uno tras otro sobre la carta, cada uno se
         //    desvanece antes de que aparezca el siguiente (para el debuff Confusión) ──
         function _spawnConfusion(charName) {
@@ -1298,6 +1358,102 @@
                             emoji: '🌀', permanent: false, gunbaiBlockCategory: _gbCatChosen
                         });
                         addLog('🌀 Gunbai: ' + targetName + ' pierde acceso a habilidades ' + _gbCatLabel + ' por 2 turnos', 'debuff');
+                    }
+                }
+            }
+            // ── ARMADURA DE HADES: cuando el PORTADOR recibe daño, gana 1 contador del inframundo.
+            //    Por cada contador: +10% daño causado (se aplica en skills.js), -10% daño recibido.
+            //    Al llegar a 8 contadores: elimina un enemigo aleatorio y resetea. ──
+            if (damage > 0 && !passiveExecuting) {
+                const _hadesTgt = gameState.characters[targetName];
+                if (_hadesTgt && (_hadesTgt.equippedRelics || []).some(function(rn){ const rd = (typeof RELICS_DATA!=='undefined')?RELICS_DATA[rn]:null; return rd&&rd.effect==='armadura_hades'; })) {
+                    const _hCnt = (_hadesTgt._hadesCounters || 0);
+                    // Reducción de daño por contador (-10% por contador, máx 70% antes del kill)
+                    if (_hCnt > 0) {
+                        const _hRed = Math.min(0.70, _hCnt * 0.10);
+                        damage = Math.max(1, Math.floor(damage * (1 - _hRed)));
+                    }
+                    _hadesTgt._hadesCounters = _hCnt + 1;
+                    addLog('⚫ Armadura de Hades: contador ' + _hadesTgt._hadesCounters + '/8', 'buff');
+                    if (_hadesTgt._hadesCounters >= 8) {
+                        _hadesTgt._hadesCounters = 0;
+                        const _hadesETeam = _hadesTgt.team === 'team1' ? 'team2' : 'team1';
+                        const _hadesEnemies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===_hadesETeam&&!c.isDead&&c.hp>0; });
+                        if (_hadesEnemies.length > 0) {
+                            const _hTarget = _hadesEnemies[Math.floor(Math.random() * _hadesEnemies.length)];
+                            if (typeof killCharacter === 'function') killCharacter(_hTarget, targetName);
+                            addLog('⚫ Armadura de Hades: 8 contadores — ¡' + _hTarget + ' eliminado! Contadores reseteados', 'damage');
+                        }
+                    }
+                }
+            }
+            // ── ESCUDO DEL CAPITÁN AMERICA: absorbe todo el daño de Overs enemigos que recibirían
+            //    los aliados. El snapshot/restore se maneja en skills.js (como Gunbai). Este hook
+            //    acumula el daño total a aplicar al Capitán. ──
+            // (El manejo principal está en _executeAbilityCore de skills.js vía _capAmericaSnap)
+
+            // ── PIEDRA DE LA RESURRECCIÓN: mientras haya aliados vivos, el HP del portador no
+            //    puede bajar de 1. Si es el último vivo, activa la resurrección del equipo. ──
+            if (damage > 0) {
+                const _piedraTgt = gameState.characters[targetName];
+                if (_piedraTgt && !_piedraTgt.isDead && (_piedraTgt.equippedRelics || []).some(function(rn){ const rd=(typeof RELICS_DATA!=='undefined')?RELICS_DATA[rn]:null; return rd&&rd.effect==='piedra_resurreccion'; })) {
+                    const _piedraHpAfter = (_piedraTgt.hp || 0) - damage + (_piedraTgt.shield || 0);
+                    if (_piedraHpAfter <= 0) {
+                        const _piedraAllies = Object.values(gameState.characters).filter(function(c){ return c && c.team === _piedraTgt.team && c !== _piedraTgt && !c.isDead && c.hp > 0; });
+                        if (_piedraAllies.length > 0) {
+                            // Hay aliados vivos → clampear en 1 (no puede morir)
+                            damage = Math.max(0, (_piedraTgt.hp || 0) - 1 + (_piedraTgt.shield || 0));
+                            addLog('💎 Piedra de la Resurrección: ' + targetName + ' no puede morir mientras haya aliados vivos', 'buff');
+                        } else if (!gameState._piedraRevived) {
+                            // ES EL ÚLTIMO VIVO → activar resurrección
+                            damage = Math.max(0, (_piedraTgt.hp || 0) - 1 + (_piedraTgt.shield || 0)); // clampear en 1
+                            gameState._piedraRevived = true;
+                            gameState._piedraReviveRound = gameState.currentRound;
+                            addLog('💎 Piedra de la Resurrección: ¡' + targetName + ' es el último vivo! El equipo revive...', 'buff');
+                            // Revivir con delay para que la animación termine
+                            setTimeout(function() {
+                                if (typeof _triggerPiedraResurreccion === 'function') _triggerPiedraResurreccion(targetName);
+                            }, 500);
+                        }
+                    }
+                }
+            }
+            // ── HIELO (Arma/Espada): ataques del portador aplican +1 HP máx por reliquia del
+            //    objetivo, y +5% daño adicional del HP actual del portador. ──
+            if (damage > 0 && attackerName !== null && !passiveExecuting) {
+                const _hieloAtk = gameState.characters[attackerName];
+                const _hieloTgt = gameState.characters[targetName];
+                if (_hieloAtk && _hieloTgt && (_hieloAtk.equippedRelics || []).some(function(rn){ const rd=(typeof RELICS_DATA!=='undefined')?RELICS_DATA[rn]:null; return rd&&rd.effect==='hielo_espada'; })) {
+                    // +1 HP máx por reliquia equipada en el objetivo
+                    const _hieloRelicCount = (_hieloTgt.equippedRelics || []).filter(Boolean).length;
+                    if (_hieloRelicCount > 0) {
+                        _hieloAtk.maxHp = (_hieloAtk.maxHp || 0) + _hieloRelicCount;
+                        addLog('🧊 Hielo: +' + _hieloRelicCount + ' HP máx (' + _hieloTgt.name + ' tenía ' + _hieloRelicCount + ' reliquia(s))', 'buff');
+                    }
+                    // +5% HP actual del portador como daño adicional
+                    const _hieloBonusDmg = Math.max(1, Math.floor((_hieloAtk.hp || 0) * 0.05));
+                    damage += _hieloBonusDmg;
+                }
+            }
+            // ── SABLE DE LUZ AMATISTA: MT golpes aplican Marca Amatista; roba cargas igual al daño. ──
+            if (damage > 0 && attackerName !== null && !passiveExecuting) {
+                const _sableAtk = gameState.characters[attackerName];
+                if (_sableAtk && (_sableAtk.equippedRelics || []).some(function(rn){ const rd=(typeof RELICS_DATA!=='undefined')?RELICS_DATA[rn]:null; return rd&&rd.effect==='sable_amatista'; })) {
+                    // Robo de cargas igual al daño (después de applyDamageWithShield, se hace aquí como estimación)
+                    const _sableTgt = gameState.characters[targetName];
+                    if (_sableTgt) {
+                        const _stolenCharges = Math.min(damage, _sableTgt.charges || 0);
+                        if (_stolenCharges > 0) {
+                            _sableTgt.charges = Math.max(0, (_sableTgt.charges || 0) - _stolenCharges);
+                            _sableAtk.charges = Math.min(20, (_sableAtk.charges || 0) + _stolenCharges);
+                            addLog('💜 Sable de Luz Amatista: robadas ' + _stolenCharges + ' cargas de ' + targetName, 'buff');
+                        }
+                    }
+                    // Si el ataque es MT, aplicar Marca Amatista
+                    if (_sableTgt && gameState.selectedAbility && gameState.selectedAbility.target === 'mt') {
+                        (_sableTgt.statusEffects = _sableTgt.statusEffects || []).push({ name: 'Marca Amatista', type: 'debuff', permanent: true, amatistaMark: true, emoji: '💜', passiveHidden: true });
+                        const _markCount = (_sableTgt.statusEffects || []).filter(function(e){ return e && e.amatistaMark; }).length;
+                        addLog('💜 Sable de Luz Amatista: Marca Amatista en ' + targetName + ' (' + _markCount + ' marcas)', 'debuff');
                     }
                 }
             }
