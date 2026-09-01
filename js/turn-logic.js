@@ -1788,8 +1788,10 @@
                 if (char.rikudoMode && (gameState.selectedCharacter === 'Madara Uchiha' || gameState.selectedCharacter === 'Madara Uchiha v2')) {
                     adjustedCost = Math.ceil(ability.cost / 2);
                 }
-                
-                const canUse = char.charges >= adjustedCost;
+                // ── CORONA DE LOS 7 REINOS: todas las habilidades del portador cuestan 0 cargas ──
+                if ((char.equippedRelics||[]).some(function(rn){ var rd=(typeof RELICS_DATA!=='undefined')?RELICS_DATA[rn]:null; return rd&&rd.effect==='corona_7_reinos'; })) {
+                    adjustedCost = 0;
+                }
                 
                 // El Rey Demonio: bloqueado tras transformación
                 if (ability.effect === 'rey_demonio_meliodas' && char._reyDemonioActive) {
@@ -2097,6 +2099,67 @@
                     Object.keys(gameState.characters || {}).forEach(function (n) {
                         const _key = '_legolasOverChainCount_' + n;
                         if (gameState[_key]) gameState[_key] = 0;
+                    });
+                    // Resetear flag de x2 Potara por ejecución
+                    gameState._potaraX2Applied = false;
+
+                    // ── ANILLO ÚNICO: al inicio de cada ronda, si el portador tiene ≤50% HP,
+                    //    aplicar nuevamente los bonos acumulativos (+4 todo). ──
+                    Object.keys(gameState.characters || {}).forEach(function(n) {
+                        const c = gameState.characters[n];
+                        if (!c || c.isDead || c.hp <= 0) return;
+                        if (!(c.equippedRelics || []).some(function(rn){ const rd=(typeof RELICS_DATA!=='undefined')?RELICS_DATA[rn]:null; return rd&&rd.effect==='anillo_unico'; })) return;
+                        if (gameState.currentRound <= 1) return; // La primera activación es en loadGameRelics (inicio de combate)
+                        if ((c.hp || 0) <= (c.maxHp || 0) * 0.50) {
+                            c.maxHp   = (c.maxHp  || 0) + 4;
+                            c.speed   = (c.speed  || 0) + 4;
+                            c._anilloUnicoDmgBonus = (c._anilloUnicoDmgBonus || 0) + 4;
+                            c.charges = Math.min(20, (c.charges || 0) + 4);
+                            if (typeof applyHeal     === 'function') applyHeal(n, 4, 'Anillo Único');
+                            if (typeof applyShield   === 'function') applyShield(n, 4);
+                            addLog('💍 Anillo Único: ' + n + ' reactiva sus bonos acumulativos (+4 todo) — activaciones: ' + Math.floor((c._anilloUnicoDmgBonus || 0) / 4), 'buff');
+                        }
+                    });
+
+                    // ── KATANA CARMESÍ: inicio de ronda → Quemadura 5 HP a todos los enemigos ──
+                    Object.keys(gameState.characters || {}).forEach(function(portadorN) {
+                        const portador = gameState.characters[portadorN];
+                        if (!portador || portador.isDead) return;
+                        if (!(portador.equippedRelics || []).some(function(rn){ const rd=(typeof RELICS_DATA!=='undefined')?RELICS_DATA[rn]:null; return rd&&rd.effect==='katana_carmesi'; })) return;
+                        const eTeam = portador.team === 'team1' ? 'team2' : 'team1';
+                        Object.keys(gameState.characters).forEach(function(en) {
+                            const ec = gameState.characters[en];
+                            if (!ec || ec.team !== eTeam || ec.isDead) return;
+                            if (typeof applyDebuff === 'function') applyDebuff(en, { name: 'Quemadura', type: 'debuff', duration: 99, damage: 5, emoji: '🔥', permanent: false });
+                        });
+                        addLog('🗡️ Katana Carmesí: Quemadura 5 HP aplicada al equipo enemigo', 'debuff');
+                    });
+
+                    // ── HUEVO NEGRO DE BALERION: invoca a Balerion al inicio de cada ronda si no está activo ──
+                    Object.keys(gameState.characters || {}).forEach(function(portadorN) {
+                        const portador = gameState.characters[portadorN];
+                        if (!portador || portador.isDead) return;
+                        if (!(portador.equippedRelics || []).some(function(rn){ const rd=(typeof RELICS_DATA!=='undefined')?RELICS_DATA[rn]:null; return rd&&rd.effect==='huevo_balerion'; })) return;
+                        // Verificar si Balerion ya está invocado
+                        const _balerionActive = Object.values(gameState.summons || {}).some(function(s){ return s && s.name === 'Balerion' && s.team === portador.team && s.hp > 0; });
+                        if (!_balerionActive) {
+                            if (typeof summonDragon === 'function') summonDragon('Balerion', portadorN, portador.team);
+                            else if (typeof summonShadow === 'function') summonShadow('Balerion', portadorN, portador.team);
+                            addLog('🐉 Huevo Negro de Balerion: ¡Balerion invocado!', 'buff');
+                            // El portador del Huevo es inmune a los Overs del equipo enemigo (marcar en el personaje)
+                            portador._balerionInvocadorImmune = true;
+                        }
+                        // Pasiva de Balerion: Miedo 1T + Debilitar 1T al equipo enemigo
+                        const bETeam = portador.team === 'team1' ? 'team2' : 'team1';
+                        Object.keys(gameState.characters).forEach(function(en) {
+                            const ec = gameState.characters[en];
+                            if (!ec || ec.team !== bETeam || ec.isDead) return;
+                            if (typeof applyDebuff === 'function') {
+                                applyDebuff(en, { name: 'Miedo', type: 'debuff', duration: 1, emoji: '😱' });
+                                applyDebuff(en, { name: 'Debilitar', type: 'debuff', duration: 1, emoji: '💔' });
+                            }
+                        });
+                        addLog('🐉 Balerion: El Terror Negro — Miedo y Debilitar al equipo enemigo', 'debuff');
                     });
                     // OJOS DE MIRKWOOD (Legolas): inicio de ronda → Protección Sagrada + disipa
                     // debuffs en 2 aliados aleatorios (puede incluir al propio Legolas).
@@ -3803,6 +3866,95 @@
                 // y antes de que expiren los buffs, para poder detectar cuáles están por expirar)
                 if (typeof window.hordaOnRoundEnd === 'function') window.hordaOnRoundEnd();
                 if (typeof window.tickActiveField === 'function') window.tickActiveField();
+
+                // ── PIEDRA DE LA RESURRECCIÓN: si esta fue la ronda del revival, eliminar al equipo ──
+                if (gameState._piedraRevived && gameState._piedraReviveRound === gameState.currentRound) {
+                    addLog('💎 Piedra de la Resurrección: fin de la ronda del revival — ¡el equipo aliado es eliminado!', 'damage');
+                    Object.keys(gameState.characters).forEach(function(n) {
+                        const c = gameState.characters[n];
+                        if (!c) return;
+                        // Buscar quién fue el portador
+                        const _hasPiedra = (c.equippedRelics||[]).some(function(rn){ const rd=(typeof RELICS_DATA!=='undefined')?RELICS_DATA[rn]:null; return rd&&rd.effect==='piedra_resurreccion'; });
+                        if (_hasPiedra || gameState._piedraRevived) {
+                            // Eliminar a todos los aliados del portador (incluyendo al portador)
+                            const _portadorTeam = Object.values(gameState.characters).find(function(cc){ return cc&&(cc.equippedRelics||[]).some(function(rn){ const rd=(typeof RELICS_DATA!=='undefined')?RELICS_DATA[rn]:null; return rd&&rd.effect==='piedra_resurreccion'; }); });
+                            if (_portadorTeam && c.team === _portadorTeam.team) {
+                                c.hp = 0; c.isDead = true;
+                            }
+                        }
+                    });
+                    gameState._piedraRevived = false;
+                }
+
+                // ── ARMADURA DE DARTH VADER: fin de ronda → ataca a un enemigo aleatorio por diferencia de velocidad ──
+                Object.keys(gameState.characters).forEach(function(portadorN) {
+                    const portador = gameState.characters[portadorN];
+                    if (!portador || portador.isDead || portador.hp <= 0) return;
+                    if (!(portador.equippedRelics||[]).some(function(rn){ const rd=(typeof RELICS_DATA!=='undefined')?RELICS_DATA[rn]:null; return rd&&rd.effect==='armadura_vader'; })) return;
+                    const _vETeam = portador.team === 'team1' ? 'team2' : 'team1';
+                    const _vEnemies = Object.keys(gameState.characters).filter(function(en){ const ec=gameState.characters[en]; return ec&&ec.team===_vETeam&&!ec.isDead&&ec.hp>0; });
+                    if (_vEnemies.length === 0) return;
+                    const _vTarget = _vEnemies[Math.floor(Math.random() * _vEnemies.length)];
+                    const _vTgtC = gameState.characters[_vTarget];
+                    const _vDmg = Math.max(0, (portador.speed||0) - (_vTgtC.speed||0));
+                    if (_vDmg > 0) {
+                        addLog('🦾 Armadura de Darth Vader: ataque de fin de ronda → ' + _vDmg + ' daño a ' + _vTarget + ' (diferencia de velocidad)', 'damage');
+                        const _vTgtHpBefore = _vTgtC.hp;
+                        if (typeof applyDamageWithShield === 'function') applyDamageWithShield(_vTarget, _vDmg, portadorN);
+                        if (_vTgtC.isDead || _vTgtC.hp <= 0) {
+                            portador.maxHp = (portador.maxHp || 0) + _vDmg;
+                            portador.hp    = Math.min(portador.maxHp, (portador.hp || 0) + _vDmg);
+                            addLog('🦾 Armadura de Darth Vader: ' + _vTarget + ' eliminado — +' + _vDmg + ' HP máx para ' + portadorN, 'buff');
+                        }
+                    }
+                });
+
+                // ── KATANA CARMESÍ: fin de ronda — si todos los enemigos tienen Quemadura activa,
+                //    el portador ejecuta su Over con cinemática. ──
+                Object.keys(gameState.characters).forEach(function(portadorN) {
+                    const portador = gameState.characters[portadorN];
+                    if (!portador || portador.isDead || portador.hp <= 0) return;
+                    if (!(portador.equippedRelics||[]).some(function(rn){ const rd=(typeof RELICS_DATA!=='undefined')?RELICS_DATA[rn]:null; return rd&&rd.effect==='katana_carmesi'; })) return;
+                    const _kETeam = portador.team === 'team1' ? 'team2' : 'team1';
+                    const _kEnemies = Object.keys(gameState.characters).filter(function(en){ const ec=gameState.characters[en]; return ec&&ec.team===_kETeam&&!ec.isDead&&ec.hp>0; });
+                    if (_kEnemies.length === 0) return;
+                    const _allBurned = _kEnemies.every(function(en){ return (gameState.characters[en].statusEffects||[]).some(function(e){ return e&&(e.name==='Quemadura'||e.name==='Quemadura Solar'); }); });
+                    if (_allBurned) {
+                        const _kOver = (portador.abilities||[]).find(function(a){ return a&&a.type==='over'; });
+                        const _kTgt  = _kEnemies[Math.floor(Math.random() * _kEnemies.length)];
+                        if (_kOver && _kTgt) {
+                            addLog('🗡️ Katana Carmesí: ¡todos los enemigos tienen Quemadura! ' + portadorN + ' ejecuta su Over', 'buff');
+                            if (typeof _showOverCinematic === 'function') {
+                                _showOverCinematic(portadorN, _kOver.name, _kOver.effect, portador.team, function() {
+                                    const _kPrevSel = gameState.selectedCharacter;
+                                    const _kPrevAb  = gameState.selectedAbility;
+                                    gameState.selectedCharacter = portadorN;
+                                    gameState.selectedAbility   = _kOver;
+                                    gameState.adjustedCost      = 0;
+                                    passiveExecuting            = true;
+                                    gameState._suppressAutoEndTurn = true;
+                                    try { if (typeof _executeAbilityCore==='function') _executeAbilityCore(_kTgt); } catch(e) {}
+                                    passiveExecuting            = false;
+                                    gameState._suppressAutoEndTurn = false;
+                                    const _kNow = gameState.turnOrder&&gameState.turnOrder[gameState.currentTurnIndex];
+                                    gameState.selectedCharacter = _kNow || _kPrevSel;
+                                    gameState.selectedAbility   = _kPrevAb;
+                                });
+                            }
+                        }
+                    }
+                });
+
+                // ── BALERION: fin de ronda → 30 daño repartido entre los enemigos ──
+                Object.values(gameState.summons || {}).forEach(function(s) {
+                    if (!s || s.name !== 'Balerion' || s.hp <= 0) return;
+                    const _bETeam = s.team === 'team1' ? 'team2' : 'team1';
+                    const _bEnemies = Object.keys(gameState.characters).filter(function(en){ const ec=gameState.characters[en]; return ec&&ec.team===_bETeam&&!ec.isDead&&ec.hp>0; });
+                    if (_bEnemies.length === 0) return;
+                    const _bDmgEach = Math.ceil(30 / _bEnemies.length);
+                    _bEnemies.forEach(function(en){ if (typeof applyDamageWithShield==='function') applyDamageWithShield(en, _bDmgEach, s.summoner||'Balerion'); });
+                    addLog('🐉 Balerion: 30 daño repartido entre ' + _bEnemies.length + ' enemigos (' + _bDmgEach + ' c/u)', 'damage');
+                });
 
                 // ── VESTIDURA ARCANA: al final de cada ronda, el portador recupera 30% de su HP máx ──
                 for (const _vaN in gameState.characters) {
