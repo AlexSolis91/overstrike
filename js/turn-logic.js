@@ -1864,6 +1864,8 @@
                 if ((char.equippedRelics||[]).some(function(rn){ var rd=(typeof RELICS_DATA!=='undefined')?RELICS_DATA[rn]:null; return rd&&rd.effect==='corona_7_reinos'; })) {
                     adjustedCost = 0;
                 }
+
+                const canUse = char.charges >= adjustedCost;
                 
                 // El Rey Demonio: bloqueado tras transformación
                 if (ability.effect === 'rey_demonio_meliodas' && char._reyDemonioActive) {
@@ -2069,6 +2071,11 @@
             let adjustedCost = ability.cost;
             if (char.rikudoMode && (gameState.selectedCharacter === 'Madara Uchiha' || gameState.selectedCharacter === 'Madara Uchiha v2')) {
                 adjustedCost = Math.ceil(ability.cost / 2);
+            }
+            // ── CORONA DE LOS 7 REINOS: costo 0 (debe aplicarse también aquí, que es el
+            //    costo que realmente se cobra al ejecutar; renderActionAbilities solo lo muestra) ──
+            if ((char.equippedRelics||[]).some(function(rn){ var rd=(typeof RELICS_DATA!=='undefined')?RELICS_DATA[rn]:null; return rd&&rd.effect==='corona_7_reinos'; })) {
+                adjustedCost = 0;
             }
             
             gameState.selectedAbility = ability;
