@@ -158,24 +158,31 @@
             // The other player will handle their own turn after receiving Firebase push
             
             try {
+                // ── HORDA: saltar al personaje que limpió la oleada anterior ──
+                // Se consume AQUÍ (al inicio de startTurn) para que el flag nunca
+                // persista más allá del primer startTurn() de la nueva oleada.
+                // El check dentro del while loop era frágil: si currentTurnIndex
+                // apuntaba a un índice DESPUÉS de Legolas (ej. 1 = General), el loop
+                // hacía break inmediatamente sin pasar por Legolas, y el flag quedaba
+                // activo indefinidamente causando saltos en turnos posteriores.
+                if (gameState.gameMode === 'horda' && window._hordaLastActed) {
+                    const _hla = window._hordaLastActed;
+                    window._hordaLastActed = null; // siempre consumir, sin importar si se salta o no
+                    if (gameState.turnOrder && gameState.turnOrder[0] === _hla) {
+                        // El último en actuar quedó primero en el nuevo orden → saltarlo
+                        if ((gameState.currentTurnIndex || 0) <= 0) {
+                            gameState.currentTurnIndex = 1;
+                        }
+                        // Si currentTurnIndex >= 1, ya apunta más allá de Legolas — sin cambio
+                    }
+                }
+
                 // Encontrar el siguiente personaje vivo
                 let attempts = 0;
                 while (attempts < gameState.turnOrder.length) {
                     const currentCharName = gameState.turnOrder[gameState.currentTurnIndex];
                     const currentChar = gameState.characters[currentCharName];
                     
-                    // ── HORDA: saltar al personaje que acaba de limpiar la oleada anterior ──
-                    // Se aplica dentro del while para que funcione sin importar el valor de
-                    // currentTurnIndex al entrar (puede ser -1, 0, 1, etc.). Es más robusto que
-                    // fijar currentTurnIndex en init-render.js porque ese valor puede cambiar
-                    // entre el fix y cuando startTurn() realmente lo lee.
-                    if (gameState.gameMode === 'horda' && window._hordaLastActed && currentCharName === window._hordaLastActed) {
-                        window._hordaLastActed = null;
-                        _advanceTurnIndex('horda: saltar personaje que limpió oleada anterior');
-                        attempts++;
-                        continue;
-                    }
-
                     if (!currentChar) {
                         // Personaje no existe, pasar al siguiente
                         _advanceTurnIndex('personaje inexistente en startTurn');
