@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OVERSTRIKE - 5v5 RPG Battle v4.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css?v=20261106">
+    <link rel="stylesheet" href="css/styles.css?v=20261107">
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -266,7 +266,7 @@
             <!-- Logo: sin emoji, pegado a la izquierda -->
             <div style="display:flex;flex-direction:column;gap:2px;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;white-space:nowrap;">OVERSTRIKE</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20261106</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20261107</div>
             </div>
 
             <!-- HUD: empujado todo a la derecha junto al botón mute -->
@@ -712,8 +712,8 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20261106"></script>
-    <script src="js/arcane-event.js?v=20261106"></script>
+    <script src="js/firebase-auth.js?v=20261107"></script>
+    <script src="js/arcane-event.js?v=20261107"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen(tab) {
@@ -1318,8 +1318,10 @@
             if (res) res.style.display = 'none';
         }
 
-        var _CHAMPION_RELICS = ['Ergonos', 'Frostmourne', 'Varita de Saúco', 'Anillo del Tiempo', 'Guante de Scorpio', 'Kama'];
-        var _HORDA_RELICS    = ['Zenit', 'Vestidura Arcana', 'Shadowmourne', 'Anima Vorax', 'Direbounds', 'Gunbai'];
+        var _CHAMPION_RELICS = ['Ergonos', 'Frostmourne', 'Varita de Saúco', 'Anillo del Tiempo', 'Guante de Scorpio', 'Kama',
+            'Anillo Único', 'Katana Carmesi', 'Pendiente Potara Derecho', 'Corona de los 7 Reinos', 'Escudo del Capitan America', 'Sable de Luz Amatista'];
+        var _HORDA_RELICS    = ['Zenit', 'Vestidura Arcana', 'Shadowmourne', 'Anima Vorax', 'Direbounds', 'Gunbai',
+            'Huevo Negro de Balerion', 'Piedra de la Resureccion', 'Mjolnir', 'Pendiente Potara Izquierdo', 'Hielo', 'Armadura de Darth Vader', 'Armadura de Hades'];
 
         window.openCofre = async function(type) {
             var user = firebase.auth ? firebase.auth().currentUser : null;
@@ -1908,9 +1910,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20261106"></script>
+    <script src="js/characters.js?v=20261107"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20261106"></script>
+    <script src="js/audio-state.js?v=20261107"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2264,6 +2266,7 @@
         }
 
         const SUMMON_CATALOGUE = {
+            'Balerion': { hp: 40, maxHp: 40, img: 'https://i.ibb.co/Qvfp2cbN/Game-of-thrones.jpg', passive: 'El Terror Negro: El invocador es inmune a daño y efectos de las habilidades Over del equipo enemigo. Al inicio de cada ronda, aplica los debuffs Miedo 1 turno y Debilidad 1 turno en el equipo enemigo. Al final de cada ronda, Balerion inflige 30 de daño repartidos en cada enemigo.' },
             'Igris':    { hp: 5,  maxHp: 5,  img: 'https://i.postimg.cc/T13zZdKD/Captura_de_pantalla_2026_03_11_145542.png', passive: 'Comandante Rojo Sangriento: Al final de cada ronda causa 2 de daño a todos los enemigos (incluyendo invocaciones enemigas). Al final de cada ronda elimina una Invocación del equipo enemigo.' },
             'MinByung': { hp: 5,  maxHp: 5,  img: 'https://i.ibb.co/B5KzCTc4/Min-Byung-Gyu.jpg',                              passive: 'Shadow Healing: Al inicio de cada ronda aplica Buff Regeneración 20% HP máximo 1 turno sobre todos los aliados y cura 2 HP a todos los aliados. Cuando esta invocación es eliminada, genera 3 cargas a todos los aliados.' },
             'Iron':     { hp: 10, maxHp: 10, img: 'https://i.postimg.cc/7hZFpH5G/Captura_de_pantalla_2026_03_11_145721.png', passive: 'Voluntad de Acero: absorbe todo el daño por golpe que fuera a recibir su invocador. Iron no puede ser seleccionado por ataques ST del enemigo. Al inicio de cada ronda el equipo aliado genera 3 cargas.' },
@@ -2739,28 +2742,28 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20261106"></script>
+    <script src="js/ai-engine.js?v=20261107"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20261106"></script>
+    <script src="js/init-render.js?v=20261107"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20261106"></script>
+    <script src="js/turn-logic.js?v=20261107"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20261106"></script>
+    <script src="js/status-effects.js?v=20261107"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20261106"></script>
+    <script src="js/debuffs.js?v=20261107"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20261106"></script>
+    <script src="js/summons.js?v=20261107"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20261106"></script>
+    <script src="js/ability-select.js?v=20261107"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20261106"></script>
+<script src="js/skills.js?v=20261107"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20261106"></script>
-    <script src="js/horda-mode.js?v=20261106"></script>
-    <script src="js/horda-abilities.js?v=20261106"></script>
-    <script src="js/horda-battle.js?v=20261106"></script>
-    <script src="js/missions.js?v=20261106"></script>
-    <script src="js/squads.js?v=20261106"></script>
+    <script src="js/jefe-de-sala.js?v=20261107"></script>
+    <script src="js/horda-mode.js?v=20261107"></script>
+    <script src="js/horda-abilities.js?v=20261107"></script>
+    <script src="js/horda-battle.js?v=20261107"></script>
+    <script src="js/missions.js?v=20261107"></script>
+    <script src="js/squads.js?v=20261107"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
@@ -3563,7 +3566,21 @@ window.RELIC_SOURCES = {
     'Anillo del Tiempo': ['🔑 Cofre Arcano', '🏆 Cofre de Campeones'],
     'Guante de Scorpio': ['🔑 Cofre Arcano', '🏆 Cofre de Campeones'],
     'Kama':              ['🔑 Cofre Arcano', '🏆 Cofre de Campeones'],
-    'Gunbai':            ['🔑 Cofre Arcano', '🌊 Cofre de la Horda']
+    'Gunbai':            ['🔑 Cofre Arcano', '🌊 Cofre de la Horda'],
+    // Nuevas reliquias
+    'Huevo Negro de Balerion':   ['🔑 Cofre Arcano', '🌊 Cofre de la Horda'],
+    'Anillo Único':              ['🔑 Cofre Arcano', '🏆 Cofre de Campeones'],
+    'Piedra de la Resureccion':  ['🔑 Cofre Arcano', '🌊 Cofre de la Horda'],
+    'Katana Carmesi':            ['🔑 Cofre Arcano', '🏆 Cofre de Campeones'],
+    'Mjolnir':                   ['🔑 Cofre Arcano', '🌊 Cofre de la Horda'],
+    'Pendiente Potara Derecho':  ['🔑 Cofre Arcano', '🏆 Cofre de Campeones'],
+    'Pendiente Potara Izquierdo':['🔑 Cofre Arcano', '🌊 Cofre de la Horda'],
+    'Corona de los 7 Reinos':    ['🔑 Cofre Arcano', '🏆 Cofre de Campeones'],
+    'Hielo':                     ['🔑 Cofre Arcano', '🌊 Cofre de la Horda'],
+    'Escudo del Capitan America':['🔑 Cofre Arcano', '🏆 Cofre de Campeones'],
+    'Armadura de Darth Vader':   ['🔑 Cofre Arcano', '🌊 Cofre de la Horda'],
+    'Sable de Luz Amatista':     ['🔑 Cofre Arcano', '🏆 Cofre de Campeones'],
+    'Armadura de Hades':         ['🔑 Cofre Arcano', '🌊 Cofre de la Horda']
 };
 
 // ── PUNTO 2: Modal de selección de modo Horda ──
