@@ -2444,34 +2444,142 @@
         function adminResetAllPlayers() {
             if (!currentUser) { alert('Debes estar logueado.'); return; }
             var seasonKey = getCurrentSeasonKey();
-            if (!confirm('\u26A0\uFE0F \u00BFReiniciar puntuaci\u00F3n de TODOS los jugadores a 0?\nTemporada: ' + seasonKey)) return;
+            if (!confirm('⚠️ ¿Reiniciar puntuación de TODOS los jugadores a 0?\nTemporada: ' + seasonKey + '\n\nSe guardará un snapshot antes del reset para que puedas entregar las recompensas después.')) return;
             db.ref('ranked_stats').once('value', function(snap) {
                 var all = snap.val() || {};
-                var updates = {};
-                var count = 0;
+                // ── PASO 0: Guardar snapshot de la temporada ANTES de resetear ──
+                // Este snapshot es la fuente de verdad para el botón "Entregar Recompensas".
+                // Se guarda en season_snapshots/{seasonKey} con los datos finales de cada jugador.
+                var snapshotData = {};
                 Object.keys(all).forEach(function(uid) {
-                    updates[uid + '/points']        = 0;
-                    updates[uid + '/atkPoints']     = 0;
-                    updates[uid + '/defPoints']     = 0;
-                    updates[uid + '/atkWins']       = 0;
-                    updates[uid + '/atkLosses']     = 0;
-                    updates[uid + '/atkDraws']      = 0;
-                    updates[uid + '/defWins']       = 0;
-                    updates[uid + '/defLosses']     = 0;
-                    updates[uid + '/seasonKey']     = seasonKey;
-                    updates[uid + '/attackHistory'] = null;
-                    updates[uid + '/defenseHistory']= null;
-                    updates[uid + '/raidToday']     = null;
-                    count++;
+                    var d = all[uid];
+                    if ((d.points || 0) > 0) { // solo guardar jugadores con puntos
+                        snapshotData[uid] = {
+                            name:       d.name || uid,
+                            points:     d.points || 0,
+                            atkPoints:  d.atkPoints || 0,
+                            defPoints:  d.defPoints || 0,
+                            atkWins:    d.atkWins || 0,
+                            defWins:    d.defWins || 0,
+                            savedAt:    Date.now()
+                        };
+                    }
                 });
-                db.ref('ranked_stats').update(updates, function(err) {
-                    if (err) { alert('\u274C Error: ' + err.message); return; }
-                    alert('\u2705 Reset completo. ' + count + ' jugadores reiniciados a 0 pts (Temporada ' + seasonKey + ').');
-                    var lb = document.getElementById('leaderboardModal');
-                    if (lb && lb.style.display !== 'none') showLeaderboard();
+                db.ref('season_snapshots/' + seasonKey).set(snapshotData, function(snapshotErr) {
+                    if (snapshotErr) { alert('❌ Error al guardar snapshot: ' + snapshotErr.message); return; }
+                    console.log('[Season] Snapshot guardado para', seasonKey, '—', Object.keys(snapshotData).length, 'jugadores');
+                    // Marcar que las recompensas de esta temporada están PENDIENTES de entregar
+                    db.ref('season_rewards_distributed').set(null);
+
+                    // PASO 1: Reset masivo de puntos
+                    var updates = {};
+                    var count = 0;
+                    Object.keys(all).forEach(function(uid) {
+                        updates[uid + '/points']        = 0;
+                        updates[uid + '/atkPoints']     = 0;
+                        updates[uid + '/defPoints']     = 0;
+                        updates[uid + '/atkWins']       = 0;
+                        updates[uid + '/atkLosses']     = 0;
+                        updates[uid + '/atkDraws']      = 0;
+                        updates[uid + '/defWins']       = 0;
+                        updates[uid + '/defLosses']     = 0;
+                        updates[uid + '/seasonKey']     = seasonKey;
+                        updates[uid + '/attackHistory'] = null;
+                        updates[uid + '/defenseHistory']= null;
+                        updates[uid + '/raidToday']     = null;
+                        count++;
+                    });
+                    db.ref('ranked_stats').update(updates, function(err) {
+                        if (err) { alert('❌ Error: ' + err.message); return; }
+                        alert('✅ Reset completo. ' + count + ' jugadores reiniciados a 0 pts.\nSnapshot de temporada ' + seasonKey + ' guardado.\nUsa "🎁 ENTREGAR RECOMPENSAS" para distribuir los premios.');
+                        var lb = document.getElementById('leaderboardModal');
+                        if (lb && lb.style.display !== 'none') showLeaderboard();
+                    });
                 });
             });
         }
+
+        async function adminEntregarRecompensas() {
+            if (!currentUser) { alert('Debes estar logueado.'); return; }
+            var now = new Date();
+            var prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            var prevKey = prevMonth.getFullYear() + '-' + String(prevMonth.getMonth() + 1).padStart(2, '0');
+
+            // Preguntar qué temporada distribuir (por defecto la del mes anterior)
+            var seasonKey = prompt('¿Temporada a distribuir? (ej. 2026-08)', prevKey);
+            if (!seasonKey) return;
+
+            // Verificar si ya se distribuyó
+            var distSnap = await db.ref('season_rewards_distributed').once('value');
+            if (distSnap.val() === seasonKey) {
+                if (!confirm('⚠️ Las recompensas de ' + seasonKey + ' ya fueron marcadas como distribuidas.\n¿Quieres re-distribuirlas de todos modos?')) return;
+            }
+
+            // Leer snapshot
+            var snap = await db.ref('season_snapshots/' + seasonKey).once('value');
+            if (!snap.val()) {
+                alert('❌ No hay snapshot guardado para la temporada ' + seasonKey + '.\nEl snapshot se guarda automáticamente al hacer RESET TEMPORADA.\nEsta temporada (2026-08) fue reseteada antes de que existiera este sistema.');
+                return;
+            }
+            var data = snap.val();
+            var players = Object.entries(data).map(function([uid, d]) {
+                return { uid: uid, name: d.name || uid, points: d.points || 0 };
+            }).sort(function(a, b) { return b.points - a.points; });
+
+            if (players.length === 0) { alert('No hay jugadores en el snapshot.'); return; }
+
+            // Identificar al campeón (top 1 en liga Leyenda)
+            var championUid = null;
+            var top = players[0];
+            var topLeague = getLeagueForPoints(top.points);
+            if (topLeague && topLeague.name === 'Leyenda') championUid = top.uid;
+
+            // Construir resumen para confirmar
+            var summary = '🎁 DISTRIBUCIÓN DE RECOMPENSAS — Temporada ' + seasonKey + '\n\n';
+            players.forEach(function(p) {
+                var l = getLeagueForPoints(p.points);
+                if (!l || l.gold === 0) return;
+                summary += (p.uid === championUid ? '👑 ' : '   ') + p.name + ' — ' + l.emoji + ' ' + l.name + ' (' + p.points.toLocaleString() + ' pts) → ' + l.gold.toLocaleString() + ' oro + ' + l.keys + ' llaves' + (p.uid === championUid ? ' + 🏆 Llave de Campeones' : '') + '\n';
+            });
+            summary += '\n¿Confirmar distribución?';
+            if (!confirm(summary)) return;
+
+            // Distribuir
+            var distributed = 0;
+            for (var i = 0; i < players.length; i++) {
+                var p = players[i];
+                var league = getLeagueForPoints(p.points);
+                if (!league || league.gold === 0) continue;
+                var isChampion = p.uid === championUid;
+
+                // Oro
+                var goldSnap = await db.ref('users/' + p.uid + '/gold').once('value');
+                await db.ref('users/' + p.uid + '/gold').set((goldSnap.val() || 0) + league.gold);
+                // Llaves arcanas
+                if (league.keys > 0) {
+                    var keysSnap = await db.ref('users/' + p.uid + '/arcane_keys').once('value');
+                    await db.ref('users/' + p.uid + '/arcane_keys').set((keysSnap.val() || 0) + league.keys);
+                }
+                // Llave de Campeones
+                if (isChampion) {
+                    var champSnap = await db.ref('users/' + p.uid + '/champion_keys').once('value');
+                    await db.ref('users/' + p.uid + '/champion_keys').set((champSnap.val() || 0) + 1);
+                }
+                // Notificación pendiente de reclamar
+                await db.ref('users/' + p.uid + '/season_reward_pending').set({
+                    season: seasonKey, league: league.name, leagueEmoji: league.emoji,
+                    points: p.points, gold: league.gold, keys: league.keys || 0,
+                    championKey: isChampion ? 1 : 0, ts: Date.now(), claimed: false
+                });
+                distributed++;
+                console.log('[Admin] Recompensa entregada a', p.name, '—', league.name, p.points, 'pts', isChampion ? '👑 CAMPEÓN' : '');
+            }
+
+            await db.ref('season_rewards_distributed').set(seasonKey);
+            alert('✅ Recompensas entregadas a ' + distributed + ' jugadores.\nTemporada: ' + seasonKey);
+            showLeaderboard();
+        }
+        window.adminEntregarRecompensas = adminEntregarRecompensas;
 
         function showRaidHistory() {
             if (!currentUser) return;
@@ -3814,7 +3922,10 @@
                         '<div>',
                             '<div style="font-family:Orbitron,sans-serif;font-size:1.4rem;font-weight:900;color:#ffaa00;text-shadow:0 0 20px rgba(255,170,0,0.6);letter-spacing:.08em;">🏆 RANKED LEADERBOARD</div>',
                             (currentUser && (currentUser.email === 'solisalex8291@gmail.com')
-                                ? '<button onclick="adminResetAllPlayers()" style="background:rgba(255,30,30,0.15);border:1px solid #ff3366;color:#ff3366;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:.7rem;font-family:Orbitron,sans-serif;letter-spacing:.05em;margin-top:4px;">🔄 RESET TEMPORADA</button>'
+                                ? '<div style="display:flex;gap:6px;margin-top:4px;">' +
+                                  '<button onclick="adminResetAllPlayers()" style="background:rgba(255,30,30,0.15);border:1px solid #ff3366;color:#ff3366;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:.7rem;font-family:Orbitron,sans-serif;letter-spacing:.05em;">🔄 RESET TEMPORADA</button>' +
+                                  '<button onclick="adminEntregarRecompensas()" style="background:rgba(0,255,136,0.12);border:1px solid #00ff88;color:#00ff88;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:.7rem;font-family:Orbitron,sans-serif;letter-spacing:.05em;">🎁 ENTREGAR RECOMPENSAS</button>' +
+                                  '</div>'
                                 : ''),
                             '<div id="leaderboardSeasonLabel" style="font-size:.72rem;color:#555;margin-top:3px;letter-spacing:.05em;">Temporada actual</div>',
                         '</div>',
