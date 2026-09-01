@@ -164,6 +164,18 @@
                     const currentCharName = gameState.turnOrder[gameState.currentTurnIndex];
                     const currentChar = gameState.characters[currentCharName];
                     
+                    // ── HORDA: saltar al personaje que acaba de limpiar la oleada anterior ──
+                    // Se aplica dentro del while para que funcione sin importar el valor de
+                    // currentTurnIndex al entrar (puede ser -1, 0, 1, etc.). Es más robusto que
+                    // fijar currentTurnIndex en init-render.js porque ese valor puede cambiar
+                    // entre el fix y cuando startTurn() realmente lo lee.
+                    if (gameState.gameMode === 'horda' && window._hordaLastActed && currentCharName === window._hordaLastActed) {
+                        window._hordaLastActed = null;
+                        _advanceTurnIndex('horda: saltar personaje que limpió oleada anterior');
+                        attempts++;
+                        continue;
+                    }
+
                     if (!currentChar) {
                         // Personaje no existe, pasar al siguiente
                         _advanceTurnIndex('personaje inexistente en startTurn');
