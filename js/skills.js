@@ -9178,24 +9178,23 @@
                         gameState[_flOverKey] = _flOverCount + 1;
                         const _flRandTgt = _flEnemies[Math.floor(Math.random() * _flEnemies.length)];
                         addLog('🏹 Flecha de Lothlórien: ¡ambos golpes críticos! Legolas ejecuta su Over automáticamente (' + (gameState[_flOverKey]) + '/3 esta ronda)', 'buff');
-                        const _flPrevSel = gameState.selectedCharacter;
-                        const _flPrevAb = gameState.selectedAbility;
-                        const _flPrevSuppress = gameState._suppressAutoEndTurn;
-                        const _flCasterName = gameState.selectedCharacter;
-                        const _flCasterTeam = _flAtk.team;
-                        if (typeof _showOverCinematic === 'function') {
-                            _showOverCinematic(_flCasterName, _flOver.name, _flOver.effect, _flCasterTeam, function () {
-                                gameState.selectedCharacter = _flCasterName;
-                                gameState.selectedAbility = _flOver;
-                                passiveExecuting = true;
-                                gameState._suppressAutoEndTurn = true;
-                                try { _executeAbilityCore(_flRandTgt); } catch (e) { console.error('[Flecha Lothlórien -> Over]', e); }
-                                passiveExecuting = false;
-                                gameState._suppressAutoEndTurn = _flPrevSuppress;
-                                gameState.selectedCharacter = _flPrevSel;
-                                gameState.selectedAbility = _flPrevAb;
-                            });
-                        }
+                        // ── Ejecutar el Over síncronamente (sin _showOverCinematic asíncrono).
+                        //    _showOverCinematic envuelve el callback para llamar showContinueButton()
+                        //    al terminar, pero para cuando la cinemática acaba el turno ya avanzó
+                        //    a otro personaje — como selectedCharacter sigue siendo "Legolas",
+                        //    showContinueButton() le daba turno extra a Legolas. Ejecutar el Over
+                        //    directo (passiveExecuting=true, _suppressAutoEndTurn=true) sigue el
+                        //    mismo patrón de todos los demás sistemas de pasiva del juego. ──
+                        const _flPrevAb2 = gameState.selectedAbility;
+                        const _flPrevExecuting2 = passiveExecuting;
+                        const _flPrevSuppress2 = gameState._suppressAutoEndTurn;
+                        gameState.selectedAbility = _flOver;
+                        passiveExecuting = true;
+                        gameState._suppressAutoEndTurn = true;
+                        try { _executeAbilityCore(_flRandTgt); } catch (e) { console.error('[Flecha Lothlórien -> Over síncr.]', e); }
+                        passiveExecuting = _flPrevExecuting2;
+                        gameState._suppressAutoEndTurn = _flPrevSuppress2;
+                        gameState.selectedAbility = _flPrevAb2;
                     } else if (_flOver && _flOverCount >= 3) {
                         addLog('🏹 Flecha de Lothlórien: doble crítico — Over bloqueado (límite de 3 activaciones por ronda alcanzado)', 'info');
                     }
