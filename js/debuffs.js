@@ -689,6 +689,21 @@ function applyDebuff(targetName, effectObj) {
                 addLog('✨ Maestría de la Varita de Saúco: ' + targetName + ' es inmune a debuffs', 'buff');
                 return;
             }
+            // HIELO (Arma/Espada): inmune a debuffs si el portador tiene Provocación o Mega Provocación activa ──
+            if ((target.equippedRelics||[]).some(function(rn){ const rd=(typeof RELICS_DATA!=='undefined')?RELICS_DATA[rn]:null; return rd&&rd.effect==='hielo_espada'; })) {
+                const _hieloHasProvoc = (target.statusEffects||[]).some(function(e){ return e&&(normAccent(e.name||'')==='provocacion'||normAccent(e.name||'')==='mega provocacion'); }) ||
+                    (target.passive && (target.passive.name==='Provocación'||target.passive.name==='Mega Provocación'||target.passive.megaProvocacion||target.passive.provocacion));
+                if (_hieloHasProvoc) { addLog('🧊 Hielo: ' + targetName + ' es inmune a debuffs (tiene Provocación activa)', 'buff'); return; }
+            }
+            // ARMADURA DE DARTH VADER: inmune a debuffs específicos ──
+            if ((target.equippedRelics||[]).some(function(rn){ const rd=(typeof RELICS_DATA!=='undefined')?RELICS_DATA[rn]:null; return rd&&rd.effect==='armadura_vader'; })) {
+                const _vaderImmune = ['miedo','congelacion','aturdimiento','mega aturdimiento','confusion','ceguera','posesion'];
+                if (_vaderImmune.includes(normAccent(effectObj&&effectObj.name||'').toLowerCase())) {
+                    addLog('🦾 Armadura de Darth Vader: ' + targetName + ' es inmune a ' + (effectObj.name||''), 'buff'); return;
+                }
+            }
+            // HUEVO NEGRO DE BALERION: inmune a daño de quemaduras (se aplica al recibir DOT, no aquí;
+            // pero la quemadura SÍ se puede aplicar como efecto) ——
             // LEGENDARIO SUPER SAYAJIN (Broly): 25% de esquivar cualquier debuff
             if (target.passive && target.passive.name === 'Legendario Super Sayajin') {
                 if (Math.random() < 0.25) {
