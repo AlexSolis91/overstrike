@@ -2323,7 +2323,11 @@
                     const c = gameState.characters[n];
                     if (!c || c.isDead || c.hp <= 0 || c.team !== _puzETeam) return;
                     if (!(c.equippedRelics || []).includes('Rompecabezas del Milenio')) return;
-                    if (Math.random() < 0.50) {
+                    // ── Guard: no sobrescribir un turno extra ya otorgado (ej. Vista de Halcón
+                    //    de Legolas ya puso _skeggoxExtraTurn = "Legolas" — sin este guard, el
+                    //    Rompecabezas lo reemplazaba con el orco y Legolas perdía su turno extra,
+                    //    quedando el botón "Continuar Turno" atorado al no darse ningún turno) ──
+                    if (!gameState._skeggoxExtraTurn && Math.random() < 0.50) {
                         gameState._skeggoxExtraTurn = n;
                         addLog('🧩 Rompecabezas del Milenio: ' + n + ' gana turno adicional (50%, enemigo ejecutó una habilidad)', 'buff');
                     }
