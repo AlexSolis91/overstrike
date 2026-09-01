@@ -349,6 +349,19 @@
                     if (typeof _runRoundStartPassiveHooks === 'function') _runRoundStartPassiveHooks();
                     // Recalcular con velocidades actualizadas por reliquias
                     calculateTurnOrder();
+                    // ── HORDA: saltar el turno del personaje que acaba de limpiar la oleada si
+                    //    quedó primero en el nuevo orden de velocidades. Sin esto, Legolas (o
+                    //    cualquier personaje con la velocidad más alta) recibía un turno extra
+                    //    automático al iniciar cada nueva oleada, creando la ilusión de que el
+                    //    orden de turnos se recalculaba en medio de su propio turno. ──
+                    if (gameState.gameMode === 'horda' && window._hordaLastActed) {
+                        const _hlaFirst = gameState.turnOrder && gameState.turnOrder[0];
+                        if (_hlaFirst === window._hordaLastActed && gameState.turnOrder.length > 1) {
+                            gameState.currentTurnIndex = 1;
+                            if (typeof addLog === 'function') addLog('🌊 Nueva oleada: ' + window._hordaLastActed + ' ya actuó — turno pasa al siguiente personaje', 'info');
+                        }
+                        window._hordaLastActed = null;
+                    }
                     renderTurnOrder();
                     startTurn();
                 }
@@ -360,6 +373,13 @@
                     gameState._waitingForRelics = false;
                     if (typeof _runRoundStartPassiveHooks === 'function') _runRoundStartPassiveHooks();
                     calculateTurnOrder();
+                    if (gameState.gameMode === 'horda' && window._hordaLastActed) {
+                        const _hlaFirst2 = gameState.turnOrder && gameState.turnOrder[0];
+                        if (_hlaFirst2 === window._hordaLastActed && gameState.turnOrder.length > 1) {
+                            gameState.currentTurnIndex = 1;
+                        }
+                        window._hordaLastActed = null;
+                    }
                     renderTurnOrder();
                     startTurn();
                 }
