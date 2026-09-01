@@ -5503,6 +5503,36 @@
                     var hasArmadura = (ch.statusEffects||[]).some(function(e){ return e && e.name === 'Armadura'; });
                     if (!hasArmadura) ch.statusEffects = (ch.statusEffects||[]).concat([{ name: 'Armadura', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🛡️' }]);
                 }
+                // ── Nuevas reliquias Legendarias ──
+                // Mjölnir: +30 velocidad
+                if (rd.effect === 'mjolnir' && !ch._mjolnirSpeedApplied) { ch.speed = (ch.speed||80) + 30; ch._mjolnirSpeedApplied = true; }
+                // Armadura de Darth Vader: -20 velocidad
+                if (rd.effect === 'armadura_vader' && !ch._vaderSpeedApplied) { ch.speed = Math.max(1, (ch.speed||80) - 20); ch._vaderSpeedApplied = true; }
+                // Potara Derecho: +25 velocidad
+                if (rd.effect === 'potara_derecho' && !ch._potaraDerechoSpeed) { ch.speed = (ch.speed||80) + 25; ch._potaraDerechoSpeed = true; }
+                // Potara Izquierdo: ambos en el mismo personaje → +25 HP máx, daño -50% recibido, velocidad x2
+                if (rd.effect === 'potara_izquierdo' && !ch._potaraIzqApplied) {
+                    ch._potaraIzqApplied = true;
+                    var hasBothPotara = (relicNames||[]).includes('Pendiente Potara Derecho') && (relicNames||[]).includes('Pendiente Potara Izquierdo');
+                    if (hasBothPotara && !ch._potaraBothApplied) {
+                        ch._potaraBothApplied = true;
+                        ch.maxHp = (ch.maxHp||20) + 25; ch.hp = Math.min(ch.maxHp, (ch.hp||0) + 25);
+                        ch.speed = (ch.speed||80) * 2;
+                        ch._potaraDmgReduction = 0.50; // daño recibido -50%
+                    }
+                }
+                // Anillo Único: activación al inicio de combate
+                if (rd.effect === 'anillo_unico' && !ch._anilloUnicoInit) {
+                    ch._anilloUnicoInit = true;
+                    ch.maxHp = (ch.maxHp||0) + 4; ch.hp = Math.min(ch.maxHp, (ch.hp||0) + 8); // +4 maxHp + cura 4
+                    ch.speed = (ch.speed||80) + 4;
+                    ch._anilloUnicoDmgBonus = (ch._anilloUnicoDmgBonus || 0) + 4;
+                    ch.charges = Math.min(20, (ch.charges||0) + 4);
+                    // Escudo 4 HP
+                    var hasEscudoAU = (ch.statusEffects||[]).some(function(e){ return e&&e.name==='Escudo'&&e.permanent; });
+                    if (!hasEscudoAU) ch.statusEffects = (ch.statusEffects||[]).concat([{ name:'Escudo', type:'buff', duration:999, permanent:true, shield: 4, passiveHidden:false, emoji:'🛡️' }]);
+                    else { ch.shield = (ch.shield||0) + 4; }
+                }
                 // Rastreador: otorga Anticipación y Contraataque permanentes
                 if (rd.effect === 'rastreador' && !ch._rastreadorApplied) {
                     ch._rastreadorApplied = true;
