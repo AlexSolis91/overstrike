@@ -112,6 +112,74 @@
         //    saltando de golpe (ver gameState.currentRound, ya diagnosticado y corregido antes).
         //    Si dos incrementos ocurren en menos de 50ms, es señal de un avance duplicado o en
         //    carrera que se está saltando algún personaje del orden de turnos sin que actúe. ──
+        // ══════════════════════════════════════════════════════════════════════════════
+        // TURNOS ADICIONALES (sistema de cola v2)
+        // ──────────────────────────────────────────────────────────────────────────────
+        // Cualquier efecto que otorgue un turno adicional llama a grantExtraTurn(nombre).
+        // Los turnos se acumulan durante el turno en curso y se insertan TODOS JUNTOS en
+        // endTurn, justo después del slot actual, ordenados por velocidad entre sí.
+        // ══════════════════════════════════════════════════════════════════════════════
+        window.grantExtraTurn = function (charName, sourceLabel) {
+            if (!charName) return;
+            const c = gameState.characters[charName];
+            if (!c || c.isDead || c.hp <= 0) return;
+            gameState._pendingExtraTurns = gameState._pendingExtraTurns || [];
+            // Un mismo personaje puede recibir varios turnos adicionales en el mismo turno;
+            // cada llamada añade un slot propio.
+            gameState._pendingExtraTurns.push(charName);
+            addLog('⚡ ' + charName + ' gana 1 turno adicional' + (sourceLabel ? ' (' + sourceLabel + ')' : '') + '', 'buff');
+        };
+
+        function _flushPendingExtraTurns() {
+            const pending = gameState._pendingExtraTurns || [];
+            if (pending.length === 0) return;
+            gameState._pendingExtraTurns = [];
+
+            // Filtrar a los que siguen vivos y no murieron esta ronda
+            const valid = pending.filter(function (n) {
+                const c = gameState.characters[n];
+                if (!c || c.isDead || c.hp <= 0) return false;
+                if ((gameState.diedThisRound || []).indexOf(n) !== -1) return false;
+                return true;
+            });
+            if (valid.length === 0) return;
+
+            // Ordenar entre ellos por velocidad (mayor primero)
+            valid.sort(function (a, b) {
+                const sa = (gameState.characters[a] || {}).speed || 0;
+                const sb = (gameState.characters[b] || {}).speed || 0;
+                if (sb !== sa) return sb - sa;
+                return a.localeCompare(b);
+            });
+
+            // Insertar justo después del slot actual
+            const insertAt = gameState.currentTurnIndex + 1;
+            gameState.turnOrder = gameState.turnOrder || [];
+            Array.prototype.splice.apply(gameState.turnOrder, [insertAt, 0].concat(valid));
+            console.log('[Turnos] Turnos adicionales insertados en la posición ' + insertAt + ':', JSON.stringify(valid));
+            if (typeof renderTurnOrder === 'function') renderTurnOrder();
+        }
+        window._flushPendingExtraTurns = _flushPendingExtraTurns;
+
+        // Red de seguridad: cierre de ronda si startTurn detecta la cola agotada sin que
+        // endTurn lo haya hecho antes (no debería ocurrir en el flujo normal).
+        function _finishRoundAndStartNext() {
+            try {
+                if (gameState.gameOver) return;
+                if (typeof processEndOfRoundEffects === 'function') processEndOfRoundEffects();
+                if (gameState.gameOver) return;
+                gameState.currentRound++;
+                if (typeof _runRoundStartPassiveHooks === 'function') _runRoundStartPassiveHooks();
+                if (gameState.gameOver) return;
+                calculateTurnOrder();
+                if (typeof renderTurnOrder === 'function') renderTurnOrder();
+                setTimeout(function () { startTurn(); }, 600);
+            } catch (e) {
+                console.error('[Turnos] Error en _finishRoundAndStartNext:', e);
+            }
+        }
+        window._finishRoundAndStartNext = _finishRoundAndStartNext;
+
         function _advanceTurnIndex(reason) {
             const _atiPrevIdx = gameState.currentTurnIndex;
             const _atiPrevName = (gameState.turnOrder || [])[_atiPrevIdx];
@@ -130,69 +198,58 @@
         }
 
         function startTurn() {
-            // Cola de turnos adicionales: procesar pendientes
-            if (gameState._sasukeRevengeQueue && gameState._sasukeRevengeQueue.length > 0) {
-                const _saTurnChar = gameState._sasukeRevengeQueue.shift();
-                const _saC = gameState.characters[_saTurnChar];
-                if (_saC && !_saC.isDead && _saC.hp > 0) {
-                    gameState.selectedCharacter = _saTurnChar;
-                    addLog('⚡ Venganza Eterna: ¡' + _saTurnChar + ' gana turno adicional!', 'buff');
-                    if (typeof renderCharacters === 'function') renderCharacters();
-                    // Si el personaje pertenece al equipo de la IA, ejecutar automáticamente
-                    if ((gameState.gameMode === 'solo' || gameState.gameMode === 'ranked' || gameState.gameMode === 'boss' || gameState.gameMode === 'horda') &&
-                        gameState.aiTeam && _saC.team === gameState.aiTeam) {
-                        if (gameState.gameMode === 'horda' && _saC.isHordaOrc && typeof window.executeHordaOrcTurn === 'function') {
-                            setTimeout(function() { window.executeHordaOrcTurn(_saTurnChar); }, 700);
-                        } else {
-                            setTimeout(function() { executeAITurn(_saTurnChar); }, 700);
-                        }
-                    } else {
-                        if (typeof showActionModal === 'function') showActionModal();
-                    }
-                    return;
-                }
-            }
             if (gameState.gameOver) return;
 
             // ONLINE MODE: Only run startTurn if it will be my team's turn
             // The other player will handle their own turn after receiving Firebase push
             
             try {
-                // ── HORDA: saltar al personaje que limpió la oleada anterior ──
-                // Se consume AQUÍ (al inicio de startTurn) para que el flag nunca
-                // persista más allá del primer startTurn() de la nueva oleada.
-                // El check dentro del while loop era frágil: si currentTurnIndex
-                // apuntaba a un índice DESPUÉS de Legolas (ej. 1 = General), el loop
-                // hacía break inmediatamente sin pasar por Legolas, y el flag quedaba
-                // activo indefinidamente causando saltos en turnos posteriores.
-                if (gameState.gameMode === 'horda' && window._hordaLastActed) {
-                    const _hla = window._hordaLastActed;
-                    window._hordaLastActed = null; // siempre consumir, sin importar si se salta o no
-                    if (gameState.turnOrder && gameState.turnOrder[0] === _hla) {
-                        // El último en actuar quedó primero en el nuevo orden → saltarlo
-                        if ((gameState.currentTurnIndex || 0) <= 0) {
-                            gameState.currentTurnIndex = 1;
-                        }
-                        // Si currentTurnIndex >= 1, ya apunta más allá de Legolas — sin cambio
-                    }
-                }
+                // ── HORDA: el personaje que limpió la oleada anterior no repite turno de golpe.
+                //    Con el sistema de cola v2 esto ya no puede pasar (la nueva oleada construye
+                //    una cola nueva y arranca en el índice 0), así que el flag solo se limpia. ──
+                if (window._hordaLastActed) window._hordaLastActed = null;
 
-                // Encontrar el siguiente personaje vivo
-                let attempts = 0;
-                while (attempts < gameState.turnOrder.length) {
+                // ── SISTEMA DE COLA v2 ──────────────────────────────────────────────────
+                // Avanzar sobre la cola de la ronda hasta encontrar un slot válido.
+                // Un slot se SALTA si: el personaje ya no existe, está muerto, o murió
+                // durante esta ronda (aunque haya sido revivido después).
+                // Si se agota la cola → la ronda terminó.
+                let _guard = 0;
+                const _queueLen = (gameState.turnOrder || []).length;
+                while (_guard <= _queueLen + 2) {
+                    _guard++;
+
+                    // ¿Se agotó la cola? → fin de ronda
+                    if (gameState.currentTurnIndex >= (gameState.turnOrder || []).length) {
+                        console.log('[Turnos] Cola de la ronda agotada → fin de Ronda ' + gameState.currentRound);
+                        if (typeof _finishRoundAndStartNext === 'function') _finishRoundAndStartNext();
+                        return;
+                    }
+
                     const currentCharName = gameState.turnOrder[gameState.currentTurnIndex];
                     const currentChar = gameState.characters[currentCharName];
-                    
+
                     if (!currentChar) {
-                        // Personaje no existe, pasar al siguiente
-                        _advanceTurnIndex('personaje inexistente en startTurn');
-                        attempts++;
+                        console.log('[Turnos] Slot ' + gameState.currentTurnIndex + ' (' + currentCharName + ') — personaje inexistente, saltando');
+                        gameState.currentTurnIndex++;
                         continue;
                     }
-                    
-                    if (currentChar.hp > 0 && !currentChar.isDead) {
-                        // Personaje vivo encontrado
+                    if (currentChar.isDead || currentChar.hp <= 0) {
+                        console.log('[Turnos] Slot ' + gameState.currentTurnIndex + ' (' + currentCharName + ') — muerto, saltando');
+                        gameState.currentTurnIndex++;
+                        continue;
+                    }
+                    if ((gameState.diedThisRound || []).indexOf(currentCharName) !== -1) {
+                        console.log('[Turnos] Slot ' + gameState.currentTurnIndex + ' (' + currentCharName + ') — murió esta ronda (revivido), no toma turno');
+                        gameState.currentTurnIndex++;
+                        continue;
+                    }
+
+                    {
+                        // Slot válido — este personaje toma su turno
                         gameState.selectedCharacter = currentCharName;
+                        gameState._turnInProgress   = true;
+                        console.log('[Turnos] Ronda ' + gameState.currentRound + ' — slot ' + gameState.currentTurnIndex + '/' + (gameState.turnOrder.length - 1) + ': ' + currentCharName);
                         
                         // Procesar efectos de estado al inicio del turno
                         // 1. Regeneración y quemaduras (ticks de daño/cura) -- SE APLICAN ANTES DE ACTUAR
@@ -415,9 +472,12 @@
                                 return;
                             }
                             
-                            // Pasar al siguiente turno
-                            _advanceTurnIndex('personaje aturdido/inmovilizado en startTurn');
-                            attempts++;
+                            // Murió por quemaduras antes de actuar → registrar y saltar su slot
+                            if ((gameState.diedThisRound || []).indexOf(currentCharName) === -1) {
+                                (gameState.diedThisRound = gameState.diedThisRound || []).push(currentCharName);
+                            }
+                            gameState._turnInProgress = false;
+                            gameState.currentTurnIndex++;
                             continue;
                         }
                         
@@ -429,22 +489,16 @@
                         
                         // Mostrar botón flotante para continuar — NO modal que bloquea la pantalla
                         showContinueButton();
-                        // Online: si saltamos personajes muertos (attempts > 0), volver a pushear
-                        // el estado correcto. El push de endTurn apuntaba a un personaje muerto;
-                        // ahora que encontramos al personaje vivo real, notificamos al otro jugador.
-                        if (onlineMode && attempts > 0) {
+                        if (onlineMode) {
                             pushGameState();
                         }
                         return;
                     }
-                    
-                    // Personaje muerto, pasar al siguiente
-                    _advanceTurnIndex('personaje muerto en startTurn');
-                    attempts++;
                 }
                 
-                // Si llegamos aquí, todos están muertos (no debería pasar)
-                checkGameOver();
+                // Guard agotado (no debería ocurrir) — cerrar la ronda de forma segura
+                console.warn('[Turnos] Guard del bucle agotado en startTurn — forzando fin de ronda');
+                if (typeof _finishRoundAndStartNext === 'function') _finishRoundAndStartNext();
             } catch (error) {
                 console.error('Error en startTurn:', error);
                 // NO reintentar automáticamente - causaba turnos dobles.
@@ -574,35 +628,53 @@
         // además limpia las banderas que normalmente bloquean la aparición del botón.
         window.forceShowContinueButton = function () {
             try {
-                console.log('[Refrescar Turno] Forzando reaparición del botón Continuar Turno...');
-                // Recuperar gameState.selectedCharacter si apunta a algo inválido
-                if (!gameState.characters[gameState.selectedCharacter]) {
-                    console.warn('[Refrescar Turno] gameState.selectedCharacter ("' + gameState.selectedCharacter + '") no existe. Recuperando desde turnOrder.');
-                    const _recovered = gameState.turnOrder && gameState.turnOrder[gameState.currentTurnIndex];
-                    if (_recovered && gameState.characters[_recovered]) {
-                        gameState.selectedCharacter = _recovered;
-                    } else {
-                        const _anyAlive = Object.keys(gameState.characters).find(function (n) {
-                            const c = gameState.characters[n];
-                            return c && !c.isDead && c.hp > 0;
-                        });
-                        if (_anyAlive) gameState.selectedCharacter = _anyAlive;
-                    }
-                }
+                console.log('[Refrescar Turno] Recuperando el flujo de turnos...');
+
                 // Limpiar banderas que bloquean la aparición normal del botón
-                gameState._relicEffectsActive = false;
-                gameState._abilityExecuting = false;
-                passiveExecuting = false;
-                // Cerrar cualquier modal que pudiera estar tapando el botón
+                gameState._relicEffectsActive  = false;
+                gameState._abilityExecuting    = false;
+                gameState._suppressAutoEndTurn = false;
+                gameState._guiaMaestroActive   = false;
+                passiveExecuting               = false;
                 ['actionModal', 'targetModal'].forEach(function (id) {
                     const el = document.getElementById(id);
                     if (el) el.classList.remove('show');
                 });
+
+                // ── CASO 1: el turno actual sigue abierto (el personaje aún no actuó) ──
+                // Solo hay que volver a mostrarle el botón, no saltarlo.
+                if (gameState._turnInProgress) {
+                    const _cur = gameState.characters[gameState.selectedCharacter];
+                    if (_cur && !_cur.isDead && _cur.hp > 0) {
+                        console.log('[Refrescar Turno] Turno de ' + gameState.selectedCharacter + ' aún abierto — reactivando su botón');
+                        if (typeof renderCharacters === 'function') renderCharacters();
+                        if (typeof showContinueButton === 'function') showContinueButton();
+                        addLog('🔄 Botón reactivado — sigue el turno de ' + gameState.selectedCharacter, 'info');
+                        return;
+                    }
+                }
+
+                // ── CASO 2: el último en tomar turno YA actuó → pasar al SIGUIENTE de la cola ──
+                // Se busca la posición exacta del último que actuó y se avanza justo detrás.
+                let _resumeAt;
+                if (typeof gameState._lastActedIndex === 'number' && gameState._lastActedIndex >= 0) {
+                    _resumeAt = gameState._lastActedIndex + 1;
+                    console.log('[Refrescar Turno] Último en actuar: ' + gameState._lastActedName +
+                                ' (slot ' + gameState._lastActedIndex + ') → retomando en el slot ' + _resumeAt);
+                } else {
+                    // Sin registro previo (ej. primer turno de la ronda) → reanudar donde apunta el índice
+                    _resumeAt = gameState.currentTurnIndex || 0;
+                    console.log('[Refrescar Turno] Sin registro de último turno — retomando en el slot ' + _resumeAt);
+                }
+                gameState.currentTurnIndex = _resumeAt;
+                gameState._turnInProgress  = false;
+
+                addLog('🔄 Orden de turnos recuperado — continuando desde el siguiente personaje', 'info');
                 if (typeof renderCharacters === 'function') renderCharacters();
-                if (typeof showContinueButton === 'function') showContinueButton();
-                addLog('🔄 Botón Continuar Turno reactivado manualmente', 'info');
+                if (typeof renderTurnOrder === 'function') renderTurnOrder();
+                startTurn();
             } catch (e) {
-                console.error('[Refrescar Turno] Error al forzar el botón:', e);
+                console.error('[Refrescar Turno] Error al recuperar el turno:', e);
             }
         };
 
@@ -3585,80 +3657,40 @@
             }
 
             // ── SKEGGÖX: turno adicional pendiente ──
-            if (gameState._skeggoxExtraTurn) {
-                const _skChar = gameState._skeggoxExtraTurn;
-                gameState._skeggoxExtraTurn = null;
-                // No conceder turno adicional si la partida ya terminó (ej. el golpe que disparó
-                // este turno extra eliminó al último enemigo vivo del equipo contrario)
-                if (gameState.gameOver) { return; }
-                const _skCurIdx = (gameState.currentTurnIndex || 0);
-                if (gameState.turnOrder) {
-                    const _skOldIdx = gameState.turnOrder.indexOf(_skChar);
-                    if (_skOldIdx >= 0) gameState.turnOrder.splice(_skOldIdx, 1);
-                    const _skInsertAt = Math.min(_skCurIdx, gameState.turnOrder.length);
-                    gameState.turnOrder.splice(_skInsertAt, 0, _skChar);
-                    gameState.currentTurnIndex = _skInsertAt;
+            // ══════════════════════════════════════════════════════════════════════════
+            // TURNOS ADICIONALES — todos los sistemas se unifican en la cola pendiente.
+            // ──────────────────────────────────────────────────────────────────────────
+            // Antes cada uno insertaba a mano en turnOrder, movía currentTurnIndex y hacía
+            // `return` saltándose el resto de endTurn (quemaduras, expiración de buffs,
+            // cooldowns...). Eso provocaba turnos repetidos, botones atorados y bucles.
+            // Ahora solo se encolan: _flushPendingExtraTurns() los inserta más abajo, en
+            // el punto único donde la cola avanza.
+            // ══════════════════════════════════════════════════════════════════════════
+            (function _collectExtraTurns() {
+                if (gameState.gameOver) return;
+                const _sources = [
+                    { flag: '_skeggoxExtraTurn', label: 'Skeggöx' },
+                    { flag: '_vaderExtraTurn',   label: 'Presencia Oscura' },
+                    { flag: '_seiyaExtraTurn',   label: '¡Arde, cosmos!' }
+                ];
+                _sources.forEach(function (src) {
+                    const _name = gameState[src.flag];
+                    if (!_name) return;
+                    gameState[src.flag] = null;
+                    const _c = gameState.characters[_name];
+                    if (!_c || _c.isDead || _c.hp <= 0) return;
+                    window.grantExtraTurn(_name, src.label);
+                    if (typeof triggerAnticipacion === 'function') {
+                        triggerAnticipacion(_name, _c.team || null);
+                    }
+                });
+                // Cola de Venganza Eterna (Sasuke): misma vía
+                if (gameState._sasukeRevengeQueue && gameState._sasukeRevengeQueue.length > 0) {
+                    const _q = gameState._sasukeRevengeQueue.splice(0);
+                    _q.forEach(function (n) { window.grantExtraTurn(n, 'Venganza Eterna'); });
                 }
-                addLog('🪓 Skeggöx: ¡' + _skChar + ' gana turno adicional!', 'buff');
-                if (typeof triggerAnticipacion === 'function') {
-                    const _skC = gameState.characters[_skChar];
-                    triggerAnticipacion(_skChar, _skC ? _skC.team : null);
-                }
-                gameState._wasExtraTurn = true;
-                if (onlineMode) {
-                    if (typeof pushGameState === 'function') pushGameState();
-                }
-                setTimeout(function() { startTurn(); }, 700);
-                return;
-            }
+            })();
 
-            // ── DARTH VADER (Presencia Oscura): turno adicional pendiente ──
-            if (gameState._vaderExtraTurn) {
-                const _vkChar = gameState._vaderExtraTurn;
-                gameState._vaderExtraTurn = null;
-                if (gameState.gameOver) { return; }
-                const _vkCurIdx = (gameState.currentTurnIndex || 0);
-                if (gameState.turnOrder) {
-                    const _vkOldIdx = gameState.turnOrder.indexOf(_vkChar);
-                    if (_vkOldIdx >= 0) gameState.turnOrder.splice(_vkOldIdx, 1);
-                    const _vkInsertAt = Math.min(_vkCurIdx, gameState.turnOrder.length);
-                    gameState.turnOrder.splice(_vkInsertAt, 0, _vkChar);
-                    gameState.currentTurnIndex = _vkInsertAt;
-                }
-                addLog('🌑 Presencia Oscura: ¡' + _vkChar + ' gana turno adicional!', 'buff');
-                if (typeof triggerAnticipacion === 'function') {
-                    const _vkC = gameState.characters[_vkChar];
-                    triggerAnticipacion(_vkChar, _vkC ? _vkC.team : null);
-                }
-                gameState._wasExtraTurn = true;
-                if (onlineMode && typeof pushGameState === 'function') pushGameState();
-                setTimeout(function() { startTurn(); }, 700);
-                return;
-            }
-
-            // ── SEIYA (¡Arde, cosmos!): turno adicional pendiente ──
-            if (gameState._seiyaExtraTurn) {
-                const _seChar = gameState._seiyaExtraTurn;
-                gameState._seiyaExtraTurn = null;
-                if (gameState.gameOver) { return; }
-                const _seCurIdx = (gameState.currentTurnIndex || 0);
-                if (gameState.turnOrder) {
-                    const _seOldIdx = gameState.turnOrder.indexOf(_seChar);
-                    if (_seOldIdx >= 0) gameState.turnOrder.splice(_seOldIdx, 1);
-                    const _seInsertAt = Math.min(_seCurIdx, gameState.turnOrder.length);
-                    gameState.turnOrder.splice(_seInsertAt, 0, _seChar);
-                    gameState.currentTurnIndex = _seInsertAt;
-                }
-                addLog('🔥 ¡Arde, cosmos!: ¡' + _seChar + ' gana turno adicional!', 'buff');
-                if (typeof triggerAnticipacion === 'function') {
-                    const _seC = gameState.characters[_seChar];
-                    triggerAnticipacion(_seChar, _seC ? _seC.team : null);
-                }
-                gameState._wasExtraTurn = true;
-                if (onlineMode && typeof pushGameState === 'function') pushGameState();
-                setTimeout(function() { startTurn(); }, 700);
-                return;
-            }
             // Cap all character charges at 20 and HP at maxHp
             for (let n in gameState.characters) {
                 const _c = gameState.characters[n];
@@ -3731,16 +3763,24 @@
                     gameState._attackedThisTurn = false;
                 }
                 
-                // Incrementar contador de turnos en la ronda
-                // No contar turnos extra (Skeggöx/Lado Luminoso) para no terminar la ronda antes de tiempo
-                if (!gameState._wasExtraTurn) {
-                    gameState.turnsInRound++;
-                }
-                gameState._wasExtraTurn = false;
+                // ── SISTEMA DE COLA v2: cerrar el slot actual y avanzar ───────────────
+                // Se registra quién acabó de actuar y en qué slot — el botón de refrescar
+                // usa exactamente ese dato para saber a quién le toca a continuación.
+                gameState._lastActedIndex = gameState.currentTurnIndex;
+                gameState._lastActedName  = (gameState.turnOrder || [])[gameState.currentTurnIndex] || gameState.selectedCharacter;
+                gameState._turnInProgress = false;
+                gameState._wasExtraTurn   = false;
 
-                // Check if round is complete
-                const _currentAlive = Object.values(gameState.characters).filter(c => c && !c.isDead && c.hp > 0).length;
-                const _roundComplete = gameState.turnsInRound >= Math.min(gameState.aliveCountAtRoundStart, _currentAlive > 0 ? _currentAlive : 1);
+                // Insertar en la cola los turnos adicionales ganados durante este turno.
+                // Se colocan JUSTO DESPUÉS del slot actual, ordenados por velocidad entre sí.
+                _flushPendingExtraTurns();
+
+                // Avanzar al siguiente slot de la cola
+                gameState.currentTurnIndex++;
+
+                // La ronda termina cuando se agota la cola (los turnos adicionales, al ser
+                // slots reales, la extienden de forma natural)
+                const _roundComplete = gameState.currentTurnIndex >= (gameState.turnOrder || []).length;
                 if (_roundComplete) {
                     // Procesar efectos de final de ronda ANTES de incrementar la ronda
                     processEndOfRoundEffects();
@@ -3809,29 +3849,17 @@
                         }
                         return;
                     }
+                    // ── NUEVA RONDA ──────────────────────────────────────────────────
+                    // 1) Primero se aplican TODOS los efectos de inicio de ronda
+                    //    (buffs, debuffs, celeridad, reliquias, invocaciones, etc.)
                     _runRoundStartPassiveHooks();
-                    // ── RECALCULAR ORDEN DE TURNOS por velocidad actual (incluye revividos) ──
-                    const _lastActed = gameState.turnOrder[gameState.currentTurnIndex]; // quién actuó último
-                    const _aliveNamesNew = Object.keys(gameState.characters).filter(function(n) {
-                        const c = gameState.characters[n]; return c && !c.isDead && c.hp > 0;
-                    });
-                    _aliveNamesNew.sort(function(a, b) {
-                        return (gameState.characters[b].speed || 0) - (gameState.characters[a].speed || 0);
-                    });
-                    gameState.turnOrder = _aliveNamesNew;
-                    gameState.aliveCountAtRoundStart = _aliveNamesNew.length;
-                    gameState.turnsInRound = 0;
-                    // Iniciar desde -1; el +1 posterior lo lleva a 0 (primer personaje)
-                    gameState.currentTurnIndex = -1;
-                    // Si el más rápido es el mismo que acaba de actuar, empezar desde el índice 1
-                    // para que no repita turno de inmediato
-                    if (_aliveNamesNew[0] === _lastActed && _aliveNamesNew.length > 1) {
-                        gameState.currentTurnIndex = 0; // el +1 posterior lo llevará a índice 1
-                    }
-
+                    // 2) DESPUÉS se calcula el orden de turnos con las velocidades ya
+                    //    modificadas por esos efectos. El orden queda congelado por toda
+                    //    la ronda: calculateTurnOrder resetea índice, diedThisRound y la
+                    //    cola de turnos adicionales pendientes.
+                    calculateTurnOrder();
+                    renderTurnOrder();
                 }
-                
-                _advanceTurnIndex('endTurn normal');
 
                 if (onlineMode) {
                     // Capture battle log for sync
