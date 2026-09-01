@@ -4178,8 +4178,12 @@
                     if (!_dbC || _dbC.isDead || _dbC.hp <= 0) continue;
                     if (!(_dbC.equippedRelics||[]).includes('Direbounds')) continue;
                     _dbC.charges = Math.min(20, (_dbC.charges||0) + 15);
-                    gameState._skeggoxExtraTurn = _dbN;
-                    addLog('🥊 Direbounds: ' + _dbN + ' gana turno adicional y 15 cargas (' + victimName + ' eliminado)', 'buff');
+                    if (!gameState._skeggoxExtraTurn) {
+                        gameState._skeggoxExtraTurn = _dbN;
+                        addLog('🥊 Direbounds: ' + _dbN + ' gana turno adicional y 15 cargas (' + victimName + ' eliminado)', 'buff');
+                    } else {
+                        addLog('🥊 Direbounds: ' + _dbN + ' gana 15 cargas (' + victimName + ' eliminado, turno extra ya pendiente)', 'buff');
+                    }
                 }
             }
             if (!killerName || !gameState.battleStats) return;
