@@ -2297,7 +2297,12 @@
             // MODO HORDA: snapshot de cargas antes de resolver la habilidad — usado por
             // Warmaster (pasiva "Warmasters") para detectar generación de cargas por EFECTO
             // (no por el chargeGain normal del movimiento) y darse turno extra.
-            if (typeof window.HORDA_CHARACTER_DATA !== 'undefined') {
+            // ── Solo se toma en la ejecución de nivel superior (!passiveExecuting). Las
+            //    llamadas anidadas (auto-Emboscada de Ojos de Mirkwood, triggerAnticipacion,
+            //    Guía del Maestro, etc.) NO sobreescriben el snapshot — si lo hacen, el check
+            //    de Warmaster usa el snapshot de la última llamada anidada en vez del de la
+            //    acción principal del jugador, dando turnos extra incorrectos en cascada. ──
+            if (_lgTopLevel && typeof window.HORDA_CHARACTER_DATA !== 'undefined') {
                 window._hordaChargeSnapshot = {};
                 Object.keys(gameState.characters).forEach(function(n) { window._hordaChargeSnapshot[n] = gameState.characters[n].charges || 0; });
                 window._hordaChargeSnapshotActor = charName;
@@ -15269,11 +15274,15 @@
 
             // ── OJOS DE MIRKWOOD (Legolas): comparar el snapshot de cargas contra el estado
             //    actual — cualquier personaje que haya ganado 5+ cargas durante esta ejecución
-            //    (sin importar el mecanismo exacto) dispara la Emboscada automática de CUALQUIER
-            //    Legolas enemigo suyo presente en la batalla. Solo se evalúa en la ejecución de
-            //    nivel superior (ver _lgTopLevel al inicio de esta función). ──
+            //    dispara la Emboscada automática. Solo se evalúa en la ejecución de nivel
+            //    superior (_lgTopLevel). Se limita a UN SOLO disparo por ejecución: si múltiples
+            //    orcos acumularon 5+ cargas en el mismo turno (p. ej. Sed de Sangre + Shadowmourne
+            //    disparados por la Emboscada de Nimrodel), sin este límite se dispararían
+            //    auto-Emboscadas en cadena causando cascadas que atascan el botón de turno. ──
             if (_lgTopLevel && _lgChargeSnapshot) {
+                let _lgAutoFired = false; // solo un disparo por ejecución de nivel superior
                 for (const _lgGainerName in gameState.characters) {
+                    if (_lgAutoFired) break;
                     const _lgGainerC = gameState.characters[_lgGainerName];
                     if (!_lgGainerC || _lgGainerC.isDead || _lgGainerC.hp <= 0) continue;
                     const _lgBefore = _lgChargeSnapshot[_lgGainerName] || 0;
@@ -15283,7 +15292,7 @@
                         const _lgC = gameState.characters[_lgN];
                         if (!_lgC || _lgC.isDead || _lgC.hp <= 0 || !_lgC.passive) continue;
                         if (_lgC.passive.name !== 'Ojos de Mirkwood') continue;
-                        if (_lgC.team === _lgGainerC.team) continue; // solo si el que ganó cargas es enemigo de Legolas
+                        if (_lgC.team === _lgGainerC.team) continue;
                         const _lgAmbush = (_lgC.abilities || []).find(function (a) { return a && a.effect === 'emboscada_nimrodel_legolas'; });
                         if (!_lgAmbush) break;
                         addLog('🏹 Ojos de Mirkwood: ' + _lgGainerName + ' ganó ' + (_lgAfter - _lgBefore) + ' cargas de golpe — ' + _lgN + ' ejecuta Emboscada de Nimrodel automáticamente', 'buff');
@@ -15303,6 +15312,7 @@
                         gameState.adjustedCost = _lgPrevCost;
                         passiveExecuting = _lgPrevExecuting;
                         gameState._suppressAutoEndTurn = _lgPrevSuppress;
+                        _lgAutoFired = true;
                     }
                 }
             }
