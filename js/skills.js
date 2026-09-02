@@ -13446,10 +13446,11 @@
                 for (const _n in gameState.characters) { if (gameState.characters[_n] && gameState.characters[_n].isDead) _aeDead++; }
                 const _aeTotalDmg = finalDamage + (_aeDead * 3); // spec: +3 por cada personaje muerto
                 let _aeKilledEnemy = false;
-                // Este Over YA NO ignora Esquiva Área: se resuelve con resolveAOETargets,
-                // igual que cualquier otro AOE, para que los objetivos con Esquiva Área
-                // (y las invocaciones que la tengan) puedan esquivarlo.
-                const _aeAOE = window.resolveAOETargets(gameState.selectedCharacter, _aeETeam);
+                // Este Over YA NO ignora Esquiva Área: se resuelve con resolveAOETargets.
+                // Pasamos `ability` explícitamente en overrides para que resolveAOETargets
+                // use target:'aoe' correcto y dispare la pasiva de Jon Snow, independientemente
+                // de si gameState.selectedAbility cambió durante efectos intermedios.
+                const _aeAOE = window.resolveAOETargets(gameState.selectedCharacter, _aeETeam, { ability: ability });
                 _aeAOE.targets.forEach(function (_n) {
                     const _c = gameState.characters[_n];
                     if (!_c || _c.isDead || _c.hp <= 0) return;
