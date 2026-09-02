@@ -215,6 +215,12 @@
 
         // Datos de invocaciones
         const summonData = {
+            'Esqueleto': {
+                name: 'Esqueleto',
+                hp: 10, maxHp: 10, summoner: null, team: null, statusEffects: [],
+                img: 'https://i.ibb.co/XRW6Mvp/image-ad7f9bbf.png',
+                passive: 'Ataque del no muerto: Al final de cada ronda causa daño sobre un enemigo aleatorio equivalente al 10% del HP máx de su invocador. Cada ronda aumenta un 10% el efecto de esta pasiva.'
+            },
             'Katsuyu': {
                 name: 'Katsuyu',
                 hp: 30, maxHp: 30, summoner: null, team: null, statusEffects: [],
