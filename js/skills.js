@@ -580,28 +580,43 @@
         };
 
         function applyAOEDamageToTeam(enemyTeam, damage, attackerName) {
+            // ── Pasar por resolveAOETargets para que Esquiva Área (Jon Snow) y
+            //    Mega Provocación (Darkseid) funcionen en TODAS las rutas. ──
             let _kyoAOEHits = 0;
-            for (let n in gameState.characters) {
-                const c = gameState.characters[n];
-                if (c && c.team === enemyTeam && !c.isDead && c.hp > 0) {
-                    if (checkAsprosAOEImmunity(n, true) || checkMinatoAOEImmunity(n)) {
-                        addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff');
-                        continue;
-                    }
-                    applyDamageWithShield(n, damage, attackerName);
+            if (typeof window.resolveAOETargets === 'function') {
+                const _aoeTgt = window.resolveAOETargets(
+                    attackerName, enemyTeam,
+                    { _skipJonSnowTrigger: true }  // ya fue disparado al inicio de _executeAbilityCore
+                );
+                _aoeTgt.targets.forEach(function(n) {
+                    applyDamageWithShield(n, damage * _aoeTgt.multiplier, attackerName);
                     _kyoAOEHits++;
+                });
+                _aoeTgt.summonTargets.forEach(function(sid) {
+                    applySummonDamage(sid, damage * _aoeTgt.multiplier, attackerName);
+                });
+            } else {
+                // Fallback si resolveAOETargets no está disponible
+                for (let n in gameState.characters) {
+                    const c = gameState.characters[n];
+                    if (c && c.team === enemyTeam && !c.isDead && c.hp > 0) {
+                        if (checkAsprosAOEImmunity(n, true) || checkMinatoAOEImmunity(n)) {
+                            addLog('🌟 ' + n + ' es inmune al AOE (Esquiva Área)', 'buff');
+                            continue;
+                        }
+                        applyDamageWithShield(n, damage, attackerName);
+                        _kyoAOEHits++;
+                    }
+                }
+                for (let sid in gameState.summons) {
+                    const s = gameState.summons[sid];
+                    if (s && s.team === enemyTeam && s.hp > 0) applySummonDamage(sid, damage, attackerName);
                 }
             }
             // Registrar hits para post-handler de Llamarada Kusanagi (una sola vez)
             if (_kyoAOEHits > 0 && attackerName) {
                 if (!gameState._kyoAOEHitsByAttacker) gameState._kyoAOEHitsByAttacker = {};
                 gameState._kyoAOEHitsByAttacker[attackerName] = (gameState._kyoAOEHitsByAttacker[attackerName]||0) + _kyoAOEHits;
-            }
-            for (let sid in gameState.summons) {
-                const s = gameState.summons[sid];
-                if (s && s.team === enemyTeam && s.hp > 0) {
-                    applySummonDamage(sid, damage, attackerName);
-                }
             }
         }
 
@@ -1502,6 +1517,21 @@
             // _relicCritUsedByHandler: true si el handler ya llamó a rollCrit() — evita que el
             // bucle de reliquias al final dispare un segundo intento (doble conteo).
             const _coreAttacker = gameState.selectedCharacter ? gameState.characters[gameState.selectedCharacter] : null;
+
+            // ── JON SNOW (El Rey Prometido): disparar la pasiva AL INICIO de CUALQUIER
+            //    AOE enemigo, ANTES de que el handler aplique daño — independientemente de
+            //    si el handler usa resolveAOETargets, applyAOEDamageToTeam u otra ruta.
+            //    Sin este hook anticipado, el buff 'Esquiva Area' podía llegar DESPUÉS del
+            //    daño cuando el Over de Aragorn lo disparaba desde el pasivo 'Sangre de
+            //    Numenor' (que llama _executeAbilityCore con passiveExecuting=true, lo que
+            //    impedía que resolveAOETargets internamente llamase triggerElReyPrometido). ──
+            if (_lgTopLevel && ability && ability.target === 'aoe' && _coreAttacker &&
+                !(ability.ignoresEsquivaArea) &&
+                typeof triggerElReyPrometido === 'function') {
+                // Solo si el atacante es enemigo de Jon Snow (no disparar si AOE aliado)
+                triggerElReyPrometido(gameState.selectedCharacter);
+            }
+
             gameState._relicCritBonus = 0;
             gameState._isCritHit = false;
             gameState._relicCritUsedByHandler = false;
