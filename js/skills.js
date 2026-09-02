@@ -1011,11 +1011,31 @@
                     break;
                 }
                 case 'DANIO_AOE': {
-                    enemies.forEach(n => {
-                        if (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(n, true)) return;
-                        applyDamageWithShield(n, qty, charName);
-                    });
-                    if (typeof applyAOEToSummons === 'function') applyAOEToSummons(enemyTeam, qty, charName);
+                    // ── Usar resolveAOETargets igual que el resto del motor:
+                    //    1) Dispara la pasiva de Jon Snow (triggerElReyPrometido) ANTES de filtrar
+                    //    2) Excluye a los personajes con Esquiva Área del resultado
+                    //    3) Redirige todo el golpe al portador de Mega Provocación si existe
+                    // Sin este fix, DANIO_AOE no llamaba triggerElReyPrometido y la pasiva de
+                    // Jon Snow se disparaba DESPUÉS del daño (o no se disparaba), dejando que el
+                    // AOE golpeara a todos incluyendo a quienes deberían tener Esquiva Área. ──
+                    if (typeof window.resolveAOETargets === 'function') {
+                        const _daAoe = window.resolveAOETargets(charName, enemyTeam, { ability: gameState.selectedAbility });
+                        _daAoe.targets.forEach(n => {
+                            applyDamageWithShield(n, qty * _daAoe.multiplier, charName);
+                        });
+                        if (typeof applyAOEToSummons === 'function' && _daAoe.summonTargets) {
+                            _daAoe.summonTargets.forEach(sid => {
+                                if (typeof applySummonDamage === 'function') applySummonDamage(sid, qty * _daAoe.multiplier, charName);
+                            });
+                        }
+                    } else {
+                        // Fallback si resolveAOETargets no está disponible
+                        enemies.forEach(n => {
+                            if (typeof checkAsprosAOEImmunity === 'function' && checkAsprosAOEImmunity(n, true)) return;
+                            applyDamageWithShield(n, qty, charName);
+                        });
+                        if (typeof applyAOEToSummons === 'function') applyAOEToSummons(enemyTeam, qty, charName);
+                    }
                     addLog('⚔️ ' + charName + ': ' + qty + ' daño AOE', 'damage');
                     break;
                 }
