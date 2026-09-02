@@ -1633,7 +1633,7 @@
                 btn.onclick = function() { _rtLoadConfig(id); };
                 list.appendChild(btn);
             });
-            if (newBtn) newBtn.style.display = ids.length >= 5 ? 'none' : '';
+            if (newBtn) newBtn.style.display = ids.length >= 20 ? 'none' : '';
         }
 
         function _rtLoadConfig(id) {
@@ -1651,8 +1651,8 @@
         }
 
         function rtCreateNewConfig() {
-            if (Object.keys(_rtConfigs).length >= 5) {
-                _rtShowMsg('⚠️ Ya tienes 5 configuraciones (máximo permitido).', true); return;
+            if (Object.keys(_rtConfigs).length >= 20) {
+                _rtShowMsg('⚠️ Ya tienes 20 configuraciones (máximo permitido).', true); return;
             }
             var name = prompt('Nombre para la nueva configuración:\n(Ej: Dot Quemaduras, Invocación, Control...)', '');
             if (name === null) return;
