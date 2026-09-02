@@ -127,6 +127,9 @@
             // Un mismo personaje puede recibir varios turnos adicionales en el mismo turno;
             // cada llamada añade un slot propio.
             gameState._pendingExtraTurns.push(charName);
+            if (typeof window.elfrOnExtraTurnGranted === 'function') {
+                try { window.elfrOnExtraTurnGranted(charName); } catch (e) { console.error('[elfr extraTurn]', e); }
+            }
             addLog('⚡ ' + charName + ' gana 1 turno adicional' + (sourceLabel ? ' (' + sourceLabel + ')' : '') + '', 'buff');
         };
 
@@ -258,6 +261,9 @@
                         // para que el decremento ocurra DESPUÉS de verificar stun/freeze/etc.
                         // Registrar el personaje activo como atacante del turno (para kills por efecto)
                         gameState._currentTurnAttacker = currentCharName;
+                        if (typeof window.elfrOnTurnStart === 'function') {
+                            try { window.elfrOnTurnStart(currentCharName); } catch (e) { console.error('[elfr turnStart]', e); }
+                        }
 
                         // ── KAISELLIN: 50% Aturdimiento al inicio del turno de cada enemigo ──
                         (function() {
@@ -2175,6 +2181,9 @@
         function _runRoundStartPassiveHooks() {
             console.log('[Ronda] _runRoundStartPassiveHooks() iniciando (Ronda ' + gameState.currentRound + ')...');
                     // ── ELFOS OSCUROS: pasivas de inicio de ronda (Klaord revive y posee) ──
+                    if (typeof window.elfrOnRoundStart === 'function') {
+                        try { window.elfrOnRoundStart(); } catch (e) { console.error('[elfr roundStart]', e); }
+                    }
                     if (typeof window.elfosOnRoundStart === 'function') {
                         try { window.elfosOnRoundStart(); } catch (e) { console.error('[Elfos roundStart]', e); }
                     }
@@ -3905,6 +3914,9 @@
                 // y antes de que expiren los buffs, para poder detectar cuáles están por expirar)
                 if (typeof window.hordaOnRoundEnd === 'function') window.hordaOnRoundEnd();
                 // ── ELFOS OSCUROS: fin de ronda (Klaord roba HP por Marcas de la Oscuridad) ──
+                if (typeof window.elfrOnRoundEnd === 'function') {
+                    try { window.elfrOnRoundEnd(); } catch (e) { console.error('[elfr roundEnd]', e); }
+                }
                 if (typeof window.elfosOnRoundEnd === 'function') {
                     try { window.elfosOnRoundEnd(); } catch (e) { console.error('[Elfos roundEnd]', e); }
                 }
@@ -4104,6 +4116,9 @@
                                 if (_aeAllEnemies.length > 0) {
                                     addLog('☠️ Aguijón Esmeralda: 2 stacks de Veneno aplicados a todo el equipo enemigo', 'debuff');
                                 }
+                            }
+                            if (typeof window.elfrOnPoisonDamage === 'function') {
+                                try { window.elfrOnPoisonDamage(_eorN); } catch (e) { console.error('[elfr poison]', e); }
                             }
                             if (typeof _animCard === 'function') _animCard(_eorN, 'anim-venom', 750);
                             if (typeof _spawnParticles === 'function') _spawnParticles(_eorN, '☠️', 4);
