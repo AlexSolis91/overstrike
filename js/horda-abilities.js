@@ -122,8 +122,14 @@
     // el Orco en el objeto `selectedChars` ANTES de llamar a initGame, para que quede
     // incluido correctamente en gameState.characters y en el orden de turnos.
     window.hordaBuildEnemyCharacterData = function (orcType) {
-        var tmpl = window.HORDA_CHARACTER_DATA[orcType];
-        if (!tmpl) { console.error('[HORDA] Tipo de Orco desconocido:', orcType); return null; }
+        // La tabla de personajes depende de la variante de Horda activa.
+        var _isElfos = (window._hordaVariant === 'elfos');
+        var _table = _isElfos ? (window.ELFOS_CHARACTER_DATA || {}) : (window.HORDA_CHARACTER_DATA || {});
+        var tmpl = _table[orcType];
+        // Respaldo: si no está en la tabla de la variante, buscar en la otra (p. ej. un
+        // Guardians invocado por Legión de la Oscuridad mientras se recarga el estado).
+        if (!tmpl) tmpl = (window.ELFOS_CHARACTER_DATA || {})[orcType] || (window.HORDA_CHARACTER_DATA || {})[orcType];
+        if (!tmpl) { console.error('[HORDA] Tipo de enemigo desconocido:', orcType); return null; }
         var ch = {
             name: orcType,
             hp: tmpl.hp, maxHp: tmpl.maxHp, speed: tmpl.speed, charges: 0,
@@ -131,8 +137,13 @@
             portrait: tmpl.portrait,
             passive: { name: tmpl.passive.name, description: tmpl.passive.description },
             abilities: tmpl.abilities.map(function (a) { return Object.assign({}, a); }),
-            isHordaOrc: true, hordaOrcType: orcType
+            isHordaOrc: true, hordaOrcType: orcType,
+            isElfoOscuro: !!(window.ELFOS_CHARACTER_DATA && window.ELFOS_CHARACTER_DATA[orcType])
         };
+        // ── Pasivas de Elfos Oscuros que otorgan buffs permanentes al entrar en combate ──
+        if (tmpl.passive.name === 'Destreza Elfica de las sombras') {
+            ch.statusEffects.push({ name: 'Esquivar', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '💨' });
+        }
         if (tmpl.passive.name === 'Rugido Provocador') {
             ch.statusEffects.push({ name: 'Provocacion', type: 'buff', duration: 999, permanent: true, passiveHidden: true, emoji: '🛡️' });
         }
@@ -1169,6 +1180,14 @@
             if (typeof applyHeal === 'function') applyHeal(charName, 5);
             if (typeof applyBuff === 'function') applyBuff(charName, { name: 'Proteccion Sagrada', type: 'buff', duration: 2, emoji: '🛡️✨' });
             addLog('🛡️ Fortaleza del Guardián: ' + charName + ' recupera 5 HP y gana Protección Sagrada 2T', 'buff');
+        }
+
+        // ── Delegación a los Elfos Oscuros ──
+        if (typeof ability.effect === 'string' && ability.effect.indexOf('elfos_') === 0) {
+            if (typeof window.elfosExecuteAbility === 'function') {
+                return window.elfosExecuteAbility(ability, charName, targetName);
+            }
+            return false;
         }
 
         switch (ability.effect) {
