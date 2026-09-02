@@ -458,6 +458,12 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 }
             }
             target.statusEffects.push(effectObj);
+            if (typeof window.elfrOnDebuffReceived === 'function') {
+                try { window.elfrOnDebuffReceived(targetName, (effectObj && effectObj.name) || ''); } catch (e) { console.error('[elfr onDebuff]', e); }
+            }
+            if (typeof window.elfosOnEffectApplied === 'function') {
+                try { window.elfosOnEffectApplied('debuff'); } catch (e) {}
+            }
             if (_dbgTrace) console.warn('[applyBuff] PUSH exitoso de Celeridad en ' + targetName + '. Total efectos ahora: ' + target.statusEffects.length);
             // ── Notificar a SJW Arise!: +2 cargas por buff aplicado sobre ENEMIGO ──
             if (typeof notifyEnemyBuffApplied === 'function' && !passiveExecuting && effectObj && effectObj.type === 'buff') {
@@ -677,6 +683,13 @@ function triggerMaboroshi(targetTeam, debuffName) {
 function applyDebuff(targetName, effectObj) {
             const target = gameState.characters[targetName];
             if (!target || !target.statusEffects) return;
+            // ── RELIQUIAS ELFOS: inmunidades (Piedra del Sol, Karuka, Capa Namekiana,
+            //    Sable de Obi-Wan consumiendo Escudo) ──
+            if (typeof window.elfrBlockDebuff === 'function') {
+                try {
+                    if (window.elfrBlockDebuff(targetName, (effectObj && effectObj.name) || '')) return;
+                } catch (e) { console.error('[elfr blockDebuff]', e); }
+            }
             // EL OJO QUE TODO LO VE (Sauron): condicional según reliquias equipadas
             if (_sauronDebuffImmune(targetName, normAccent(effectObj && effectObj.name || ''))) return;
             // SABIDURÍA ANTIGUA (Yoda): inmune a todos los debuffs
