@@ -1363,6 +1363,27 @@
             }
             // ── ELFOS OSCUROS: pasivas al recibir daño (Corrupción +5 vel, Canto de la
             //    Oscuridad devuelve 2, Artes Élficas Oscuras cura al Necromancer) ──
+            // ── RELIQUIAS ELFOS: modificador de DAÑO ENTRANTE (Ferndur, Corona,
+            //    Karuka, Escudo Arcantos). Puede reducirlo o anularlo por completo. ──
+            if (damage > 0 && typeof window.elfrModifyIncomingDamage === 'function') {
+                try {
+                    damage = window.elfrModifyIncomingDamage(targetName, attackerName, damage, gameState.selectedAbility);
+                } catch (e) { console.error('[elfr incoming]', e); }
+                if (damage <= 0) { if (typeof renderCharacters === 'function') renderCharacters(); return 0; }
+            }
+            // ── RELIQUIAS ELFOS: modificador de DAÑO SALIENTE del atacante ──
+            if (damage > 0 && attackerName && typeof window.elfrModifyOutgoingDamage === 'function') {
+                try {
+                    damage = window.elfrModifyOutgoingDamage(attackerName, targetName, damage, gameState.selectedAbility);
+                } catch (e) { console.error('[elfr outgoing]', e); }
+            }
+            // ── RELIQUIAS ELFOS: efectos posteriores al golpe ──
+            if (damage > 0 && typeof window.elfrOnDamageTaken === 'function') {
+                try { window.elfrOnDamageTaken(targetName, attackerName, damage, gameState.selectedAbility); } catch (e) { console.error('[elfr onDamageTaken]', e); }
+            }
+            if (damage > 0 && attackerName && typeof window.elfrOnDamageDealt === 'function') {
+                try { window.elfrOnDamageDealt(attackerName, targetName, damage, gameState.selectedAbility); } catch (e) { console.error('[elfr onDamageDealt]', e); }
+            }
             if (damage > 0 && typeof window.elfosOnDamageTaken === 'function') {
                 try { window.elfosOnDamageTaken(targetName, attackerName, damage); } catch (e) { console.error('[Elfos onDamage]', e); }
             }
@@ -3684,6 +3705,9 @@
                 } else {
                     target.isDead = true;
                     // ── ELFOS OSCUROS: pasivas al morir (Corrupción, Furia de Rey Loco, Klaord) ──
+                    if (typeof window.elfrOnDeath === 'function') {
+                        try { window.elfrOnDeath(targetName); } catch (e) { console.error('[elfr onDeath]', e); }
+                    }
                     if (typeof window.elfosOnDeath === 'function') {
                         try { window.elfosOnDeath(targetName); } catch (e) { console.error('[Elfos onDeath]', e); }
                     }
