@@ -13437,7 +13437,7 @@
                 }
 
             } else if (ability.effect === 'aragorn_ejercito') {
-                // EJÉRCITO DEL INFRAMUNDO: AOE 5, ignora Esquiva Área. +3 por cada muerto. Si mata, revive aliado
+                // EJÉRCITO DEL INFRAMUNDO: AOE 5. +3 por cada muerto. Si mata, revive aliado
                 const _aeAtk = gameState.characters[gameState.selectedCharacter];
                 const _aeETeam = _aeAtk ? (_aeAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
                 const _aeMyTeam = _aeAtk ? _aeAtk.team : 'team1';
@@ -13446,16 +13446,21 @@
                 for (const _n in gameState.characters) { if (gameState.characters[_n] && gameState.characters[_n].isDead) _aeDead++; }
                 const _aeTotalDmg = finalDamage + (_aeDead * 3); // spec: +3 por cada personaje muerto
                 let _aeKilledEnemy = false;
-                for (const _n in gameState.characters) {
+                // Este Over YA NO ignora Esquiva Área: se resuelve con resolveAOETargets,
+                // igual que cualquier otro AOE, para que los objetivos con Esquiva Área
+                // (y las invocaciones que la tengan) puedan esquivarlo.
+                const _aeAOE = window.resolveAOETargets(gameState.selectedCharacter, _aeETeam);
+                _aeAOE.targets.forEach(function (_n) {
                     const _c = gameState.characters[_n];
-                    if (!_c || _c.team !== _aeETeam || _c.isDead || _c.hp <= 0) continue;
-                    // Ignora Esquiva Área → no llamar checkAsprosAOEImmunity
-                    const _hpBefore = _c.hp;
-                    applyDamageWithShield(_n, _aeTotalDmg, gameState.selectedCharacter);
-                    addLog('⚔️ Ejército del Inframundo: ' + _aeTotalDmg + ' daño a ' + _n + ' (base + ' + (_aeDead*3) + ' por ' + _aeDead + ' muertos)', 'damage');
+                    if (!_c || _c.isDead || _c.hp <= 0) return;
+                    applyDamageWithShield(_n, _aeTotalDmg * _aeAOE.multiplier, gameState.selectedCharacter);
+                    addLog('⚔️ Ejército del Inframundo: ' + (_aeTotalDmg * _aeAOE.multiplier) + ' daño a ' + _n + ' (base + ' + (_aeDead*3) + ' por ' + _aeDead + ' muertos)', 'damage');
                     const _cAfter = gameState.characters[_n];
                     if (_cAfter && (_cAfter.isDead || _cAfter.hp <= 0)) _aeKilledEnemy = true;
-                }
+                });
+                _aeAOE.summonTargets.forEach(function (_sid) {
+                    applySummonDamage(_sid, _aeTotalDmg * _aeAOE.multiplier, gameState.selectedCharacter);
+                });
                 // Si mató un enemigo → revivir aliado aleatorio eliminado
                 if (_aeKilledEnemy) {
                     const _aeDeadAllies = Object.keys(gameState.characters).filter(function(_n){ const _c=gameState.characters[_n]; return _c&&_c.team===_aeMyTeam&&_c.isDead; });
