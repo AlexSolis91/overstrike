@@ -20,11 +20,19 @@
     ];
 
     function pickChestReward() {
-        var total = CHEST_TABLE.reduce(function (s, e) { return s + e.weight; }, 0);
+        // ── VARIANTE ELFOS OSCUROS ──
+        // Las reliquias actuales (Raras/Especiales/Épicas) son recompensa EXCLUSIVA de la
+        // Horda de Orcos. Los Elfos Oscuros tendrán su propio conjunto de reliquias; hasta
+        // entonces sus oleadas solo entregan oro y llaves arcanas.
+        var table = CHEST_TABLE;
+        if (window._hordaVariant === 'elfos') {
+            table = CHEST_TABLE.filter(function (e) { return e.type.indexOf('relic_') !== 0; });
+        }
+        var total = table.reduce(function (s, e) { return s + e.weight; }, 0);
         var r = Math.random() * total;
-        for (var i = 0; i < CHEST_TABLE.length; i++) {
-            r -= CHEST_TABLE[i].weight;
-            if (r <= 0) return CHEST_TABLE[i].type;
+        for (var i = 0; i < table.length; i++) {
+            r -= table[i].weight;
+            if (r <= 0) return table[i].type;
         }
         return 'gold';
     }
@@ -72,6 +80,9 @@
         var run = runSnap.val();
 
         if (run && run.active) {
+            // Restaurar la variante de la corrida guardada (orcos por defecto para
+            // corridas creadas antes de que existieran los Elfos Oscuros)
+            window._hordaVariant = run.variant || 'orcos';
             var cont = confirm('Tienes una corrida de Modo Horda en curso (Oleada ' + run.wave + '). ¿Quieres continuarla?\n\nCancelar = abandonar esta corrida y empezar una nueva (requiere Runa de Portal).');
             if (cont) {
                 window._hordaResuming = true;
@@ -140,7 +151,7 @@
             teamState[name] = { hp: base.hp, maxHp: base.hp, charges: 0, statusEffects: [], shield: 0 };
         });
         await db.ref('horda_runs/' + uid).set({
-            active: true, wave: 1, team: team, teamState: teamState,
+            active: true, variant: (window._hordaVariant || 'orcos'), wave: 1, team: team, teamState: teamState,
             goldTotal: 0, rewardsLog: [], startedAt: Date.now()
         });
         return true;
