@@ -276,8 +276,15 @@
 
         function _hordaRelicPool(category) {
             if (typeof RELICS_DATA === 'undefined') return [];
+            // Las reliquias con efecto 'elfr_' son exclusivas de la Horda de Elfos
+            // Oscuros; el resto son exclusivas de la Horda de Orcos. En el Cofre
+            // Arcano pueden salir todas (ese pool se arma en otro sitio).
+            var wantElfos = (window._hordaVariant === 'elfos');
             return Object.keys(RELICS_DATA).filter(function(name) {
-                return RELICS_DATA[name].slotCategory === category;
+                var rd = RELICS_DATA[name];
+                if (rd.slotCategory !== category) return false;
+                var isElfos = typeof rd.effect === 'string' && rd.effect.indexOf('elfr_') === 0;
+                return wantElfos ? isElfos : !isElfos;
             });
         }
 
