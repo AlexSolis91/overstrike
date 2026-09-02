@@ -206,6 +206,23 @@
             }
         }
 function processBurnEffects(charName) {
+    // ── DRAFURIZ: el daño de Quemadura CURA al portador en vez de dañarlo ──
+    if (typeof window.elfrBurnHeals === 'function' && window.elfrBurnHeals(charName)) {
+        var _dfC = gameState.characters[charName];
+        if (_dfC) {
+            var _dfBurn = (_dfC.statusEffects || []).filter(function (e) {
+                if (!e || !e.name) return false;
+                var _n = (typeof normAccent === 'function') ? normAccent(e.name) : e.name.toLowerCase();
+                return _n === 'quemadura' || _n === 'quemadura solar';
+            });
+            var _dfTotal = _dfBurn.reduce(function (a, e) { return a + (e.damage || 1); }, 0);
+            if (_dfTotal > 0) {
+                if (typeof applyHeal === 'function') applyHeal(charName, _dfTotal);
+                addLog('🔥 Drafuriz: ' + charName + ' se cura ' + _dfTotal + ' HP en vez de recibir el daño de Quemadura', 'buff');
+            }
+        }
+        return;
+    }
             const char = gameState.characters[charName];
             if (!char || !char.statusEffects) return;
             // DAENERYS: immune to Quemadura — remove any that slipped through (sin curar, ya que
