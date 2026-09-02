@@ -369,6 +369,13 @@
             
             const oldHp = summon.hp;
             summon.hp = Math.max(0, summon.hp - damage);
+
+            // ── MÁSCARA DE NIGROMANTE: el daño recibido por un Esqueleto cura a su
+            //    portador; si ya está al máximo de HP, se redirige a un enemigo. ──
+            if (damage > 0 && typeof window.elfrOnSummonDamaged === 'function') {
+                try { window.elfrOnSummonDamaged(summonId, Math.max(0, oldHp - summon.hp)); }
+                catch (e) { console.error('[elfr summonDamaged]', e); }
+            }
             
             // SINDRAGOSA Dragon de la Muerte: pasiva se activa cuando el ATACANTE golpea a Lich King (en applyDamageWithShield)
             // (la lógica está en applyDamageWithShield para Lich King)
