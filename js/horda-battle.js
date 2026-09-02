@@ -38,7 +38,18 @@
 
     function randomRelicOfTier(tier) {
         if (typeof RELICS_DATA === 'undefined') return null;
-        var pool = Object.keys(RELICS_DATA).filter(function (n) { return RELICS_DATA[n].tier === tier; });
+        // ── RECOMPENSA DE OLEADA: el conjunto depende de la variante de Horda ──
+        // Orcos entrega las reliquias originales; Elfos Oscuros entrega las 30
+        // exclusivas (efecto 'elfr_'). Esto solo afecta a lo que GANA el jugador
+        // al superar una oleada — no a lo que los enemigos pueden equipar, ni al
+        // Cofre Arcano, donde siguen saliendo todas.
+        var wantElfos = (window._hordaVariant === 'elfos');
+        var pool = Object.keys(RELICS_DATA).filter(function (n) {
+            var rd = RELICS_DATA[n];
+            if (rd.tier !== tier) return false;
+            var isElfos = typeof rd.effect === 'string' && rd.effect.indexOf('elfr_') === 0;
+            return wantElfos ? isElfos : !isElfos;
+        });
         return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
     }
 
