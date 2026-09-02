@@ -13380,11 +13380,15 @@
                 // ESTRATEGIA DE MONTARAZ: MT 3 daño, 4 golpes. Debuff aleatorio por golpe. Si alguno no aplica debuff → +5 cargas + turno extra
                 const _amAtk = gameState.characters[gameState.selectedCharacter];
                 const _amTgt = gameState.characters[targetName];
+                // Lista de debuffs de Estrategia de Montaraz (spec del personaje):
+                // Aturdimiento, Congelación, Confusión, Ceguera, Posesión o Miedo.
                 const _amDebuffPool = [
-                    {name:'Sangrado',type:'debuff',duration:2,emoji:'🩸'},{name:'Veneno',type:'debuff',duration:2,emoji:'☠️',stacks:1},
-                    {name:'Quemadura',type:'debuff',duration:2,emoji:'🔥',dmg:2},{name:'Miedo',type:'debuff',duration:1,emoji:'😱'},
-                    {name:'Confusion',type:'debuff',duration:1,emoji:'💫'},{name:'Debilitar',type:'debuff',duration:1,emoji:'⬇️'},
-                    {name:'Ceguera',type:'debuff',duration:1,emoji:'👁️'},{name:'Congelacion',type:'debuff',duration:1,emoji:'🧊'}
+                    {name:'Aturdimiento',type:'debuff',duration:1,emoji:'⭐'},
+                    {name:'Congelacion',type:'debuff',duration:1,emoji:'🧊'},
+                    {name:'Confusion',type:'debuff',duration:1,emoji:'💫'},
+                    {name:'Ceguera',type:'debuff',duration:1,emoji:'👁️'},
+                    {name:'Posesion',type:'debuff',duration:1,emoji:'👁️‍🗨️'},
+                    {name:'Miedo',type:'debuff',duration:1,emoji:'😱'}
                 ];
                 let _amAnyFailed = false;
                 for (let _gi = 0; _gi < 4; _gi++) {
@@ -13399,6 +13403,8 @@
                     // legítimos como el Yelmo de Caballero de la Muerte.
                     if (_amDebuff.name === 'Congelacion' && typeof applyFreeze === 'function') {
                         applyFreeze(targetName, 1, false);
+                    } else if (_amDebuff.name === 'Aturdimiento' && typeof applyStun === 'function') {
+                        applyStun(targetName, 1);
                     } else if (typeof applyDebuff==='function') {
                         applyDebuff(targetName, Object.assign({}, _amDebuff));
                     }
@@ -13407,9 +13413,9 @@
                     else addLog('⚔️ Montaraz: ' + _amDebuff.name + ' aplicado a ' + targetName, 'debuff');
                 }
                 if (_amAnyFailed && _amAtk) {
+                    // Spec actualizada: solo +5 cargas. Ya NO otorga turno adicional.
                     _amAtk.charges = Math.min(20, (_amAtk.charges||0) + 5);
-                    if (!gameState._skeggoxExtraTurn) gameState._skeggoxExtraTurn = gameState.selectedCharacter;
-                    addLog('⚔️ Montaraz: algún golpe no aplicó debuff → +5 cargas y turno extra para Aragorn', 'buff');
+                    addLog('⚔️ Montaraz: algún objetivo no recibió debuff → Aragorn genera 5 cargas', 'buff');
                 }
 
             } else if (ability.effect === 'aragorn_grito_guerra') {
@@ -13431,14 +13437,14 @@
                 }
 
             } else if (ability.effect === 'aragorn_ejercito') {
-                // EJÉRCITO DEL INFRAMUNDO: AOE 7, ignora Esquiva Área. +5 por cada muerto. Si mata, revive aliado
+                // EJÉRCITO DEL INFRAMUNDO: AOE 5, ignora Esquiva Área. +3 por cada muerto. Si mata, revive aliado
                 const _aeAtk = gameState.characters[gameState.selectedCharacter];
                 const _aeETeam = _aeAtk ? (_aeAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
                 const _aeMyTeam = _aeAtk ? _aeAtk.team : 'team1';
                 // Contar muertos en ambos equipos
                 let _aeDead = 0;
                 for (const _n in gameState.characters) { if (gameState.characters[_n] && gameState.characters[_n].isDead) _aeDead++; }
-                const _aeTotalDmg = finalDamage + (_aeDead * 5);
+                const _aeTotalDmg = finalDamage + (_aeDead * 3); // spec: +3 por cada personaje muerto
                 let _aeKilledEnemy = false;
                 for (const _n in gameState.characters) {
                     const _c = gameState.characters[_n];
@@ -13446,7 +13452,7 @@
                     // Ignora Esquiva Área → no llamar checkAsprosAOEImmunity
                     const _hpBefore = _c.hp;
                     applyDamageWithShield(_n, _aeTotalDmg, gameState.selectedCharacter);
-                    addLog('⚔️ Ejército del Inframundo: ' + _aeTotalDmg + ' daño a ' + _n + ' (base + ' + (_aeDead*5) + ' por ' + _aeDead + ' muertos)', 'damage');
+                    addLog('⚔️ Ejército del Inframundo: ' + _aeTotalDmg + ' daño a ' + _n + ' (base + ' + (_aeDead*3) + ' por ' + _aeDead + ' muertos)', 'damage');
                     const _cAfter = gameState.characters[_n];
                     if (_cAfter && (_cAfter.isDead || _cAfter.hp <= 0)) _aeKilledEnemy = true;
                 }
@@ -13859,22 +13865,27 @@
                 const _khAtk   = gameState.characters[gameState.selectedCharacter];
                 const _khTeam  = _khAtk ? _khAtk.team : 'team1';
                 const _khETeam = _khTeam === 'team1' ? 'team2' : 'team1';
-                const _khPool  = ['Quemadura','Veneno','Sangrado','Congelacion','Silenciar','Miedo','Aturdimiento'];
+                // Lista de la spec: Quemadura 3 HP, Quemadura Solar 2T, Sangrado 2T,
+                // Debilitar 2T, Ceguera 2T, Aturdimiento, Silenciar 2T y Congelación.
+                const _khPool  = ['Quemadura','Quemadura Solar','Sangrado','Debilitar','Ceguera','Aturdimiento','Silenciar','Congelacion'];
                 const _khAOE = window.resolveAOETargets(gameState.selectedCharacter, _khETeam);
                 _khAOE.targets.forEach(function (_n) {
                     const _c = gameState.characters[_n];
                     if (!_c || _c.isDead || _c.hp <= 0) return;
                     applyDamageWithShield(_n, finalDamage * _khAOE.multiplier, gameState.selectedCharacter);
-                    for (let _ki=0; _ki<5; _ki++) {
-                        const _kd = _khPool[Math.floor(Math.random()*_khPool.length)];
-                        if (_kd==='Quemadura')   { if(typeof applyFlatBurn==='function') applyFlatBurn(_n, 2, 2); }
-                        else if (_kd==='Veneno') { if(typeof applyPoison==='function') applyPoison(_n, 1); }
-                        else if (_kd==='Sangrado'){ if(typeof applyBleed==='function') applyBleed(_n, 2); }
-                        else if (_kd==='Congelacion'){ if(typeof applyFreeze==='function') applyFreeze(_n, 2, false); }
-                        else if (_kd==='Silenciar'){ if(typeof applySilenciar==='function') applySilenciar(_n, 2); }
-                        else if (_kd==='Miedo')  { if(typeof applyFear==='function') applyFear(_n, 2); }
-                        else if (_kd==='Aturdimiento'){ if(typeof applyStun==='function') applyStun(_n, 2); }
-                    }
+                    // 5 debuffs SIN REPETIR sobre un mismo objetivo: se baraja la lista
+                    // y se toman los 5 primeros, en vez de sortear 5 veces con repetición.
+                    const _khShuffled = _khPool.slice().sort(function(){ return Math.random() - 0.5; }).slice(0, 5);
+                    _khShuffled.forEach(function (_kd) {
+                        if (_kd==='Quemadura')            { if(typeof applyFlatBurn==='function') applyFlatBurn(_n, 3, 2); }
+                        else if (_kd==='Quemadura Solar') { if(typeof applySolarBurn==='function') applySolarBurn(_n, 2); else if(typeof applyDebuff==='function') applyDebuff(_n, {name:'Quemadura Solar', type:'debuff', duration:2, emoji:'☀️'}); }
+                        else if (_kd==='Sangrado')        { if(typeof applyBleed==='function') applyBleed(_n, 2); }
+                        else if (_kd==='Debilitar')       { if(typeof applyWeaken==='function') applyWeaken(_n, 2); else if(typeof applyDebuff==='function') applyDebuff(_n, {name:'Debilitar', type:'debuff', duration:2, emoji:'⬇️'}); }
+                        else if (_kd==='Ceguera')         { if(typeof applyDebuff==='function') applyDebuff(_n, {name:'Ceguera', type:'debuff', duration:2, emoji:'👁️'}); }
+                        else if (_kd==='Aturdimiento')    { if(typeof applyStun==='function') applyStun(_n, 1); }
+                        else if (_kd==='Silenciar')       { if(typeof applySilenciar==='function') applySilenciar(_n, 2); }
+                        else if (_kd==='Congelacion')     { if(typeof applyFreeze==='function') applyFreeze(_n, 2, false); }
+                    });
                 });
                 _khAOE.summonTargets.forEach(function (_sid) {
                     applySummonDamage(_sid, finalDamage * _khAOE.multiplier, gameState.selectedCharacter);
