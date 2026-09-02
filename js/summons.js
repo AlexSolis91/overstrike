@@ -1361,6 +1361,12 @@
                     }
                 }
             }
+            // ── ELFOS OSCUROS: pasivas al recibir daño (Corrupción +5 vel, Canto de la
+            //    Oscuridad devuelve 2, Artes Élficas Oscuras cura al Necromancer) ──
+            if (damage > 0 && typeof window.elfosOnDamageTaken === 'function') {
+                try { window.elfosOnDamageTaken(targetName, attackerName, damage); } catch (e) { console.error('[Elfos onDamage]', e); }
+            }
+
             // ── ARMADURA DE HADES: cuando el PORTADOR recibe daño, gana 1 contador del inframundo.
             //    Por cada contador: +10% daño causado (se aplica en skills.js), -10% daño recibido.
             //    Al llegar a 8 contadores: elimina un enemigo aleatorio y resetea. ──
@@ -3677,6 +3683,10 @@
                     if (typeof _animCard === 'function') _animCard(targetName, 'anim-transform', 700);
                 } else {
                     target.isDead = true;
+                    // ── ELFOS OSCUROS: pasivas al morir (Corrupción, Furia de Rey Loco, Klaord) ──
+                    if (typeof window.elfosOnDeath === 'function') {
+                        try { window.elfosOnDeath(targetName); } catch (e) { console.error('[Elfos onDeath]', e); }
+                    }
                     // ── SISTEMA DE TURNOS v2: quien muere durante la ronda NO vuelve a tomar
                     //    turno esta ronda, aunque sea revivido después (Anillo del Tiempo,
                     //    Piedra de la Resurrección, Frostmourne, etc.). Su slot en la cola se
