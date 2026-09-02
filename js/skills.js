@@ -2466,8 +2466,12 @@
                 }
             }
 
-            // ── MODO HORDA: delega efectos 'horda_*' al módulo dedicado (js/horda-abilities.js) ──
-            if (ability.effect && ability.effect.indexOf('horda_') === 0) {
+            // ── MODO HORDA: delega efectos 'horda_*' y 'elfos_*' al módulo dedicado
+            //    (js/horda-abilities.js, que a su vez reenvía los 'elfos_*' a
+            //    js/elfos-abilities.js). Sin incluir el prefijo 'elfos_' aquí, las
+            //    habilidades de los Elfos Oscuros caían por la cadena de else-if sin
+            //    coincidir con ningún handler: gastaban cargas y no hacían nada. ──
+            if (ability.effect && (ability.effect.indexOf('horda_') === 0 || ability.effect.indexOf('elfos_') === 0)) {
                 if (typeof window.hordaExecuteAbility === 'function') {
                     window.hordaExecuteAbility(ability, charName, targetName, attacker, finalDamage);
                 } else {
