@@ -385,7 +385,10 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 }
             }
             // No stackeable si ya existe (salvo stackeables explícitos)
-            const stackable = ['furia', 'frenesi', 'regeneracion', 'escudo', 'celeridad', 'armadura', 'anticipacion', 'sangrado', 'debilitar', 'confusion', 'miedo', 'agotamiento', 'veneno', 'quemadura', 'quemadura solar'];
+            const stackable = ['furia', 'frenesi', 'regeneracion', 'escudo', 'celeridad', 'armadura', 'anticipacion', 'sangrado', 'debilitar', 'miedo', 'agotamiento', 'veneno', 'quemadura', 'quemadura solar'];
+            // NOTA: 'confusion' fue eliminado de esta lista intencionalmente: solo puede
+            // haber 1 Confusión activa por personaje. Si ya tiene una, el HARD DEDUP
+            // más abajo renueva la duración en vez de apilar una nueva instancia.
             const effNorm = normAccent(effectObj.name || '');
             if (!stackable.includes(effNorm)) {
                 if (target.statusEffects.some(e => e && normAccent(e.name || '') === effNorm)) {
