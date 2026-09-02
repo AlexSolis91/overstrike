@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OVERSTRIKE - 5v5 RPG Battle v4.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css?v=20261118">
+    <link rel="stylesheet" href="css/styles.css?v=20261119">
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -266,7 +266,7 @@
             <!-- Logo: sin emoji, pegado a la izquierda -->
             <div style="display:flex;flex-direction:column;gap:2px;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;white-space:nowrap;">OVERSTRIKE</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20261118</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20261119</div>
             </div>
 
             <!-- HUD: empujado todo a la derecha junto al botón mute -->
@@ -712,8 +712,8 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20261118"></script>
-    <script src="js/arcane-event.js?v=20261118"></script>
+    <script src="js/firebase-auth.js?v=20261119"></script>
+    <script src="js/arcane-event.js?v=20261119"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen(tab) {
@@ -1910,9 +1910,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20261118"></script>
+    <script src="js/characters.js?v=20261119"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20261118"></script>
+    <script src="js/audio-state.js?v=20261119"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2486,24 +2486,22 @@
                     csState.team1.push(name);
                     if (csState.team1.length >= CS_TEAM_SIZE) {
                         if (csState.gameMode === 'boss') {
-                            // En modo boss: equipo1 listo → iniciar partida automáticamente
                             csState.phase = 'done';
                             csRenderSlots();
                             csRenderGrid();
-                            setTimeout(function() { csStartGame(); }, 800);
+                            showPreGameConfirm();
                             return;
                         } else if (csState.gameMode === 'solo') {
                             csState.phase = 'done';
                             csAIPickTeam();
                             csRenderSlots();
-                            setTimeout(function() { csStartGame(); }, 800);
+                            showPreGameConfirm();
                             return;
                         } else if (csState.gameMode === 'horda') {
                             csState.phase = 'done';
-                            // Placeholders — horda-battle.js los reemplaza por los Orcos reales de la oleada
                             csState.team2 = ['_horda1','_horda2','_horda3','_horda4','_horda5'];
                             csRenderSlots();
-                            setTimeout(function() { csStartGame(); }, 800);
+                            showPreGameConfirm();
                             return;
                         } else if (csState.gameMode === 'online') {
                             csState.phase = 'done';
@@ -2534,7 +2532,7 @@
                             return;
                         }
                         csState.phase = 'done';
-                        csStartGame();
+                        showPreGameConfirm();
                         return;
                     }
                 }
@@ -2571,6 +2569,97 @@
         function getTeamLabel(team) {
             return (window._teamNames && window._teamNames[team]) || (team === 'team1' ? 'HUNTERS' : 'REAPERS');
         }
+
+
+        // ══ CONFIRMACIÓN PRE-PARTIDA ══════════════════════════════════════════
+        function _renderSavedTeamPicker() {
+            if (typeof _rtConfigs === 'undefined' || !_rtConfigs) return '<div style="font-size:.7rem;color:#666;">Aún no has creado equipos en Crear Equipo.</div>';
+            var ids = Object.keys(_rtConfigs).filter(function(id) {
+                var cfg = _rtConfigs[id];
+                return cfg && cfg.attack && cfg.attack.filter(Boolean).length === 5;
+            });
+            if (!ids.length) return '<div style="font-size:.7rem;color:#666;">Sin equipos guardados con 5 personajes.</div>';
+            var opts = ids.map(function(id) {
+                return '<option value="' + id + '">' + (_rtConfigs[id].name || id) + '</option>';
+            }).join('');
+            return '<div style="display:flex;align-items:center;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:4px;">' +
+                '<span style="font-size:.7rem;color:#aaa;">📋 Cargar equipo guardado:</span>' +
+                '<select id="savedTeamSelect" style="background:#1a1040;color:#ddd;border:1px solid rgba(150,80,255,0.4);border-radius:8px;padding:5px 8px;font-size:.72rem;cursor:pointer;">' +
+                '<option value="">— Selecciona —</option>' + opts + '</select>' +
+                '<button onclick="loadSavedTeamIntoSelector()" style="background:rgba(150,80,255,0.2);border:1px solid rgba(150,80,255,0.6);color:#c864ff;border-radius:8px;padding:5px 12px;cursor:pointer;font-size:.72rem;font-family:Orbitron,sans-serif;font-weight:700;">Cargar</button>' +
+            '</div>';
+        }
+        function showPreGameConfirm() {
+            var modal = document.getElementById('preGameConfirmModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'preGameConfirmModal';
+                modal.style.cssText = 'position:fixed;inset:0;z-index:9000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.82);';
+                document.body.appendChild(modal);
+            }
+            var team = csState.team1;
+            var portraits = team.map(function(n) {
+                var cd = (typeof characterData !== 'undefined') ? characterData[n] : null;
+                var img = cd ? (cd.portrait || cd.img || '') : '';
+                return '<div style="display:flex;flex-direction:column;align-items:center;gap:4px;">' +
+                    '<img src="' + img + '" style="width:60px;height:60px;border-radius:10px;object-fit:cover;border:2px solid rgba(255,255,255,0.2);">' +
+                    '<span style="font-size:.58rem;color:#ccc;text-align:center;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + n + '</span>' +
+                    '</div>';
+            }).join('');
+            modal.innerHTML =
+                '<div style="background:linear-gradient(160deg,#0d0d1a,#1a1040);border:1.5px solid rgba(150,80,255,0.4);border-radius:18px;padding:26px 28px;max-width:500px;width:94%;text-align:center;">' +
+                '<div style="font-family:Orbitron,sans-serif;font-size:1.05rem;font-weight:900;color:#c864ff;margin-bottom:6px;">⚔️ EQUIPO SELECCIONADO</div>' +
+                '<div style="font-size:.73rem;color:#aaa;margin-bottom:18px;">Confirma tu equipo o edítalo antes de iniciar.</div>' +
+                '<div style="display:flex;justify-content:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">' + portraits + '</div>' +
+                '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:16px;">' +
+                    '<button onclick="preGameConfirmStart()" style="background:linear-gradient(135deg,#00cc55,#009944);border:none;color:#fff;border-radius:10px;padding:10px 20px;cursor:pointer;font-family:Orbitron,sans-serif;font-size:.75rem;font-weight:700;">✅ CONFIRMAR</button>' +
+                    '<button onclick="preGameEdit()" style="background:rgba(255,200,0,0.12);border:1.5px solid #ffcc00;color:#ffcc00;border-radius:10px;padding:10px 20px;cursor:pointer;font-family:Orbitron,sans-serif;font-size:.75rem;font-weight:700;">✏️ EDITAR</button>' +
+                    '<button onclick="preGameCancel()" style="background:rgba(255,50,80,0.1);border:1.5px solid #ff3355;color:#ff3355;border-radius:10px;padding:10px 20px;cursor:pointer;font-family:Orbitron,sans-serif;font-size:.75rem;font-weight:700;">❌ CANCELAR</button>' +
+                '</div>' +
+                _renderSavedTeamPicker() +
+                '</div>';
+            modal.style.display = 'flex';
+        }
+        function preGameConfirmStart() {
+            var m = document.getElementById('preGameConfirmModal');
+            if (m) m.style.display = 'none';
+            csStartGame();
+        }
+        function preGameEdit() {
+            var m = document.getElementById('preGameConfirmModal');
+            if (m) m.style.display = 'none';
+            csState.phase = 'team1';
+            csRenderSlots();
+            csRenderGrid();
+        }
+        function preGameCancel() {
+            var m = document.getElementById('preGameConfirmModal');
+            if (m) m.style.display = 'none';
+            csState.team1 = [];
+            csState.team2 = [];
+            csState.phase = 'team1';
+            csRenderSlots();
+            csRenderGrid();
+        }
+        function loadSavedTeamIntoSelector() {
+            var sel = document.getElementById('savedTeamSelect');
+            if (!sel || !sel.value) { alert('Selecciona un equipo de la lista.'); return; }
+            var cfg = _rtConfigs[sel.value];
+            if (!cfg || !cfg.attack) { alert('No se encontró el equipo.'); return; }
+            var team = cfg.attack.filter(Boolean).slice(0, 5);
+            if (team.length < 5) { alert('⚠️ Ese equipo no tiene 5 personajes completos.'); return; }
+            csState.team1 = team.slice();
+            csState.phase = 'team1';
+            csRenderSlots();
+            csRenderGrid();
+            showPreGameConfirm();
+        }
+        window.showPreGameConfirm = showPreGameConfirm;
+        window.preGameConfirmStart = preGameConfirmStart;
+        window.preGameEdit = preGameEdit;
+        window.preGameCancel = preGameCancel;
+        window.loadSavedTeamIntoSelector = loadSavedTeamIntoSelector;
+        // ═════════════════════════════════════════════════════════════════════
 
         function csStartGame() {
             try {
@@ -2743,31 +2832,31 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20261118"></script>
+    <script src="js/ai-engine.js?v=20261119"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20261118"></script>
+    <script src="js/init-render.js?v=20261119"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20261118"></script>
+    <script src="js/turn-logic.js?v=20261119"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20261118"></script>
+    <script src="js/status-effects.js?v=20261119"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20261118"></script>
+    <script src="js/debuffs.js?v=20261119"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20261118"></script>
+    <script src="js/summons.js?v=20261119"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20261118"></script>
+    <script src="js/ability-select.js?v=20261119"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20261118"></script>
+<script src="js/skills.js?v=20261119"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20261118"></script>
-    <script src="js/horda-mode.js?v=20261118"></script>
-    <script src="js/horda-abilities.js?v=20261118"></script>
-    <script src="js/elfos-mode.js?v=20261118"></script>
-    <script src="js/elfos-abilities.js?v=20261118"></script>
-    <script src="js/elfos-relics.js?v=20261118"></script>
-    <script src="js/horda-battle.js?v=20261118"></script>
-    <script src="js/missions.js?v=20261118"></script>
-    <script src="js/squads.js?v=20261118"></script>
+    <script src="js/jefe-de-sala.js?v=20261119"></script>
+    <script src="js/horda-mode.js?v=20261119"></script>
+    <script src="js/horda-abilities.js?v=20261119"></script>
+    <script src="js/elfos-mode.js?v=20261119"></script>
+    <script src="js/elfos-abilities.js?v=20261119"></script>
+    <script src="js/elfos-relics.js?v=20261119"></script>
+    <script src="js/horda-battle.js?v=20261119"></script>
+    <script src="js/missions.js?v=20261119"></script>
+    <script src="js/squads.js?v=20261119"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
