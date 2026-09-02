@@ -1047,7 +1047,7 @@
                 abilities: [
                     { name: 'Castigador de Almas',    type: 'basic',   cost: 0,  chargeGain: 1, damage: 5, target: 'single', effect: 'gogeta_castigador',    description: 'ST 5 daño. Disipa los buffs del objetivo.' },
                     { name: 'Galick Ho',              type: 'special', cost: 7,  chargeGain: 0, damage: 5, target: 'aoe',    effect: 'gogeta_galick_ho', ignoresEsquivaArea:true,     description: 'AOE 5 daño. Ignora Esquiva Área. Disipa todos los buffs del equipo enemigo e inflige +1 de daño por cada buff disipado.' },
-                    { name: 'Kame Hame Ha',           type: 'special', cost: 7,  chargeGain: 0, damage: 5, target: 'aoe',    effect: 'gogeta_kamehameha', ignoresEsquivaArea:true,    description: 'AOE 5 daño. Ignora Esquiva Área. Aplica 5 debuffs aleatorios a los objetivos golpeados.' },
+                    { name: 'Kame Hame Ha',           type: 'special', cost: 9,  chargeGain: 0, damage: 5, target: 'aoe',    effect: 'gogeta_kamehameha', ignoresEsquivaArea:true,    description: 'AOE 5 daño. Ignora Esquiva Área. Aplica 5 debuffs de esta lista a cada objetivo golpeado, sin repetir ninguno sobre el mismo objetivo: Quemadura 3 HP, Quemadura Solar 2T, Sangrado 2T, Debilitar 2T, Ceguera 2T, Aturdimiento, Silenciar 2T y Congelación.' },
                     { name: 'Big Bang Kame Hame Ha',  type: 'over',    cost: 18, chargeGain: 0, damage: 5, target: 'aoe',    effect: 'gogeta_big_bang',      description: 'AOE 5 daño. Causa +1 de daño por cada buff y debuff activo en ambos equipos.' }
                 ],
                 _isEventChar: true, _eventBoss: 'Broly'
@@ -1126,13 +1126,13 @@
             'Aragorn': {
                 hp: 25, maxHp: 25, speed: 81, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.ibb.co/CxsCTmK/Gemini-Generated-Image-6l8bwb6l8bwb6l8b-jpg.jpg',
-                passive: { name: 'Sangre de Numenor', description: 'Efecto pasivo Anticipación. Cuando un aliado muere, Aragorn y un aliado aleatorio ejecutan su Over automáticamente. Cada crítico de Aragorn o un aliado aumenta +2 el daño base del equipo aliado (máx +100%).' },
+                portrait: 'https://i.ibb.co/Wv8TnQVX/Whats-App-Image-2026-07-27-at-2-05-35-PM-1.jpg',
+                passive: { name: 'Sangre de Numenor', description: 'Efecto pasivo Anticipar. Cada vez que un aliado muere, Aragorn y un aliado aleatorio ejecutan su Over automáticamente (con la animación de ambos). Cada vez que Aragorn o un aliado aciertan un golpe crítico, el equipo aliado aumenta +2 el daño de todas sus habilidades.' },
                 abilities: [
                     { name:'Andúril',                      type:'basic',   cost:0,  chargeGain:1, damage:1, target:'single', effect:'aragorn_anduril',         description:'1 daño + 3 por cada buff y debuff activo en el objetivo. Genera +2 cargas a todo el equipo aliado por cada reliquia equipada del objetivo.' },
-                    { name:'Estrategia de Montaraz',       type:'special', cost:5,  chargeGain:0, damage:3, target:'mt',     effect:'aragorn_montaraz',        description:'MT 3 daño, 4 golpes. Aplica debuff aleatorio por golpe. Si algún golpe no aplica debuff: Aragorn gana 5 cargas y turno adicional.' },
-                    { name:'Grito de Guerra del Verdadero Rey', type:'special', cost:7, chargeGain:0, damage:5, target:'aoe', effect:'aragorn_grito_guerra',  description:'AOE 5 daño. +1 contador de Grito permanente. Por cada contador, el equipo aliado gana +10% de probabilidad de crítico.' },
-                    { name:'Ejército del Inframundo',      type:'over',    cost:12, chargeGain:0, damage:7, target:'aoe',    effect:'aragorn_ejercito',        description:'AOE 7 daño, ignora Esquiva Área. +5 daño por cada personaje muerto (ambos equipos). Si un enemigo muere, revive un aliado aleatorio con 100% HP y 0 cargas.' }
+                    { name:'Estrategia de Montaraz',       type:'special', cost:5,  chargeGain:0, damage:3, target:'mt',     effect:'aragorn_montaraz',        description:'MT 3 daño, 4 golpes. Cada golpe aplica un debuff aleatorio (Aturdimiento, Congelación, Confusión, Ceguera, Posesión o Miedo). Si alguno de los objetivos golpeados no recibe debuff, Aragorn genera 5 cargas.' },
+                    { name:'Grito de Guerra del Verdadero Rey', type:'special', cost:6, chargeGain:0, damage:4, target:'aoe', effect:'aragorn_grito_guerra',  description:'AOE 4 daño. Cada uso genera 1 contador de Grito. Por cada contador, los aliados aumentan en 10% la probabilidad de golpe crítico de todos sus ataques.' },
+                    { name:'Ejército del Inframundo',      type:'over',    cost:13, chargeGain:0, damage:5, target:'aoe',    effect:'aragorn_ejercito',        description:'AOE 5 daño, ignora Esquiva Área. +3 de daño adicional por cada personaje muerto. Si un enemigo muere con este ataque, revive a un aliado aleatorio con 100% de su HP y 0 cargas.' }
                 ],
                 _isEventChar: true, _eventBoss: 'Balrog'
             },
