@@ -2174,6 +2174,10 @@
 
         function _runRoundStartPassiveHooks() {
             console.log('[Ronda] _runRoundStartPassiveHooks() iniciando (Ronda ' + gameState.currentRound + ')...');
+                    // ── ELFOS OSCUROS: pasivas de inicio de ronda (Klaord revive y posee) ──
+                    if (typeof window.elfosOnRoundStart === 'function') {
+                        try { window.elfosOnRoundStart(); } catch (e) { console.error('[Elfos roundStart]', e); }
+                    }
                     // Resetear el contador de Over en cadena de Legolas (máx 3 por ronda)
                     Object.keys(gameState.characters || {}).forEach(function (n) {
                         const _key = '_legolasOverChainCount_' + n;
@@ -3900,6 +3904,10 @@
                 // Artes de la Sangre Oscura — se ejecuta ANTES de procesar Veneno/Sangrado/etc.
                 // y antes de que expiren los buffs, para poder detectar cuáles están por expirar)
                 if (typeof window.hordaOnRoundEnd === 'function') window.hordaOnRoundEnd();
+                // ── ELFOS OSCUROS: fin de ronda (Klaord roba HP por Marcas de la Oscuridad) ──
+                if (typeof window.elfosOnRoundEnd === 'function') {
+                    try { window.elfosOnRoundEnd(); } catch (e) { console.error('[Elfos roundEnd]', e); }
+                }
                 if (typeof window.tickActiveField === 'function') window.tickActiveField();
 
                 // ── PIEDRA DE LA RESURRECCIÓN: si esta fue la ronda del revival, eliminar al equipo ──
