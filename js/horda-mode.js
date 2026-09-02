@@ -334,6 +334,10 @@
         // en vez de su rango normal — nunca puede haber más de 1 SSS por oleada, y nunca
         // aparece antes de la oleada 41 ("después de la oleada 40").
         function hordaGenerateWaveEnemies(wave) {
+            // Variante Elfos Oscuros: delega en su propio generador (rangos C-S + jefe SSS)
+            if (window._hordaVariant === 'elfos' && typeof window.elfosGenerateWaveEnemies === 'function') {
+                return window.elfosGenerateWaveEnemies(wave);
+            }
             const enemies = [];
             let sssSlot = -1;
             if (wave >= 41 && Math.random() < 0.25) {
