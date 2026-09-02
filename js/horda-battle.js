@@ -24,10 +24,9 @@
         // Las reliquias actuales (Raras/Especiales/Épicas) son recompensa EXCLUSIVA de la
         // Horda de Orcos. Los Elfos Oscuros tendrán su propio conjunto de reliquias; hasta
         // entonces sus oleadas solo entregan oro y llaves arcanas.
+        // Ambas variantes entregan reliquias; cuáles salen lo decide _hordaRelicPool,
+        // que filtra por variante (las 'elfr_' solo caen en Elfos Oscuros).
         var table = CHEST_TABLE;
-        if (window._hordaVariant === 'elfos') {
-            table = CHEST_TABLE.filter(function (e) { return e.type.indexOf('relic_') !== 0; });
-        }
         var total = table.reduce(function (s, e) { return s + e.weight; }, 0);
         var r = Math.random() * total;
         for (var i = 0; i < table.length; i++) {
