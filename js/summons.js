@@ -936,9 +936,9 @@
         // Verificar si hay Kamish con Mega Provocación
         function checkKamishMegaProvocation(targetTeam) {
             // Returns { id, kamish/char obj, isCharacter, characterName } if MegaProv active
-            // Priority: character buff > summon megaProvocation flag > Kamish by name
+            // Priority: character buff > pasiva permanente > summon megaProvocation flag
             try {
-                // 1. CHARACTER with MegaProvocacion buff active OR pasiva Provocación
+                // 1. CHARACTER with MegaProvocacion buff active OR pasiva permanente
                 for (let n in gameState.characters) {
                     const c = gameState.characters[n];
                     if (!c || c.team !== targetTeam || c.isDead || c.hp <= 0) continue;
@@ -950,8 +950,17 @@
                     })) {
                         return { id: null, holder: c, isCharacter: true, characterName: n, kamish: c };
                     }
-                    // NOTA: 'Señor de los Nazgul' es Provocación regular (no MegaProvocación)
-                    // Se maneja en el bloque de tauntTarget en ability-select.js
+                    // ── PASIVA DE MEGA PROVOCACIÓN PERMANENTE (Darkseid "Efecto Omega",
+                    //    Superman "Hombre de Acero", cualquier pasiva con megaProvocacion:true
+                    //    o cuyo nombre indique Mega Provocación) ──
+                    if (c.passive && (
+                        c.passive.megaProvocacion ||
+                        c.passive.name === 'Efecto Omega' ||
+                        c.passive.name === 'Hombre de Acero' ||
+                        normAccent(c.passive.name || '') === 'mega provocacion'
+                    )) {
+                        return { id: null, holder: c, isCharacter: true, characterName: n, kamish: c };
+                    }
                 }
                 // 2. SUMMON with megaProvocation flag (Drogon, Sindragosa, Caballero de la Muerte)
                 // NOTA: Kamish ya NO tiene MegaProvocación (nueva pasiva Terror de las Sombras)
