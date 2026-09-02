@@ -1490,6 +1490,9 @@
                     const rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[rn] : null;
                     if (!rd) return;
                     if (rd.effect === 'crit_chance_bonus') gameState._relicCritBonus += 0.30; // Cuerno del Caos
+                    if (rd.effect === 'elfr_cuchillas_depredador' && typeof window.elfrCritBonus === 'function') {
+                        gameState._relicCritBonus += window.elfrCritBonus(gameState.selectedCharacter); // Cuchillas de Depredador (acumulativo)
+                    }
                     if (rd.effect === 'onslaught')         gameState._relicCritBonus += 0.30; // Onslaught
                     if (rd.effect === 'mjolnir')           gameState._relicCritBonus += 0.50; // Mjölnir +50%
                     if (rd.effect === 'potara_izquierdo')  gameState._relicCritBonus += 0.25; // Pendiente Potara Izquierdo +25%
@@ -2301,6 +2304,14 @@
 
             // Consumir cargas
             attacker.charges = Math.max(0, (attacker.charges||0) - adjustedCost);
+            // ── RELIQUIAS ELFOS: gasto de cargas (Cinturón Arcano, Drafuriz) y
+            //    ejecución de movimiento (Maza Necrótica, Piedra del Sol, Talismán) ──
+            if (adjustedCost > 0 && typeof window.elfrOnChargesSpent === 'function') {
+                try { window.elfrOnChargesSpent(gameState.selectedCharacter, adjustedCost); } catch (e) { console.error('[elfr chargesSpent]', e); }
+            }
+            if (typeof window.elfrOnAbilityExecuted === 'function') {
+                try { window.elfrOnAbilityExecuted(gameState.selectedCharacter, ability); } catch (e) { console.error('[elfr abilityExec]', e); }
+            }
 
             // ── REACTOR NUCLEAR (Gipsy Danger): cuando un ENEMIGO consume cargas → Gipsy gana Escudo HP igual a cargas consumidas ──
             if (adjustedCost > 0 && !passiveExecuting) {
