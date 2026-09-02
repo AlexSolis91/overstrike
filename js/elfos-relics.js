@@ -651,6 +651,22 @@
     // HOOK: fin de ronda
     // ══════════════════════════════════════════════════════════════════════
     window.elfrOnRoundEnd = function () {
+        // ── ESQUELETO (Máscara de Nigromante): al final de cada ronda causa daño
+        //    a un enemigo aleatorio igual al 10% del HP máx de su invocador. El
+        //    porcentaje sube un 10% cada ronda (10% → 20% → 30% ...). ──
+        Object.values(gameState.summons || {}).forEach(function (s) {
+            if (!s || s.name !== 'Esqueleto' || s.hp <= 0 || !s.summoner) return;
+            var owner = gameState.characters[s.summoner];
+            if (!owner) return;
+            s._elfrSkeletonPct = (s._elfrSkeletonPct || 0) + 10;
+            var dmg = Math.max(1, Math.floor((owner.maxHp || 0) * (s._elfrSkeletonPct / 100)));
+            var es = aliveEnemiesOf(owner.team);
+            if (!es.length) return;
+            var tgt = randomFrom(es);
+            if (typeof applyDamageWithShield === 'function') applyDamageWithShield(tgt, dmg, s.summoner);
+            addLog('💀 Ataque del no muerto: el Esqueleto causa ' + dmg + ' de daño a ' + tgt + ' (' + s._elfrSkeletonPct + '% del HP máx de ' + s.summoner + ')', 'damage');
+        });
+
         // ── NEKROVUS: 50% de robar 1 HP y 1 carga de cada enemigo (x2 con <50% HP) ──
         holdersOf('elfr_nekrovus').forEach(function (n) {
             if (Math.random() >= 0.50) return;
