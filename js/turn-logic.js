@@ -1284,11 +1284,19 @@
 
             // ── CONFUSIÓN: ataca a un enemigo aleatorio automáticamente ──────
             if (hasStatusEffect(charName, 'Confusion')) {
-                addLog(`😵 ${charName} está Confundido — atacará a un enemigo aleatorio automáticamente`, 'damage');
-                if (typeof _animCard === 'function') _animCard(charName, 'anim-confusion', 800);
-                if (typeof _spawnConfusion === 'function') _spawnConfusion(charName);
-                executeConfusionAttack(charName);
-                return;
+                if (Math.random() < 0.50) {
+                    // 50%: pierde el turno y se causa 1-5 de daño sobre sí mismo
+                    const _confDmg = Math.floor(Math.random() * 5) + 1;
+                    addLog('😵 ' + charName + ' está Confundido — pierde su turno y se causa ' + _confDmg + ' de daño (50%)', 'damage');
+                    if (typeof _animCard === 'function') _animCard(charName, 'anim-confusion', 800);
+                    if (typeof _spawnConfusion === 'function') _spawnConfusion(charName);
+                    if (typeof applyDamageWithShield === 'function') applyDamageWithShield(charName, _confDmg, charName);
+                    if (typeof renderCharacters === 'function') renderCharacters();
+                    endTurn();
+                    return;
+                }
+                // 50%: toma su turno con normalidad
+                addLog('😵 ' + charName + ' está Confundido — pero supera la confusión y actúa normalmente (50%)', 'buff');
             }
 
             // ── AGOTAMIENTO: reduce 1-3 cargas al portador ──────────────
