@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OVERSTRIKE - 5v5 RPG Battle v4.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css?v=20261124">
+    <link rel="stylesheet" href="css/styles.css?v=20261125">
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -266,7 +266,7 @@
             <!-- Logo: sin emoji, pegado a la izquierda -->
             <div style="display:flex;flex-direction:column;gap:2px;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;white-space:nowrap;">OVERSTRIKE</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20261124</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20261125</div>
             </div>
 
             <!-- HUD: empujado todo a la derecha junto al botón mute -->
@@ -712,8 +712,8 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20261124"></script>
-    <script src="js/arcane-event.js?v=20261124"></script>
+    <script src="js/firebase-auth.js?v=20261125"></script>
+    <script src="js/arcane-event.js?v=20261125"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen(tab) {
@@ -1797,8 +1797,8 @@
             'balrog': {
                 name: 'Balrog',
                 portrait: 'https://i.ibb.co/nsGvCCPZ/image-594f3a6b.png',
-                hp: 100000, maxHp: 100000, speed: 85,
-                passive: { name: 'Valaraukar', description: 'Inmune a Quemaduras, Aturdimiento, Mega Aturdimiento, Congelación, Megacongelación, Posesión, Mega Posesión, Confusión y Miedo. Al inicio de cada ronda 50% de aplicar Miedo 1T, Quemaduras 3HP y Debilitar 1T a cada enemigo. Cada vez que un enemigo usa especial Balrog genera 2 cargas; si usa Over, genera 5 cargas.' }
+                hp: 200000, maxHp: 200000, speed: 85,
+                passive: { name: 'Valaraukar', description: 'Inmune a Quemaduras, Aturdimiento, Mega Aturdimiento, Congelación, Megacongelación, Posesión, Mega Posesión, Confusión y Miedo. Al inicio de cada ronda 50% de aplicar Miedo 1T, Quemaduras 3HP y Debilitar 1T a cada enemigo. Cada vez que un enemigo usa especial Balrog genera 2 cargas; si usa Over, genera 5 cargas. 200,000 HP.' }
             }
         };
         window.BOSS_DATA = BOSS_DATA;
@@ -1910,9 +1910,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20261124"></script>
+    <script src="js/characters.js?v=20261125"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20261124"></script>
+    <script src="js/audio-state.js?v=20261125"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2832,31 +2832,31 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20261124"></script>
+    <script src="js/ai-engine.js?v=20261125"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20261124"></script>
+    <script src="js/init-render.js?v=20261125"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20261124"></script>
+    <script src="js/turn-logic.js?v=20261125"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20261124"></script>
+    <script src="js/status-effects.js?v=20261125"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20261124"></script>
+    <script src="js/debuffs.js?v=20261125"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20261124"></script>
+    <script src="js/summons.js?v=20261125"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20261124"></script>
+    <script src="js/ability-select.js?v=20261125"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20261124"></script>
+<script src="js/skills.js?v=20261125"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20261124"></script>
-    <script src="js/horda-mode.js?v=20261124"></script>
-    <script src="js/horda-abilities.js?v=20261124"></script>
-    <script src="js/elfos-mode.js?v=20261124"></script>
-    <script src="js/elfos-abilities.js?v=20261124"></script>
-    <script src="js/elfos-relics.js?v=20261124"></script>
-    <script src="js/horda-battle.js?v=20261124"></script>
-    <script src="js/missions.js?v=20261124"></script>
-    <script src="js/squads.js?v=20261124"></script>
+    <script src="js/jefe-de-sala.js?v=20261125"></script>
+    <script src="js/horda-mode.js?v=20261125"></script>
+    <script src="js/horda-abilities.js?v=20261125"></script>
+    <script src="js/elfos-mode.js?v=20261125"></script>
+    <script src="js/elfos-abilities.js?v=20261125"></script>
+    <script src="js/elfos-relics.js?v=20261125"></script>
+    <script src="js/horda-battle.js?v=20261125"></script>
+    <script src="js/missions.js?v=20261125"></script>
+    <script src="js/squads.js?v=20261125"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
@@ -3159,7 +3159,7 @@
                         style="background:rgba(255,68,68,0.08);border:2px solid rgba(255,68,68,0.3);border-radius:10px;padding:8px;text-align:center;cursor:pointer;transition:all .2s;">
                         <img src="https://i.ibb.co/wrhphbYm/image.jpg" style="width:50px;height:50px;object-fit:cover;border-radius:8px;border:2px solid #ff4444;margin-bottom:4px;" onerror="this.style.display='none'">
                         <div style="font-family:Orbitron,sans-serif;font-size:.65rem;color:#ff4444;font-weight:700;">BROLY</div>
-                        <div style="font-size:.55rem;color:#666;margin-top:1px;">100,000 HP</div>
+                        <div style="font-size:.55rem;color:#666;margin-top:1px;">200,000 HP</div>
                         <div style="font-size:.52rem;color:#555;">Legendario SS</div>
                     </div>
                     <!-- Lich King -->
@@ -3185,7 +3185,7 @@
                         style="background:rgba(200,100,0,0.08);border:2px solid rgba(200,100,0,0.3);border-radius:10px;padding:8px;text-align:center;cursor:pointer;transition:all .2s;">
                         <img src="https://i.ibb.co/prMkQpBk/Whats-App-Image-2026-06-22-at-2-24-27-PM.jpg" style="width:50px;height:50px;object-fit:cover;border-radius:8px;border:2px solid #c86400;margin-bottom:4px;" onerror="this.style.display='none'">
                         <div style="font-family:Orbitron,sans-serif;font-size:.65rem;color:#fb923c;font-weight:700;">BOLVAR</div>
-                        <div style="font-size:.55rem;color:#666;margin-top:1px;">100,000 HP</div>
+                        <div style="font-size:.55rem;color:#666;margin-top:1px;">200,000 HP</div>
                         <div style="font-size:.52rem;color:#555;">Rey de los Muertos</div>
                     </div>
                     <!-- Balrog -->
@@ -3193,7 +3193,7 @@
                         style="background:rgba(180,20,20,0.08);border:2px solid rgba(180,20,20,0.3);border-radius:10px;padding:8px;text-align:center;cursor:pointer;transition:all .2s;">
                         <img src="https://i.ibb.co/nsGvCCPZ/image-594f3a6b.png" style="width:50px;height:50px;object-fit:cover;border-radius:8px;border:2px solid #b41414;margin-bottom:4px;" onerror="this.style.display='none'">
                         <div style="font-family:Orbitron,sans-serif;font-size:.65rem;color:#ff4444;font-weight:700;">BALROG</div>
-                        <div style="font-size:.55rem;color:#666;margin-top:1px;">100,000 HP</div>
+                        <div style="font-size:.55rem;color:#666;margin-top:1px;">200,000 HP</div>
                         <div style="font-size:.52rem;color:#555;">Valaraukar</div>
                     </div>
                 </div>
