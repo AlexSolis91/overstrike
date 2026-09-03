@@ -1590,10 +1590,13 @@
             //    disparándose a sí misma) no vuelven a tomar snapshot, evitando dobles disparos.
             const _lgTopLevel = !passiveExecuting;
             // ── JON SNOW: disparar El Rey Prometido ANTES de cualquier handler AOE ──
-            if (_lgTopLevel && ability && ability.target === 'aoe' &&
-                !ability.ignoresEsquivaArea &&
-                typeof triggerElReyPrometido === 'function') {
-                triggerElReyPrometido(gameState.selectedCharacter);
+            {
+                const _jsAbility = gameState.selectedAbility;
+                if (_lgTopLevel && _jsAbility && _jsAbility.target === 'aoe' &&
+                    !_jsAbility.ignoresEsquivaArea &&
+                    typeof triggerElReyPrometido === 'function') {
+                    triggerElReyPrometido(gameState.selectedCharacter);
+                }
             }
             let _lgChargeSnapshot = null;
             if (_lgTopLevel) {
