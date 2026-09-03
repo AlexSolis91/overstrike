@@ -601,6 +601,14 @@
         window.initGame(selectedChars);
     }
 
+    // ── Hook llamado desde turn-logic.js al llegar a la ronda 20 sin completar oleada ──
+    window.hordaOnBattleEnd = async function (result) {
+        if (result === 'defeat') {
+            if (typeof window.hordaHideVideoBackground === 'function') window.hordaHideVideoBackground();
+            await showHordaDefeatModal();
+        }
+    };
+
     // ── Modal: derrota final — resumen de recompensas de toda la corrida ──
     async function showHordaDefeatModal() {
         var uid = currentUid();
