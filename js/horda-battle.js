@@ -66,7 +66,15 @@
     // FONDO DE VIDEO EXCLUSIVO DEL MODO HORDA
     // ══════════════════════════════════════════════════════════════════════
     window.hordaShowVideoBackground = function () {
-        var v = document.getElementById('hordaBattleVideo');
+        // Seleccionar el video correcto según la variante activa
+        var isElfos = (window._hordaVariant === 'elfos');
+        var activeId  = isElfos ? 'hordaElfosVideo'  : 'hordaBattleVideo';
+        var inactiveId = isElfos ? 'hordaBattleVideo' : 'hordaElfosVideo';
+        // Ocultar el video de la otra variante
+        var vOff = document.getElementById(inactiveId);
+        if (vOff) { vOff.style.display = 'none'; try { vOff.pause(); } catch(e) {} }
+        // Mostrar el video activo
+        var v = document.getElementById(activeId);
         if (!v) return;
         v.style.display = 'block';
         var gc = document.querySelector('.game-container');
@@ -74,10 +82,12 @@
         try { v.currentTime = 0; v.play().catch(function () {}); } catch (e) {}
     };
     window.hordaHideVideoBackground = function () {
-        var v = document.getElementById('hordaBattleVideo');
-        if (!v) return;
-        v.style.display = 'none';
-        try { v.pause(); } catch (e) {}
+        ['hordaBattleVideo','hordaElfosVideo'].forEach(function(id) {
+            var v = document.getElementById(id);
+            if (!v) return;
+            v.style.display = 'none';
+            try { v.pause(); } catch (e) {}
+        });
     };
 
     // ══════════════════════════════════════════════════════════════════════
