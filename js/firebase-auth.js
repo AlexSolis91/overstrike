@@ -2983,14 +2983,13 @@
 
         // ── Ligas ──
         var LEAGUES = [
-            { name: 'Bronce',    min: 0,     max: 1499,  icon: '🥉',  subs: ['III','II','I'] },
-            { name: 'Plata',     min: 1500,  max: 2999,  icon: '🥈',  subs: ['III','II','I'] },
-            { name: 'Oro',       min: 3000,  max: 4499,  icon: '🥇',  subs: ['III','II','I'] },
-            { name: 'Diamante',  min: 4500,  max: 5999,  icon: '💎',  subs: ['III','II','I'] },
-            { name: 'Platino',   min: 6000,  max: 7499,  icon: '⭐',  subs: ['III','II','I'] },
-            { name: 'Master',    min: 7500,  max: 9999,  icon: '👑',  subs: ['III','II','I'] },
-            { name: 'Leyenda',   min: 10000, max: 999999,icon: '🔱',  subs: ['III','II','I'] },
-            { name: 'Leyenda',   min: 15000, max: Infinity, icon: '🔱', subs: [] }
+            { name: 'Bronce',    min: 0,     max: 4999,  icon: '🥉',  subs: ['III','II','I'] },
+            { name: 'Plata',     min: 5000,  max: 9999,  icon: '🥈',  subs: ['III','II','I'] },
+            { name: 'Oro',       min: 10000, max: 14999, icon: '🥇',  subs: ['III','II','I'] },
+            { name: 'Diamante',  min: 15000, max: 19999, icon: '💎',  subs: ['III','II','I'] },
+            { name: 'Platino',   min: 20000, max: 24999, icon: '⭐',  subs: ['III','II','I'] },
+            { name: 'Master',    min: 25000, max: 29999, icon: '👑',  subs: ['III','II','I'] },
+            { name: 'Leyenda',   min: 30000, max: Infinity, icon: '🔱', subs: [] }
         ];
 
         function getLeague(points) {
@@ -3126,13 +3125,13 @@
         // ── Premio de fin de temporada Ranked ──────────────────────────────────
         // ── LIGAS RANKED ───────────────────────────────────────────────
         const RANKED_LEAGUES = [
-            { name:'Bronce',   min:0,     max:1499,  gold:5000,    keys:1,  emoji:'🥉', color:'#cd7f32' },
-            { name:'Plata',    min:1500,  max:2999,  gold:10000,   keys:1,  emoji:'🥈', color:'#C0C0C0' },
-            { name:'Oro',      min:3000,  max:4499,  gold:20000,   keys:2,  emoji:'🥇', color:'#FFD700' },
-            { name:'Diamante', min:4500,  max:5999,  gold:50000,   keys:2,  emoji:'💎', color:'#b9f2ff' },
-            { name:'Platino',  min:6000,  max:7499,  gold:100000,  keys:3,  emoji:'⭐', color:'#ff8c00' },
-            { name:'Master',   min:7500,  max:9999,  gold:200000,  keys:5,  emoji:'👑', color:'#bf00ff' },
-            { name:'Leyenda',  min:10000, max:999999, gold:500000, keys:10, emoji:'🔱', color:'#e74c3c' },
+            { name:'Bronce',   min:0,     max:4999,  gold:10000,    keys:1,  emoji:'🥉', color:'#cd7f32' },
+            { name:'Plata',    min:5000,  max:9999,  gold:20000,    keys:1,  emoji:'🥈', color:'#C0C0C0' },
+            { name:'Oro',      min:10000, max:14999, gold:50000,    keys:2,  emoji:'🥇', color:'#FFD700' },
+            { name:'Diamante', min:15000, max:19999, gold:100000,   keys:3,  emoji:'💎', color:'#b9f2ff' },
+            { name:'Platino',  min:20000, max:24999, gold:200000,   keys:5,  emoji:'⭐', color:'#ff8c00' },
+            { name:'Master',   min:25000, max:29999, gold:500000,   keys:10, emoji:'👑', color:'#bf00ff' },
+            { name:'Leyenda',  min:30000, max:999999, gold:1000000, keys:20, emoji:'🔱', color:'#e74c3c' },
         ];
         window.RANKED_LEAGUES = RANKED_LEAGUES;
 
@@ -4086,13 +4085,13 @@
             modal.id = '_rewardsModal';
             modal.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);';
             var SEASON_LEAGUES = [
-                { name:'Bronce',   min:0,     max:1499,  gold:'5,000',    keys:1,  emoji:'🥉', color:'#cd7f32' },
-                { name:'Plata',    min:1500,  max:2999,  gold:'10,000',   keys:1,  emoji:'🥈', color:'#C0C0C0' },
-                { name:'Oro',      min:3000,  max:4499,  gold:'20,000',   keys:2,  emoji:'🥇', color:'#FFD700' },
-                { name:'Diamante', min:4500,  max:5999,  gold:'50,000',   keys:2,  emoji:'💎', color:'#b9f2ff' },
-                { name:'Platino',  min:6000,  max:7499,  gold:'100,000',  keys:3,  emoji:'⭐', color:'#ff8c00' },
-                { name:'Master',   min:7500,  max:9999,  gold:'200,000',  keys:5,  emoji:'👑', color:'#bf00ff' },
-                { name:'Leyenda',  min:10000, max:999999, gold:'500,000', keys:10, emoji:'🔱', color:'#e74c3c' },
+                { name:'Bronce',   min:0,     max:4999,  gold:'10,000',    keys:1,  emoji:'🥉', color:'#cd7f32' },
+                { name:'Plata',    min:5000,  max:9999,  gold:'20,000',    keys:1,  emoji:'🥈', color:'#C0C0C0' },
+                { name:'Oro',      min:10000, max:14999, gold:'50,000',    keys:2,  emoji:'🥇', color:'#FFD700' },
+                { name:'Diamante', min:15000, max:19999, gold:'100,000',   keys:3,  emoji:'💎', color:'#b9f2ff' },
+                { name:'Platino',  min:20000, max:24999, gold:'200,000',   keys:5,  emoji:'⭐', color:'#ff8c00' },
+                { name:'Master',   min:25000, max:29999, gold:'500,000',   keys:10, emoji:'👑', color:'#bf00ff' },
+                { name:'Leyenda',  min:30000, max:999999, gold:'1,000,000', keys:20, emoji:'🔱', color:'#e74c3c' },
             ];
             var rows = SEASON_LEAGUES.map(function(lg) {
                 var keysStr = lg.keys > 0 ? ' + ' + lg.keys + ' 🗝️' : '';
