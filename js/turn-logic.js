@@ -172,6 +172,19 @@
                 if (typeof processEndOfRoundEffects === 'function') processEndOfRoundEffects();
                 if (gameState.gameOver) return;
                 gameState.currentRound++;
+
+                // ── MODO HORDA: si se llega a la ronda 20 sin completar la oleada,
+                //    se declara derrota automática. Aplica a Orcos y Elfos Oscuros. ──
+                if (gameState.gameMode === 'horda' && gameState.currentRound >= 20) {
+                    gameState.gameOver = true;
+                    addLog('💀 Ronda 20 alcanzada — ¡DERROTA! La oleada no pudo ser completada.', 'damage');
+                    setTimeout(function () {
+                        if (typeof window.hordaOnBattleEnd === 'function') {
+                            window.hordaOnBattleEnd('defeat');
+                        }
+                    }, 1200);
+                    return;
+                }
                 if (typeof _runRoundStartPassiveHooks === 'function') _runRoundStartPassiveHooks();
                 if (gameState.gameOver) return;
                 calculateTurnOrder();
