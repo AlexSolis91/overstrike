@@ -1525,13 +1525,6 @@
             //    daño cuando el Over de Aragorn lo disparaba desde el pasivo 'Sangre de
             //    Numenor' (que llama _executeAbilityCore con passiveExecuting=true, lo que
             //    impedía que resolveAOETargets internamente llamase triggerElReyPrometido). ──
-            if (_lgTopLevel && ability && ability.target === 'aoe' && _coreAttacker &&
-                !(ability.ignoresEsquivaArea) &&
-                typeof triggerElReyPrometido === 'function') {
-                // Solo si el atacante es enemigo de Jon Snow (no disparar si AOE aliado)
-                triggerElReyPrometido(gameState.selectedCharacter);
-            }
-
             gameState._relicCritBonus = 0;
             gameState._isCritHit = false;
             gameState._relicCritUsedByHandler = false;
@@ -1596,6 +1589,12 @@
             //    (!passiveExecuting) — las ejecuciones forzadas anidadas (ej. la propia Emboscada
             //    disparándose a sí misma) no vuelven a tomar snapshot, evitando dobles disparos.
             const _lgTopLevel = !passiveExecuting;
+            // ── JON SNOW: disparar El Rey Prometido ANTES de cualquier handler AOE ──
+            if (_lgTopLevel && ability && ability.target === 'aoe' &&
+                !ability.ignoresEsquivaArea &&
+                typeof triggerElReyPrometido === 'function') {
+                triggerElReyPrometido(gameState.selectedCharacter);
+            }
             let _lgChargeSnapshot = null;
             if (_lgTopLevel) {
                 _lgChargeSnapshot = {};
