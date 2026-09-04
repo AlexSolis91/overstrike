@@ -1295,14 +1295,19 @@
                     // elegía completamente al azar, ignorando por completo estos efectos.
                     const ignoresProv = !!chosen.ignoresProvocacion || !!chosen.ignoresMegaProvocacion;
                     if (!ignoresProv) {
-                        const megaProvHolder = enemies.find(function (n) {
-                            const c = gameState.characters[n];
-                            return (c.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'mega provocacion'; });
-                        });
-                        if (megaProvHolder) return megaProvHolder;
+                        // Usar checkKamishMegaProvocation para detectar también pasivas
+                        // permanentes (Efecto Omega/Darkseid, Hombre de Acero/Superman, etc.)
+                        // y no solo el buff activo en statusEffects.
+                        var _mpData = typeof checkKamishMegaProvocation === 'function'
+                            ? checkKamishMegaProvocation(enemyTeamOf(charC.team))
+                            : null;
+                        if (_mpData && _mpData.isCharacter) return _mpData.characterName;
+                        // Provocación normal
                         const provHolder = enemies.find(function (n) {
                             const c = gameState.characters[n];
-                            return (c.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'provocacion'; });
+                            if (!c) return false;
+                            if ((c.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'provocacion'; })) return true;
+                            return !!(c.passive && (c.passive.name === 'Señor de los Nazgul' || c.passive.name === 'Fortaleza de Tauro'));
                         });
                         if (provHolder) return provHolder;
                     }
