@@ -1433,13 +1433,35 @@
             }
 
             if (!targetName) {
-                // 80% chance (or fallback): attack random enemy
+                // Elegir objetivo respetando Mega Provocación y Provocación
                 const enemies = Object.keys(gameState.characters).filter(n => {
                     const c = gameState.characters[n];
                     return c && c.team === enemyTeam && !c.isDead && c.hp > 0;
                 });
                 if (enemies.length > 0) {
-                    targetName = enemies[Math.floor(Math.random() * enemies.length)];
+                    // Verificar si la habilidad ignora Prov/MegaProv
+                    const _aiAbility = gameState.selectedAbility;
+                    const _aiIgnoresProv = _aiAbility && (_aiAbility.ignoresProvocacion || _aiAbility.ignoresMegaProvocacion);
+                    if (!_aiIgnoresProv && typeof checkKamishMegaProvocation === 'function') {
+                        // Mega Provocación: forzar objetivo al portador
+                        const _mpAI = checkKamishMegaProvocation(enemyTeam);
+                        if (_mpAI && _mpAI.isCharacter && enemies.includes(_mpAI.characterName)) {
+                            targetName = _mpAI.characterName;
+                        }
+                    }
+                    if (!targetName && !(_aiAbility && _aiAbility.ignoresProvocacion)) {
+                        // Provocación normal (buff activo o pasiva)
+                        const _provAI = enemies.find(n => {
+                            const c = gameState.characters[n];
+                            if (!c) return false;
+                            if ((c.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'provocacion')) return true;
+                            return !!(c.passive && (c.passive.name === 'Señor de los Nazgul' || c.passive.name === 'Fortaleza de Tauro'));
+                        });
+                        if (_provAI) targetName = _provAI;
+                    }
+                    if (!targetName) {
+                        targetName = enemies[Math.floor(Math.random() * enemies.length)];
+                    }
                 }
             }
 
