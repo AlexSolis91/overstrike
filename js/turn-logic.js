@@ -65,20 +65,28 @@
 
                 const _target = (_chosen.target === 'single' || _chosen.target === 'multi')
                     ? (function () {
-                        // Respetar Provocación/Mega Provocación al elegir objetivo — antes la IA
-                        // elegía completamente al azar, ignorando por completo estos efectos
-                        // (ej. Ragnar atacando a Yorichi en vez de a Escanor, que tenía
-                        // Provocación permanente activa en el mismo equipo enemigo).
                         const _ignoresProv = !!_chosen.ignoresProvocacion || !!_chosen.ignoresMegaProvocacion;
                         if (!_ignoresProv) {
-                            const _megaProvHolder = _enemies.find(function (n) {
-                                const c = gameState.characters[n];
-                                return (c.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'mega provocacion'; });
-                            });
-                            if (_megaProvHolder) return _megaProvHolder;
+                            // Usar checkKamishMegaProvocation para detectar TAMBIÉN pasivas
+                            // permanentes (Efecto Omega/Darkseid, Hombre de Acero/Superman…),
+                            // no solo el buff activo en statusEffects.
+                            if (typeof checkKamishMegaProvocation === 'function') {
+                                const _mpAI = checkKamishMegaProvocation(_enemyTeam);
+                                if (_mpAI && _mpAI.isCharacter && _enemies.includes(_mpAI.characterName)) {
+                                    return _mpAI.characterName;
+                                }
+                            }
+                            // Provocación normal: buff activo o pasiva permanente
                             const _provHolder = _enemies.find(function (n) {
                                 const c = gameState.characters[n];
-                                return (c.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'provocacion'; });
+                                if (!c) return false;
+                                if ((c.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'provocacion'; })) return true;
+                                return !!(c.passive && (
+                                    c.passive.name === 'Señor de los Nazgul' ||
+                                    c.passive.name === 'Fortaleza de Tauro' ||
+                                    c.passive.name === 'Primogénito del Sol' ||
+                                    c.passive.name === 'Primogenito del Sol'
+                                ));
                             });
                             if (_provHolder) return _provHolder;
                         }
