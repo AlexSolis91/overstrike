@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OVERSTRIKE - 5v5 RPG Battle v4.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css?v=20261132">
+    <link rel="stylesheet" href="css/styles.css?v=20261133">
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -270,7 +270,7 @@
             <!-- Logo: sin emoji, pegado a la izquierda -->
             <div style="display:flex;flex-direction:column;gap:2px;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;white-space:nowrap;">OVERSTRIKE</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20261132</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20261133</div>
             </div>
 
             <!-- HUD: empujado todo a la derecha junto al botón mute -->
@@ -656,8 +656,6 @@
             _btn.style.cssText = 'position:fixed;bottom:28px;right:28px;background:linear-gradient(135deg,var(--primary-glow,#00d9ff),var(--secondary-glow,#7b2fff));border:none;color:#0a0e17;font-family:Orbitron,sans-serif;font-size:1.1em;font-weight:700;padding:16px 32px;border-radius:50px;cursor:pointer;z-index:9999;box-shadow:0 0 28px rgba(0,217,255,0.55);letter-spacing:0.05em;';
             _btn.onclick = function() {
                 this.style.display = 'none';
-                var _sr2 = document.getElementById('hordaSurrenderBtn');
-                if (_sr2) _sr2.style.display = 'none';
                 if (typeof continueTurn === 'function') continueTurn();
             };
             document.body.appendChild(_btn);
@@ -665,24 +663,13 @@
         _btn.style.zIndex = '9999';
         var _charName = (typeof gameState !== 'undefined' && gameState.selectedCharacter) ? gameState.selectedCharacter : '';
         var _round = (typeof gameState !== 'undefined' && gameState.currentRound) ? gameState.currentRound : 1;
-        _btn.innerHTML = '▶ Continuar Turno' + (_charName ? '<br><span style="font-size:0.65em;opacity:0.75;font-weight:400;">RONDA ' + _round + ' · ' + _charName + '</span>' : '');
-        _btn.style.display = 'block';
-        // Botón RENDIRSE: solo en modo Horda, aparece ENCIMA del botón Continuar Turno
-        var _srBtn = document.getElementById('hordaSurrenderBtn');
         var _isHorda = (typeof gameState !== 'undefined' && gameState.gameMode === 'horda');
-        if (_isHorda) {
-            if (!_srBtn) {
-                _srBtn = document.createElement('button');
-                _srBtn.id = 'hordaSurrenderBtn';
-                _srBtn.textContent = '🏳️ RENDIRSE';
-                _srBtn.style.cssText = 'position:fixed;bottom:112px;right:28px;background:rgba(180,20,20,0.85);border:2px solid #cc2222;color:#fff;font-family:Orbitron,sans-serif;font-size:.78em;font-weight:700;padding:10px 28px;border-radius:50px;cursor:pointer;z-index:9999;box-shadow:0 0 14px rgba(200,30,30,0.5);letter-spacing:0.05em;';
-                _srBtn.onclick = function() { if (typeof window.hordaSurrender === 'function') window.hordaSurrender(); };
-                document.body.appendChild(_srBtn);
-            }
-            _srBtn.style.display = 'block';
-        } else if (_srBtn) {
-            _srBtn.style.display = 'none';
-        }
+        var _surrenderHTML = _isHorda
+            ? '<div onclick="event.stopPropagation();if(typeof window.hordaSurrender===\'function\')window.hordaSurrender();" style="margin-top:10px;background:rgba(180,20,20,0.9);border:2px solid #cc2222;border-radius:40px;padding:8px 20px;font-size:0.75em;color:#fff;cursor:pointer;letter-spacing:0.05em;">🏳️ RENDIRSE</div>'
+            : '';
+        _btn.innerHTML = '▶ Continuar Turno' + (_charName ? '<br><span style="font-size:0.65em;opacity:0.75;font-weight:400;">RONDA ' + _round + ' · ' + _charName + '</span>' : '') + _surrenderHTML;
+        _btn.style.display = 'block';
+
     }
     </script>
 
@@ -739,8 +726,8 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20261132"></script>
-    <script src="js/arcane-event.js?v=20261132"></script>
+    <script src="js/firebase-auth.js?v=20261133"></script>
+    <script src="js/arcane-event.js?v=20261133"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen(tab) {
@@ -1937,9 +1924,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20261132"></script>
+    <script src="js/characters.js?v=20261133"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20261132"></script>
+    <script src="js/audio-state.js?v=20261133"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2873,31 +2860,31 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20261132"></script>
+    <script src="js/ai-engine.js?v=20261133"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20261132"></script>
+    <script src="js/init-render.js?v=20261133"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20261132"></script>
+    <script src="js/turn-logic.js?v=20261133"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20261132"></script>
+    <script src="js/status-effects.js?v=20261133"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20261132"></script>
+    <script src="js/debuffs.js?v=20261133"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20261132"></script>
+    <script src="js/summons.js?v=20261133"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20261132"></script>
+    <script src="js/ability-select.js?v=20261133"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20261132"></script>
+<script src="js/skills.js?v=20261133"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20261132"></script>
-    <script src="js/horda-mode.js?v=20261132"></script>
-    <script src="js/horda-abilities.js?v=20261132"></script>
-    <script src="js/elfos-mode.js?v=20261132"></script>
-    <script src="js/elfos-abilities.js?v=20261132"></script>
-    <script src="js/elfos-relics.js?v=20261132"></script>
-    <script src="js/horda-battle.js?v=20261132"></script>
-    <script src="js/missions.js?v=20261132"></script>
-    <script src="js/squads.js?v=20261132"></script>
+    <script src="js/jefe-de-sala.js?v=20261133"></script>
+    <script src="js/horda-mode.js?v=20261133"></script>
+    <script src="js/horda-abilities.js?v=20261133"></script>
+    <script src="js/elfos-mode.js?v=20261133"></script>
+    <script src="js/elfos-abilities.js?v=20261133"></script>
+    <script src="js/elfos-relics.js?v=20261133"></script>
+    <script src="js/horda-battle.js?v=20261133"></script>
+    <script src="js/missions.js?v=20261133"></script>
+    <script src="js/squads.js?v=20261133"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
