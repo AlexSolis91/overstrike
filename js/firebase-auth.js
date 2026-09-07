@@ -6026,7 +6026,14 @@
             var btn = document.getElementById('gameChatFloatBtn');
             var gc = document.querySelector('.game-container');
             if (!btn || !gc) return;
-            btn.style.display = (gc.style.display === 'block') ? 'flex' : 'none';
+            var inGame = (gc.style.display === 'block');
+            btn.style.display = inGame ? 'flex' : 'none';
+            // Botón Rendirse: visible solo en modo Horda durante la partida
+            var srBtn = document.getElementById('hordaSurrenderBtn');
+            if (srBtn) {
+                var isHorda = inGame && typeof gameState !== 'undefined' && gameState.gameMode === 'horda';
+                srBtn.style.display = isHorda ? 'flex' : 'none';
+            }
         }, 800);
 
         // ── JUGADORES EN LÍNEA + CHAT PRIVADO ──────────────────────────────
