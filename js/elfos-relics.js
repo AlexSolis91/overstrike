@@ -95,13 +95,14 @@
             if (ability.target === 'aoe') addShield(targetName, 5);
         }
 
-        // ── CORONA DE LOS NO MUERTOS: solo recibe daño POR GOLPE de enemigos
-        //    con más HP actual. El daño directo (DOT) no se bloquea. ──
+        // ── CORONA DE LOS NO MUERTOS: si el atacante tiene MENOS HP actual que el
+        //    portador, el daño por golpe se reduce un 75% (aplicado DESPUÉS de todas
+        //    las demás reducciones). Los DOT no se ven afectados. ──
         if (isDirectHit && hasRelic(targetName, 'elfr_corona_no_muertos')) {
             var atk = gameState.characters[attackerName];
-            if (atk && (atk.hp || 0) <= (t.hp || 0)) {
-                addLog('👑 Corona de los no muertos: ' + attackerName + ' no tiene HP suficiente para dañar a ' + targetName, 'buff');
-                return 0;
+            if (atk && (atk.hp || 0) < (t.hp || 0)) {
+                damage = Math.max(1, Math.floor(damage * 0.25));
+                addLog('👑 Corona de los no muertos: daño reducido 75% (atacante con menos HP) → ' + damage, 'buff');
             }
         }
 
