@@ -461,6 +461,26 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 }
             }
             target.statusEffects.push(effectObj);
+            // ── INOSUKE (El Rey de la Montaña): reacciona cuando se aplica Sangrado
+            //    o Hemorragia en un enemigo ──
+            if (effectObj && typeof effectObj.name === 'string') {
+                const _inoNorm = normAccent(effectObj.name);
+                const _isSang = _inoNorm === 'sangrado';
+                const _isHemo = _inoNorm === 'hemorragia';
+                if ((_isSang || _isHemo) && typeof window._inosukeEmbestida === 'function') {
+                    Object.keys(gameState.characters).forEach(function(iName) {
+                        const _ic = gameState.characters[iName];
+                        if (!_ic || _ic.isDead || _ic.hp <= 0) return;
+                        if (!_ic.passive || _ic.passive.name !== 'El Rey de la Montaña') return;
+                        if (_ic.team === (gameState.characters[targetName]||{}).team) return; // solo si son enemigos
+                        const times = _isHemo ? 3 : 1;
+                        for (let _it = 0; _it < times; _it++) {
+                            window._inosukeEmbestida(iName, targetName, _it > 0);
+                        }
+                    });
+                }
+            }
+
             if (typeof window.elfrOnDebuffReceived === 'function') {
                 try { window.elfrOnDebuffReceived(targetName, (effectObj && effectObj.name) || ''); } catch (e) { console.error('[elfr onDebuff]', e); }
             }
@@ -686,7 +706,21 @@ function triggerMaboroshi(targetTeam, debuffName) {
 function applyDebuff(targetName, effectObj) {
             const target = gameState.characters[targetName];
             if (!target || !target.statusEffects) return;
-            // ── RELIQUIAS ELFOS: inmunidades (Piedra del Sol, Karuka, Capa Namekiana,
+            // ── INOSUKE: inmune a Veneno ──
+    if (typeof window.elfrBlockDebuff !== 'function' || !window.elfrBlockDebuff._inoInjected) {
+        var _origElfrBlock = window.elfrBlockDebuff || function(){return false;};
+        window.elfrBlockDebuff = function(targetName, effectName) {
+            var _tc = gameState.characters[targetName];
+            if (_tc && _tc.passive && _tc.passive.name === 'El Rey de la Montaña') {
+                var _n = (typeof normAccent==='function') ? normAccent(effectName||'') : (effectName||'').toLowerCase();
+                if (_n === 'veneno') { return true; }
+            }
+            return _origElfrBlock(targetName, effectName);
+        };
+        window.elfrBlockDebuff._inoInjected = true;
+    }
+
+    // ── RELIQUIAS ELFOS: inmunidades (Piedra del Sol, Karuka, Capa Namekiana,
             //    Sable de Obi-Wan consumiendo Escudo) ──
             if (typeof window.elfrBlockDebuff === 'function') {
                 try {
