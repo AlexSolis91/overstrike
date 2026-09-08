@@ -647,6 +647,20 @@
                     { name: 'Valquiria',        type: 'over',    cost: 12, chargeGain: 0, damage: 0, target: 'single', effect: 'valquiria_lagertha_v2',     description: 'Todo el equipo aliado usa su básico sobre el objetivo. Aplica buff Contraataque al equipo aliado por 3 turnos.' }
                 ]
             },
+            'Inosuke': {
+                hp: 20, maxHp: 20, speed: 87, charges: 0, team: 'team1',
+                statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
+                portrait: 'https://i.ibb.co/S70tNpJY/descarga-8.jpg',
+                passive: { name: 'El Rey de la Montaña', description: 'Inmune a Veneno. Cuando se aplica Sangrado en un enemigo, ejecuta Embestida del Cerdo sobre ese enemigo. Con Hemorragia, la ejecuta 3 veces. Recibe solo el 40% del daño de golpes de 10 o más. Al inicio de cada ronda, ejecuta Perforar y Extraer automáticamente sobre enemigos con 15 HP o menos. Si un enemigo usa su Over, ejecuta Desgarrar y Romper automáticamente.' },
+                abilities: [
+                    { name: 'Embestida del Cerdo',        type: 'basic',   cost: 0,  chargeGain: 2, damage: 2,  target: 'single', effect: 'inosuke_basic',    description: 'ST 2 daño. Contra objetivos con Sangrado activo: elimina 2 cargas. Contra objetivos con Hemorragia activa: elimina 3 cargas y reduce -1 su HP máx.' },
+                    { name: 'Perforar y Extraer',          type: 'special', cost: 4,  chargeGain: 0, damage: 4,  target: 'single', effect: 'inosuke_special1',  description: 'ST 4 daño. Disipa todos los buffs del objetivo. Por cada buff disipado, +5% de probabilidad de crítico. Si critica, ejecuta Embestida del Cerdo sobre un enemigo aleatorio con Sangrado o Hemorragia.' },
+                    { name: 'Desgarrar y Romper',          type: 'special', cost: 10, chargeGain: 0, damage: 8,  target: 'single', effect: 'inosuke_special2',  description: 'ST 8 daño. +5% de crítico por cada reliquia equipada en el objetivo. Si critica: Inosuke y un aliado aleatorio generan 14 cargas y ganan un turno adicional (primero Inosuke, luego el aliado).' },
+                    { name: 'Corte Ondulante Divino',      type: 'over',    cost: 14, chargeGain: 0, damage: 10, target: 'single', effect: 'inosuke_over',      description: 'ST 10 daño. +5% de crítico por cada reliquia del objetivo. Daño doble con Sangrado, cuádruple con Hemorragia. El daño excedente se transfiere a un enemigo aleatorio con Sangrado o Hemorragia.' }
+                ],
+                _isEventChar: false
+            },
+
             'Shinobu Kocho': {
                 hp: 15, maxHp: 15, speed: 82, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
