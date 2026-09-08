@@ -2235,6 +2235,30 @@
                     if (typeof window.elfrOnRoundStart === 'function') {
                         try { window.elfrOnRoundStart(); } catch (e) { console.error('[elfr roundStart]', e); }
                     }
+                    // ── INOSUKE: Perforar y Extraer automático al inicio de ronda ──
+                    ;(function() {
+                        Object.keys(gameState.characters).forEach(function(iName) {
+                            const _icR = gameState.characters[iName];
+                            if (!_icR || _icR.isDead || _icR.hp <= 0) return;
+                            if (!_icR.passive || _icR.passive.name !== 'El Rey de la Montaña') return;
+                            const _inoET = (_icR.team === 'team1') ? 'team2' : 'team1';
+                            Object.keys(gameState.characters).forEach(function(eName) {
+                                const _ec = gameState.characters[eName];
+                                if (!_ec || _ec.team !== _inoET || _ec.isDead || _ec.hp <= 0 || _ec.hp > 15) return;
+                                const _inoS1 = (_icR.abilities||[]).find(function(a){return a&&a.effect==='inosuke_special1';});
+                                if (!_inoS1 || _icR.charges < (_inoS1.cost||4)) return;
+                                var _pSel = gameState.selectedCharacter, _pAb = gameState.selectedAbility;
+                                passiveExecuting = true;
+                                gameState.selectedCharacter = iName;
+                                gameState.selectedAbility = _inoS1;
+                                try { if(typeof _executeAbilityCore==='function') _executeAbilityCore(eName); } catch(e) { console.error('[Inosuke roundStart]',e); }
+                                gameState.selectedCharacter = _pSel;
+                                gameState.selectedAbility = _pAb;
+                                passiveExecuting = false;
+                                addLog('🐗 El Rey de la Montaña: ' + iName + ' ejecuta Perforar y Extraer sobre ' + eName + ' ('+_ec.hp+' HP)', 'buff');
+                            });
+                        });
+                    })();
                     if (typeof window.elfosOnRoundStart === 'function') {
                         try { window.elfosOnRoundStart(); } catch (e) { console.error('[Elfos roundStart]', e); }
                     }
