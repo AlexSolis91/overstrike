@@ -1379,6 +1379,14 @@
             }
             // ── ELFOS OSCUROS: pasivas al recibir daño (Corrupción +5 vel, Canto de la
             //    Oscuridad devuelve 2, Artes Élficas Oscuras cura al Necromancer) ──
+            // ── INOSUKE (El Rey de la Montaña): recibe solo 40% del daño si el golpe es ≥10 ──
+            if (damage >= 10) {
+                const _inoTgt = gameState.characters[targetName];
+                if (_inoTgt && _inoTgt.passive && _inoTgt.passive.name === 'El Rey de la Montaña') {
+                    damage = Math.ceil(damage * 0.40);
+                }
+            }
+
             // ── RELIQUIAS ELFOS: modificador de DAÑO ENTRANTE (Ferndur, Corona,
             //    Karuka, Escudo Arcantos). Puede reducirlo o anularlo por completo. ──
             if (damage > 0 && typeof window.elfrModifyIncomingDamage === 'function') {
