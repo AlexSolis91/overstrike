@@ -1589,6 +1589,28 @@
             //    (!passiveExecuting) — las ejecuciones forzadas anidadas (ej. la propia Emboscada
             //    disparándose a sí misma) no vuelven a tomar snapshot, evitando dobles disparos.
             const _lgTopLevel = !passiveExecuting;
+            // ── INOSUKE (El Rey de la Montaña): reacción al Over ENEMIGO ──
+            if (_lgTopLevel && gameState.selectedAbility && gameState.selectedAbility.type === 'over') {
+                Object.keys(gameState.characters).forEach(function(iName) {
+                    const _icOver = gameState.characters[iName];
+                    if (!_icOver || _icOver.isDead || _icOver.hp <= 0) return;
+                    if (!_icOver.passive || _icOver.passive.name !== 'El Rey de la Montaña') return;
+                    const _overUser = gameState.characters[gameState.selectedCharacter];
+                    if (!_overUser || _overUser.team === _icOver.team) return;
+                    const _inoS2 = (_icOver.abilities||[]).find(function(a){return a&&a.effect==='inosuke_special2';});
+                    if (!_inoS2) return;
+                    var _pSel = gameState.selectedCharacter, _pAb = gameState.selectedAbility;
+                    passiveExecuting = true;
+                    gameState.selectedCharacter = iName;
+                    gameState.selectedAbility = _inoS2;
+                    try { _executeAbilityCore(_pSel); } catch(e) { console.error('[Inosuke Over]', e); }
+                    gameState.selectedCharacter = _pSel;
+                    gameState.selectedAbility = _pAb;
+                    passiveExecuting = false;
+                    addLog('🐗 El Rey de la Montaña: ' + iName + ' reacciona al Over enemigo con Desgarrar y Romper', 'buff');
+                });
+            }
+
             // ── JON SNOW: disparar El Rey Prometido ANTES de cualquier handler AOE ──
             {
                 const _jsAbility = gameState.selectedAbility;
@@ -10036,7 +10058,111 @@
             // SHINOBU KOCHO
             // ══════════════════════════════════════════════════════
 
-            } else if (ability.effect === 'danza_mariposa_shinobu') {
+            } else if (ability.effect === 'inosuke_basic') {
+                // ── INOSUKE — Embestida del Cerdo ──
+                if (!window._inosukeEmbestida) {
+                    window._inosukeEmbestida = function(cName, tName, skipChargeGain) {
+                        const _ic = gameState.characters[cName];
+                        const _tc = gameState.characters[tName];
+                        if (!_ic || !_tc || _tc.isDead || _tc.hp <= 0) return;
+                        applyDamageWithShield(tName, 2, cName);
+                        const _hS = (_tc.statusEffects||[]).some(e=>e&&normAccent(e.name||'')==='sangrado');
+                        const _hH = (_tc.statusEffects||[]).some(e=>e&&normAccent(e.name||'')==='hemorragia');
+                        if (_hS) {
+                            _tc.charges = Math.max(0,(_tc.charges||0)-2);
+                            addLog('🐗 Embestida: ' + tName + ' -2 cargas (Sangrado)', 'damage');
+                        }
+                        if (_hH) {
+                            _tc.charges = Math.max(0,(_tc.charges||0)-3);
+                            _tc.maxHp = Math.max(1,(_tc.maxHp||0)-1);
+                            if (_tc.hp > _tc.maxHp) _tc.hp = _tc.maxHp;
+                            addLog('🐗 Embestida: ' + tName + ' -3 cargas y -1 HP máx (Hemorragia)', 'damage');
+                        }
+                        if (!skipChargeGain) _ic.charges = Math.min(20,(_ic.charges||0)+2);
+                    };
+                }
+                window._inosukeEmbestida(charName, targetName, false);
+                addLog('🐗 Embestida del Cerdo: 2 daño a ' + targetName, 'damage');
+
+            } else if (ability.effect === 'inosuke_special1') {
+                // ── INOSUKE — Perforar y Extraer ──
+                const _ip1T = gameState.characters[targetName];
+                if (_ip1T) {
+                    const _ip1Buffs = (_ip1T.statusEffects||[]).filter(e=>e&&e.type==='buff'&&!e.passiveHidden);
+                    const _ip1CritPct = _ip1Buffs.length * 0.05;
+                    _ip1T.statusEffects = (_ip1T.statusEffects||[]).filter(e=>!e||e.type!=='buff'||e.passiveHidden);
+                    applyDamageWithShield(targetName, finalDamage, charName);
+                    addLog('🐗 Perforar y Extraer: ' + finalDamage + ' daño, ' + _ip1Buffs.length + ' buffs disipados (+' + Math.round(_ip1CritPct*100) + '% crit)', 'damage');
+                    const _ip1Crit = rollCrit(_ip1CritPct, charName);
+                    if (_ip1Crit) {
+                        gameState._isCritHit = true;
+                        const _ip1Pool = Object.keys(gameState.characters).filter(n=>{
+                            const c=gameState.characters[n];
+                            if(!c||c.team===attacker.team||c.isDead||c.hp<=0) return false;
+                            return (c.statusEffects||[]).some(e=>e&&(normAccent(e.name||'')==='sangrado'||normAccent(e.name||'')==='hemorragia'));
+                        });
+                        if (_ip1Pool.length && window._inosukeEmbestida) {
+                            const _ip1ET = _ip1Pool[Math.floor(Math.random()*_ip1Pool.length)];
+                            window._inosukeEmbestida(charName, _ip1ET, true);
+                            addLog('🐗 ¡Crítico! Embestida extra sobre ' + _ip1ET, 'buff');
+                        }
+                    }
+                }
+
+            } else if (ability.effect === 'inosuke_special2') {
+                // ── INOSUKE — Desgarrar y Romper ──
+                const _ip2T = gameState.characters[targetName];
+                if (_ip2T) {
+                    const _ip2R = (_ip2T.equippedRelics||[]).filter(Boolean).length;
+                    const _ip2CP = _ip2R * 0.05;
+                    applyDamageWithShield(targetName, finalDamage, charName);
+                    const _ip2Crit = rollCrit(_ip2CP, charName);
+                    addLog('🐗 Desgarrar y Romper: ' + finalDamage + ' daño (' + _ip2R + ' reliquias = +' + Math.round(_ip2CP*100) + '% crit)', 'damage');
+                    if (_ip2Crit) {
+                        gameState._isCritHit = true;
+                        attacker.charges = Math.min(20,(attacker.charges||0)+14);
+                        if (typeof window.grantExtraTurn==='function') window.grantExtraTurn(charName,'Desgarrar y Romper');
+                        const _ip2Al = Object.keys(gameState.characters).filter(n=>{const c=gameState.characters[n];return c&&c.team===attacker.team&&!c.isDead&&c.hp>0&&n!==charName;});
+                        if (_ip2Al.length) {
+                            const _ip2A = _ip2Al[Math.floor(Math.random()*_ip2Al.length)];
+                            gameState.characters[_ip2A].charges = Math.min(20,(gameState.characters[_ip2A].charges||0)+14);
+                            if (typeof window.grantExtraTurn==='function') window.grantExtraTurn(_ip2A,'Desgarrar y Romper (aliado)');
+                            addLog('🐗 ¡Crítico! ' + charName + ' y ' + _ip2A + ' ganan 14 cargas y turno adicional', 'buff');
+                        }
+                    }
+                }
+
+            } else if (ability.effect === 'inosuke_over') {
+                // ── INOSUKE — Corte Ondulante Divino ──
+                const _ioT = gameState.characters[targetName];
+                if (_ioT) {
+                    const _ioR = (_ioT.equippedRelics||[]).filter(Boolean).length;
+                    const _ioCP = _ioR * 0.05;
+                    const _ioSang = (_ioT.statusEffects||[]).some(e=>e&&normAccent(e.name||'')==='sangrado');
+                    const _ioHemo = (_ioT.statusEffects||[]).some(e=>e&&normAccent(e.name||'')==='hemorragia');
+                    let _ioMult = _ioHemo ? 4 : (_ioSang ? 2 : 1);
+                    const _ioCrit = rollCrit(_ioCP, charName);
+                    if (_ioCrit) { gameState._isCritHit = true; _ioMult *= 2; }
+                    const _ioRealDmg = finalDamage * _ioMult;
+                    const _ioHpBefore = _ioT.hp || 0;
+                    applyDamageWithShield(targetName, _ioRealDmg, charName);
+                    const _ioExcess = Math.max(0, _ioRealDmg - _ioHpBefore);
+                    if (_ioExcess > 0) {
+                        const _ioPool = Object.keys(gameState.characters).filter(n=>{
+                            const c=gameState.characters[n];
+                            if(!c||c.team===attacker.team||c.isDead||c.hp<=0||n===targetName) return false;
+                            return (c.statusEffects||[]).some(e=>e&&(normAccent(e.name||'')==='sangrado'||normAccent(e.name||'')==='hemorragia'));
+                        });
+                        if (_ioPool.length) {
+                            const _ioSp = _ioPool[Math.floor(Math.random()*_ioPool.length)];
+                            applyDamageWithShield(_ioSp, _ioExcess, charName);
+                            addLog('🐗 Corte Ondulante: excedente ' + _ioExcess + ' a ' + _ioSp, 'damage');
+                        }
+                    }
+                    addLog('🐗 Corte Ondulante Divino: ' + _ioRealDmg + ' daño' + (_ioMult>1?' (x'+_ioMult+')':'') + (_ioCrit?' ¡CRÍTICO!':''), 'damage');
+                }
+
+                        } else if (ability.effect === 'danza_mariposa_shinobu') {
                 // SELF — Veneno 2T + Concentración 2T a sí misma
                 applyPoison(gameState.selectedCharacter, 2);
                 applyConcentracion(gameState.selectedCharacter, 2);
