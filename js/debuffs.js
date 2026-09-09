@@ -689,6 +689,18 @@ function triggerMaboroshi(targetTeam, debuffName) {
             if (limboChar && limboChar.passive && limboChar.passive.name === 'Limbo' && limboChar.rikudoMode) return true;
             // MAESTRÍA DE LA VARITA DE SAÚCO (Albus Dumbledore): inmune a todos los debuffs
             if (limboChar && limboChar.passive && limboChar.passive.name === 'Maestría de la Varita de Saúco') return true;
+            // EL OJO QUE TODO LO VE (Sauron): inmune a todos los debuffs con 3+ Legendarias ──
+            {
+                const _saC = gameState.characters[targetName];
+                if (_saC && _saC.passive && _saC.passive.name === 'El Ojo que Todo lo Ve') {
+                    const _tier = {};
+                    (_saC.equippedRelics || []).forEach(function(rn) {
+                        const rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[rn] : null;
+                        if (rd) _tier[rd.tier] = (_tier[rd.tier] || 0) + 1;
+                    });
+                    if ((_tier['Legendario'] || 0) >= 3) return true;
+                }
+            }
             return false;
         }
         function isImmuneToBurn(targetName) {
