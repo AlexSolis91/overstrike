@@ -2394,7 +2394,12 @@
                             const _saGain = 5 * _saAnillos.length;
                             _saC.speed = (_saC.speed || 0) + _saGain;
                             _saC.maxHp = (_saC.maxHp || 0) + _saGain;
-                            _saC.hp = Math.min(_saC.maxHp, (_saC.hp || 0) + _saGain);
+                            // Usar applyHeal para que Ashbringer y otros hooks de curación se activen
+                            if (typeof applyHeal === 'function') {
+                                applyHeal(_saN, _saGain, 'El Ojo que Todo lo Ve (Anillo)');
+                            } else {
+                                _saC.hp = Math.min(_saC.maxHp, (_saC.hp || 0) + _saGain);
+                            }
                             addLog('👁️ El Ojo que Todo lo Ve: Sauron gana +' + _saGain + ' velocidad y +' + _saGain + ' HP máximo (' + _saAnillos.length + ' Anillo(s))', 'buff');
                         }
                     }
