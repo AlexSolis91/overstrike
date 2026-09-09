@@ -1509,7 +1509,29 @@
             gameState._sauronAppliesMegaPosesion = false;
             gameState._sauronCapaSteal = 0;
 
-            // ── SISTEMA CENTRALIZADO DE CRÍTICO POR RELIQUIAS ────────────────────────────────
+            // ── INOSUKE — _inosukeEmbestida definida globalmente para que la pasiva
+        //    pueda llamarla incluso antes de que Inosuke haya usado su básico manualmente ──
+        window._inosukeEmbestida = function(cName, tName, skipChargeGain) {
+            var _ic = gameState.characters[cName];
+            var _tc = gameState.characters[tName];
+            if (!_ic || !_tc || _tc.isDead || _tc.hp <= 0) return;
+            if (typeof applyDamageWithShield === 'function') applyDamageWithShield(tName, 2, cName);
+            var _hS = (_tc.statusEffects||[]).some(function(e){return e&&(typeof normAccent==='function'?normAccent(e.name||''):e.name||'')==='sangrado';});
+            var _hH = (_tc.statusEffects||[]).some(function(e){return e&&(typeof normAccent==='function'?normAccent(e.name||''):e.name||'')==='hemorragia';});
+            if (_hS) {
+                _tc.charges = Math.max(0,(_tc.charges||0)-2);
+                if (typeof addLog==='function') addLog('🐗 Embestida del Cerdo: ' + tName + ' -2 cargas (Sangrado)', 'damage');
+            }
+            if (_hH) {
+                _tc.charges = Math.max(0,(_tc.charges||0)-3);
+                _tc.maxHp = Math.max(1,(_tc.maxHp||0)-1);
+                if (_tc.hp > _tc.maxHp) _tc.hp = _tc.maxHp;
+                if (typeof addLog==='function') addLog('🐗 Embestida del Cerdo: ' + tName + ' -3 cargas y -1 HP máx (Hemorragia)', 'damage');
+            }
+            if (!skipChargeGain) _ic.charges = Math.min(20,(_ic.charges||0)+2);
+        };
+
+        // ── SISTEMA CENTRALIZADO DE CRÍTICO POR RELIQUIAS ────────────────────────────────
             // Calcula el bono acumulado de probabilidad de crítico de TODAS las reliquias
             // equipadas por el atacante. Los handlers de habilidades llaman a rollCrit(base) para
             // obtener la tirada CORRECTAMENTE ADITIVA: 20% base + 30% Cuerno + 30% Onslaught = 80%.
@@ -10060,28 +10082,11 @@
 
             } else if (ability.effect === 'inosuke_basic') {
                 // ── INOSUKE — Embestida del Cerdo ──
-                if (!window._inosukeEmbestida) {
-                    window._inosukeEmbestida = function(cName, tName, skipChargeGain) {
-                        const _ic = gameState.characters[cName];
-                        const _tc = gameState.characters[tName];
-                        if (!_ic || !_tc || _tc.isDead || _tc.hp <= 0) return;
-                        applyDamageWithShield(tName, 2, cName);
-                        const _hS = (_tc.statusEffects||[]).some(e=>e&&normAccent(e.name||'')==='sangrado');
-                        const _hH = (_tc.statusEffects||[]).some(e=>e&&normAccent(e.name||'')==='hemorragia');
-                        if (_hS) {
-                            _tc.charges = Math.max(0,(_tc.charges||0)-2);
-                            addLog('🐗 Embestida: ' + tName + ' -2 cargas (Sangrado)', 'damage');
-                        }
-                        if (_hH) {
-                            _tc.charges = Math.max(0,(_tc.charges||0)-3);
-                            _tc.maxHp = Math.max(1,(_tc.maxHp||0)-1);
-                            if (_tc.hp > _tc.maxHp) _tc.hp = _tc.maxHp;
-                            addLog('🐗 Embestida: ' + tName + ' -3 cargas y -1 HP máx (Hemorragia)', 'damage');
-                        }
-                        if (!skipChargeGain) _ic.charges = Math.min(20,(_ic.charges||0)+2);
-                    };
+                // _inosukeEmbestida se define globalmente al cargar skills.js (ver arriba)
+                // para que esté disponible desde la pasiva incluso antes del primer uso manual.
+                if (typeof window._inosukeEmbestida === 'function') {
+                    window._inosukeEmbestida(charName, targetName, false);
                 }
-                window._inosukeEmbestida(charName, targetName, false);
                 addLog('🐗 Embestida del Cerdo: 2 daño a ' + targetName, 'damage');
 
             } else if (ability.effect === 'inosuke_special1') {
