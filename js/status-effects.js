@@ -737,7 +737,7 @@ function processBurnEffects(charName) {
                     }
                     // Aplicar Quemadura = cantidad curada
                     if (typeof applyDebuff === 'function') {
-                        applyDebuff(charName, { name: 'Quemadura', type: 'debuff', duration: 99, damage: _actual, emoji: '🔥', permanent: false });
+                        if (typeof applyFlatBurn === 'function') applyFlatBurn(charName, _actual, 99); else applyDebuff(charName, { name: 'Quemadura', type: 'debuff', duration: 99, flatHp: _actual, damage: _actual, emoji: '🔥', permanent: false });
                         addLog('🗡️ Katana Carmesí: ' + portadorName + ' atacó a ' + charName + ' (se curó ' + _actual + ' HP) → Quemadura ' + _actual + ' HP', 'damage');
                     }
                 });
