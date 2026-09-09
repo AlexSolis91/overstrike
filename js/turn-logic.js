@@ -1897,7 +1897,20 @@
             
             // Renderizar habilidades
             renderActionAbilities();
-            
+
+            // ── BLOQUEO TOTAL: si todas las habilidades están deshabilitadas, saltar turno ──
+            // Esto ocurre cuando el personaje no tiene cargas para ninguna habilidad y todas
+            // las demás condiciones (freeze, silencio, etc.) también bloquean las que no cuestan.
+            setTimeout(function() {
+                var _allBtns = document.querySelectorAll('#actionAbilities .action-ability-btn');
+                var _allDisabled = _allBtns.length > 0 && Array.from(_allBtns).every(function(b){ return b.disabled; });
+                if (_allDisabled) {
+                    addLog('⏭️ ' + (gameState.selectedCharacter||'') + ' no puede ejecutar ninguna habilidad — turno saltado', 'info');
+                    modal.classList.remove('show');
+                    setTimeout(function() { if (typeof endTurn === 'function') endTurn(); }, 500);
+                }
+            }, 80);
+
             modal.classList.add('show');
         }
 
