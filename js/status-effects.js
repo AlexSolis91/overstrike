@@ -152,6 +152,8 @@
                 addLog('🛡️ ' + targetName + ' es inmune a Quemadura (Protección Sagrada)', 'buff');
                 return;
             }
+            // EL OJO QUE TODO LO VE (Sauron): inmune a debuffs con 3+ Legendarias ──
+            if (typeof _sauronDebuffImmune === 'function' && _sauronDebuffImmune(targetName, 'quemadura')) return;
             if (!target.statusEffects) target.statusEffects = [];
             target.statusEffects.push({
                 name: 'Quemadura', type: 'debuff',
