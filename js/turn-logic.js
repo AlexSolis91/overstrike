@@ -2297,7 +2297,7 @@
                         Object.keys(gameState.characters).forEach(function(en) {
                             const ec = gameState.characters[en];
                             if (!ec || ec.team !== eTeam || ec.isDead) return;
-                            if (typeof applyDebuff === 'function') applyDebuff(en, { name: 'Quemadura', type: 'debuff', duration: 99, damage: 5, emoji: '🔥', permanent: false });
+                            if (typeof applyFlatBurn === 'function') applyFlatBurn(en, 5, 99); else if (typeof applyDebuff === 'function') applyDebuff(en, { name: 'Quemadura', type: 'debuff', duration: 99, flatHp: 5, damage: 5, emoji: '🔥', permanent: false });
                         });
                         addLog('🗡️ Katana Carmesí: Quemadura 5 HP aplicada al equipo enemigo', 'debuff');
                     });
