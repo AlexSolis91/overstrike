@@ -1379,6 +1379,43 @@
             }
             // ── ELFOS OSCUROS: pasivas al recibir daño (Corrupción +5 vel, Canto de la
             //    Oscuridad devuelve 2, Artes Élficas Oscuras cura al Necromancer) ──
+            // ── ALDEBARAN (Fortaleza del Toro): contadores de Tauro al recibir daño ──
+            // Cada golpe añade 1 contador (máx 8). Por cada contador, reduce 10% el daño.
+            if (damage > 0) {
+                const _aldC = gameState.characters[targetName];
+                if (_aldC && _aldC.passive && _aldC.passive.name === 'Fortaleza del Toro') {
+                    // Acumular contador
+                    _aldC._taurusCounters = Math.min(8, (_aldC._taurusCounters || 0) + 1);
+                    // Reducción por contadores (10% por contador, acumulable hasta 80%)
+                    if (_aldC._taurusCounters > 0) {
+                        var _aldRed = Math.min(0.80, _aldC._taurusCounters * 0.10);
+                        damage = Math.max(1, Math.floor(damage * (1 - _aldRed)));
+                    }
+                }
+            }
+            // ── ALDEBARAN (Fortaleza del Toro): absorbe 50% del daño de ataques por
+            //    pasivas o reliquias (passiveExecuting = true o _relicTriggeredAttack = true) ──
+            if (damage > 0 && (passiveExecuting || gameState._relicTriggeredAttack)) {
+                // Buscar un Aldebaran aliado del objetivo que tenga la pasiva
+                const _tgtChar = gameState.characters[targetName];
+                if (_tgtChar) {
+                    const _aldName = Object.keys(gameState.characters).find(function(n) {
+                        const c = gameState.characters[n];
+                        return c && c.team === _tgtChar.team && !c.isDead && c.hp > 0
+                            && c.passive && c.passive.name === 'Fortaleza del Toro'
+                            && n !== targetName;
+                    });
+                    if (_aldName) {
+                        var _aldAbsorb = Math.floor(damage * 0.50);
+                        damage = damage - _aldAbsorb;
+                        if (_aldAbsorb > 0) {
+                            applyDamageWithShield(_aldName, _aldAbsorb, attackerName);
+                            addLog('🐂 Fortaleza del Toro: ' + _aldName + ' absorbe ' + _aldAbsorb + ' daño (50% de ataque por pasiva/reliquia)', 'buff');
+                        }
+                    }
+                }
+            }
+
             // ── INOSUKE (El Rey de la Montaña): recibe solo 40% del daño si el golpe es ≥10 ──
             if (damage >= 10) {
                 const _inoTgt = gameState.characters[targetName];
