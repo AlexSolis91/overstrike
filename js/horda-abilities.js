@@ -1299,7 +1299,7 @@
                         // permanentes (Efecto Omega/Darkseid, Hombre de Acero/Superman, etc.)
                         // y no solo el buff activo en statusEffects.
                         var _mpData = typeof checkKamishMegaProvocation === 'function'
-                            ? checkKamishMegaProvocation(enemyTeamOf(charC.team))
+                            ? checkKamishMegaProvocation(enemyTeamOf(char.team))
                             : null;
                         if (_mpData && _mpData.isCharacter) return _mpData.characterName;
                         // Provocación normal
