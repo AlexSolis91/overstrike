@@ -132,9 +132,35 @@
             const c = gameState.characters[charName];
             if (!c || c.isDead || c.hp <= 0) return;
             gameState._pendingExtraTurns = gameState._pendingExtraTurns || [];
-            // Un mismo personaje puede recibir varios turnos adicionales en el mismo turno;
-            // cada llamada añade un slot propio.
             gameState._pendingExtraTurns.push(charName);
+
+            // ── KATANA DEL RAYO y HILOS DE CHAKRA DE SASORI: reaccionan cuando un
+            //    ENEMIGO gana un turno adicional. Busca portadores en el equipo contrario. ──
+            const _etEnemyTeam = c.team;  // el que ganó el turno es el "enemigo" del portador
+            Object.keys(gameState.characters).forEach(function(_etN) {
+                const _etC = gameState.characters[_etN];
+                if (!_etC || _etC.isDead || _etC.hp <= 0) return;
+                if (_etC.team === _etEnemyTeam) return;  // mismo equipo que el que ganó turno → no aplica
+                (_etC.equippedRelics || []).forEach(function(rn) {
+                    const rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[rn] : null;
+                    if (!rd) return;
+                    // Katana del Rayo: Mega Aturdimiento garantizado
+                    if (rd.effect === 'katana_rayo') {
+                        if (typeof applyStun === 'function') {
+                            applyStun(charName, 2);
+                            addLog('⚡ Katana del Rayo: Mega Aturdimiento sobre ' + charName + ' (ganó turno adicional)', 'debuff');
+                        }
+                    }
+                    // Hilos de Chakra de Sasori: 30% de Mega Posesión
+                    if (rd.effect === 'hilos_sasori' && Math.random() < 0.30) {
+                        if (typeof applyDebuff === 'function') {
+                            applyDebuff(charName, { name:'Mega Posesion', type:'debuff', duration:2, emoji:'👁️‍🗨️' });
+                            addLog('🕸️ Hilos de Chakra de Sasori: Mega Posesión sobre ' + charName + ' (30%)', 'debuff');
+                        }
+                    }
+                });
+            });
+
             if (typeof window.elfrOnExtraTurnGranted === 'function') {
                 try { window.elfrOnExtraTurnGranted(charName); } catch (e) { console.error('[elfr extraTurn]', e); }
             }
