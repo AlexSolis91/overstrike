@@ -10040,42 +10040,46 @@
                 addLog('⚔️ Furia de Freya: 5 golpes MT completados', 'damage');
 
             } else if (ability.effect === 'valquiria_lagertha_v2') {
-                // VALQUIRIA: todo el equipo aliado usa su básico sobre el objetivo + Contraataque 3T
+                // ── VALQUIRIA (Over SELF) — nueva versión ──
+                // 1) El equipo aliado gana HP máx = 50% del Escudo de Lagertha
+                // 2) Lagertha gana Mega Provocación 3T
+                // 3) Daño a un enemigo aleatorio = HP de Escudo de Lagertha
                 const _vlAtk  = gameState.characters[charName];
                 const _vlTeam = _vlAtk ? _vlAtk.team : 'team1';
-                const _vlTgt  = gameState.characters[targetName];
-                if (_vlTgt) {
+                const _vlShield = _vlAtk ? (_vlAtk.shield || 0) : 0;
+
+                // 1) HP máx para todos los aliados (50% del Escudo)
+                const _vlHpBonus = Math.floor(_vlShield * 0.50);
+                if (_vlHpBonus > 0) {
                     for (const _an in gameState.characters) {
                         const _a = gameState.characters[_an];
-                        if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _vlTeam || _an === charName) continue;
-                        const _basic = _a.abilities && _a.abilities[0];
-                        if (!_basic || !_basic.damage || _basic.damage <= 0) continue;
-                        passiveExecuting = true;
-                        const _saveSel = gameState.selectedCharacter;
-                        const _saveAb  = gameState.selectedAbility;
-                        gameState.selectedCharacter = _an;
-                        gameState.selectedAbility   = _basic;
-                        applyDamageWithShield(targetName, _basic.damage, _an);
-                        _a.charges = Math.min(20, (_a.charges||0) + (_basic.chargeGain||0));
-                        // Apply the basic's effects too
-                        if (typeof executeAbility === 'function' && _basic.effect) {
-                            // Only apply effects, not damage (damage already applied)
-                            addLog('⚔️ Valquiria: ' + _an + ' usa ' + _basic.name + ' → ' + _basic.damage + ' daño a ' + targetName, 'damage');
-                        } else {
-                            addLog('⚔️ Valquiria: ' + _an + ' ataca a ' + targetName + ' (' + _basic.damage + ' daño)', 'damage');
-                        }
-                        gameState.selectedCharacter = _saveSel;
-                        gameState.selectedAbility   = _saveAb;
-                        passiveExecuting = false;
+                        if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _vlTeam) continue;
+                        _a.maxHp = (_a.maxHp || 0) + _vlHpBonus;
                     }
+                    addLog('⚔️ Valquiria: equipo aliado +' + _vlHpBonus + ' HP máx (50% del Escudo de Lagertha = ' + _vlShield + ')', 'buff');
                 }
-                // Buff Contraataque 3T al equipo aliado
-                for (const _an in gameState.characters) {
-                    const _a = gameState.characters[_an];
-                    if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _vlTeam) continue;
-                    if (typeof applyBuff === 'function') applyBuff(_an, { name:'Contraataque', type:'buff', duration:3, emoji:'⚔️' });
+
+                // 2) Mega Provocación 3T para Lagertha
+                if (typeof applyBuff === 'function') {
+                    applyBuff(charName, { name:'Mega Provocacion', type:'buff', duration:3, emoji:'🌑', megaProvocacion:true });
                 }
-                addLog('⚔️ Valquiria: equipo aliado atacó + Contraataque 3T', 'buff');
+                addLog('⚔️ Valquiria: Lagertha gana Mega Provocación 3T', 'buff');
+
+                // 3) Daño = HP de Escudo a un enemigo aleatorio
+                if (_vlShield > 0) {
+                    const _vlETeam = _vlTeam === 'team1' ? 'team2' : 'team1';
+                    const _vlEnemies = Object.keys(gameState.characters).filter(function(n) {
+                        const _c = gameState.characters[n];
+                        return _c && _c.team === _vlETeam && !_c.isDead && _c.hp > 0;
+                    });
+                    if (_vlEnemies.length) {
+                        const _vlTgt = _vlEnemies[Math.floor(Math.random() * _vlEnemies.length)];
+                        applyDamageWithShield(_vlTgt, _vlShield, charName);
+                        addLog('⚔️ Valquiria: ' + _vlShield + ' daño a ' + _vlTgt + ' (= HP de Escudo de Lagertha)', 'damage');
+                    }
+                } else {
+                    addLog('⚔️ Valquiria: Lagertha no tiene Escudo — sin daño adicional', 'info');
+                }
 
             // ══════════════════════════════════════════════════════
             // SHINOBU KOCHO            // ══════════════════════════════════════════════════════
