@@ -2248,6 +2248,32 @@
                     if (typeof window.elfrOnRoundStart === 'function') {
                         try { window.elfrOnRoundStart(); } catch (e) { console.error('[elfr roundStart]', e); }
                     }
+                    // ── ALDEBARAN (Fortaleza del Toro): Great Horn automático al inicio
+                    //    de ronda por cada contador de Tauro ──
+                    ;(function() {
+                        Object.keys(gameState.characters).forEach(function(aName) {
+                            var _ac = gameState.characters[aName];
+                            if (!_ac || _ac.isDead || _ac.hp <= 0) return;
+                            if (!_ac.passive || _ac.passive.name !== 'Fortaleza del Toro') return;
+                            var _ctrs = _ac._taurusCounters || 0;
+                            if (_ctrs <= 0) return;
+                            var _eTeam = (_ac.team === 'team1') ? 'team2' : 'team1';
+                            for (var _ai = 0; _ai < _ctrs; _ai++) {
+                                var _enemies = Object.keys(gameState.characters).filter(function(n){
+                                    var c=gameState.characters[n]; return c&&c.team===_eTeam&&!c.isDead&&c.hp>0;
+                                });
+                                if (!_enemies.length) break;
+                                var _tgt = _enemies[Math.floor(Math.random()*_enemies.length)];
+                                if (typeof window._aldGreatHorn === 'function') {
+                                    passiveExecuting = true;
+                                    window._aldGreatHorn(aName, _tgt);
+                                    passiveExecuting = false;
+                                }
+                                addLog('🐂 Fortaleza del Toro: Great Horn sobre ' + _tgt + ' (contador '+(_ai+1)+'/'+_ctrs+')', 'buff');
+                            }
+                        });
+                    })();
+
                     // ── INOSUKE: Perforar y Extraer automático al inicio de ronda ──
                     ;(function() {
                         Object.keys(gameState.characters).forEach(function(iName) {
