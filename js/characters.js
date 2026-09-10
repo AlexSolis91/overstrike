@@ -645,7 +645,7 @@
                     { name: 'Hacha y Escudo',   type: 'basic',   cost: 0,  chargeGain: 2, damage: 1, target: 'single', effect: 'hacha_escudo_lagertha_v2',  description: 'ST 1 daño + Provocación a Lagertha. 50% de probabilidad de aplicar Reflejar a Lagertha.' },
                     { name: 'Muro de Escudo',   type: 'special', cost: 4,  chargeGain: 0, damage: 0, target: 'self',   effect: 'muro_escudo_lagertha_v2',   description: 'Escudo 5 HP + Protección Sagrada 2T al equipo aliado.' },
                     { name: 'Furia de Freya',   type: 'special', cost: 7,  chargeGain: 0, damage: 2, target: 'mt',     effect: 'furia_freya_v2',             description: '5 golpes MT 2 daño. Por cada debuff activo en el enemigo golpeado, aplica 1 buff aleatorio (Escudo Sagrado/Armadura/Esquiva Área/Esquivar/Cuerpo Perfecto) a un aliado aleatorio.' },
-                    { name: 'Valquiria',        type: 'over',    cost: 12, chargeGain: 0, damage: 0, target: 'single', effect: 'valquiria_lagertha_v2',     description: 'Todo el equipo aliado usa su básico sobre el objetivo. Aplica buff Contraataque al equipo aliado por 3 turnos.' }
+                    { name: 'Valquiria',        type: 'over',    cost: 12, chargeGain: 0, damage: 0, target: 'self',   effect: 'valquiria_lagertha_v2',     description: 'SELF. El equipo aliado gana HP máx equivalente al 50% del Escudo de Lagertha. Lagertha gana Mega Provocación 3T. Causa daño a un enemigo aleatorio igual al HP de Escudo de Lagertha.' }
                 ]
             },
             'Inosuke': {
