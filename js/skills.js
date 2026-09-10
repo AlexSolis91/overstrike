@@ -1026,6 +1026,8 @@
                     break;
                 }
                 case 'DANIO_AOE': {
+                    // Marcar como ataque de reliquia para que Aldebaran absorba el 50%
+                    gameState._relicTriggeredAttack = true;
                     // ── Usar resolveAOETargets igual que el resto del motor:
                     //    1) Dispara la pasiva de Jon Snow (triggerElReyPrometido) ANTES de filtrar
                     //    2) Excluye a los personajes con Esquiva Área del resultado
@@ -15357,34 +15359,62 @@
             // ══════════════════════════════════════════════════════
 
             else if (ability.effect === 'great_horn_ald') {
-                // Great Horn: 1 ST + recupera 3 HP + Escudo 2 HP en Aldebaran
-                applyDamageWithShield(targetName, finalDamage, gameState.selectedCharacter);
-                addLog('🐂 Great Horn: ' + finalDamage + ' daño a ' + targetName, 'damage');
-                if (typeof applyHeal === 'function') applyHeal(gameState.selectedCharacter, 3, 'Great Horn');
-                const _ghAld = gameState.characters[gameState.selectedCharacter];
-                if (_ghAld) { _ghAld.shield = (_ghAld.shield||0) + 2; addLog('🐂 Great Horn: Escudo 2 HP en Aldebaran', 'buff'); }
+                // ── ALDEBARAN — Great Horn (BASIC ST) ──
+                // Función también usada por la pasiva al inicio de ronda
+                window._aldGreatHorn = window._aldGreatHorn || function(cName, tName) {
+                    var _ald = gameState.characters[cName];
+                    var _tgt = gameState.characters[tName];
+                    if (!_ald || !_tgt || _tgt.isDead || _tgt.hp <= 0) return;
+                    var _counters = _ald._taurusCounters || 0;
+                    var _baseDmg = 2;
+                    applyDamageWithShield(tName, _baseDmg, cName);
+                    // Roba 2 HP por contador de Tauro
+                    if (_counters > 0) {
+                        var _steal = Math.min(_counters * 2, _tgt.hp || 0);
+                        if (_steal > 0) {
+                            applyDamageWithShield(tName, _steal, cName);
+                            if (typeof applyHeal === 'function') applyHeal(cName, _steal, 'Great Horn (robo)');
+                        }
+                        addLog('🐂 Great Horn: roba ' + _steal + ' HP (' + _counters + ' contadores de Tauro)', 'buff');
+                    }
+                    // Escudo 3 HP
+                    _ald.shield = (_ald.shield || 0) + 3;
+                    // 5% Mega Aturdimiento
+                    if (Math.random() < 0.05 && typeof applyStun === 'function') {
+                        applyStun(tName, 2);
+                        addLog('🐂 Great Horn: Mega Aturdimiento en ' + tName + ' (5%)', 'debuff');
+                    }
+                    // Carga de generación solo cuando no es disparo pasivo
+                    _ald.charges = Math.min(20, (_ald.charges || 0) + 2);
+                };
+                if (typeof window._aldGreatHorn === 'function') window._aldGreatHorn(charName, targetName);
+                addLog('🐂 Great Horn: 2 daño a ' + targetName, 'damage');
 
             } else if (ability.effect === 'golden_shield_ald') {
-                // Golden Shield: limpia debuffs + Protección Sagrada 2T + 50% Escudo Sagrado
-                const _gsAld = gameState.characters[gameState.selectedCharacter];
-                if (_gsAld) {
-                    const _removed = (_gsAld.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff'; }).length;
-                    _gsAld.statusEffects = (_gsAld.statusEffects||[]).filter(function(e){ return !e || e.type !== 'debuff'; });
-                    if (_removed > 0) addLog('🐂 Golden Shield: ' + _removed + ' debuffs eliminados de Aldebaran', 'buff');
-                    (_gsAld.statusEffects = _gsAld.statusEffects||[]).push({ name:'Protección Sagrada', type:'buff', duration:2, emoji:'🛡️', protSagrada:true });
-                    addLog('🐂 Golden Shield: Protección Sagrada 2T', 'buff');
-                    if (Math.random() < 0.5) {
-                        if (typeof applyBuff === 'function') {
-                            applyBuff(gameState.selectedCharacter, { name:'Escudo Sagrado', type:'buff', duration:3, emoji:'✝️' });
-                        } else {
-                            _gsAld.statusEffects.push({ name:'Escudo Sagrado', type:'buff', duration:3, emoji:'✝️' });
-                        }
-                        addLog('🐂 Golden Shield: Escudo Sagrado 2T (50%)', 'buff');
+                // ── ALDEBARAN — Brazo de Hierro (SPECIAL SELF) ──
+                const _biAld = gameState.characters[gameState.selectedCharacter];
+                if (_biAld) {
+                    const _debuffs = (_biAld.statusEffects||[]).filter(function(e){ return e && e.type === 'debuff' && !e.permanent; });
+                    const _removed = _debuffs.length;
+                    _biAld.statusEffects = (_biAld.statusEffects||[]).filter(function(e){ return !e || e.type !== 'debuff' || e.permanent; });
+                    if (_removed > 0) {
+                        // +30% HP máx por debuff disipado
+                        var _hpBonus = Math.floor((_biAld.maxHp || 30) * 0.30 * _removed);
+                        _biAld.maxHp = (_biAld.maxHp || 30) + _hpBonus;
+                        addLog('🐂 Brazo de Hierro: ' + _removed + ' debuffs disipados → +' + _hpBonus + ' HP máx', 'buff');
                     }
+                    // Protección Sagrada 2T
+                    if (typeof applyBuff === 'function') {
+                        applyBuff(charName, { name:'Proteccion Sagrada', type:'buff', duration:2, emoji:'🛡️✨', protSagrada:true });
+                        applyBuff(charName, { name:'Armadura', type:'buff', duration:2, emoji:'🪖' });
+                    }
+                    // Regeneración 25% 2T
+                    if (typeof applyBuff === 'function') applyBuff(charName, { name:'Regeneracion', type:'buff', duration:2, emoji:'💚', healPercent:25 });
+                    addLog('🐂 Brazo de Hierro: Protección Sagrada + Armadura + Regeneración 25% (2T)', 'buff');
                 }
 
             } else if (ability.effect === 'double_great_horn_ald') {
-                // Double Great Horn: 2 objetivos, 60% doble, 40% triple. Escudo = daño total
+                // ── ALDEBARAN — Double Great Horn (SPECIAL MT) ──
                 const _dghAld = gameState.characters[gameState.selectedCharacter];
                 const _dghETeam = _dghAld ? (_dghAld.team === 'team1' ? 'team2' : 'team1') : 'team2';
                 let _dghTotalDmg = 0;
@@ -15394,28 +15424,70 @@
                     });
                     if (!_dghEnemies.length) break;
                     const _dghTgt = _dghEnemies[Math.floor(Math.random() * _dghEnemies.length)];
-                    const _roll = Math.random();
-                    const _dghDmg = _roll < 0.6 ? finalDamage * 2 : finalDamage * 3;
+                    // 50% crítico, 50% daño triple (independientes)
+                    var _dghDmg = finalDamage;
+                    const _isCrit = rollCrit(0.50, charName);
+                    if (_isCrit) { gameState._isCritHit = true; _dghDmg *= 2; }
+                    if (Math.random() < 0.50) _dghDmg *= 3;
                     applyDamageWithShield(_dghTgt, _dghDmg, gameState.selectedCharacter);
                     _dghTotalDmg += _dghDmg;
-                    addLog('🐂 Double Great Horn: ' + _dghDmg + ' daño a ' + _dghTgt + (_roll < 0.6 ? ' (doble)' : ' (triple)'), 'damage');
+                    addLog('🐂 Double Great Horn: ' + _dghDmg + ' daño a ' + _dghTgt, 'damage');
                     if (checkGameOver()) break;
                 }
-                if (_dghTotalDmg > 0 && _dghAld) {
-                    _dghAld.shield = (_dghAld.shield||0) + _dghTotalDmg;
-                    addLog('🐂 Double Great Horn: Escudo +' + _dghTotalDmg + ' HP (= daño total)', 'buff');
+                // Roba HP = daño total causado, repartido entre enemigos aleatorios
+                if (_dghTotalDmg > 0) {
+                    let _remaining = _dghTotalDmg;
+                    while (_remaining > 0) {
+                        const _dghEn = Object.keys(gameState.characters).filter(function(n){
+                            const _c = gameState.characters[n]; return _c && _c.team === _dghETeam && !_c.isDead && _c.hp > 0;
+                        });
+                        if (!_dghEn.length) break;
+                        const _t = _dghEn[Math.floor(Math.random() * _dghEn.length)];
+                        const _take = Math.min(_remaining, gameState.characters[_t].hp || 0);
+                        if (_take <= 0) break;
+                        applyDamageWithShield(_t, _take, charName);
+                        if (typeof applyHeal === 'function') applyHeal(charName, _take, 'Double Great Horn (robo)');
+                        _remaining -= _take;
+                        if (_remaining <= 0) break;
+                    }
+                    addLog('🐂 Double Great Horn: roba ' + _dghTotalDmg + ' HP total', 'buff');
                 }
 
             } else if (ability.effect === 'great_supernova_ald') {
-                // Great Supernova: 5 ST + bonus daño por HP de escudo + Escudo aleatorio 1-20
+                // ── ALDEBARAN — Great Supernova (OVER AOE) ──
                 const _gsn = gameState.characters[gameState.selectedCharacter];
-                const _gsnShield = _gsn ? (_gsn.shield||0) : 0;
-                const _gsnDmg = finalDamage + _gsnShield;
-                applyDamageWithShield(targetName, _gsnDmg, gameState.selectedCharacter);
-                addLog('🐂 Great Supernova: ' + _gsnDmg + ' daño (' + finalDamage + ' base + ' + _gsnShield + ' por Escudo)', 'damage');
-                const _newShield = 1 + Math.floor(Math.random() * 20);
-                if (_gsn) { _gsn.shield = (_gsn.shield||0) + _newShield; }
-                addLog('🐂 Great Supernova: Escudo ' + _newShield + ' HP en Aldebaran (aleatorio 1-20)', 'buff');
+                const _gsnCounters = _gsn ? (_gsn._taurusCounters || 0) : 0;
+                const _gsnETeam = _gsn ? (_gsn.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                // Daño AOE base (usa resolveAOETargets para respetar MegaProv y EsquivaArea)
+                if (typeof window.resolveAOETargets === 'function') {
+                    const _gsnAOE = window.resolveAOETargets(gameState.selectedCharacter, _gsnETeam);
+                    _gsnAOE.targets.forEach(function(n) {
+                        applyDamageWithShield(n, finalDamage * _gsnAOE.multiplier, gameState.selectedCharacter);
+                        addLog('🐂 Great Supernova: ' + (finalDamage * _gsnAOE.multiplier) + ' daño AOE a ' + n, 'damage');
+                    });
+                }
+                // Por cada contador: 20% HP máx a un enemigo aleatorio
+                if (_gsnCounters > 0 && _gsn) {
+                    const _gsnBonusDmg = Math.max(1, Math.floor((_gsn.maxHp || 30) * 0.20));
+                    for (var _gi = 0; _gi < _gsnCounters; _gi++) {
+                        const _gsnEnemies = Object.keys(gameState.characters).filter(function(n){
+                            const _c = gameState.characters[n]; return _c && _c.team === _gsnETeam && !_c.isDead && _c.hp > 0;
+                        });
+                        if (!_gsnEnemies.length) break;
+                        const _gsnTgt = _gsnEnemies[Math.floor(Math.random() * _gsnEnemies.length)];
+                        applyDamageWithShield(_gsnTgt, _gsnBonusDmg, charName);
+                        addLog('🐂 Great Supernova: contador Tauro ' + (_gi+1) + '/' + _gsnCounters + ' → ' + _gsnBonusDmg + ' daño a ' + _gsnTgt, 'damage');
+                    }
+                    _gsn._taurusCounters = 0; // Consumir contadores
+                    addLog('🐂 Great Supernova: contadores de Tauro consumidos', 'buff');
+                }
+                // Disipar todos los buffs de los enemigos
+                Object.keys(gameState.characters).forEach(function(n) {
+                    const _ec = gameState.characters[n];
+                    if (!_ec || _ec.team !== _gsnETeam || _ec.isDead) return;
+                    _ec.statusEffects = (_ec.statusEffects||[]).filter(function(e){ return !e || e.type !== 'buff' || e.passiveHidden; });
+                });
+                addLog('🐂 Great Supernova: todos los buffs enemigos disipados', 'buff');
 
             // ══════════════════════════════════════════════════════
             // ANDROIDE 17 — handlers
