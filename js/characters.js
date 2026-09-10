@@ -31,16 +31,17 @@
             },
             'Aldebaran': {
                 name: 'Aldebaran',
-                hp: 30, maxHp: 30, speed: 83, charges: 0,
+                hp: 30, maxHp: 30, speed: 84, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.postimg.cc/PJr0LB6N/Captura-de-pantalla-2026-02-21-230603.png',
-                passive: { name: 'Fortaleza de Tauro', description: 'Efecto pasivo Provocación. Cada vez que un Buff Escudo (en cualquier aliado o en Aldebaran) pierde HP: Aldebaran ejecuta Great Horn automáticamente. Al final de cada ronda, si Aldebaran tiene Escudo activo: recupera 2 HP.' },
+                portrait: 'https://i.ibb.co/ynXvHnT8/image-484da2b2.jpg',
+                passive: { name: 'Fortaleza del Toro', description: 'Efecto pasivo Provocación. Cuando un enemigo ejecuta un ataque por pasiva o reliquia, Aldebaran absorbe ese daño reduciéndolo un 50%. Cada daño recibido genera 1 contador de Tauro (máx 8). Por cada contador, reduce un 10% el daño recibido. Al inicio de cada ronda, ejecuta Great Horn automáticamente sobre un enemigo aleatorio por cada contador de Tauro.' },
                 abilities: [
-                    { name: 'Great Horn',        type: 'basic',   cost: 0,  chargeGain: 1, damage: 1, target: 'single', effect: 'great_horn_ald',        description: 'Causa 1 daño ST. Recupera 3 HP. Aplica Buff Escudo 2 HP sobre Aldebaran.' },
-                    { name: 'Golden Shield',     type: 'special', cost: 3,  chargeGain: 0, damage: 0, target: 'self',   effect: 'golden_shield_ald',     description: 'Limpia todos los debuffs de Aldebaran. Aplica Buff Protección Sagrada 2T. 50% de aplicar Buff Escudo Sagrado 2T.' },
-                    { name: 'Double Great Horn', type: 'special', cost: 7,  chargeGain: 0, damage: 3, target: 'single', effect: 'double_great_horn_ald', description: 'Causa 3 daño a 2 objetivos aleatorios. 60% doble daño, 40% triple daño. Aplica Buff Escudo con HP = daño total causado.' },
-                    { name: 'Great Supernova',   type: 'over',    cost: 10, chargeGain: 0, damage: 5, target: 'single', effect: 'great_supernova_ald',   description: 'Causa 5 ST. Aplica Escudo 1-20 HP (aleatorio) sobre Aldebaran. +1 daño adicional por cada HP de Escudo que Aldebaran tenga.' },
-                ]
+                    { name: 'Great Horn',        type: 'basic',   cost: 0,  chargeGain: 2, damage: 2, target: 'single', effect: 'great_horn_ald',        description: 'ST 2 daño. Roba 2 HP del objetivo por cada contador de Tauro. Aplica Escudo 3 HP en Aldebaran. 5% de probabilidad de Mega Aturdimiento.' },
+                    { name: 'Brazo de Hierro',   type: 'special', cost: 6,  chargeGain: 0, damage: 0, target: 'self',   effect: 'golden_shield_ald',     description: 'Disipa todos los debuffs de Aldebaran. Por cada debuff disipado: +30% de HP máx. Aplica Protección Sagrada 2T, Armadura 2T y Regeneración 25% 2T.' },
+                    { name: 'Double Great Horn', type: 'special', cost: 8,  chargeGain: 0, damage: 2, target: 'mt',     effect: 'double_great_horn_ald', description: 'MT 2 daño, 2 golpes a enemigos aleatorios. 50% de crítico por golpe. 50% de daño triple por golpe. Roba HP igual al daño causado, repartido entre enemigos.' },
+                    { name: 'Great Supernova',   type: 'over',    cost: 12, chargeGain: 0, damage: 5, target: 'aoe',    effect: 'great_supernova_ald',   description: 'AOE 5 daño. Consume todos los contadores de Tauro: por cada contador causa 20% del HP máx de Aldebaran a un enemigo aleatorio. Disipa todos los buffs de los enemigos.' },
+                ],
+                _isEventChar: false
             },
             'Leonidas': {
                 hp: 20, maxHp: 20, speed: 79, charges: 0, team: 'team1',
