@@ -2271,6 +2271,21 @@
         function _runRoundStartPassiveHooks() {
             console.log('[Ronda] _runRoundStartPassiveHooks() iniciando (Ronda ' + gameState.currentRound + ')...');
                     // ── ELFOS OSCUROS: pasivas de inicio de ronda (Klaord revive y posee) ──
+
+                    // ── KATANA CARMESÍ: inicio de ronda → Quemadura 5 HP a todos los enemigos ──
+                    Object.keys(gameState.characters || {}).forEach(function(portadorN) {
+                        const portador = gameState.characters[portadorN];
+                        if (!portador || portador.isDead) return;
+                        if (!(portador.equippedRelics || []).some(function(rn){ const rd=(typeof RELICS_DATA!=='undefined')?RELICS_DATA[rn]:null; return rd&&rd.effect==='katana_carmesi'; })) return;
+                        const eTeam = portador.team === 'team1' ? 'team2' : 'team1';
+                        Object.keys(gameState.characters).forEach(function(en) {
+                            const ec = gameState.characters[en];
+                            if (!ec || ec.team !== eTeam || ec.isDead) return;
+                            if (typeof applyFlatBurn === 'function') applyFlatBurn(en, 5, 99); else if (typeof applyDebuff === 'function') applyDebuff(en, { name: 'Quemadura', type: 'debuff', duration: 99, flatHp: 5, damage: 5, emoji: '🔥', permanent: false });
+                        });
+                        addLog('🗡️ Katana Carmesí: Quemadura 5 HP aplicada al equipo enemigo', 'debuff');
+                    });
+
                     if (typeof window.elfrOnRoundStart === 'function') {
                         try { window.elfrOnRoundStart(); } catch (e) { console.error('[elfr roundStart]', e); }
                     }
@@ -2351,20 +2366,6 @@
                             if (typeof applyShield   === 'function') applyShield(n, 4);
                             addLog('💍 Anillo Único: ' + n + ' reactiva sus bonos acumulativos (+4 todo) — activaciones: ' + Math.floor((c._anilloUnicoDmgBonus || 0) / 4), 'buff');
                         }
-                    });
-
-                    // ── KATANA CARMESÍ: inicio de ronda → Quemadura 5 HP a todos los enemigos ──
-                    Object.keys(gameState.characters || {}).forEach(function(portadorN) {
-                        const portador = gameState.characters[portadorN];
-                        if (!portador || portador.isDead) return;
-                        if (!(portador.equippedRelics || []).some(function(rn){ const rd=(typeof RELICS_DATA!=='undefined')?RELICS_DATA[rn]:null; return rd&&rd.effect==='katana_carmesi'; })) return;
-                        const eTeam = portador.team === 'team1' ? 'team2' : 'team1';
-                        Object.keys(gameState.characters).forEach(function(en) {
-                            const ec = gameState.characters[en];
-                            if (!ec || ec.team !== eTeam || ec.isDead) return;
-                            if (typeof applyFlatBurn === 'function') applyFlatBurn(en, 5, 99); else if (typeof applyDebuff === 'function') applyDebuff(en, { name: 'Quemadura', type: 'debuff', duration: 99, flatHp: 5, damage: 5, emoji: '🔥', permanent: false });
-                        });
-                        addLog('🗡️ Katana Carmesí: Quemadura 5 HP aplicada al equipo enemigo', 'debuff');
                     });
 
                     // ── HUEVO NEGRO DE BALERION: invoca a Balerion al inicio de cada ronda si no está activo ──
