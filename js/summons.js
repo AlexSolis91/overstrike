@@ -2735,7 +2735,9 @@
             }
 
             // ── ALABARDA DEL SOL: si el objetivo golpeado tiene Quemaduras o Quemadura Solar → portador +8 cargas ──
-            if (remainingDamage > 0 && !passiveExecuting && attackerName) {
+            // Se activa también con ataques automáticos de reliquia (passiveExecuting=true),
+            // como los disparos de la Pistola de Chispa Zafkei.
+            if (remainingDamage > 0 && attackerName) {
                 const _alsAtk = gameState.characters[attackerName];
                 if (_alsAtk && (_alsAtk.equippedRelics||[]).includes('Alabarda del Sol')) {
                     const _alsTgt = gameState.characters[targetName];
