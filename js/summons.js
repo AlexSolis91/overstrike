@@ -2935,7 +2935,7 @@
 
                         // ST sobre enemigo con Quemadura → añade una copia de cada Quemadura activa y +3 daño
                         case 'pyro_st_burn':
-                            if (_tgtChar && !passiveExecuting) {
+                            if (_tgtChar) {
                                 const _burns = (_tgtChar.statusEffects||[]).filter(function(e){ return e && (e.name === 'Quemadura' || e.name === 'quemadura'); });
                                 if (_burns.length > 0) {
                                     // Tope de 1000 stacks de Quemadura en Jefes de Sala (evita crecimiento
