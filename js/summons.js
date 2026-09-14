@@ -1416,6 +1416,15 @@
                 }
             }
 
+            // ── LICH KING (Rey de la Muerte): solo recibe 20% del daño de ataques automáticos
+            //    por efecto de habilidades pasivas (passiveExecuting=true) ──
+            if (damage > 0 && passiveExecuting) {
+                const _lkC = gameState.characters[targetName];
+                if (_lkC && (_lkC.passive && _lkC.passive.name === 'Rey de la Muerte' || _lkC.bossId === 'lich_king' || _lkC.characterKey === 'Arthas Menethil')) {
+                    damage = Math.max(1, Math.floor(damage * 0.20));
+                }
+            }
+
             // ── INOSUKE (El Rey de la Montaña): recibe solo 40% del daño si el golpe es ≥10 ──
             if (damage >= 10) {
                 const _inoTgt = gameState.characters[targetName];
