@@ -2306,11 +2306,14 @@
                                 if (!_enemies.length) break;
                                 var _tgt = _enemies[Math.floor(Math.random()*_enemies.length)];
                                 if (typeof window._aldGreatHorn === 'function') {
+                                    // Límite 10%: el daño del Great Horn automático se reduce al 10%
+                                    gameState._autoAttackDmgCap = 0.10;
                                     passiveExecuting = true;
                                     window._aldGreatHorn(aName, _tgt);
                                     passiveExecuting = false;
+                                    gameState._autoAttackDmgCap = null;
                                 }
-                                addLog('🐂 Fortaleza del Toro: Great Horn sobre ' + _tgt + ' (contador '+(_ai+1)+'/'+_ctrs+')', 'buff');
+                                addLog('🐂 Fortaleza del Toro: Great Horn sobre ' + _tgt + ' (contador '+(_ai+1)+'/'+_ctrs+') [10% daño]', 'buff');
                             }
                         });
                     })();
@@ -2993,8 +2996,10 @@
                         gameState._guiaMaestroActive = true;
                         gameState._abilityExecuting = false;
                         gameState._gmOverrideFinalDamage = _baBasic.damage || 1;
-                        try { _executeAbilityCore(null); } catch(e) { console.error('[Baran pasiva]', e); }
-                        gameState._guiaMaestroActive = false;
+                        gameState._autoAttackDmgCap = 0.10;
+                    try { _executeAbilityCore(null); } catch(e) { console.error('[Baran pasiva]', e); }
+                    gameState._autoAttackDmgCap = null;
+                    gameState._guiaMaestroActive = false;
                         gameState._abilityExecuting = false;
                         gameState.selectedCharacter = _baPrevChar;
                         gameState.selectedAbility   = _baPrevAb;
