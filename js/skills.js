@@ -9148,16 +9148,16 @@
 
             } else if (ability.effect === 'poder_anillo_sauron_v2') {
                 // SAURON (Over) — Poder del Anillo: cura y aumenta HP máx sumando por cada
-                // reliquia equipada (10%/10 normal, 20%/20 Legendaria). Causa daño al equipo
-                // enemigo (repartido hasta 3 objetivos) igual al HP curado. Turno extra por kill.
+                // reliquia equipada (5%/+5 normal, 10%/+10 Legendaria). Causa daño repartido
+                // entre hasta 3 enemigos igual al HP curado. Sin turno extra por kill.
                 const _paAtk = gameState.characters[gameState.selectedCharacter];
                 if (_paAtk) {
                     let _paHealPct = 0, _paMaxHpBonus = 0;
                     (_paAtk.equippedRelics || []).forEach(function (rn) {
                         const rd = RELICS_DATA[rn];
                         if (!rd) return;
-                        if (rd.tier === 'Legendario') { _paHealPct += 0.20; _paMaxHpBonus += 20; }
-                        else { _paHealPct += 0.10; _paMaxHpBonus += 10; }
+                        if (rd.tier === 'Legendario') { _paHealPct += 0.10; _paMaxHpBonus += 10; }
+                        else { _paHealPct += 0.05; _paMaxHpBonus += 5; }
                     });
                     _paAtk.maxHp = (_paAtk.maxHp || 0) + _paMaxHpBonus;
                     const _paHealAmt = Math.ceil((_paAtk.maxHp || 0) * _paHealPct);
@@ -9170,20 +9170,13 @@
                     });
                     const _paTargets = _paEnemies.sort(function () { return Math.random() - 0.5; }).slice(0, 3);
                     let _paRemaining = _paHealAmt;
-                    let _paAnyKill = false;
-                    _paTargets.forEach(function (_n, _idx) {
+                    _paTargets.forEach(function (_n) {
                         const _paShare = Math.ceil(_paHealAmt / _paTargets.length);
                         const _paThisDmg = Math.min(_paShare, _paRemaining);
                         _paRemaining -= _paThisDmg;
                         applyDamageWithShield(_n, _paThisDmg, gameState.selectedCharacter);
-                        const _cAfter = gameState.characters[_n];
-                        if (_cAfter && _cAfter.isDead) _paAnyKill = true;
                     });
                     if (_paTargets.length > 0) addLog('👁️ Poder del Anillo: ' + _paHealAmt + ' daño repartido entre ' + _paTargets.join(', '), 'damage');
-                    if (_paAnyKill) {
-                        if (!gameState._skeggoxExtraTurn) gameState._skeggoxExtraTurn = gameState.selectedCharacter;
-                        addLog('👁️ Poder del Anillo: ¡Sauron gana un turno adicional! (eliminó un enemigo)', 'buff');
-                    }
                 }
 
             // ══════════════════════════════════════════════════════
