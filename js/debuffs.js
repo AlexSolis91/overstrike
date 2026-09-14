@@ -474,9 +474,12 @@ function triggerMaboroshi(targetTeam, debuffName) {
                         if (!_ic.passive || _ic.passive.name !== 'El Rey de la Montaña') return;
                         if (_ic.team === (gameState.characters[targetName]||{}).team) return; // solo si son enemigos
                         const times = _isHemo ? 3 : 1;
+                        // Límite 10%: los ataques automáticos reactivos a Sangrado/Hemorragia
+                        gameState._autoAttackDmgCap = 0.10;
                         for (let _it = 0; _it < times; _it++) {
                             window._inosukeEmbestida(iName, targetName, _it > 0);
                         }
+                        gameState._autoAttackDmgCap = null;
                     });
                 }
             }
