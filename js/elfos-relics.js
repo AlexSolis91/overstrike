@@ -217,6 +217,21 @@
             if (sh > 0) damage = Math.floor(damage * (1 + sh * 0.02));
         }
 
+        // ── ESPADAS DEL CAOS: si el objetivo es un Jefe de Sala, 80% daño doble / 20% triple ──
+        if (targetName && hasRelic(attackerName, 'elfr_espadas_caos')) {
+            var _ecTgtO = gameState.characters[targetName];
+            if (_ecTgtO && (_ecTgtO.isBoss || _ecTgtO.bossId)) {
+                var _ecRoll = Math.random();
+                if (_ecRoll < 0.20) {
+                    damage = Math.floor(damage * 3);
+                    addLog('⚔️ Espadas del Caos: ¡daño triple! contra Jefe de Sala (20%)', 'buff');
+                } else if (_ecRoll < 1.00) {
+                    damage = Math.floor(damage * 2);
+                    addLog('⚔️ Espadas del Caos: daño doble contra Jefe de Sala (80%)', 'buff');
+                }
+            }
+        }
+
         // ── ABANICO DE ACERO: +N al daño base de los AOE ──
         if (ability && ability.target === 'aoe' && hasRelic(attackerName, 'elfr_abanico_acero')) {
             damage += (a._elfrAoeBonus || 0);
@@ -262,11 +277,18 @@
             }
             if (hasRelic(attackerName, 'elfr_espadas_caos')) {
                 a.maxHp = (a.maxHp || 0) + 4;
-                var es = aliveEnemiesOf(a.team);
-                if (es.length) {
-                    var extra = Math.max(1, Math.floor((a.maxHp || 0) * 0.25));
-                    if (typeof applyDamageWithShield === 'function') applyDamageWithShield(randomFrom(es), extra, attackerName);
-                    addLog('⚔️ Espadas del Caos: crítico — ' + extra + ' de daño extra y +4 HP máx', 'damage');
+                // Daño adicional al 25% del HP máx — solo si el objetivo NO es un Jefe de Sala
+                var _ecTgt = t ? t : gameState.characters[targetName];
+                var _ecIsBoss = _ecTgt && (_ecTgt.isBoss || _ecTgt.bossId);
+                if (!_ecIsBoss) {
+                    var es = aliveEnemiesOf(a.team);
+                    if (es.length) {
+                        var extra = Math.max(1, Math.floor((a.maxHp || 0) * 0.25));
+                        if (typeof applyDamageWithShield === 'function') applyDamageWithShield(randomFrom(es), extra, attackerName);
+                        addLog('⚔️ Espadas del Caos: crítico — ' + extra + ' de daño extra y +4 HP máx', 'damage');
+                    }
+                } else {
+                    addLog('⚔️ Espadas del Caos: crítico — +4 HP máx (sin daño extra en Jefe de Sala)', 'buff');
                 }
             }
         }
