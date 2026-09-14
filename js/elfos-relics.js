@@ -630,7 +630,8 @@
                 var c = gameState.characters[n];
                 var basic = (c.abilities || []).find(function (a) { return a && a.type === 'basic'; });
                 if (!basic || basic.target !== 'single') return;
-                addLog('🔫 Pistola de Chispa Zafkei: ' + n + ' abre la partida con 3 disparos', 'buff');
+                addLog('🔫 Pistola de Chispa Zafkei: ' + n + ' abre la partida con 3 disparos [10% daño]', 'buff');
+                gameState._autoAttackDmgCap = 0.10;
                 for (var i = 0; i < 3; i++) {
                     var es = aliveEnemiesOf(c.team);
                     if (!es.length) break;
@@ -656,6 +657,7 @@
                     gameState.selectedCharacter = prevSel;
                     gameState.selectedAbility = prevAb;
                 }
+                gameState._autoAttackDmgCap = null;
             });
         }
 
