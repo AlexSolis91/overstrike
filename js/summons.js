@@ -1416,6 +1416,13 @@
                 }
             }
 
+            // ── CAP DE DAÑO AUTOMÁTICO (10%): cuando gameState._autoAttackDmgCap está activo,
+            //    el daño se limita al porcentaje indicado. Se usa para ataques automáticos de
+            //    pasivas/reliquias de inicio de ronda (Aldebaran, Baran, Inosuke, Pistola Zafkei). ──
+            if (damage > 0 && gameState._autoAttackDmgCap) {
+                damage = Math.max(1, Math.floor(damage * gameState._autoAttackDmgCap));
+            }
+
             // ── LICH KING (Rey de la Muerte): solo recibe 20% del daño de ataques automáticos
             //    por efecto de habilidades pasivas (passiveExecuting=true) ──
             if (damage > 0 && passiveExecuting) {
