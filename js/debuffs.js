@@ -1358,6 +1358,17 @@ function applyDebuff(targetName, effectObj) {
                 _bleedTgt.statusEffects = (_bleedTgt.statusEffects||[]).filter(function(e){ return !e || normAccent(e.name||'') !== 'sangrado'; });
                 applyDebuff(targetName, { name: 'Hemorragia', type: 'debuff', duration: 999, permanent: true, emoji: '🩸💀' });
                 addLog(`🩸💀 ${targetName} ya tenía Sangrado activo — ambos se eliminan y se aplica Hemorragia (permanente)`, 'damage');
+                // ── ESPADAS DEL CAOS: +5 HP máx al portador cuando cualquier Sangrado → Hemorragia ──
+                Object.keys(gameState.characters).forEach(function(pn) {
+                    var pc = gameState.characters[pn];
+                    if (!pc || pc.isDead || pc.hp <= 0) return;
+                    if (!(pc.equippedRelics || []).some(function(rn) {
+                        var rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[rn] : null;
+                        return rd && rd.effect === 'elfr_espadas_caos';
+                    })) return;
+                    pc.maxHp = (pc.maxHp || 0) + 5;
+                    addLog('⚔️ Espadas del Caos: Sangrado → Hemorragia en ' + targetName + ' — ' + pn + ' gana +5 HP máx', 'buff');
+                });
                 return;
             }
             applyDebuff(targetName, { name: 'Sangrado', type: 'debuff', duration: _bleedDuration, emoji: '🩸' });
