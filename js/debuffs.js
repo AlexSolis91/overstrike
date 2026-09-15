@@ -484,6 +484,35 @@ function triggerMaboroshi(targetTeam, debuffName) {
                 }
             }
 
+            // ── PILAR DEL INSECTO (Shinobu): 25% de Ponzoña cuando se aplica Veneno
+            //    a un enemigo que YA tiene Veneno activo ──
+            if (effectObj && normAccent(effectObj.name||'') === 'veneno') {
+                const _tgtC2 = gameState.characters[targetName];
+                const _tgtHasVen = _tgtC2 && (_tgtC2.statusEffects||[]).some(function(e){
+                    return e && normAccent(e.name||'') === 'veneno';
+                });
+                if (_tgtHasVen) {
+                    // Buscar a Shinobu en cualquier equipo aliado del que esté aplicando veneno
+                    Object.keys(gameState.characters).forEach(function(shn) {
+                        const shc = gameState.characters[shn];
+                        if (!shc || shc.isDead || shc.hp <= 0) return;
+                        if (!shc.passive || shc.passive.name !== 'Pilar del Insecto') return;
+                        if (shc.team === (_tgtC2 && _tgtC2.team)) return; // mismo equipo que el objetivo → no aplica
+                        // Todos los aliados de Shinobu tienen 25% de aplicar Ponzoña
+                        Object.keys(gameState.characters).forEach(function(an) {
+                            const ac = gameState.characters[an];
+                            if (!ac || ac.team !== shc.team || ac.isDead || ac.hp <= 0) return;
+                            if (Math.random() < 0.25) {
+                                if (typeof applyDebuff === 'function') {
+                                    applyDebuff(targetName, { name: 'Ponzoña', type: 'debuff', duration: 3, emoji: '🟢' });
+                                    addLog('🦋 Pilar del Insecto: ' + an + ' aplica Ponzoña a ' + targetName + ' (25%)', 'debuff');
+                                }
+                            }
+                        });
+                    });
+                }
+            }
+
             if (typeof window.elfrOnDebuffReceived === 'function') {
                 try { window.elfrOnDebuffReceived(targetName, (effectObj && effectObj.name) || ''); } catch (e) { console.error('[elfr onDebuff]', e); }
             }
