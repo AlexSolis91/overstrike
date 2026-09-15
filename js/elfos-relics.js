@@ -217,19 +217,10 @@
             if (sh > 0) damage = Math.floor(damage * (1 + sh * 0.02));
         }
 
-        // ── ESPADAS DEL CAOS: vs Jefe de Sala — 80% daño doble / 20% triple en TODOS los ataques ──
-        if (targetName && hasRelic(attackerName, 'elfr_espadas_caos')) {
-            var _ecTgtO = gameState.characters[targetName];
-            if (_ecTgtO && (_ecTgtO.isBoss || _ecTgtO.bossId)) {
-                var _ecRoll = Math.random();
-                if (_ecRoll < 0.20) {
-                    damage = Math.floor(damage * 3);
-                    addLog('⚔️ Espadas del Caos: ¡daño triple! contra Jefe de Sala (20%)', 'buff');
-                } else {
-                    damage = Math.floor(damage * 2);
-                    addLog('⚔️ Espadas del Caos: daño doble contra Jefe de Sala (80%)', 'buff');
-                }
-            }
+        // ── ESPADAS DEL CAOS: +2 daño por Contador del Caos (acumulable) ──
+        if (hasRelic(attackerName, 'elfr_espadas_caos') && gameState._caosCounters && gameState._caosCounters[attackerName]) {
+            var _caosBonus = gameState._caosCounters[attackerName] * 2;
+            damage = damage + _caosBonus;
         }
 
         // ── ABANICO DE ACERO: +N al daño base de los AOE ──
@@ -282,21 +273,14 @@
                 a._elfrCritBonus = (a._elfrCritBonus || 0.10) + 0.10;
             }
             if (hasRelic(attackerName, 'elfr_espadas_caos')) {
-                // ── Acumulador: +2% por crítico (se reinicia al iniciar partida) ──
-                var _ecTgt = t ? t : gameState.characters[targetName];
-                var _ecIsBoss = _ecTgt && (_ecTgt.isBoss || _ecTgt.bossId);
-                if (!_ecIsBoss) {
-                    if (!gameState._ecCritStacks) gameState._ecCritStacks = {};
-                    if (!gameState._ecCritStacks[attackerName]) gameState._ecCritStacks[attackerName] = 0;
-                    gameState._ecCritStacks[attackerName] += 2;
-                    var _ecPct = gameState._ecCritStacks[attackerName] * 0.02;
-                    var _ecExtra = Math.max(1, Math.floor((a.maxHp || 0) * _ecPct));
-                    if (typeof applyDamageWithShield === 'function') applyDamageWithShield(targetName, _ecExtra, attackerName);
-                    a.maxHp = (a.maxHp || 0) + 5;
-                    addLog('⚔️ Espadas del Caos: crítico — ' + _ecExtra + ' daño extra (' + Math.round(_ecPct*100) + '% HP máx, acum. ' + gameState._ecCritStacks[attackerName] + '/2% por crit) y +5 HP máx', 'damage');
-                } else {
-                    addLog('⚔️ Espadas del Caos: Jefe de Sala — efecto de daño doble/triple activo', 'buff');
-                }
+                // ── ESPADAS DEL CAOS: Contador del Caos por crítico ──
+                // Cada crítico genera 1 contador. Por contador: +2 daño base permanente (hasta fin de partida).
+                if (!gameState._caosCounters) gameState._caosCounters = {};
+                if (!gameState._caosCounters[attackerName]) gameState._caosCounters[attackerName] = 0;
+                gameState._caosCounters[attackerName] += 1;
+                var _caosTotal = gameState._caosCounters[attackerName];
+                // El bono de daño se aplica en elfrModifyOutgoingDamage leyendo _caosCounters
+                addLog('⚔️ Espadas del Caos: crítico — Contador del Caos x' + _caosTotal + ' (+' + (_caosTotal * 2) + ' daño base acumulado)', 'buff');
             }
         }
 
