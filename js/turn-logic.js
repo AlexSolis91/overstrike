@@ -4222,11 +4222,7 @@
                                 for (const _sn in gameState.characters) {
                                     const _sc = gameState.characters[_sn];
                                     if (!_sc || _sc.isDead || _sc.hp <= 0 || _sc.team !== _shinTeam) continue;
-                                    if (_sc.passive && _sc.passive.name === 'Pilar del Insecto') {
-                                        _eorPoisonDmg *= 2;
-                                        addLog('🦋 Pilar del Insecto: Veneno daño doble (' + _eorPoisonDmg + ')', 'damage');
-                                        break;
-                                    }
+                                    // Pilar del Insecto: efecto de daño doble por Veneno eliminado en v20261161
                                 }
                             }
                             gameState._currentDamageSource = 'Veneno'; // Visión Esmeralda
