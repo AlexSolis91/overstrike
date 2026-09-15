@@ -10167,82 +10167,88 @@
                 }
 
                         } else if (ability.effect === 'danza_mariposa_shinobu') {
-                // SELF — Veneno 2T + Concentración 2T a sí misma
-                applyPoison(gameState.selectedCharacter, 2);
-                applyConcentracion(gameState.selectedCharacter, 2);
-                addLog('🦋 Danza de la Mariposa: Shinobu se aplica Veneno 2T y Concentración 2T', 'buff');
+                // ── DANZA DE LA MARIPOSA (BASIC SELF) ──
+                const _dmAtk = gameState.characters[charName];
+                const _dmETeam = _dmAtk ? (_dmAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                let _dmVenStacks = 0;
+                Object.keys(gameState.characters).forEach(function(n) {
+                    const _c = gameState.characters[n];
+                    if (!_c || _c.team !== _dmETeam || _c.isDead || _c.hp <= 0) return;
+                    _dmVenStacks += (_c.statusEffects||[]).filter(function(e){ return e && normAccent(e.name||'') === 'veneno'; }).length;
+                });
+                if (_dmAtk) _dmAtk.charges = Math.min(20, (_dmAtk.charges||0) + _dmVenStacks);
+                if (typeof window._shinobuhPillarOnCharge === 'function') window._shinobuhPillarOnCharge(charName, _dmVenStacks);
+                addLog('🦋 Danza de la Mariposa: Shinobu genera ' + _dmVenStacks + ' cargas (' + _dmVenStacks + ' stacks de Veneno)', 'buff');
 
             } else if (ability.effect === 'aguijon_abeja_shinobu') {
-                // AOE aliados — cura 2 HP + 2 adicionales por cada Veneno enemigo
-                const _aaAtk = gameState.characters[gameState.selectedCharacter];
-                const _aaMyTeam = _aaAtk ? _aaAtk.team : 'team1';
-                const _aaEnemyTeam = _aaMyTeam === 'team1' ? 'team2' : 'team1';
-                let _aaVenenos = 0;
-                for (const _n in gameState.characters) {
-                    const _c = gameState.characters[_n];
-                    if (!_c || _c.team !== _aaEnemyTeam || _c.isDead || _c.hp <= 0) continue;
-                    if ((_c.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'veneno')) _aaVenenos++;
-                }
-                const _aaHealAmt = 2 + (_aaVenenos * 2);
-                for (const _an in gameState.characters) {
-                    const _a = gameState.characters[_an];
-                    if (!_a || _a.isDead || _a.hp <= 0 || _a.team !== _aaMyTeam) continue;
-                    if (typeof canHeal === 'function' && !canHeal(_an)) { addLog('☀️ QS bloquea curación de ' + _an + ' (Aguijón de Abeja)', 'debuff'); continue; }
-                    _a.hp = Math.min(_a.maxHp, (_a.hp||0) + _aaHealAmt);
-                    addLog('🐝 Aguijón de Abeja: ' + _an + ' recupera ' + _aaHealAmt + ' HP (2 base + ' + (_aaVenenos*2) + ' por venenos)', 'heal');
-                }
+                // ── AGUIJÓN DE ABEJA (SPECIAL AOE) ──
+                const _aaAtk = gameState.characters[charName];
+                const _aaETeam = _aaAtk ? (_aaAtk.team === 'team1' ? 'team2' : 'team1') : 'team2';
+                const _aaAOE = typeof window.resolveAOETargets === 'function'
+                    ? window.resolveAOETargets(charName, _aaETeam, { ability: ability })
+                    : { targets: Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===_aaETeam&&!c.isDead&&c.hp>0; }), multiplier:1, summonTargets:[] };
+                _aaAOE.targets.forEach(function(_tn) {
+                    const _tc = gameState.characters[_tn];
+                    if (!_tc || _tc.isDead || _tc.hp <= 0) return;
+                    if (typeof applyPoison === 'function') { applyPoison(_tn, 1); applyPoison(_tn, 1); }
+                    const _hasPonzona = (_tc.statusEffects||[]).some(function(e){ return e && (normAccent(e.name||'') === 'ponzona' || normAccent(e.name||'') === 'ponzoña'); });
+                    if (_hasPonzona && _aaAtk) {
+                        _aaAtk.charges = Math.min(20, (_aaAtk.charges||0) + 4);
+                        if (typeof window._shinobuhPillarOnCharge === 'function') window._shinobuhPillarOnCharge(charName, 4);
+                        addLog('🐝 Aguijón de Abeja: ' + _tn + ' tiene Ponzoña — Shinobu +4 cargas', 'buff');
+                    }
+                });
+                addLog('🐝 Aguijón de Abeja: 2 stacks de Veneno a todos los enemigos', 'debuff');
 
             } else if (ability.effect === 'ojo_hexagonal_shinobu') {
-                // MT 5 golpes a enemigos aleatorios — si tiene Veneno: cura 1 HP y genera 1 carga al equipo
-                const _ohAtk = gameState.characters[gameState.selectedCharacter];
+                // ── OJO HEXAGONAL COMPUESTO (SPECIAL MT) ──
+                const _ohAtk = gameState.characters[charName];
                 const _ohMyTeam = _ohAtk ? _ohAtk.team : 'team1';
-                const _ohEnemyTeam = _ohMyTeam === 'team1' ? 'team2' : 'team1';
-                const _ohEnemies = Object.keys(gameState.characters).filter(n => { const c = gameState.characters[n]; return c && c.team === _ohEnemyTeam && !c.isDead && c.hp > 0; });
-                if (_ohEnemies.length === 0) { addLog('👁️ Ojo Hexagonal: No hay objetivos', 'info'); }
-                else {
-                    for (let _i = 0; _i < 5; _i++) {
-                        const _tn = _ohEnemies[Math.floor(Math.random() * _ohEnemies.length)];
-                        const _tc = gameState.characters[_tn];
-                        if (!_tc || _tc.isDead || _tc.hp <= 0) continue;
-                        const _hasVen = (_tc.statusEffects||[]).some(e => e && normAccent(e.name||'') === 'veneno');
-                        applyDamageWithShield(_tn, 1, gameState.selectedCharacter);
-                        if (_hasVen) {
-                            for (const _an in gameState.characters) {
-                                const _a = gameState.characters[_an];
-                                if (_a && _a.team === _ohMyTeam && !_a.isDead && _a.hp > 0) {
-                                    _a.hp = Math.min(_a.maxHp, (_a.hp||0) + 1);
-                                    _a.charges = Math.min(20, (_a.charges||0) + 1);
-                                }
-                            }
-                            addLog('👁️ Ojo Hexagonal: Golpe a ' + _tn + ' (con Veneno) — equipo aliado +1 HP y +1 carga', 'heal');
-                        } else { addLog('👁️ Ojo Hexagonal: 1 daño a ' + _tn, 'damage'); }
+                const _ohETeam = _ohMyTeam === 'team1' ? 'team2' : 'team1';
+                const _ohEnemies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===_ohETeam&&!c.isDead&&c.hp>0; });
+                for (let _i = 0; _i < 5; _i++) {
+                    if (!_ohEnemies.length) break;
+                    const _tn = _ohEnemies[Math.floor(Math.random() * _ohEnemies.length)];
+                    const _tc = gameState.characters[_tn];
+                    if (!_tc || _tc.isDead || _tc.hp <= 0) continue;
+                    const _hasVen = (_tc.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'veneno'; });
+                    if (_hasVen) {
+                        Object.keys(gameState.characters).forEach(function(an) {
+                            const _a = gameState.characters[an];
+                            if (!_a || _a.team !== _ohMyTeam || _a.isDead || _a.hp <= 0) return;
+                            if (typeof applyHeal === 'function') applyHeal(an, 1, 'Ojo Hexagonal');
+                            _a.charges = Math.min(20, (_a.charges||0) + 1);
+                        });
+                        if (typeof window._shinobuhPillarOnCharge === 'function') window._shinobuhPillarOnCharge(charName, 1);
+                        addLog('👁️ Ojo Hexagonal: golpe a ' + _tn + ' (Veneno) — equipo aliado +1 HP y +1 carga', 'heal');
+                    } else {
+                        addLog('👁️ Ojo Hexagonal: golpe a ' + _tn + ' (sin Veneno)', 'damage');
                     }
                 }
 
             } else if (ability.effect === 'danza_ciempies_shinobu') {
-                // MT 10 golpes — aplica Veneno 3T por golpe + cura 3 HP y genera 3 cargas a aliado aleatorio por Veneno aplicado
-                const _dcAtk = gameState.characters[gameState.selectedCharacter];
+                // ── DANZA DEL CIEMPIÉS (OVER MT) ──
+                const _dcAtk = gameState.characters[charName];
                 const _dcMyTeam = _dcAtk ? _dcAtk.team : 'team1';
-                const _dcEnemyTeam = _dcMyTeam === 'team1' ? 'team2' : 'team1';
-                const _dcEnemies = Object.keys(gameState.characters).filter(n => { const c = gameState.characters[n]; return c && c.team === _dcEnemyTeam && !c.isDead && c.hp > 0; });
-                if (_dcEnemies.length === 0) { addLog('🐛 Danza del Ciempiés: No hay objetivos', 'info'); }
-                else {
-                    for (let _i = 0; _i < 10; _i++) {
-                        const _tn = _dcEnemies[Math.floor(Math.random() * _dcEnemies.length)];
-                        const _tc = gameState.characters[_tn];
-                        if (!_tc || _tc.isDead || _tc.hp <= 0) continue;
-                        applyDamageWithShield(_tn, 1, gameState.selectedCharacter);
-                        applyPoison(_tn, 3);
-                        addLog('🐛 Danza del Ciempiés: Veneno 3T aplicado a ' + _tn, 'debuff');
-                        // Cura 3 HP y genera 3 cargas a un aliado aleatorio
-                        const _allies = Object.keys(gameState.characters).filter(n => { const c = gameState.characters[n]; return c && c.team === _dcMyTeam && !c.isDead && c.hp > 0; });
-                        if (_allies.length > 0) {
-                            const _randAlly = _allies[Math.floor(Math.random() * _allies.length)];
-                            const _ra = gameState.characters[_randAlly];
-                            if (typeof canHeal === 'function' && !canHeal(_randAlly)) { addLog('☀️ QS bloquea curación (Danza del Ciempiés)', 'debuff'); } else {
-                            _ra.hp = Math.min(_ra.maxHp, (_ra.hp||0) + 3);
-                            addLog('🐛 Danza del Ciempiés: ' + _randAlly + ' +3 HP y +3 cargas', 'heal'); }
-                            _ra.charges = Math.min(20, (_ra.charges||0) + 3);
+                const _dcETeam = _dcMyTeam === 'team1' ? 'team2' : 'team1';
+                const _dcEnemies = Object.keys(gameState.characters).filter(function(n){ const c=gameState.characters[n]; return c&&c.team===_dcETeam&&!c.isDead&&c.hp>0; });
+                for (let _i = 0; _i < 10; _i++) {
+                    if (!_dcEnemies.length) break;
+                    const _tn = _dcEnemies[Math.floor(Math.random() * _dcEnemies.length)];
+                    const _tc = gameState.characters[_tn];
+                    if (!_tc || _tc.isDead || _tc.hp <= 0) continue;
+                    for (let _v = 0; _v < 3; _v++) {
+                        if (typeof applyPoison === 'function') applyPoison(_tn, 1);
+                        const _dcAllies = Object.keys(gameState.characters).filter(function(an){ const c=gameState.characters[an]; return c&&c.team===_dcMyTeam&&!c.isDead&&c.hp>0; });
+                        if (_dcAllies.length) {
+                            const _ra = _dcAllies[Math.floor(Math.random() * _dcAllies.length)];
+                            const _rac = gameState.characters[_ra];
+                            if (_rac) {
+                                if (typeof applyHeal === 'function') applyHeal(_ra, 3, 'Danza del Ciempiés');
+                                _rac.charges = Math.min(20, (_rac.charges||0) + 3);
+                                if (_ra === charName && typeof window._shinobuhPillarOnCharge === 'function') window._shinobuhPillarOnCharge(charName, 3);
+                                addLog('🐛 Danza del Ciempiés: Veneno en ' + _tn + ' → ' + _ra + ' +3 HP y +3 cargas', 'heal');
+                            }
                         }
                     }
                 }
