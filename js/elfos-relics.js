@@ -267,8 +267,14 @@
         var t = gameState.characters[targetName];
         if (!a || damage <= 0) return;
 
-        // ── SABLE DE LUZ DE OBI-WAN: Escudo acumulable igual al daño ──
-        if (hasRelic(attackerName, 'elfr_sable_obiwan')) addShield(attackerName, damage);
+        // ── SABLE DE LUZ DE OBI-WAN: Escudo acumulable igual al 10% del HP máx del objetivo ──
+        if (hasRelic(attackerName, 'elfr_sable_obiwan')) {
+            var _obTgt = gameState.characters[targetName];
+            if (_obTgt) {
+                var _obShield = Math.max(1, Math.floor((_obTgt.maxHp || 0) * 0.10));
+                addShield(attackerName, _obShield);
+            }
+        }
 
         // ── ESPADAS DEL CAOS / CUCHILLAS DE DEPREDADOR: efectos por crítico ──
         if (gameState._isCritHit) {
@@ -370,10 +376,11 @@
             addLog('🟢 Capa Namekiana: ' + targetName + ' es inmune a debuffs (tiene buffs activos)', 'buff');
             return true;
         }
-        // ── SABLE DE LUZ DE OBI-WAN: consume 10 de Escudo para anularlo ──
+        // ── SABLE DE LUZ DE OBI-WAN: sacrifica 10 HP de Escudo para limpiar el debuff ──
+        //    Solo se activa si el portador tiene ≥10 de Escudo en ese momento.
         if (hasRelic(targetName, 'elfr_sable_obiwan') && (t.shield || 0) >= 10) {
             t.shield -= 10;
-            addLog('🔵 Sable de Luz de Obi-Wan: consume 10 de Escudo y anula ' + effectName, 'buff');
+            addLog('🔵 Sable de Luz de Obi-Wan: sacrifica 10 de Escudo y anula ' + effectName + ' (quedan ' + (t.shield) + ' de Escudo)', 'buff');
             return true;
         }
         return false;
