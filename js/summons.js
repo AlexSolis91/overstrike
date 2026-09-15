@@ -3998,11 +3998,16 @@
                 if ((targetName === 'Shinobu Kocho' || targetName === 'Shinobu Kocho v2') && !passiveExecuting) {
                     passiveExecuting = true;
                     const _shinEnemyTeam = target.team === 'team1' ? 'team2' : 'team1';
-                    for (const _sn in gameState.characters) {
+                    const _shinEnemies = Object.keys(gameState.characters).filter(function(_sn) {
                         const _sc = gameState.characters[_sn];
-                        if (!_sc || _sc.isDead || _sc.hp <= 0 || _sc.team !== _shinEnemyTeam) continue;
-                        applyPoison(_sn, 10);
-                        addLog('🦋 Pilar del Insecto: ' + _sn + ' recibe Veneno 10T al morir Shinobu', 'debuff');
+                        return _sc && !_sc.isDead && _sc.hp > 0 && _sc.team === _shinEnemyTeam;
+                    });
+                    if (_shinEnemies.length > 0) {
+                        for (let _si = 0; _si < 150; _si++) {
+                            const _rt = _shinEnemies[Math.floor(Math.random() * _shinEnemies.length)];
+                            applyPoison(_rt, 1);
+                        }
+                        addLog('🦋 Pilar del Insecto: Shinobu muere — 150 stacks de Veneno repartidos entre el equipo enemigo', 'debuff');
                     }
                     passiveExecuting = false;
                 }
