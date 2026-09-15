@@ -665,14 +665,15 @@
             'Shinobu Kocho': {
                 hp: 15, maxHp: 15, speed: 82, charges: 0, team: 'team1',
                 statusEffects: [], shield: 0, shieldEffect: null, isDead: false,
-                portrait: 'https://i.ibb.co/NgbypqWC/Whats-App-Image-2026-03-23-at-1-48-34-PM.jpg',
-                passive: { name: 'Pilar del Insecto', description: 'Al morir aplica Veneno 10T al equipo enemigo. Debuffs Veneno activos en enemigos causan daño doble. Cada vez que Shinobu recibe daño por Veneno, genera 1 carga al equipo aliado.' },
+                portrait: 'https://i.ibb.co/wNBJSfjR/Shinobu.jpg',
+                passive: { name: 'Pilar del Insecto', description: 'Al morir: aplica 150 stacks de Veneno repartidos aleatoriamente entre el equipo enemigo. Los ataques del equipo aliado tienen 25% de probabilidad de aplicar Ponzoña a enemigos con Veneno activo (también al aplicar Veneno). Efecto pasivo Infectar. Cada vez que Shinobu genera 1 carga, un aliado aleatorio (incluyendo Shinobu) gana +1 HP máx.' },
                 abilities: [
-                    { name: 'Danza de la Mariposa', type: 'basic', cost: 0, chargeGain: 2, damage: 0, target: 'self', effect: 'danza_mariposa_shinobu', description: 'Shinobu se aplica Veneno 2T y Buff Concentración 2T.' },
-                    { name: 'Aguijón de Abeja', type: 'special', cost: 5, chargeGain: 0, damage: 0, target: 'ally_aoe', effect: 'aguijon_abeja_shinobu', description: 'Cura 2 HP al equipo aliado. Cura 2 HP adicionales a cada aliado si el objetivo enemigo tiene Veneno activo.' },
-                    { name: 'Ojo Hexagonal Compuesto', type: 'special', cost: 6, chargeGain: 0, damage: 0, target: 'multi', effect: 'ojo_hexagonal_shinobu', description: 'Golpea 5 veces a enemigos aleatorios. Por cada golpe a objetivo con Veneno: cura 1 HP y genera 1 carga al equipo aliado.' },
-                    { name: 'Danza del Ciempiés', type: 'over', cost: 12, chargeGain: 0, damage: 0, target: 'multi', effect: 'danza_ciempies_shinobu', description: 'Golpea 10 veces a enemigos aleatorios. Al golpear aplica Veneno 3T. Por Veneno aplicado: cura 3 HP y genera 3 cargas a aliado aleatorio.' }
-                ]
+                    { name: 'Danza de la Mariposa',    type: 'basic',   cost: 0,  chargeGain: 2, damage: 0, target: 'self',  effect: 'danza_mariposa_shinobu',  description: 'SELF. Genera 1 carga por cada stack de Veneno activo en el equipo enemigo.' },
+                    { name: 'Aguijón de Abeja',         type: 'special', cost: 5,  chargeGain: 0, damage: 0, target: 'aoe',   effect: 'aguijon_abeja_shinobu',   description: 'AOE. Aplica 2 stacks de Veneno a todos los enemigos. Por cada enemigo con Ponzoña golpeado: Shinobu genera 4 cargas.' },
+                    { name: 'Ojo Hexagonal Compuesto',  type: 'special', cost: 6,  chargeGain: 0, damage: 0, target: 'multi', effect: 'ojo_hexagonal_shinobu',   description: 'MT 5 golpes a enemigos aleatorios. Por cada golpe a objetivo con Veneno: cura 1 HP y genera 1 carga a todo el equipo aliado.' },
+                    { name: 'Danza del Ciempiés',       type: 'over',    cost: 12, chargeGain: 0, damage: 0, target: 'multi', effect: 'danza_ciempies_shinobu',  description: 'MT 10 golpes a enemigos aleatorios. Aplica 3 stacks de Veneno por golpe. Por cada Veneno aplicado: cura 3 HP y genera 3 cargas a 1 aliado aleatorio (incluye Shinobu).' }
+                ],
+                _isEventChar: false
             },
             'Rey Brujo de Angmar': {
                 hp: 30, maxHp: 30, speed: 75, charges: 0, team: 'team1',
