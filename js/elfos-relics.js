@@ -282,19 +282,19 @@
                 a._elfrCritBonus = (a._elfrCritBonus || 0.10) + 0.10;
             }
             if (hasRelic(attackerName, 'elfr_espadas_caos')) {
-                a.maxHp = (a.maxHp || 0) + 2;
-                // Daño adicional al 10% del HP máx — solo si el objetivo NO es un Jefe de Sala
+                a.maxHp = (a.maxHp || 0) + 3;
+                // Daño adicional al 25% del HP máx del OBJETIVO golpeado — no aplica en Jefes de Sala
                 var _ecTgt = t ? t : gameState.characters[targetName];
                 var _ecIsBoss = _ecTgt && (_ecTgt.isBoss || _ecTgt.bossId);
                 if (!_ecIsBoss) {
                     var es = aliveEnemiesOf(a.team);
                     if (es.length) {
-                        var extra = Math.max(1, Math.floor((a.maxHp || 0) * 0.10));
+                        var extra = Math.max(1, Math.floor((_ecTgt ? (_ecTgt.maxHp || 0) : 0) * 0.25));
                         if (typeof applyDamageWithShield === 'function') applyDamageWithShield(randomFrom(es), extra, attackerName);
-                        addLog('⚔️ Espadas del Caos: crítico — ' + extra + ' de daño extra y +2 HP máx', 'damage');
+                        addLog('⚔️ Espadas del Caos: crítico — ' + extra + ' de daño extra (25% HP máx de ' + targetName + ') y +3 HP máx portador', 'damage');
                     }
                 } else {
-                    addLog('⚔️ Espadas del Caos: crítico — +2 HP máx (sin daño extra en Jefe de Sala)', 'buff');
+                    addLog('⚔️ Espadas del Caos: crítico — +3 HP máx (sin daño extra en Jefe de Sala)', 'buff');
                 }
             }
         }
