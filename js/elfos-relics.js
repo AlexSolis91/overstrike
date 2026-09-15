@@ -217,7 +217,7 @@
             if (sh > 0) damage = Math.floor(damage * (1 + sh * 0.02));
         }
 
-        // ── ESPADAS DEL CAOS: si el objetivo es un Jefe de Sala, 80% daño doble / 20% triple ──
+        // ── ESPADAS DEL CAOS: vs Jefe de Sala — 80% daño doble / 20% triple en TODOS los ataques ──
         if (targetName && hasRelic(attackerName, 'elfr_espadas_caos')) {
             var _ecTgtO = gameState.characters[targetName];
             if (_ecTgtO && (_ecTgtO.isBoss || _ecTgtO.bossId)) {
@@ -225,7 +225,7 @@
                 if (_ecRoll < 0.20) {
                     damage = Math.floor(damage * 3);
                     addLog('⚔️ Espadas del Caos: ¡daño triple! contra Jefe de Sala (20%)', 'buff');
-                } else if (_ecRoll < 1.00) {
+                } else {
                     damage = Math.floor(damage * 2);
                     addLog('⚔️ Espadas del Caos: daño doble contra Jefe de Sala (80%)', 'buff');
                 }
@@ -282,19 +282,20 @@
                 a._elfrCritBonus = (a._elfrCritBonus || 0.10) + 0.10;
             }
             if (hasRelic(attackerName, 'elfr_espadas_caos')) {
-                a.maxHp = (a.maxHp || 0) + 3;
-                // Daño adicional al 25% del HP máx del OBJETIVO golpeado — no aplica en Jefes de Sala
+                // ── Acumulador: +2% por crítico (se reinicia al iniciar partida) ──
                 var _ecTgt = t ? t : gameState.characters[targetName];
                 var _ecIsBoss = _ecTgt && (_ecTgt.isBoss || _ecTgt.bossId);
                 if (!_ecIsBoss) {
-                    var es = aliveEnemiesOf(a.team);
-                    if (es.length) {
-                        var extra = Math.max(1, Math.floor((_ecTgt ? (_ecTgt.maxHp || 0) : 0) * 0.25));
-                        if (typeof applyDamageWithShield === 'function') applyDamageWithShield(randomFrom(es), extra, attackerName);
-                        addLog('⚔️ Espadas del Caos: crítico — ' + extra + ' de daño extra (25% HP máx de ' + targetName + ') y +3 HP máx portador', 'damage');
-                    }
+                    if (!gameState._ecCritStacks) gameState._ecCritStacks = {};
+                    if (!gameState._ecCritStacks[attackerName]) gameState._ecCritStacks[attackerName] = 0;
+                    gameState._ecCritStacks[attackerName] += 2;
+                    var _ecPct = gameState._ecCritStacks[attackerName] * 0.02;
+                    var _ecExtra = Math.max(1, Math.floor((a.maxHp || 0) * _ecPct));
+                    if (typeof applyDamageWithShield === 'function') applyDamageWithShield(targetName, _ecExtra, attackerName);
+                    a.maxHp = (a.maxHp || 0) + 5;
+                    addLog('⚔️ Espadas del Caos: crítico — ' + _ecExtra + ' daño extra (' + Math.round(_ecPct*100) + '% HP máx, acum. ' + gameState._ecCritStacks[attackerName] + '/2% por crit) y +5 HP máx', 'damage');
                 } else {
-                    addLog('⚔️ Espadas del Caos: crítico — +3 HP máx (sin daño extra en Jefe de Sala)', 'buff');
+                    addLog('⚔️ Espadas del Caos: Jefe de Sala — efecto de daño doble/triple activo', 'buff');
                 }
             }
         }
