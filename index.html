@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OVERSTRIKE - 5v5 RPG Battle v4.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css?v=20261157">
+    <link rel="stylesheet" href="css/styles.css?v=20261158">
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -270,7 +270,7 @@
             <!-- Logo: sin emoji, pegado a la izquierda -->
             <div style="display:flex;flex-direction:column;gap:2px;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;white-space:nowrap;">OVERSTRIKE</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20261157</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20261158</div>
             </div>
 
             <!-- HUD: empujado todo a la derecha junto al botón mute -->
@@ -344,6 +344,8 @@
                         <button id="notifBellBtn" onclick="toggleNotifInbox()" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all .2s;" title="Notificaciones">🔔</button>
                         <span id="notifBadge" style="display:none;position:absolute;top:-4px;right:-4px;background:#ff3366;color:#fff;border-radius:50%;width:16px;height:16px;font-size:.55rem;font-weight:700;font-family:Orbitron,sans-serif;display:none;align-items:center;justify-content:center;pointer-events:none;"></span>
                     </div>
+                    <!-- Botón Configuración — solo visible para el admin (Alejandro Solis) -->
+                    <button id="adminConfigBtn" onclick="window.openAdminConfig()" style="display:none;background:rgba(0,196,255,0.12);border:1px solid rgba(0,196,255,0.4);color:#00c4ff;border-radius:20px;padding:3px 10px;font-size:.72rem;cursor:pointer;">⚙️ Config</button>
                     <button onclick="signOut()" style="background:rgba(255,51,102,0.15);border:1px solid #ff3366;color:#ff3366;border-radius:20px;padding:3px 10px;font-size:.72rem;cursor:pointer;">Salir</button>
                 </div>
             </div>
@@ -726,8 +728,8 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20261157"></script>
-    <script src="js/arcane-event.js?v=20261157"></script>
+    <script src="js/firebase-auth.js?v=20261158"></script>
+    <script src="js/arcane-event.js?v=20261158"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen(tab) {
@@ -1924,9 +1926,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20261157"></script>
+    <script src="js/characters.js?v=20261158"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20261157"></script>
+    <script src="js/audio-state.js?v=20261158"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2864,31 +2866,31 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20261157"></script>
+    <script src="js/ai-engine.js?v=20261158"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20261157"></script>
+    <script src="js/init-render.js?v=20261158"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20261157"></script>
+    <script src="js/turn-logic.js?v=20261158"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20261157"></script>
+    <script src="js/status-effects.js?v=20261158"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20261157"></script>
+    <script src="js/debuffs.js?v=20261158"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20261157"></script>
+    <script src="js/summons.js?v=20261158"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20261157"></script>
+    <script src="js/ability-select.js?v=20261158"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20261157"></script>
+<script src="js/skills.js?v=20261158"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20261157"></script>
-    <script src="js/horda-mode.js?v=20261157"></script>
-    <script src="js/horda-abilities.js?v=20261157"></script>
-    <script src="js/elfos-mode.js?v=20261157"></script>
-    <script src="js/elfos-abilities.js?v=20261157"></script>
-    <script src="js/elfos-relics.js?v=20261157"></script>
-    <script src="js/horda-battle.js?v=20261157"></script>
-    <script src="js/missions.js?v=20261157"></script>
-    <script src="js/squads.js?v=20261157"></script>
+    <script src="js/jefe-de-sala.js?v=20261158"></script>
+    <script src="js/horda-mode.js?v=20261158"></script>
+    <script src="js/horda-abilities.js?v=20261158"></script>
+    <script src="js/elfos-mode.js?v=20261158"></script>
+    <script src="js/elfos-abilities.js?v=20261158"></script>
+    <script src="js/elfos-relics.js?v=20261158"></script>
+    <script src="js/horda-battle.js?v=20261158"></script>
+    <script src="js/missions.js?v=20261158"></script>
+    <script src="js/squads.js?v=20261158"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
@@ -3770,5 +3772,142 @@ window.showHordaModeSelector = function() {
 };
 </script>
 
+
+    <!-- ══ PANEL DE CONFIGURACIÓN ADMIN (solo Alejandro Solis) ══ -->
+    <div id="adminConfigModal" style="display:none;position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.82);align-items:center;justify-content:center;">
+        <div style="background:linear-gradient(160deg,#050d1a,#0a1428);border:1.5px solid rgba(0,196,255,0.35);border-radius:20px;padding:32px 36px;max-width:440px;width:92%;box-shadow:0 0 60px rgba(0,196,255,0.15);">
+            <div style="font-family:Orbitron,sans-serif;font-size:1rem;font-weight:900;color:#00c4ff;margin-bottom:6px;">⚙️ CONFIGURACIÓN ADMIN</div>
+            <div style="font-size:.72rem;color:#666;margin-bottom:24px;">Solo visible para Alejandro Solis</div>
+
+            <!-- Barra de HP -->
+            <div style="margin-bottom:20px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <span style="font-family:Orbitron,sans-serif;font-size:.75rem;color:#aaa;">HP de todos los personajes</span>
+                    <span id="adminHpPctLabel" style="font-family:Orbitron,sans-serif;font-size:.9rem;font-weight:700;color:#00c4ff;">100%</span>
+                </div>
+                <input type="range" id="adminHpSlider" min="0" max="10000" step="50" value="100"
+                    style="width:100%;accent-color:#00c4ff;height:6px;cursor:pointer;"
+                    oninput="window._adminUpdateHpLabel(this.value)">
+                <div style="display:flex;justify-content:space-between;font-size:.6rem;color:#444;margin-top:4px;">
+                    <span>0%</span><span>2500%</span><span>5000%</span><span>7500%</span><span>10000%</span>
+                </div>
+                <div style="font-size:.65rem;color:#555;margin-top:8px;">
+                    Ejemplo: 100% = HP base original · 200% = HP × 2 · 500% = HP × 5
+                </div>
+            </div>
+
+            <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;">
+                <button onclick="document.getElementById('adminConfigModal').style.display='none'"
+                    style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:#aaa;border-radius:10px;padding:8px 18px;cursor:pointer;font-family:Orbitron,sans-serif;font-size:.7rem;">CANCELAR</button>
+                <button onclick="window._adminSaveConfig()"
+                    style="background:linear-gradient(135deg,#005f80,#00a8cc);border:none;color:#fff;border-radius:10px;padding:8px 20px;cursor:pointer;font-family:Orbitron,sans-serif;font-size:.7rem;font-weight:700;">💾 GUARDAR</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    (function() {
+        var ADMIN_UID = 'kDMfuAZotOeHhLDZdJZquNEKTiY2';
+        var DB = 'https://overstrike-game-default-rtdb.firebaseio.com';
+        var SECRET = 'ru6WVsNWnYPStlqMqpXAXgVJu4sPvqiuMZj2LZuv';
+
+        // HP base original de cada personaje (antes de cualquier multiplicador)
+        var _BASE_HP = {};
+
+        // Inicializar HP base la primera vez que se carga characterData
+        window._adminInitBaseHp = function() {
+            if (!window.characterData) return;
+            Object.keys(window.characterData).forEach(function(name) {
+                var c = window.characterData[name];
+                if (c && c.hp !== undefined && !_BASE_HP[name]) {
+                    _BASE_HP[name] = c.hp;
+                }
+            });
+        };
+
+        // Aplicar el multiplicador a characterData en memoria
+        window._adminApplyHpMultiplier = function(pct) {
+            if (!window.characterData) return;
+            var mult = pct / 100;
+            Object.keys(window.characterData).forEach(function(name) {
+                var c = window.characterData[name];
+                if (!c || c.hp === undefined) return;
+                var base = _BASE_HP[name] || c.hp;
+                _BASE_HP[name] = _BASE_HP[name] || base;
+                var newHp = Math.max(1, Math.round(base * (mult === 0 ? 0.01 : mult)));
+                c.hp = newHp;
+                c.maxHp = newHp;
+            });
+        };
+
+        // Actualizar label en tiempo real al mover el slider
+        window._adminUpdateHpLabel = function(val) {
+            var el = document.getElementById('adminHpPctLabel');
+            if (el) el.textContent = val + '%';
+        };
+
+        // Abrir modal y cargar valor guardado
+        window.openAdminConfig = async function() {
+            window._adminInitBaseHp();
+            try {
+                var r = await fetch(DB + '/config/adminHpPct.json?auth=' + SECRET);
+                var val = await r.json();
+                val = val || 100;
+                var slider = document.getElementById('adminHpSlider');
+                if (slider) slider.value = val;
+                window._adminUpdateHpLabel(val);
+            } catch(e) { console.error('[adminConfig] Error cargando config:', e); }
+            document.getElementById('adminConfigModal').style.display = 'flex';
+        };
+
+        // Guardar en Firebase y aplicar
+        window._adminSaveConfig = async function() {
+            var slider = document.getElementById('adminHpSlider');
+            var pct = parseInt(slider ? slider.value : 100);
+            try {
+                await fetch(DB + '/config/adminHpPct.json?auth=' + SECRET, {
+                    method: 'PUT',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify(pct)
+                });
+                window._adminApplyHpMultiplier(pct);
+                document.getElementById('adminConfigModal').style.display = 'none';
+                alert('✅ HP de personajes actualizado a ' + pct + '%');
+            } catch(e) {
+                console.error('[adminConfig] Error guardando:', e);
+                alert('❌ Error al guardar la configuración');
+            }
+        };
+
+        // Al cargar: aplicar el % guardado automáticamente y mostrar el botón al admin
+        window._adminConfigOnLogin = async function(uid) {
+            if (uid === ADMIN_UID) {
+                var btn = document.getElementById('adminConfigBtn');
+                if (btn) btn.style.display = 'block';
+            }
+            try {
+                var r = await fetch(DB + '/config/adminHpPct.json?auth=' + SECRET);
+                var pct = await r.json();
+                if (pct && pct !== 100) {
+                    // Esperar a que characterData esté disponible
+                    var tries = 0;
+                    var interval = setInterval(function() {
+                        tries++;
+                        if (window.characterData) {
+                            clearInterval(interval);
+                            window._adminInitBaseHp();
+                            window._adminApplyHpMultiplier(pct);
+                            var lbl = document.getElementById('adminHpPctLabel');
+                            if (lbl) lbl.textContent = pct + '%';
+                            var sl = document.getElementById('adminHpSlider');
+                            if (sl) sl.value = pct;
+                        }
+                        if (tries > 40) clearInterval(interval);
+                    }, 250);
+                }
+            } catch(e) { console.error('[adminConfig] Error al cargar HP inicial:', e); }
+        };
+    })();
+    </script>
 </body>
 </html>
