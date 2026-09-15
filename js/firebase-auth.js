@@ -28,6 +28,10 @@
             if (user) {
                 currentUser = user;
                 document.getElementById('loginScreen').style.display = 'none';
+                // Llamar al hook de configuración admin (muestra botón si es admin y aplica HP guardado)
+                if (typeof window._adminConfigOnLogin === 'function') {
+                    window._adminConfigOnLogin(user.uid);
+                }
                 // Only show lobby if no game, mode select, or char select is active
                 var _gc = document.querySelector('.game-container');
                 var _cs = document.getElementById('charSelectScreen');
