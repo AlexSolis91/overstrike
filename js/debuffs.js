@@ -327,7 +327,11 @@ function triggerMaboroshi(targetTeam, debuffName) {
             const _dbgTrace = (effectObj && effectObj.name === 'Celeridad'); // diagnóstico detallado solo para Celeridad, para no saturar la consola
             if (!target || !target.statusEffects) { if (_dbgTrace) console.warn('[applyBuff] ABORT temprano: target inválido para ' + targetName); return; }
             // ── PONZOÑA: el portador no puede recibir buffs ──
-            const _hasPonzona = (target.statusEffects||[]).some(function(e){ return e && normAccent(e.name||'') === 'ponzona'; });
+            const _hasPonzona = (target.statusEffects||[]).some(function(e){
+                if (!e || !e.name) return false;
+                var _n = e.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+                return _n === 'ponzo\u00f1a' || _n === 'ponzona';
+            });
             if (_hasPonzona) {
                 addLog('☠️ Ponzoña: ' + targetName + ' no puede recibir buffs', 'debuff');
                 if (_dbgTrace) console.warn('[applyBuff] BLOQUEADO por Ponzoña en ' + targetName);
@@ -504,8 +508,17 @@ function triggerMaboroshi(targetTeam, debuffName) {
                             if (!ac || ac.team !== shc.team || ac.isDead || ac.hp <= 0) return;
                             if (Math.random() < 0.25) {
                                 if (typeof applyDebuff === 'function') {
-                                    applyDebuff(targetName, { name: 'Ponzoña', type: 'debuff', duration: 3, emoji: '🟢' });
-                                    addLog('🦋 Pilar del Insecto: ' + an + ' aplica Ponzoña a ' + targetName + ' (25%)', 'debuff');
+                                    // Verificar que el objetivo no tenga ya Ponzoña activa
+                                    const _tgtC3 = gameState.characters[targetName];
+                                    const _yaPonzona = (_tgtC3 && (_tgtC3.statusEffects||[]).some(function(e){
+                                        if (!e || !e.name) return false;
+                                        var _np = e.name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+                                        return _np === 'ponzoña' || _np === 'ponzona';
+                                    }));
+                                    if (!_yaPonzona) {
+                                        applyDebuff(targetName, { name: 'Ponzoña', type: 'debuff', duration: 3, emoji: '☠️🟢' });
+                                        addLog('🦋 Pilar del Insecto: ' + an + ' aplica Ponzoña a ' + targetName + ' (25%)', 'debuff');
+                                    }
                                 }
                             }
                         });
