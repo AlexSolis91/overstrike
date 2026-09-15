@@ -1511,7 +1511,24 @@
             gameState._sauronAppliesMegaPosesion = false;
             gameState._sauronCapaSteal = 0;
 
-            // ── INOSUKE — _inosukeEmbestida definida globalmente para que la pasiva
+            // ── SHINOBU KOCHO (Pilar del Insecto): +1 HP máx a aliado aleatorio por cada carga generada ──
+        window._shinobuhPillarOnCharge = function(charName, amount) {
+            var sc = gameState.characters[charName];
+            if (!sc || !sc.passive || sc.passive.name !== 'Pilar del Insecto') return;
+            if (!amount || amount <= 0) return;
+            var allies = Object.keys(gameState.characters).filter(function(n) {
+                var c = gameState.characters[n];
+                return c && c.team === sc.team && !c.isDead && c.hp > 0;
+            });
+            if (!allies.length) return;
+            for (var _qi = 0; _qi < amount; _qi++) {
+                var _ra = allies[Math.floor(Math.random() * allies.length)];
+                gameState.characters[_ra].maxHp = (gameState.characters[_ra].maxHp || 0) + 1;
+            }
+            addLog('🦋 Pilar del Insecto: ' + charName + ' generó ' + amount + ' cargas → aliados ganan +' + amount + ' HP máx (1 por carga)', 'buff');
+        };
+
+        // ── INOSUKE — _inosukeEmbestida definida globalmente para que la pasiva
         //    pueda llamarla incluso antes de que Inosuke haya usado su básico manualmente ──
         window._inosukeEmbestida = function(cName, tName, skipChargeGain) {
             var _ic = gameState.characters[cName];
@@ -10174,11 +10191,22 @@
                 Object.keys(gameState.characters).forEach(function(n) {
                     const _c = gameState.characters[n];
                     if (!_c || _c.team !== _dmETeam || _c.isDead || _c.hp <= 0) return;
-                    _dmVenStacks += (_c.statusEffects||[]).filter(function(e){ return e && normAccent(e.name||'') === 'veneno'; }).length;
+                    // Sumar poisonStacks de cada debuff Veneno (un personaje tiene un solo
+                    // debuff de Veneno pero puede tener múltiples stacks en poisonStacks)
+                    (_c.statusEffects||[]).forEach(function(e) {
+                        if (e && normAccent(e.name||'') === 'veneno') {
+                            _dmVenStacks += (e.poisonStacks || 1);
+                        }
+                    });
                 });
-                if (_dmAtk) _dmAtk.charges = Math.min(20, (_dmAtk.charges||0) + _dmVenStacks);
-                if (typeof window._shinobuhPillarOnCharge === 'function') window._shinobuhPillarOnCharge(charName, _dmVenStacks);
-                addLog('🦋 Danza de la Mariposa: Shinobu genera ' + _dmVenStacks + ' cargas (' + _dmVenStacks + ' stacks de Veneno)', 'buff');
+                var _dmCargasAntes = _dmAtk ? (_dmAtk.charges || 0) : 0;
+                if (_dmAtk) _dmAtk.charges = Math.min(20, _dmCargasAntes + _dmVenStacks);
+                var _dmCargasGen = _dmAtk ? (_dmAtk.charges - _dmCargasAntes) : 0;
+                // Pasiva: +1 HP máx a aliado aleatorio por cada carga generada
+                if (_dmCargasGen > 0 && typeof window._shinobuhPillarOnCharge === 'function') {
+                    window._shinobuhPillarOnCharge(charName, _dmCargasGen);
+                }
+                addLog('🦋 Danza de la Mariposa: Shinobu genera ' + _dmCargasGen + ' cargas (' + _dmVenStacks + ' stacks de Veneno totales en enemigos)', 'buff');
 
             } else if (ability.effect === 'aguijon_abeja_shinobu') {
                 // ── AGUIJÓN DE ABEJA (SPECIAL AOE) ──
