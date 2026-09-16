@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OVERSTRIKE - 5v5 RPG Battle v4.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css?v=20261162">
+    <link rel="stylesheet" href="css/styles.css?v=20261163">
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -270,7 +270,7 @@
             <!-- Logo: sin emoji, pegado a la izquierda -->
             <div style="display:flex;flex-direction:column;gap:2px;">
                 <div style="font-family:'Orbitron',sans-serif;font-size:1.5rem;font-weight:900;color:#00c4ff;text-shadow:0 0 14px #00c4ff;white-space:nowrap;">OVERSTRIKE</div>
-                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20261162</div>
+                <div style="font-family:'Orbitron',sans-serif;font-size:.55rem;color:#00c4ff88;letter-spacing:.12em;">v=20261163</div>
             </div>
 
             <!-- HUD: empujado todo a la derecha junto al botón mute -->
@@ -728,8 +728,113 @@
 
     <!-- ==================== JAVASCRIPT MODULES ==================== -->
     <!-- 1. Firebase, Auth, Lobby, Online -->
-    <script src="js/firebase-auth.js?v=20261162"></script>
-    <script src="js/arcane-event.js?v=20261162"></script>
+
+    <script>
+    (function() {
+        var ADMIN_UID = 'kDMfuAZotOeHhLDZdJZquNEKTiY2';
+        var DB = 'https://overstrike-game-default-rtdb.firebaseio.com';
+        var SECRET = 'ru6WVsNWnYPStlqMqpXAXgVJu4sPvqiuMZj2LZuv';
+
+        // HP base original de cada personaje (antes de cualquier multiplicador)
+        var _BASE_HP = {};
+
+        // Inicializar HP base la primera vez que se carga characterData
+        window._adminInitBaseHp = function() {
+            if (!window.characterData) return;
+            Object.keys(window.characterData).forEach(function(name) {
+                var c = window.characterData[name];
+                if (c && c.hp !== undefined && !_BASE_HP[name]) {
+                    _BASE_HP[name] = c.hp;
+                }
+            });
+        };
+
+        // Aplicar el multiplicador a characterData en memoria
+        window._adminApplyHpMultiplier = function(pct) {
+            if (!window.characterData) return;
+            var mult = pct / 100;
+            Object.keys(window.characterData).forEach(function(name) {
+                var c = window.characterData[name];
+                if (!c || c.hp === undefined) return;
+                var base = _BASE_HP[name] || c.hp;
+                _BASE_HP[name] = _BASE_HP[name] || base;
+                var newHp = Math.max(1, Math.round(base * (mult === 0 ? 0.01 : mult)));
+                c.hp = newHp;
+                c.maxHp = newHp;
+            });
+        };
+
+        // Actualizar label en tiempo real al mover el slider
+        window._adminUpdateHpLabel = function(val) {
+            var el = document.getElementById('adminHpPctLabel');
+            if (el) el.textContent = val + '%';
+        };
+
+        // Abrir modal y cargar valor guardado
+        window.openAdminConfig = async function() {
+            window._adminInitBaseHp();
+            try {
+                var r = await fetch(DB + '/config/adminHpPct.json?auth=' + SECRET);
+                var val = await r.json();
+                val = val || 100;
+                var slider = document.getElementById('adminHpSlider');
+                if (slider) slider.value = val;
+                window._adminUpdateHpLabel(val);
+            } catch(e) { console.error('[adminConfig] Error cargando config:', e); }
+            document.getElementById('adminConfigModal').style.display = 'flex';
+        };
+
+        // Guardar en Firebase y aplicar
+        window._adminSaveConfig = async function() {
+            var slider = document.getElementById('adminHpSlider');
+            var pct = parseInt(slider ? slider.value : 100);
+            try {
+                await fetch(DB + '/config/adminHpPct.json?auth=' + SECRET, {
+                    method: 'PUT',
+                    headers: {'Content-Type':'application/json'},
+                    body: JSON.stringify(pct)
+                });
+                window._adminApplyHpMultiplier(pct);
+                document.getElementById('adminConfigModal').style.display = 'none';
+                alert('✅ HP de personajes actualizado a ' + pct + '%');
+            } catch(e) {
+                console.error('[adminConfig] Error guardando:', e);
+                alert('❌ Error al guardar la configuración');
+            }
+        };
+
+        // Al cargar: aplicar el % guardado automáticamente y mostrar el botón al admin
+        window._adminConfigOnLogin = async function(uid) {
+            if (uid === ADMIN_UID) {
+                var btn = document.getElementById('adminConfigBtn');
+                if (btn) btn.style.display = 'block';
+            }
+            try {
+                var r = await fetch(DB + '/config/adminHpPct.json?auth=' + SECRET);
+                var pct = await r.json();
+                if (pct && pct !== 100) {
+                    // Esperar a que characterData esté disponible
+                    var tries = 0;
+                    var interval = setInterval(function() {
+                        tries++;
+                        if (window.characterData) {
+                            clearInterval(interval);
+                            window._adminInitBaseHp();
+                            window._adminApplyHpMultiplier(pct);
+                            var lbl = document.getElementById('adminHpPctLabel');
+                            if (lbl) lbl.textContent = pct + '%';
+                            var sl = document.getElementById('adminHpSlider');
+                            if (sl) sl.value = pct;
+                        }
+                        if (tries > 40) clearInterval(interval);
+                    }, 250);
+                }
+            } catch(e) { console.error('[adminConfig] Error al cargar HP inicial:', e); }
+        };
+    })();
+    </script>
+    <script src="js/firebase-auth.js?v=20261163"></script>
+    <script src="js/arcane-event.js?v=20261163"></script>
     <script>
         // ── Navegación pantallas ── (registrar en window para acceso global)
         window.showInventoryScreen = function showInventoryScreen(tab) {
@@ -1926,9 +2031,9 @@
         }
     </script>
     <!-- 2. Datos de personajes -->
-    <script src="js/characters.js?v=20261162"></script>
+    <script src="js/characters.js?v=20261163"></script>
     <!-- 3. Estado del juego + Audio Manager -->
-    <script src="js/audio-state.js?v=20261162"></script>
+    <script src="js/audio-state.js?v=20261163"></script>
     <!-- 4. Character Select Screen (inlined to avoid 404 issues) -->
     <script>
         // ==================== CHARACTER SELECT ====================
@@ -2866,31 +2971,31 @@
 
     </script>
     <!-- 5. IA Engine -->
-    <script src="js/ai-engine.js?v=20261162"></script>
+    <script src="js/ai-engine.js?v=20261163"></script>
     <!-- 6. Inicialización + Orden de turnos + Renderizado -->
-    <script src="js/init-render.js?v=20261162"></script>
+    <script src="js/init-render.js?v=20261163"></script>
     <!-- 7. Lógica de turnos -->
-    <script src="js/turn-logic.js?v=20261162"></script>
+    <script src="js/turn-logic.js?v=20261163"></script>
     <!-- 8. Procesamiento de efectos de estado -->
-    <script src="js/status-effects.js?v=20261162"></script>
+    <script src="js/status-effects.js?v=20261163"></script>
     <!-- 9. Aplicadores de debuffs -->
-    <script src="js/debuffs.js?v=20261162"></script>
+    <script src="js/debuffs.js?v=20261163"></script>
     <!-- 10. Invocaciones -->
-    <script src="js/summons.js?v=20261162"></script>
+    <script src="js/summons.js?v=20261163"></script>
     <!-- 11. Selección de habilidad + Selección de objetivo -->
-    <script src="js/ability-select.js?v=20261162"></script>
+    <script src="js/ability-select.js?v=20261163"></script>
     <!-- 12. Ejecución de habilidades (skills) -->
-<script src="js/skills.js?v=20261162"></script>
+<script src="js/skills.js?v=20261163"></script>
     <!-- 13. Jefe de Sala — raid boss system -->
-    <script src="js/jefe-de-sala.js?v=20261162"></script>
-    <script src="js/horda-mode.js?v=20261162"></script>
-    <script src="js/horda-abilities.js?v=20261162"></script>
-    <script src="js/elfos-mode.js?v=20261162"></script>
-    <script src="js/elfos-abilities.js?v=20261162"></script>
-    <script src="js/elfos-relics.js?v=20261162"></script>
-    <script src="js/horda-battle.js?v=20261162"></script>
-    <script src="js/missions.js?v=20261162"></script>
-    <script src="js/squads.js?v=20261162"></script>
+    <script src="js/jefe-de-sala.js?v=20261163"></script>
+    <script src="js/horda-mode.js?v=20261163"></script>
+    <script src="js/horda-abilities.js?v=20261163"></script>
+    <script src="js/elfos-mode.js?v=20261163"></script>
+    <script src="js/elfos-abilities.js?v=20261163"></script>
+    <script src="js/elfos-relics.js?v=20261163"></script>
+    <script src="js/horda-battle.js?v=20261163"></script>
+    <script src="js/missions.js?v=20261163"></script>
+    <script src="js/squads.js?v=20261163"></script>
     <!-- ==================== END JAVASCRIPT MODULES ==================== -->
 
 
@@ -3805,109 +3910,5 @@ window.showHordaModeSelector = function() {
         </div>
     </div>
 
-    <script>
-    (function() {
-        var ADMIN_UID = 'kDMfuAZotOeHhLDZdJZquNEKTiY2';
-        var DB = 'https://overstrike-game-default-rtdb.firebaseio.com';
-        var SECRET = 'ru6WVsNWnYPStlqMqpXAXgVJu4sPvqiuMZj2LZuv';
-
-        // HP base original de cada personaje (antes de cualquier multiplicador)
-        var _BASE_HP = {};
-
-        // Inicializar HP base la primera vez que se carga characterData
-        window._adminInitBaseHp = function() {
-            if (!window.characterData) return;
-            Object.keys(window.characterData).forEach(function(name) {
-                var c = window.characterData[name];
-                if (c && c.hp !== undefined && !_BASE_HP[name]) {
-                    _BASE_HP[name] = c.hp;
-                }
-            });
-        };
-
-        // Aplicar el multiplicador a characterData en memoria
-        window._adminApplyHpMultiplier = function(pct) {
-            if (!window.characterData) return;
-            var mult = pct / 100;
-            Object.keys(window.characterData).forEach(function(name) {
-                var c = window.characterData[name];
-                if (!c || c.hp === undefined) return;
-                var base = _BASE_HP[name] || c.hp;
-                _BASE_HP[name] = _BASE_HP[name] || base;
-                var newHp = Math.max(1, Math.round(base * (mult === 0 ? 0.01 : mult)));
-                c.hp = newHp;
-                c.maxHp = newHp;
-            });
-        };
-
-        // Actualizar label en tiempo real al mover el slider
-        window._adminUpdateHpLabel = function(val) {
-            var el = document.getElementById('adminHpPctLabel');
-            if (el) el.textContent = val + '%';
-        };
-
-        // Abrir modal y cargar valor guardado
-        window.openAdminConfig = async function() {
-            window._adminInitBaseHp();
-            try {
-                var r = await fetch(DB + '/config/adminHpPct.json?auth=' + SECRET);
-                var val = await r.json();
-                val = val || 100;
-                var slider = document.getElementById('adminHpSlider');
-                if (slider) slider.value = val;
-                window._adminUpdateHpLabel(val);
-            } catch(e) { console.error('[adminConfig] Error cargando config:', e); }
-            document.getElementById('adminConfigModal').style.display = 'flex';
-        };
-
-        // Guardar en Firebase y aplicar
-        window._adminSaveConfig = async function() {
-            var slider = document.getElementById('adminHpSlider');
-            var pct = parseInt(slider ? slider.value : 100);
-            try {
-                await fetch(DB + '/config/adminHpPct.json?auth=' + SECRET, {
-                    method: 'PUT',
-                    headers: {'Content-Type':'application/json'},
-                    body: JSON.stringify(pct)
-                });
-                window._adminApplyHpMultiplier(pct);
-                document.getElementById('adminConfigModal').style.display = 'none';
-                alert('✅ HP de personajes actualizado a ' + pct + '%');
-            } catch(e) {
-                console.error('[adminConfig] Error guardando:', e);
-                alert('❌ Error al guardar la configuración');
-            }
-        };
-
-        // Al cargar: aplicar el % guardado automáticamente y mostrar el botón al admin
-        window._adminConfigOnLogin = async function(uid) {
-            if (uid === ADMIN_UID) {
-                var btn = document.getElementById('adminConfigBtn');
-                if (btn) btn.style.display = 'block';
-            }
-            try {
-                var r = await fetch(DB + '/config/adminHpPct.json?auth=' + SECRET);
-                var pct = await r.json();
-                if (pct && pct !== 100) {
-                    // Esperar a que characterData esté disponible
-                    var tries = 0;
-                    var interval = setInterval(function() {
-                        tries++;
-                        if (window.characterData) {
-                            clearInterval(interval);
-                            window._adminInitBaseHp();
-                            window._adminApplyHpMultiplier(pct);
-                            var lbl = document.getElementById('adminHpPctLabel');
-                            if (lbl) lbl.textContent = pct + '%';
-                            var sl = document.getElementById('adminHpSlider');
-                            if (sl) sl.value = pct;
-                        }
-                        if (tries > 40) clearInterval(interval);
-                    }, 250);
-                }
-            } catch(e) { console.error('[adminConfig] Error al cargar HP inicial:', e); }
-        };
-    })();
-    </script>
 </body>
 </html>
