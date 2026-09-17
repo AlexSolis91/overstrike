@@ -16252,19 +16252,13 @@
 
         // Exponer globalmente para firebase-auth.js
         window._calculateMvpScore = function _calculateMvpScore(charName) {
-            // Determinar si el personaje es tanque
+            // Tanque: HP máx ≥ 150
             const _ch = gameState.characters[charName];
             if (!_ch) return 0;
-            const _isTank = (_ch.maxHp >= 30) ||
-                (_ch.passive && (_ch.passive.name === 'Hombre de Acero' || _ch.passive.name === 'Mega Provocacion' ||
-                    _ch.passive.name === 'Efecto Omega' || _ch.passive.name === 'Señor de los Nazgul' ||
-                    _ch.passive.name === 'El Príncipe Caído')) ||
-                (_ch.abilities||[]).some(function(ab){
-                    return ab && (ab.effect === 'rugido_devastador' || (ab.description||'').toLowerCase().includes('provocac'));
-                });
+            const _isTank = (_ch.maxHp >= 150);
             const bs = gameState.battleStats || {};
             let score = 0;
-            // 1. Kills × 10
+            // 1. Kills × 15
             score += (bs.killMap && bs.killMap[charName] || 0) * 15;
             // 2. Cargas propias × 0.5
             score += (bs.chargesGenSelf && bs.chargesGenSelf[charName] || 0) * 0.5;
@@ -16272,8 +16266,8 @@
             score += (bs.chargesGenAllies && bs.chargesGenAllies[charName] || 0) * 1.5;
             // 4. Daño causado (cualquier tipo) × 0.15
             score += (bs.damageDone && bs.damageDone[charName] || 0) * 0.15;
-            // 5. Daño recibido × 1 (tanque × 1.5)
-            score += (bs.damageReceived && bs.damageReceived[charName] || 0) * (_isTank ? 1.5 : 1);
+            // 5. Daño recibido: 0.5 por punto (normal, hasta 149 HP) / 1 por punto (tanque, 150+ HP)
+            score += (bs.damageReceived && bs.damageReceived[charName] || 0) * (_isTank ? 1 : 0.5);
             // 6. Debuffs aplicados × 2
             score += (bs.debuffsApplied && bs.debuffsApplied[charName] || 0) * 2;
             // 7. Buffs aplicados × 2
