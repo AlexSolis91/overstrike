@@ -2251,6 +2251,7 @@
                     const _faC = gameState.characters[_faN];
                     if (!_faC || _faC.isDead || _faC.hp <= 0) continue;
                     if (!(_faC.equippedRelics||[]).includes('Fulgor Argénteo')) continue;
+                        if (Math.random() >= 0.50) { addLog('✨ Fulgor Argénteo: ' + _faN + ' no gana Protección Sagrada esta ronda (50%)', 'info'); continue; }
                     const _faBefore = (_faC.statusEffects || []).length;
                     if (typeof applyBuff === 'function') applyBuff(_faN, { name: 'Proteccion Sagrada', type: 'buff', duration: 2, emoji: '✨' });
                     const _faHasIt = (_faC.statusEffects || []).some(function (e) { return e && normAccent(e.name || '') === 'proteccion sagrada'; });
