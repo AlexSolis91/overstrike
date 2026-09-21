@@ -131,6 +131,14 @@
             if (!charName) return;
             const c = gameState.characters[charName];
             if (!c || c.isDead || c.hp <= 0) return;
+            // ── CORONA DE LOS 7 REINOS: el portador no puede ganar turnos adicionales ──
+            if ((c.equippedRelics||[]).some(function(rn){
+                const rd = (typeof RELICS_DATA !== 'undefined') ? RELICS_DATA[rn] : null;
+                return rd && rd.effect === 'corona_7_reinos';
+            })) {
+                addLog('👑 Corona de los 7 Reinos: ' + charName + ' no puede ganar turnos adicionales', 'info');
+                return;
+            }
             gameState._pendingExtraTurns = gameState._pendingExtraTurns || [];
             gameState._pendingExtraTurns.push(charName);
 
